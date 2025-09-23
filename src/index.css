@@ -2,41 +2,71 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* QuizMaster Design System - Vibrant, Modern Quiz Platform */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Core Background & Text */
+    --background: 245 100% 98%;
+    --foreground: 220 15% 25%;
 
+    /* Card System */
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 220 15% 25%;
 
+    /* Popover System */
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 220 15% 25%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Quiz Brand Colors - Vibrant & Engaging */
+    --primary: 260 100% 65%;        /* Vibrant Purple */
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 260 100% 75%;
+    
+    --secondary: 340 100% 60%;      /* Hot Pink */
+    --secondary-foreground: 0 0% 100%;
+    
+    --success: 140 70% 50%;         /* Quiz Green */
+    --success-foreground: 0 0% 100%;
+    
+    --warning: 45 100% 55%;         /* Quiz Orange */
+    --warning-foreground: 0 0% 100%;
+    
+    --danger: 0 85% 60%;            /* Quiz Red */
+    --danger-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Interactive States */
+    --muted: 240 5% 96%;
+    --muted-foreground: 240 4% 46%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 260 100% 97%;
+    --accent-foreground: 260 100% 65%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 85% 60%;
+    --destructive-foreground: 0 0% 100%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    /* Form Elements */
+    --border: 240 6% 90%;
+    --input: 240 6% 90%;
+    --ring: 260 100% 65%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-
-    --radius: 0.5rem;
+    /* Design System */
+    --radius: 1rem;
+    
+    /* Quiz Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
+    --gradient-secondary: linear-gradient(135deg, hsl(var(--secondary)), hsl(340 100% 70%));
+    --gradient-success: linear-gradient(135deg, hsl(var(--success)), hsl(140 70% 60%));
+    --gradient-hero: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
+    
+    /* Animation Variables */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    
+    /* Shadows */
+    --shadow-quiz: 0 10px 40px -10px hsl(var(--primary) / 0.3);
+    --shadow-glow: 0 0 50px hsl(var(--primary-glow) / 0.4);
+    --shadow-card: 0 4px 20px -2px hsl(220 15% 25% / 0.1);
 
     --sidebar-background: 0 0% 98%;
 
@@ -100,6 +130,32 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
+  }
+
+  /* Custom utility classes */
+  .quiz-gradient {
+    background: var(--gradient-hero);
+  }
+
+  .quiz-card {
+    @apply bg-white/10 backdrop-blur-lg border-white/20 shadow-card;
+  }
+
+  .quiz-button {
+    @apply transition-all duration-300 hover:scale-105 active:scale-95;
+  }
+
+  /* Animation classes */
+  .animate-quiz-pulse {
+    animation: quiz-pulse 2s ease-in-out infinite;
+  }
+
+  .animate-confetti {
+    animation: confetti 3s ease-out forwards;
+  }
+
+  .hover-glow:hover {
+    box-shadow: var(--shadow-glow);
   }
 }
