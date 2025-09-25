@@ -1,11 +1,14 @@
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { QuizSession } from "@/components/QuizSession";
+import { PlayerView } from "@/components/PlayerView";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertTriangle } from "lucide-react";
 
 const LiveQuizPage = () => {
   const { gameCode } = useParams<{ gameCode: string }>();
+  const [searchParams] = useSearchParams();
+  const playerName = searchParams.get('player');
 
   // Mock quiz data - in real app this would come from backend
   const mockQuiz = {
@@ -66,6 +69,12 @@ const LiveQuizPage = () => {
     );
   }
 
+  // If player parameter is present, show player view
+  if (playerName && gameCode) {
+    return <PlayerView gameCode={gameCode} playerName={playerName} />;
+  }
+
+  // Otherwise show host view
   return <QuizSession quiz={mockQuiz} isHost={true} />;
 };
 

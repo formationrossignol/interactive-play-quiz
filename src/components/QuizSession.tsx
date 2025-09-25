@@ -317,13 +317,74 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
                       <Clock className="w-4 h-4" />
                       <span>{currentQuestion.timeLimit}s</span>
                     </div>
+                    <div className="flex items-center gap-1">
+                      <Trophy className="w-4 h-4" />
+                      <span>{currentQuestion.points} points</span>
+                    </div>
                   </div>
                 </div>
 
-                {/* Answer options would go here based on question type */}
-                <div className="text-center text-white/60">
-                  <p>Question interface for {currentQuestion.type}</p>
-                </div>
+                {/* Multiple Choice */}
+                {currentQuestion.type === 'multiple-choice' && currentQuestion.answers && (
+                  <div className="grid md:grid-cols-2 gap-4 max-w-2xl mx-auto">
+                    {currentQuestion.answers.map((answer, index) => (
+                      <Button
+                        key={index}
+                        variant="quiz"
+                        size="lg"
+                        className="h-20 text-lg p-6 hover:scale-105 transition-transform"
+                        onClick={() => console.log('Answer:', index)}
+                      >
+                        {String.fromCharCode(65 + index)}. {answer}
+                      </Button>
+                    ))}
+                  </div>
+                )}
+
+                {/* True/False */}
+                {currentQuestion.type === 'true-false' && (
+                  <div className="flex gap-4 justify-center max-w-md mx-auto">
+                    <Button
+                      variant="quiz"
+                      size="lg"
+                      className="flex-1 h-20 text-xl hover:scale-105 transition-transform bg-success/20 hover:bg-success/30"
+                      onClick={() => console.log('Answer: true')}
+                    >
+                      Vrai
+                    </Button>
+                    <Button
+                      variant="quiz"
+                      size="lg"
+                      className="flex-1 h-20 text-xl hover:scale-105 transition-transform bg-destructive/20 hover:bg-destructive/30"
+                      onClick={() => console.log('Answer: false')}
+                    >
+                      Faux
+                    </Button>
+                  </div>
+                )}
+
+                {/* Short Answer */}
+                {currentQuestion.type === 'short-answer' && (
+                  <div className="max-w-md mx-auto">
+                    <div className="bg-white/10 rounded-lg p-4 mb-4">
+                      <input
+                        type="text"
+                        placeholder="Tapez votre réponse..."
+                        className="w-full bg-transparent text-white placeholder:text-white/60 text-xl text-center border-none outline-none"
+                        maxLength={100}
+                        onKeyPress={(e) => e.key === 'Enter' && console.log('Answer:', e.currentTarget.value)}
+                      />
+                    </div>
+                    <Button
+                      variant="hero"
+                      size="lg"
+                      className="w-full"
+                      onClick={() => console.log('Submit answer')}
+                    >
+                      Envoyer la réponse
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
@@ -332,15 +393,121 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
     );
   }
 
-  // Other game states (leaderboard, final) would be similar to LiveQuiz component
-  return (
-    <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
-      <div className="text-center text-white">
-        <h2 className="text-2xl font-bold mb-4">Game State: {gameState}</h2>
-        <Button variant="hero" onClick={() => setGameState('waiting')}>
-          Back to Waiting Room
-        </Button>
+  if (gameState === 'leaderboard') {
+    const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
+    
+    return (
+      <div className="min-h-screen bg-gradient-hero p-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-8">
+            <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 animate-fade-in">
+              🏆 Classement
+            </h1>
+            <p className="text-white/80 text-lg">
+              Question {currentQuestionIndex + 1} sur {quiz.questions.length}
+            </p>
+          </div>
+
+          <div className="space-y-4 max-w-2xl mx-auto">
+            {sortedPlayers.slice(0, 10).map((player, index) => (
+              <div
+                key={player.id}
+                className={cn(
+                  "flex items-center gap-4 p-4 rounded-lg backdrop-blur-lg animate-fade-in",
+                  index < 3 ? "bg-gradient-primary/20 border border-primary/30" : "bg-white/10 border border-white/20"
+                )}
+                style={{ animationDelay: `${index * 0.1}s` }}
+              >
+                <div className={cn(
+                  "w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg",
+                  index === 0 ? "bg-yellow-500 text-black" :
+                  index === 1 ? "bg-gray-400 text-black" :
+                  index === 2 ? "bg-amber-600 text-white" :
+                  "bg-white/20 text-white"
+                )}>
+                  {index < 3 ? ['🥇', '🥈', '🥉'][index] : index + 1}
+                </div>
+                
+                <div className="flex-1">
+                  <div className="text-white font-bold text-lg">{player.name}</div>
+                  <div className="text-white/60 text-sm">
+                    {player.correctAnswers} bonnes réponses
+                  </div>
+                </div>
+                
+                <div className="text-right">
+                  <div className="text-white font-bold text-xl">{player.score}</div>
+                  <div className="text-white/60 text-sm">points</div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {isHost && (
+            <div className="flex justify-center gap-4 mt-8">
+              <Button variant="quiz" onClick={nextQuestion}>
+                {currentQuestionIndex < quiz.questions.length - 1 ? 'Question suivante' : 'Résultats finaux'}
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  if (gameState === 'final') {
+    const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
+    const winner = sortedPlayers[0];
+    
+    return (
+      <div className="min-h-screen bg-gradient-hero p-4">
+        <div className="max-w-4xl mx-auto text-center">
+          <div className="mb-8 animate-scale-in">
+            <div className="text-6xl mb-4">🎉</div>
+            <h1 className="text-5xl md:text-6xl font-bold text-white mb-4">
+              Quiz Terminé !
+            </h1>
+            {winner && (
+              <div className="bg-gradient-primary/20 backdrop-blur-lg rounded-lg p-8 border border-primary/30 mb-8">
+                <div className="text-4xl mb-4">👑</div>
+                <h2 className="text-3xl font-bold text-white mb-2">Félicitations</h2>
+                <div className="text-2xl text-white font-bold">{winner.name}</div>
+                <div className="text-white/80">
+                  {winner.score} points • {winner.correctAnswers} bonnes réponses
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6 mb-8">
+            {sortedPlayers.slice(0, 3).map((player, index) => (
+              <Card key={player.id} className="bg-white/10 backdrop-blur-lg border-white/20">
+                <CardContent className="p-6 text-center">
+                  <div className="text-3xl mb-2">
+                    {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
+                  </div>
+                  <div className="text-white font-bold text-lg mb-1">{player.name}</div>
+                  <div className="text-white/80">{player.score} points</div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {isHost && (
+            <div className="flex justify-center gap-4">
+              <Button variant="outline" onClick={exportResults}>
+                <Download className="w-4 h-4 mr-2" />
+                Exporter les résultats
+              </Button>
+              <Button variant="hero" onClick={() => window.location.href = '/'}>
+                Nouveau Quiz
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return null;
 };
