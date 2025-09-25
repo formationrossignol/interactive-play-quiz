@@ -54,6 +54,7 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
   const [gameState, setGameState] = useState<'waiting' | 'question' | 'results' | 'leaderboard' | 'final'>('waiting');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(0);
   const [sessionStats, setSessionStats] = useState({
     totalPlayers: 0,
     averageScore: 0,
@@ -87,6 +88,19 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
     return () => clearInterval(interval);
   }, [gameState]);
 
+  // Timer effect for questions
+  useEffect(() => {
+    if (gameState === 'question' && timeLeft > 0) {
+      const timer = setTimeout(() => {
+        setTimeLeft(prev => prev - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else if (gameState === 'question' && timeLeft === 0) {
+      // Auto-advance when timer reaches 0
+      showLeaderboard();
+    }
+  }, [gameState, timeLeft]);
+
   // Update session stats
   useEffect(() => {
     setSessionStats({
@@ -100,13 +114,15 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
   const startQuiz = () => {
     console.log('Start quiz clicked! Players:', players.length, 'Current game state:', gameState);
     setGameState('question');
-    console.log('Game state changed to: question');
+    setTimeLeft(currentQuestion.timeLimit);
+    console.log('Game state changed to: question', 'Timer set to:', currentQuestion.timeLimit);
   };
 
   const nextQuestion = () => {
     if (currentQuestionIndex < quiz.questions.length - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
       setGameState('question');
+      setTimeLeft(quiz.questions[currentQuestionIndex + 1].timeLimit);
     } else {
       setGameState('final');
     }
@@ -317,7 +333,9 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
                   <div className="flex items-center justify-center gap-4 text-white/80">
                     <div className="flex items-center gap-1">
                       <Clock className="w-4 h-4" />
-                      <span>{currentQuestion.timeLimit}s</span>
+                      <span className={timeLeft <= 10 ? "text-warning font-bold animate-pulse" : ""}>
+                        {timeLeft}s
+                      </span>
                     </div>
                     <div className="flex items-center gap-1">
                       <Trophy className="w-4 h-4" />
