@@ -98,7 +98,9 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
   }, [players, currentQuestionIndex, quiz.createdAt]);
 
   const startQuiz = () => {
+    console.log('Start quiz clicked! Players:', players.length, 'Current game state:', gameState);
     setGameState('question');
+    console.log('Game state changed to: question');
   };
 
   const nextQuestion = () => {
