@@ -1,11 +1,15 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Clock, Users, Play, Save } from "lucide-react";
+import { Plus, Trash2, Clock, Users, Play, Save, BookMarked } from "lucide-react";
+import { QuestionBank, SavedQuestion } from "./QuestionBank";
+import { QRCodeGenerator } from "./QRCodeGenerator";
+import { toast } from "sonner";
 
 interface Question {
   id: string;
@@ -30,6 +34,7 @@ interface Quiz {
 }
 
 export const QuizBuilder = () => {
+  const navigate = useNavigate();
   const [quiz, setQuiz] = useState<Quiz>({
     id: '',
     title: '',
@@ -51,6 +56,14 @@ export const QuizBuilder = () => {
     points: 100
   });
 
+  const [gameCode, setGameCode] = useState<string>('');
+  const [showQRCode, setShowQRCode] = useState(false);
+  const [showQuestionBank, setShowQuestionBank] = useState(false);
+
+  const generateGameCode = () => {
+    return Math.random().toString(36).substring(2, 8).toUpperCase();
+  };
+
   const addQuestion = () => {
     if (currentQuestion.question && currentQuestion.answers?.some(a => a.trim())) {
       const newQuestion: Question = {
@@ -63,6 +76,15 @@ export const QuizBuilder = () => {
         questions: [...prev.questions, newQuestion]
       }));
 
+      // Save to question bank
+      const savedQuestion: SavedQuestion = {
+        ...newQuestion,
+        createdAt: new Date().toISOString()
+      };
+      const bank = JSON.parse(localStorage.getItem('questionBank') || '[]');
+      bank.push(savedQuestion);
+      localStorage.setItem('questionBank', JSON.stringify(bank));
+
       // Reset form
       setCurrentQuestion({
         type: 'multiple-choice',
@@ -72,7 +94,58 @@ export const QuizBuilder = () => {
         timeLimit: 30,
         points: 100
       });
+      
+      toast.success("Question ajoutée");
     }
+  };
+
+  const addQuestionFromBank = (question: SavedQuestion) => {
+    const newQuestion: Question = {
+      id: Date.now().toString(),
+      type: question.type,
+      question: question.question,
+      answers: question.answers,
+      correctAnswer: question.correctAnswer,
+      timeLimit: question.timeLimit,
+      points: question.points
+    };
+
+    setQuiz(prev => ({
+      ...prev,
+      questions: [...prev.questions, newQuestion]
+    }));
+
+    toast.success("Question ajoutée depuis la banque");
+  };
+
+  const saveDraft = () => {
+    if (!quiz.title) {
+      toast.error("Veuillez entrer un titre pour le quiz");
+      return;
+    }
+    localStorage.setItem('quizDraft', JSON.stringify(quiz));
+    toast.success("Brouillon sauvegardé");
+  };
+
+  const startQuiz = () => {
+    if (!quiz.title || quiz.questions.length === 0) {
+      toast.error("Veuillez ajouter un titre et au moins une question");
+      return;
+    }
+
+    const code = generateGameCode();
+    setGameCode(code);
+    
+    // Save quiz
+    const quizWithId = { ...quiz, id: code };
+    localStorage.setItem(`quiz-${code}`, JSON.stringify(quizWithId));
+    
+    setShowQRCode(true);
+    toast.success(`Quiz créé avec le code: ${code}`);
+  };
+
+  const goToQuiz = () => {
+    navigate(`/quiz/${gameCode}`);
   };
 
   const removeQuestion = (questionId: string) => {
@@ -102,6 +175,34 @@ export const QuizBuilder = () => {
     }
   };
 
+  if (showQRCode && gameCode) {
+    return (
+      <div className="min-h-screen bg-background p-6">
+        <div className="max-w-2xl mx-auto">
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold text-foreground mb-2">Quiz Créé!</h1>
+            <p className="text-muted-foreground">Partagez ce code ou ce QR code avec vos participants</p>
+          </div>
+          
+          <QRCodeGenerator 
+            gameCode={gameCode}
+            joinUrl={`${window.location.origin}/join/${gameCode}`}
+          />
+          
+          <div className="flex gap-3 mt-6">
+            <Button variant="outline" size="lg" onClick={() => setShowQRCode(false)} className="flex-1">
+              Modifier le Quiz
+            </Button>
+            <Button variant="hero" size="lg" onClick={goToQuiz} className="flex-1">
+              <Play className="w-4 h-4 mr-2" />
+              Lancer le Quiz
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-6xl mx-auto">
@@ -112,18 +213,28 @@ export const QuizBuilder = () => {
             <p className="text-muted-foreground">Create engaging quizzes with multiple question types</p>
           </div>
           <div className="flex gap-3">
-            <Button variant="outline" size="lg">
-              <Save className="w-4 h-4 mr-2" />
-              Save Draft
+            <Button variant="outline" size="lg" onClick={() => setShowQuestionBank(!showQuestionBank)}>
+              <BookMarked className="w-4 h-4 mr-2" />
+              {showQuestionBank ? 'Masquer' : 'Banque'}
             </Button>
-            <Button variant="hero" size="lg">
+            <Button variant="outline" size="lg" onClick={saveDraft}>
+              <Save className="w-4 h-4 mr-2" />
+              Sauvegarder
+            </Button>
+            <Button variant="hero" size="lg" onClick={startQuiz}>
               <Play className="w-4 h-4 mr-2" />
-              Start Quiz
+              Créer Quiz
             </Button>
           </div>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-6">
+          {/* Question Bank */}
+          {showQuestionBank && (
+            <div className="lg:col-span-3 mb-6">
+              <QuestionBank onSelectQuestion={addQuestionFromBank} />
+            </div>
+          )}
           {/* Quiz Settings */}
           <div className="lg:col-span-1 space-y-6">
             <Card>
