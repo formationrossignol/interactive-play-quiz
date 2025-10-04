@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Header } from "@/components/Header";
 import { getCurrentUser } from "@/lib/auth";
 import { getUserQuizzes, getPublicQuizzes, getFavoriteQuizzes, deleteQuiz, toggleFavorite, SavedQuiz } from "@/lib/quizStorage";
-import { Star, Trash2, Play, Globe, Lock, ArrowLeft } from "lucide-react";
+import { Star, Trash2, Play } from "lucide-react";
 import { toast } from "sonner";
 
 const MyPolls = () => {
@@ -82,10 +83,6 @@ const MyPolls = () => {
       <CardContent>
         <div className="space-y-3">
           <div className="flex flex-wrap gap-2">
-            <Badge variant={poll.isPublic ? "default" : "secondary"} className="bg-white/20">
-              {poll.isPublic ? <Globe className="w-3 h-3 mr-1" /> : <Lock className="w-3 h-3 mr-1" />}
-              {poll.isPublic ? "Public" : "Privé"}
-            </Badge>
             <Badge variant="secondary" className="bg-white/20">
               {poll.questions.length} questions
             </Badge>
@@ -125,17 +122,13 @@ const MyPolls = () => {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-hero p-6">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-4xl font-bold text-white mb-2">Mes Sondages</h1>
-            <p className="text-white/80">Gérez vos sondages et explorez les sondages publics</p>
-          </div>
-          <Button variant="outline" onClick={() => navigate("/")}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Retour
-          </Button>
+    <div className="min-h-screen bg-background">
+      <Header subtitle="Mes Sondages" />
+      
+      <div className="max-w-6xl mx-auto p-6">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-foreground mb-2">Mes Sondages</h1>
+          <p className="text-muted-foreground">Gérez vos sondages</p>
         </div>
 
         <Tabs defaultValue="my-polls" className="space-y-6">

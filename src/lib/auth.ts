@@ -1,8 +1,13 @@
+export type Theme = 'light' | 'dark';
+export type Language = 'en' | 'fr';
+
 export interface User {
   id: string;
   email: string;
   username: string;
   createdAt: string;
+  theme?: Theme;
+  language?: Language;
 }
 
 export const AUTH_STORAGE_KEY = 'quiz_auth_user';

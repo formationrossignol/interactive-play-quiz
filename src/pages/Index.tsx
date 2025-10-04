@@ -1,21 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Users, Zap, Trophy, Play, Plus, QrCode, Clock, ArrowRight, Gamepad2, LogOut, User, BookOpen, Compass, BarChart3 } from "lucide-react";
-import { getCurrentUser, logout } from "@/lib/auth";
+import { Header } from "@/components/Header";
+import { Plus, QrCode, Compass } from "lucide-react";
+import { t } from "@/lib/i18n";
 
 const Index = () => {
   const [gameCode, setGameCode] = useState("");
-  const [user, setUser] = useState(getCurrentUser());
   const navigate = useNavigate();
-
-  useEffect(() => {
-    setUser(getCurrentUser());
-  }, []);
 
   const joinQuiz = () => {
     if (gameCode.trim()) {
@@ -23,206 +17,92 @@ const Index = () => {
     }
   };
 
-  const createQuiz = (type: 'quiz' | 'poll' = 'quiz') => {
-    if (!user) {
-      navigate('/auth');
-      return;
-    }
-    navigate(`/builder?type=${type}`);
-  };
-
-  const handleLogout = () => {
-    logout();
-    setUser(null);
-  };
-
-
   return (
-    <div className="min-h-screen bg-gradient-hero">
-      {/* Navigation */}
-      <nav className="p-6 border-b border-white/10">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div 
-            className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
-            onClick={() => navigate('/')}
-          >
-            <div className="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center">
-              <Zap className="w-6 h-6 text-white" />
-            </div>
-            <h1 className="text-2xl font-bold text-white">QuizMaster</h1>
-          </div>
-          
-          <div className="flex items-center gap-3">
-            {user ? (
-              <>
-                <Button variant="outline" onClick={() => navigate('/my-quizzes')}>
-                  <BookOpen className="w-4 h-4 mr-2" />
-                  Mes Quiz
-                </Button>
-                <Button variant="outline" onClick={() => navigate('/my-polls')}>
-                  <BarChart3 className="w-4 h-4 mr-2" />
-                  Mes Sondages
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => navigate('/profile')}
-                  className="flex items-center gap-2"
-                >
-                  <User className="w-4 h-4" />
-                  <span className="hidden sm:inline">{user.username}</span>
-                </Button>
-                <Button variant="ghost" size="sm" onClick={handleLogout}>
-                  <LogOut className="w-4 h-4" />
-                </Button>
-              </>
-            ) : (
-              <Button variant="outline" onClick={() => navigate('/auth')}>
-                <User className="w-4 h-4 mr-2" />
-                Connexion
-              </Button>
-            )}
-          </div>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-background">
+      <Header />
 
       {/* Hero Section */}
       <div className="max-w-6xl mx-auto p-6">
         <div className="text-center mb-16 mt-8">
-          <h2 className="text-6xl font-bold text-white mb-6 animate-fade-in">
-            Create <span className="bg-gradient-primary bg-clip-text text-transparent">Interactive</span> Quizzes
+          <h2 className="text-6xl font-bold text-foreground mb-6 animate-fade-in">
+            {t('heroTitle')} <span className="bg-gradient-primary bg-clip-text text-transparent">{t('heroInteractive')}</span> {t('heroQuizzes')}
           </h2>
-          <p className="text-xl text-white/80 mb-12 max-w-3xl mx-auto leading-relaxed">
-            Engage your audience with real-time multiplayer quizzes featuring QR code joining, 
-            live leaderboards, multiple question types, and beautiful animations.
+          <p className="text-xl text-muted-foreground mb-12 max-w-3xl mx-auto leading-relaxed">
+            {t('heroDescription')}
           </p>
         </div>
 
         {/* Main Actions */}
         <div className="grid md:grid-cols-2 gap-8 mb-16">
-          {/* Host a Quiz or Poll */}
-          <Card className="bg-white/10 backdrop-blur-lg border-white/20 hover:bg-white/15 transition-all duration-300 group shadow-glow">
+          {/* Create Quiz */}
+          <Card className="border-2 hover:border-primary transition-all cursor-pointer group" onClick={() => navigate('/builder?type=quiz')}>
             <CardContent className="p-8 text-center">
-              <div className="w-20 h-20 bg-gradient-primary rounded-2xl mx-auto mb-6 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Gamepad2 className="w-10 h-10 text-white" />
+              <div className="w-16 h-16 bg-gradient-primary rounded-full mx-auto mb-4 flex items-center justify-center transform group-hover:scale-110 transition-transform">
+                <Plus className="w-8 h-8 text-white" />
               </div>
-              <h3 className="text-2xl font-bold text-white mb-4">Host a Quiz or a Poll</h3>
-              <p className="text-white/80 mb-8 leading-relaxed">
-                Create and host interactive quizzes or polls with real-time participation. 
-                Perfect for classrooms, meetings, or events.
-              </p>
-              <div className="flex gap-3">
-                <Button onClick={() => createQuiz('quiz')} variant="hero" size="lg" className="flex-1 text-lg">
-                  <Plus className="w-5 h-5 mr-2" />
-                  Create Quiz
-                </Button>
-                <Button onClick={() => createQuiz('poll')} variant="quiz" size="lg" className="flex-1 text-lg">
-                  <Plus className="w-5 h-5 mr-2" />
-                  Create Poll
-                </Button>
-              </div>
+              <h3 className="text-2xl font-bold text-foreground mb-2">{t('createQuiz')}</h3>
+              <p className="text-muted-foreground mb-6">{t('createQuizDesc')}</p>
+              <Button className="w-full" size="lg">
+                {t('newQuiz')}
+              </Button>
             </CardContent>
           </Card>
 
-          {/* Join a Quiz or Poll */}
-          <Card className="bg-white/10 backdrop-blur-lg border-white/20 hover:bg-white/15 transition-all duration-300 group shadow-glow">
+          {/* Create Poll */}
+          <Card className="border-2 hover:border-primary transition-all cursor-pointer group" onClick={() => navigate('/builder?type=poll')}>
             <CardContent className="p-8 text-center">
-              <div className="w-20 h-20 bg-gradient-secondary rounded-2xl mx-auto mb-6 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Users className="w-10 h-10 text-white" />
+              <div className="w-16 h-16 bg-gradient-secondary rounded-full mx-auto mb-4 flex items-center justify-center transform group-hover:scale-110 transition-transform">
+                <Plus className="w-8 h-8 text-white" />
               </div>
-              <h3 className="text-2xl font-bold text-white mb-4">Join a Quiz or a Poll</h3>
-              <p className="text-white/80 mb-6 leading-relaxed">
-                Enter a game code or scan a QR code to join an active quiz or poll session.
-              </p>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="game-code" className="text-white text-sm font-medium">
-                    Game Code
-                  </Label>
-                  <Input
-                    id="game-code"
-                    placeholder="Enter code (e.g. ABC123)"
-                    value={gameCode}
-                    onChange={(e) => setGameCode(e.target.value.toUpperCase())}
-                    onKeyPress={(e) => e.key === 'Enter' && joinQuiz()}
-                    className="bg-white/10 border-white/20 text-white placeholder:text-white/60 text-center text-xl font-mono tracking-wider mt-2"
-                    maxLength={6}
-                  />
-                </div>
-                <Button 
-                  onClick={joinQuiz} 
-                  disabled={!gameCode.trim()}
-                  variant="quiz" 
-                  size="lg" 
-                  className="w-full text-lg"
-                >
-                  <Play className="w-5 h-5 mr-2" />
-                  Join Quiz or Poll
-                  <ArrowRight className="w-5 h-5 ml-2" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Discover Quizzes Link */}
-        <div className="mb-16">
-          <Card className="bg-white/10 backdrop-blur-lg border-white/20 hover:bg-white/15 transition-all duration-300 shadow-glow">
-            <CardContent className="p-8 text-center">
-              <div className="w-20 h-20 bg-gradient-success rounded-2xl mx-auto mb-6 flex items-center justify-center">
-                <Compass className="w-10 h-10 text-white" />
-              </div>
-              <h3 className="text-2xl font-bold text-white mb-4">Découvrir les Quiz Publics</h3>
-              <p className="text-white/80 mb-8 leading-relaxed">
-                Explorez et participez aux quiz créés par la communauté
-              </p>
-              <Button onClick={() => navigate('/discover')} variant="hero" size="lg" className="text-lg">
-                <Compass className="w-5 h-5 mr-2" />
-                Explorer les Quiz
-                <ArrowRight className="w-5 h-5 ml-2" />
+              <h3 className="text-2xl font-bold text-foreground mb-2">{t('createPoll')}</h3>
+              <p className="text-muted-foreground mb-6">{t('createPollDesc')}</p>
+              <Button className="w-full" size="lg">
+                {t('newPoll')}
               </Button>
             </CardContent>
           </Card>
         </div>
 
-        {/* Features Grid */}
-        <div className="grid md:grid-cols-3 gap-6 mb-16">
-          <Card className="bg-white/10 backdrop-blur-lg border-white/20 hover:bg-white/15 transition-all duration-300 group">
-            <CardHeader>
-              <div className="w-12 h-12 bg-gradient-primary rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+        {/* Join Section */}
+        <Card className="max-w-2xl mx-auto mb-16">
+          <CardContent className="p-8">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-12 h-12 bg-gradient-success rounded-full flex items-center justify-center">
                 <QrCode className="w-6 h-6 text-white" />
               </div>
-              <CardTitle className="text-white">QR Code Joining</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-white/80">Players join instantly by scanning QR codes. No apps to download, no accounts needed!</p>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-white/10 backdrop-blur-lg border-white/20 hover:bg-white/15 transition-all duration-300 group">
-            <CardHeader>
-              <div className="w-12 h-12 bg-gradient-secondary rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                <Clock className="w-6 h-6 text-white" />
+              <div className="flex-1">
+                <h3 className="text-2xl font-bold text-foreground">{t('joinTitle')}</h3>
+                <p className="text-muted-foreground">{t('joinDesc')}</p>
               </div>
-              <CardTitle className="text-white">Multiple Question Types</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-white/80">Multiple choice, true/false, short answer, ranking, and word clouds for diverse engagement!</p>
-            </CardContent>
-          </Card>
+            </div>
+            <div className="flex gap-3">
+              <Input
+                placeholder={t('enterCode')}
+                value={gameCode}
+                onChange={(e) => setGameCode(e.target.value.toUpperCase())}
+                onKeyPress={(e) => e.key === 'Enter' && joinQuiz()}
+                className="text-lg"
+                maxLength={6}
+              />
+              <Button onClick={joinQuiz} size="lg" disabled={!gameCode.trim()}>
+                {t('join')}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
-          <Card className="bg-white/10 backdrop-blur-lg border-white/20 hover:bg-white/15 transition-all duration-300 group">
-            <CardHeader>
-              <div className="w-12 h-12 bg-gradient-success rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                <Trophy className="w-6 h-6 text-white" />
-              </div>
-              <CardTitle className="text-white">Live Leaderboards</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-white/80">Animated rankings with podium celebrations. Points based on speed and accuracy!</p>
-            </CardContent>
-          </Card>
+        {/* Discover Public Quizzes */}
+        <div className="text-center">
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={() => navigate('/discover')}
+            className="group"
+          >
+            <Compass className="w-5 h-5 mr-2 group-hover:rotate-12 transition-transform" />
+            {t('discoverPublic')}
+          </Button>
         </div>
-
       </div>
     </div>
   );

@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Header } from "@/components/Header";
 import { getCurrentUser } from "@/lib/auth";
 import { getUserQuizzes, getPublicQuizzes, getFavoriteQuizzes, deleteQuiz, toggleFavorite, SavedQuiz } from "@/lib/quizStorage";
-import { Star, Trash2, Play, Globe, Lock, ArrowLeft } from "lucide-react";
+import { Star, Trash2, Play, Globe, Lock } from "lucide-react";
 import { toast } from "sonner";
 
 const MyQuizzes = () => {
@@ -113,17 +114,13 @@ const MyQuizzes = () => {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-hero p-6">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-4xl font-bold text-white mb-2">Mes Quiz</h1>
-            <p className="text-white/80">Gérez vos quiz et explorez les quiz publics</p>
-          </div>
-          <Button variant="outline" onClick={() => navigate("/")}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Retour
-          </Button>
+    <div className="min-h-screen bg-background">
+      <Header subtitle="Mes Quiz" />
+      
+      <div className="max-w-6xl mx-auto p-6">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-foreground mb-2">Mes Quiz</h1>
+          <p className="text-muted-foreground">Gérez vos quiz et explorez les quiz publics</p>
         </div>
 
         <Tabs defaultValue="my-quizzes" className="space-y-6">
