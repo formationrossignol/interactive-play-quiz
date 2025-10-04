@@ -10,6 +10,8 @@ import LiveQuizPage from "./pages/LiveQuizPage";
 import JoinQuiz from "./pages/JoinQuiz";
 import AuthPage from "./pages/AuthPage";
 import MyQuizzes from "./pages/MyQuizzes";
+import DiscoverQuizzes from "./pages/DiscoverQuizzes";
+import ProfilePage from "./pages/ProfilePage";
 
 const queryClient = new QueryClient();
 
@@ -24,6 +26,8 @@ const App = () => (
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/builder" element={<QuizBuilder />} />
           <Route path="/my-quizzes" element={<MyQuizzes />} />
+          <Route path="/discover" element={<DiscoverQuizzes />} />
+          <Route path="/profile" element={<ProfilePage />} />
           <Route path="/quiz/:gameCode" element={<LiveQuizPage />} />
           <Route path="/join/:gameCode" element={<JoinQuiz />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

@@ -65,6 +65,7 @@ export const QuizBuilder = () => {
   const [speedBonus, setSpeedBonus] = useState(true);
   const [transitionTime, setTransitionTime] = useState(5);
   const [category, setCategory] = useState('Autre');
+  const [quizType, setQuizType] = useState<'quiz' | 'poll'>('quiz');
 
   const [currentQuestion, setCurrentQuestion] = useState<Partial<Question>>({
     type: 'multiple-choice',
@@ -176,7 +177,8 @@ export const QuizBuilder = () => {
         tags,
         speedBonus,
         transitionTime,
-        category
+        category,
+        type: quizType
       });
     } catch (error) {
       console.error("Error saving quiz:", error);
@@ -265,16 +267,10 @@ export const QuizBuilder = () => {
           
           <div className="flex items-center gap-3">
             {user && (
-              <>
-                <Button variant="outline" onClick={() => navigate('/my-quizzes')}>
-                  <BookMarked className="w-4 h-4 mr-2" />
-                  Mes Quiz
-                </Button>
-                <div className="flex items-center gap-2 bg-white/10 rounded-lg px-3 py-2">
-                  <Users className="w-4 h-4 text-white" />
-                  <span className="text-white text-sm">{user.username}</span>
-                </div>
-              </>
+              <div className="flex items-center gap-2 bg-white/10 rounded-lg px-3 py-2">
+                <Users className="w-4 h-4 text-white" />
+                <span className="text-white text-sm">{user.username}</span>
+              </div>
             )}
           </div>
         </div>
@@ -395,6 +391,18 @@ export const QuizBuilder = () => {
                     value={transitionTime}
                     onChange={(e) => setTransitionTime(parseInt(e.target.value))}
                   />
+                </div>
+                <div>
+                  <Label htmlFor="quiz-type">Type</Label>
+                  <select
+                    id="quiz-type"
+                    value={quizType}
+                    onChange={(e) => setQuizType(e.target.value as 'quiz' | 'poll')}
+                    className="w-full mt-2 bg-background border border-input rounded-md px-3 py-2 text-sm"
+                  >
+                    <option value="quiz">Quiz</option>
+                    <option value="poll">Sondage</option>
+                  </select>
                 </div>
                 <div>
                   <Label htmlFor="category">Catégorie</Label>

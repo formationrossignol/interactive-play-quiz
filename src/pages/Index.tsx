@@ -5,9 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Users, Zap, Trophy, Play, Plus, QrCode, Clock, Star, ArrowRight, Gamepad2, LogOut, User, BookOpen, Library } from "lucide-react";
+import { Users, Zap, Trophy, Play, Plus, QrCode, Clock, ArrowRight, Gamepad2, LogOut, User, BookOpen, Compass } from "lucide-react";
 import { getCurrentUser, logout } from "@/lib/auth";
-import { PublicQuizExplorer } from "@/components/PublicQuizExplorer";
 
 const Index = () => {
   const [gameCode, setGameCode] = useState("");
@@ -63,9 +62,9 @@ const Index = () => {
                   <BookOpen className="w-4 h-4 mr-2" />
                   Mes Quiz
                 </Button>
-                <Button variant="outline" onClick={() => navigate('/builder')}>
-                  <Library className="w-4 h-4 mr-2" />
-                  Banque de Questions
+                <Button variant="outline" onClick={() => navigate('/profile')}>
+                  <User className="w-4 h-4 mr-2" />
+                  Profil
                 </Button>
                 <div className="flex items-center gap-2 bg-white/10 rounded-lg px-3 py-2">
                   <User className="w-4 h-4 text-white" />
@@ -159,9 +158,24 @@ const Index = () => {
           </Card>
         </div>
 
-        {/* Public Quiz Explorer */}
+        {/* Discover Quizzes Link */}
         <div className="mb-16">
-          <PublicQuizExplorer />
+          <Card className="bg-white/10 backdrop-blur-lg border-white/20 hover:bg-white/15 transition-all duration-300 shadow-glow">
+            <CardContent className="p-8 text-center">
+              <div className="w-20 h-20 bg-gradient-success rounded-2xl mx-auto mb-6 flex items-center justify-center">
+                <Compass className="w-10 h-10 text-white" />
+              </div>
+              <h3 className="text-2xl font-bold text-white mb-4">Découvrir les Quiz Publics</h3>
+              <p className="text-white/80 mb-8 leading-relaxed">
+                Explorez et participez aux quiz créés par la communauté
+              </p>
+              <Button onClick={() => navigate('/discover')} variant="hero" size="lg" className="text-lg">
+                <Compass className="w-5 h-5 mr-2" />
+                Explorer les Quiz
+                <ArrowRight className="w-5 h-5 ml-2" />
+              </Button>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Features Grid */}
