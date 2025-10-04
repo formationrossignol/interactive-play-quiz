@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Users, Zap, Trophy, Play, Plus, QrCode, Clock, Star, ArrowRight, Gamepad2, LogOut, User, BookOpen, Library } from "lucide-react";
 import { getCurrentUser, logout } from "@/lib/auth";
+import { PublicQuizExplorer } from "@/components/PublicQuizExplorer";
 
 const Index = () => {
   const [gameCode, setGameCode] = useState("");
@@ -156,6 +157,11 @@ const Index = () => {
               </div>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Public Quiz Explorer */}
+        <div className="mb-16">
+          <PublicQuizExplorer />
         </div>
 
         {/* Features Grid */}

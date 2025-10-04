@@ -13,6 +13,7 @@ import { ExitQuizDialog } from "./ExitQuizDialog";
 import { CircularTimer } from "./CircularTimer";
 import { QuizSessionAnswerDistribution } from "./QuizSession_AnswerDistribution";
 import { RaceLeaderboard } from "./RaceLeaderboard";
+import { TransitionTimer } from "./TransitionTimer";
 import { cn } from "@/lib/utils";
 
 interface Player {
@@ -60,7 +61,7 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
     { id: '3', name: 'Charlie', avatar: '🐻', score: 0, correctAnswers: 0, joinedAt: new Date() },
   ]);
   
-  const [gameState, setGameState] = useState<'waiting' | 'question' | 'answer-distribution' | 'leaderboard' | 'final'>('waiting');
+  const [gameState, setGameState] = useState<'waiting' | 'transition' | 'question' | 'answer-distribution' | 'leaderboard' | 'final'>('waiting');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
@@ -135,12 +136,16 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
     if (currentQuestionIndex < quiz.questions.length - 1) {
       // Save previous scores before updating
       setPlayers(prev => prev.map(p => ({ ...p, previousScore: p.score })));
-      setCurrentQuestionIndex(prev => prev + 1);
-      setGameState('question');
-      setTimeLeft(quiz.questions[currentQuestionIndex + 1].timeLimit);
+      setGameState('transition');
     } else {
       setGameState('final');
     }
+  };
+
+  const handleTransitionComplete = () => {
+    setCurrentQuestionIndex(prev => prev + 1);
+    setGameState('question');
+    setTimeLeft(quiz.questions[currentQuestionIndex + 1].timeLimit);
   };
 
   const showAnswerDistribution = () => {
@@ -295,6 +300,15 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
           )}
         </div>
       </div>
+    );
+  }
+
+  if (gameState === 'transition') {
+    return (
+      <TransitionTimer 
+        duration={5}
+        onComplete={handleTransitionComplete}
+      />
     );
   }
 

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AvatarDisplay } from "./BetterAvatars";
 
 interface Player {
   id: string;
@@ -66,17 +67,22 @@ export const RaceLeaderboard = ({ players, onComplete }: RaceLeaderboardProps) =
                     className="relative bg-white/10 rounded-xl p-4 overflow-hidden animate-fade-in"
                     style={{ animationDelay: `${index * 100}ms` }}
                   >
-                    {/* Progress Background */}
-                    <div
-                      className={cn(
-                        "absolute inset-0 transition-all duration-1000 ease-out",
-                        position === 1 && "bg-gradient-to-r from-yellow-500/20 to-transparent",
-                        position === 2 && "bg-gradient-to-r from-gray-400/20 to-transparent",
-                        position === 3 && "bg-gradient-to-r from-orange-600/20 to-transparent",
-                        position > 3 && "bg-gradient-to-r from-primary/10 to-transparent"
-                      )}
-                      style={{ width: `${progress}%` }}
-                    />
+                    {/* Interactive Progress Bar */}
+                    <div className="absolute inset-0 overflow-hidden">
+                      <div
+                        className={cn(
+                          "absolute inset-y-0 left-0 transition-all duration-1000 ease-out",
+                          position === 1 && "bg-gradient-to-r from-yellow-500/30 via-yellow-400/20 to-transparent",
+                          position === 2 && "bg-gradient-to-r from-gray-400/30 via-gray-300/20 to-transparent",
+                          position === 3 && "bg-gradient-to-r from-orange-600/30 via-orange-500/20 to-transparent",
+                          position > 3 && "bg-gradient-to-r from-primary/20 via-primary/10 to-transparent"
+                        )}
+                        style={{ width: `${progress}%` }}
+                      >
+                        {/* Animated shimmer effect */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-pulse" />
+                      </div>
+                    </div>
 
                     <div className="relative flex items-center gap-4">
                       {/* Position Badge */}
@@ -92,8 +98,24 @@ export const RaceLeaderboard = ({ players, onComplete }: RaceLeaderboardProps) =
                         {position <= 3 ? <Trophy className="w-5 h-5" /> : position}
                       </div>
 
-                      {/* Avatar */}
-                      <div className="text-4xl shrink-0">{player.avatar}</div>
+                      {/* Avatar with Animation */}
+                      <div className="relative shrink-0">
+                        <AvatarDisplay 
+                          emoji={player.avatar} 
+                          size="md"
+                          showGlow={position <= 3}
+                        />
+                        {position <= 3 && (
+                          <div className={cn(
+                            "absolute -top-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shadow-lg",
+                            position === 1 && "bg-yellow-500 text-yellow-900",
+                            position === 2 && "bg-gray-400 text-gray-900",
+                            position === 3 && "bg-orange-600 text-white"
+                          )}>
+                            {position}
+                          </div>
+                        )}
+                      </div>
 
                       {/* Player Info */}
                       <div className="flex-1 min-w-0">

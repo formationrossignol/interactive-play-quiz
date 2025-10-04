@@ -63,6 +63,8 @@ export const QuizBuilder = () => {
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
   const [speedBonus, setSpeedBonus] = useState(true);
+  const [transitionTime, setTransitionTime] = useState(5);
+  const [category, setCategory] = useState('Autre');
 
   const [currentQuestion, setCurrentQuestion] = useState<Partial<Question>>({
     type: 'multiple-choice',
@@ -169,11 +171,13 @@ export const QuizBuilder = () => {
         title: quiz.title,
         description: quiz.description,
         questions: quiz.questions,
-      isPublic,
-      isFavorite,
-      tags,
-      speedBonus
-    });
+        isPublic,
+        isFavorite,
+        tags,
+        speedBonus,
+        transitionTime,
+        category
+      });
     } catch (error) {
       console.error("Error saving quiz:", error);
     }
@@ -242,13 +246,46 @@ export const QuizBuilder = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-gradient-hero">
+      {/* Navigation - Same as Index */}
+      <nav className="p-6 border-b border-white/10">
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
+          <div 
+            className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={() => navigate('/')}
+          >
+            <div className="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center">
+              <Play className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-white">QuizMaster</h1>
+              <p className="text-white/60 text-sm">Interactive Quiz Platform</p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            {user && (
+              <>
+                <Button variant="outline" onClick={() => navigate('/my-quizzes')}>
+                  <BookMarked className="w-4 h-4 mr-2" />
+                  Mes Quiz
+                </Button>
+                <div className="flex items-center gap-2 bg-white/10 rounded-lg px-3 py-2">
+                  <Users className="w-4 h-4 text-white" />
+                  <span className="text-white text-sm">{user.username}</span>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </nav>
+
+      <div className="max-w-6xl mx-auto p-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-4xl font-bold text-foreground mb-2">Quiz Builder</h1>
-            <p className="text-muted-foreground">Create engaging quizzes with multiple question types</p>
+            <h1 className="text-4xl font-bold text-white mb-2">Quiz Builder</h1>
+            <p className="text-white/80">Create engaging quizzes with multiple question types</p>
           </div>
           <div className="flex gap-3">
             <Button variant="outline" size="lg" onClick={() => setShowQuestionBank(!showQuestionBank)}>
@@ -347,6 +384,36 @@ export const QuizBuilder = () => {
                     checked={speedBonus}
                     onCheckedChange={setSpeedBonus}
                   />
+                </div>
+                <div>
+                  <Label htmlFor="transition-time">Temps de transition (secondes)</Label>
+                  <Input
+                    id="transition-time"
+                    type="number"
+                    min="3"
+                    max="10"
+                    value={transitionTime}
+                    onChange={(e) => setTransitionTime(parseInt(e.target.value))}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="category">Catégorie</Label>
+                  <select
+                    id="category"
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="w-full mt-2 bg-background border border-input rounded-md px-3 py-2 text-sm"
+                  >
+                    <option value="Culture Générale">Culture Générale</option>
+                    <option value="Science">Science</option>
+                    <option value="Histoire">Histoire</option>
+                    <option value="Géographie">Géographie</option>
+                    <option value="Sport">Sport</option>
+                    <option value="Divertissement">Divertissement</option>
+                    <option value="Technologie">Technologie</option>
+                    <option value="Arts">Arts</option>
+                    <option value="Autre">Autre</option>
+                  </select>
                 </div>
                 <div>
                   <Label htmlFor="tags">Tags</Label>

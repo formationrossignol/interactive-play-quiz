@@ -11,6 +11,8 @@ export interface SavedQuiz {
   isFavorite: boolean;
   tags: string[];
   speedBonus: boolean;
+  transitionTime: number;
+  category: string;
 }
 
 const QUIZ_STORAGE_KEY = 'saved_quizzes';
@@ -40,6 +42,8 @@ export const saveQuiz = (quiz: Omit<SavedQuiz, 'id' | 'createdAt' | 'userId'>): 
     ...quiz,
     tags: quiz.tags || [],
     speedBonus: quiz.speedBonus ?? true,
+    transitionTime: quiz.transitionTime ?? 5,
+    category: quiz.category || 'Autre',
     id: Date.now().toString(),
     createdAt: new Date().toISOString(),
     userId: user.id

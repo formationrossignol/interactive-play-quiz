@@ -4,11 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-
-const AVATARS = [
-  "🦁", "🐯", "🐻", "🐼", "🐨", "🐸", "🐵", "🦊",
-  "🐱", "🐶", "🐰", "🦄", "🐲", "🦖", "🐙", "🦉"
-];
+import { ENHANCED_AVATARS, AvatarDisplay } from "./BetterAvatars";
 
 interface AvatarSelectorProps {
   onComplete: (name: string, avatar: string) => void;
@@ -16,7 +12,7 @@ interface AvatarSelectorProps {
 }
 
 export const AvatarSelector = ({ onComplete, gameCode }: AvatarSelectorProps) => {
-  const [selectedAvatar, setSelectedAvatar] = useState(AVATARS[0]);
+  const [selectedAvatar, setSelectedAvatar] = useState(ENHANCED_AVATARS[0].emoji);
   const [playerName, setPlayerName] = useState("");
 
   const handleSubmit = () => {
@@ -40,19 +36,26 @@ export const AvatarSelector = ({ onComplete, gameCode }: AvatarSelectorProps) =>
             {/* Avatar Selection */}
             <div>
               <Label className="text-white mb-3 block">Choisis ton avatar</Label>
-              <div className="grid grid-cols-8 gap-2">
-                {AVATARS.map((avatar) => (
+              <div className="grid grid-cols-5 gap-3">
+                {ENHANCED_AVATARS.map((avatar) => (
                   <button
-                    key={avatar}
-                    onClick={() => setSelectedAvatar(avatar)}
+                    key={avatar.emoji}
+                    onClick={() => setSelectedAvatar(avatar.emoji)}
                     className={cn(
-                      "text-3xl p-2 rounded-lg transition-all hover:scale-110",
-                      selectedAvatar === avatar
-                        ? "bg-primary/30 ring-2 ring-primary scale-110"
-                        : "bg-white/10 hover:bg-white/20"
+                      "relative group transition-all hover:scale-110 rounded-xl p-2",
+                      selectedAvatar === avatar.emoji
+                        ? "ring-2 ring-primary scale-110"
+                        : ""
                     )}
                   >
-                    {avatar}
+                    <AvatarDisplay 
+                      emoji={avatar.emoji} 
+                      size="md"
+                      showGlow={selectedAvatar === avatar.emoji}
+                    />
+                    <div className="text-white/60 text-xs mt-1 text-center truncate">
+                      {avatar.name}
+                    </div>
                   </button>
                 ))}
               </div>
@@ -76,9 +79,12 @@ export const AvatarSelector = ({ onComplete, gameCode }: AvatarSelectorProps) =>
 
             {/* Preview */}
             <div className="bg-white/10 rounded-lg p-4 flex items-center gap-3">
-              <div className="text-4xl">{selectedAvatar}</div>
-              <div className="text-white font-bold">
-                {playerName || "Ton pseudo"}
+              <AvatarDisplay emoji={selectedAvatar} size="lg" />
+              <div className="flex-1">
+                <div className="text-white/60 text-sm">Ton profil</div>
+                <div className="text-white font-bold text-xl">
+                  {playerName || "Ton pseudo"}
+                </div>
               </div>
             </div>
 
