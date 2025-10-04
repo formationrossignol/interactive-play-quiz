@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +7,7 @@ import { Users, Clock, Trophy, CheckCircle, XCircle, LogOut } from "lucide-react
 import { MultiStepProgress } from "./MultiStepProgress";
 import { BackgroundMusic } from "./BackgroundMusic";
 import { ExitQuizDialog } from "./ExitQuizDialog";
+import { CircularTimer } from "./CircularTimer";
 import { cn } from "@/lib/utils";
 
 interface PlayerViewProps {
@@ -16,6 +17,8 @@ interface PlayerViewProps {
 
 export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const playerAvatar = searchParams.get('avatar') || '🎮';
   const [gameState, setGameState] = useState<'waiting' | 'question' | 'answer-feedback' | 'leaderboard' | 'final'>('waiting');
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | string | null>(null);
@@ -57,19 +60,22 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
     setSelectedAnswer(answer);
     setHasAnswered(true);
     
-    // Mock scoring logic
+    // Mock scoring logic with speed bonus
     const correct = answer === mockQuestion.correctAnswer;
     setIsCorrect(correct);
     
     if (correct) {
-      const speedBonus = Math.floor((timeLeft / mockQuestion.timeLimit) * 50);
-      setPlayerScore(prev => prev + mockQuestion.points + speedBonus);
+      // Calculate speed bonus: proportional to time remaining
+      const speedBonusPercentage = timeLeft / mockQuestion.timeLimit;
+      const speedBonus = Math.floor(mockQuestion.points * speedBonusPercentage * 0.5);
+      const totalPoints = mockQuestion.points + speedBonus;
+      setPlayerScore(prev => prev + totalPoints);
     }
     
-    // Show feedback then move to next state
+    // Auto-advance after showing feedback
     setTimeout(() => {
       setGameState('leaderboard');
-    }, 2000);
+    }, 2500);
   };
 
   if (gameState === 'waiting') {
@@ -77,8 +83,8 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
       <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
         <Card className="bg-white/10 backdrop-blur-lg border-white/20 max-w-md w-full">
           <CardContent className="p-8 text-center">
-            <div className="w-16 h-16 bg-gradient-primary rounded-full mx-auto mb-6 flex items-center justify-center">
-              <Users className="w-8 h-8 text-white" />
+            <div className="text-6xl mb-6">
+              {playerAvatar}
             </div>
             
             <h1 className="text-2xl font-bold text-white mb-2">Connecté !</h1>
@@ -131,9 +137,6 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
               <Button variant="ghost" size="sm" onClick={() => setShowExitDialog(true)} className="bg-white/10 hover:bg-white/20 text-white">
                 <LogOut className="w-4 h-4" />
               </Button>
-              <div className="text-2xl font-bold">
-                {timeLeft}s
-              </div>
             </div>
           </div>
 
@@ -155,6 +158,10 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
           {/* Question */}
           <Card className="bg-white/10 backdrop-blur-lg border-white/20 shadow-glow mb-6">
             <CardContent className="p-6">
+              <div className="flex justify-center mb-6">
+                <CircularTimer timeLeft={timeLeft} totalTime={mockQuestion.timeLimit} />
+              </div>
+              
               <h2 className="text-xl md:text-2xl font-bold text-white text-center mb-6">
                 {mockQuestion.question}
               </h2>
@@ -199,7 +206,17 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
                 <h3 className="text-xl font-bold text-white mb-2">
                   {isCorrect ? "Bonne réponse !" : "Mauvaise réponse"}
                 </h3>
-                <p className="text-white/80">
+                {isCorrect && mockQuestion.correctAnswer !== undefined && (
+                  <p className="text-white/80 text-sm mb-2">
+                    La bonne réponse était: <span className="font-bold">{mockQuestion.answers[mockQuestion.correctAnswer]}</span>
+                  </p>
+                )}
+                {!isCorrect && mockQuestion.correctAnswer !== undefined && (
+                  <p className="text-white/80 text-sm mb-2">
+                    La bonne réponse était: <span className="font-bold text-success">{mockQuestion.answers[mockQuestion.correctAnswer]}</span>
+                  </p>
+                )}
+                <p className="text-white/80 text-lg font-bold">
                   {isCorrect ? `+${mockQuestion.points} points` : "0 point"}
                 </p>
               </CardContent>

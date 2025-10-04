@@ -62,6 +62,7 @@ export const QuizBuilder = () => {
   const [isFavorite, setIsFavorite] = useState(false);
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
+  const [speedBonus, setSpeedBonus] = useState(true);
 
   const [currentQuestion, setCurrentQuestion] = useState<Partial<Question>>({
     type: 'multiple-choice',
@@ -168,10 +169,11 @@ export const QuizBuilder = () => {
         title: quiz.title,
         description: quiz.description,
         questions: quiz.questions,
-        isPublic,
-        isFavorite,
-        tags
-      });
+      isPublic,
+      isFavorite,
+      tags,
+      speedBonus
+    });
     } catch (error) {
       console.error("Error saving quiz:", error);
     }
@@ -333,6 +335,17 @@ export const QuizBuilder = () => {
                     id="is-favorite"
                     checked={isFavorite}
                     onCheckedChange={setIsFavorite}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="speed-bonus" className="flex items-center gap-2">
+                    <Clock className="w-4 h-4" />
+                    Bonus de vitesse
+                  </Label>
+                  <Switch
+                    id="speed-bonus"
+                    checked={speedBonus}
+                    onCheckedChange={setSpeedBonus}
                   />
                 </div>
                 <div>

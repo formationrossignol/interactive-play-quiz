@@ -10,6 +10,7 @@ export interface SavedQuiz {
   isPublic: boolean;
   isFavorite: boolean;
   tags: string[];
+  speedBonus: boolean;
 }
 
 const QUIZ_STORAGE_KEY = 'saved_quizzes';
@@ -38,6 +39,7 @@ export const saveQuiz = (quiz: Omit<SavedQuiz, 'id' | 'createdAt' | 'userId'>): 
   const newQuiz: SavedQuiz = {
     ...quiz,
     tags: quiz.tags || [],
+    speedBonus: quiz.speedBonus ?? true,
     id: Date.now().toString(),
     createdAt: new Date().toISOString(),
     userId: user.id

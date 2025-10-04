@@ -10,12 +10,17 @@ import { RankingQuestion } from "./RankingQuestion";
 import { MultiStepProgress } from "./MultiStepProgress";
 import { BackgroundMusic } from "./BackgroundMusic";
 import { ExitQuizDialog } from "./ExitQuizDialog";
+import { CircularTimer } from "./CircularTimer";
+import { QuizSessionAnswerDistribution } from "./QuizSession_AnswerDistribution";
+import { RaceLeaderboard } from "./RaceLeaderboard";
 import { cn } from "@/lib/utils";
 
 interface Player {
   id: string;
   name: string;
+  avatar: string;
   score: number;
+  previousScore?: number;
   correctAnswers: number;
   joinedAt: Date;
 }
@@ -50,16 +55,17 @@ interface QuizSessionProps {
 export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
   const navigate = useNavigate();
   const [players, setPlayers] = useState<Player[]>([
-    { id: '1', name: 'Alice', score: 2850, correctAnswers: 8, joinedAt: new Date() },
-    { id: '2', name: 'Bob', score: 2650, correctAnswers: 7, joinedAt: new Date() },
-    { id: '3', name: 'Charlie', score: 2400, correctAnswers: 6, joinedAt: new Date() },
+    { id: '1', name: 'Alice', avatar: '🦁', score: 0, correctAnswers: 0, joinedAt: new Date() },
+    { id: '2', name: 'Bob', avatar: '🐯', score: 0, correctAnswers: 0, joinedAt: new Date() },
+    { id: '3', name: 'Charlie', avatar: '🐻', score: 0, correctAnswers: 0, joinedAt: new Date() },
   ]);
   
-  const [gameState, setGameState] = useState<'waiting' | 'question' | 'results' | 'leaderboard' | 'final'>('waiting');
+  const [gameState, setGameState] = useState<'waiting' | 'question' | 'answer-distribution' | 'leaderboard' | 'final'>('waiting');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
   const [showExitDialog, setShowExitDialog] = useState(false);
+  const [answerDistribution, setAnswerDistribution] = useState<number[]>([]);
   const [sessionStats, setSessionStats] = useState({
     totalPlayers: 0,
     averageScore: 0,
@@ -76,9 +82,11 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
       if (gameState === 'waiting') {
         setPlayers(prev => {
           if (prev.length < 10 && Math.random() > 0.7) {
+            const avatars = ['🦁', '🐯', '🐻', '🐼', '🐨', '🐸', '🐵', '🦊'];
             const newPlayer: Player = {
               id: Date.now().toString(),
               name: `Player${prev.length + 1}`,
+              avatar: avatars[Math.floor(Math.random() * avatars.length)],
               score: 0,
               correctAnswers: 0,
               joinedAt: new Date()
@@ -102,7 +110,7 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
       return () => clearTimeout(timer);
     } else if (gameState === 'question' && timeLeft === 0) {
       // Auto-advance when timer reaches 0
-      showLeaderboard();
+      showAnswerDistribution();
     }
   }, [gameState, timeLeft]);
 
@@ -125,12 +133,23 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
 
   const nextQuestion = () => {
     if (currentQuestionIndex < quiz.questions.length - 1) {
+      // Save previous scores before updating
+      setPlayers(prev => prev.map(p => ({ ...p, previousScore: p.score })));
       setCurrentQuestionIndex(prev => prev + 1);
       setGameState('question');
       setTimeLeft(quiz.questions[currentQuestionIndex + 1].timeLimit);
     } else {
       setGameState('final');
     }
+  };
+
+  const showAnswerDistribution = () => {
+    // Mock answer distribution (in real app this would come from actual answers)
+    const mockDistribution = currentQuestion.answers 
+      ? currentQuestion.answers.map(() => Math.floor(Math.random() * 50))
+      : [];
+    setAnswerDistribution(mockDistribution);
+    setGameState('answer-distribution');
   };
 
   const showLeaderboard = () => {
@@ -226,8 +245,8 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
                         key={player.id} 
                         className="bg-white/10 rounded-lg p-3 text-white text-sm animate-fade-in flex items-center gap-2"
                       >
-                        <div className="w-8 h-8 bg-gradient-primary rounded-full flex items-center justify-center text-xs font-bold">
-                          {player.name.charAt(0)}
+                        <div className="text-2xl">
+                          {player.avatar}
                         </div>
                         <span className="flex-1 truncate">{player.name}</span>
                       </div>
@@ -302,12 +321,8 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
                   <LogOut className="w-4 h-4 mr-2" />
                   Quitter
                 </Button>
-                <Button variant="quiz" onClick={showLeaderboard}>
-                  <Trophy className="w-4 h-4 mr-2" />
-                  Leaderboard
-                </Button>
-                <Button variant="quiz" onClick={nextQuestion}>
-                  Next Question
+                <Button variant="quiz" onClick={showAnswerDistribution}>
+                  Afficher les résultats
                 </Button>
               </div>
             )}
@@ -358,19 +373,17 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
             <Card className="bg-white/10 backdrop-blur-lg border-white/20 shadow-glow">
               <CardContent className="p-8">
                 <div className="text-center mb-8">
-                  <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+                  <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
                     {currentQuestion.question}
                   </h2>
-                  <div className="flex items-center justify-center gap-4 text-white/80">
-                    <div className="flex items-center gap-1">
-                      <Clock className="w-4 h-4" />
-                      <span className={timeLeft <= 10 ? "text-warning font-bold animate-pulse" : ""}>
-                        {timeLeft}s
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Trophy className="w-4 h-4" />
-                      <span>{currentQuestion.points} points</span>
+                  
+                  <div className="flex items-center justify-center gap-6 mb-6">
+                    <CircularTimer timeLeft={timeLeft} totalTime={currentQuestion.timeLimit} />
+                    <div className="text-white/80">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Trophy className="w-5 h-5" />
+                        <span className="text-xl font-bold">{currentQuestion.points} points</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -444,65 +457,23 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
     );
   }
 
-  if (gameState === 'leaderboard') {
-    const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
-    
+  if (gameState === 'answer-distribution') {
     return (
-      <div className="min-h-screen bg-gradient-hero p-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 animate-fade-in">
-              🏆 Classement
-            </h1>
-            <p className="text-white/80 text-lg">
-              Question {currentQuestionIndex + 1} sur {quiz.questions.length}
-            </p>
-          </div>
+      <QuizSessionAnswerDistribution
+        currentQuestion={currentQuestion}
+        answerDistribution={answerDistribution}
+        onNext={showLeaderboard}
+        isHost={isHost || false}
+      />
+    );
+  }
 
-          <div className="space-y-4 max-w-2xl mx-auto">
-            {sortedPlayers.slice(0, 10).map((player, index) => (
-              <div
-                key={player.id}
-                className={cn(
-                  "flex items-center gap-4 p-4 rounded-lg backdrop-blur-lg animate-fade-in",
-                  index < 3 ? "bg-gradient-primary/20 border border-primary/30" : "bg-white/10 border border-white/20"
-                )}
-                style={{ animationDelay: `${index * 0.1}s` }}
-              >
-                <div className={cn(
-                  "w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg",
-                  index === 0 ? "bg-yellow-500 text-black" :
-                  index === 1 ? "bg-gray-400 text-black" :
-                  index === 2 ? "bg-amber-600 text-white" :
-                  "bg-white/20 text-white"
-                )}>
-                  {index < 3 ? ['🥇', '🥈', '🥉'][index] : index + 1}
-                </div>
-                
-                <div className="flex-1">
-                  <div className="text-white font-bold text-lg">{player.name}</div>
-                  <div className="text-white/60 text-sm">
-                    {player.correctAnswers} bonnes réponses
-                  </div>
-                </div>
-                
-                <div className="text-right">
-                  <div className="text-white font-bold text-xl">{player.score}</div>
-                  <div className="text-white/60 text-sm">points</div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {isHost && (
-            <div className="flex justify-center gap-4 mt-8">
-              <Button variant="quiz" onClick={nextQuestion}>
-                {currentQuestionIndex < quiz.questions.length - 1 ? 'Question suivante' : 'Résultats finaux'}
-              </Button>
-            </div>
-          )}
-        </div>
-      </div>
+  if (gameState === 'leaderboard') {
+    return (
+      <RaceLeaderboard
+        players={players}
+        onComplete={nextQuestion}
+      />
     );
   }
 
