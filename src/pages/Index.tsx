@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Users, Zap, Trophy, Play, Plus, QrCode, Clock, ArrowRight, Gamepad2, LogOut, User, BookOpen, Compass } from "lucide-react";
+import { Users, Zap, Trophy, Play, Plus, QrCode, Clock, ArrowRight, Gamepad2, LogOut, User, BookOpen, Compass, BarChart3 } from "lucide-react";
 import { getCurrentUser, logout } from "@/lib/auth";
 
 const Index = () => {
@@ -23,12 +23,12 @@ const Index = () => {
     }
   };
 
-  const createQuiz = () => {
+  const createQuiz = (type: 'quiz' | 'poll' = 'quiz') => {
     if (!user) {
       navigate('/auth');
       return;
     }
-    navigate('/builder');
+    navigate(`/builder?type=${type}`);
   };
 
   const handleLogout = () => {
@@ -62,14 +62,18 @@ const Index = () => {
                   <BookOpen className="w-4 h-4 mr-2" />
                   Mes Quiz
                 </Button>
-                <Button variant="outline" onClick={() => navigate('/profile')}>
-                  <User className="w-4 h-4 mr-2" />
-                  Profil
+                <Button variant="outline" onClick={() => navigate('/my-polls')}>
+                  <BarChart3 className="w-4 h-4 mr-2" />
+                  Mes Sondages
                 </Button>
-                <div className="flex items-center gap-2 bg-white/10 rounded-lg px-3 py-2">
-                  <User className="w-4 h-4 text-white" />
-                  <span className="text-white text-sm">{user.username}</span>
-                </div>
+                <Button 
+                  variant="outline" 
+                  onClick={() => navigate('/profile')}
+                  className="flex items-center gap-2"
+                >
+                  <User className="w-4 h-4" />
+                  <span className="hidden sm:inline">{user.username}</span>
+                </Button>
                 <Button variant="ghost" size="sm" onClick={handleLogout}>
                   <LogOut className="w-4 h-4" />
                 </Button>
@@ -98,34 +102,39 @@ const Index = () => {
 
         {/* Main Actions */}
         <div className="grid md:grid-cols-2 gap-8 mb-16">
-          {/* Host a Quiz */}
+          {/* Host a Quiz or Poll */}
           <Card className="bg-white/10 backdrop-blur-lg border-white/20 hover:bg-white/15 transition-all duration-300 group shadow-glow">
             <CardContent className="p-8 text-center">
               <div className="w-20 h-20 bg-gradient-primary rounded-2xl mx-auto mb-6 flex items-center justify-center group-hover:scale-110 transition-transform">
                 <Gamepad2 className="w-10 h-10 text-white" />
               </div>
-              <h3 className="text-2xl font-bold text-white mb-4">Host a Quiz</h3>
+              <h3 className="text-2xl font-bold text-white mb-4">Host a Quiz or a Poll</h3>
               <p className="text-white/80 mb-8 leading-relaxed">
-                Create and host interactive quizzes with real-time participation. 
+                Create and host interactive quizzes or polls with real-time participation. 
                 Perfect for classrooms, meetings, or events.
               </p>
-              <Button onClick={createQuiz} variant="hero" size="lg" className="w-full text-lg">
-                <Plus className="w-5 h-5 mr-2" />
-                Create New Quiz
-                <ArrowRight className="w-5 h-5 ml-2" />
-              </Button>
+              <div className="flex gap-3">
+                <Button onClick={() => createQuiz('quiz')} variant="hero" size="lg" className="flex-1 text-lg">
+                  <Plus className="w-5 h-5 mr-2" />
+                  Create Quiz
+                </Button>
+                <Button onClick={() => createQuiz('poll')} variant="quiz" size="lg" className="flex-1 text-lg">
+                  <Plus className="w-5 h-5 mr-2" />
+                  Create Poll
+                </Button>
+              </div>
             </CardContent>
           </Card>
 
-          {/* Join a Quiz */}
+          {/* Join a Quiz or Poll */}
           <Card className="bg-white/10 backdrop-blur-lg border-white/20 hover:bg-white/15 transition-all duration-300 group shadow-glow">
             <CardContent className="p-8 text-center">
               <div className="w-20 h-20 bg-gradient-secondary rounded-2xl mx-auto mb-6 flex items-center justify-center group-hover:scale-110 transition-transform">
                 <Users className="w-10 h-10 text-white" />
               </div>
-              <h3 className="text-2xl font-bold text-white mb-4">Join a Quiz</h3>
+              <h3 className="text-2xl font-bold text-white mb-4">Join a Quiz or a Poll</h3>
               <p className="text-white/80 mb-6 leading-relaxed">
-                Enter a game code or scan a QR code to join an active quiz session.
+                Enter a game code or scan a QR code to join an active quiz or poll session.
               </p>
               <div className="space-y-4">
                 <div>
@@ -150,7 +159,7 @@ const Index = () => {
                   className="w-full text-lg"
                 >
                   <Play className="w-5 h-5 mr-2" />
-                  Join Quiz
+                  Join Quiz or Poll
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </Button>
               </div>

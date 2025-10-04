@@ -6,16 +6,18 @@ import { Badge } from "@/components/ui/badge";
 import { Database, Plus, Search, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import * as XLSX from 'xlsx';
+import type { QuizQuestionType, PollQuestionType } from "@/lib/questionTypes";
 
 export interface SavedQuestion {
   id: string;
-  type: 'multiple-choice' | 'true-false' | 'short-answer' | 'ranking';
+  type: QuizQuestionType | PollQuestionType;
   question: string;
   answers: string[];
-  correctAnswer: number | string;
-  timeLimit: number;
-  points: number;
+  correctAnswer?: number | string;
+  timeLimit?: number;
+  points?: number;
   createdAt: string;
+  [key: string]: any;
 }
 
 interface QuestionBankProps {

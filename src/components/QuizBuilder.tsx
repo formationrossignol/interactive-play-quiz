@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -7,21 +7,32 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Trash2, Clock, Users, Play, Save, BookMarked, Star, Globe } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Plus, Trash2, Clock, Users, Play, Save, BookMarked, Star, Globe, HelpCircle, Upload, Image } from "lucide-react";
 import { QuestionBank, SavedQuestion } from "./QuestionBank";
 import { QRCodeGenerator } from "./QRCodeGenerator";
 import { getCurrentUser } from "@/lib/auth";
 import { saveQuiz } from "@/lib/quizStorage";
 import { toast } from "sonner";
+import { getQuestionTypeLabel } from "@/lib/questionTypes";
+import type { QuizQuestionType, PollQuestionType } from "@/lib/questionTypes";
 
 interface Question {
   id: string;
-  type: 'multiple-choice' | 'true-false' | 'short-answer' | 'ranking';
+  type: QuizQuestionType | PollQuestionType;
   question: string;
   answers: string[];
-  correctAnswer: number | string;
-  timeLimit: number;
-  points: number;
+  correctAnswer?: number | string;
+  timeLimit?: number;
+  points?: number;
+  scale?: string[];
+  maxStars?: number;
+  leftColumn?: { id: string; text: string }[];
+  rightColumn?: { id: string; text: string }[];
+  correctMatches?: { leftId: string; rightId: string }[];
+  text?: string;
+  blanks?: { id: string; correctAnswer: string }[];
+  maxLength?: number;
 }
 
 interface Quiz {
@@ -39,12 +50,15 @@ interface Quiz {
 export const QuizBuilder = () => {
   const navigate = useNavigate();
   const user = getCurrentUser();
+  const [searchParams] = useSearchParams();
   
   useEffect(() => {
     if (!user) {
       navigate("/auth");
     }
   }, [user, navigate]);
+
+  const initialType = (searchParams.get('type') as 'quiz' | 'poll') || 'quiz';
   
   const [quiz, setQuiz] = useState<Quiz>({
     id: '',
@@ -65,16 +79,29 @@ export const QuizBuilder = () => {
   const [speedBonus, setSpeedBonus] = useState(true);
   const [transitionTime, setTransitionTime] = useState(5);
   const [category, setCategory] = useState('Autre');
-  const [quizType, setQuizType] = useState<'quiz' | 'poll'>('quiz');
+  const [quizType, setQuizType] = useState<'quiz' | 'poll'>(initialType);
+  const [headerImage, setHeaderImage] = useState<string>('');
 
-  const [currentQuestion, setCurrentQuestion] = useState<Partial<Question>>({
-    type: 'multiple-choice',
-    question: '',
-    answers: ['', '', '', ''],
-    correctAnswer: 0,
-    timeLimit: 30,
-    points: 100
-  });
+  const getDefaultQuestion = (): Partial<Question> => {
+    if (quizType === 'poll') {
+      return {
+        type: 'single-choice' as PollQuestionType,
+        question: '',
+        answers: ['', '', '', ''],
+        timeLimit: 30,
+      };
+    }
+    return {
+      type: 'multiple-choice' as QuizQuestionType,
+      question: '',
+      answers: ['', '', '', ''],
+      correctAnswer: 0,
+      timeLimit: 30,
+      points: 100
+    };
+  };
+
+  const [currentQuestion, setCurrentQuestion] = useState<Partial<Question>>(getDefaultQuestion());
 
   const [gameCode, setGameCode] = useState<string>('');
   const [showQRCode, setShowQRCode] = useState(false);
@@ -106,14 +133,7 @@ export const QuizBuilder = () => {
       localStorage.setItem('questionBank', JSON.stringify(bank));
 
       // Reset form
-      setCurrentQuestion({
-        type: 'multiple-choice',
-        question: '',
-        answers: ['', '', '', ''],
-        correctAnswer: 0,
-        timeLimit: 30,
-        points: 100
-      });
+      setCurrentQuestion(getDefaultQuestion());
       
       toast.success("Question ajoutée");
     }
@@ -178,7 +198,8 @@ export const QuizBuilder = () => {
         speedBonus,
         transitionTime,
         category,
-        type: quizType
+        type: quizType,
+        headerImage
       });
     } catch (error) {
       console.error("Error saving quiz:", error);
@@ -200,23 +221,40 @@ export const QuizBuilder = () => {
   };
 
   const getQuestionTypeColor = (type: Question['type']) => {
-    switch (type) {
-      case 'multiple-choice': return 'bg-gradient-primary';
-      case 'true-false': return 'bg-gradient-secondary';
-      case 'short-answer': return 'bg-gradient-success';
-      case 'ranking': return 'bg-warning';
-      default: return 'bg-gradient-primary';
+    const colors: Record<string, string> = {
+      'multiple-choice': 'bg-gradient-primary',
+      'single-choice': 'bg-gradient-primary',
+      'true-false': 'bg-gradient-secondary',
+      'short-answer': 'bg-gradient-success',
+      'ranking': 'bg-warning',
+      'matching': 'bg-purple-500',
+      'fill-blank': 'bg-blue-500',
+      'drag-drop': 'bg-green-500',
+      'hotspot': 'bg-red-500',
+      'likert-scale': 'bg-indigo-500',
+      'frequency-scale': 'bg-teal-500',
+      'star-rating': 'bg-yellow-500',
+      'open-text': 'bg-gray-500',
+    };
+    return colors[type] || 'bg-gradient-primary';
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setHeaderImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
-  const getQuestionTypeLabel = (type: Question['type']) => {
-    switch (type) {
-      case 'multiple-choice': return 'Multiple Choice';
-      case 'true-false': return 'True/False';
-      case 'short-answer': return 'Short Answer';
-      case 'ranking': return 'Ranking';
-      default: return 'Multiple Choice';
+  const getAvailableQuestionTypes = (): (QuizQuestionType | PollQuestionType)[] => {
+    if (quizType === 'poll') {
+      return ['single-choice', 'multiple-choice', 'likert-scale', 'frequency-scale', 'star-rating', 'ranking', 'open-text'];
     }
+    return ['multiple-choice', 'true-false', 'short-answer', 'ranking', 'matching', 'fill-blank'];
   };
 
   if (showQRCode && gameCode) {
@@ -335,6 +373,39 @@ export const QuizBuilder = () => {
                   />
                 </div>
                 <div>
+                  <Label htmlFor="header-image">Image d'en-tête</Label>
+                  <div className="mt-2 space-y-2">
+                    {headerImage && (
+                      <div className="relative w-full h-32 rounded-lg overflow-hidden">
+                        <img src={headerImage} alt="Header" className="w-full h-full object-cover" />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="absolute top-2 right-2 bg-black/50 hover:bg-black/70"
+                          onClick={() => setHeaderImage('')}
+                        >
+                          <Trash2 className="w-4 h-4 text-white" />
+                        </Button>
+                      </div>
+                    )}
+                    <label htmlFor="header-image">
+                      <Button variant="outline" size="sm" asChild className="w-full">
+                        <span>
+                          <Upload className="w-4 h-4 mr-2" />
+                          {headerImage ? 'Changer l\'image' : 'Ajouter une image'}
+                        </span>
+                      </Button>
+                    </label>
+                    <input
+                      id="header-image"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                    />
+                  </div>
+                </div>
+                <div>
                   <Label htmlFor="time-per-question">Default Time (seconds)</Label>
                   <Input
                     id="time-per-question"
@@ -374,6 +445,14 @@ export const QuizBuilder = () => {
                   <Label htmlFor="speed-bonus" className="flex items-center gap-2">
                     <Clock className="w-4 h-4" />
                     Bonus de vitesse
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <HelpCircle className="w-4 h-4 text-muted-foreground" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p>Plus un joueur répond rapidement, plus il gagne de points. Le bonus est calculé en fonction du temps restant et de la valeur en points de la question.</p>
+                      </TooltipContent>
+                    </Tooltip>
                   </Label>
                   <Switch
                     id="speed-bonus"
@@ -529,19 +608,17 @@ export const QuizBuilder = () => {
                 <div>
                   <Label>Question Type</Label>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2">
-                    {(['multiple-choice', 'true-false', 'short-answer', 'ranking'] as const).map((type) => (
+                    {getAvailableQuestionTypes().map((type) => (
                       <Button
                         key={type}
                         variant={currentQuestion.type === type ? "default" : "outline"}
-                        className="h-auto p-3 flex flex-col items-center"
-                        onClick={() => setCurrentQuestion(prev => ({ ...prev, type }))}
+                        className="h-auto p-3 flex flex-col items-center text-xs"
+                        onClick={() => setCurrentQuestion(prev => ({ ...prev, type, answers: type === 'multiple-choice' || type === 'single-choice' ? ['', '', '', ''] : [] }))}
                       >
-                        <div className={`w-8 h-8 rounded-full mb-2 flex items-center justify-center text-white text-sm font-bold ${getQuestionTypeColor(type)}`}>
-                          {type === 'multiple-choice' ? 'MC' : 
-                           type === 'true-false' ? 'TF' :
-                           type === 'short-answer' ? 'SA' : 'RK'}
+                        <div className={`w-8 h-8 rounded-full mb-2 flex items-center justify-center text-white text-[10px] font-bold ${getQuestionTypeColor(type)}`}>
+                          {type.substring(0, 2).toUpperCase()}
                         </div>
-                        <span className="text-xs">{getQuestionTypeLabel(type)}</span>
+                        <span className="text-[10px] text-center leading-tight">{getQuestionTypeLabel(type)}</span>
                       </Button>
                     ))}
                   </div>
@@ -560,7 +637,7 @@ export const QuizBuilder = () => {
                 </div>
 
                 {/* Answer Options */}
-                {currentQuestion.type === 'multiple-choice' && (
+                {(currentQuestion.type === 'multiple-choice' || currentQuestion.type === 'single-choice') && (
                   <div>
                     <Label>Answer Options</Label>
                     <div className="space-y-2 mt-2">
@@ -608,32 +685,110 @@ export const QuizBuilder = () => {
                   </div>
                 )}
 
-                {/* Question Settings */}
-                <div className="grid md:grid-cols-2 gap-4">
+                {currentQuestion.type === 'likert-scale' && (
                   <div>
-                    <Label htmlFor="time-limit">Time Limit (seconds)</Label>
+                    <Label>Échelle de Likert</Label>
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Échelle par défaut : Tout à fait d'accord → Pas du tout d'accord
+                    </p>
                     <Input
-                      id="time-limit"
-                      type="number"
-                      min="5"
-                      max="120"
-                      value={currentQuestion.timeLimit}
-                      onChange={(e) => setCurrentQuestion(prev => ({ ...prev, timeLimit: parseInt(e.target.value) }))}
+                      placeholder="Personnaliser l'échelle (séparée par des virgules)"
+                      onChange={(e) => {
+                        const scale = e.target.value.split(',').map(s => s.trim()).filter(Boolean);
+                        setCurrentQuestion(prev => ({ ...prev, scale: scale.length > 0 ? scale : ["Tout à fait d'accord", "D'accord", "Neutre", "Pas d'accord", "Pas du tout d'accord"] }));
+                      }}
                     />
                   </div>
+                )}
+
+                {currentQuestion.type === 'frequency-scale' && (
                   <div>
-                    <Label htmlFor="points">Points</Label>
+                    <Label>Échelle de Fréquence</Label>
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Échelle par défaut : Jamais → Toujours
+                    </p>
                     <Input
-                      id="points"
+                      placeholder="Personnaliser l'échelle (séparée par des virgules)"
+                      onChange={(e) => {
+                        const scale = e.target.value.split(',').map(s => s.trim()).filter(Boolean);
+                        setCurrentQuestion(prev => ({ ...prev, scale: scale.length > 0 ? scale : ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"] }));
+                      }}
+                    />
+                  </div>
+                )}
+
+                {currentQuestion.type === 'star-rating' && (
+                  <div>
+                    <Label htmlFor="max-stars">Nombre d'étoiles maximum</Label>
+                    <Input
+                      id="max-stars"
+                      type="number"
+                      min="3"
+                      max="10"
+                      value={currentQuestion.maxStars || 5}
+                      onChange={(e) => setCurrentQuestion(prev => ({ ...prev, maxStars: parseInt(e.target.value) }))}
+                    />
+                  </div>
+                )}
+
+                {currentQuestion.type === 'open-text' && (
+                  <div>
+                    <Label htmlFor="max-length">Longueur maximale (optionnel)</Label>
+                    <Input
+                      id="max-length"
                       type="number"
                       min="10"
                       max="1000"
-                      step="10"
-                      value={currentQuestion.points}
-                      onChange={(e) => setCurrentQuestion(prev => ({ ...prev, points: parseInt(e.target.value) }))}
+                      placeholder="Ex: 500"
+                      value={currentQuestion.maxLength || ''}
+                      onChange={(e) => setCurrentQuestion(prev => ({ ...prev, maxLength: e.target.value ? parseInt(e.target.value) : undefined }))}
                     />
                   </div>
-                </div>
+                )}
+
+                {/* Question Settings */}
+                {quizType === 'quiz' && (
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="time-limit">Time Limit (seconds)</Label>
+                      <Input
+                        id="time-limit"
+                        type="number"
+                        min="5"
+                        max="120"
+                        value={currentQuestion.timeLimit || 30}
+                        onChange={(e) => setCurrentQuestion(prev => ({ ...prev, timeLimit: parseInt(e.target.value) }))}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="points">Points</Label>
+                      <Input
+                        id="points"
+                        type="number"
+                        min="10"
+                        max="1000"
+                        step="10"
+                        value={currentQuestion.points || 100}
+                        onChange={(e) => setCurrentQuestion(prev => ({ ...prev, points: parseInt(e.target.value) }))}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {quizType === 'poll' && (
+                  <div>
+                    <Label htmlFor="time-limit-poll">Temps de réponse (optionnel, en secondes)</Label>
+                    <Input
+                      id="time-limit-poll"
+                      type="number"
+                      min="5"
+                      max="120"
+                      placeholder="Pas de limite"
+                      value={currentQuestion.timeLimit || ''}
+                      onChange={(e) => setCurrentQuestion(prev => ({ ...prev, timeLimit: e.target.value ? parseInt(e.target.value) : undefined }))}
+                    />
+                  </div>
+                )}
 
                 <Button 
                   onClick={addQuestion}

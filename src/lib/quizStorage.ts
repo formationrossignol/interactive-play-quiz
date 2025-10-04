@@ -14,6 +14,7 @@ export interface SavedQuiz {
   transitionTime: number;
   category: string;
   type: 'quiz' | 'poll';
+  headerImage?: string;
 }
 
 const QUIZ_STORAGE_KEY = 'saved_quizzes';

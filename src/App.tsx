@@ -10,6 +10,7 @@ import LiveQuizPage from "./pages/LiveQuizPage";
 import JoinQuiz from "./pages/JoinQuiz";
 import AuthPage from "./pages/AuthPage";
 import MyQuizzes from "./pages/MyQuizzes";
+import MyPolls from "./pages/MyPolls";
 import DiscoverQuizzes from "./pages/DiscoverQuizzes";
 import ProfilePage from "./pages/ProfilePage";
 
@@ -26,6 +27,7 @@ const App = () => (
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/builder" element={<QuizBuilder />} />
           <Route path="/my-quizzes" element={<MyQuizzes />} />
+          <Route path="/my-polls" element={<MyPolls />} />
           <Route path="/discover" element={<DiscoverQuizzes />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/quiz/:gameCode" element={<LiveQuizPage />} />
