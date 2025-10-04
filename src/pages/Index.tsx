@@ -42,7 +42,10 @@ const Index = () => {
       {/* Navigation */}
       <nav className="p-6 border-b border-white/10">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div 
+            className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={() => navigate('/')}
+          >
             <div className="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center">
               <Zap className="w-6 h-6 text-white" />
             </div>

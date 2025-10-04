@@ -58,14 +58,28 @@ export const QRCodeGenerator = ({ gameCode, joinUrl }: QRCodeGeneratorProps) => 
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'Join my quiz!',
-          text: `Use code ${gameCode} to join the quiz`,
+          title: 'Rejoignez mon quiz!',
+          text: `Utilisez le code ${gameCode} pour rejoindre le quiz`,
           url: joinUrl,
         });
+        toast({
+          title: "Partagé!",
+          description: "Quiz partagé avec succès",
+          duration: 2000,
+        });
       } catch (error) {
-        console.log('Share cancelled');
+        // User cancelled share
+        if ((error as Error).name !== 'AbortError') {
+          toast({
+            title: "Erreur",
+            description: "Impossible de partager",
+            variant: "destructive",
+            duration: 2000,
+          });
+        }
       }
     } else {
+      // Fallback: copy to clipboard
       copyJoinUrl();
     }
   };

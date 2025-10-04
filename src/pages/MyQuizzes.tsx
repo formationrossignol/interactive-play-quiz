@@ -68,8 +68,8 @@ const MyQuizzes = () => {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+        <div className="space-y-3">
+          <div className="flex flex-wrap gap-2">
             <Badge variant={quiz.isPublic ? "default" : "secondary"} className="bg-white/20">
               {quiz.isPublic ? <Globe className="w-3 h-3 mr-1" /> : <Lock className="w-3 h-3 mr-1" />}
               {quiz.isPublic ? "Public" : "Privé"}
@@ -77,26 +77,33 @@ const MyQuizzes = () => {
             <Badge variant="secondary" className="bg-white/20">
               {quiz.questions.length} questions
             </Badge>
+            {quiz.tags?.map((tag) => (
+              <Badge key={tag} variant="outline" className="bg-primary/20 text-white border-white/20">
+                {tag}
+              </Badge>
+            ))}
           </div>
-          <div className="flex gap-2">
-            {showDelete && (
+          <div className="flex items-center justify-between">
+            <div className="flex gap-2">
+              {showDelete && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleDelete(quiz.id)}
+                  className="text-destructive hover:bg-destructive/10"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              )}
               <Button
-                variant="ghost"
+                variant="hero"
                 size="sm"
-                onClick={() => handleDelete(quiz.id)}
-                className="text-destructive hover:bg-destructive/10"
+                onClick={() => handlePlayQuiz(quiz)}
               >
-                <Trash2 className="w-4 h-4" />
+                <Play className="w-4 h-4 mr-1" />
+                Jouer
               </Button>
-            )}
-            <Button
-              variant="hero"
-              size="sm"
-              onClick={() => handlePlayQuiz(quiz)}
-            >
-              <Play className="w-4 h-4 mr-1" />
-              Jouer
-            </Button>
+            </div>
           </div>
         </div>
       </CardContent>

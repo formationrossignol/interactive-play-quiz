@@ -60,6 +60,8 @@ export const QuizBuilder = () => {
   
   const [isPublic, setIsPublic] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState('');
 
   const [currentQuestion, setCurrentQuestion] = useState<Partial<Question>>({
     type: 'multiple-choice',
@@ -167,7 +169,8 @@ export const QuizBuilder = () => {
         description: quiz.description,
         questions: quiz.questions,
         isPublic,
-        isFavorite
+        isFavorite,
+        tags
       });
     } catch (error) {
       console.error("Error saving quiz:", error);
@@ -331,6 +334,50 @@ export const QuizBuilder = () => {
                     checked={isFavorite}
                     onCheckedChange={setIsFavorite}
                   />
+                </div>
+                <div>
+                  <Label htmlFor="tags">Tags</Label>
+                  <div className="flex gap-2 mt-2">
+                    <Input
+                      id="tags"
+                      placeholder="Ajouter un tag..."
+                      value={tagInput}
+                      onChange={(e) => setTagInput(e.target.value)}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter' && tagInput.trim()) {
+                          e.preventDefault();
+                          if (!tags.includes(tagInput.trim())) {
+                            setTags([...tags, tagInput.trim()]);
+                            setTagInput('');
+                          }
+                        }
+                      }}
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        if (tagInput.trim() && !tags.includes(tagInput.trim())) {
+                          setTags([...tags, tagInput.trim()]);
+                          setTagInput('');
+                        }
+                      }}
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {tags.map((tag) => (
+                      <Badge
+                        key={tag}
+                        variant="secondary"
+                        className="cursor-pointer"
+                        onClick={() => setTags(tags.filter(t => t !== tag))}
+                      >
+                        {tag} ×
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
               </CardContent>
             </Card>
