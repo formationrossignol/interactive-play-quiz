@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
-import { useParams, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Users, Clock, Trophy, CheckCircle, XCircle } from "lucide-react";
+import { Users, Clock, Trophy, CheckCircle, XCircle, LogOut } from "lucide-react";
+import { MultiStepProgress } from "./MultiStepProgress";
+import { BackgroundMusic } from "./BackgroundMusic";
+import { ExitQuizDialog } from "./ExitQuizDialog";
 import { cn } from "@/lib/utils";
 
 interface PlayerViewProps {
@@ -13,6 +15,7 @@ interface PlayerViewProps {
 }
 
 export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
+  const navigate = useNavigate();
   const [gameState, setGameState] = useState<'waiting' | 'question' | 'answer-feedback' | 'leaderboard' | 'final'>('waiting');
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | string | null>(null);
@@ -22,6 +25,9 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
   const [totalPlayers, setTotalPlayers] = useState(5);
   const [timeLeft, setTimeLeft] = useState(30);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
+  const [showExitDialog, setShowExitDialog] = useState(false);
+  
+  const totalQuestions = 10;
 
   // Mock current question data
   const mockQuestion = {
@@ -40,6 +46,10 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
       return () => clearTimeout(timer);
     }
   }, [gameState, timeLeft, hasAnswered]);
+
+  const handleExitQuiz = () => {
+    navigate("/");
+  };
 
   const submitAnswer = (answer: number | string) => {
     if (hasAnswered) return;
@@ -107,14 +117,20 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
         <div className="max-w-2xl mx-auto">
           {/* Header */}
           <div className="flex items-center justify-between mb-6 text-white">
-            <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
-              Question {currentQuestion + 1}
-            </Badge>
             <div className="flex items-center gap-4">
+              <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
+                Question {currentQuestion + 1}
+              </Badge>
               <div className="flex items-center gap-1">
                 <Trophy className="w-4 h-4" />
                 <span>{playerScore}</span>
               </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <BackgroundMusic isPlaying={gameState === 'question'} />
+              <Button variant="ghost" size="sm" onClick={() => setShowExitDialog(true)} className="bg-white/10 hover:bg-white/20 text-white">
+                <LogOut className="w-4 h-4" />
+              </Button>
               <div className="text-2xl font-bold">
                 {timeLeft}s
               </div>
@@ -123,11 +139,18 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
 
           {/* Progress */}
           <div className="mb-6">
-            <Progress 
-              value={hasAnswered ? 100 : ((mockQuestion.timeLimit - timeLeft) / mockQuestion.timeLimit) * 100} 
-              className="h-2 bg-white/20"
+            <MultiStepProgress 
+              totalSteps={totalQuestions}
+              currentStep={currentQuestion}
+              className="h-3"
             />
           </div>
+          
+          <ExitQuizDialog 
+            open={showExitDialog}
+            onOpenChange={setShowExitDialog}
+            onConfirm={handleExitQuiz}
+          />
 
           {/* Question */}
           <Card className="bg-white/10 backdrop-blur-lg border-white/20 shadow-glow mb-6">

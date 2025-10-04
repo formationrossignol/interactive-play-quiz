@@ -1,12 +1,15 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Users, Clock, Trophy, Settings, Download, Share2 } from "lucide-react";
+import { Users, Clock, Trophy, Settings, Download, LogOut } from "lucide-react";
 import { QRCodeGenerator } from "./QRCodeGenerator";
 import { WordCloudQuestion } from "./WordCloudQuestion";
 import { RankingQuestion } from "./RankingQuestion";
+import { MultiStepProgress } from "./MultiStepProgress";
+import { BackgroundMusic } from "./BackgroundMusic";
+import { ExitQuizDialog } from "./ExitQuizDialog";
 import { cn } from "@/lib/utils";
 
 interface Player {
@@ -45,6 +48,7 @@ interface QuizSessionProps {
 }
 
 export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
+  const navigate = useNavigate();
   const [players, setPlayers] = useState<Player[]>([
     { id: '1', name: 'Alice', score: 2850, correctAnswers: 8, joinedAt: new Date() },
     { id: '2', name: 'Bob', score: 2650, correctAnswers: 7, joinedAt: new Date() },
@@ -55,6 +59,7 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
+  const [showExitDialog, setShowExitDialog] = useState(false);
   const [sessionStats, setSessionStats] = useState({
     totalPlayers: 0,
     averageScore: 0,
@@ -132,6 +137,10 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
     setGameState('leaderboard');
   };
 
+  const handleExitQuiz = () => {
+    navigate("/");
+  };
+
   const exportResults = () => {
     const results = {
       quiz: quiz.title,
@@ -167,6 +176,10 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
                 <p className="text-white/80">{quiz.description}</p>
               </div>
               <div className="flex gap-3">
+                <Button variant="outline" onClick={() => setShowExitDialog(true)}>
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Quitter
+                </Button>
                 <Button variant="outline" onClick={() => setShowSettings(!showSettings)}>
                   <Settings className="w-4 h-4 mr-2" />
                   Settings
@@ -177,6 +190,12 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
               </div>
             </div>
           )}
+          
+          <ExitQuizDialog 
+            open={showExitDialog}
+            onOpenChange={setShowExitDialog}
+            onConfirm={handleExitQuiz}
+          />
 
           <div className="grid lg:grid-cols-3 gap-6">
             {/* QR Code & Join Info */}
@@ -278,6 +297,11 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
             
             {isHost && (
               <div className="flex gap-2">
+                <BackgroundMusic isPlaying={gameState === 'question'} />
+                <Button variant="outline" size="sm" onClick={() => setShowExitDialog(true)} className="bg-white/10 hover:bg-white/20 text-white">
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Quitter
+                </Button>
                 <Button variant="quiz" onClick={showLeaderboard}>
                   <Trophy className="w-4 h-4 mr-2" />
                   Leaderboard
@@ -291,11 +315,18 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
 
           {/* Progress Bar */}
           <div className="mb-8">
-            <Progress 
-              value={(currentQuestionIndex / quiz.questions.length) * 100} 
-              className="h-2 bg-white/20"
+            <MultiStepProgress 
+              totalSteps={quiz.questions.length}
+              currentStep={currentQuestionIndex}
+              className="h-3"
             />
           </div>
+          
+          <ExitQuizDialog 
+            open={showExitDialog}
+            onOpenChange={setShowExitDialog}
+            onConfirm={handleExitQuiz}
+          />
 
           {/* Dynamic Question Component */}
           {currentQuestion.type === 'word-cloud' && (

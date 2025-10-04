@@ -1,0 +1,80 @@
+import { getCurrentUser } from './auth';
+
+export interface SavedQuiz {
+  id: string;
+  title: string;
+  description: string;
+  questions: any[];
+  createdAt: string;
+  userId: string;
+  isPublic: boolean;
+  isFavorite: boolean;
+}
+
+const QUIZ_STORAGE_KEY = 'saved_quizzes';
+
+export const getSavedQuizzes = (): SavedQuiz[] => {
+  const quizzesStr = localStorage.getItem(QUIZ_STORAGE_KEY);
+  return quizzesStr ? JSON.parse(quizzesStr) : [];
+};
+
+export const getUserQuizzes = (userId: string): SavedQuiz[] => {
+  return getSavedQuizzes().filter(q => q.userId === userId);
+};
+
+export const getPublicQuizzes = (): SavedQuiz[] => {
+  return getSavedQuizzes().filter(q => q.isPublic);
+};
+
+export const getFavoriteQuizzes = (userId: string): SavedQuiz[] => {
+  return getSavedQuizzes().filter(q => q.userId === userId && q.isFavorite);
+};
+
+export const saveQuiz = (quiz: Omit<SavedQuiz, 'id' | 'createdAt' | 'userId'>): SavedQuiz => {
+  const user = getCurrentUser();
+  if (!user) throw new Error('User not authenticated');
+  
+  const newQuiz: SavedQuiz = {
+    ...quiz,
+    id: Date.now().toString(),
+    createdAt: new Date().toISOString(),
+    userId: user.id
+  };
+  
+  const quizzes = getSavedQuizzes();
+  quizzes.push(newQuiz);
+  localStorage.setItem(QUIZ_STORAGE_KEY, JSON.stringify(quizzes));
+  
+  return newQuiz;
+};
+
+export const updateQuiz = (id: string, updates: Partial<SavedQuiz>): SavedQuiz | null => {
+  const quizzes = getSavedQuizzes();
+  const index = quizzes.findIndex(q => q.id === id);
+  
+  if (index === -1) return null;
+  
+  quizzes[index] = { ...quizzes[index], ...updates };
+  localStorage.setItem(QUIZ_STORAGE_KEY, JSON.stringify(quizzes));
+  
+  return quizzes[index];
+};
+
+export const deleteQuiz = (id: string): boolean => {
+  const quizzes = getSavedQuizzes();
+  const filtered = quizzes.filter(q => q.id !== id);
+  
+  if (filtered.length === quizzes.length) return false;
+  
+  localStorage.setItem(QUIZ_STORAGE_KEY, JSON.stringify(filtered));
+  return true;
+};
+
+export const toggleFavorite = (id: string): SavedQuiz | null => {
+  const quizzes = getSavedQuizzes();
+  const quiz = quizzes.find(q => q.id === id);
+  
+  if (!quiz) return null;
+  
+  return updateQuiz(id, { isFavorite: !quiz.isFavorite });
+};

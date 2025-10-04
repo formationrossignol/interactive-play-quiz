@@ -1,0 +1,173 @@
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { getCurrentUser } from "@/lib/auth";
+import { getUserQuizzes, getPublicQuizzes, getFavoriteQuizzes, deleteQuiz, toggleFavorite, SavedQuiz } from "@/lib/quizStorage";
+import { Star, Trash2, Play, Globe, Lock, ArrowLeft } from "lucide-react";
+import { toast } from "sonner";
+
+const MyQuizzes = () => {
+  const navigate = useNavigate();
+  const user = getCurrentUser();
+  const [myQuizzes, setMyQuizzes] = useState<SavedQuiz[]>([]);
+  const [publicQuizzes, setPublicQuizzes] = useState<SavedQuiz[]>([]);
+  const [favoriteQuizzes, setFavoriteQuizzes] = useState<SavedQuiz[]>([]);
+
+  useEffect(() => {
+    if (!user) {
+      navigate("/auth");
+      return;
+    }
+    loadQuizzes();
+  }, [user, navigate]);
+
+  const loadQuizzes = () => {
+    if (!user) return;
+    setMyQuizzes(getUserQuizzes(user.id));
+    setPublicQuizzes(getPublicQuizzes());
+    setFavoriteQuizzes(getFavoriteQuizzes(user.id));
+  };
+
+  const handleDelete = (id: string) => {
+    if (deleteQuiz(id)) {
+      toast.success("Quiz supprimé");
+      loadQuizzes();
+    }
+  };
+
+  const handleToggleFavorite = (id: string) => {
+    toggleFavorite(id);
+    loadQuizzes();
+  };
+
+  const handlePlayQuiz = (quiz: SavedQuiz) => {
+    // Save quiz to active session
+    localStorage.setItem(`quiz-${quiz.id}`, JSON.stringify(quiz));
+    navigate(`/quiz/${quiz.id}`);
+  };
+
+  const QuizCard = ({ quiz, showDelete = false }: { quiz: SavedQuiz; showDelete?: boolean }) => (
+    <Card className="bg-white/10 backdrop-blur-lg border-white/20 hover:bg-white/15 transition-all">
+      <CardHeader>
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <CardTitle className="text-white mb-2">{quiz.title}</CardTitle>
+            <p className="text-white/60 text-sm">{quiz.description}</p>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleToggleFavorite(quiz.id)}
+            className="text-white hover:bg-white/10"
+          >
+            <Star className={quiz.isFavorite ? "fill-yellow-500 text-yellow-500" : ""} />
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Badge variant={quiz.isPublic ? "default" : "secondary"} className="bg-white/20">
+              {quiz.isPublic ? <Globe className="w-3 h-3 mr-1" /> : <Lock className="w-3 h-3 mr-1" />}
+              {quiz.isPublic ? "Public" : "Privé"}
+            </Badge>
+            <Badge variant="secondary" className="bg-white/20">
+              {quiz.questions.length} questions
+            </Badge>
+          </div>
+          <div className="flex gap-2">
+            {showDelete && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleDelete(quiz.id)}
+                className="text-destructive hover:bg-destructive/10"
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            )}
+            <Button
+              variant="hero"
+              size="sm"
+              onClick={() => handlePlayQuiz(quiz)}
+            >
+              <Play className="w-4 h-4 mr-1" />
+              Jouer
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  if (!user) return null;
+
+  return (
+    <div className="min-h-screen bg-gradient-hero p-6">
+      <div className="max-w-6xl mx-auto">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-4xl font-bold text-white mb-2">Mes Quiz</h1>
+            <p className="text-white/80">Gérez vos quiz et explorez les quiz publics</p>
+          </div>
+          <Button variant="outline" onClick={() => navigate("/")}>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Retour
+          </Button>
+        </div>
+
+        <Tabs defaultValue="my-quizzes" className="space-y-6">
+          <TabsList className="bg-white/10">
+            <TabsTrigger value="my-quizzes">Mes Quiz ({myQuizzes.length})</TabsTrigger>
+            <TabsTrigger value="public">Quiz Publics ({publicQuizzes.length})</TabsTrigger>
+            <TabsTrigger value="favorites">Favoris ({favoriteQuizzes.length})</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="my-quizzes" className="space-y-4">
+            {myQuizzes.length === 0 ? (
+              <Card className="bg-white/10 backdrop-blur-lg border-white/20">
+                <CardContent className="p-12 text-center">
+                  <p className="text-white/60">Vous n'avez pas encore créé de quiz</p>
+                  <Button variant="hero" className="mt-4" onClick={() => navigate("/builder")}>
+                    Créer mon premier quiz
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              myQuizzes.map(quiz => <QuizCard key={quiz.id} quiz={quiz} showDelete />)
+            )}
+          </TabsContent>
+
+          <TabsContent value="public" className="space-y-4">
+            {publicQuizzes.length === 0 ? (
+              <Card className="bg-white/10 backdrop-blur-lg border-white/20">
+                <CardContent className="p-12 text-center">
+                  <p className="text-white/60">Aucun quiz public disponible</p>
+                </CardContent>
+              </Card>
+            ) : (
+              publicQuizzes.map(quiz => <QuizCard key={quiz.id} quiz={quiz} />)
+            )}
+          </TabsContent>
+
+          <TabsContent value="favorites" className="space-y-4">
+            {favoriteQuizzes.length === 0 ? (
+              <Card className="bg-white/10 backdrop-blur-lg border-white/20">
+                <CardContent className="p-12 text-center">
+                  <p className="text-white/60">Vous n'avez pas encore de quiz favoris</p>
+                </CardContent>
+              </Card>
+            ) : (
+              favoriteQuizzes.map(quiz => <QuizCard key={quiz.id} quiz={quiz} showDelete={quiz.userId === user.id} />)
+            )}
+          </TabsContent>
+        </Tabs>
+      </div>
+    </div>
+  );
+};
+
+export default MyQuizzes;

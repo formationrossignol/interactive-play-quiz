@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,9 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Clock, Users, Play, Save, BookMarked } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Plus, Trash2, Clock, Users, Play, Save, BookMarked, Star, Globe } from "lucide-react";
 import { QuestionBank, SavedQuestion } from "./QuestionBank";
 import { QRCodeGenerator } from "./QRCodeGenerator";
+import { getCurrentUser } from "@/lib/auth";
+import { saveQuiz } from "@/lib/quizStorage";
 import { toast } from "sonner";
 
 interface Question {
@@ -35,6 +38,14 @@ interface Quiz {
 
 export const QuizBuilder = () => {
   const navigate = useNavigate();
+  const user = getCurrentUser();
+  
+  useEffect(() => {
+    if (!user) {
+      navigate("/auth");
+    }
+  }, [user, navigate]);
+  
   const [quiz, setQuiz] = useState<Quiz>({
     id: '',
     title: '',
@@ -46,6 +57,9 @@ export const QuizBuilder = () => {
       showAnswersAfterEach: true
     }
   });
+  
+  const [isPublic, setIsPublic] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
 
   const [currentQuestion, setCurrentQuestion] = useState<Partial<Question>>({
     type: 'multiple-choice',
@@ -132,13 +146,32 @@ export const QuizBuilder = () => {
       toast.error("Veuillez ajouter un titre et au moins une question");
       return;
     }
+    
+    if (!user) {
+      toast.error("Vous devez être connecté");
+      navigate("/auth");
+      return;
+    }
 
     const code = generateGameCode();
     setGameCode(code);
     
-    // Save quiz
+    // Save quiz to storage
     const quizWithId = { ...quiz, id: code };
     localStorage.setItem(`quiz-${code}`, JSON.stringify(quizWithId));
+    
+    // Save to user's quizzes
+    try {
+      saveQuiz({
+        title: quiz.title,
+        description: quiz.description,
+        questions: quiz.questions,
+        isPublic,
+        isFavorite
+      });
+    } catch (error) {
+      console.error("Error saving quiz:", error);
+    }
     
     setShowQRCode(true);
     toast.success(`Quiz créé avec le code: ${code}`);
@@ -275,6 +308,28 @@ export const QuizBuilder = () => {
                       ...prev,
                       settings: { ...prev.settings, timePerQuestion: parseInt(e.target.value) }
                     }))}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="is-public" className="flex items-center gap-2">
+                    <Globe className="w-4 h-4" />
+                    Quiz Public
+                  </Label>
+                  <Switch
+                    id="is-public"
+                    checked={isPublic}
+                    onCheckedChange={setIsPublic}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="is-favorite" className="flex items-center gap-2">
+                    <Star className="w-4 h-4" />
+                    Favori
+                  </Label>
+                  <Switch
+                    id="is-favorite"
+                    checked={isFavorite}
+                    onCheckedChange={setIsFavorite}
                   />
                 </div>
               </CardContent>

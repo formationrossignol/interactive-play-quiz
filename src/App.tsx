@@ -8,6 +8,8 @@ import NotFound from "./pages/NotFound";
 import QuizBuilder from "./pages/QuizBuilder";
 import LiveQuizPage from "./pages/LiveQuizPage";
 import JoinQuiz from "./pages/JoinQuiz";
+import AuthPage from "./pages/AuthPage";
+import MyQuizzes from "./pages/MyQuizzes";
 
 const queryClient = new QueryClient();
 
@@ -19,7 +21,9 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/auth" element={<AuthPage />} />
           <Route path="/builder" element={<QuizBuilder />} />
+          <Route path="/my-quizzes" element={<MyQuizzes />} />
           <Route path="/quiz/:gameCode" element={<LiveQuizPage />} />
           <Route path="/join/:gameCode" element={<JoinQuiz />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

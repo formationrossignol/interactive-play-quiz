@@ -1,15 +1,21 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Users, Zap, Trophy, Play, Plus, QrCode, Clock, Star, ArrowRight, Gamepad2 } from "lucide-react";
+import { Users, Zap, Trophy, Play, Plus, QrCode, Clock, Star, ArrowRight, Gamepad2, LogOut, User, BookOpen, Library } from "lucide-react";
+import { getCurrentUser, logout } from "@/lib/auth";
 
 const Index = () => {
   const [gameCode, setGameCode] = useState("");
+  const [user, setUser] = useState(getCurrentUser());
   const navigate = useNavigate();
+
+  useEffect(() => {
+    setUser(getCurrentUser());
+  }, []);
 
   const joinQuiz = () => {
     if (gameCode.trim()) {
@@ -18,7 +24,16 @@ const Index = () => {
   };
 
   const createQuiz = () => {
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
     navigate('/builder');
+  };
+
+  const handleLogout = () => {
+    logout();
+    setUser(null);
   };
 
 
@@ -37,10 +52,32 @@ const Index = () => {
             </div>
           </div>
           
-          <Badge variant="secondary" className="bg-white/10 text-white border-white/20">
-            <Star className="w-3 h-3 mr-1" />
-            Live Multiplayer
-          </Badge>
+          <div className="flex items-center gap-3">
+            {user ? (
+              <>
+                <Button variant="outline" onClick={() => navigate('/my-quizzes')}>
+                  <BookOpen className="w-4 h-4 mr-2" />
+                  Mes Quiz
+                </Button>
+                <Button variant="outline" onClick={() => navigate('/builder')}>
+                  <Library className="w-4 h-4 mr-2" />
+                  Banque de Questions
+                </Button>
+                <div className="flex items-center gap-2 bg-white/10 rounded-lg px-3 py-2">
+                  <User className="w-4 h-4 text-white" />
+                  <span className="text-white text-sm">{user.username}</span>
+                </div>
+                <Button variant="ghost" size="sm" onClick={handleLogout}>
+                  <LogOut className="w-4 h-4" />
+                </Button>
+              </>
+            ) : (
+              <Button variant="outline" onClick={() => navigate('/auth')}>
+                <User className="w-4 h-4 mr-2" />
+                Connexion
+              </Button>
+            )}
+          </div>
         </div>
       </nav>
 
