@@ -138,3 +138,24 @@ export const getQuestionTypeLabel = (type: QuizQuestionType | PollQuestionType):
   };
   return labels[type] || type;
 };
+
+export const getQuestionTypeDescription = (type: QuizQuestionType | PollQuestionType): string => {
+  const descriptions: Record<QuizQuestionType | PollQuestionType, string> = {
+    // Quiz types
+    'multiple-choice': 'Une seule réponse correcte parmi plusieurs options',
+    'true-false': 'Question avec réponse Vrai ou Faux',
+    'short-answer': 'Réponse textuelle courte',
+    'ranking': 'Hiérarchiser des options par ordre d\'importance',
+    'matching': 'Relier des éléments entre deux colonnes',
+    'fill-blank': 'Phrase à trous à compléter',
+    'drag-drop': 'Glisser-déposer des éléments dans la bonne zone',
+    'hotspot': 'Cliquer sur la bonne partie d\'une image',
+    // Poll types
+    'single-choice': 'Une seule réponse possible parmi plusieurs',
+    'likert-scale': 'Échelle d\'accord (Tout à fait d\'accord → Pas du tout)',
+    'frequency-scale': 'Échelle de fréquence (Jamais → Toujours)',
+    'star-rating': 'Évaluation par étoiles (1 à 5)',
+    'open-text': 'Réponse libre en texte',
+  };
+  return descriptions[type] || '';
+};

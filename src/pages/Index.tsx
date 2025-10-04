@@ -49,10 +49,7 @@ const Index = () => {
             <div className="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center">
               <Zap className="w-6 h-6 text-white" />
             </div>
-            <div>
-              <h1 className="text-2xl font-bold text-white">QuizMaster</h1>
-              <p className="text-white/60 text-sm">Interactive Quiz Platform</p>
-            </div>
+            <h1 className="text-2xl font-bold text-white">QuizMaster</h1>
           </div>
           
           <div className="flex items-center gap-3">

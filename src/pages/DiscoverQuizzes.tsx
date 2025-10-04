@@ -78,10 +78,7 @@ const DiscoverQuizzes = () => {
             <div className="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center">
               <Zap className="w-6 h-6 text-white" />
             </div>
-            <div>
-              <h1 className="text-2xl font-bold text-white">QuizMaster</h1>
-              <p className="text-white/60 text-sm">Interactive Quiz Platform</p>
-            </div>
+            <h1 className="text-2xl font-bold text-white">QuizMaster</h1>
           </div>
           
           <div className="flex items-center gap-3">
@@ -190,7 +187,16 @@ const DiscoverQuizzes = () => {
         {/* Quiz Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredQuizzes.map((quiz) => (
-            <Card key={quiz.id} className="bg-white/10 border-white/20 hover:bg-white/15 transition-all group">
+            <Card key={quiz.id} className="bg-white/10 border-white/20 hover:bg-white/15 transition-all group overflow-hidden">
+              {quiz.headerImage && (
+                <div className="w-full h-48 overflow-hidden">
+                  <img 
+                    src={quiz.headerImage} 
+                    alt={quiz.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                </div>
+              )}
               <CardContent className="p-6">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">

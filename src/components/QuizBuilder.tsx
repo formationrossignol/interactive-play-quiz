@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -7,236 +7,206 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Plus, Trash2, Clock, Users, Play, Save, BookMarked, Star, Globe, HelpCircle, Upload, Image } from "lucide-react";
-import { QuestionBank, SavedQuestion } from "./QuestionBank";
-import { QRCodeGenerator } from "./QRCodeGenerator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Plus, Trash2, Save, ChevronUp, ChevronDown, Upload, HelpCircle, Zap, User } from "lucide-react";
+import { QuestionBank } from "./QuestionBank";
+import { PollTemplateSelector } from "./PollTemplateSelector";
 import { getCurrentUser } from "@/lib/auth";
 import { saveQuiz } from "@/lib/quizStorage";
 import { toast } from "sonner";
-import { getQuestionTypeLabel } from "@/lib/questionTypes";
+import { getQuestionTypeLabel, getQuestionTypeDescription } from "@/lib/questionTypes";
 import type { QuizQuestionType, PollQuestionType } from "@/lib/questionTypes";
-
-interface Question {
-  id: string;
-  type: QuizQuestionType | PollQuestionType;
-  question: string;
-  answers: string[];
-  correctAnswer?: number | string;
-  timeLimit?: number;
-  points?: number;
-  scale?: string[];
-  maxStars?: number;
-  leftColumn?: { id: string; text: string }[];
-  rightColumn?: { id: string; text: string }[];
-  correctMatches?: { leftId: string; rightId: string }[];
-  text?: string;
-  blanks?: { id: string; correctAnswer: string }[];
-  maxLength?: number;
-}
-
-interface Quiz {
-  id: string;
-  title: string;
-  description: string;
-  questions: Question[];
-  settings: {
-    showLeaderboard: boolean;
-    timePerQuestion: number;
-    showAnswersAfterEach: boolean;
-  };
-}
+import type { PollTemplate } from "@/lib/pollTemplates";
 
 export const QuizBuilder = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const quizType = (searchParams.get('type') || 'quiz') as 'quiz' | 'poll';
   const user = getCurrentUser();
-  const [searchParams] = useSearchParams();
   
+  const isPoll = quizType === 'poll';
+
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [questions, setQuestions] = useState<any[]>([]);
+  const [currentQuestion, setCurrentQuestion] = useState<any>(getDefaultQuestion());
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [isPublic, setIsPublic] = useState(false);
+  const [speedBonus, setSpeedBonus] = useState(true);
+  const [transitionTime, setTransitionTime] = useState(5);
+  const [category, setCategory] = useState("Autre");
+  const [tags, setTags] = useState<string[]>([]);
+  const [newTag, setNewTag] = useState("");
+  const [headerImage, setHeaderImage] = useState("");
+  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
+  const [showQuestionBank, setShowQuestionBank] = useState(false);
+
   useEffect(() => {
     if (!user) {
       navigate("/auth");
     }
   }, [user, navigate]);
 
-  const initialType = (searchParams.get('type') as 'quiz' | 'poll') || 'quiz';
-  
-  const [quiz, setQuiz] = useState<Quiz>({
-    id: '',
-    title: '',
-    description: '',
-    questions: [],
-    settings: {
-      showLeaderboard: true,
-      timePerQuestion: 30,
-      showAnswersAfterEach: true
-    }
-  });
-  
-  const [isPublic, setIsPublic] = useState(false);
-  const [isFavorite, setIsFavorite] = useState(false);
-  const [tags, setTags] = useState<string[]>([]);
-  const [tagInput, setTagInput] = useState('');
-  const [speedBonus, setSpeedBonus] = useState(true);
-  const [transitionTime, setTransitionTime] = useState(5);
-  const [category, setCategory] = useState('Autre');
-  const [quizType, setQuizType] = useState<'quiz' | 'poll'>(initialType);
-  const [headerImage, setHeaderImage] = useState<string>('');
-
-  const getDefaultQuestion = (): Partial<Question> => {
-    if (quizType === 'poll') {
-      return {
-        type: 'single-choice' as PollQuestionType,
+  function getDefaultQuestion(type?: QuizQuestionType | PollQuestionType): any {
+    if (isPoll) {
+      const pollType = type || 'single-choice';
+      
+      const base = {
+        type: pollType,
         question: '',
-        answers: ['', '', '', ''],
+      };
+
+      switch (pollType) {
+        case 'single-choice':
+        case 'multiple-choice':
+          return { ...base, answers: ['', '', '', ''], allowMultiple: pollType === 'multiple-choice' };
+        case 'likert-scale':
+          return { ...base, scale: ["Tout à fait d'accord", "D'accord", "Neutre", "Pas d'accord", "Pas du tout d'accord"] };
+        case 'frequency-scale':
+          return { ...base, scale: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"] };
+        case 'star-rating':
+          return { ...base, maxStars: 5 };
+        case 'ranking':
+          return { ...base, items: ['', '', '', ''] };
+        case 'open-text':
+          return { ...base, maxLength: 500 };
+        default:
+          return { ...base, answers: ['', '', '', ''] };
+      }
+    } else {
+      const quizType = type || 'multiple-choice';
+      
+      const base = {
+        type: quizType,
+        question: '',
         timeLimit: 30,
+        points: 100,
       };
+
+      switch (quizType) {
+        case 'multiple-choice':
+          return { ...base, answers: ['', '', '', ''], correctAnswer: 0 };
+        case 'true-false':
+          return { ...base, answers: ['Vrai', 'Faux'], correctAnswer: 'true' };
+        case 'short-answer':
+          return { ...base, correctAnswer: '', acceptableAnswers: [] };
+        case 'ranking':
+          return { ...base, items: ['', '', '', ''], correctOrder: [0, 1, 2, 3] };
+        case 'matching':
+          return {
+            ...base,
+            leftColumn: [{ id: '1', text: '' }, { id: '2', text: '' }],
+            rightColumn: [{ id: 'a', text: '' }, { id: 'b', text: '' }],
+            correctMatches: [{ leftId: '1', rightId: 'a' }, { leftId: '2', rightId: 'b' }]
+          };
+        case 'fill-blank':
+          return { ...base, text: '', blanks: [{ id: '1', correctAnswer: '', acceptableAnswers: [] }] };
+        default:
+          return { ...base, answers: ['', '', '', ''], correctAnswer: 0 };
+      }
     }
-    return {
-      type: 'multiple-choice' as QuizQuestionType,
-      question: '',
-      answers: ['', '', '', ''],
-      correctAnswer: 0,
-      timeLimit: 30,
-      points: 100
+  }
+
+  const getAvailableQuestionTypes = (): (QuizQuestionType | PollQuestionType)[] => {
+    if (isPoll) {
+      return ['single-choice', 'multiple-choice', 'likert-scale', 'frequency-scale', 'star-rating', 'ranking', 'open-text'];
+    }
+    return ['multiple-choice', 'true-false', 'short-answer', 'ranking', 'matching', 'fill-blank'];
+  };
+
+  const handleAddQuestion = () => {
+    if (!currentQuestion.question?.trim()) {
+      toast.error("Veuillez saisir une question");
+      return;
+    }
+
+    const newQuestion = {
+      id: Date.now().toString(),
+      ...currentQuestion,
     };
-  };
 
-  const [currentQuestion, setCurrentQuestion] = useState<Partial<Question>>(getDefaultQuestion());
-
-  const [gameCode, setGameCode] = useState<string>('');
-  const [showQRCode, setShowQRCode] = useState(false);
-  const [showQuestionBank, setShowQuestionBank] = useState(false);
-
-  const generateGameCode = () => {
-    return Math.random().toString(36).substring(2, 8).toUpperCase();
-  };
-
-  const addQuestion = () => {
-    if (currentQuestion.question && currentQuestion.answers?.some(a => a.trim())) {
-      const newQuestion: Question = {
-        id: Date.now().toString(),
-        ...currentQuestion as Question
-      };
-      
-      setQuiz(prev => ({
-        ...prev,
-        questions: [...prev.questions, newQuestion]
-      }));
-
-      // Save to question bank
-      const savedQuestion: SavedQuestion = {
-        ...newQuestion,
-        createdAt: new Date().toISOString()
-      };
-      const bank = JSON.parse(localStorage.getItem('questionBank') || '[]');
-      bank.push(savedQuestion);
-      localStorage.setItem('questionBank', JSON.stringify(bank));
-
-      // Reset form
-      setCurrentQuestion(getDefaultQuestion());
-      
+    if (editingIndex !== null) {
+      const updated = [...questions];
+      updated[editingIndex] = newQuestion;
+      setQuestions(updated);
+      setEditingIndex(null);
+      toast.success("Question modifiée");
+    } else {
+      setQuestions([...questions, newQuestion]);
       toast.success("Question ajoutée");
     }
+
+    setCurrentQuestion(getDefaultQuestion());
   };
 
-  const addQuestionFromBank = (question: SavedQuestion) => {
-    const newQuestion: Question = {
-      id: Date.now().toString(),
-      type: question.type,
-      question: question.question,
-      answers: question.answers,
-      correctAnswer: question.correctAnswer,
-      timeLimit: question.timeLimit,
-      points: question.points
-    };
+  const handleEditQuestion = (index: number) => {
+    setCurrentQuestion(questions[index]);
+    setEditingIndex(index);
+  };
 
-    setQuiz(prev => ({
-      ...prev,
-      questions: [...prev.questions, newQuestion]
-    }));
+  const handleDeleteQuestion = (index: number) => {
+    setQuestions(questions.filter((_, i) => i !== index));
+    toast.success("Question supprimée");
+  };
 
+  const handleSelectFromBank = (question: any) => {
+    setQuestions([...questions, { ...question, id: Date.now().toString() }]);
     toast.success("Question ajoutée depuis la banque");
   };
 
-  const saveDraft = () => {
-    if (!quiz.title) {
-      toast.error("Veuillez entrer un titre pour le quiz");
+  const handleSelectTemplate = (template: PollTemplate) => {
+    if (selectedTemplate === template.id) {
+      setSelectedTemplate(null);
       return;
     }
-    localStorage.setItem('quizDraft', JSON.stringify(quiz));
-    toast.success("Brouillon sauvegardé");
+
+    setSelectedTemplate(template.id);
+    setTitle(template.name);
+    setDescription(template.description);
+    setCategory(template.category);
+    
+    const templateQuestions = template.questions.map((q, index) => ({
+      id: Date.now().toString() + index,
+      ...q
+    }));
+    
+    setQuestions(templateQuestions);
+    toast.success(`Template "${template.name}" chargé`);
   };
 
-  const startQuiz = () => {
-    if (!quiz.title || quiz.questions.length === 0) {
-      toast.error("Veuillez ajouter un titre et au moins une question");
-      return;
-    }
-    
-    if (!user) {
-      toast.error("Vous devez être connecté");
-      navigate("/auth");
+  const handleSaveQuiz = () => {
+    if (!title.trim()) {
+      toast.error("Veuillez saisir un titre");
       return;
     }
 
-    const code = generateGameCode();
-    setGameCode(code);
-    
-    // Save quiz to storage
-    const quizWithId = { ...quiz, id: code };
-    localStorage.setItem(`quiz-${code}`, JSON.stringify(quizWithId));
-    
-    // Save to user's quizzes
+    if (questions.length === 0) {
+      toast.error("Veuillez ajouter au moins une question");
+      return;
+    }
+
     try {
-      saveQuiz({
-        title: quiz.title,
-        description: quiz.description,
-        questions: quiz.questions,
+      const saved = saveQuiz({
+        title,
+        description,
+        questions,
         isPublic,
-        isFavorite,
+        isFavorite: false,
         tags,
-        speedBonus,
+        speedBonus: isPoll ? false : speedBonus,
         transitionTime,
         category,
         type: quizType,
-        headerImage
+        headerImage,
       });
+
+      toast.success(`${isPoll ? 'Sondage' : 'Quiz'} enregistré avec succès`);
+      navigate(isPoll ? '/my-polls' : '/my-quizzes');
     } catch (error) {
-      console.error("Error saving quiz:", error);
+      toast.error("Erreur lors de l'enregistrement");
     }
-    
-    setShowQRCode(true);
-    toast.success(`Quiz créé avec le code: ${code}`);
-  };
-
-  const goToQuiz = () => {
-    navigate(`/quiz/${gameCode}`);
-  };
-
-  const removeQuestion = (questionId: string) => {
-    setQuiz(prev => ({
-      ...prev,
-      questions: prev.questions.filter(q => q.id !== questionId)
-    }));
-  };
-
-  const getQuestionTypeColor = (type: Question['type']) => {
-    const colors: Record<string, string> = {
-      'multiple-choice': 'bg-gradient-primary',
-      'single-choice': 'bg-gradient-primary',
-      'true-false': 'bg-gradient-secondary',
-      'short-answer': 'bg-gradient-success',
-      'ranking': 'bg-warning',
-      'matching': 'bg-purple-500',
-      'fill-blank': 'bg-blue-500',
-      'drag-drop': 'bg-green-500',
-      'hotspot': 'bg-red-500',
-      'likert-scale': 'bg-indigo-500',
-      'frequency-scale': 'bg-teal-500',
-      'star-rating': 'bg-yellow-500',
-      'open-text': 'bg-gray-500',
-    };
-    return colors[type] || 'bg-gradient-primary';
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -245,49 +215,22 @@ export const QuizBuilder = () => {
       const reader = new FileReader();
       reader.onloadend = () => {
         setHeaderImage(reader.result as string);
+        toast.success("Image ajoutée");
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const getAvailableQuestionTypes = (): (QuizQuestionType | PollQuestionType)[] => {
-    if (quizType === 'poll') {
-      return ['single-choice', 'multiple-choice', 'likert-scale', 'frequency-scale', 'star-rating', 'ranking', 'open-text'];
+  const handleAddTag = () => {
+    if (newTag.trim() && !tags.includes(newTag.trim())) {
+      setTags([...tags, newTag.trim()]);
+      setNewTag("");
     }
-    return ['multiple-choice', 'true-false', 'short-answer', 'ranking', 'matching', 'fill-blank'];
   };
-
-  if (showQRCode && gameCode) {
-    return (
-      <div className="min-h-screen bg-background p-6">
-        <div className="max-w-2xl mx-auto">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-foreground mb-2">Quiz Créé!</h1>
-            <p className="text-muted-foreground">Partagez ce code ou ce QR code avec vos participants</p>
-          </div>
-          
-          <QRCodeGenerator 
-            gameCode={gameCode}
-            joinUrl={`${window.location.origin}/join/${gameCode}`}
-          />
-          
-          <div className="flex gap-3 mt-6">
-            <Button variant="outline" size="lg" onClick={() => setShowQRCode(false)} className="flex-1">
-              Modifier le Quiz
-            </Button>
-            <Button variant="hero" size="lg" onClick={goToQuiz} className="flex-1">
-              <Play className="w-4 h-4 mr-2" />
-              Lancer le Quiz
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-hero">
-      {/* Navigation - Same as Index */}
+      {/* Navigation */}
       <nav className="p-6 border-b border-white/10">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div 
@@ -295,513 +238,485 @@ export const QuizBuilder = () => {
             onClick={() => navigate('/')}
           >
             <div className="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center">
-              <Play className="w-6 h-6 text-white" />
+              <Zap className="w-6 h-6 text-white" />
             </div>
+            <h1 className="text-2xl font-bold text-white">QuizMaster</h1>
+            <div className="h-6 w-px bg-white/20" />
             <div>
-              <h1 className="text-2xl font-bold text-white">QuizMaster</h1>
-              <p className="text-white/60 text-sm">Interactive Quiz Platform</p>
+              <h1 className="text-2xl font-bold text-white">{isPoll ? 'Sondage Builder' : 'Quiz Builder'}</h1>
+              <p className="text-white/60 text-sm">{isPoll ? 'Créez votre sondage' : 'Créez votre quiz'}</p>
             </div>
           </div>
           
           <div className="flex items-center gap-3">
             {user && (
-              <div className="flex items-center gap-2 bg-white/10 rounded-lg px-3 py-2">
-                <Users className="w-4 h-4 text-white" />
-                <span className="text-white text-sm">{user.username}</span>
-              </div>
+              <Button 
+                variant="outline" 
+                onClick={() => navigate('/profile')}
+                className="flex items-center gap-2"
+              >
+                <User className="w-4 h-4" />
+                <span className="hidden sm:inline">{user.username}</span>
+              </Button>
             )}
           </div>
         </div>
       </nav>
 
+      {/* Main Content */}
       <div className="max-w-6xl mx-auto p-6">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-4xl font-bold text-white mb-2">Quiz Builder</h1>
-            <p className="text-white/80">Create engaging quizzes with multiple question types</p>
-          </div>
-          <div className="flex gap-3">
-            <Button variant="outline" size="lg" onClick={() => setShowQuestionBank(!showQuestionBank)}>
-              <BookMarked className="w-4 h-4 mr-2" />
-              {showQuestionBank ? 'Masquer' : 'Banque'}
-            </Button>
-            <Button variant="outline" size="lg" onClick={saveDraft}>
-              <Save className="w-4 h-4 mr-2" />
-              Sauvegarder
-            </Button>
-            <Button variant="hero" size="lg" onClick={startQuiz}>
-              <Play className="w-4 h-4 mr-2" />
-              Créer Quiz
-            </Button>
-          </div>
-        </div>
-
-        <div className="grid lg:grid-cols-3 gap-6">
-          {/* Question Bank */}
-          {showQuestionBank && (
-            <div className="lg:col-span-3 mb-6">
-              <QuestionBank onSelectQuestion={addQuestionFromBank} />
-            </div>
+        <div className="space-y-6">
+          {/* Templates (only for polls) */}
+          {isPoll && (
+            <PollTemplateSelector
+              selectedTemplateId={selectedTemplate}
+              onSelectTemplate={handleSelectTemplate}
+            />
           )}
-          {/* Quiz Settings */}
-          <div className="lg:col-span-1 space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Users className="w-5 h-5 mr-2" />
-                  Quiz Settings
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+
+          {/* Quiz/Poll Settings */}
+          <Card className="bg-white/10 backdrop-blur-lg border-white/20">
+            <CardHeader>
+              <CardTitle className="text-white">Paramètres</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="quiz-title">Quiz Title</Label>
+                  <Label className="text-white">Titre du {isPoll ? 'sondage' : 'quiz'}</Label>
                   <Input
-                    id="quiz-title"
-                    placeholder="Enter quiz title"
-                    value={quiz.title}
-                    onChange={(e) => setQuiz(prev => ({ ...prev, title: e.target.value }))}
+                    placeholder={isPoll ? "Mon sondage" : "Mon super quiz"}
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    className="bg-white/10 border-white/20 text-white placeholder:text-white/60"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="quiz-description">Description</Label>
-                  <Textarea
-                    id="quiz-description"
-                    placeholder="Brief description of your quiz"
-                    value={quiz.description}
-                    onChange={(e) => setQuiz(prev => ({ ...prev, description: e.target.value }))}
-                  />
+                  <Label className="text-white">Catégorie</Label>
+                  <Select value={category} onValueChange={setCategory}>
+                    <SelectTrigger className="bg-white/10 border-white/20 text-white">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Culture Générale">Culture Générale</SelectItem>
+                      <SelectItem value="Science">Science</SelectItem>
+                      <SelectItem value="Histoire">Histoire</SelectItem>
+                      <SelectItem value="Géographie">Géographie</SelectItem>
+                      <SelectItem value="Sport">Sport</SelectItem>
+                      <SelectItem value="Divertissement">Divertissement</SelectItem>
+                      <SelectItem value="Technologie">Technologie</SelectItem>
+                      <SelectItem value="Arts">Arts</SelectItem>
+                      <SelectItem value="Autre">Autre</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-                <div>
-                  <Label htmlFor="header-image">Image d'en-tête</Label>
-                  <div className="mt-2 space-y-2">
-                    {headerImage && (
-                      <div className="relative w-full h-32 rounded-lg overflow-hidden">
-                        <img src={headerImage} alt="Header" className="w-full h-full object-cover" />
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="absolute top-2 right-2 bg-black/50 hover:bg-black/70"
-                          onClick={() => setHeaderImage('')}
-                        >
-                          <Trash2 className="w-4 h-4 text-white" />
-                        </Button>
-                      </div>
-                    )}
-                    <label htmlFor="header-image">
-                      <Button variant="outline" size="sm" asChild className="w-full">
-                        <span>
-                          <Upload className="w-4 h-4 mr-2" />
-                          {headerImage ? 'Changer l\'image' : 'Ajouter une image'}
-                        </span>
-                      </Button>
-                    </label>
-                    <input
-                      id="header-image"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      className="hidden"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="time-per-question">Default Time (seconds)</Label>
-                  <Input
-                    id="time-per-question"
-                    type="number"
-                    min="5"
-                    max="120"
-                    value={quiz.settings.timePerQuestion}
-                    onChange={(e) => setQuiz(prev => ({
-                      ...prev,
-                      settings: { ...prev.settings, timePerQuestion: parseInt(e.target.value) }
-                    }))}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="is-public" className="flex items-center gap-2">
-                    <Globe className="w-4 h-4" />
-                    Quiz Public
-                  </Label>
-                  <Switch
-                    id="is-public"
-                    checked={isPublic}
-                    onCheckedChange={setIsPublic}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="is-favorite" className="flex items-center gap-2">
-                    <Star className="w-4 h-4" />
-                    Favori
-                  </Label>
-                  <Switch
-                    id="is-favorite"
-                    checked={isFavorite}
-                    onCheckedChange={setIsFavorite}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="speed-bonus" className="flex items-center gap-2">
-                    <Clock className="w-4 h-4" />
-                    Bonus de vitesse
-                    <Tooltip>
-                      <TooltipTrigger>
-                        <HelpCircle className="w-4 h-4 text-muted-foreground" />
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-xs">
-                        <p>Plus un joueur répond rapidement, plus il gagne de points. Le bonus est calculé en fonction du temps restant et de la valeur en points de la question.</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </Label>
-                  <Switch
-                    id="speed-bonus"
-                    checked={speedBonus}
-                    onCheckedChange={setSpeedBonus}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="transition-time">Temps de transition (secondes)</Label>
-                  <Input
-                    id="transition-time"
-                    type="number"
-                    min="3"
-                    max="10"
-                    value={transitionTime}
-                    onChange={(e) => setTransitionTime(parseInt(e.target.value))}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="quiz-type">Type</Label>
-                  <select
-                    id="quiz-type"
-                    value={quizType}
-                    onChange={(e) => setQuizType(e.target.value as 'quiz' | 'poll')}
-                    className="w-full mt-2 bg-background border border-input rounded-md px-3 py-2 text-sm"
-                  >
-                    <option value="quiz">Quiz</option>
-                    <option value="poll">Sondage</option>
-                  </select>
-                </div>
-                <div>
-                  <Label htmlFor="category">Catégorie</Label>
-                  <select
-                    id="category"
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="w-full mt-2 bg-background border border-input rounded-md px-3 py-2 text-sm"
-                  >
-                    <option value="Culture Générale">Culture Générale</option>
-                    <option value="Science">Science</option>
-                    <option value="Histoire">Histoire</option>
-                    <option value="Géographie">Géographie</option>
-                    <option value="Sport">Sport</option>
-                    <option value="Divertissement">Divertissement</option>
-                    <option value="Technologie">Technologie</option>
-                    <option value="Arts">Arts</option>
-                    <option value="Autre">Autre</option>
-                  </select>
-                </div>
-                <div>
-                  <Label htmlFor="tags">Tags</Label>
-                  <div className="flex gap-2 mt-2">
-                    <Input
-                      id="tags"
-                      placeholder="Ajouter un tag..."
-                      value={tagInput}
-                      onChange={(e) => setTagInput(e.target.value)}
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter' && tagInput.trim()) {
-                          e.preventDefault();
-                          if (!tags.includes(tagInput.trim())) {
-                            setTags([...tags, tagInput.trim()]);
-                            setTagInput('');
-                          }
-                        }
-                      }}
-                    />
+              </div>
+
+              <div>
+                <Label className="text-white">Description</Label>
+                <Textarea
+                  placeholder="Décrivez votre quiz ou sondage..."
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="bg-white/10 border-white/20 text-white placeholder:text-white/60"
+                />
+              </div>
+
+              <div>
+                <Label className="text-white">Image d'en-tête</Label>
+                {headerImage && (
+                  <div className="relative w-full h-48 rounded-lg overflow-hidden mt-2 mb-2">
+                    <img src={headerImage} alt="Header" className="w-full h-full object-cover" />
                     <Button
-                      variant="outline"
+                      variant="ghost"
                       size="sm"
-                      onClick={() => {
-                        if (tagInput.trim() && !tags.includes(tagInput.trim())) {
-                          setTags([...tags, tagInput.trim()]);
-                          setTagInput('');
-                        }
-                      }}
+                      className="absolute top-2 right-2 bg-black/50 hover:bg-black/70"
+                      onClick={() => setHeaderImage('')}
                     >
-                      <Plus className="w-4 h-4" />
+                      <Trash2 className="w-4 h-4 text-white" />
                     </Button>
                   </div>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {tags.map((tag) => (
-                      <Badge
-                        key={tag}
-                        variant="secondary"
-                        className="cursor-pointer"
-                        onClick={() => setTags(tags.filter(t => t !== tag))}
-                      >
-                        {tag} ×
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                )}
+                <label htmlFor="header-image">
+                  <Button variant="outline" size="sm" asChild className="w-full">
+                    <span>
+                      <Upload className="w-4 h-4 mr-2" />
+                      {headerImage ? 'Changer l\'image' : 'Ajouter une image'}
+                    </span>
+                  </Button>
+                </label>
+                <input
+                  id="header-image"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
+              </div>
 
-            {/* Question List */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Questions ({quiz.questions.length})</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3 max-h-96 overflow-y-auto">
-                  {quiz.questions.map((question, index) => (
-                    <div key={question.id} className="flex items-center gap-3 p-3 border rounded-lg">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold ${getQuestionTypeColor(question.type)}`}>
-                        {index + 1}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate">{question.question}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Badge variant="secondary" className="text-xs">
-                            {getQuestionTypeLabel(question.type)}
-                          </Badge>
-                          <div className="flex items-center text-xs text-muted-foreground">
-                            <Clock className="w-3 h-3 mr-1" />
-                            {question.timeLimit}s
-                          </div>
-                        </div>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeQuestion(question.id)}
-                        className="text-danger hover:text-danger"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  ))}
-                  {quiz.questions.length === 0 && (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <p>No questions added yet</p>
-                      <p className="text-sm">Create your first question →</p>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Question Builder */}
-          <div className="lg:col-span-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Plus className="w-5 h-5 mr-2" />
-                  Add New Question
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Question Type Selector */}
-                <div>
-                  <Label>Question Type</Label>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2">
-                    {getAvailableQuestionTypes().map((type) => (
-                      <Button
-                        key={type}
-                        variant={currentQuestion.type === type ? "default" : "outline"}
-                        className="h-auto p-3 flex flex-col items-center text-xs"
-                        onClick={() => setCurrentQuestion(prev => ({ ...prev, type, answers: type === 'multiple-choice' || type === 'single-choice' ? ['', '', '', ''] : [] }))}
-                      >
-                        <div className={`w-8 h-8 rounded-full mb-2 flex items-center justify-center text-white text-[10px] font-bold ${getQuestionTypeColor(type)}`}>
-                          {type.substring(0, 2).toUpperCase()}
-                        </div>
-                        <span className="text-[10px] text-center leading-tight">{getQuestionTypeLabel(type)}</span>
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Question Text */}
-                <div>
-                  <Label htmlFor="question-text">Question</Label>
-                  <Textarea
-                    id="question-text"
-                    placeholder="Enter your question here..."
-                    value={currentQuestion.question}
-                    onChange={(e) => setCurrentQuestion(prev => ({ ...prev, question: e.target.value }))}
-                    className="mt-2"
+              <div>
+                <Label className="text-white">Tags</Label>
+                <div className="flex gap-2 mt-2">
+                  <Input
+                    placeholder="Ajouter un tag..."
+                    value={newTag}
+                    onChange={(e) => setNewTag(e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddTag();
+                      }
+                    }}
+                    className="bg-white/10 border-white/20 text-white placeholder:text-white/60"
                   />
+                  <Button variant="outline" onClick={handleAddTag}>
+                    <Plus className="w-4 h-4" />
+                  </Button>
                 </div>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {tags.map((tag) => (
+                    <Badge
+                      key={tag}
+                      variant="secondary"
+                      className="cursor-pointer bg-white/20"
+                      onClick={() => setTags(tags.filter(t => t !== tag))}
+                    >
+                      {tag} ×
+                    </Badge>
+                  ))}
+                </div>
+              </div>
 
-                {/* Answer Options */}
-                {(currentQuestion.type === 'multiple-choice' || currentQuestion.type === 'single-choice') && (
-                  <div>
-                    <Label>Answer Options</Label>
-                    <div className="space-y-2 mt-2">
-                      {currentQuestion.answers?.map((answer, index) => (
-                        <div key={index} className="flex items-center gap-2">
-                          <input
-                            type="radio"
-                            name="correct-answer"
-                            checked={currentQuestion.correctAnswer === index}
-                            onChange={() => setCurrentQuestion(prev => ({ ...prev, correctAnswer: index }))}
-                            className="text-primary"
-                          />
-                          <Input
-                            placeholder={`Option ${index + 1}`}
-                            value={answer}
-                            onChange={(e) => {
-                              const newAnswers = [...(currentQuestion.answers || [])];
-                              newAnswers[index] = e.target.value;
-                              setCurrentQuestion(prev => ({ ...prev, answers: newAnswers }));
-                            }}
-                          />
-                        </div>
-                      ))}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <Label className="text-white">Public</Label>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button className="text-white/60 hover:text-white">
+                            <HelpCircle className="w-4 h-4" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="max-w-xs">Rendre le {isPoll ? 'sondage' : 'quiz'} visible dans la section "Découvrir"</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                  <Switch checked={isPublic} onCheckedChange={setIsPublic} />
+                </div>
+                {!isPoll && (
+                  <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <Label className="text-white">Bonus de vitesse</Label>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button className="text-white/60 hover:text-white">
+                              <HelpCircle className="w-4 h-4" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="max-w-xs">Les joueurs gagnent des points bonus en répondant rapidement aux questions</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     </div>
+                    <Switch checked={speedBonus} onCheckedChange={setSpeedBonus} />
                   </div>
                 )}
-
-                {currentQuestion.type === 'true-false' && (
+                {!isPoll && (
                   <div>
-                    <Label>Correct Answer</Label>
-                    <div className="flex gap-4 mt-2">
-                      <Button
-                        variant={currentQuestion.correctAnswer === 'true' ? "success" : "outline"}
-                        onClick={() => setCurrentQuestion(prev => ({ ...prev, correctAnswer: 'true', answers: ['True', 'False'] }))}
-                      >
-                        True
-                      </Button>
-                      <Button
-                        variant={currentQuestion.correctAnswer === 'false' ? "success" : "outline"}
-                        onClick={() => setCurrentQuestion(prev => ({ ...prev, correctAnswer: 'false', answers: ['True', 'False'] }))}
-                      >
-                        False
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
-                {currentQuestion.type === 'likert-scale' && (
-                  <div>
-                    <Label>Échelle de Likert</Label>
-                    <p className="text-sm text-muted-foreground mb-2">
-                      Échelle par défaut : Tout à fait d'accord → Pas du tout d'accord
-                    </p>
+                    <Label className="text-white">Temps de transition (secondes)</Label>
                     <Input
-                      placeholder="Personnaliser l'échelle (séparée par des virgules)"
-                      onChange={(e) => {
-                        const scale = e.target.value.split(',').map(s => s.trim()).filter(Boolean);
-                        setCurrentQuestion(prev => ({ ...prev, scale: scale.length > 0 ? scale : ["Tout à fait d'accord", "D'accord", "Neutre", "Pas d'accord", "Pas du tout d'accord"] }));
-                      }}
-                    />
-                  </div>
-                )}
-
-                {currentQuestion.type === 'frequency-scale' && (
-                  <div>
-                    <Label>Échelle de Fréquence</Label>
-                    <p className="text-sm text-muted-foreground mb-2">
-                      Échelle par défaut : Jamais → Toujours
-                    </p>
-                    <Input
-                      placeholder="Personnaliser l'échelle (séparée par des virgules)"
-                      onChange={(e) => {
-                        const scale = e.target.value.split(',').map(s => s.trim()).filter(Boolean);
-                        setCurrentQuestion(prev => ({ ...prev, scale: scale.length > 0 ? scale : ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"] }));
-                      }}
-                    />
-                  </div>
-                )}
-
-                {currentQuestion.type === 'star-rating' && (
-                  <div>
-                    <Label htmlFor="max-stars">Nombre d'étoiles maximum</Label>
-                    <Input
-                      id="max-stars"
                       type="number"
                       min="3"
                       max="10"
-                      value={currentQuestion.maxStars || 5}
-                      onChange={(e) => setCurrentQuestion(prev => ({ ...prev, maxStars: parseInt(e.target.value) }))}
+                      value={transitionTime}
+                      onChange={(e) => setTransitionTime(parseInt(e.target.value) || 5)}
+                      className="bg-white/10 border-white/20 text-white"
                     />
                   </div>
                 )}
+              </div>
+            </CardContent>
+          </Card>
 
-                {currentQuestion.type === 'open-text' && (
-                  <div>
-                    <Label htmlFor="max-length">Longueur maximale (optionnel)</Label>
-                    <Input
-                      id="max-length"
-                      type="number"
-                      min="10"
-                      max="1000"
-                      placeholder="Ex: 500"
-                      value={currentQuestion.maxLength || ''}
-                      onChange={(e) => setCurrentQuestion(prev => ({ ...prev, maxLength: e.target.value ? parseInt(e.target.value) : undefined }))}
-                    />
-                  </div>
-                )}
-
-                {/* Question Settings */}
-                {quizType === 'quiz' && (
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="time-limit">Time Limit (seconds)</Label>
-                      <Input
-                        id="time-limit"
-                        type="number"
-                        min="5"
-                        max="120"
-                        value={currentQuestion.timeLimit || 30}
-                        onChange={(e) => setCurrentQuestion(prev => ({ ...prev, timeLimit: parseInt(e.target.value) }))}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="points">Points</Label>
-                      <Input
-                        id="points"
-                        type="number"
-                        min="10"
-                        max="1000"
-                        step="10"
-                        value={currentQuestion.points || 100}
-                        onChange={(e) => setCurrentQuestion(prev => ({ ...prev, points: parseInt(e.target.value) }))}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {quizType === 'poll' && (
-                  <div>
-                    <Label htmlFor="time-limit-poll">Temps de réponse (optionnel, en secondes)</Label>
-                    <Input
-                      id="time-limit-poll"
-                      type="number"
-                      min="5"
-                      max="120"
-                      placeholder="Pas de limite"
-                      value={currentQuestion.timeLimit || ''}
-                      onChange={(e) => setCurrentQuestion(prev => ({ ...prev, timeLimit: e.target.value ? parseInt(e.target.value) : undefined }))}
-                    />
-                  </div>
-                )}
-
-                <Button 
-                  onClick={addQuestion}
-                  variant="default"
-                  size="lg"
-                  className="w-full"
-                  disabled={!currentQuestion.question || !currentQuestion.answers?.some(a => a.trim())}
+          {/* Question Editor */}
+          <Card className="bg-white/10 backdrop-blur-lg border-white/20">
+            <CardHeader>
+              <CardTitle className="text-white">
+                {editingIndex !== null ? 'Modifier la question' : 'Ajouter une question'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div>
+                <Label className="text-white mb-4 block">Type de question</Label>
+                <Select
+                  value={currentQuestion.type}
+                  onValueChange={(value) => {
+                    setCurrentQuestion(getDefaultQuestion(value as any));
+                  }}
                 >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Question
-                </Button>
+                  <SelectTrigger className="bg-white/10 border-white/20 text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {getAvailableQuestionTypes().map((type) => (
+                      <SelectItem key={type} value={type}>
+                        <div className="flex flex-col">
+                          <span>{getQuestionTypeLabel(type)}</span>
+                          <span className="text-xs text-muted-foreground">{getQuestionTypeDescription(type)}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label className="text-white">Question</Label>
+                <Input
+                  placeholder="Votre question..."
+                  value={currentQuestion.question || ''}
+                  onChange={(e) => setCurrentQuestion({ ...currentQuestion, question: e.target.value })}
+                  className="bg-white/10 border-white/20 text-white placeholder:text-white/60"
+                />
+              </div>
+
+              {/* Question type specific fields */}
+              {(currentQuestion.type === 'multiple-choice' || currentQuestion.type === 'single-choice') && (
+                <div className="space-y-3">
+                  <Label className="text-white">Réponses</Label>
+                  {currentQuestion.answers?.map((answer: string, idx: number) => (
+                    <div key={idx} className="flex gap-2">
+                      <Input
+                        placeholder={`Réponse ${idx + 1}`}
+                        value={answer}
+                        onChange={(e) => {
+                          const newAnswers = [...currentQuestion.answers];
+                          newAnswers[idx] = e.target.value;
+                          setCurrentQuestion({ ...currentQuestion, answers: newAnswers });
+                        }}
+                        className="bg-white/10 border-white/20 text-white placeholder:text-white/60"
+                      />
+                      {!isPoll && (
+                        <Button
+                          variant={currentQuestion.correctAnswer === idx ? 'default' : 'outline'}
+                          onClick={() => setCurrentQuestion({ ...currentQuestion, correctAnswer: idx })}
+                        >
+                          {currentQuestion.correctAnswer === idx ? '✓' : '○'}
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                  <Button
+                    variant="outline"
+                    onClick={() => setCurrentQuestion({
+                      ...currentQuestion,
+                      answers: [...(currentQuestion.answers || []), '']
+                    })}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Ajouter une réponse
+                  </Button>
+                </div>
+              )}
+
+              {currentQuestion.type === 'likert-scale' && (
+                <div>
+                  <Label className="text-white">Échelle</Label>
+                  <div className="space-y-2 mt-2">
+                    {currentQuestion.scale?.map((item: string, idx: number) => (
+                      <Input
+                        key={idx}
+                        value={item}
+                        onChange={(e) => {
+                          const newScale = [...currentQuestion.scale];
+                          newScale[idx] = e.target.value;
+                          setCurrentQuestion({ ...currentQuestion, scale: newScale });
+                        }}
+                        className="bg-white/10 border-white/20 text-white"
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {currentQuestion.type === 'frequency-scale' && (
+                <div>
+                  <Label className="text-white">Échelle de fréquence</Label>
+                  <div className="space-y-2 mt-2">
+                    {currentQuestion.scale?.map((item: string, idx: number) => (
+                      <Input
+                        key={idx}
+                        value={item}
+                        onChange={(e) => {
+                          const newScale = [...currentQuestion.scale];
+                          newScale[idx] = e.target.value;
+                          setCurrentQuestion({ ...currentQuestion, scale: newScale });
+                        }}
+                        className="bg-white/10 border-white/20 text-white"
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {currentQuestion.type === 'star-rating' && (
+                <div>
+                  <Label className="text-white">Nombre d'étoiles</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={currentQuestion.maxStars || 5}
+                    onChange={(e) => setCurrentQuestion({ ...currentQuestion, maxStars: parseInt(e.target.value) || 5 })}
+                    className="bg-white/10 border-white/20 text-white"
+                  />
+                </div>
+              )}
+
+              {currentQuestion.type === 'open-text' && (
+                <div>
+                  <Label className="text-white">Longueur maximale</Label>
+                  <Input
+                    type="number"
+                    value={currentQuestion.maxLength || 500}
+                    onChange={(e) => setCurrentQuestion({ ...currentQuestion, maxLength: parseInt(e.target.value) || 500 })}
+                    className="bg-white/10 border-white/20 text-white"
+                  />
+                </div>
+              )}
+
+              {currentQuestion.type === 'ranking' && (
+                <div className="space-y-3">
+                  <Label className="text-white">Éléments à classer</Label>
+                  {currentQuestion.items?.map((item: string, idx: number) => (
+                    <Input
+                      key={idx}
+                      placeholder={`Élément ${idx + 1}`}
+                      value={item}
+                      onChange={(e) => {
+                        const newItems = [...currentQuestion.items];
+                        newItems[idx] = e.target.value;
+                        setCurrentQuestion({ ...currentQuestion, items: newItems });
+                      }}
+                      className="bg-white/10 border-white/20 text-white placeholder:text-white/60"
+                    />
+                  ))}
+                  <Button
+                    variant="outline"
+                    onClick={() => setCurrentQuestion({
+                      ...currentQuestion,
+                      items: [...(currentQuestion.items || []), '']
+                    })}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Ajouter un élément
+                  </Button>
+                </div>
+              )}
+
+              {/* Time and Points (only for quiz) */}
+              {!isPoll && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-white">Temps (secondes)</Label>
+                    <Input
+                      type="number"
+                      value={currentQuestion.timeLimit}
+                      onChange={(e) =>
+                        setCurrentQuestion({ ...currentQuestion, timeLimit: parseInt(e.target.value) || 30 })
+                      }
+                      className="bg-white/10 border-white/20 text-white"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-white">Points</Label>
+                    <Input
+                      type="number"
+                      value={currentQuestion.points}
+                      onChange={(e) =>
+                        setCurrentQuestion({ ...currentQuestion, points: parseInt(e.target.value) || 100 })
+                      }
+                      className="bg-white/10 border-white/20 text-white"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <Button onClick={handleAddQuestion} variant="hero" className="w-full">
+                <Plus className="w-4 h-4 mr-2" />
+                {editingIndex !== null ? 'Modifier la question' : 'Ajouter la question'}
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Questions List */}
+          {questions.length > 0 && (
+            <Card className="bg-white/10 backdrop-blur-lg border-white/20">
+              <CardHeader>
+                <CardTitle className="text-white">Questions ({questions.length})</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {questions.map((question, index) => (
+                    <div key={question.id} className="flex items-center gap-3 p-4 bg-white/5 rounded-lg">
+                      <div className="flex-1">
+                        <p className="text-white font-medium">{index + 1}. {question.question}</p>
+                        <p className="text-white/60 text-sm">{getQuestionTypeLabel(question.type)}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button variant="ghost" size="sm" onClick={() => handleEditQuestion(index)}>
+                          Modifier
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => handleDeleteQuestion(index)}>
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </CardContent>
             </Card>
+          )}
+
+          {/* Question Bank (only for quiz) */}
+          {!isPoll && (
+            <Card className="bg-white/10 backdrop-blur-lg border-white/20">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-white">Banque de Questions</CardTitle>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowQuestionBank(!showQuestionBank)}
+                  >
+                    {showQuestionBank ? <ChevronUp /> : <ChevronDown />}
+                  </Button>
+                </div>
+              </CardHeader>
+              {showQuestionBank && (
+                <CardContent>
+                  <QuestionBank onSelectQuestion={handleSelectFromBank} />
+                </CardContent>
+              )}
+            </Card>
+          )}
+
+          {/* Save Button */}
+          <div className="flex justify-end">
+            <Button
+              onClick={handleSaveQuiz}
+              disabled={!title || questions.length === 0}
+              variant="hero"
+              size="lg"
+              className="text-lg"
+            >
+              <Save className="w-5 h-5 mr-2" />
+              Enregistrer le {isPoll ? 'Sondage' : 'Quiz'}
+            </Button>
           </div>
         </div>
       </div>
