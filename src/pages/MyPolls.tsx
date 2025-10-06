@@ -9,6 +9,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { getUserQuizzes, getPublicQuizzes, getFavoriteQuizzes, deleteQuiz, toggleFavorite, SavedQuiz } from "@/lib/quizStorage";
 import { Star, Trash2, Play } from "lucide-react";
 import { toast } from "sonner";
+import { DeleteQuizDialog } from "@/components/DeleteQuizDialog";
 
 const MyPolls = () => {
   const navigate = useNavigate();
@@ -16,6 +17,8 @@ const MyPolls = () => {
   const [myPolls, setMyPolls] = useState<SavedQuiz[]>([]);
   const [publicPolls, setPublicPolls] = useState<SavedQuiz[]>([]);
   const [favoritePolls, setFavoritePolls] = useState<SavedQuiz[]>([]);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [pollToDelete, setPollToDelete] = useState<SavedQuiz | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -36,14 +39,22 @@ const MyPolls = () => {
     setFavoritePolls(allFavoriteQuizzes.filter(q => q.type === 'poll'));
   };
 
-  const handleDelete = (id: string) => {
-    if (deleteQuiz(id)) {
+  const handleDeleteClick = (poll: SavedQuiz) => {
+    setPollToDelete(poll);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (pollToDelete && deleteQuiz(pollToDelete.id)) {
       toast.success("Sondage supprimé");
       loadPolls();
     }
+    setDeleteDialogOpen(false);
+    setPollToDelete(null);
   };
 
-  const handleToggleFavorite = (id: string, currentState: boolean) => {
+  const handleToggleFavorite = (e: React.MouseEvent, id: string, currentState: boolean) => {
+    e.stopPropagation();
     const updated = toggleFavorite(id);
     if (updated) {
       toast.success(
@@ -79,7 +90,7 @@ const MyPolls = () => {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => handleToggleFavorite(poll.id, poll.isFavorite || false)}
+            onClick={(e) => handleToggleFavorite(e, poll.id, poll.isFavorite || false)}
             className="text-yellow-500 hover:bg-yellow-500/10 hover:text-yellow-400 shrink-0"
           >
             <Star className={`w-5 h-5 ${poll.isFavorite ? "fill-yellow-500" : ""}`} />
@@ -104,7 +115,10 @@ const MyPolls = () => {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => handleDelete(poll.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteClick(poll);
+                  }}
                   className="text-destructive hover:bg-destructive/10"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -185,6 +199,14 @@ const MyPolls = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      <DeleteQuizDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={handleDeleteConfirm}
+        title={pollToDelete?.title || ""}
+        type="poll"
+      />
     </div>
   );
 };

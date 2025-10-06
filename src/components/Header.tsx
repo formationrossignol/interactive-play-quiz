@@ -21,8 +21,11 @@ export const Header = ({ subtitle }: HeaderProps) => {
   const [currentLanguage, setCurrentLanguage] = useState<Language>(getLanguage());
 
   useEffect(() => {
-    setUser(getCurrentUser());
-  }, []);
+    const currentUser = getCurrentUser();
+    if (currentUser?.id !== user?.id || currentUser?.username !== user?.username) {
+      setUser(currentUser);
+    }
+  }, [user]);
 
   const handleLogout = () => {
     logout();

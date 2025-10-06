@@ -9,6 +9,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { getUserQuizzes, getPublicQuizzes, getFavoriteQuizzes, deleteQuiz, toggleFavorite, SavedQuiz } from "@/lib/quizStorage";
 import { Star, Trash2, Play, Globe, Lock } from "lucide-react";
 import { toast } from "sonner";
+import { DeleteQuizDialog } from "@/components/DeleteQuizDialog";
 
 const MyQuizzes = () => {
   const navigate = useNavigate();
@@ -16,6 +17,8 @@ const MyQuizzes = () => {
   const [myQuizzes, setMyQuizzes] = useState<SavedQuiz[]>([]);
   const [publicQuizzes, setPublicQuizzes] = useState<SavedQuiz[]>([]);
   const [favoriteQuizzes, setFavoriteQuizzes] = useState<SavedQuiz[]>([]);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [quizToDelete, setQuizToDelete] = useState<SavedQuiz | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -32,14 +35,22 @@ const MyQuizzes = () => {
     setFavoriteQuizzes(getFavoriteQuizzes(user.id));
   };
 
-  const handleDelete = (id: string) => {
-    if (deleteQuiz(id)) {
+  const handleDeleteClick = (quiz: SavedQuiz) => {
+    setQuizToDelete(quiz);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (quizToDelete && deleteQuiz(quizToDelete.id)) {
       toast.success("Quiz supprimé");
       loadQuizzes();
     }
+    setDeleteDialogOpen(false);
+    setQuizToDelete(null);
   };
 
-  const handleToggleFavorite = (id: string, currentState: boolean) => {
+  const handleToggleFavorite = (e: React.MouseEvent, id: string, currentState: boolean) => {
+    e.stopPropagation();
     const updated = toggleFavorite(id);
     if (updated) {
       toast.success(
@@ -75,7 +86,7 @@ const MyQuizzes = () => {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => handleToggleFavorite(quiz.id, quiz.isFavorite || false)}
+            onClick={(e) => handleToggleFavorite(e, quiz.id, quiz.isFavorite || false)}
             className="text-yellow-500 hover:bg-yellow-500/10 hover:text-yellow-400 shrink-0"
           >
             <Star className={`w-5 h-5 ${quiz.isFavorite ? "fill-yellow-500" : ""}`} />
@@ -104,7 +115,10 @@ const MyQuizzes = () => {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => handleDelete(quiz.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteClick(quiz);
+                  }}
                   className="text-destructive hover:bg-destructive/10"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -185,6 +199,14 @@ const MyQuizzes = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      <DeleteQuizDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={handleDeleteConfirm}
+        title={quizToDelete?.title || ""}
+        type="quiz"
+      />
     </div>
   );
 };
