@@ -39,9 +39,14 @@ const MyQuizzes = () => {
     }
   };
 
-  const handleToggleFavorite = (id: string) => {
-    toggleFavorite(id);
-    loadQuizzes();
+  const handleToggleFavorite = (id: string, currentState: boolean) => {
+    const updated = toggleFavorite(id);
+    if (updated) {
+      toast.success(
+        currentState ? "Retiré des favoris" : "Ajouté aux favoris"
+      );
+      loadQuizzes();
+    }
   };
 
   const handlePlayQuiz = (quiz: SavedQuiz) => {
@@ -51,40 +56,49 @@ const MyQuizzes = () => {
   };
 
   const QuizCard = ({ quiz, showDelete = false }: { quiz: SavedQuiz; showDelete?: boolean }) => (
-    <Card className="bg-white/10 backdrop-blur-lg border-white/20 hover:bg-white/15 transition-all">
+    <Card className="group relative overflow-hidden bg-gradient-to-br from-card via-card to-card/95 border-border/50 hover:border-primary/30 hover:shadow-card transition-all duration-300">
+      {quiz.headerImage && (
+        <div className="w-full h-48 overflow-hidden">
+          <img 
+            src={quiz.headerImage} 
+            alt={quiz.title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+        </div>
+      )}
       <CardHeader>
-        <div className="flex items-start justify-between">
+        <div className="flex items-start justify-between gap-3">
           <div className="flex-1">
-            <CardTitle className="text-white mb-2">{quiz.title}</CardTitle>
-            <p className="text-white/60 text-sm">{quiz.description}</p>
+            <CardTitle className="text-foreground mb-2 text-xl">{quiz.title}</CardTitle>
+            <p className="text-muted-foreground text-sm line-clamp-2">{quiz.description}</p>
           </div>
           <Button
             variant="ghost"
-            size="sm"
-            onClick={() => handleToggleFavorite(quiz.id)}
-            className="text-white hover:bg-white/10"
+            size="icon"
+            onClick={() => handleToggleFavorite(quiz.id, quiz.isFavorite || false)}
+            className="text-yellow-500 hover:bg-yellow-500/10 hover:text-yellow-400 shrink-0"
           >
-            <Star className={quiz.isFavorite ? "fill-yellow-500 text-yellow-500" : ""} />
+            <Star className={`w-5 h-5 ${quiz.isFavorite ? "fill-yellow-500" : ""}`} />
           </Button>
         </div>
       </CardHeader>
       <CardContent>
-        <div className="space-y-3">
+        <div className="space-y-4">
           <div className="flex flex-wrap gap-2">
-            <Badge variant={quiz.isPublic ? "default" : "secondary"} className="bg-white/20">
-              {quiz.isPublic ? <Globe className="w-3 h-3 mr-1" /> : <Lock className="w-3 h-3 mr-1" />}
+            <Badge variant={quiz.isPublic ? "default" : "secondary"} className="gap-1">
+              {quiz.isPublic ? <Globe className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
               {quiz.isPublic ? "Public" : "Privé"}
             </Badge>
-            <Badge variant="secondary" className="bg-white/20">
+            <Badge variant="outline">
               {quiz.questions.length} questions
             </Badge>
             {quiz.tags?.map((tag) => (
-              <Badge key={tag} variant="outline" className="bg-primary/20 text-white border-white/20">
+              <Badge key={tag} variant="outline" className="bg-primary/5">
                 {tag}
               </Badge>
             ))}
           </div>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between pt-2 border-t border-border/50">
             <div className="flex gap-2">
               {showDelete && (
                 <Button
@@ -96,15 +110,16 @@ const MyQuizzes = () => {
                   <Trash2 className="w-4 h-4" />
                 </Button>
               )}
-              <Button
-                variant="hero"
-                size="sm"
-                onClick={() => handlePlayQuiz(quiz)}
-              >
-                <Play className="w-4 h-4 mr-1" />
-                Jouer
-              </Button>
             </div>
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => handlePlayQuiz(quiz)}
+              className="gap-2"
+            >
+              <Play className="w-4 h-4" />
+              Jouer
+            </Button>
           </div>
         </div>
       </CardContent>

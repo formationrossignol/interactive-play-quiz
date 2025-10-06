@@ -115,6 +115,20 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
     }
   }, [gameState, timeLeft]);
 
+  // Check if all players have answered
+  useEffect(() => {
+    if (gameState === 'question') {
+      // In a real app, track answered players
+      // For demo: simulate checking if all answered
+      // If all answered, skip timer
+      const checkAllAnswered = () => {
+        // This would be connected to real player answers
+        // For now, this is a placeholder for the logic
+      };
+      checkAllAnswered();
+    }
+  }, [gameState, players]);
+
   // Update session stats
   useEffect(() => {
     setSessionStats({

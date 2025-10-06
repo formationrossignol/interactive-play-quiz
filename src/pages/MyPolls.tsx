@@ -43,56 +43,62 @@ const MyPolls = () => {
     }
   };
 
-  const handleToggleFavorite = (id: string) => {
-    toggleFavorite(id);
-    loadPolls();
+  const handleToggleFavorite = (id: string, currentState: boolean) => {
+    const updated = toggleFavorite(id);
+    if (updated) {
+      toast.success(
+        currentState ? "Retiré des favoris" : "Ajouté aux favoris"
+      );
+      loadPolls();
+    }
   };
 
   const handlePlayPoll = (poll: SavedQuiz) => {
-    localStorage.setItem(`quiz-${poll.id}`, JSON.stringify(poll));
+    // Save poll to active session
+    localStorage.setItem(`poll-${poll.id}`, JSON.stringify(poll));
     navigate(`/quiz/${poll.id}`);
   };
 
   const PollCard = ({ poll, showDelete = false }: { poll: SavedQuiz; showDelete?: boolean }) => (
-    <Card className="bg-white/10 backdrop-blur-lg border-white/20 hover:bg-white/15 transition-all">
+    <Card className="group relative overflow-hidden bg-gradient-to-br from-card via-card to-card/95 border-border/50 hover:border-primary/30 hover:shadow-card transition-all duration-300">
       {poll.headerImage && (
-        <div className="w-full h-48 overflow-hidden rounded-t-lg">
+        <div className="w-full h-48 overflow-hidden">
           <img 
             src={poll.headerImage} 
             alt={poll.title}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
         </div>
       )}
       <CardHeader>
-        <div className="flex items-start justify-between">
+        <div className="flex items-start justify-between gap-3">
           <div className="flex-1">
-            <CardTitle className="text-white mb-2">{poll.title}</CardTitle>
-            <p className="text-white/60 text-sm">{poll.description}</p>
+            <CardTitle className="text-foreground mb-2 text-xl">{poll.title}</CardTitle>
+            <p className="text-muted-foreground text-sm line-clamp-2">{poll.description}</p>
           </div>
           <Button
             variant="ghost"
-            size="sm"
-            onClick={() => handleToggleFavorite(poll.id)}
-            className="text-white hover:bg-white/10"
+            size="icon"
+            onClick={() => handleToggleFavorite(poll.id, poll.isFavorite || false)}
+            className="text-yellow-500 hover:bg-yellow-500/10 hover:text-yellow-400 shrink-0"
           >
-            <Star className={poll.isFavorite ? "fill-yellow-500 text-yellow-500" : ""} />
+            <Star className={`w-5 h-5 ${poll.isFavorite ? "fill-yellow-500" : ""}`} />
           </Button>
         </div>
       </CardHeader>
       <CardContent>
-        <div className="space-y-3">
+        <div className="space-y-4">
           <div className="flex flex-wrap gap-2">
-            <Badge variant="secondary" className="bg-white/20">
+            <Badge variant="outline">
               {poll.questions.length} questions
             </Badge>
             {poll.tags?.map((tag) => (
-              <Badge key={tag} variant="outline" className="bg-primary/20 text-white border-white/20">
+              <Badge key={tag} variant="outline" className="bg-primary/5">
                 {tag}
               </Badge>
             ))}
           </div>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between pt-2 border-t border-border/50">
             <div className="flex gap-2">
               {showDelete && (
                 <Button
@@ -104,15 +110,16 @@ const MyPolls = () => {
                   <Trash2 className="w-4 h-4" />
                 </Button>
               )}
-              <Button
-                variant="hero"
-                size="sm"
-                onClick={() => handlePlayPoll(poll)}
-              >
-                <Play className="w-4 h-4 mr-1" />
-                Lancer
-              </Button>
             </div>
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => handlePlayPoll(poll)}
+              className="gap-2"
+            >
+              <Play className="w-4 h-4" />
+              Lancer
+            </Button>
           </div>
         </div>
       </CardContent>
