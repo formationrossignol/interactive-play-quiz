@@ -39,7 +39,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-// Sortable Question Item Component
+// Sortable Question Item Component for drag and drop functionality
 const SortableQuestionItem = ({ question, index, onEdit, onDelete }: any) => {
   const {
     attributes,
