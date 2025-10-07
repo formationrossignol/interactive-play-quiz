@@ -35,7 +35,7 @@ const Index = () => {
         {/* Main Actions */}
         <div className="grid md:grid-cols-2 gap-8 mb-16">
           {/* Create Quiz */}
-          <Card className="border-2 hover:border-primary transition-all cursor-pointer group" onClick={() => navigate('/builder?type=quiz')}>
+          <Card className="border-2 hover:border-primary transition-all cursor-pointer group" onClick={() => navigate('/builder-start?type=quiz')}>
             <CardContent className="p-8 text-center">
               <div className="w-16 h-16 bg-gradient-primary rounded-full mx-auto mb-4 flex items-center justify-center transform group-hover:scale-110 transition-transform">
                 <Plus className="w-8 h-8 text-white" />
@@ -49,7 +49,7 @@ const Index = () => {
           </Card>
 
           {/* Create Poll */}
-          <Card className="border-2 hover:border-primary transition-all cursor-pointer group" onClick={() => navigate('/builder?type=poll')}>
+          <Card className="border-2 hover:border-primary transition-all cursor-pointer group" onClick={() => navigate('/builder-start?type=poll')}>
             <CardContent className="p-8 text-center">
               <div className="w-16 h-16 bg-gradient-secondary rounded-full mx-auto mb-4 flex items-center justify-center transform group-hover:scale-110 transition-transform">
                 <Plus className="w-8 h-8 text-white" />

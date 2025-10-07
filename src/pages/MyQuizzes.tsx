@@ -164,7 +164,7 @@ const MyQuizzes = () => {
               <Card className="bg-white/10 backdrop-blur-lg border-white/20">
                 <CardContent className="p-12 text-center">
                   <p className="text-white/60">Vous n'avez pas encore créé de quiz</p>
-                  <Button variant="hero" className="mt-4" onClick={() => navigate("/builder")}>
+                  <Button variant="hero" className="mt-4" onClick={() => navigate("/builder-start?type=quiz")}>
                     Créer mon premier quiz
                   </Button>
                 </CardContent>

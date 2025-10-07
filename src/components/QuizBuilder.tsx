@@ -7,25 +7,84 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Plus, Trash2, Save, ChevronUp, ChevronDown, Upload, HelpCircle } from "lucide-react";
-import { QuestionBank } from "./QuestionBank";
-import { PollTemplateSelectorEnhanced } from "./PollTemplateSelectorEnhanced";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Plus, Trash2, Save, Upload, HelpCircle, GripVertical } from "lucide-react";
 import { Header } from "./Header";
+import { QuizPreview } from "./QuizPreview";
+import { QuestionTypeSelector } from "./QuestionTypeSelector";
 import { getCurrentUser } from "@/lib/auth";
 import { saveQuiz } from "@/lib/quizStorage";
+import { getPollTemplate } from "@/lib/pollTemplates";
 import { toast } from "sonner";
-import { getQuestionTypeLabel, getQuestionTypeDescription } from "@/lib/questionTypes";
+import { getQuestionTypeLabel } from "@/lib/questionTypes";
 import { t } from "@/lib/i18n";
 import type { QuizQuestionType, PollQuestionType } from "@/lib/questionTypes";
-import type { PollTemplate } from "@/lib/pollTemplates";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
+// Sortable Question Item Component
+const SortableQuestionItem = ({ question, index, onEdit, onDelete }: any) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+  } = useSortable({ id: question.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg"
+    >
+      <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing">
+        <GripVertical className="w-5 h-5 text-muted-foreground" />
+      </div>
+      <div className="flex-1">
+        <p className="text-foreground font-medium">{index + 1}. {question.question}</p>
+        <p className="text-muted-foreground text-sm">{getQuestionTypeLabel(question.type)}</p>
+      </div>
+      <div className="flex gap-2">
+        <Button variant="ghost" size="sm" onClick={() => onEdit(index)}>
+          {t('edit')}
+        </Button>
+        <Button variant="ghost" size="sm" onClick={() => onDelete(index)}>
+          <Trash2 className="w-4 h-4" />
+        </Button>
+      </div>
+    </div>
+  );
+};
 
 export const QuizBuilder = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
   const quizType = (searchParams.get('type') || 'quiz') as 'quiz' | 'poll';
+  const templateId = searchParams.get('templateId');
   const user = getCurrentUser();
   
   const isPoll = quizType === 'poll';
@@ -42,14 +101,38 @@ export const QuizBuilder = () => {
   const [tags, setTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState("");
   const [headerImage, setHeaderImage] = useState("");
-  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
-  const [showQuestionBank, setShowQuestionBank] = useState(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   useEffect(() => {
     if (!user) {
       navigate("/auth");
     }
   }, [user, navigate]);
+
+  useEffect(() => {
+    if (templateId && isPoll) {
+      const template = getPollTemplate(templateId);
+      if (template) {
+        setTitle(template.name);
+        setDescription(template.description);
+        setCategory(template.category);
+        
+        const templateQuestions = template.questions.map((q, index) => ({
+          id: Date.now().toString() + index,
+          ...q
+        }));
+        
+        setQuestions(templateQuestions);
+        toast.success(t('templateLoaded'));
+      }
+    }
+  }, [templateId, isPoll]);
 
   function getDefaultQuestion(type?: QuizQuestionType | PollQuestionType): any {
     if (isPoll) {
@@ -125,7 +208,7 @@ export const QuizBuilder = () => {
     }
 
     const newQuestion = {
-      id: Date.now().toString(),
+      id: editingIndex !== null ? questions[editingIndex].id : Date.now().toString(),
       ...currentQuestion,
     };
 
@@ -153,29 +236,17 @@ export const QuizBuilder = () => {
     toast.success(t('questionDeleted'));
   };
 
-  const handleSelectFromBank = (question: any) => {
-    setQuestions([...questions, { ...question, id: Date.now().toString() }]);
-    toast.success("Question ajoutée depuis la banque");
-  };
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
 
-  const handleSelectTemplate = (template: PollTemplate) => {
-    if (selectedTemplate === template.id) {
-      setSelectedTemplate(null);
-      return;
+    if (over && active.id !== over.id) {
+      setQuestions((items) => {
+        const oldIndex = items.findIndex((item) => item.id === active.id);
+        const newIndex = items.findIndex((item) => item.id === over.id);
+
+        return arrayMove(items, oldIndex, newIndex);
+      });
     }
-
-    setSelectedTemplate(template.id);
-    setTitle(template.name);
-    setDescription(template.description);
-    setCategory(template.category);
-    
-    const templateQuestions = template.questions.map((q, index) => ({
-      id: Date.now().toString() + index,
-      ...q
-    }));
-    
-    setQuestions(templateQuestions);
-    toast.success(t('templateLoaded'));
   };
 
   const handleSaveQuiz = () => {
@@ -190,7 +261,7 @@ export const QuizBuilder = () => {
     }
 
     try {
-      const saved = saveQuiz({
+      saveQuiz({
         title,
         description,
         questions,
@@ -236,10 +307,9 @@ export const QuizBuilder = () => {
 
       {/* Main Content with Sidebar Layout */}
       <div className="max-w-7xl mx-auto p-6">
-        <div className="grid lg:grid-cols-[300px_1fr] gap-6">
-          {/* Left Sidebar - Options */}
+        <div className="grid lg:grid-cols-[300px_1fr_350px] gap-6">
+          {/* Left Sidebar - Settings */}
           <div className="space-y-6">
-            {/* Quiz/Poll Settings */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-foreground">{t('settings')}</CardTitle>
@@ -406,301 +476,239 @@ export const QuizBuilder = () => {
                 )}
               </CardContent>
             </Card>
-
-            {/* Templates for Polls */}
-            {isPoll && (
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-foreground">{t('pollTemplates')}</CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full"
-                    onClick={() => setShowQuestionBank(!showQuestionBank)}
-                  >
-                    {showQuestionBank ? <ChevronUp /> : <ChevronDown />}
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Question Bank for Quiz */}
-            {!isPoll && (
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-foreground">{t('questionBank')}</CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full"
-                    onClick={() => setShowQuestionBank(!showQuestionBank)}
-                  >
-                    {showQuestionBank ? <ChevronUp /> : <ChevronDown />}
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
           </div>
 
           {/* Center - Questions */}
           <div className="space-y-6">
-            {/* Templates Expanded (only for polls) */}
-            {isPoll && showQuestionBank && (
-              <PollTemplateSelectorEnhanced
-                selectedTemplateId={selectedTemplate}
-                onSelectTemplate={handleSelectTemplate}
-              />
-            )}
-
-            {/* Question Bank Expanded (only for quiz) */}
-            {!isPoll && showQuestionBank && (
-              <Card>
-                <CardContent className="p-6">
-                  <QuestionBank onSelectQuestion={handleSelectFromBank} />
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Question Editor */}
+            {/* Question Editor with Tabs */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-foreground">
                   {editingIndex !== null ? t('editQuestion') : t('addQuestion')}
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div>
-                  <Label className="mb-4 block">{t('questionType')}</Label>
-                  <Select
-                    value={currentQuestion.type}
-                    onValueChange={(value) => {
-                      setCurrentQuestion(getDefaultQuestion(value as any));
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-popover z-50">
-                      {getAvailableQuestionTypes().map((type) => (
-                        <SelectItem key={type} value={type}>
-                          <div className="flex flex-col">
-                            <span>{getQuestionTypeLabel(type)}</span>
-                            <span className="text-xs text-muted-foreground">{getQuestionTypeDescription(type)}</span>
+              <CardContent>
+                <Tabs defaultValue="type" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="type">{t('questionType')}</TabsTrigger>
+                    <TabsTrigger value="details">{t('question')}</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="type" className="space-y-4">
+                    <QuestionTypeSelector
+                      questionTypes={getAvailableQuestionTypes()}
+                      selectedType={currentQuestion.type}
+                      onSelectType={(type) => setCurrentQuestion(getDefaultQuestion(type as any))}
+                    />
+                  </TabsContent>
+
+                  <TabsContent value="details" className="space-y-6">
+                    <div>
+                      <Label>{t('question')}</Label>
+                      <Input
+                        placeholder={t('yourQuestion')}
+                        value={currentQuestion.question || ''}
+                        onChange={(e) => setCurrentQuestion({ ...currentQuestion, question: e.target.value })}
+                        className="mt-2"
+                      />
+                    </div>
+
+                    {/* Question type specific fields */}
+                    {(currentQuestion.type === 'multiple-choice' || currentQuestion.type === 'single-choice') && (
+                      <div className="space-y-3">
+                        <Label>{t('answers')}</Label>
+                        {currentQuestion.answers?.map((answer: string, idx: number) => (
+                          <div key={idx} className="flex gap-2">
+                            <Input
+                              placeholder={`${t('answer')} ${idx + 1}`}
+                              value={answer}
+                              onChange={(e) => {
+                                const newAnswers = [...currentQuestion.answers];
+                                newAnswers[idx] = e.target.value;
+                                setCurrentQuestion({ ...currentQuestion, answers: newAnswers });
+                              }}
+                            />
+                            {!isPoll && (
+                              <Button
+                                variant={currentQuestion.correctAnswer === idx ? 'default' : 'outline'}
+                                onClick={() => setCurrentQuestion({ ...currentQuestion, correctAnswer: idx })}
+                              >
+                                {currentQuestion.correctAnswer === idx ? '✓' : '○'}
+                              </Button>
+                            )}
                           </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label>{t('question')}</Label>
-                  <Input
-                    placeholder={t('yourQuestion')}
-                    value={currentQuestion.question || ''}
-                    onChange={(e) => setCurrentQuestion({ ...currentQuestion, question: e.target.value })}
-                    className="mt-2"
-                  />
-                </div>
-
-                {/* Question type specific fields */}
-                {(currentQuestion.type === 'multiple-choice' || currentQuestion.type === 'single-choice') && (
-                  <div className="space-y-3">
-                    <Label>{t('answers')}</Label>
-                    {currentQuestion.answers?.map((answer: string, idx: number) => (
-                      <div key={idx} className="flex gap-2">
-                        <Input
-                          placeholder={`${t('answer')} ${idx + 1}`}
-                          value={answer}
-                          onChange={(e) => {
-                            const newAnswers = [...currentQuestion.answers];
-                            newAnswers[idx] = e.target.value;
-                            setCurrentQuestion({ ...currentQuestion, answers: newAnswers });
-                          }}
-                        />
-                        {!isPoll && (
-                          <Button
-                            variant={currentQuestion.correctAnswer === idx ? 'default' : 'outline'}
-                            onClick={() => setCurrentQuestion({ ...currentQuestion, correctAnswer: idx })}
-                          >
-                            {currentQuestion.correctAnswer === idx ? '✓' : '○'}
-                          </Button>
-                        )}
+                        ))}
+                        <Button
+                          variant="outline"
+                          onClick={() => setCurrentQuestion({
+                            ...currentQuestion,
+                            answers: [...(currentQuestion.answers || []), '']
+                          })}
+                        >
+                          <Plus className="w-4 h-4 mr-2" />
+                          {t('addAnswer')}
+                        </Button>
                       </div>
-                    ))}
-                    <Button
-                      variant="outline"
-                      onClick={() => setCurrentQuestion({
-                        ...currentQuestion,
-                        answers: [...(currentQuestion.answers || []), '']
-                      })}
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      {t('addAnswer')}
-                    </Button>
-                  </div>
-                )}
+                    )}
 
-                {currentQuestion.type === 'likert-scale' && (
-                  <div>
-                    <Label>Échelle de Likert</Label>
-                    <div className="space-y-2 mt-2">
-                      {currentQuestion.scale?.map((item: string, idx: number) => (
+                    {currentQuestion.type === 'likert-scale' && (
+                      <div>
+                        <Label>Échelle de Likert</Label>
+                        <div className="space-y-2 mt-2">
+                          {currentQuestion.scale?.map((item: string, idx: number) => (
+                            <Input
+                              key={idx}
+                              value={item}
+                              onChange={(e) => {
+                                const newScale = [...currentQuestion.scale];
+                                newScale[idx] = e.target.value;
+                                setCurrentQuestion({ ...currentQuestion, scale: newScale });
+                              }}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {currentQuestion.type === 'frequency-scale' && (
+                      <div>
+                        <Label>Échelle de fréquence</Label>
+                        <div className="space-y-2 mt-2">
+                          {currentQuestion.scale?.map((item: string, idx: number) => (
+                            <Input
+                              key={idx}
+                              value={item}
+                              onChange={(e) => {
+                                const newScale = [...currentQuestion.scale];
+                                newScale[idx] = e.target.value;
+                                setCurrentQuestion({ ...currentQuestion, scale: newScale });
+                              }}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {currentQuestion.type === 'star-rating' && (
+                      <div>
+                        <Label>Nombre d'étoiles</Label>
                         <Input
-                          key={idx}
-                          value={item}
-                          onChange={(e) => {
-                            const newScale = [...currentQuestion.scale];
-                            newScale[idx] = e.target.value;
-                            setCurrentQuestion({ ...currentQuestion, scale: newScale });
-                          }}
+                          type="number"
+                          min="1"
+                          max="10"
+                          value={currentQuestion.maxStars || 5}
+                          onChange={(e) => setCurrentQuestion({ ...currentQuestion, maxStars: parseInt(e.target.value) || 5 })}
+                          className="mt-2"
                         />
-                      ))}
-                    </div>
-                  </div>
-                )}
+                      </div>
+                    )}
 
-                {currentQuestion.type === 'frequency-scale' && (
-                  <div>
-                    <Label>Échelle de fréquence</Label>
-                    <div className="space-y-2 mt-2">
-                      {currentQuestion.scale?.map((item: string, idx: number) => (
+                    {currentQuestion.type === 'open-text' && (
+                      <div>
+                        <Label>Longueur maximale</Label>
                         <Input
-                          key={idx}
-                          value={item}
-                          onChange={(e) => {
-                            const newScale = [...currentQuestion.scale];
-                            newScale[idx] = e.target.value;
-                            setCurrentQuestion({ ...currentQuestion, scale: newScale });
-                          }}
+                          type="number"
+                          value={currentQuestion.maxLength || 500}
+                          onChange={(e) => setCurrentQuestion({ ...currentQuestion, maxLength: parseInt(e.target.value) || 500 })}
+                          className="mt-2"
                         />
-                      ))}
-                    </div>
-                  </div>
-                )}
+                      </div>
+                    )}
 
-                {currentQuestion.type === 'star-rating' && (
-                  <div>
-                    <Label>Nombre d'étoiles</Label>
-                    <Input
-                      type="number"
-                      min="1"
-                      max="10"
-                      value={currentQuestion.maxStars || 5}
-                      onChange={(e) => setCurrentQuestion({ ...currentQuestion, maxStars: parseInt(e.target.value) || 5 })}
-                      className="mt-2"
-                    />
-                  </div>
-                )}
+                    {currentQuestion.type === 'ranking' && (
+                      <div className="space-y-3">
+                        <Label>Éléments à classer</Label>
+                        {currentQuestion.items?.map((item: string, idx: number) => (
+                          <Input
+                            key={idx}
+                            placeholder={`Élément ${idx + 1}`}
+                            value={item}
+                            onChange={(e) => {
+                              const newItems = [...currentQuestion.items];
+                              newItems[idx] = e.target.value;
+                              setCurrentQuestion({ ...currentQuestion, items: newItems });
+                            }}
+                          />
+                        ))}
+                        <Button
+                          variant="outline"
+                          onClick={() => setCurrentQuestion({
+                            ...currentQuestion,
+                            items: [...(currentQuestion.items || []), '']
+                          })}
+                        >
+                          <Plus className="w-4 h-4 mr-2" />
+                          {t('addItem')}
+                        </Button>
+                      </div>
+                    )}
 
-                {currentQuestion.type === 'open-text' && (
-                  <div>
-                    <Label>Longueur maximale</Label>
-                    <Input
-                      type="number"
-                      value={currentQuestion.maxLength || 500}
-                      onChange={(e) => setCurrentQuestion({ ...currentQuestion, maxLength: parseInt(e.target.value) || 500 })}
-                      className="mt-2"
-                    />
-                  </div>
-                )}
+                    {/* Time and Points (only for quiz) */}
+                    {!isPoll && (
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label>{t('timeSeconds')}</Label>
+                          <Input
+                            type="number"
+                            value={currentQuestion.timeLimit}
+                            onChange={(e) =>
+                              setCurrentQuestion({ ...currentQuestion, timeLimit: parseInt(e.target.value) || 30 })
+                            }
+                            className="mt-2"
+                          />
+                        </div>
+                        <div>
+                          <Label>{t('points')}</Label>
+                          <Input
+                            type="number"
+                            value={currentQuestion.points}
+                            onChange={(e) =>
+                              setCurrentQuestion({ ...currentQuestion, points: parseInt(e.target.value) || 100 })
+                            }
+                            className="mt-2"
+                          />
+                        </div>
+                      </div>
+                    )}
 
-                {currentQuestion.type === 'ranking' && (
-                  <div className="space-y-3">
-                    <Label>Éléments à classer</Label>
-                    {currentQuestion.items?.map((item: string, idx: number) => (
-                      <Input
-                        key={idx}
-                        placeholder={`Élément ${idx + 1}`}
-                        value={item}
-                        onChange={(e) => {
-                          const newItems = [...currentQuestion.items];
-                          newItems[idx] = e.target.value;
-                          setCurrentQuestion({ ...currentQuestion, items: newItems });
-                        }}
-                      />
-                    ))}
-                    <Button
-                      variant="outline"
-                      onClick={() => setCurrentQuestion({
-                        ...currentQuestion,
-                        items: [...(currentQuestion.items || []), '']
-                      })}
-                    >
+                    <Button onClick={handleAddQuestion} variant="default" className="w-full">
                       <Plus className="w-4 h-4 mr-2" />
-                      {t('addItem')}
+                      {editingIndex !== null ? t('editQuestion') : t('addQuestion')}
                     </Button>
-                  </div>
-                )}
-
-                {/* Time and Points (only for quiz) */}
-                {!isPoll && (
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label>{t('timeSeconds')}</Label>
-                      <Input
-                        type="number"
-                        value={currentQuestion.timeLimit}
-                        onChange={(e) =>
-                          setCurrentQuestion({ ...currentQuestion, timeLimit: parseInt(e.target.value) || 30 })
-                        }
-                        className="mt-2"
-                      />
-                    </div>
-                    <div>
-                      <Label>{t('points')}</Label>
-                      <Input
-                        type="number"
-                        value={currentQuestion.points}
-                        onChange={(e) =>
-                          setCurrentQuestion({ ...currentQuestion, points: parseInt(e.target.value) || 100 })
-                        }
-                        className="mt-2"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                <Button onClick={handleAddQuestion} variant="default" className="w-full">
-                  <Plus className="w-4 h-4 mr-2" />
-                  {editingIndex !== null ? t('editQuestion') : t('addQuestion')}
-                </Button>
+                  </TabsContent>
+                </Tabs>
               </CardContent>
             </Card>
 
-            {/* Questions List */}
+            {/* Questions List with Drag & Drop */}
             {questions.length > 0 && (
               <Card>
                 <CardHeader>
                   <CardTitle className="text-foreground">{t('questions')} ({questions.length})</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3">
-                    {questions.map((question, index) => (
-                      <div key={question.id} className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg">
-                        <div className="flex-1">
-                          <p className="text-foreground font-medium">{index + 1}. {question.question}</p>
-                          <p className="text-muted-foreground text-sm">{getQuestionTypeLabel(question.type)}</p>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button variant="ghost" size="sm" onClick={() => handleEditQuestion(index)}>
-                            {t('edit')}
-                          </Button>
-                          <Button variant="ghost" size="sm" onClick={() => handleDeleteQuestion(index)}>
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
+                  >
+                    <SortableContext
+                      items={questions.map(q => q.id)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      <div className="space-y-3">
+                        {questions.map((question, index) => (
+                          <SortableQuestionItem
+                            key={question.id}
+                            question={question}
+                            index={index}
+                            onEdit={handleEditQuestion}
+                            onDelete={handleDeleteQuestion}
+                          />
+                        ))}
                       </div>
-                    ))}
-                  </div>
+                    </SortableContext>
+                  </DndContext>
                 </CardContent>
               </Card>
             )}
@@ -718,6 +726,18 @@ export const QuizBuilder = () => {
                 {t('save')} {isPoll ? t('myPoll') : t('myQuiz')}
               </Button>
             </div>
+          </div>
+
+          {/* Right Sidebar - Live Preview */}
+          <div>
+            <QuizPreview
+              title={title}
+              description={description}
+              category={category}
+              headerImage={headerImage}
+              questions={questions}
+              isPoll={isPoll}
+            />
           </div>
         </div>
       </div>

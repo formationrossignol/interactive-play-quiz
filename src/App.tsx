@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import QuizBuilder from "./pages/QuizBuilder";
+import QuizBuilderStart from "./pages/QuizBuilderStart";
 import LiveQuizPage from "./pages/LiveQuizPage";
 import JoinQuiz from "./pages/JoinQuiz";
 import AuthPage from "./pages/AuthPage";
@@ -25,6 +26,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<AuthPage />} />
+          <Route path="/builder-start" element={<QuizBuilderStart />} />
           <Route path="/builder" element={<QuizBuilder />} />
           <Route path="/my-quizzes" element={<MyQuizzes />} />
           <Route path="/my-polls" element={<MyPolls />} />

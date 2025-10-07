@@ -144,6 +144,26 @@ export const translations = {
     productFeedback: "Product/Service Feedback",
     icebreaker: "Icebreaker / Fun Poll",
     pulseSurvey: "Continuous Evaluation (Pulse Survey)",
+    
+    // QuizBuilderStart
+    createNewPoll: "Create a New Poll",
+    createNewQuiz: "Create a New Quiz",
+    choosePollStart: "Choose how you want to start your poll",
+    chooseQuizStart: "Choose how you want to start your quiz",
+    fromScratch: "From Scratch",
+    createPollFromScratchDesc: "Start with a blank canvas and build your own custom poll",
+    createQuizFromScratchDesc: "Start with a blank canvas and build your own custom quiz",
+    startFromScratch: "Start from Scratch",
+    fromTemplate: "From Template",
+    createPollFromTemplateDesc: "Choose from pre-made templates to get started quickly",
+    browseTemplates: "Browse Templates",
+    
+    // QuizPreview
+    livePreview: "Live Preview",
+    untitled: "Untitled",
+    noDescription: "No description",
+    noQuestionText: "No question text",
+    noQuestionsYet: "No questions added yet",
   },
   fr: {
     // Navigation & Common
@@ -288,6 +308,26 @@ export const translations = {
     productFeedback: "Feedback produit / service",
     icebreaker: "Icebreaker / sondage ludique",
     pulseSurvey: "Évaluation continue (pulse survey)",
+    
+    // QuizBuilderStart
+    createNewPoll: "Créer un Nouveau Sondage",
+    createNewQuiz: "Créer un Nouveau Quiz",
+    choosePollStart: "Choisissez comment vous souhaitez commencer votre sondage",
+    chooseQuizStart: "Choisissez comment vous souhaitez commencer votre quiz",
+    fromScratch: "Depuis zéro",
+    createPollFromScratchDesc: "Commencez avec une page blanche et créez votre propre sondage",
+    createQuizFromScratchDesc: "Commencez avec une page blanche et créez votre propre quiz",
+    startFromScratch: "Commencer depuis zéro",
+    fromTemplate: "Depuis un template",
+    createPollFromTemplateDesc: "Choisissez parmi des modèles pré-faits pour démarrer rapidement",
+    browseTemplates: "Parcourir les templates",
+    
+    // QuizPreview
+    livePreview: "Aperçu en direct",
+    untitled: "Sans titre",
+    noDescription: "Aucune description",
+    noQuestionText: "Aucun texte de question",
+    noQuestionsYet: "Aucune question ajoutée",
   }
 };
 
