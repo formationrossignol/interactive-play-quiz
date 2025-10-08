@@ -62,29 +62,27 @@ export const QuizBuilderStart = () => {
               </CardContent>
             </Card>
 
-            {isPoll && (
-              <Card className="cursor-pointer hover:shadow-lg transition-all border-2 hover:border-primary">
-                <CardHeader>
-                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                    <Sparkles className="w-6 h-6 text-primary" />
-                  </div>
-                  <CardTitle>{t('fromTemplate')}</CardTitle>
-                  <CardDescription>
-                    {t('createPollFromTemplateDesc')}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button 
-                    className="w-full" 
-                    variant="outline"
-                    onClick={() => setShowTemplates(true)}
-                  >
-                    {t('browseTemplates')}
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
+            <Card className="cursor-pointer hover:shadow-lg transition-all border-2 hover:border-primary">
+              <CardHeader>
+                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                  <Sparkles className="w-6 h-6 text-primary" />
+                </div>
+                <CardTitle>{t('fromTemplate')}</CardTitle>
+                <CardDescription>
+                  {isPoll ? t('createPollFromTemplateDesc') : t('createQuizFromTemplateDesc')}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button 
+                  className="w-full" 
+                  variant="outline"
+                  onClick={() => setShowTemplates(true)}
+                >
+                  {t('browseTemplates')}
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </CardContent>
+            </Card>
           </div>
         ) : (
           <div className="space-y-4">

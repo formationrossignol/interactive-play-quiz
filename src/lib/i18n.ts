@@ -16,6 +16,7 @@ export const translations = {
     cancel: "Cancel",
     delete: "Delete",
     edit: "Edit",
+    home: "Home",
     
     // Hero Section
     heroTitle: "Create",
@@ -82,6 +83,7 @@ export const translations = {
     content: "Content",
     true: "True",
     false: "False",
+    createQuizFromTemplateDesc: "Start with a pre-designed template",
     
     // Question Type Labels
     multipleChoice: "Multiple Choice",
@@ -188,6 +190,7 @@ export const translations = {
     cancel: "Annuler",
     delete: "Supprimer",
     edit: "Modifier",
+    home: "Accueil",
     
     // Hero Section
     heroTitle: "Créez des",
@@ -254,6 +257,7 @@ export const translations = {
     content: "Contenu",
     true: "Vrai",
     false: "Faux",
+    createQuizFromTemplateDesc: "Commencer avec un modèle pré-conçu",
     
     // Question Type Labels
     multipleChoice: "Choix multiple",

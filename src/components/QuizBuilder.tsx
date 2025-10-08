@@ -11,10 +11,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Trash2, Save, Upload, HelpCircle, GripVertical, Settings, Menu, X } from "lucide-react";
+import { Plus, Trash2, Save, Upload, HelpCircle, GripVertical, Settings, Menu, X, Home, BarChart3, User, LogOut, Zap } from "lucide-react";
 import { QuizPreview } from "./QuizPreview";
 import { QuestionTypeSelector } from "./QuestionTypeSelector";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, logout } from "@/lib/auth";
 import { saveQuiz } from "@/lib/quizStorage";
 import { getPollTemplate } from "@/lib/pollTemplates";
 import { toast } from "sonner";
@@ -627,19 +627,72 @@ export const QuizBuilder = () => {
 
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Sidebar - Questions List */}
-        <div className={`${sidebarOpen ? 'w-80' : 'w-0'} border-r bg-card overflow-hidden transition-all duration-200`}>
-          <div className="p-4 h-full overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-foreground">{t('questions')} ({questions.length})</h3>
+        {/* Left Sidebar - Navigation */}
+        <div className={`${sidebarOpen ? 'w-64' : 'w-0'} border-r bg-card overflow-hidden transition-all duration-200`}>
+          <div className="p-4 h-full flex flex-col">
+            {/* Logo */}
+            <div className="flex items-center gap-2 mb-8 px-2">
+              <Zap className="w-8 h-8 text-primary" />
+              <span className="font-bold text-xl text-foreground">QuizMaster</span>
+            </div>
+
+            {/* Navigation Links */}
+            <nav className="flex-1 space-y-2">
               <Button
                 variant="ghost"
-                size="sm"
-                onClick={() => setSidebarOpen(false)}
-                className="lg:hidden"
+                className="w-full justify-start"
+                onClick={() => navigate('/')}
               >
-                <X className="w-4 h-4" />
+                <Home className="w-5 h-5 mr-3" />
+                {t('home')}
               </Button>
+              <Button
+                variant="ghost"
+                className="w-full justify-start"
+                onClick={() => navigate('/my-quizzes')}
+              >
+                <BarChart3 className="w-5 h-5 mr-3" />
+                {t('myQuizzes')}
+              </Button>
+              <Button
+                variant="ghost"
+                className="w-full justify-start"
+                onClick={() => navigate('/my-polls')}
+              >
+                <BarChart3 className="w-5 h-5 mr-3" />
+                {t('myPolls')}
+              </Button>
+              <Button
+                variant="ghost"
+                className="w-full justify-start"
+                onClick={() => navigate('/profile')}
+              >
+                <User className="w-5 h-5 mr-3" />
+                {t('profile')}
+              </Button>
+            </nav>
+
+            {/* Logout Button */}
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10"
+              onClick={() => {
+                logout();
+                navigate('/auth');
+              }}
+            >
+              <LogOut className="w-5 h-5 mr-3" />
+              {t('logout')}
+            </Button>
+          </div>
+        </div>
+
+        {/* Center - Questions List + Preview */}
+        <div className="flex-1 flex overflow-hidden">
+          {/* Questions List */}
+          <div className="w-80 border-r bg-muted/30 overflow-y-auto p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-foreground">{t('questions')} ({questions.length})</h3>
             </div>
             <DndContext
               sensors={sensors}
@@ -667,19 +720,19 @@ export const QuizBuilder = () => {
               <p className="text-sm text-muted-foreground text-center py-8">{t('noQuestions')}</p>
             )}
           </div>
-        </div>
 
-        {/* Center - Preview */}
-        <div className="flex-1 overflow-y-auto p-6 bg-muted/30">
-          <div className="max-w-3xl mx-auto">
-            <QuizPreview
-              title={title || (isPoll ? "Mon Sondage" : "Mon Quiz") }
-              description={description}
-              category={category}
-              headerImage={headerImage}
-              questions={questions}
-              isPoll={isPoll}
-            />
+          {/* Preview */}
+          <div className="flex-1 overflow-y-auto p-6">
+            <div className="max-w-3xl mx-auto">
+              <QuizPreview
+                title={title || (isPoll ? "Mon Sondage" : "Mon Quiz") }
+                description={description}
+                category={category}
+                headerImage={headerImage}
+                questions={questions}
+                isPoll={isPoll}
+              />
+            </div>
           </div>
         </div>
 
