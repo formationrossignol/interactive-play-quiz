@@ -36,11 +36,28 @@ const iconMap: Partial<Record<QuizQuestionType | PollQuestionType, any>> = {
   'hotspot': CheckSquare,
 };
 
+const colorMap: Partial<Record<QuizQuestionType | PollQuestionType, string>> = {
+  'multiple-choice': 'bg-blue-500',
+  'true-false': 'bg-green-500',
+  'short-answer': 'bg-purple-500',
+  'ranking': 'bg-orange-500',
+  'matching': 'bg-pink-500',
+  'fill-blank': 'bg-indigo-500',
+  'drag-drop': 'bg-teal-500',
+  'single-choice': 'bg-cyan-500',
+  'likert-scale': 'bg-amber-500',
+  'frequency-scale': 'bg-lime-500',
+  'star-rating': 'bg-yellow-500',
+  'open-text': 'bg-rose-500',
+  'hotspot': 'bg-violet-500',
+};
+
 export const QuestionTypeSelector = ({ questionTypes, selectedType, onSelectType }: QuestionTypeSelectorProps) => {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
       {questionTypes.map((type) => {
         const Icon = iconMap[type] || CheckSquare;
+        const bgColor = colorMap[type] || 'bg-blue-500';
         const isSelected = selectedType === type;
         
         return (
@@ -54,9 +71,7 @@ export const QuestionTypeSelector = ({ questionTypes, selectedType, onSelectType
             onClick={() => onSelectType(type)}
           >
             <CardContent className="p-4 flex flex-col items-center text-center gap-3">
-              <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-                isSelected ? 'bg-primary text-primary-foreground' : 'bg-muted'
-              }`}>
+              <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${bgColor} text-white shadow-sm`}>
                 <Icon className="w-6 h-6" />
               </div>
               <div className="space-y-1">
