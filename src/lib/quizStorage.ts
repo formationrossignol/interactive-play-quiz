@@ -15,6 +15,9 @@ export interface SavedQuiz {
   category: string;
   type: 'quiz' | 'poll';
   headerImage?: string;
+  theme?: string;
+  rating?: number;
+  ratingCount?: number;
 }
 
 const QUIZ_STORAGE_KEY = 'saved_quizzes';
@@ -88,4 +91,26 @@ export const toggleFavorite = (id: string): SavedQuiz | null => {
   if (!quiz) return null;
   
   return updateQuiz(id, { isFavorite: !quiz.isFavorite });
+};
+
+export const rateQuiz = (id: string, rating: number): SavedQuiz | null => {
+  const quizzes = getSavedQuizzes();
+  const quiz = quizzes.find(q => q.id === id);
+  
+  if (!quiz || !quiz.isPublic) return null;
+  
+  const currentRating = quiz.rating || 0;
+  const currentCount = quiz.ratingCount || 0;
+  const newCount = currentCount + 1;
+  const newRating = (currentRating * currentCount + rating) / newCount;
+  
+  return updateQuiz(id, { 
+    rating: newRating,
+    ratingCount: newCount 
+  });
+};
+
+export const getQuizById = (id: string): SavedQuiz | null => {
+  const quizzes = getSavedQuizzes();
+  return quizzes.find(q => q.id === id) || null;
 };

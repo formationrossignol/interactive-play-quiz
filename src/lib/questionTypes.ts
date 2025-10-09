@@ -7,7 +7,8 @@ export type QuizQuestionType =
   | 'matching'         // Association / appariement
   | 'fill-blank'       // Remplir les blancs
   | 'drag-drop'        // Glisser-déposer
-  | 'hotspot';         // Zones cliquables
+  | 'hotspot'          // Zones cliquables
+  | 'slider';          // Curseur
 
 // Types de questions pour les sondages
 export type PollQuestionType = 
@@ -17,7 +18,8 @@ export type PollQuestionType =
   | 'frequency-scale'  // Échelle de fréquence
   | 'star-rating'      // Évaluation par étoiles
   | 'ranking'          // Classement / Priorisation
-  | 'open-text';       // Question ouverte (texte)
+  | 'open-text'        // Question ouverte (texte)
+  | 'nps-scale';       // Échelle NPS
 
 export interface BaseQuestion {
   id: string;
@@ -98,15 +100,32 @@ export interface OpenTextQuestion extends BaseQuestion {
   minLength?: number;
 }
 
-export type QuizQuestion = 
-  | MultipleChoiceQuestion 
-  | TrueFalseQuestion 
-  | ShortAnswerQuestion 
+export interface NPSScaleQuestion extends BaseQuestion {
+  type: 'nps-scale';
+  minLabel?: string;
+  maxLabel?: string;
+}
+
+export interface SliderQuestion extends BaseQuestion {
+  type: 'slider';
+  min: number;
+  max: number;
+  step: number;
+  minLabel?: string;
+  maxLabel?: string;
+  correctValue?: number;
+}
+
+export type QuizQuestion =
+  | MultipleChoiceQuestion
+  | TrueFalseQuestion
+  | ShortAnswerQuestion
   | RankingQuestion
   | MatchingQuestion
   | FillBlankQuestion
   | DragDropQuestion
-  | HotspotQuestion;
+  | HotspotQuestion
+  | SliderQuestion;
 
 export type PollQuestion = 
   | MultipleChoiceQuestion
@@ -114,7 +133,8 @@ export type PollQuestion =
   | LikertScaleQuestion
   | FrequencyScaleQuestion
   | StarRatingQuestion
-  | OpenTextQuestion;
+  | OpenTextQuestion
+  | NPSScaleQuestion;
 
 export type Question = QuizQuestion | PollQuestion;
 
@@ -129,12 +149,14 @@ export const getQuestionTypeLabel = (type: QuizQuestionType | PollQuestionType):
     'fill-blank': 'Remplir les Blancs',
     'drag-drop': 'Glisser-Déposer',
     'hotspot': 'Zones Cliquables',
+    'slider': 'Curseur',
     // Poll types
     'single-choice': 'Choix Unique',
     'likert-scale': 'Échelle de Likert',
     'frequency-scale': 'Échelle de Fréquence',
     'star-rating': 'Notation par Étoiles',
     'open-text': 'Question Ouverte',
+    'nps-scale': 'Échelle NPS',
   };
   return labels[type] || type;
 };
@@ -150,12 +172,14 @@ export const getQuestionTypeDescription = (type: QuizQuestionType | PollQuestion
     'fill-blank': 'Phrase à trous à compléter',
     'drag-drop': 'Glisser-déposer des éléments dans la bonne zone',
     'hotspot': 'Cliquer sur la bonne partie d\'une image',
+    'slider': 'Réponse par déplacement de curseur',
     // Poll types
     'single-choice': 'Une seule réponse possible parmi plusieurs',
     'likert-scale': 'Échelle d\'accord (Tout à fait d\'accord → Pas du tout)',
     'frequency-scale': 'Échelle de fréquence (Jamais → Toujours)',
     'star-rating': 'Évaluation par étoiles (1 à 5)',
     'open-text': 'Réponse libre en texte',
+    'nps-scale': 'Échelle de recommandation 0-10',
   };
   return descriptions[type] || '';
 };

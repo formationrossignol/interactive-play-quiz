@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Header } from "@/components/Header";
 import { getCurrentUser } from "@/lib/auth";
 import { getUserQuizzes, getPublicQuizzes, getFavoriteQuizzes, deleteQuiz, toggleFavorite, SavedQuiz } from "@/lib/quizStorage";
-import { Star, Trash2, Play, Globe, Lock } from "lucide-react";
+import { Star, Trash2, Play, Globe, Lock, Edit } from "lucide-react";
 import { toast } from "sonner";
 import { DeleteQuizDialog } from "@/components/DeleteQuizDialog";
 
@@ -66,6 +66,11 @@ const MyQuizzes = () => {
     navigate(`/quiz/${quiz.id}`);
   };
 
+  const handleEditQuiz = (e: React.MouseEvent, quizId: string) => {
+    e.stopPropagation();
+    navigate(`/builder?id=${quizId}`);
+  };
+
   const QuizCard = ({ quiz, showDelete = false }: { quiz: SavedQuiz; showDelete?: boolean }) => (
     <Card className="group relative overflow-hidden bg-gradient-to-br from-card via-card to-card/95 border-border/50 hover:border-primary/30 hover:shadow-card transition-all duration-300">
       {quiz.headerImage && (
@@ -112,17 +117,27 @@ const MyQuizzes = () => {
           <div className="flex items-center justify-between pt-2 border-t border-border/50">
             <div className="flex gap-2">
               {showDelete && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteClick(quiz);
-                  }}
-                  className="text-destructive hover:bg-destructive/10"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
+                <>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => handleEditQuiz(e, quiz.id)}
+                    className="text-primary hover:bg-primary/10"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteClick(quiz);
+                    }}
+                    className="text-destructive hover:bg-destructive/10"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </>
               )}
             </div>
             <Button

@@ -34,6 +34,8 @@ const iconMap: Partial<Record<QuizQuestionType | PollQuestionType, any>> = {
   'star-rating': Star,
   'open-text': MessageSquare,
   'hotspot': CheckSquare,
+  'nps-scale': BarChart3,
+  'slider': ArrowUpDown,
 };
 
 const colorMap: Partial<Record<QuizQuestionType | PollQuestionType, string>> = {
@@ -50,6 +52,8 @@ const colorMap: Partial<Record<QuizQuestionType | PollQuestionType, string>> = {
   'star-rating': 'bg-yellow-500',
   'open-text': 'bg-rose-500',
   'hotspot': 'bg-violet-500',
+  'nps-scale': 'bg-emerald-500',
+  'slider': 'bg-sky-500',
 };
 
 export const QuestionTypeSelector = ({ questionTypes, selectedType, onSelectType }: QuestionTypeSelectorProps) => {
