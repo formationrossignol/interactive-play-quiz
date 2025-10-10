@@ -6,9 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Header } from "@/components/Header";
-import { getPublicQuizzes } from "@/lib/quizStorage";
+import { RatingStars } from "@/components/RatingStars";
+import { getPublicQuizzes, rateQuiz } from "@/lib/quizStorage";
 import { Search, Play, Clock, Users, Filter } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
+import { toast } from "sonner";
 import { t } from "@/lib/i18n";
 
 const QUIZ_CATEGORIES = [
@@ -58,6 +60,14 @@ const DiscoverQuizzes = () => {
     if (quiz) {
       localStorage.setItem('current-quiz', JSON.stringify(quiz));
       navigate(`/quiz/${quizId}`);
+    }
+  };
+
+  const handleRateQuiz = (quizId: string, rating: number) => {
+    const result = rateQuiz(quizId, rating);
+    if (result) {
+      toast.success("Merci pour votre note !");
+      window.location.reload(); // Reload to show updated rating
     }
   };
 
@@ -190,6 +200,17 @@ const DiscoverQuizzes = () => {
                     </div>
                   )}
                 </div>
+
+                {quiz.type === 'quiz' && (
+                  <div className="mb-3">
+                    <RatingStars
+                      rating={quiz.rating || 0}
+                      ratingCount={quiz.ratingCount}
+                      onRate={(rating) => handleRateQuiz(quiz.id, rating)}
+                      readonly={quiz.userId === user?.id}
+                    />
+                  </div>
+                )}
 
                 <Button
                   className="w-full"

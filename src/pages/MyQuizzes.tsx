@@ -5,8 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Header } from "@/components/Header";
+import { RatingStars } from "@/components/RatingStars";
 import { getCurrentUser } from "@/lib/auth";
-import { getUserQuizzes, getPublicQuizzes, getFavoriteQuizzes, deleteQuiz, toggleFavorite, SavedQuiz } from "@/lib/quizStorage";
+import { getUserQuizzes, getPublicQuizzes, getFavoriteQuizzes, deleteQuiz, toggleFavorite, rateQuiz, SavedQuiz } from "@/lib/quizStorage";
 import { Star, Trash2, Play, Globe, Lock, Edit } from "lucide-react";
 import { toast } from "sonner";
 import { DeleteQuizDialog } from "@/components/DeleteQuizDialog";
@@ -68,7 +69,15 @@ const MyQuizzes = () => {
 
   const handleEditQuiz = (e: React.MouseEvent, quizId: string) => {
     e.stopPropagation();
-    navigate(`/builder?id=${quizId}`);
+    navigate(`/builder?type=quiz&quizId=${quizId}`);
+  };
+
+  const handleRateQuiz = (quizId: string, rating: number) => {
+    const result = rateQuiz(quizId, rating);
+    if (result) {
+      toast.success("Merci pour votre note !");
+      loadQuizzes();
+    }
   };
 
   const QuizCard = ({ quiz, showDelete = false }: { quiz: SavedQuiz; showDelete?: boolean }) => (
@@ -114,6 +123,18 @@ const MyQuizzes = () => {
               </Badge>
             ))}
           </div>
+          
+          {quiz.isPublic && (
+            <div className="pt-2 border-t border-border/50">
+              <RatingStars
+                rating={quiz.rating || 0}
+                ratingCount={quiz.ratingCount}
+                onRate={(rating) => handleRateQuiz(quiz.id, rating)}
+                readonly={quiz.userId === user?.id}
+              />
+            </div>
+          )}
+          
           <div className="flex items-center justify-between pt-2 border-t border-border/50">
             <div className="flex gap-2">
               {showDelete && (

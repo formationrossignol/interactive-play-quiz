@@ -5,8 +5,10 @@ import { Button } from "@/components/ui/button";
 import { FileText, Sparkles, ArrowRight } from "lucide-react";
 import { Header } from "@/components/Header";
 import { PollTemplateSelectorEnhanced } from "@/components/PollTemplateSelectorEnhanced";
+import { QuizTemplateSelectorEnhanced } from "@/components/QuizTemplateSelectorEnhanced";
 import { t } from "@/lib/i18n";
 import type { PollTemplate } from "@/lib/pollTemplates";
+import type { QuizTemplate } from "@/lib/quizTemplates";
 
 export const QuizBuilderStart = () => {
   const navigate = useNavigate();
@@ -21,7 +23,7 @@ export const QuizBuilderStart = () => {
     navigate(`/builder?type=${quizType}`);
   };
 
-  const handleSelectTemplate = (template: PollTemplate) => {
+  const handleSelectTemplate = (template: PollTemplate | QuizTemplate) => {
     navigate(`/builder?type=${quizType}&templateId=${template.id}`);
   };
 
@@ -93,10 +95,17 @@ export const QuizBuilderStart = () => {
             >
               ← {t('back')}
             </Button>
-            <PollTemplateSelectorEnhanced
-              selectedTemplateId={null}
-              onSelectTemplate={handleSelectTemplate}
-            />
+            {isPoll ? (
+              <PollTemplateSelectorEnhanced
+                selectedTemplateId={null}
+                onSelectTemplate={handleSelectTemplate}
+              />
+            ) : (
+              <QuizTemplateSelectorEnhanced
+                selectedTemplateId={null}
+                onSelectTemplate={handleSelectTemplate}
+              />
+            )}
           </div>
         )}
       </div>

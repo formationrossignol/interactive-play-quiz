@@ -15,8 +15,10 @@ import { Plus, Trash2, Save, Upload, HelpCircle, GripVertical, Settings, Menu, X
 import { QuizPreview } from "./QuizPreview";
 import { QuestionTypeSelector } from "./QuestionTypeSelector";
 import { getCurrentUser, logout } from "@/lib/auth";
-import { saveQuiz } from "@/lib/quizStorage";
+import { saveQuiz, updateQuiz, getQuizById } from "@/lib/quizStorage";
 import { getPollTemplate } from "@/lib/pollTemplates";
+import { getQuizTemplate } from "@/lib/quizTemplates";
+import { THEMES } from "@/lib/themes";
 import { toast } from "sonner";
 import { getQuestionTypeLabel } from "@/lib/questionTypes";
 import { t } from "@/lib/i18n";
@@ -85,6 +87,7 @@ export const QuizBuilder = () => {
   const searchParams = new URLSearchParams(location.search);
   const quizType = (searchParams.get('type') || 'quiz') as 'quiz' | 'poll';
   const templateId = searchParams.get('templateId');
+  const quizId = searchParams.get('quizId');
   const user = getCurrentUser();
   
   const isPoll = quizType === 'poll';
@@ -101,6 +104,7 @@ export const QuizBuilder = () => {
   const [tags, setTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState("");
   const [headerImage, setHeaderImage] = useState("");
+  const [theme, setTheme] = useState("default");
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const sensors = useSensors(
@@ -116,24 +120,65 @@ export const QuizBuilder = () => {
     }
   }, [user, navigate]);
 
+  // Load existing quiz for editing
   useEffect(() => {
-    if (templateId && isPoll) {
-      const template = getPollTemplate(templateId);
-      if (template) {
-        setTitle(template.name);
-        setDescription(template.description);
-        setCategory(template.category);
-        
-        const templateQuestions = template.questions.map((q, index) => ({
-          id: Date.now().toString() + index,
+    if (quizId) {
+      const existingQuiz = getQuizById(quizId);
+      if (existingQuiz) {
+        setTitle(existingQuiz.title);
+        setDescription(existingQuiz.description);
+        setCategory(existingQuiz.category);
+        setIsPublic(existingQuiz.isPublic);
+        setSpeedBonus(existingQuiz.speedBonus);
+        setTransitionTime(existingQuiz.transitionTime);
+        setTags(existingQuiz.tags || []);
+        setHeaderImage(existingQuiz.headerImage || "");
+        setTheme(existingQuiz.theme || "default");
+        setQuestions(existingQuiz.questions.map((q, index) => ({
+          id: q.id || Date.now().toString() + index,
           ...q
-        }));
-        
-        setQuestions(templateQuestions);
-        toast.success(t('templateLoaded'));
+        })));
+        toast.success("Quiz chargé pour édition");
       }
     }
-  }, [templateId, isPoll]);
+  }, [quizId]);
+
+  // Load template
+  useEffect(() => {
+    if (templateId && !quizId) {
+      if (isPoll) {
+        const template = getPollTemplate(templateId);
+        if (template) {
+          setTitle(template.name);
+          setDescription(template.description);
+          setCategory(template.category);
+          
+          const templateQuestions = template.questions.map((q, index) => ({
+            id: Date.now().toString() + index,
+            ...q
+          }));
+          
+          setQuestions(templateQuestions);
+          toast.success(t('templateLoaded'));
+        }
+      } else {
+        const template = getQuizTemplate(templateId);
+        if (template) {
+          setTitle(template.name);
+          setDescription(template.description);
+          setCategory(template.category);
+          
+          const templateQuestions = template.questions.map((q, index) => ({
+            id: Date.now().toString() + index,
+            ...q
+          }));
+          
+          setQuestions(templateQuestions);
+          toast.success(t('templateLoaded'));
+        }
+      }
+    }
+  }, [templateId, isPoll, quizId]);
 
   function getDefaultQuestion(type?: QuizQuestionType | PollQuestionType): any {
     if (isPoll) {
@@ -158,6 +203,8 @@ export const QuizBuilder = () => {
           return { ...base, items: ['', '', '', ''] };
         case 'open-text':
           return { ...base, maxLength: 500 };
+        case 'nps-scale':
+          return { ...base, minLabel: "Pas du tout probable", maxLabel: "Extrêmement probable" };
         default:
           return { ...base, answers: ['', '', '', ''] };
       }
@@ -189,6 +236,8 @@ export const QuizBuilder = () => {
           };
         case 'fill-blank':
           return { ...base, text: '', blanks: [{ id: '1', correctAnswer: '', acceptableAnswers: [] }] };
+        case 'slider':
+          return { ...base, min: 0, max: 100, step: 1, correctValue: 50, minLabel: "", maxLabel: "" };
         default:
           return { ...base, answers: ['', '', '', ''], correctAnswer: 0 };
       }
@@ -197,9 +246,9 @@ export const QuizBuilder = () => {
 
   const getAvailableQuestionTypes = (): (QuizQuestionType | PollQuestionType)[] => {
     if (isPoll) {
-      return ['single-choice', 'multiple-choice', 'likert-scale', 'frequency-scale', 'star-rating', 'ranking', 'open-text'];
+      return ['single-choice', 'multiple-choice', 'likert-scale', 'frequency-scale', 'star-rating', 'ranking', 'open-text', 'nps-scale'];
     }
-    return ['multiple-choice', 'true-false', 'short-answer', 'ranking', 'matching', 'fill-blank'];
+    return ['multiple-choice', 'true-false', 'short-answer', 'ranking', 'matching', 'fill-blank', 'slider'];
   };
 
   const handleAddQuestion = () => {
@@ -262,7 +311,7 @@ export const QuizBuilder = () => {
     }
 
     try {
-      saveQuiz({
+      const quizData = {
         title,
         description,
         questions,
@@ -274,9 +323,19 @@ export const QuizBuilder = () => {
         category,
         type: quizType,
         headerImage,
-      });
+        theme,
+      };
 
-      toast.success(isPoll ? t('pollSaved') : t('quizSaved'));
+      if (quizId) {
+        // Update existing quiz
+        updateQuiz(quizId, quizData);
+        toast.success(isPoll ? "Sondage mis à jour" : "Quiz mis à jour");
+      } else {
+        // Create new quiz
+        saveQuiz(quizData);
+        toast.success(isPoll ? t('pollSaved') : t('quizSaved'));
+      }
+
       navigate(isPoll ? '/my-polls' : '/my-quizzes');
     } catch (error) {
       toast.error("Erreur lors de l'enregistrement");
@@ -614,6 +673,37 @@ export const QuizBuilder = () => {
                       />
                     </div>
                   )}
+
+                  <div>
+                    <Label>Thème visuel</Label>
+                    <Select value={theme} onValueChange={setTheme}>
+                      <SelectTrigger className="mt-2">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover z-50">
+                        {THEMES.map((t) => (
+                          <SelectItem key={t.id} value={t.id}>
+                            {t.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    
+                    {/* Theme Preview */}
+                    <div className="mt-4 p-4 rounded-lg border overflow-hidden">
+                      <p className="text-xs text-muted-foreground mb-2">Aperçu du thème :</p>
+                      <div 
+                        className="h-32 rounded-md flex items-center justify-center"
+                        style={{
+                          background: THEMES.find(t => t.id === theme)?.background || 'linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary)) 100%)'
+                        }}
+                      >
+                        <span className="text-white font-bold text-lg drop-shadow-lg">
+                          {THEMES.find(t => t.id === theme)?.name}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </DialogContent>
             </Dialog>
@@ -731,6 +821,7 @@ export const QuizBuilder = () => {
                 headerImage={headerImage}
                 questions={questions}
                 isPoll={isPoll}
+                theme={theme}
               />
             </div>
           </div>

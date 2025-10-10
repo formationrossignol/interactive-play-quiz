@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Clock, Trophy } from "lucide-react";
 import { getQuestionTypeLabel } from "@/lib/questionTypes";
+import { THEMES } from "@/lib/themes";
 import { t } from "@/lib/i18n";
 
 interface QuizPreviewProps {
@@ -11,9 +12,12 @@ interface QuizPreviewProps {
   headerImage?: string;
   questions: any[];
   isPoll: boolean;
+  theme?: string;
 }
 
-export const QuizPreview = ({ title, description, category, headerImage, questions, isPoll }: QuizPreviewProps) => {
+export const QuizPreview = ({ title, description, category, headerImage, questions, isPoll, theme = "default" }: QuizPreviewProps) => {
+  const selectedTheme = THEMES.find(t => t.id === theme);
+  
   return (
     <Card className="sticky top-6">
       <CardHeader>
@@ -23,11 +27,22 @@ export const QuizPreview = ({ title, description, category, headerImage, questio
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {headerImage && (
-          <div className="w-full h-40 rounded-lg overflow-hidden">
-            <img src={headerImage} alt="Header" className="w-full h-full object-cover" />
-          </div>
-        )}
+        {/* Theme preview */}
+        <div 
+          className="w-full h-40 rounded-lg overflow-hidden flex items-center justify-center relative"
+          style={{
+            background: selectedTheme?.background || 'linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary)) 100%)'
+          }}
+        >
+          {headerImage && (
+            <img src={headerImage} alt="Header" className="w-full h-full object-cover absolute inset-0" />
+          )}
+          {!headerImage && (
+            <span className="text-white font-bold text-xl drop-shadow-lg">
+              {title || (isPoll ? "Mon Sondage" : "Mon Quiz")}
+            </span>
+          )}
+        </div>
         
         <div>
           <h3 className="text-2xl font-bold text-foreground mb-2">
