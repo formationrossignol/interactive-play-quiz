@@ -40,7 +40,7 @@ export const Header = ({ subtitle }: HeaderProps) => {
   };
 
   return (
-    <nav className="p-6 border-b border-white/10 bg-background/50 backdrop-blur-sm">
+    <nav className="p-6 border-b border-primary/20 bg-primary/5 backdrop-blur-sm">
       <div className="max-w-6xl mx-auto flex items-center justify-between">
         <div 
           className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
