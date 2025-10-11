@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Plus, Trash2, Save, Upload, HelpCircle, GripVertical, Settings, Menu, X, Home, BarChart3, User, LogOut, Zap, Play, Copy } from "lucide-react";
 import { QuizPreview } from "./QuizPreview";
 import { QuestionTypeSelector } from "./QuestionTypeSelector";
+import { Header } from "./Header";
 import { getCurrentUser, logout } from "@/lib/auth";
 import { saveQuiz, updateQuiz, getQuizById } from "@/lib/quizStorage";
 import { getPollTemplate } from "@/lib/pollTemplates";
@@ -534,14 +535,16 @@ export const QuizBuilder = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <div className="border-b bg-card">
-        <div className="flex items-center justify-between px-4 h-14">
+      <Header subtitle={isPoll ? t('pollBuilder') : t('quizBuilder')} />
+      
+      {/* Toolbar */}
+      <div className="border-b bg-card/50 backdrop-blur-sm">
+        <div className="flex items-center justify-between px-4 h-12">
           <div className="flex items-center gap-3">
             <Button
               variant="ghost"
-              size="sm"
+              size="icon"
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="lg:hidden"
             >
               {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </Button>
@@ -555,9 +558,8 @@ export const QuizBuilder = () => {
           <div className="flex items-center gap-2">
             <Dialog>
               <DialogTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Settings className="w-4 h-4 mr-2" />
-                  {t('settings')}
+                <Button variant="outline" size="icon" title={t('settings')}>
+                  <Settings className="w-4 h-4" />
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
@@ -750,15 +752,15 @@ export const QuizBuilder = () => {
             </Dialog>
             <Button 
               variant="outline"
+              size="icon"
               onClick={handlePreviewQuiz}
               disabled={questions.length === 0}
+              title="Lancer"
             >
-              <Play className="w-4 h-4 mr-2" />
-              Lancer
+              <Play className="w-4 h-4" />
             </Button>
-            <Button onClick={handleSaveQuiz}>
-              <Save className="w-4 h-4 mr-2" />
-              {t('save')}
+            <Button onClick={handleSaveQuiz} size="icon" title={t('save')}>
+              <Save className="w-4 h-4" />
             </Button>
           </div>
         </div>
