@@ -86,27 +86,30 @@ export const Header = ({ subtitle }: HeaderProps) => {
             <>
               <Button
                 variant="outline"
+                size="icon"
                 onClick={() => navigate('/my-quizzes')}
-                className="hidden rounded-full border-white/60 bg-white/60 text-sm font-medium text-foreground/70 shadow-[0_10px_30px_-18px_rgba(15,26,61,0.5)] transition-all duration-300 hover:border-[#0f1a3d]/25 hover:text-foreground sm:flex"
+                className="h-10 w-10 rounded-full border-white/60 bg-white/60 text-foreground/70 shadow-[0_10px_30px_-18px_rgba(15,26,61,0.5)] transition-all duration-300 hover:border-[#0f1a3d]/25 hover:text-foreground"
+                title={t('myQuizzes')}
               >
-                <BookOpen className="mr-2 h-4 w-4" />
-                {t('myQuizzes')}
+                <BookOpen className="h-4 w-4" />
               </Button>
               <Button
                 variant="outline"
+                size="icon"
                 onClick={() => navigate('/my-polls')}
-                className="hidden rounded-full border-white/60 bg-white/60 text-sm font-medium text-foreground/70 shadow-[0_10px_30px_-18px_rgba(15,26,61,0.5)] transition-all duration-300 hover:border-[#0f1a3d]/25 hover:text-foreground md:flex"
+                className="h-10 w-10 rounded-full border-white/60 bg-white/60 text-foreground/70 shadow-[0_10px_30px_-18px_rgba(15,26,61,0.5)] transition-all duration-300 hover:border-[#0f1a3d]/25 hover:text-foreground"
+                title={t('myPolls')}
               >
-                <BarChart3 className="mr-2 h-4 w-4" />
-                {t('myPolls')}
+                <BarChart3 className="h-4 w-4" />
               </Button>
               <Button
                 variant="outline"
+                size="icon"
                 onClick={() => navigate('/profile')}
-                className="rounded-full border-white/60 bg-white/60 px-4 text-sm font-medium text-foreground/80 shadow-[0_10px_30px_-18px_rgba(15,26,61,0.5)] transition-all duration-300 hover:border-[#0f1a3d]/25 hover:text-foreground"
+                className="h-10 w-10 rounded-full border-white/60 bg-white/60 text-foreground/80 shadow-[0_10px_30px_-18px_rgba(15,26,61,0.5)] transition-all duration-300 hover:border-[#0f1a3d]/25 hover:text-foreground"
+                title={user.username}
               >
                 <User className="h-4 w-4" />
-                <span className="hidden sm:inline">{user.username}</span>
               </Button>
               <Button
                 variant="ghost"

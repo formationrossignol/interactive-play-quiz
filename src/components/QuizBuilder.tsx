@@ -115,6 +115,7 @@ export const QuizBuilder = () => {
   const [headerImage, setHeaderImage] = useState("");
   const [theme, setTheme] = useState("default");
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [selectedQuestionIndex, setSelectedQuestionIndex] = useState<number | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -843,11 +844,14 @@ export const QuizBuilder = () => {
               >
                 <div className="space-y-2">
                   {questions.map((question, index) => (
-                    <SortableQuestionItem
+                     <SortableQuestionItem
                       key={question.id}
                       question={question}
                       index={index}
-                      onEdit={handleEditQuestion}
+                      onEdit={(idx: number) => {
+                        handleEditQuestion(idx);
+                        setSelectedQuestionIndex(idx);
+                      }}
                       onDelete={handleDeleteQuestion}
                       onDuplicate={handleDuplicateQuestion}
                     />
@@ -863,15 +867,27 @@ export const QuizBuilder = () => {
           {/* Preview */}
           <div className="flex-1 overflow-y-auto p-6">
             <div className="max-w-3xl mx-auto">
-              <QuizPreview
-                title={title || (isPoll ? "Mon Sondage" : "Mon Quiz") }
-                description={description}
-                category={category}
-                headerImage={headerImage}
-                questions={questions}
-                isPoll={isPoll}
-                theme={theme}
-              />
+              {selectedQuestionIndex !== null && questions[selectedQuestionIndex] ? (
+                <QuizPreview
+                  title={title || (isPoll ? "Mon Sondage" : "Mon Quiz") }
+                  description={description}
+                  category={category}
+                  headerImage={headerImage}
+                  questions={[questions[selectedQuestionIndex]]}
+                  isPoll={isPoll}
+                  theme={theme}
+                />
+              ) : (
+                <QuizPreview
+                  title={title || (isPoll ? "Mon Sondage" : "Mon Quiz") }
+                  description={description}
+                  category={category}
+                  headerImage={headerImage}
+                  questions={questions}
+                  isPoll={isPoll}
+                  theme={theme}
+                />
+              )}
             </div>
           </div>
         </div>
