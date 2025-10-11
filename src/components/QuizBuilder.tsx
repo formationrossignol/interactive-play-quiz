@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Trash2, Save, Upload, HelpCircle, GripVertical, Settings, Menu, X, Home, BarChart3, User, LogOut, Zap } from "lucide-react";
+import { Plus, Trash2, Save, Upload, HelpCircle, GripVertical, Settings, Menu, X, Home, BarChart3, User, LogOut, Zap, Play, Copy } from "lucide-react";
 import { QuizPreview } from "./QuizPreview";
 import { QuestionTypeSelector } from "./QuestionTypeSelector";
 import { getCurrentUser, logout } from "@/lib/auth";
@@ -42,7 +42,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 
 // Sortable Question Item Component
-const SortableQuestionItem = ({ question, index, onEdit, onDelete }: any) => {
+const SortableQuestionItem = ({ question, index, onEdit, onDelete, onDuplicate }: any) => {
   const {
     attributes,
     listeners,
@@ -60,7 +60,7 @@ const SortableQuestionItem = ({ question, index, onEdit, onDelete }: any) => {
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-2 p-3 bg-card border rounded-lg hover:shadow-sm transition-shadow"
+      className="group flex items-center gap-2 p-3 bg-card border rounded-lg hover:shadow-sm transition-shadow"
     >
       <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing">
         <GripVertical className="w-4 h-4 text-muted-foreground" />
@@ -70,6 +70,15 @@ const SortableQuestionItem = ({ question, index, onEdit, onDelete }: any) => {
         <p className="text-xs text-muted-foreground">{getQuestionTypeLabel(question.type)}</p>
       </div>
       <div className="flex gap-1">
+        <Button 
+          variant="ghost" 
+          size="icon"
+          className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+          onClick={() => onDuplicate(index)}
+          title="Dupliquer"
+        >
+          <Copy className="w-4 h-4" />
+        </Button>
         <Button variant="ghost" size="sm" onClick={() => onEdit(index)}>
           {t('edit')}
         </Button>
@@ -340,6 +349,37 @@ export const QuizBuilder = () => {
     } catch (error) {
       toast.error("Erreur lors de l'enregistrement");
     }
+  };
+
+  const handlePreviewQuiz = () => {
+    if (questions.length === 0) {
+      toast.error("Ajoutez au moins une question pour prévisualiser");
+      return;
+    }
+    // Save temporary quiz data for preview
+    const tempQuiz = {
+      id: 'preview-' + Date.now(),
+      title: title || (isPoll ? "Mon Sondage" : "Mon Quiz"),
+      description,
+      questions,
+      type: quizType,
+      headerImage,
+      theme,
+    };
+    localStorage.setItem(`quiz-${tempQuiz.id}`, JSON.stringify(tempQuiz));
+    navigate(`/quiz/${tempQuiz.id}`);
+  };
+
+  const handleDuplicateQuestion = (index: number) => {
+    const questionToDuplicate = questions[index];
+    const duplicatedQuestion = {
+      ...questionToDuplicate,
+      id: Date.now().toString(),
+    };
+    const newQuestions = [...questions];
+    newQuestions.splice(index + 1, 0, duplicatedQuestion);
+    setQuestions(newQuestions);
+    toast.success("Question dupliquée");
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -707,6 +747,14 @@ export const QuizBuilder = () => {
                 </div>
               </DialogContent>
             </Dialog>
+            <Button 
+              variant="outline"
+              onClick={handlePreviewQuiz}
+              disabled={questions.length === 0}
+            >
+              <Play className="w-4 h-4 mr-2" />
+              Lancer
+            </Button>
             <Button onClick={handleSaveQuiz}>
               <Save className="w-4 h-4 mr-2" />
               {t('save')}
@@ -801,6 +849,7 @@ export const QuizBuilder = () => {
                       index={index}
                       onEdit={handleEditQuestion}
                       onDelete={handleDeleteQuestion}
+                      onDuplicate={handleDuplicateQuestion}
                     />
                   ))}
                 </div>

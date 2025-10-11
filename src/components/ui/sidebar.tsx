@@ -192,7 +192,7 @@ const Sidebar = React.forwardRef<
       />
       <div
         className={cn(
-          "fixed inset-y-0 z-10 hidden h-svh w-[--sidebar-width] transition-[left,right,width] duration-200 ease-linear md:flex",
+          "fixed inset-y-0 z-40 hidden h-screen w-[--sidebar-width] transition-[left,right,width] duration-200 ease-linear md:flex",
           side === "left"
             ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
             : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
@@ -206,7 +206,7 @@ const Sidebar = React.forwardRef<
       >
         <div
           data-sidebar="sidebar"
-          className="flex h-full w-full flex-col bg-accent/10 backdrop-blur-sm border-r border-accent/20 group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow"
+          className="flex h-full w-full flex-col bg-accent/10 backdrop-blur-sm border-r border-accent/20 group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow overflow-y-auto"
         >
           {children}
         </div>
@@ -226,7 +226,7 @@ const SidebarTrigger = React.forwardRef<React.ElementRef<typeof Button>, React.C
         data-sidebar="trigger"
         variant="ghost"
         size="icon"
-        className={cn("h-7 w-7 fixed top-4 left-4 z-50 bg-background/80 backdrop-blur-sm hover:bg-accent/20 border border-border/50", className)}
+        className={cn("h-9 w-9 fixed top-4 left-4 z-[100] bg-background/95 backdrop-blur-sm hover:bg-accent/20 border border-border/50 shadow-lg", className)}
         onClick={(event) => {
           onClick?.(event);
           toggleSidebar();

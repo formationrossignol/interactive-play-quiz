@@ -72,7 +72,7 @@ const MyPolls = () => {
 
   const handleEditPoll = (e: React.MouseEvent, pollId: string) => {
     e.stopPropagation();
-    navigate(`/builder?id=${pollId}`);
+    navigate(`/builder?type=poll&quizId=${pollId}`);
   };
 
   const PollCard = ({ poll, showDelete = false }: { poll: SavedQuiz; showDelete?: boolean }) => (
