@@ -50,13 +50,14 @@ export const QuizPreview = ({
         backgroundSize: "cover",
         backgroundPosition: "center",
       }
-    : selectedTheme
-      ? {
-          backgroundImage: selectedTheme.preview,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }
-      : { background: themeOverlay };
+    : {
+        backgroundImage: `linear-gradient(135deg, ${hexToRgba("#0f172a", 0.88)}, ${hexToRgba(
+          "#1e293b",
+          0.82,
+        )})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      };
 
   const questionToShow =
     selectedQuestionIndex !== null &&
@@ -223,19 +224,8 @@ export const QuizPreview = ({
   };
 
   return (
-    <div className="relative flex h-full flex-col overflow-hidden rounded-3xl border border-border/60 shadow-sm">
-      <div className="absolute inset-0" style={backgroundStyle} aria-hidden />
-      <div
-        className="absolute inset-0 backdrop-blur-sm"
-        style={{ background: neutralOverlay }}
-        aria-hidden
-      />
-      <div
-        className="absolute inset-0"
-        style={{ background: themeOverlay, mixBlendMode: "multiply" }}
-        aria-hidden
-      />
-      <div className="relative z-10 mx-auto flex w-full max-w-5xl flex-1 flex-col overflow-hidden text-foreground">
+    <div className="relative flex h-full flex-col overflow-hidden rounded-3xl border border-border/60 bg-white shadow-sm">
+      <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col overflow-hidden text-foreground">
         <header className="relative overflow-hidden">
           <div className="absolute inset-0" style={headerBackgroundStyle} aria-hidden />
           <div className="absolute inset-0 bg-slate-900/45" aria-hidden />
@@ -257,43 +247,60 @@ export const QuizPreview = ({
                   <p className="max-w-2xl text-sm text-white/85 sm:text-base">{description}</p>
                 )}
               </div>
-              <div className="rounded-full bg-white/15 px-4 py-2 text-sm font-medium text-white shadow-sm backdrop-blur">
-                {t("question")} {questionIndex + 1} / {questions.length}
+              <div className="flex flex-col items-end gap-3 text-sm text-white/90">
+                <div className="rounded-full bg-white/15 px-4 py-2 font-medium text-white shadow-sm backdrop-blur">
+                  {t("question")} {questionIndex + 1} / {questions.length}
+                </div>
+                {!isPoll && (
+                  <div className="flex flex-wrap items-center justify-end gap-4">
+                    <span className="flex items-center gap-2">
+                      <Clock className="h-4 w-4" />
+                      {questionToShow.timeLimit}s
+                    </span>
+                    <span className="flex items-center gap-2">
+                      <Trophy className="h-4 w-4" />
+                      {questionToShow.points} pts
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
         </header>
 
-        <div className="flex-1 space-y-6 bg-white/75 px-5 py-6 backdrop-blur sm:px-10 sm:py-8">
-          <div className="space-y-4">
-            <h2 className="text-2xl font-semibold leading-snug sm:text-3xl">
-              {questionToShow.question?.trim() || t("noQuestionText")}
-            </h2>
-            {!isPoll && (
-              <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                <span className="flex items-center gap-2">
-                  <Clock className="h-4 w-4" />
-                  {questionToShow.timeLimit}s
-                </span>
-                <span className="flex items-center gap-2">
-                  <Trophy className="h-4 w-4" />
-                  {questionToShow.points} pts
-                </span>
+        <div className="relative flex-1 overflow-hidden">
+          <div className="absolute inset-0" style={backgroundStyle} aria-hidden />
+          <div
+            className="absolute inset-0 backdrop-blur-sm"
+            style={{ background: neutralOverlay }}
+            aria-hidden
+          />
+          <div
+            className="absolute inset-0"
+            style={{ background: themeOverlay, mixBlendMode: "multiply" }}
+            aria-hidden
+          />
+          <div className="relative z-10 flex h-full flex-col gap-6 px-5 py-6 text-center backdrop-blur-sm sm:px-10 sm:py-8">
+            <div className="space-y-4">
+              <h2 className="text-2xl font-semibold leading-snug text-foreground sm:text-3xl">
+                {questionToShow.question?.trim() || t("noQuestionText")}
+              </h2>
+            </div>
+
+            {questionToShow.image && (
+              <div className="mx-auto max-h-72 w-full overflow-hidden rounded-3xl border border-white/60 bg-white/90 shadow-sm sm:w-4/5">
+                <img
+                  src={questionToShow.image}
+                  alt={questionToShow.question || t("question")}
+                  className="h-full w-full object-cover"
+                />
               </div>
             )}
-          </div>
 
-          {questionToShow.image && (
-            <div className="max-h-72 w-full overflow-hidden rounded-3xl border border-white/60 bg-white/90 shadow-sm">
-              <img
-                src={questionToShow.image}
-                alt={questionToShow.question || t("question")}
-                className="h-full w-full object-cover"
-              />
+            <div className="mx-auto w-full max-w-3xl text-left">
+              {renderAnswers()}
             </div>
-          )}
-
-          {renderAnswers()}
+          </div>
         </div>
       </div>
     </div>

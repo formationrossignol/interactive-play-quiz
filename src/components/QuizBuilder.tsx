@@ -131,12 +131,21 @@ const SortableQuestionItem = ({ question, index, onEdit, onDelete, onDuplicate, 
     <div ref={setNodeRef} style={style} className="flex items-center gap-2">
       <span className="w-5 text-xs font-semibold text-muted-foreground text-right">{index + 1}</span>
       <div
-        className={`group flex w-full items-center justify-between gap-3 rounded-xl border-2 px-3 py-3 transition-all cursor-pointer ${
+        className={`group flex w-full min-h-[4.25rem] items-center justify-between gap-3 rounded-xl border-2 px-3 py-3 transition-all cursor-pointer ${
           isActive ? 'border-primary bg-primary/10 shadow-sm' : 'border-transparent bg-muted/40 hover:border-primary/40 hover:bg-muted/60'
         }`}
         onClick={() => onEdit(index)}
       >
         <div className="flex flex-1 items-center gap-3 min-w-0">
+          <button
+            {...attributes}
+            {...listeners}
+            onClick={(e) => e.stopPropagation()}
+            className="rounded-md p-1 text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing"
+            title={t('dragToReorder')}
+          >
+            <GripVertical className="w-4 h-4" />
+          </button>
           <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${iconColors}`}>
             <Icon className="h-5 w-5" />
           </div>
@@ -147,15 +156,6 @@ const SortableQuestionItem = ({ question, index, onEdit, onDelete, onDuplicate, 
           </div>
         </div>
         <div className="flex items-center gap-1">
-          <button
-            {...attributes}
-            {...listeners}
-            onClick={(e) => e.stopPropagation()}
-            className="rounded-md p-1 text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing"
-            title={t('dragToReorder')}
-          >
-            <GripVertical className="w-4 h-4" />
-          </button>
           <Button
             variant="ghost"
             size="icon"
