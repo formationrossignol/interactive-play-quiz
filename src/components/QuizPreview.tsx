@@ -73,7 +73,7 @@ export const QuizPreview = ({
 
   if (!questionToShow) {
     return (
-      <div className="relative flex h-full flex-col overflow-hidden rounded-3xl">
+      <div className="relative flex h-full flex-col overflow-hidden">
         <div className="absolute inset-0" style={backgroundStyle} aria-hidden />
         <div
           className="absolute inset-0 backdrop-blur-sm"
@@ -224,12 +224,12 @@ export const QuizPreview = ({
   };
 
   return (
-    <div className="relative flex h-full flex-col overflow-hidden rounded-3xl border border-border/60 bg-white shadow-sm">
+    <div className="relative flex h-full flex-col overflow-hidden border border-border/60 bg-white shadow-sm">
       <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col overflow-hidden text-foreground">
         <header className="relative overflow-hidden">
           <div className="absolute inset-0" style={headerBackgroundStyle} aria-hidden />
           <div className="absolute inset-0 bg-slate-900/45" aria-hidden />
-          <div className="relative z-10 flex flex-col gap-4 px-5 py-8 text-white sm:px-10">
+          <div className="relative z-10 flex flex-col gap-4 text-white">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="space-y-2">
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
@@ -280,7 +280,7 @@ export const QuizPreview = ({
             style={{ background: themeOverlay, mixBlendMode: "multiply" }}
             aria-hidden
           />
-          <div className="relative z-10 flex h-full flex-col gap-6 px-5 py-6 text-center backdrop-blur-sm sm:px-10 sm:py-8">
+          <div className="relative z-10 flex h-full flex-col gap-6 text-center backdrop-blur-sm">
             <div className="space-y-4 min-h-[5rem]">
               <h2 className="text-2xl font-semibold leading-snug text-foreground sm:text-3xl">
                 {questionToShow.question?.trim() || t("noQuestionText")}
