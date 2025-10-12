@@ -795,7 +795,6 @@ export const QuizBuilder = () => {
 
                       {/* Theme Preview */}
                       <div className="mt-4 overflow-hidden rounded-lg border p-4">
-                        <p className="mb-2 text-xs text-muted-foreground">Aperçu du thème :</p>
                         <div
                           className="flex h-32 items-center justify-center rounded-md"
                           style={{
@@ -862,7 +861,6 @@ export const QuizBuilder = () => {
                 </SelectContent>
               </Select>
               <div className="mt-4 rounded-lg border p-4">
-                <p className="mb-2 text-xs text-muted-foreground">Aperçu du thème :</p>
                 <div
                   className="flex h-32 items-center justify-center rounded-md"
                   style={{
