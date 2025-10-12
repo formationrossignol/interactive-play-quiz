@@ -28,13 +28,18 @@ export const QuizPreview = ({
   selectedQuestionIndex,
 }: QuizPreviewLiveProps) => {
   const selectedTheme = THEMES.find((themeOption) => themeOption.id === theme) ?? THEMES[0];
-  const palette = selectedTheme?.palette?.length
-    ? selectedTheme.palette
-    : ["#f97316", "#2563eb", "#16a34a", "#dc2626"];
-
-  const backgroundTint = selectedTheme?.palette?.[2]
-    ? hexToRgba(selectedTheme.palette[2], 0.08)
-    : "rgba(15, 23, 42, 0.04)";
+  const themeOverlay = selectedTheme?.palette?.[2]
+    ? hexToRgba(selectedTheme.palette[2], 0.18)
+    : "rgba(15, 23, 42, 0.08)";
+  const neutralOverlay = "rgba(255, 255, 255, 0.82)";
+  const backgroundStyle = selectedTheme
+    ? {
+        backgroundImage: selectedTheme.background,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+      }
+    : { background: themeOverlay };
 
   const questionToShow =
     selectedQuestionIndex !== null &&
@@ -50,16 +55,25 @@ export const QuizPreview = ({
 
   if (!questionToShow) {
     return (
-      <div
-        className="flex h-full items-center justify-center text-sm text-muted-foreground"
-        style={{ background: backgroundTint }}
-      >
-        {t("noQuestionsYet")}
+      <div className="relative flex h-full flex-col overflow-hidden rounded-3xl">
+        <div className="absolute inset-0" style={backgroundStyle} aria-hidden />
+        <div
+          className="absolute inset-0 backdrop-blur-sm"
+          style={{ background: neutralOverlay }}
+          aria-hidden
+        />
+        <div
+          className="absolute inset-0"
+          style={{ background: themeOverlay, mixBlendMode: "multiply" }}
+          aria-hidden
+        />
+        <div className="relative z-10 flex h-full items-center justify-center px-6 text-center text-sm text-muted-foreground">
+          {t("noQuestionsYet")}
+        </div>
       </div>
     );
   }
 
-  const getOptionColor = (index: number) => palette[index % palette.length];
   const optionShapes = ["▲", "◆", "■", "●"];
 
   const renderChoiceAnswers = (answers: string[]) => (
@@ -67,10 +81,11 @@ export const QuizPreview = ({
       {answers.map((answer, index) => (
         <div
           key={index}
-          className="flex min-h-[4.25rem] items-center gap-4 px-5 py-4 text-lg font-semibold text-white"
-          style={{ backgroundColor: getOptionColor(index) }}
+          className="flex min-h-[4.25rem] items-center gap-4 rounded-2xl border border-white/40 bg-white/90 px-5 py-4 text-lg font-semibold text-foreground shadow-sm"
         >
-          <span className="text-2xl">{optionShapes[index % optionShapes.length]}</span>
+          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-base font-bold text-muted-foreground">
+            {optionShapes[index % optionShapes.length]}
+          </span>
           <span className="flex-1 break-words">
             {answer?.trim() || `${t("answer")} ${index + 1}`}
           </span>
@@ -163,7 +178,7 @@ export const QuizPreview = ({
         );
       case "star-rating":
         return (
-          <div className="flex justify-center gap-2 text-4xl" style={{ color: palette[1] }}>
+          <div className="flex justify-center gap-2 text-4xl text-yellow-400">
             {Array.from({ length: questionToShow.maxStars || 5 }).map((_, index) => (
               <span key={index}>★</span>
             ))}
@@ -191,8 +206,19 @@ export const QuizPreview = ({
   };
 
   return (
-    <div className="flex h-full flex-col" style={{ background: backgroundTint }}>
-      <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-2 py-4 text-foreground sm:px-4 md:px-8">
+    <div className="relative flex h-full flex-col overflow-hidden rounded-3xl">
+      <div className="absolute inset-0" style={backgroundStyle} aria-hidden />
+      <div
+        className="absolute inset-0 backdrop-blur-sm"
+        style={{ background: neutralOverlay }}
+        aria-hidden
+      />
+      <div
+        className="absolute inset-0"
+        style={{ background: themeOverlay, mixBlendMode: "multiply" }}
+        aria-hidden
+      />
+      <div className="relative z-10 mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-2 py-4 text-foreground sm:px-4 md:px-8">
         <div className="space-y-2">
           <h1 className="text-2xl font-bold leading-tight">{title}</h1>
           {description && <p className="text-base text-muted-foreground">{description}</p>}

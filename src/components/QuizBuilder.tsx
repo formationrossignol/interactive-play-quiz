@@ -684,7 +684,7 @@ export const QuizBuilder = () => {
   const builderToolbar = (
     <div className="flex w-full flex-col gap-3 md:flex-row md:items-center md:justify-between">
       <div className="flex w-full flex-1 flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="flex items-center gap-2">
+        <div className="flex w-full items-center gap-2">
           <Button
             variant="ghost"
             size="icon"
@@ -698,28 +698,28 @@ export const QuizBuilder = () => {
               <PanelLeftOpen className="w-5 h-5" />
             )}
           </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setQuestionEditorOpen(!questionEditorOpen)}
-            title={questionEditorOpen ? t('hideQuestionEditor') : t('showQuestionEditor')}
-            aria-label={questionEditorOpen ? t('hideQuestionEditor') : t('showQuestionEditor')}
-          >
-            {questionEditorOpen ? (
-              <PanelRightClose className="w-5 h-5" />
-            ) : (
-              <PanelRightOpen className="w-5 h-5" />
-            )}
-          </Button>
+          <Input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder={isPoll ? t('pollTitle') : t('quizTitle')}
+            className="font-medium sm:max-w-md flex-1"
+          />
         </div>
-        <Input
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder={isPoll ? t('pollTitle') : t('quizTitle')}
-          className="font-medium sm:max-w-md"
-        />
       </div>
       <div className="flex flex-wrap items-center justify-end gap-2">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setQuestionEditorOpen(!questionEditorOpen)}
+          title={questionEditorOpen ? t('hideQuestionEditor') : t('showQuestionEditor')}
+          aria-label={questionEditorOpen ? t('hideQuestionEditor') : t('showQuestionEditor')}
+        >
+          {questionEditorOpen ? (
+            <PanelRightClose className="w-5 h-5" />
+          ) : (
+            <PanelRightOpen className="w-5 h-5" />
+          )}
+        </Button>
         <Dialog>
           <DialogTrigger asChild>
             <Button variant="outline" size="icon" title={t('settings')}>
