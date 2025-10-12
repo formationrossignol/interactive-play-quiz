@@ -27,8 +27,6 @@ import {
   Home,
   BookOpen,
   BarChart3,
-  User,
-  LogOut,
   CheckSquare,
   ToggleLeft,
   FileText,
@@ -42,7 +40,7 @@ import {
 import { QuizPreview } from "./QuizPreview";
 import { QuestionTypeSelector } from "./QuestionTypeSelector";
 import { Header } from "./Header";
-import { getCurrentUser, logout } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/auth";
 import { saveQuiz, updateQuiz, getQuizById } from "@/lib/quizStorage";
 import { getPollTemplate } from "@/lib/pollTemplates";
 import { getQuizTemplate } from "@/lib/quizTemplates";
@@ -320,11 +318,6 @@ export const QuizBuilder = () => {
       requiresAuth: true,
     },
   ];
-
-  const handleSidebarLogout = () => {
-    logout();
-    navigate('/');
-  };
 
   function applyTemplate(template: PollTemplate | QuizTemplate) {
     setTitle(template.name);
@@ -1076,7 +1069,9 @@ export const QuizBuilder = () => {
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Sidebar - Navigation */}
-        <div className={`${sidebarOpen ? 'w-72' : 'w-0'} border-r bg-card overflow-hidden transition-all duration-200`}>
+        <div
+          className={`${sidebarOpen ? 'w-72 border-r bg-card' : 'w-0'} overflow-hidden transition-all duration-200`}
+        >
           <div className="flex h-full flex-col overflow-y-auto">
             <div className="border-b border-border/60 p-4">
               <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -1101,31 +1096,6 @@ export const QuizBuilder = () => {
                     );
                   })}
               </nav>
-              {user && (
-                <div className="mt-6 space-y-2 rounded-xl border border-border/60 bg-muted/30 p-3">
-                  <p className="px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    {t('accountActions')}
-                  </p>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => navigate('/profile')}
-                    className="w-full justify-start gap-2 rounded-lg text-sm text-foreground/80 transition-colors hover:bg-muted/40 hover:text-foreground"
-                  >
-                    <User className="h-4 w-4" />
-                    <span>{t('profile')}</span>
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleSidebarLogout}
-                    className="w-full justify-start gap-2 rounded-lg text-sm text-destructive transition-colors hover:bg-destructive/10 hover:text-destructive"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    <span>{t('logout')}</span>
-                  </Button>
-                </div>
-              )}
             </div>
             <div className="flex-1 space-y-6 p-4">
               <div>
@@ -1242,8 +1212,8 @@ export const QuizBuilder = () => {
 
       {/* Right Sidebar - Add Question */}
       <div
-        className={`border-l bg-card transition-all duration-200 overflow-y-auto ${questionEditorOpen ? 'w-96' : 'w-0'}`}
-        >
+        className={`${questionEditorOpen ? 'w-96 border-l bg-card' : 'w-0'} transition-all duration-200 overflow-y-auto`}
+      >
           <div
             className={`h-full transition-opacity duration-200 ${questionEditorOpen ? 'p-4 opacity-100' : 'p-0 opacity-0 pointer-events-none'}`}
             aria-hidden={!questionEditorOpen}
