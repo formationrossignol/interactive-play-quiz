@@ -20,8 +20,6 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
-  ChevronDown,
-  Check,
   Play,
   Copy,
   Home,
@@ -208,46 +206,6 @@ const ThemePaletteChips = ({ theme }: { theme: Theme }) => (
   </span>
 );
 
-const ThemeOptionPill = ({
-  theme,
-  showChevron = false,
-  isActive = false,
-}: {
-  theme: Theme;
-  showChevron?: boolean;
-  isActive?: boolean;
-}) => (
-  <span
-    className={cn(
-      "flex w-full items-center gap-3 rounded-full border border-border/60 bg-background/80 px-2 py-2 shadow-sm backdrop-blur transition-colors",
-      isActive && "border-primary/60 bg-primary/10 ring-1 ring-primary/40"
-    )}
-  >
-    <span className="relative flex h-12 w-20 shrink-0 overflow-hidden rounded-full border border-border/60">
-      <img
-        src={theme.imageUrl}
-        alt={theme.imageDescription}
-        className="h-full w-full object-cover"
-        loading="lazy"
-      />
-      <span className="absolute inset-0" aria-hidden style={{ background: getThemeOverlay(theme) }} />
-      {isActive && (
-        <span className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground shadow">
-          <Check className="h-3 w-3" />
-        </span>
-      )}
-    </span>
-    <span className="min-w-0 flex-1">
-      <span className="block text-sm font-semibold text-foreground">{theme.name}</span>
-      <span className="block text-xs text-muted-foreground line-clamp-1">{theme.imageDescription}</span>
-    </span>
-    <span className="flex items-center gap-2">
-      <ThemePaletteChips theme={theme} />
-      {showChevron && <ChevronDown className="h-4 w-4 text-muted-foreground" />}
-    </span>
-  </span>
-);
-
 const ThemePreviewPanel = ({ theme }: { theme?: Theme }) => {
   if (!theme) {
     return (
@@ -315,35 +273,64 @@ const FONT_OPTIONS: { value: string; label: string; stack: string; tagline: stri
   },
 ];
 
-const ThemeSelectionList = ({
+const ThemeSelectionDropdown = ({
   value,
   onChange,
-  columns = 1,
 }: {
   value: string;
   onChange: (id: string) => void;
-  columns?: 1 | 2;
-}) => (
-  <div className={cn("grid gap-3", columns === 2 ? "sm:grid-cols-2" : "grid-cols-1")}>
-    {THEMES.map((themeOption) => {
-      const isActive = themeOption.id === value;
-      return (
-        <button
-          type="button"
-          key={themeOption.id}
-          onClick={() => onChange(themeOption.id)}
-          aria-pressed={isActive}
-          className={cn(
-            "group block w-full rounded-[2rem] text-left transition-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
-            isActive ? "ring-2 ring-primary/40" : "hover:-translate-y-1"
-          )}
-        >
-          <ThemeOptionPill theme={themeOption} isActive={isActive} />
-        </button>
-      );
-    })}
-  </div>
-);
+}) => {
+  const selectedTheme = THEMES.find((themeOption) => themeOption.id === value);
+
+  const getPreviewStyle = (theme?: Theme) =>
+    theme
+      ? {
+          background: theme.preview,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }
+      : undefined;
+
+  return (
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger className="h-auto min-h-12 items-center justify-between rounded-xl border border-border/60 bg-background px-3 py-3 text-left">
+        <SelectValue aria-hidden className="sr-only" />
+        <div className="flex flex-1 items-center gap-3">
+          <span
+            className="h-10 w-16 shrink-0 overflow-hidden rounded-lg border border-border/60"
+            style={getPreviewStyle(selectedTheme)}
+            aria-hidden
+          />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-foreground">
+              {selectedTheme?.name ?? t('selectTheme')}
+            </p>
+            <p className="text-xs text-muted-foreground line-clamp-1">
+              {selectedTheme?.imageDescription ?? t('selectThemeDescription')}
+            </p>
+          </div>
+        </div>
+      </SelectTrigger>
+      <SelectContent className="bg-popover z-50 max-h-[320px]">
+        {THEMES.map((themeOption) => (
+          <SelectItem key={themeOption.id} value={themeOption.id} className="py-2">
+            <div className="flex items-center gap-3">
+              <span
+                className="h-10 w-16 shrink-0 overflow-hidden rounded-lg border border-border/60"
+                style={getPreviewStyle(themeOption)}
+                aria-hidden
+              />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-foreground">{themeOption.name}</p>
+                <p className="text-xs text-muted-foreground line-clamp-1">{themeOption.imageDescription}</p>
+              </div>
+            </div>
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+};
 
 export const QuizBuilder = () => {
   const navigate = useNavigate();
@@ -1092,7 +1079,7 @@ export const QuizBuilder = () => {
                   Personnalisez l'ambiance graphique de votre activité.
                 </p>
                 <div className="mt-3 space-y-3">
-                  <ThemeSelectionList value={theme} onChange={setTheme} columns={2} />
+                  <ThemeSelectionDropdown value={theme} onChange={setTheme} />
                   <div className="rounded-2xl border border-border/60 bg-muted/30 p-4">
                     <ThemePreviewPanel theme={activeTheme} />
                   </div>
@@ -1198,7 +1185,7 @@ export const QuizBuilder = () => {
               <div>
                 <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Thèmes</p>
                 <div className="space-y-3">
-                  <ThemeSelectionList value={theme} onChange={setTheme} />
+                  <ThemeSelectionDropdown value={theme} onChange={setTheme} />
                   <div className="rounded-2xl border border-border/60 bg-muted/30 p-4">
                     <ThemePreviewPanel theme={activeTheme} />
                   </div>
