@@ -10,13 +10,21 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 
 interface HeaderProps {
   subtitle?: string;
   toolbar?: ReactNode;
+  toolbarPlacement?: "secondary" | "main";
+  showNavigation?: boolean;
 }
 
-export const Header = ({ subtitle, toolbar }: HeaderProps) => {
+export const Header = ({
+  subtitle,
+  toolbar,
+  toolbarPlacement = "secondary",
+  showNavigation = true,
+}: HeaderProps) => {
   const navigate = useNavigate();
   const [user, setUser] = useState(getCurrentUser());
   const [currentLanguage, setCurrentLanguage] = useState<Language>(getLanguage());
@@ -63,7 +71,7 @@ export const Header = ({ subtitle, toolbar }: HeaderProps) => {
 
   return (
     <header className="sticky top-0 z-40 border-b border-white/40 bg-white/70 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5 gap-6">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-6 px-6 py-5">
         <div
           className="group flex cursor-pointer items-center gap-4 transition-transform duration-300 hover:-translate-y-0.5"
           onClick={() => navigate('/')}
@@ -77,66 +85,81 @@ export const Header = ({ subtitle, toolbar }: HeaderProps) => {
           </div>
         </div>
 
-        <div className="hidden flex-1 items-center justify-center gap-1 md:flex">
-          {navigationItems
-            .filter((item) => (item.requiresAuth ? Boolean(user) : true))
-            .map((item) => {
-              const Icon = item.icon;
-              return (
-                <Button
-                  key={item.label}
-                  variant="ghost"
-                  size="sm"
-                  onClick={item.onClick}
-                  className="gap-2 rounded-full px-4 text-sm font-medium text-foreground/80 transition-colors hover:text-foreground"
-                >
-                  <Icon className="h-4 w-4" />
-                  <span>{item.label}</span>
-                </Button>
-              );
-            })}
-        </div>
-
-        <div className="flex items-center gap-3">
-          <div className="md:hidden">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-10 w-10 rounded-full border-white/60 bg-white/60 text-foreground/70 shadow-[0_10px_30px_-18px_rgba(15,26,61,0.5)] transition-all duration-300 hover:border-[#0f1a3d]/30 hover:text-foreground"
-                >
-                  <Menu className="h-5 w-5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="z-50 w-56 rounded-2xl border border-white/50 bg-white/80 p-2 backdrop-blur-xl">
-                {navigationItems
-                  .filter((item) => (item.requiresAuth ? Boolean(user) : true))
-                  .map((item) => {
-                    const Icon = item.icon;
-                    return (
-                      <DropdownMenuItem
-                        key={item.label}
-                        className="gap-2 rounded-xl text-sm text-foreground/80 transition-colors hover:bg-foreground/5"
-                        onSelect={item.onClick}
-                      >
-                        <Icon className="h-4 w-4" />
-                        {item.label}
-                      </DropdownMenuItem>
-                    );
-                  })}
-                {user && (
-                  <DropdownMenuItem
-                    className="gap-2 rounded-xl text-sm text-foreground/80 transition-colors hover:bg-foreground/5"
-                    onSelect={() => navigate('/profile')}
+        {showNavigation && (
+          <div className="hidden flex-1 items-center justify-center gap-1 md:flex">
+            {navigationItems
+              .filter((item) => (item.requiresAuth ? Boolean(user) : true))
+              .map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Button
+                    key={item.label}
+                    variant="ghost"
+                    size="sm"
+                    onClick={item.onClick}
+                    className="gap-2 rounded-full px-4 text-sm font-medium text-foreground/80 transition-colors hover:text-foreground"
                   >
-                    <User className="h-4 w-4" />
-                    {t('profile')}
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
+                    <Icon className="h-4 w-4" />
+                    <span>{item.label}</span>
+                  </Button>
+                );
+              })}
           </div>
+        )}
+
+        <div
+          className={cn(
+            "flex items-center gap-3",
+            toolbarPlacement === "main" ? "flex-1 flex-wrap justify-end" : ""
+          )}
+        >
+          {toolbar && toolbarPlacement === "main" && (
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              {toolbar}
+            </div>
+          )}
+
+          {showNavigation && (
+            <div className="md:hidden">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-10 w-10 rounded-full border-white/60 bg-white/60 text-foreground/70 shadow-[0_10px_30px_-18px_rgba(15,26,61,0.5)] transition-all duration-300 hover:border-[#0f1a3d]/30 hover:text-foreground"
+                  >
+                    <Menu className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="z-50 w-56 rounded-2xl border border-white/50 bg-white/80 p-2 backdrop-blur-xl">
+                  {navigationItems
+                    .filter((item) => (item.requiresAuth ? Boolean(user) : true))
+                    .map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <DropdownMenuItem
+                          key={item.label}
+                          className="gap-2 rounded-xl text-sm text-foreground/80 transition-colors hover:bg-foreground/5"
+                          onSelect={item.onClick}
+                        >
+                          <Icon className="h-4 w-4" />
+                          {item.label}
+                        </DropdownMenuItem>
+                      );
+                    })}
+                  {user && (
+                    <DropdownMenuItem
+                      className="gap-2 rounded-xl text-sm text-foreground/80 transition-colors hover:bg-foreground/5"
+                      onSelect={() => navigate('/profile')}
+                    >
+                      <User className="h-4 w-4" />
+                      {t('profile')}
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )}
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -207,9 +230,16 @@ export const Header = ({ subtitle, toolbar }: HeaderProps) => {
           )}
         </div>
       </div>
-      {toolbar && (
+      {toolbar && toolbarPlacement === "secondary" && (
         <div className="border-t border-white/40 bg-white/60 backdrop-blur-xl">
           <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-3">
+            {toolbar}
+          </div>
+        </div>
+      )}
+      {toolbar && toolbarPlacement === "main" && (
+        <div className="w-full px-6 pb-4 lg:hidden">
+          <div className="flex flex-wrap items-center justify-end gap-2 border-t border-white/40 bg-white/60 px-4 py-3 backdrop-blur-xl">
             {toolbar}
           </div>
         </div>

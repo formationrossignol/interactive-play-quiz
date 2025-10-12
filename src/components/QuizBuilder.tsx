@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -25,11 +24,17 @@ import {
   PanelRightOpen,
   Play,
   Copy,
+  Home,
+  BookOpen,
+  BarChart3,
+  User,
+  LogOut,
+  Sparkles,
 } from "lucide-react";
 import { QuizPreview } from "./QuizPreview";
 import { QuestionTypeSelector } from "./QuestionTypeSelector";
 import { Header } from "./Header";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, logout } from "@/lib/auth";
 import { saveQuiz, updateQuiz, getQuizById } from "@/lib/quizStorage";
 import { getPollTemplate } from "@/lib/pollTemplates";
 import { getQuizTemplate } from "@/lib/quizTemplates";
@@ -38,6 +43,10 @@ import { toast } from "sonner";
 import { getQuestionTypeLabel } from "@/lib/questionTypes";
 import { t } from "@/lib/i18n";
 import type { QuizQuestionType, PollQuestionType } from "@/lib/questionTypes";
+import type { PollTemplate } from "@/lib/pollTemplates";
+import type { QuizTemplate } from "@/lib/quizTemplates";
+import { PollTemplateSelectorEnhanced } from "./PollTemplateSelectorEnhanced";
+import { QuizTemplateSelectorEnhanced } from "./QuizTemplateSelectorEnhanced";
 import {
   DndContext,
   closestCenter,
@@ -142,6 +151,8 @@ export const QuizBuilder = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [questionEditorOpen, setQuestionEditorOpen] = useState(true);
   const [selectedQuestionIndex, setSelectedQuestionIndex] = useState<number | null>(null);
+  const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
+  const [activeTemplateId, setActiveTemplateId] = useState<string | null>(templateId);
   const activeTheme = THEMES.find((t) => t.id === theme) ?? THEMES[0];
 
   const sensors = useSensors(
@@ -150,6 +161,56 @@ export const QuizBuilder = () => {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
+
+  const sidebarNavigationItems = [
+    {
+      label: t('home'),
+      icon: Home,
+      action: () => navigate('/'),
+      requiresAuth: false,
+    },
+    {
+      label: t('myQuizzes'),
+      icon: BookOpen,
+      action: () => navigate('/my-quizzes'),
+      requiresAuth: true,
+    },
+    {
+      label: t('myPolls'),
+      icon: BarChart3,
+      action: () => navigate('/my-polls'),
+      requiresAuth: true,
+    },
+    {
+      label: t('profile'),
+      icon: User,
+      action: () => navigate('/profile'),
+      requiresAuth: true,
+    },
+  ];
+
+  const handleSidebarLogout = () => {
+    logout();
+    navigate('/');
+  };
+
+  function applyTemplate(template: PollTemplate | QuizTemplate) {
+    setTitle(template.name);
+    setDescription(template.description);
+    setCategory(template.category);
+    const templateQuestions = template.questions.map((question, index) => ({
+      id: `${template.id}-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 8)}`,
+      ...question,
+    }));
+    setQuestions(templateQuestions as any[]);
+    setSelectedQuestionIndex(templateQuestions.length > 0 ? 0 : null);
+    setEditingIndex(null);
+    setCurrentQuestion(getDefaultQuestion());
+    setTags([]);
+    setTemplateDialogOpen(false);
+    setActiveTemplateId(template.id);
+    toast.success(t('templateLoaded'));
+  }
 
   useEffect(() => {
     if (!user) {
@@ -178,6 +239,8 @@ export const QuizBuilder = () => {
           id: q.id || Date.now().toString() + index,
           ...q
         })));
+        setActiveTemplateId(null);
+        setTemplateDialogOpen(false);
         toast.success("Quiz chargé pour édition");
       }
     }
@@ -189,32 +252,12 @@ export const QuizBuilder = () => {
       if (isPoll) {
         const template = getPollTemplate(templateId);
         if (template) {
-          setTitle(template.name);
-          setDescription(template.description);
-          setCategory(template.category);
-          
-          const templateQuestions = template.questions.map((q, index) => ({
-            id: Date.now().toString() + index,
-            ...q
-          }));
-          
-          setQuestions(templateQuestions);
-          toast.success(t('templateLoaded'));
+          applyTemplate(template);
         }
       } else {
         const template = getQuizTemplate(templateId);
         if (template) {
-          setTitle(template.name);
-          setDescription(template.description);
-          setCategory(template.category);
-          
-          const templateQuestions = template.questions.map((q, index) => ({
-            id: Date.now().toString() + index,
-            ...q
-          }));
-          
-          setQuestions(templateQuestions);
-          toast.success(t('templateLoaded'));
+          applyTemplate(template);
         }
       }
     }
@@ -562,332 +605,380 @@ export const QuizBuilder = () => {
     }
   };
 
+  const builderToolbar = (
+    <div className="flex w-full flex-col gap-3 md:flex-row md:items-center md:justify-between">
+      <div className="flex w-full flex-1 flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            title={sidebarOpen ? t('hideThemes') : t('showThemes')}
+            aria-label={sidebarOpen ? t('hideThemes') : t('showThemes')}
+          >
+            {sidebarOpen ? (
+              <PanelLeftClose className="w-5 h-5" />
+            ) : (
+              <PanelLeftOpen className="w-5 h-5" />
+            )}
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setQuestionEditorOpen(!questionEditorOpen)}
+            title={questionEditorOpen ? t('hideQuestionEditor') : t('showQuestionEditor')}
+            aria-label={questionEditorOpen ? t('hideQuestionEditor') : t('showQuestionEditor')}
+          >
+            {questionEditorOpen ? (
+              <PanelRightClose className="w-5 h-5" />
+            ) : (
+              <PanelRightOpen className="w-5 h-5" />
+            )}
+          </Button>
+        </div>
+        <Input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder={isPoll ? t('pollTitle') : t('quizTitle')}
+          className="font-medium sm:max-w-md"
+        />
+      </div>
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button variant="outline" size="icon" title={t('settings')}>
+              <Settings className="w-5 h-5" />
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{t('settings')}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 mt-4">
+              <div>
+                <Label>{t('category')}</Label>
+                <Select value={category} onValueChange={setCategory}>
+                  <SelectTrigger className="mt-2">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover z-50">
+                    <SelectItem value="Culture Générale">{t('generalCulture')}</SelectItem>
+                    <SelectItem value="Science">{t('science')}</SelectItem>
+                    <SelectItem value="Histoire">{t('history')}</SelectItem>
+                    <SelectItem value="Géographie">{t('geography')}</SelectItem>
+                    <SelectItem value="Sport">{t('sports')}</SelectItem>
+                    <SelectItem value="Divertissement">{t('entertainment')}</SelectItem>
+                    <SelectItem value="Technologie">{t('technology')}</SelectItem>
+                    <SelectItem value="Arts">{t('arts')}</SelectItem>
+                    <SelectItem value="Autre">{t('other')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label>{t('description')}</Label>
+                <Textarea
+                  placeholder={t('descriptionPlaceholder')}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="mt-2"
+                />
+              </div>
+
+              <div>
+                <Label>{t('headerImage')}</Label>
+                {headerImage && (
+                  <div className="relative w-full h-32 rounded-lg overflow-hidden mt-2 mb-2">
+                    <img src={headerImage} alt="Header" className="w-full h-full object-cover" />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="absolute top-2 right-2 bg-black/50 hover:bg-black/70"
+                      onClick={() => setHeaderImage('')}
+                    >
+                      <Trash2 className="w-4 h-4 text-white" />
+                    </Button>
+                  </div>
+                )}
+                <label htmlFor="header-image">
+                  <Button variant="outline" size="sm" asChild className="w-full mt-2">
+                    <span>
+                      <Upload className="w-4 h-4 mr-2" />
+                      {headerImage ? t('changeImage') : t('addImage')}
+                    </span>
+                  </Button>
+                </label>
+                <input
+                  id="header-image"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
+              </div>
+
+              <div>
+                <Label>{t('tags')}</Label>
+                <div className="flex gap-2 mt-2">
+                  <Input
+                    placeholder={t('addTag')}
+                    value={newTag}
+                    onChange={(e) => setNewTag(e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddTag();
+                      }
+                    }}
+                  />
+                  <Button variant="outline" onClick={handleAddTag}>
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {tags.map((tag) => (
+                    <Badge
+                      key={tag}
+                      variant="secondary"
+                      className="cursor-pointer"
+                      onClick={() => setTags(tags.filter(t => t !== tag))}
+                    >
+                      {tag} ×
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+
+              {!isPoll && (
+                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <Label className="cursor-pointer">{t('public')}</Label>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button className="text-muted-foreground hover:text-foreground">
+                            <HelpCircle className="w-4 h-4" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="max-w-xs">{t('publicTooltip')}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                  <Switch checked={isPublic} onCheckedChange={setIsPublic} />
+                </div>
+              )}
+
+              {!isPoll && (
+                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <Label className="cursor-pointer">{t('speedBonus')}</Label>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button className="text-muted-foreground hover:text-foreground">
+                            <HelpCircle className="w-4 h-4" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="max-w-xs">{t('speedBonusTooltip')}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                  <Switch checked={speedBonus} onCheckedChange={setSpeedBonus} />
+                </div>
+              )}
+
+              {!isPoll && (
+                <div>
+                  <Label>{t('transitionTime')}</Label>
+                  <Input
+                    type="number"
+                    min="3"
+                    max="10"
+                    value={transitionTime}
+                    onChange={(e) => setTransitionTime(parseInt(e.target.value) || 5)}
+                    className="mt-2"
+                  />
+                </div>
+              )}
+
+              <div>
+                <Label>Thème visuel</Label>
+                <Select value={theme} onValueChange={setTheme}>
+                  <SelectTrigger className="mt-2">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover z-50">
+                    {THEMES.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>
+                        <div className="flex items-center justify-between gap-3">
+                          <span>{t.name}</span>
+                          <div className="flex items-center gap-1">
+                            {t.palette.map((color, index) => (
+                              <span
+                                key={`${t.id}-palette-${index}`}
+                                className="h-3 w-3 rounded-sm border border-black/10 dark:border-white/30"
+                                style={{ backgroundColor: color }}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <div className="mt-4 overflow-hidden rounded-lg border p-4">
+                  <div
+                    className="flex h-32 items-center justify-center rounded-md"
+                    style={{
+                      backgroundImage: activeTheme?.background,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center',
+                      backgroundRepeat: 'no-repeat'
+                    }}
+                    title={activeTheme?.imageDescription}
+                  >
+                    <span className="text-lg font-bold text-white drop-shadow-lg">
+                      {activeTheme?.name || 'Thème'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={handlePreviewQuiz}
+          disabled={questions.length === 0}
+          title={t('launchPreview')}
+        >
+          <Play className="w-5 h-5" />
+        </Button>
+        <Button onClick={handleSaveQuiz} size="icon" title={t('save')}>
+          <Save className="w-5 h-5" />
+        </Button>
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header with integrated toolbar */}
       <Header
         subtitle={isPoll ? t('pollBuilder') : t('quizBuilder')}
-        toolbar={
-          <div className="flex w-full flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div className="flex w-full flex-1 flex-col gap-3 sm:flex-row sm:items-center">
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setSidebarOpen(!sidebarOpen)}
-                  title={sidebarOpen ? "Masquer les thèmes" : "Afficher les thèmes"}
-                  aria-label={sidebarOpen ? "Masquer les thèmes" : "Afficher les thèmes"}
-                >
-                  {sidebarOpen ? (
-                    <PanelLeftClose className="w-5 h-5" />
-                  ) : (
-                    <PanelLeftOpen className="w-5 h-5" />
-                  )}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setQuestionEditorOpen(!questionEditorOpen)}
-                  title={questionEditorOpen ? "Masquer l'éditeur de question" : "Afficher l'éditeur de question"}
-                  aria-label={questionEditorOpen ? "Masquer l'éditeur de question" : "Afficher l'éditeur de question"}
-                >
-                  {questionEditorOpen ? (
-                    <PanelRightClose className="w-5 h-5" />
-                  ) : (
-                    <PanelRightOpen className="w-5 h-5" />
-                  )}
-                </Button>
-              </div>
-              <Input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder={isPoll ? t('pollTitle') : t('quizTitle')}
-                className="font-medium sm:max-w-md"
-              />
-            </div>
-            <div className="flex flex-wrap items-center justify-end gap-2">
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="outline" size="icon" title={t('settings')}>
-                    <Settings className="w-5 h-5" />
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle>{t('settings')}</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4 mt-4">
-                    <div>
-                      <Label>{t('category')}</Label>
-                      <Select value={category} onValueChange={setCategory}>
-                        <SelectTrigger className="mt-2">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="bg-popover z-50">
-                          <SelectItem value="Culture Générale">{t('generalCulture')}</SelectItem>
-                          <SelectItem value="Science">{t('science')}</SelectItem>
-                          <SelectItem value="Histoire">{t('history')}</SelectItem>
-                          <SelectItem value="Géographie">{t('geography')}</SelectItem>
-                          <SelectItem value="Sport">{t('sports')}</SelectItem>
-                          <SelectItem value="Divertissement">{t('entertainment')}</SelectItem>
-                          <SelectItem value="Technologie">{t('technology')}</SelectItem>
-                          <SelectItem value="Arts">{t('arts')}</SelectItem>
-                          <SelectItem value="Autre">{t('other')}</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <Label>{t('description')}</Label>
-                      <Textarea
-                        placeholder={t('descriptionPlaceholder')}
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                        className="mt-2"
-                      />
-                    </div>
-
-                    <div>
-                      <Label>{t('headerImage')}</Label>
-                      {headerImage && (
-                        <div className="relative w-full h-32 rounded-lg overflow-hidden mt-2 mb-2">
-                          <img src={headerImage} alt="Header" className="w-full h-full object-cover" />
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="absolute top-2 right-2 bg-black/50 hover:bg-black/70"
-                            onClick={() => setHeaderImage('')}
-                          >
-                            <Trash2 className="w-4 h-4 text-white" />
-                          </Button>
-                        </div>
-                      )}
-                      <label htmlFor="header-image">
-                        <Button variant="outline" size="sm" asChild className="w-full mt-2">
-                          <span>
-                            <Upload className="w-4 h-4 mr-2" />
-                            {headerImage ? t('changeImage') : t('addImage')}
-                          </span>
-                        </Button>
-                      </label>
-                      <input
-                        id="header-image"
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageUpload}
-                        className="hidden"
-                      />
-                    </div>
-
-                    <div>
-                      <Label>{t('tags')}</Label>
-                      <div className="flex gap-2 mt-2">
-                        <Input
-                          placeholder={t('addTag')}
-                          value={newTag}
-                          onChange={(e) => setNewTag(e.target.value)}
-                          onKeyPress={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              handleAddTag();
-                            }
-                          }}
-                        />
-                        <Button variant="outline" onClick={handleAddTag}>
-                          <Plus className="w-4 h-4" />
-                        </Button>
-                      </div>
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {tags.map((tag) => (
-                          <Badge
-                            key={tag}
-                            variant="secondary"
-                            className="cursor-pointer"
-                            onClick={() => setTags(tags.filter(t => t !== tag))}
-                          >
-                            {tag} ×
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-
-                    {!isPoll && (
-                      <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                        <div className="flex items-center gap-2">
-                          <Label className="cursor-pointer">{t('public')}</Label>
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <button className="text-muted-foreground hover:text-foreground">
-                                  <HelpCircle className="w-4 h-4" />
-                                </button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p className="max-w-xs">{t('publicTooltip')}</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        </div>
-                        <Switch checked={isPublic} onCheckedChange={setIsPublic} />
-                      </div>
-                    )}
-
-                    {!isPoll && (
-                      <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                        <div className="flex items-center gap-2">
-                          <Label className="cursor-pointer">{t('speedBonus')}</Label>
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <button className="text-muted-foreground hover:text-foreground">
-                                  <HelpCircle className="w-4 h-4" />
-                                </button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p className="max-w-xs">{t('speedBonusTooltip')}</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        </div>
-                        <Switch checked={speedBonus} onCheckedChange={setSpeedBonus} />
-                      </div>
-                    )}
-
-                    {!isPoll && (
-                      <div>
-                        <Label>{t('transitionTime')}</Label>
-                        <Input
-                          type="number"
-                          min="3"
-                          max="10"
-                          value={transitionTime}
-                          onChange={(e) => setTransitionTime(parseInt(e.target.value) || 5)}
-                          className="mt-2"
-                        />
-                      </div>
-                    )}
-
-                    <div>
-                      <Label>Thème visuel</Label>
-                      <Select value={theme} onValueChange={setTheme}>
-                        <SelectTrigger className="mt-2">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="bg-popover z-50">
-                          {THEMES.map((t) => (
-                            <SelectItem key={t.id} value={t.id}>
-                              <div className="flex items-center justify-between gap-3">
-                                <span>{t.name}</span>
-                                <div className="flex items-center gap-1">
-                                  {t.palette.map((color, index) => (
-                                    <span
-                                      key={`${t.id}-palette-${index}`}
-                                      className="h-3 w-3 rounded-sm border border-black/10 dark:border-white/30"
-                                      style={{ backgroundColor: color }}
-                                    />
-                                  ))}
-                                </div>
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-
-                      {/* Theme Preview */}
-                      <div className="mt-4 overflow-hidden rounded-lg border p-4">
-                        <div
-                          className="flex h-32 items-center justify-center rounded-md"
-                          style={{
-                            backgroundImage: activeTheme?.background,
-                            backgroundSize: 'cover',
-                            backgroundPosition: 'center',
-                            backgroundRepeat: 'no-repeat'
-                          }}
-                          title={activeTheme?.imageDescription}
-                        >
-                          <span className="text-lg font-bold text-white drop-shadow-lg">
-                            {activeTheme?.name || 'Thème'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </DialogContent>
-              </Dialog>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={handlePreviewQuiz}
-                disabled={questions.length === 0}
-                title="Lancer"
-              >
-                <Play className="w-5 h-5" />
-              </Button>
-              <Button onClick={handleSaveQuiz} size="icon" title={t('save')}>
-                <Save className="w-5 h-5" />
-              </Button>
-            </div>
-          </div>
-        }
+        toolbar={builderToolbar}
+        toolbarPlacement="main"
+        showNavigation={false}
       />
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Sidebar - Navigation */}
-        <div className={`${sidebarOpen ? 'w-64' : 'w-0'} border-r bg-card overflow-hidden transition-all duration-200`}>
-          <div className="flex h-full flex-col gap-6 overflow-y-auto p-4">
-            <div>
-              <p className="px-3 text-xs font-semibold text-muted-foreground mb-2">Thèmes</p>
-              <Select value={theme} onValueChange={setTheme}>
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="z-50 bg-popover">
-                  {THEMES.map((t) => (
-                    <SelectItem key={t.id} value={t.id}>
-                      <div className="flex items-center justify-between gap-3">
-                        <span>{t.name}</span>
-                        <div className="flex items-center gap-1">
-                          {t.palette.map((color, index) => (
-                            <span
-                              key={`${t.id}-sidebar-palette-${index}`}
-                              className="h-3 w-3 rounded-sm border border-black/10 dark:border-white/30"
-                              style={{ backgroundColor: color }}
-                            />
-                          ))}
+        <div className={`${sidebarOpen ? 'w-72' : 'w-0'} border-r bg-card overflow-hidden transition-all duration-200`}>
+          <div className="flex h-full flex-col overflow-y-auto">
+            <div className="border-b border-border/60 p-4">
+              <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                {t('builderMenu')}
+              </p>
+              <nav className="space-y-2">
+                {sidebarNavigationItems
+                  .filter((item) => (item.requiresAuth ? Boolean(user) : true))
+                  .map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <Button
+                        key={item.label}
+                        variant="ghost"
+                        size="sm"
+                        onClick={item.action}
+                        className="w-full justify-start gap-2 rounded-lg text-sm text-foreground/80 transition-colors hover:bg-muted/40 hover:text-foreground"
+                      >
+                        <Icon className="h-4 w-4" />
+                        <span>{item.label}</span>
+                      </Button>
+                    );
+                  })}
+                {user && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleSidebarLogout}
+                    className="w-full justify-start gap-2 rounded-lg text-sm text-destructive transition-colors hover:bg-destructive/10 hover:text-destructive"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span>{t('logout')}</span>
+                  </Button>
+                )}
+              </nav>
+            </div>
+            <div className="flex-1 space-y-6 p-4">
+              <div>
+                <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Thèmes</p>
+                <Select value={theme} onValueChange={setTheme}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="z-50 bg-popover">
+                    {THEMES.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>
+                        <div className="flex items-center justify-between gap-3">
+                          <span>{t.name}</span>
+                          <div className="flex items-center gap-1">
+                            {t.palette.map((color, index) => (
+                              <span
+                                key={`${t.id}-sidebar-palette-${index}`}
+                                className="h-3 w-3 rounded-sm border border-black/10 dark:border-white/30"
+                                style={{ backgroundColor: color }}
+                              />
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <div className="mt-4 rounded-lg border p-4">
-                <div
-                  className="flex h-32 items-center justify-center rounded-md"
-                  style={{
-                    backgroundImage: activeTheme?.background,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                    backgroundRepeat: 'no-repeat'
-                  }}
-                  title={activeTheme?.imageDescription}
-                >
-                  <span className="text-lg font-bold text-white drop-shadow-lg">
-                    {activeTheme?.name || 'Thème'}
-                  </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <div className="mt-4 rounded-lg border p-4">
+                  <div
+                    className="flex h-32 items-center justify-center rounded-md"
+                    style={{
+                      backgroundImage: activeTheme?.background,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center',
+                      backgroundRepeat: 'no-repeat'
+                    }}
+                    title={activeTheme?.imageDescription}
+                  >
+                    <span className="text-lg font-bold text-white drop-shadow-lg">
+                      {activeTheme?.name || 'Thème'}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div>
-              <p className="px-3 text-xs font-semibold text-muted-foreground mb-2">Templates</p>
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full justify-start"
-                onClick={() => navigate(`/quiz-builder-start?type=${quizType}`)}
-              >
-                Changer de template
-              </Button>
+              <div>
+                <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Templates</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full justify-start"
+                  onClick={() => setTemplateDialogOpen(true)}
+                >
+                  {t('changeTemplate')}
+                </Button>
+                {activeTemplateId && (
+                  <div className="mt-3 rounded-lg border bg-muted/40 p-3 text-sm">
+                    <p className="font-medium text-foreground">{t('currentTemplate')}</p>
+                    <p className="text-muted-foreground">
+                      {(isPoll ? getPollTemplate(activeTemplateId) : getQuizTemplate(activeTemplateId))?.name || t('customTemplate')}
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -946,8 +1037,23 @@ export const QuizBuilder = () => {
           </div>
 
           {/* Preview */}
-          <div className="flex-1 overflow-y-auto p-6 bg-muted/10">
-            <div className="max-w-3xl mx-auto">
+          <div className="flex-1 overflow-y-auto bg-muted/10 p-6">
+            <div className="mx-auto flex max-w-3xl flex-col gap-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground">{t('preview')}</h3>
+                  <p className="text-sm text-muted-foreground">{t('previewDescription')}</p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2"
+                  onClick={() => setTemplateDialogOpen(true)}
+                >
+                  <Sparkles className="h-4 w-4" />
+                  {t('changeTemplate')}
+                </Button>
+              </div>
               <QuizPreview
                 title={title || (isPoll ? "Mon Sondage" : "Mon Quiz") }
                 description={description}
@@ -960,11 +1066,11 @@ export const QuizBuilder = () => {
               />
             </div>
           </div>
-        </div>
+      </div>
 
-        {/* Right Sidebar - Add Question */}
-        <div
-          className={`border-l bg-card transition-all duration-200 overflow-y-auto ${questionEditorOpen ? 'w-96' : 'w-0'}`}
+      {/* Right Sidebar - Add Question */}
+      <div
+        className={`border-l bg-card transition-all duration-200 overflow-y-auto ${questionEditorOpen ? 'w-96' : 'w-0'}`}
         >
           <div
             className={`h-full transition-opacity duration-200 ${questionEditorOpen ? 'p-4 opacity-100' : 'p-0 opacity-0 pointer-events-none'}`}
@@ -1009,9 +1115,30 @@ export const QuizBuilder = () => {
                 </div>
               </TabsContent>
             </Tabs>
-          </div>
         </div>
       </div>
+    </div>
+
+      <Dialog open={templateDialogOpen} onOpenChange={setTemplateDialogOpen}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>{t('changeTemplate')}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {isPoll ? (
+              <PollTemplateSelectorEnhanced
+                selectedTemplateId={activeTemplateId}
+                onSelectTemplate={applyTemplate}
+              />
+            ) : (
+              <QuizTemplateSelectorEnhanced
+                selectedTemplateId={activeTemplateId}
+                onSelectTemplate={applyTemplate}
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
