@@ -296,7 +296,7 @@ const ThemeSelectionDropdown = ({
       <SelectTrigger className="h-auto min-h-12 items-center justify-between rounded-xl border border-border/60 bg-background px-3 py-3 text-left">
         <SelectValue aria-hidden className="sr-only" />
         <div className="flex flex-1 items-center gap-3">
-          <span
+          <div
             className="h-10 w-16 shrink-0 overflow-hidden rounded-lg border border-border/60"
             style={getPreviewStyle(selectedTheme)}
             aria-hidden
@@ -315,7 +315,7 @@ const ThemeSelectionDropdown = ({
         {THEMES.map((themeOption) => (
           <SelectItem key={themeOption.id} value={themeOption.id} className="py-2">
             <div className="flex items-center gap-3">
-              <span
+              <div
                 className="h-10 w-16 shrink-0 overflow-hidden rounded-lg border border-border/60"
                 style={getPreviewStyle(themeOption)}
                 aria-hidden

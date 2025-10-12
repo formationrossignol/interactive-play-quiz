@@ -286,7 +286,7 @@ export const QuizPreview = ({
             aria-hidden
           />
           <div className="relative z-10 flex h-full flex-col px-5 py-6 text-center backdrop-blur-sm sm:px-10 sm:py-8">
-            <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-4">
+            <div className="mx-auto flex w-full max-w-4xl flex-col gap-4">
               <div className="space-y-3">
                 <h2 className="text-2xl font-semibold leading-snug text-foreground sm:text-3xl">
                   {questionToShow.question?.trim() || t("noQuestionText")}
