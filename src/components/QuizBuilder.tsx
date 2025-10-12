@@ -820,6 +820,36 @@ export const QuizBuilder = () => {
                 <User className="w-5 h-5 mr-3" />
                 {t('profile')}
               </Button>
+              
+              {/* Thèmes Section */}
+              <div className="pt-4 border-t">
+                <p className="text-xs font-semibold text-muted-foreground mb-2 px-3">Thèmes</p>
+                <Select value={theme} onValueChange={setTheme}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover z-50">
+                    {THEMES.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>
+                        {t.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Templates Section */}
+              <div className="pt-4">
+                <p className="text-xs font-semibold text-muted-foreground mb-2 px-3">Templates</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full justify-start"
+                  onClick={() => navigate(`/quiz-builder-start?type=${quizType}`)}
+                >
+                  Changer de template
+                </Button>
+              </div>
             </nav>
 
             {/* Logout Button */}
@@ -842,8 +872,22 @@ export const QuizBuilder = () => {
           {/* Questions List */}
           <div className="w-80 border-r bg-muted/30 overflow-y-auto p-4">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-foreground">Questions ({questions.length})</h3>
+              <h3 className="font-semibold text-foreground">Questions</h3>
             </div>
+            
+            {/* Nouvelle question button */}
+            <Button 
+              onClick={() => {
+                setCurrentQuestion(getDefaultQuestion());
+                setEditingIndex(null);
+              }}
+              className="w-full mb-4"
+              variant="outline"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Nouvelle question
+            </Button>
+
             <DndContext
               sensors={sensors}
               collisionDetection={closestCenter}
@@ -878,32 +922,16 @@ export const QuizBuilder = () => {
           {/* Preview */}
           <div className="flex-1 overflow-y-auto p-6 bg-muted/10">
             <div className="max-w-3xl mx-auto">
-              <h3 className="font-semibold text-foreground mb-4">Aperçu en direct</h3>
-              {selectedQuestionIndex !== null && questions[selectedQuestionIndex] ? (
-                <QuizPreview
-                  title={title || (isPoll ? "Mon Sondage" : "Mon Quiz") }
-                  description={description}
-                  category={category}
-                  headerImage={headerImage}
-                  questions={[questions[selectedQuestionIndex]]}
-                  isPoll={isPoll}
-                  theme={theme}
-                />
-              ) : questions.length > 0 ? (
-                <QuizPreview
-                  title={title || (isPoll ? "Mon Sondage" : "Mon Quiz") }
-                  description={description}
-                  category={category}
-                  headerImage={headerImage}
-                  questions={[questions[0]]}
-                  isPoll={isPoll}
-                  theme={theme}
-                />
-              ) : (
-                <div className="text-center py-12 text-muted-foreground">
-                  <p>Aucune question à prévisualiser</p>
-                </div>
-              )}
+              <QuizPreview
+                title={title || (isPoll ? "Mon Sondage" : "Mon Quiz") }
+                description={description}
+                category={category}
+                headerImage={headerImage}
+                questions={questions}
+                isPoll={isPoll}
+                theme={theme}
+                selectedQuestionIndex={selectedQuestionIndex}
+              />
             </div>
           </div>
         </div>
