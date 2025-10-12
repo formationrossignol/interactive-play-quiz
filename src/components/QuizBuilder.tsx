@@ -29,6 +29,15 @@ import {
   BarChart3,
   User,
   LogOut,
+  CheckSquare,
+  ToggleLeft,
+  FileText,
+  ArrowUpDown,
+  Shuffle,
+  Square,
+  List,
+  Star,
+  MessageSquare,
 } from "lucide-react";
 import { QuizPreview } from "./QuizPreview";
 import { QuestionTypeSelector } from "./QuestionTypeSelector";
@@ -40,7 +49,6 @@ import { getQuizTemplate } from "@/lib/quizTemplates";
 import { DEFAULT_THEME_ID, THEMES, type Theme } from "@/lib/themes";
 import { hexToRgba } from "@/lib/color";
 import { toast } from "sonner";
-import { getQuestionTypeLabel } from "@/lib/questionTypes";
 import { t } from "@/lib/i18n";
 import type { QuizQuestionType, PollQuestionType } from "@/lib/questionTypes";
 import type { PollTemplate } from "@/lib/pollTemplates";
@@ -65,8 +73,44 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
+const questionTypeIconMap: Partial<Record<QuizQuestionType | PollQuestionType, any>> = {
+  'multiple-choice': CheckSquare,
+  'true-false': ToggleLeft,
+  'short-answer': FileText,
+  'ranking': ArrowUpDown,
+  'matching': Shuffle,
+  'fill-blank': Square,
+  'drag-drop': Shuffle,
+  'hotspot': CheckSquare,
+  'slider': ArrowUpDown,
+  'single-choice': List,
+  'likert-scale': BarChart3,
+  'frequency-scale': BarChart3,
+  'star-rating': Star,
+  'open-text': MessageSquare,
+  'nps-scale': BarChart3,
+};
+
+const questionTypeColorMap: Partial<Record<QuizQuestionType | PollQuestionType, string>> = {
+  'multiple-choice': 'bg-blue-100 text-blue-700',
+  'true-false': 'bg-emerald-100 text-emerald-700',
+  'short-answer': 'bg-purple-100 text-purple-700',
+  'ranking': 'bg-orange-100 text-orange-700',
+  'matching': 'bg-pink-100 text-pink-700',
+  'fill-blank': 'bg-indigo-100 text-indigo-700',
+  'drag-drop': 'bg-teal-100 text-teal-700',
+  'hotspot': 'bg-sky-100 text-sky-700',
+  'slider': 'bg-cyan-100 text-cyan-700',
+  'single-choice': 'bg-cyan-100 text-cyan-700',
+  'likert-scale': 'bg-amber-100 text-amber-700',
+  'frequency-scale': 'bg-lime-100 text-lime-700',
+  'star-rating': 'bg-yellow-100 text-yellow-700',
+  'open-text': 'bg-rose-100 text-rose-700',
+  'nps-scale': 'bg-emerald-100 text-emerald-700',
+};
+
 // Sortable Question Item Component
-const SortableQuestionItem = ({ question, index, onEdit, onDelete, onDuplicate }: any) => {
+const SortableQuestionItem = ({ question, index, onEdit, onDelete, onDuplicate, isActive }: any) => {
   const {
     attributes,
     listeners,
@@ -80,45 +124,63 @@ const SortableQuestionItem = ({ question, index, onEdit, onDelete, onDuplicate }
     transition,
   };
 
+  const Icon = questionTypeIconMap[question.type as QuizQuestionType | PollQuestionType] || CheckSquare;
+  const iconColors = questionTypeColorMap[question.type as QuizQuestionType | PollQuestionType] || 'bg-primary/10 text-primary';
+
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className="group flex items-center gap-2 p-3 bg-card border rounded-lg hover:shadow-sm transition-shadow cursor-pointer"
-      onClick={() => onEdit(index)}
-    >
-      <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing" onClick={(e) => e.stopPropagation()}>
-        <GripVertical className="w-4 h-4 text-muted-foreground" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium truncate">{index + 1}. {question.question}</p>
-        <p className="text-xs text-muted-foreground">{getQuestionTypeLabel(question.type)}</p>
-      </div>
-      <div className="flex gap-1">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-          onClick={(e) => {
-            e.stopPropagation();
-            onDuplicate(index);
-          }}
-          title="Dupliquer"
-        >
-          <Copy className="w-4 h-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete(index);
-          }}
-          title="Supprimer"
-        >
-          <Trash2 className="w-4 h-4" />
-        </Button>
+    <div ref={setNodeRef} style={style} className="flex items-center gap-2">
+      <span className="w-5 text-xs font-semibold text-muted-foreground text-right">{index + 1}</span>
+      <div
+        className={`group flex w-full items-center justify-between gap-3 rounded-xl border-2 px-3 py-3 transition-all cursor-pointer ${
+          isActive ? 'border-primary bg-primary/10 shadow-sm' : 'border-transparent bg-muted/40 hover:border-primary/40 hover:bg-muted/60'
+        }`}
+        onClick={() => onEdit(index)}
+      >
+        <div className="flex flex-1 items-center gap-3 min-w-0">
+          <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${iconColors}`}>
+            <Icon className="h-5 w-5" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold truncate text-foreground">
+              {question.question?.trim() || t('noQuestionText')}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-1">
+          <button
+            {...attributes}
+            {...listeners}
+            onClick={(e) => e.stopPropagation()}
+            className="rounded-md p-1 text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing"
+            title={t('dragToReorder')}
+          >
+            <GripVertical className="w-4 h-4" />
+          </button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDuplicate(index);
+            }}
+            title="Dupliquer"
+          >
+            <Copy className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(index);
+            }}
+            title="Supprimer"
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
     </div>
   );
@@ -277,6 +339,7 @@ export const QuizBuilder = () => {
     const templateQuestions = template.questions.map((question, index) => ({
       id: `${template.id}-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 8)}`,
       ...question,
+      image: question.image || '',
     }));
     setQuestions(templateQuestions as any[]);
     setSelectedQuestionIndex(templateQuestions.length > 0 ? 0 : null);
@@ -313,8 +376,10 @@ export const QuizBuilder = () => {
         setTheme(existingTheme);
         setQuestions(existingQuiz.questions.map((q, index) => ({
           id: q.id || Date.now().toString() + index,
-          ...q
+          ...q,
+          image: q.image || '',
         })));
+        setSelectedQuestionIndex(existingQuiz.questions.length > 0 ? 0 : null);
         setActiveTemplateId(null);
         setTemplateDialogOpen(false);
         toast.success("Quiz chargé pour édition");
@@ -342,10 +407,11 @@ export const QuizBuilder = () => {
   function getDefaultQuestion(type?: QuizQuestionType | PollQuestionType): any {
     if (isPoll) {
       const pollType = type || 'single-choice';
-      
+
       const base = {
         type: pollType,
         question: '',
+        image: '',
       };
 
       switch (pollType) {
@@ -369,12 +435,13 @@ export const QuizBuilder = () => {
       }
     } else {
       const quizType = type || 'multiple-choice';
-      
+
       const base = {
         type: quizType,
         question: '',
         timeLimit: 30,
         points: 100,
+        image: '',
       };
 
       switch (quizType) {
@@ -416,33 +483,56 @@ export const QuizBuilder = () => {
       return;
     }
 
+    const isEditing = editingIndex !== null;
+
     const newQuestion = {
-      id: editingIndex !== null ? questions[editingIndex].id : Date.now().toString(),
+      id: isEditing ? questions[editingIndex as number].id : Date.now().toString(),
       ...currentQuestion,
+      image: currentQuestion.image || '',
     };
 
-    if (editingIndex !== null) {
+    if (isEditing) {
       const updated = [...questions];
-      updated[editingIndex] = newQuestion;
+      updated[editingIndex as number] = newQuestion;
       setQuestions(updated);
+      setSelectedQuestionIndex(editingIndex as number);
       setEditingIndex(null);
       toast.success(t('questionEdited'));
     } else {
-      setQuestions([...questions, newQuestion]);
+      const updated = [...questions, newQuestion];
+      setQuestions(updated);
+      setSelectedQuestionIndex(updated.length - 1);
       toast.success(t('questionAdded'));
     }
 
-    setCurrentQuestion(getDefaultQuestion());
+    setCurrentQuestion(getDefaultQuestion(currentQuestion.type));
   };
 
   const handleEditQuestion = (index: number) => {
-    setCurrentQuestion(questions[index]);
+    setCurrentQuestion({ image: '', ...questions[index] });
     setEditingIndex(index);
+    setSelectedQuestionIndex(index);
     setQuestionEditorOpen(true);
   };
 
   const handleDeleteQuestion = (index: number) => {
-    setQuestions(questions.filter((_, i) => i !== index));
+    const updatedQuestions = questions.filter((_, i) => i !== index);
+    setQuestions(updatedQuestions);
+    setSelectedQuestionIndex((prev) => {
+      if (prev === null) {
+        return prev;
+      }
+      if (prev === index) {
+        if (updatedQuestions.length === 0) {
+          return null;
+        }
+        return Math.min(index, updatedQuestions.length - 1);
+      }
+      if (prev > index) {
+        return prev - 1;
+      }
+      return prev;
+    });
     toast.success(t('questionDeleted'));
   };
 
@@ -526,10 +616,12 @@ export const QuizBuilder = () => {
     const duplicatedQuestion = {
       ...questionToDuplicate,
       id: Date.now().toString(),
+      image: questionToDuplicate.image || '',
     };
     const newQuestions = [...questions];
     newQuestions.splice(index + 1, 0, duplicatedQuestion);
     setQuestions(newQuestions);
+    setSelectedQuestionIndex(index + 1);
     toast.success("Question dupliquée");
   };
 
@@ -545,12 +637,68 @@ export const QuizBuilder = () => {
     }
   };
 
+  const handleCurrentQuestionImageChange = (file: File | null) => {
+    if (!file) {
+      setCurrentQuestion((prev: any) => ({ ...prev, image: '' }));
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setCurrentQuestion((prev: any) => ({ ...prev, image: reader.result as string }));
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleAddTag = () => {
     if (newTag.trim() && !tags.includes(newTag.trim())) {
       setTags([...tags, newTag.trim()]);
       setNewTag("");
     }
   };
+
+  const renderQuestionImageField = () => (
+    <div>
+      <Label>{t('questionImage')}</Label>
+      {currentQuestion.image && (
+        <div className="relative mt-2 overflow-hidden rounded-lg border bg-muted/40">
+          <img
+            src={currentQuestion.image}
+            alt={currentQuestion.question || t('question')}
+            className="h-40 w-full object-cover"
+          />
+          <Button
+            variant="ghost"
+            size="sm"
+            className="absolute right-2 top-2 bg-black/60 text-white hover:bg-black/80"
+            onClick={() => handleCurrentQuestionImageChange(null)}
+          >
+            <Trash2 className="h-4 w-4" />
+            <span className="sr-only">{t('removeImage')}</span>
+          </Button>
+        </div>
+      )}
+      <label htmlFor="question-image" className="mt-2 block">
+        <Button variant="outline" size="sm" asChild className="w-full">
+          <span className="flex items-center justify-center gap-2">
+            <Upload className="h-4 w-4" />
+            {currentQuestion.image ? t('changeImage') : t('addImage')}
+          </span>
+        </Button>
+      </label>
+      <input
+        id="question-image"
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(event) => {
+          const file = event.target.files?.[0] || null;
+          handleCurrentQuestionImageChange(file);
+          event.target.value = '';
+        }}
+      />
+    </div>
+  );
 
   const renderQuestionForm = () => {
     switch (currentQuestion.type) {
@@ -567,6 +715,7 @@ export const QuizBuilder = () => {
                 className="mt-2"
               />
             </div>
+            {renderQuestionImageField()}
             <div>
               <Label>{t('answers')}</Label>
               {currentQuestion.answers.map((answer: string, i: number) => (
@@ -628,6 +777,7 @@ export const QuizBuilder = () => {
                 className="mt-2"
               />
             </div>
+            {renderQuestionImageField()}
             <div>
               <Label>{t('correctAnswer')}</Label>
               <Select
@@ -676,6 +826,7 @@ export const QuizBuilder = () => {
                 className="mt-2"
               />
             </div>
+            {renderQuestionImageField()}
           </div>
         );
     }
@@ -1050,10 +1201,10 @@ export const QuizBuilder = () => {
                       index={index}
                       onEdit={(idx: number) => {
                         handleEditQuestion(idx);
-                        setSelectedQuestionIndex(idx);
                       }}
                       onDelete={handleDeleteQuestion}
                       onDuplicate={handleDuplicateQuestion}
+                      isActive={selectedQuestionIndex === index}
                     />
                   ))}
                 </div>

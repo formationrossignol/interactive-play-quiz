@@ -26,6 +26,7 @@ export interface BaseQuestion {
   question: string;
   timeLimit?: number;
   points?: number;
+  image?: string;
 }
 
 export interface MultipleChoiceQuestion extends BaseQuestion {

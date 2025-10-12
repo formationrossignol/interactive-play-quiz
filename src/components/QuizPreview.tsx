@@ -246,6 +246,16 @@ export const QuizPreview = ({
           )}
         </div>
 
+        {questionToShow.image && (
+          <div className="max-h-72 w-full overflow-hidden rounded-3xl border border-white/40 bg-white/80 shadow-sm">
+            <img
+              src={questionToShow.image}
+              alt={questionToShow.question || t("question")}
+              className="h-full w-full object-cover"
+            />
+          </div>
+        )}
+
         {headerImage && (
           <div className="max-h-72 w-full overflow-hidden">
             <img src={headerImage} alt={title} className="h-full w-full object-cover" />
