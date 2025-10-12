@@ -70,7 +70,7 @@ export const Header = ({
   };
 
   return (
-    <header className="relative sticky top-0 z-40 bg-white/70 backdrop-blur-xl">
+    <header className="relative sticky top-0 z-40 bg-white/70 backdrop-blur-xl border-b border-border/60">
       <div
         className="pointer-events-none absolute inset-x-0 bottom-0 h-px"
         aria-hidden
