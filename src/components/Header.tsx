@@ -70,7 +70,15 @@ export const Header = ({
   };
 
   return (
-    <header className="sticky top-0 z-40 border-b border-white/40 bg-white/70 backdrop-blur-xl">
+    <header className="relative sticky top-0 z-40 bg-white/70 backdrop-blur-xl">
+      <div
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-px"
+        aria-hidden
+        style={{
+          background:
+            "linear-gradient(90deg, hsla(var(--border), 0) 0%, hsla(var(--border), 0.45) 45%, hsla(var(--border), 0.45) 55%, hsla(var(--border), 0) 100%)",
+        }}
+      />
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-6 px-6 py-5">
         <div
           className="group flex cursor-pointer items-center gap-4 transition-transform duration-300 hover:-translate-y-0.5"
