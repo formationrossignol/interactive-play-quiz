@@ -61,9 +61,10 @@ const SortableQuestionItem = ({ question, index, onEdit, onDelete, onDuplicate }
     <div
       ref={setNodeRef}
       style={style}
-      className="group flex items-center gap-2 p-3 bg-card border rounded-lg hover:shadow-sm transition-shadow"
+      className="group flex items-center gap-2 p-3 bg-card border rounded-lg hover:shadow-sm transition-shadow cursor-pointer"
+      onClick={() => onEdit(index)}
     >
-      <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing">
+      <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing" onClick={(e) => e.stopPropagation()}>
         <GripVertical className="w-4 h-4 text-muted-foreground" />
       </div>
       <div className="flex-1 min-w-0">
@@ -75,15 +76,24 @@ const SortableQuestionItem = ({ question, index, onEdit, onDelete, onDuplicate }
           variant="ghost" 
           size="icon"
           className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-          onClick={() => onDuplicate(index)}
+          onClick={(e) => {
+            e.stopPropagation();
+            onDuplicate(index);
+          }}
           title="Dupliquer"
         >
           <Copy className="w-4 h-4" />
         </Button>
-        <Button variant="ghost" size="sm" onClick={() => onEdit(index)}>
-          {t('edit')}
-        </Button>
-        <Button variant="ghost" size="sm" onClick={() => onDelete(index)}>
+        <Button 
+          variant="ghost" 
+          size="icon"
+          className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(index);
+          }}
+          title="Supprimer"
+        >
           <Trash2 className="w-4 h-4" />
         </Button>
       </div>
@@ -534,17 +544,16 @@ export const QuizBuilder = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
-      <Header subtitle={isPoll ? t('pollBuilder') : t('quizBuilder')} />
-      
-      {/* Toolbar */}
-      <div className="border-b bg-card/50 backdrop-blur-sm">
-        <div className="flex items-center justify-between px-4 h-12">
+      {/* Header with integrated toolbar */}
+      <div className="border-b bg-card">
+        <Header subtitle={isPoll ? t('pollBuilder') : t('quizBuilder')} />
+        <div className="flex items-center justify-between px-4 h-12 border-t">
           <div className="flex items-center gap-3">
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setSidebarOpen(!sidebarOpen)}
+              title={sidebarOpen ? "Fermer" : "Ouvrir"}
             >
               {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </Button>
@@ -559,7 +568,7 @@ export const QuizBuilder = () => {
             <Dialog>
               <DialogTrigger asChild>
                 <Button variant="outline" size="icon" title={t('settings')}>
-                  <Settings className="w-4 h-4" />
+                  <Settings className="w-5 h-5" />
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
@@ -757,10 +766,10 @@ export const QuizBuilder = () => {
               disabled={questions.length === 0}
               title="Lancer"
             >
-              <Play className="w-4 h-4" />
+              <Play className="w-5 h-5" />
             </Button>
             <Button onClick={handleSaveQuiz} size="icon" title={t('save')}>
-              <Save className="w-4 h-4" />
+              <Save className="w-5 h-5" />
             </Button>
           </div>
         </div>
@@ -833,7 +842,7 @@ export const QuizBuilder = () => {
           {/* Questions List */}
           <div className="w-80 border-r bg-muted/30 overflow-y-auto p-4">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-foreground">{t('questions')} ({questions.length})</h3>
+              <h3 className="font-semibold text-foreground">Questions ({questions.length})</h3>
             </div>
             <DndContext
               sensors={sensors}
@@ -867,8 +876,9 @@ export const QuizBuilder = () => {
           </div>
 
           {/* Preview */}
-          <div className="flex-1 overflow-y-auto p-6">
+          <div className="flex-1 overflow-y-auto p-6 bg-muted/10">
             <div className="max-w-3xl mx-auto">
+              <h3 className="font-semibold text-foreground mb-4">Aperçu en direct</h3>
               {selectedQuestionIndex !== null && questions[selectedQuestionIndex] ? (
                 <QuizPreview
                   title={title || (isPoll ? "Mon Sondage" : "Mon Quiz") }
@@ -879,16 +889,20 @@ export const QuizBuilder = () => {
                   isPoll={isPoll}
                   theme={theme}
                 />
-              ) : (
+              ) : questions.length > 0 ? (
                 <QuizPreview
                   title={title || (isPoll ? "Mon Sondage" : "Mon Quiz") }
                   description={description}
                   category={category}
                   headerImage={headerImage}
-                  questions={questions}
+                  questions={[questions[0]]}
                   isPoll={isPoll}
                   theme={theme}
                 />
+              ) : (
+                <div className="text-center py-12 text-muted-foreground">
+                  <p>Aucune question à prévisualiser</p>
+                </div>
               )}
             </div>
           </div>
