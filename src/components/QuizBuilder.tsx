@@ -21,6 +21,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
+  Check,
   Play,
   Copy,
   Home,
@@ -52,6 +53,7 @@ import type { PollTemplate } from "@/lib/pollTemplates";
 import type { QuizTemplate } from "@/lib/quizTemplates";
 import { PollTemplateSelectorEnhanced } from "./PollTemplateSelectorEnhanced";
 import { QuizTemplateSelectorEnhanced } from "./QuizTemplateSelectorEnhanced";
+import { cn } from "@/lib/utils";
 import {
   DndContext,
   closestCenter,
@@ -206,8 +208,21 @@ const ThemePaletteChips = ({ theme }: { theme: Theme }) => (
   </span>
 );
 
-const ThemeOptionPill = ({ theme, showChevron = false }: { theme: Theme; showChevron?: boolean }) => (
-  <span className="flex w-full items-center gap-3 rounded-full border border-border/60 bg-background/80 px-2 py-2 shadow-sm backdrop-blur">
+const ThemeOptionPill = ({
+  theme,
+  showChevron = false,
+  isActive = false,
+}: {
+  theme: Theme;
+  showChevron?: boolean;
+  isActive?: boolean;
+}) => (
+  <span
+    className={cn(
+      "flex w-full items-center gap-3 rounded-full border border-border/60 bg-background/80 px-2 py-2 shadow-sm backdrop-blur transition-colors",
+      isActive && "border-primary/60 bg-primary/10 ring-1 ring-primary/40"
+    )}
+  >
     <span className="relative flex h-12 w-20 shrink-0 overflow-hidden rounded-full border border-border/60">
       <img
         src={theme.imageUrl}
@@ -216,6 +231,11 @@ const ThemeOptionPill = ({ theme, showChevron = false }: { theme: Theme; showChe
         loading="lazy"
       />
       <span className="absolute inset-0" aria-hidden style={{ background: getThemeOverlay(theme) }} />
+      {isActive && (
+        <span className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground shadow">
+          <Check className="h-3 w-3" />
+        </span>
+      )}
     </span>
     <span className="min-w-0 flex-1">
       <span className="block text-sm font-semibold text-foreground">{theme.name}</span>
@@ -228,7 +248,9 @@ const ThemeOptionPill = ({ theme, showChevron = false }: { theme: Theme; showChe
   </span>
 );
 
-const ThemeOption = ({ theme }: { theme: Theme }) => <ThemeOptionPill theme={theme} />;
+const ThemeOption = ({ theme, isActive = false }: { theme: Theme; isActive?: boolean }) => (
+  <ThemeOptionPill theme={theme} isActive={isActive} />
+);
 
 const ThemePreviewPanel = ({ theme }: { theme?: Theme }) => {
   if (!theme) {
@@ -827,19 +849,6 @@ export const QuizBuilder = () => {
     <div className="flex w-full flex-col gap-3 md:flex-row md:items-center md:justify-between">
       <div className="flex w-full flex-1 flex-col gap-3 sm:flex-row sm:items-center">
         <div className="flex w-full items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            title={sidebarOpen ? t('hideThemes') : t('showThemes')}
-            aria-label={sidebarOpen ? t('hideThemes') : t('showThemes')}
-          >
-            {sidebarOpen ? (
-              <ChevronLeft className="h-5 w-5" />
-            ) : (
-              <ChevronRight className="h-5 w-5" />
-            )}
-          </Button>
           <Input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
@@ -849,19 +858,6 @@ export const QuizBuilder = () => {
         </div>
       </div>
       <div className="flex flex-wrap items-center justify-end gap-2">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setQuestionEditorOpen(!questionEditorOpen)}
-          title={questionEditorOpen ? t('hideQuestionEditor') : t('showQuestionEditor')}
-          aria-label={questionEditorOpen ? t('hideQuestionEditor') : t('showQuestionEditor')}
-        >
-          {questionEditorOpen ? (
-            <ChevronRight className="h-5 w-5" />
-          ) : (
-            <ChevronLeft className="h-5 w-5" />
-          )}
-        </Button>
         <Dialog>
           <DialogTrigger asChild>
             <Button variant="outline" size="icon" title={t('settings')}>
@@ -1028,12 +1024,16 @@ export const QuizBuilder = () => {
                 <Select value={theme} onValueChange={setTheme}>
                   <SelectTrigger className="mt-2 h-auto border-0 bg-transparent p-0 shadow-none focus:ring-0 focus:ring-offset-0 [&>span:last-child]:hidden">
                     <SelectValue className="sr-only" />
-                    <ThemeOptionPill theme={activeTheme} showChevron />
+                    <ThemeOptionPill theme={activeTheme} showChevron isActive />
                   </SelectTrigger>
                   <SelectContent className="bg-popover z-50">
                     {THEMES.map((t) => (
-                      <SelectItem key={t.id} value={t.id}>
-                        <ThemeOption theme={t} />
+                      <SelectItem
+                        key={t.id}
+                        value={t.id}
+                        className="px-1 py-1.5 [&>span:first-child]:hidden"
+                      >
+                        <ThemeOption theme={t} isActive={theme === t.id} />
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -1072,7 +1072,7 @@ export const QuizBuilder = () => {
         showNavigation={false}
       />
       {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="relative flex-1 flex overflow-hidden">
         {/* Left Sidebar - Navigation */}
         <div
           className={`${sidebarOpen ? 'w-72 border-r bg-card' : 'w-0'} overflow-hidden transition-all duration-200`}
@@ -1108,12 +1108,16 @@ export const QuizBuilder = () => {
                 <Select value={theme} onValueChange={setTheme}>
                   <SelectTrigger className="w-full h-auto border-0 bg-transparent p-0 shadow-none focus:ring-0 focus:ring-offset-0 [&>span:last-child]:hidden">
                     <SelectValue className="sr-only" />
-                    <ThemeOptionPill theme={activeTheme} showChevron />
+                    <ThemeOptionPill theme={activeTheme} showChevron isActive />
                   </SelectTrigger>
                   <SelectContent className="z-50 bg-popover">
                     {THEMES.map((t) => (
-                      <SelectItem key={t.id} value={t.id}>
-                        <ThemeOption theme={t} />
+                      <SelectItem
+                        key={t.id}
+                        value={t.id}
+                        className="px-1 py-1.5 [&>span:first-child]:hidden"
+                      >
+                        <ThemeOption theme={t} isActive={theme === t.id} />
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -1145,6 +1149,20 @@ export const QuizBuilder = () => {
             </div>
           </div>
         </div>
+
+        <Button
+          variant="secondary"
+          size="icon"
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          title={sidebarOpen ? t('hideThemes') : t('showThemes')}
+          aria-label={sidebarOpen ? t('hideThemes') : t('showThemes')}
+          className={cn(
+            "absolute top-6 z-20 h-9 w-9 -translate-x-1/2 rounded-full border border-border/60 bg-background text-muted-foreground shadow-sm transition-all hover:text-foreground",
+            sidebarOpen ? "left-[288px]" : "left-6"
+          )}
+        >
+          {sidebarOpen ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+        </Button>
 
         {/* Center - Questions List + Preview */}
         <div className="flex-1 flex overflow-hidden">
@@ -1265,6 +1283,20 @@ export const QuizBuilder = () => {
             </Tabs>
         </div>
       </div>
+
+      <Button
+        variant="secondary"
+        size="icon"
+        onClick={() => setQuestionEditorOpen(!questionEditorOpen)}
+        title={questionEditorOpen ? t('hideQuestionEditor') : t('showQuestionEditor')}
+        aria-label={questionEditorOpen ? t('hideQuestionEditor') : t('showQuestionEditor')}
+        className={cn(
+          "absolute top-6 z-20 h-9 w-9 translate-x-1/2 rounded-full border border-border/60 bg-background text-muted-foreground shadow-sm transition-all hover:text-foreground",
+          questionEditorOpen ? "right-[384px]" : "right-6"
+        )}
+      >
+        {questionEditorOpen ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+      </Button>
     </div>
 
       <Dialog open={templateDialogOpen} onOpenChange={setTemplateDialogOpen}>
