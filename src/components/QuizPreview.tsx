@@ -51,7 +51,7 @@ export const QuizPreview = ({ title, description, category, headerImage, questio
   
   const themeBackgroundStyle = selectedTheme
     ? {
-        backgroundImage: selectedTheme.preview,
+        backgroundImage: selectedTheme.background,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',

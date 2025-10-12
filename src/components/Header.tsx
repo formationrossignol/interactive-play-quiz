@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { getCurrentUser, logout } from "@/lib/auth";
 import { Zap, LogOut, User, BookOpen, BarChart3, Globe, Home, Menu } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { getLanguage, setLanguage, t, type Language } from "@/lib/i18n";
 import {
   DropdownMenu,
@@ -13,9 +13,10 @@ import {
 
 interface HeaderProps {
   subtitle?: string;
+  toolbar?: ReactNode;
 }
 
-export const Header = ({ subtitle }: HeaderProps) => {
+export const Header = ({ subtitle, toolbar }: HeaderProps) => {
   const navigate = useNavigate();
   const [user, setUser] = useState(getCurrentUser());
   const [currentLanguage, setCurrentLanguage] = useState<Language>(getLanguage());
@@ -61,7 +62,7 @@ export const Header = ({ subtitle }: HeaderProps) => {
   };
 
   return (
-    <nav className="sticky top-0 z-40 border-b border-white/40 bg-white/70 backdrop-blur-xl">
+    <header className="sticky top-0 z-40 border-b border-white/40 bg-white/70 backdrop-blur-xl">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5 gap-6">
         <div
           className="group flex cursor-pointer items-center gap-4 transition-transform duration-300 hover:-translate-y-0.5"
@@ -206,6 +207,13 @@ export const Header = ({ subtitle }: HeaderProps) => {
           )}
         </div>
       </div>
-    </nav>
+      {toolbar && (
+        <div className="border-t border-white/40 bg-white/60 backdrop-blur-xl">
+          <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-3">
+            {toolbar}
+          </div>
+        </div>
+      )}
+    </header>
   );
 };

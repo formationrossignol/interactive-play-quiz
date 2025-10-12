@@ -11,7 +11,21 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Trash2, Save, Upload, HelpCircle, GripVertical, Settings, Menu, X, Play, Copy } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  Save,
+  Upload,
+  HelpCircle,
+  GripVertical,
+  Settings,
+  PanelLeftClose,
+  PanelLeftOpen,
+  PanelRightClose,
+  PanelRightOpen,
+  Play,
+  Copy,
+} from "lucide-react";
 import { QuizPreview } from "./QuizPreview";
 import { QuestionTypeSelector } from "./QuestionTypeSelector";
 import { Header } from "./Header";
@@ -126,6 +140,7 @@ export const QuizBuilder = () => {
   const [headerImage, setHeaderImage] = useState("");
   const [theme, setTheme] = useState<string>(DEFAULT_THEME_ID);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [questionEditorOpen, setQuestionEditorOpen] = useState(true);
   const [selectedQuestionIndex, setSelectedQuestionIndex] = useState<number | null>(null);
   const activeTheme = THEMES.find((t) => t.id === theme) ?? THEMES[0];
 
@@ -304,6 +319,7 @@ export const QuizBuilder = () => {
   const handleEditQuestion = (index: number) => {
     setCurrentQuestion(questions[index]);
     setEditingIndex(index);
+    setQuestionEditorOpen(true);
   };
 
   const handleDeleteQuestion = (index: number) => {
@@ -549,251 +565,272 @@ export const QuizBuilder = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header with integrated toolbar */}
-      <div className="border-b bg-card">
-        <Header subtitle={isPoll ? t('pollBuilder') : t('quizBuilder')} />
-        <div className="flex items-center justify-between px-4 h-12 border-t">
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              title={sidebarOpen ? "Fermer" : "Ouvrir"}
-            >
-              {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </Button>
-            <Input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder={isPoll ? t('pollTitle') : t('quizTitle')}
-              className="max-w-md font-medium"
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button variant="outline" size="icon" title={t('settings')}>
-                  <Settings className="w-5 h-5" />
+      <Header
+        subtitle={isPoll ? t('pollBuilder') : t('quizBuilder')}
+        toolbar={
+          <div className="flex w-full flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="flex w-full flex-1 flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setSidebarOpen(!sidebarOpen)}
+                  title={sidebarOpen ? "Masquer les thèmes" : "Afficher les thèmes"}
+                  aria-label={sidebarOpen ? "Masquer les thèmes" : "Afficher les thèmes"}
+                >
+                  {sidebarOpen ? (
+                    <PanelLeftClose className="w-5 h-5" />
+                  ) : (
+                    <PanelLeftOpen className="w-5 h-5" />
+                  )}
                 </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>{t('settings')}</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4 mt-4">
-                  <div>
-                    <Label>{t('category')}</Label>
-                    <Select value={category} onValueChange={setCategory}>
-                      <SelectTrigger className="mt-2">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-popover z-50">
-                        <SelectItem value="Culture Générale">{t('generalCulture')}</SelectItem>
-                        <SelectItem value="Science">{t('science')}</SelectItem>
-                        <SelectItem value="Histoire">{t('history')}</SelectItem>
-                        <SelectItem value="Géographie">{t('geography')}</SelectItem>
-                        <SelectItem value="Sport">{t('sports')}</SelectItem>
-                        <SelectItem value="Divertissement">{t('entertainment')}</SelectItem>
-                        <SelectItem value="Technologie">{t('technology')}</SelectItem>
-                        <SelectItem value="Arts">{t('arts')}</SelectItem>
-                        <SelectItem value="Autre">{t('other')}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label>{t('description')}</Label>
-                    <Textarea
-                      placeholder={t('descriptionPlaceholder')}
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      className="mt-2"
-                    />
-                  </div>
-
-                  <div>
-                    <Label>{t('headerImage')}</Label>
-                    {headerImage && (
-                      <div className="relative w-full h-32 rounded-lg overflow-hidden mt-2 mb-2">
-                        <img src={headerImage} alt="Header" className="w-full h-full object-cover" />
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="absolute top-2 right-2 bg-black/50 hover:bg-black/70"
-                          onClick={() => setHeaderImage('')}
-                        >
-                          <Trash2 className="w-4 h-4 text-white" />
-                        </Button>
-                      </div>
-                    )}
-                    <label htmlFor="header-image">
-                      <Button variant="outline" size="sm" asChild className="w-full mt-2">
-                        <span>
-                          <Upload className="w-4 h-4 mr-2" />
-                          {headerImage ? t('changeImage') : t('addImage')}
-                        </span>
-                      </Button>
-                    </label>
-                    <input
-                      id="header-image"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      className="hidden"
-                    />
-                  </div>
-
-                  <div>
-                    <Label>{t('tags')}</Label>
-                    <div className="flex gap-2 mt-2">
-                      <Input
-                        placeholder={t('addTag')}
-                        value={newTag}
-                        onChange={(e) => setNewTag(e.target.value)}
-                        onKeyPress={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            handleAddTag();
-                          }
-                        }}
-                      />
-                      <Button variant="outline" onClick={handleAddTag}>
-                        <Plus className="w-4 h-4" />
-                      </Button>
-                    </div>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {tags.map((tag) => (
-                        <Badge
-                          key={tag}
-                          variant="secondary"
-                          className="cursor-pointer"
-                          onClick={() => setTags(tags.filter(t => t !== tag))}
-                        >
-                          {tag} ×
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-
-                  {!isPoll && (
-                    <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <Label className="cursor-pointer">{t('public')}</Label>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button className="text-muted-foreground hover:text-foreground">
-                                <HelpCircle className="w-4 h-4" />
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p className="max-w-xs">{t('publicTooltip')}</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </div>
-                      <Switch checked={isPublic} onCheckedChange={setIsPublic} />
-                    </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setQuestionEditorOpen(!questionEditorOpen)}
+                  title={questionEditorOpen ? "Masquer l'éditeur de question" : "Afficher l'éditeur de question"}
+                  aria-label={questionEditorOpen ? "Masquer l'éditeur de question" : "Afficher l'éditeur de question"}
+                >
+                  {questionEditorOpen ? (
+                    <PanelRightClose className="w-5 h-5" />
+                  ) : (
+                    <PanelRightOpen className="w-5 h-5" />
                   )}
-
-                  {!isPoll && (
-                    <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <Label className="cursor-pointer">{t('speedBonus')}</Label>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button className="text-muted-foreground hover:text-foreground">
-                                <HelpCircle className="w-4 h-4" />
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p className="max-w-xs">{t('speedBonusTooltip')}</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </div>
-                      <Switch checked={speedBonus} onCheckedChange={setSpeedBonus} />
-                    </div>
-                  )}
-
-                  {!isPoll && (
+                </Button>
+              </div>
+              <Input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder={isPoll ? t('pollTitle') : t('quizTitle')}
+                className="font-medium sm:max-w-md"
+              />
+            </div>
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="icon" title={t('settings')}>
+                    <Settings className="w-5 h-5" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>{t('settings')}</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 mt-4">
                     <div>
-                      <Label>{t('transitionTime')}</Label>
-                      <Input
-                        type="number"
-                        min="3"
-                        max="10"
-                        value={transitionTime}
-                        onChange={(e) => setTransitionTime(parseInt(e.target.value) || 5)}
+                      <Label>{t('category')}</Label>
+                      <Select value={category} onValueChange={setCategory}>
+                        <SelectTrigger className="mt-2">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-popover z-50">
+                          <SelectItem value="Culture Générale">{t('generalCulture')}</SelectItem>
+                          <SelectItem value="Science">{t('science')}</SelectItem>
+                          <SelectItem value="Histoire">{t('history')}</SelectItem>
+                          <SelectItem value="Géographie">{t('geography')}</SelectItem>
+                          <SelectItem value="Sport">{t('sports')}</SelectItem>
+                          <SelectItem value="Divertissement">{t('entertainment')}</SelectItem>
+                          <SelectItem value="Technologie">{t('technology')}</SelectItem>
+                          <SelectItem value="Arts">{t('arts')}</SelectItem>
+                          <SelectItem value="Autre">{t('other')}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label>{t('description')}</Label>
+                      <Textarea
+                        placeholder={t('descriptionPlaceholder')}
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
                         className="mt-2"
                       />
                     </div>
-                  )}
 
-                  <div>
-                    <Label>Thème visuel</Label>
-                    <Select value={theme} onValueChange={setTheme}>
-                      <SelectTrigger className="mt-2">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-popover z-50">
-                        {THEMES.map((t) => (
-                          <SelectItem key={t.id} value={t.id}>
-                            <div className="flex items-center justify-between gap-3">
-                              <span>{t.name}</span>
-                              <div className="flex items-center gap-1">
-                                {t.palette.map((color, index) => (
-                                  <span
-                                    key={`${t.id}-palette-${index}`}
-                                    className="h-3 w-3 rounded-sm border border-black/10 dark:border-white/30"
-                                    style={{ backgroundColor: color }}
-                                  />
-                                ))}
-                              </div>
-                            </div>
-                          </SelectItem>
+                    <div>
+                      <Label>{t('headerImage')}</Label>
+                      {headerImage && (
+                        <div className="relative w-full h-32 rounded-lg overflow-hidden mt-2 mb-2">
+                          <img src={headerImage} alt="Header" className="w-full h-full object-cover" />
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="absolute top-2 right-2 bg-black/50 hover:bg-black/70"
+                            onClick={() => setHeaderImage('')}
+                          >
+                            <Trash2 className="w-4 h-4 text-white" />
+                          </Button>
+                        </div>
+                      )}
+                      <label htmlFor="header-image">
+                        <Button variant="outline" size="sm" asChild className="w-full mt-2">
+                          <span>
+                            <Upload className="w-4 h-4 mr-2" />
+                            {headerImage ? t('changeImage') : t('addImage')}
+                          </span>
+                        </Button>
+                      </label>
+                      <input
+                        id="header-image"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        className="hidden"
+                      />
+                    </div>
+
+                    <div>
+                      <Label>{t('tags')}</Label>
+                      <div className="flex gap-2 mt-2">
+                        <Input
+                          placeholder={t('addTag')}
+                          value={newTag}
+                          onChange={(e) => setNewTag(e.target.value)}
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleAddTag();
+                            }
+                          }}
+                        />
+                        <Button variant="outline" onClick={handleAddTag}>
+                          <Plus className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {tags.map((tag) => (
+                          <Badge
+                            key={tag}
+                            variant="secondary"
+                            className="cursor-pointer"
+                            onClick={() => setTags(tags.filter(t => t !== tag))}
+                          >
+                            {tag} ×
+                          </Badge>
                         ))}
-                      </SelectContent>
-                    </Select>
-                    
-                    {/* Theme Preview */}
-                    <div className="mt-4 overflow-hidden rounded-lg border p-4">
-                      <p className="mb-2 text-xs text-muted-foreground">Aperçu du thème :</p>
-                      <div
-                        className="flex h-32 items-center justify-center rounded-md"
-                        style={{
-                          backgroundImage: activeTheme?.preview,
-                          backgroundSize: 'cover',
-                          backgroundPosition: 'center',
-                          backgroundRepeat: 'no-repeat'
-                        }}
-                        title={activeTheme?.imageDescription}
-                      >
-                        <span className="text-lg font-bold text-white drop-shadow-lg">
-                          {activeTheme?.name || 'Thème'}
-                        </span>
+                      </div>
+                    </div>
+
+                    {!isPoll && (
+                      <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <Label className="cursor-pointer">{t('public')}</Label>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button className="text-muted-foreground hover:text-foreground">
+                                  <HelpCircle className="w-4 h-4" />
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="max-w-xs">{t('publicTooltip')}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
+                        <Switch checked={isPublic} onCheckedChange={setIsPublic} />
+                      </div>
+                    )}
+
+                    {!isPoll && (
+                      <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <Label className="cursor-pointer">{t('speedBonus')}</Label>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button className="text-muted-foreground hover:text-foreground">
+                                  <HelpCircle className="w-4 h-4" />
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="max-w-xs">{t('speedBonusTooltip')}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
+                        <Switch checked={speedBonus} onCheckedChange={setSpeedBonus} />
+                      </div>
+                    )}
+
+                    {!isPoll && (
+                      <div>
+                        <Label>{t('transitionTime')}</Label>
+                        <Input
+                          type="number"
+                          min="3"
+                          max="10"
+                          value={transitionTime}
+                          onChange={(e) => setTransitionTime(parseInt(e.target.value) || 5)}
+                          className="mt-2"
+                        />
+                      </div>
+                    )}
+
+                    <div>
+                      <Label>Thème visuel</Label>
+                      <Select value={theme} onValueChange={setTheme}>
+                        <SelectTrigger className="mt-2">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-popover z-50">
+                          {THEMES.map((t) => (
+                            <SelectItem key={t.id} value={t.id}>
+                              <div className="flex items-center justify-between gap-3">
+                                <span>{t.name}</span>
+                                <div className="flex items-center gap-1">
+                                  {t.palette.map((color, index) => (
+                                    <span
+                                      key={`${t.id}-palette-${index}`}
+                                      className="h-3 w-3 rounded-sm border border-black/10 dark:border-white/30"
+                                      style={{ backgroundColor: color }}
+                                    />
+                                  ))}
+                                </div>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      {/* Theme Preview */}
+                      <div className="mt-4 overflow-hidden rounded-lg border p-4">
+                        <p className="mb-2 text-xs text-muted-foreground">Aperçu du thème :</p>
+                        <div
+                          className="flex h-32 items-center justify-center rounded-md"
+                          style={{
+                            backgroundImage: activeTheme?.background,
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                            backgroundRepeat: 'no-repeat'
+                          }}
+                          title={activeTheme?.imageDescription}
+                        >
+                          <span className="text-lg font-bold text-white drop-shadow-lg">
+                            {activeTheme?.name || 'Thème'}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              </DialogContent>
-            </Dialog>
-            <Button 
-              variant="outline"
-              size="icon"
-              onClick={handlePreviewQuiz}
-              disabled={questions.length === 0}
-              title="Lancer"
-            >
-              <Play className="w-5 h-5" />
-            </Button>
-            <Button onClick={handleSaveQuiz} size="icon" title={t('save')}>
-              <Save className="w-5 h-5" />
-            </Button>
+                </DialogContent>
+              </Dialog>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handlePreviewQuiz}
+                disabled={questions.length === 0}
+                title="Lancer"
+              >
+                <Play className="w-5 h-5" />
+              </Button>
+              <Button onClick={handleSaveQuiz} size="icon" title={t('save')}>
+                <Save className="w-5 h-5" />
+              </Button>
+            </div>
           </div>
-        </div>
-      </div>
-
+        }
+      />
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Sidebar - Navigation */}
@@ -829,7 +866,7 @@ export const QuizBuilder = () => {
                 <div
                   className="flex h-32 items-center justify-center rounded-md"
                   style={{
-                    backgroundImage: activeTheme?.preview,
+                    backgroundImage: activeTheme?.background,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                     backgroundRepeat: 'no-repeat'
@@ -866,10 +903,11 @@ export const QuizBuilder = () => {
             </div>
             
             {/* Nouvelle question button */}
-            <Button 
+            <Button
               onClick={() => {
                 setCurrentQuestion(getDefaultQuestion());
                 setEditingIndex(null);
+                setQuestionEditorOpen(true);
               }}
               className="w-full mb-4"
               variant="outline"
@@ -927,46 +965,53 @@ export const QuizBuilder = () => {
         </div>
 
         {/* Right Sidebar - Add Question */}
-        <div className="w-96 border-l bg-card overflow-y-auto p-4">
-          <h3 className="font-semibold text-foreground mb-4">
-            {editingIndex !== null ? t('editQuestion') : t('addQuestion')}
-          </h3>
-          
-          <Tabs defaultValue="type" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="type">Type</TabsTrigger>
-              <TabsTrigger value="content">{t('content')}</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="type" className="mt-4">
-              <QuestionTypeSelector
-                questionTypes={getAvailableQuestionTypes()}
-                selectedType={currentQuestion.type}
-                onSelectType={(type) => setCurrentQuestion(getDefaultQuestion(type))}
-              />
-            </TabsContent>
-            
-            <TabsContent value="content" className="mt-4">
-              {renderQuestionForm()}
-              
-              <div className="flex gap-2 mt-6">
-                <Button onClick={handleAddQuestion} className="flex-1">
-                  {editingIndex !== null ? t('updateQuestion') : t('addQuestion')}
-                </Button>
-                {editingIndex !== null && (
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setCurrentQuestion(getDefaultQuestion());
-                      setEditingIndex(null);
-                    }}
-                  >
-                    {t('cancel')}
+        <div
+          className={`border-l bg-card transition-all duration-200 overflow-y-auto ${questionEditorOpen ? 'w-96' : 'w-0'}`}
+        >
+          <div
+            className={`h-full transition-opacity duration-200 ${questionEditorOpen ? 'p-4 opacity-100' : 'p-0 opacity-0 pointer-events-none'}`}
+            aria-hidden={!questionEditorOpen}
+          >
+            <h3 className="font-semibold text-foreground mb-4">
+              {editingIndex !== null ? t('editQuestion') : t('addQuestion')}
+            </h3>
+
+            <Tabs defaultValue="type" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="type">Type</TabsTrigger>
+                <TabsTrigger value="content">{t('content')}</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="type" className="mt-4">
+                <QuestionTypeSelector
+                  questionTypes={getAvailableQuestionTypes()}
+                  selectedType={currentQuestion.type}
+                  onSelectType={(type) => setCurrentQuestion(getDefaultQuestion(type))}
+                />
+              </TabsContent>
+
+              <TabsContent value="content" className="mt-4">
+                {renderQuestionForm()}
+
+                <div className="flex gap-2 mt-6">
+                  <Button onClick={handleAddQuestion} className="flex-1">
+                    {editingIndex !== null ? t('updateQuestion') : t('addQuestion')}
                   </Button>
-                )}
-              </div>
-            </TabsContent>
-          </Tabs>
+                  {editingIndex !== null && (
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setCurrentQuestion(getDefaultQuestion());
+                        setEditingIndex(null);
+                      }}
+                    >
+                      {t('cancel')}
+                    </Button>
+                  )}
+                </div>
+              </TabsContent>
+            </Tabs>
+          </div>
         </div>
       </div>
     </div>
