@@ -16,6 +16,7 @@ export interface SavedQuiz {
   type: 'quiz' | 'poll';
   headerImage?: string;
   theme?: string;
+  font?: string;
   rating?: number;
   ratingCount?: number;
 }

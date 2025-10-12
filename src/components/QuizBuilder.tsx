@@ -248,10 +248,6 @@ const ThemeOptionPill = ({
   </span>
 );
 
-const ThemeOption = ({ theme, isActive = false }: { theme: Theme; isActive?: boolean }) => (
-  <ThemeOptionPill theme={theme} isActive={isActive} />
-);
-
 const ThemePreviewPanel = ({ theme }: { theme?: Theme }) => {
   if (!theme) {
     return (
@@ -286,6 +282,69 @@ const ThemePreviewPanel = ({ theme }: { theme?: Theme }) => {
   );
 };
 
+const FONT_OPTIONS: { value: string; label: string; stack: string; tagline: string }[] = [
+  {
+    value: "inter",
+    label: "Inter",
+    stack: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    tagline: "Moderne et très lisible",
+  },
+  {
+    value: "poppins",
+    label: "Poppins",
+    stack: '"Poppins", "Inter", sans-serif',
+    tagline: "Arrondie et chaleureuse",
+  },
+  {
+    value: "space-grotesk",
+    label: "Space Grotesk",
+    stack: '"Space Grotesk", "Inter", sans-serif',
+    tagline: "Typographie géométrique",
+  },
+  {
+    value: "playfair",
+    label: "Playfair Display",
+    stack: '"Playfair Display", "Times New Roman", serif',
+    tagline: "Élégance éditoriale",
+  },
+  {
+    value: "merriweather",
+    label: "Merriweather",
+    stack: '"Merriweather", "Georgia", serif',
+    tagline: "Classique et sérieuse",
+  },
+];
+
+const ThemeSelectionList = ({
+  value,
+  onChange,
+  columns = 1,
+}: {
+  value: string;
+  onChange: (id: string) => void;
+  columns?: 1 | 2;
+}) => (
+  <div className={cn("grid gap-3", columns === 2 ? "sm:grid-cols-2" : "grid-cols-1")}>
+    {THEMES.map((themeOption) => {
+      const isActive = themeOption.id === value;
+      return (
+        <button
+          type="button"
+          key={themeOption.id}
+          onClick={() => onChange(themeOption.id)}
+          aria-pressed={isActive}
+          className={cn(
+            "group block w-full rounded-[2rem] text-left transition-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+            isActive ? "ring-2 ring-primary/40" : "hover:-translate-y-1"
+          )}
+        >
+          <ThemeOptionPill theme={themeOption} isActive={isActive} />
+        </button>
+      );
+    })}
+  </div>
+);
+
 export const QuizBuilder = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -316,6 +375,8 @@ export const QuizBuilder = () => {
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
   const [activeTemplateId, setActiveTemplateId] = useState<string | null>(templateId);
   const activeTheme = THEMES.find((t) => t.id === theme) ?? THEMES[0];
+  const [previewFont, setPreviewFont] = useState<string>(FONT_OPTIONS[0].value);
+  const activeFont = FONT_OPTIONS.find((option) => option.value === previewFont) ?? FONT_OPTIONS[0];
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -387,6 +448,10 @@ export const QuizBuilder = () => {
           ? existingQuiz.theme
           : DEFAULT_THEME_ID;
         setTheme(existingTheme);
+        const existingFont = existingQuiz.font && FONT_OPTIONS.some(option => option.value === existingQuiz.font)
+          ? existingQuiz.font
+          : FONT_OPTIONS[0].value;
+        setPreviewFont(existingFont);
         setQuestions(existingQuiz.questions.map((q, index) => ({
           id: q.id || Date.now().toString() + index,
           ...q,
@@ -587,6 +652,7 @@ export const QuizBuilder = () => {
         type: quizType,
         headerImage,
         theme,
+        font: previewFont,
       };
 
       if (quizId) {
@@ -619,6 +685,7 @@ export const QuizBuilder = () => {
       type: quizType,
       headerImage,
       theme,
+      font: previewFont,
     };
     localStorage.setItem(`quiz-${tempQuiz.id}`, JSON.stringify(tempQuiz));
     navigate(`/quiz/${tempQuiz.id}`);
@@ -1021,26 +1088,51 @@ export const QuizBuilder = () => {
 
               <div>
                 <Label>Thème visuel</Label>
-                <Select value={theme} onValueChange={setTheme}>
-                  <SelectTrigger className="mt-2 h-auto border-0 bg-transparent p-0 shadow-none focus:ring-0 focus:ring-offset-0 [&>span:last-child]:hidden">
-                    <SelectValue className="sr-only" />
-                    <ThemeOptionPill theme={activeTheme} showChevron isActive />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Personnalisez l'ambiance graphique de votre activité.
+                </p>
+                <div className="mt-3 space-y-3">
+                  <ThemeSelectionList value={theme} onChange={setTheme} columns={2} />
+                  <div className="rounded-2xl border border-border/60 bg-muted/30 p-4">
+                    <ThemePreviewPanel theme={activeTheme} />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <Label>Police d'écriture</Label>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Choisissez la typographie utilisée dans l'aperçu et par vos participants.
+                </p>
+                <Select value={previewFont} onValueChange={setPreviewFont}>
+                  <SelectTrigger className="mt-2" style={{ fontFamily: activeFont.stack }}>
+                    <SelectValue placeholder="Sélectionner une police" />
                   </SelectTrigger>
                   <SelectContent className="bg-popover z-50">
-                    {THEMES.map((t) => (
-                      <SelectItem
-                        key={t.id}
-                        value={t.id}
-                        className="px-1 py-1.5 [&>span:first-child]:hidden"
-                      >
-                        <ThemeOption theme={t} isActive={theme === t.id} />
+                    {FONT_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value} className="py-2">
+                        <div className="flex flex-col">
+                          <span className="text-sm font-semibold" style={{ fontFamily: option.stack }}>
+                            {option.label}
+                          </span>
+                          <span className="text-xs text-muted-foreground" style={{ fontFamily: option.stack }}>
+                            {option.tagline}
+                          </span>
+                        </div>
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-
-                <div className="mt-4 rounded-2xl border border-border/60 bg-muted/30 p-4">
-                  <ThemePreviewPanel theme={activeTheme} />
+                <div
+                  className="mt-3 rounded-2xl border border-border/60 bg-muted/30 p-4 text-sm leading-relaxed text-muted-foreground"
+                  style={{ fontFamily: activeFont.stack }}
+                >
+                  <p className="text-base font-semibold text-foreground">
+                    {title?.trim() || (isPoll ? "Mon Sondage" : "Mon Quiz")}
+                  </p>
+                  <p className="mt-1">
+                    {description?.trim() || "Aperçu de la police sélectionnée pour vos questions."}
+                  </p>
                 </div>
               </div>
             </div>
@@ -1105,25 +1197,11 @@ export const QuizBuilder = () => {
             <div className="flex-1 space-y-6 p-4">
               <div>
                 <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Thèmes</p>
-                <Select value={theme} onValueChange={setTheme}>
-                  <SelectTrigger className="w-full h-auto border-0 bg-transparent p-0 shadow-none focus:ring-0 focus:ring-offset-0 [&>span:last-child]:hidden">
-                    <SelectValue className="sr-only" />
-                    <ThemeOptionPill theme={activeTheme} showChevron isActive />
-                  </SelectTrigger>
-                  <SelectContent className="z-50 bg-popover">
-                    {THEMES.map((t) => (
-                      <SelectItem
-                        key={t.id}
-                        value={t.id}
-                        className="px-1 py-1.5 [&>span:first-child]:hidden"
-                      >
-                        <ThemeOption theme={t} isActive={theme === t.id} />
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <div className="mt-4 rounded-2xl border border-border/60 bg-muted/30 p-4">
-                  <ThemePreviewPanel theme={activeTheme} />
+                <div className="space-y-3">
+                  <ThemeSelectionList value={theme} onChange={setTheme} />
+                  <div className="rounded-2xl border border-border/60 bg-muted/30 p-4">
+                    <ThemePreviewPanel theme={activeTheme} />
+                  </div>
                 </div>
               </div>
 
@@ -1157,7 +1235,7 @@ export const QuizBuilder = () => {
           title={sidebarOpen ? t('hideThemes') : t('showThemes')}
           aria-label={sidebarOpen ? t('hideThemes') : t('showThemes')}
           className={cn(
-            "absolute top-6 z-20 h-9 w-9 -translate-x-1/2 rounded-full border border-border/60 bg-background text-muted-foreground shadow-sm transition-all hover:text-foreground",
+            "absolute top-1/2 z-20 h-9 w-9 -translate-x-1/2 -translate-y-1/2 rounded-full border border-border/60 bg-background text-muted-foreground shadow-sm transition-all hover:text-foreground",
             sidebarOpen ? "left-[288px]" : "left-6"
           )}
         >
@@ -1229,6 +1307,7 @@ export const QuizBuilder = () => {
                 isPoll={isPoll}
                 theme={theme}
                 selectedQuestionIndex={selectedQuestionIndex}
+                fontFamily={activeFont.stack}
               />
             </div>
           </div>
@@ -1291,7 +1370,7 @@ export const QuizBuilder = () => {
         title={questionEditorOpen ? t('hideQuestionEditor') : t('showQuestionEditor')}
         aria-label={questionEditorOpen ? t('hideQuestionEditor') : t('showQuestionEditor')}
         className={cn(
-          "absolute top-6 z-20 h-9 w-9 translate-x-1/2 rounded-full border border-border/60 bg-background text-muted-foreground shadow-sm transition-all hover:text-foreground",
+          "absolute top-1/2 z-20 h-9 w-9 translate-x-1/2 -translate-y-1/2 rounded-full border border-border/60 bg-background text-muted-foreground shadow-sm transition-all hover:text-foreground",
           questionEditorOpen ? "right-[384px]" : "right-6"
         )}
       >
