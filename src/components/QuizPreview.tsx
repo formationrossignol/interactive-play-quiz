@@ -11,6 +11,7 @@ interface QuizPreviewProps {
   questions: any[];
   isPoll: boolean;
   theme?: string;
+  fontFamily?: string;
 }
 
 interface QuizPreviewLiveProps extends QuizPreviewProps {
@@ -26,6 +27,7 @@ export const QuizPreview = ({
   isPoll,
   theme = DEFAULT_THEME_ID,
   selectedQuestionIndex,
+  fontFamily,
 }: QuizPreviewLiveProps) => {
   const selectedTheme = THEMES.find((themeOption) => themeOption.id === theme) ?? THEMES[0];
   const themeOverlay = selectedTheme?.palette?.[2]
@@ -224,7 +226,10 @@ export const QuizPreview = ({
   };
 
   return (
-    <div className="relative flex h-full flex-col overflow-hidden border border-border/60 bg-white shadow-sm">
+    <div
+      className="relative flex h-full flex-col overflow-hidden border border-border/60 bg-white shadow-sm"
+      style={fontFamily ? { fontFamily } : undefined}
+    >
       <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col overflow-hidden text-foreground">
         <header className="relative overflow-hidden">
           <div className="absolute inset-0" style={headerBackgroundStyle} aria-hidden />
@@ -281,8 +286,8 @@ export const QuizPreview = ({
             aria-hidden
           />
           <div className="relative z-10 flex h-full flex-col px-5 py-6 text-center backdrop-blur-sm sm:px-10 sm:py-8">
-            <div className="flex flex-1 flex-col gap-6">
-              <div className="space-y-4 min-h-[5rem]">
+            <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-4">
+              <div className="space-y-3">
                 <h2 className="text-2xl font-semibold leading-snug text-foreground sm:text-3xl">
                   {questionToShow.question?.trim() || t("noQuestionText")}
                 </h2>
@@ -299,7 +304,7 @@ export const QuizPreview = ({
               )}
             </div>
 
-            <div className="mx-auto mt-auto w-full max-w-3xl text-left">
+            <div className="mx-auto w-full max-w-3xl text-left">
               {renderAnswers()}
             </div>
           </div>
