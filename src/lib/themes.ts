@@ -134,6 +134,66 @@ export const THEMES: Theme[] = [
     name: "Rayons",
     preview: "radial-gradient(circle at 30% 30%, #a5f3fc, transparent), conic-gradient(from -10deg at 30% 30%, #0e7490 10deg, transparent 10deg)",
     background: "theme-pattern bg-pattern-rays"
+  },
+  {
+    id: "cyber-neon",
+    name: "Cyber Neon",
+    preview: "linear-gradient(135deg, #0f0c29 0%, #302b63 40%, #24243e 70%, #00ffe0 100%)",
+    background: "linear-gradient(135deg, #0f0c29 0%, #302b63 40%, #24243e 70%, #00ffe0 100%)"
+  },
+  {
+    id: "paper-classroom",
+    name: "Paper Classroom",
+    preview: "linear-gradient(135deg, #fffaf3 0%, #ffd166 35%, #06d6a0 70%, #073b4c 100%)",
+    background: "linear-gradient(135deg, #fffaf3 0%, #ffd166 35%, #06d6a0 70%, #073b4c 100%)"
+  },
+  {
+    id: "minimal-zen",
+    name: "Minimal Zen",
+    preview: "linear-gradient(135deg, #f4f1de 0%, #e07a5f 25%, #3d405b 55%, #81b29a 80%, #f2cc8f 100%)",
+    background: "linear-gradient(135deg, #f4f1de 0%, #e07a5f 25%, #3d405b 55%, #81b29a 80%, #f2cc8f 100%)"
+  },
+  {
+    id: "retro-arcade",
+    name: "Retro Arcade",
+    preview: "linear-gradient(135deg, #000000 0%, #1a1a40 35%, #00ffff 65%, #ff00c8 100%)",
+    background: "linear-gradient(135deg, #000000 0%, #1a1a40 35%, #00ffff 65%, #ff00c8 100%)"
+  },
+  {
+    id: "nature-aventure",
+    name: "Nature & Aventure",
+    preview: "linear-gradient(135deg, #283618 0%, #606c38 30%, #fefae0 60%, #dda15e 80%, #bc6c25 100%)",
+    background: "linear-gradient(135deg, #283618 0%, #606c38 30%, #fefae0 60%, #dda15e 80%, #bc6c25 100%)"
+  },
+  {
+    id: "corporate-elegant",
+    name: "Corporate Elegant",
+    preview: "linear-gradient(135deg, #ffffff 0%, #f2f2f2 35%, #1c1c1e 65%, #007aff 100%)",
+    background: "linear-gradient(135deg, #ffffff 0%, #f2f2f2 35%, #1c1c1e 65%, #007aff 100%)"
+  },
+  {
+    id: "galactic-space",
+    name: "Galactic Space",
+    preview: "linear-gradient(135deg, #0b0033 0%, #1b1b3a 35%, #6930c3 60%, #64dfdf 80%, #80ffdb 100%)",
+    background: "linear-gradient(135deg, #0b0033 0%, #1b1b3a 35%, #6930c3 60%, #64dfdf 80%, #80ffdb 100%)"
+  },
+  {
+    id: "festival-pop",
+    name: "Festival Pop",
+    preview: "linear-gradient(135deg, #ff006e 0%, #ffbe0b 35%, #8338ec 65%, #3a86ff 100%)",
+    background: "linear-gradient(135deg, #ff006e 0%, #ffbe0b 35%, #8338ec 65%, #3a86ff 100%)"
+  },
+  {
+    id: "dark-matter",
+    name: "Dark Matter",
+    preview: "linear-gradient(135deg, #0d1117 0%, #161b22 40%, #1f6feb 70%, #58a6ff 85%, #8b949e 100%)",
+    background: "linear-gradient(135deg, #0d1117 0%, #161b22 40%, #1f6feb 70%, #58a6ff 85%, #8b949e 100%)"
+  },
+  {
+    id: "museum-chic",
+    name: "Museum Chic",
+    preview: "linear-gradient(135deg, #f5f3e7 0%, #c6a664 40%, #a68b5b 70%, #4b4237 100%)",
+    background: "linear-gradient(135deg, #f5f3e7 0%, #c6a664 40%, #a68b5b 70%, #4b4237 100%)"
   }
 ];
 
