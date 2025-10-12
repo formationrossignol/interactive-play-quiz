@@ -49,6 +49,15 @@ export const QuizPreview = ({ title, description, category, headerImage, questio
     );
   }
   
+  const themeBackgroundStyle = selectedTheme
+    ? {
+        backgroundImage: selectedTheme.preview,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+      }
+    : {};
+
   return (
     <Card className="sticky top-6">
       <CardHeader>
@@ -60,12 +69,11 @@ export const QuizPreview = ({ title, description, category, headerImage, questio
       <CardContent className="space-y-4">
         {/* Question preview comme en mode live */}
         <div
-          className="rounded-lg overflow-hidden p-6"
+          className="overflow-hidden rounded-lg p-6"
           style={{
-            background: selectedTheme?.background || 'linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary)) 100%)',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat'
+            ...themeBackgroundStyle,
+            backgroundImage:
+              themeBackgroundStyle.backgroundImage || 'linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary)) 100%)',
           }}
           title={selectedTheme?.imageDescription}
         >
