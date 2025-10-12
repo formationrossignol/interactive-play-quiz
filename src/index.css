@@ -180,4 +180,135 @@
     filter: blur(60px);
     opacity: 0.8;
   }
+
+  /* Palette pour motifs géométriques */
+  .theme-pattern {
+    --c1: 14 116 144; /* principal - cyan-700 en HSL */
+    --c2: 165 243 252; /* secondaire - cyan-200 en HSL */
+    --c3: 17 24 39;    /* foncé - gray-900 en HSL */
+    --c4: 249 250 251; /* clair - gray-50 en HSL */
+  }
+
+  /* Base commune pour motifs */
+  [class^="bg-pattern-"] {
+    min-height: 260px;
+    border-radius: 16px;
+  }
+
+  /* 1) Rayures horizontales */
+  .bg-pattern-stripes {
+    background: repeating-linear-gradient(
+      0deg,
+      hsl(var(--c1)) 0 16px,
+      hsl(var(--c2)) 16px 32px
+    );
+  }
+
+  /* 2) Rayures diagonales 45° */
+  .bg-pattern-diag {
+    background: repeating-linear-gradient(
+      45deg,
+      hsl(var(--c1)) 0 14px,
+      hsl(var(--c2)) 14px 28px
+    );
+  }
+
+  /* 3) Pois (polka dots) */
+  .bg-pattern-polka {
+    --s: 28px;
+    background:
+      radial-gradient(circle 4px at 7px 7px, hsl(var(--c1)) 98%, transparent) 0 0/var(--s) var(--s),
+      radial-gradient(circle 4px at 21px 21px, hsl(var(--c1)) 98%, transparent) 0 0/var(--s) var(--s),
+      hsl(var(--c4));
+  }
+
+  /* 4) Damier (checkerboard) */
+  .bg-pattern-checker {
+    --s: 32px;
+    background: conic-gradient(
+      from 90deg,
+      hsl(var(--c1)) 90deg,
+      hsl(var(--c2)) 0
+    ) 0 0 / var(--s) var(--s);
+  }
+
+  /* 5) Grille fine (graph paper) */
+  .bg-pattern-grid {
+    --s: 28px;
+    background:
+      linear-gradient(hsl(var(--c2)) 1px, transparent 1px) 0 0/100% var(--s),
+      linear-gradient(90deg, hsl(var(--c2)) 1px, transparent 1px) 0 0/var(--s) 100%,
+      hsl(var(--c4));
+  }
+
+  /* 6) Grille croisée épaisse */
+  .bg-pattern-cross {
+    --s: 36px;
+    background:
+      linear-gradient(hsl(var(--c1)) 2px, transparent 2px) 0 0/100% var(--s),
+      linear-gradient(90deg, hsl(var(--c1)) 2px, transparent 2px) 0 0/var(--s) 100%,
+      hsl(var(--c4));
+  }
+
+  /* 7) Zigzag */
+  .bg-pattern-zigzag {
+    --s: 24px;
+    background:
+      conic-gradient(
+        from 135deg at 12px 12px,
+        hsl(var(--c1)) 90deg,
+        transparent 0 180deg,
+        hsl(var(--c1)) 0 270deg,
+        transparent 0
+      ) 0 0/var(--s) var(--s),
+      hsl(var(--c4));
+  }
+
+  /* 8) Chevron (herringbone léger) */
+  .bg-pattern-herringbone {
+    --s: 28px;
+    background:
+      repeating-linear-gradient(135deg, hsl(var(--c1)) 0 6px, transparent 6px 14px) 0 0/var(--s) var(--s),
+      repeating-linear-gradient(225deg, hsl(var(--c2)) 0 6px, transparent 6px 14px) 0 0/var(--s) var(--s),
+      hsl(var(--c4));
+  }
+
+  /* 9) Cubes isométriques */
+  .bg-pattern-cubes {
+    --s: 48px;
+    --g: #0000 52%, hsl(var(--c1)) 0 56%, #0000 0;
+    background:
+      linear-gradient(30deg, var(--g)) 0 0/var(--s) var(--s),
+      linear-gradient(150deg, var(--g)) 0 0/var(--s) var(--s),
+      linear-gradient(90deg, var(--g)) 0 0/var(--s) var(--s),
+      hsl(var(--c4));
+  }
+
+  /* 10) Ondes fluides (waves) */
+  .bg-pattern-waves {
+    --s: 48px;
+    background:
+      radial-gradient(ellipse 60% 40% at 50% -10%, hsl(var(--c2)), #0000 70%),
+      radial-gradient(ellipse 60% 40% at 50% 110%, hsl(var(--c2)), #0000 70%),
+      repeating-radial-gradient(circle at 50% 50%, #0000 0 10px, hsl(var(--c1)) 10px 20px);
+    background-blend-mode: screen, multiply, normal;
+  }
+
+  /* 11) "Confetti" (points multi-tailles) */
+  .bg-pattern-confetti {
+    --s: 36px;
+    background:
+      radial-gradient(circle 2px, hsl(var(--c1)) 98%, #0000) 6px 6px/var(--s) var(--s),
+      radial-gradient(circle 3px, hsl(var(--c2)) 98%, #0000) 18px 18px/var(--s) var(--s),
+      radial-gradient(circle 1.5px, hsl(var(--c3)) 98%, #0000) 24px 12px/var(--s) var(--s),
+      hsl(var(--c4));
+  }
+
+  /* 12) Soleil/conique (accent héro) */
+  .bg-pattern-rays {
+    background:
+      radial-gradient(circle at 30% 30%, hsl(var(--c2)), #0000 40%),
+      conic-gradient(from -10deg at 30% 30%, hsl(var(--c1)) 0 10deg, #0000 10deg 20deg) 0 0/120px 120px,
+      hsl(var(--c4));
+  }
 }
