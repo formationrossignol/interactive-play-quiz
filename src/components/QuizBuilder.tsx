@@ -18,10 +18,9 @@ import {
   HelpCircle,
   GripVertical,
   Settings,
-  PanelLeftClose,
-  PanelLeftOpen,
-  PanelRightClose,
-  PanelRightOpen,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
   Play,
   Copy,
   Home,
@@ -196,35 +195,40 @@ const getThemeOverlay = (theme?: Theme) => {
 };
 
 const ThemePaletteChips = ({ theme }: { theme: Theme }) => (
-  <div className="flex items-center gap-1">
+  <span className="flex items-center gap-1.5">
     {theme.palette.map((color, index) => (
       <span
         key={`${theme.id}-palette-${index}`}
-        className="h-3.5 w-3.5 rounded-sm border border-black/10 shadow-sm dark:border-white/20"
+        className="h-3 w-3 rounded-full border border-black/10 shadow-sm dark:border-white/15"
         style={{ backgroundColor: color }}
       />
     ))}
-  </div>
+  </span>
 );
 
-const ThemeOption = ({ theme }: { theme: Theme }) => (
-  <div className="flex items-center gap-3">
-    <div className="relative h-12 w-20 flex-shrink-0 overflow-hidden rounded-lg border border-border/60 shadow-sm">
+const ThemeOptionPill = ({ theme, showChevron = false }: { theme: Theme; showChevron?: boolean }) => (
+  <span className="flex w-full items-center gap-3 rounded-full border border-border/60 bg-background/80 px-2 py-2 shadow-sm backdrop-blur">
+    <span className="relative flex h-12 w-20 shrink-0 overflow-hidden rounded-full border border-border/60">
       <img
         src={theme.imageUrl}
         alt={theme.imageDescription}
         className="h-full w-full object-cover"
         loading="lazy"
       />
-      <div className="absolute inset-0" aria-hidden style={{ background: getThemeOverlay(theme) }} />
-    </div>
-    <div className="min-w-0 flex-1">
-      <p className="text-sm font-medium text-foreground">{theme.name}</p>
-      <p className="text-xs text-muted-foreground line-clamp-2">{theme.imageDescription}</p>
-    </div>
-    <ThemePaletteChips theme={theme} />
-  </div>
+      <span className="absolute inset-0" aria-hidden style={{ background: getThemeOverlay(theme) }} />
+    </span>
+    <span className="min-w-0 flex-1">
+      <span className="block text-sm font-semibold text-foreground">{theme.name}</span>
+      <span className="block text-xs text-muted-foreground line-clamp-1">{theme.imageDescription}</span>
+    </span>
+    <span className="flex items-center gap-2">
+      <ThemePaletteChips theme={theme} />
+      {showChevron && <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+    </span>
+  </span>
 );
+
+const ThemeOption = ({ theme }: { theme: Theme }) => <ThemeOptionPill theme={theme} />;
 
 const ThemePreviewPanel = ({ theme }: { theme?: Theme }) => {
   if (!theme) {
@@ -831,9 +835,9 @@ export const QuizBuilder = () => {
             aria-label={sidebarOpen ? t('hideThemes') : t('showThemes')}
           >
             {sidebarOpen ? (
-              <PanelLeftClose className="w-5 h-5" />
+              <ChevronLeft className="h-5 w-5" />
             ) : (
-              <PanelLeftOpen className="w-5 h-5" />
+              <ChevronRight className="h-5 w-5" />
             )}
           </Button>
           <Input
@@ -853,9 +857,9 @@ export const QuizBuilder = () => {
           aria-label={questionEditorOpen ? t('hideQuestionEditor') : t('showQuestionEditor')}
         >
           {questionEditorOpen ? (
-            <PanelRightClose className="w-5 h-5" />
+            <ChevronRight className="h-5 w-5" />
           ) : (
-            <PanelRightOpen className="w-5 h-5" />
+            <ChevronLeft className="h-5 w-5" />
           )}
         </Button>
         <Dialog>
@@ -1022,8 +1026,9 @@ export const QuizBuilder = () => {
               <div>
                 <Label>Thème visuel</Label>
                 <Select value={theme} onValueChange={setTheme}>
-                  <SelectTrigger className="mt-2">
-                    <SelectValue />
+                  <SelectTrigger className="mt-2 h-auto border-0 bg-transparent p-0 shadow-none focus:ring-0 focus:ring-offset-0 [&>span:last-child]:hidden">
+                    <SelectValue className="sr-only" />
+                    <ThemeOptionPill theme={activeTheme} showChevron />
                   </SelectTrigger>
                   <SelectContent className="bg-popover z-50">
                     {THEMES.map((t) => (
@@ -1101,8 +1106,9 @@ export const QuizBuilder = () => {
               <div>
                 <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Thèmes</p>
                 <Select value={theme} onValueChange={setTheme}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
+                  <SelectTrigger className="w-full h-auto border-0 bg-transparent p-0 shadow-none focus:ring-0 focus:ring-offset-0 [&>span:last-child]:hidden">
+                    <SelectValue className="sr-only" />
+                    <ThemeOptionPill theme={activeTheme} showChevron />
                   </SelectTrigger>
                   <SelectContent className="z-50 bg-popover">
                     {THEMES.map((t) => (

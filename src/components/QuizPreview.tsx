@@ -280,24 +280,26 @@ export const QuizPreview = ({
             style={{ background: themeOverlay, mixBlendMode: "multiply" }}
             aria-hidden
           />
-          <div className="relative z-10 flex h-full flex-col gap-6 px-5 py-6 text-center backdrop-blur-sm sm:px-10 sm:py-8">
-            <div className="space-y-4 min-h-[5rem]">
-              <h2 className="text-2xl font-semibold leading-snug text-foreground sm:text-3xl">
-                {questionToShow.question?.trim() || t("noQuestionText")}
-              </h2>
+          <div className="relative z-10 flex h-full flex-col px-5 py-6 text-center backdrop-blur-sm sm:px-10 sm:py-8">
+            <div className="flex flex-1 flex-col gap-6">
+              <div className="space-y-4 min-h-[5rem]">
+                <h2 className="text-2xl font-semibold leading-snug text-foreground sm:text-3xl">
+                  {questionToShow.question?.trim() || t("noQuestionText")}
+                </h2>
+              </div>
+
+              {questionToShow.image && (
+                <div className="mx-auto max-h-72 w-full overflow-hidden rounded-3xl border border-white/60 bg-white/90 shadow-sm sm:w-4/5">
+                  <img
+                    src={questionToShow.image}
+                    alt={questionToShow.question || t("question")}
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+              )}
             </div>
 
-            {questionToShow.image && (
-              <div className="mx-auto max-h-72 w-full overflow-hidden rounded-3xl border border-white/60 bg-white/90 shadow-sm sm:w-4/5">
-                <img
-                  src={questionToShow.image}
-                  alt={questionToShow.question || t("question")}
-                  className="h-full w-full object-cover"
-                />
-              </div>
-            )}
-
-            <div className="mx-auto w-full max-w-3xl text-left">
+            <div className="mx-auto mt-auto w-full max-w-3xl text-left">
               {renderAnswers()}
             </div>
           </div>
