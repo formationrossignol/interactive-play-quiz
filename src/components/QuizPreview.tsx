@@ -31,7 +31,7 @@ export const QuizPreview = ({
   const themeOverlay = selectedTheme?.palette?.[2]
     ? hexToRgba(selectedTheme.palette[2], 0.12)
     : "rgba(15, 23, 42, 0.08)";
-  const neutralOverlay = "rgba(255, 255, 255, 0.88)";
+  const neutralOverlay = "rgba(255, 255, 255, 0.6)";
   const backgroundStyle = selectedTheme
     ? {
         backgroundImage: selectedTheme.background,
@@ -281,7 +281,7 @@ export const QuizPreview = ({
             aria-hidden
           />
           <div className="relative z-10 flex h-full flex-col gap-6 px-5 py-6 text-center backdrop-blur-sm sm:px-10 sm:py-8">
-            <div className="space-y-4">
+            <div className="space-y-4 min-h-[5rem]">
               <h2 className="text-2xl font-semibold leading-snug text-foreground sm:text-3xl">
                 {questionToShow.question?.trim() || t("noQuestionText")}
               </h2>

@@ -1173,7 +1173,7 @@ export const QuizBuilder = () => {
         {/* Center - Questions List + Preview */}
         <div className="flex-1 flex overflow-hidden">
           {/* Questions List */}
-          <div className="w-80 border-r bg-muted/30 overflow-y-auto p-4">
+          <div className="w-80 border-r bg-muted/30 overflow-y-auto p-4 mr-8">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-foreground">Questions</h3>
             </div>
@@ -1225,7 +1225,7 @@ export const QuizBuilder = () => {
 
           {/* Preview */}
           <div className="flex-1 overflow-hidden">
-            <div className="h-full overflow-y-auto p-6">
+            <div className="h-full overflow-y-auto p-0">
               <QuizPreview
                 title={title || (isPoll ? "Mon Sondage" : "Mon Quiz") }
                 description={description}
