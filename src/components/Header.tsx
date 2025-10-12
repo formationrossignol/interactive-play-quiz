@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { getCurrentUser, logout } from "@/lib/auth";
-import { Zap, LogOut, User, BookOpen, BarChart3, Globe } from "lucide-react";
+import { Zap, LogOut, User, BookOpen, BarChart3, Globe, Home, Menu } from "lucide-react";
 import { useState, useEffect } from "react";
 import { getLanguage, setLanguage, t, type Language } from "@/lib/i18n";
 import {
@@ -19,6 +19,27 @@ export const Header = ({ subtitle }: HeaderProps) => {
   const navigate = useNavigate();
   const [user, setUser] = useState(getCurrentUser());
   const [currentLanguage, setCurrentLanguage] = useState<Language>(getLanguage());
+
+  const navigationItems = [
+    {
+      label: t('home'),
+      icon: Home,
+      onClick: () => navigate('/'),
+      requiresAuth: false,
+    },
+    {
+      label: t('myQuizzes'),
+      icon: BookOpen,
+      onClick: () => navigate('/my-quizzes'),
+      requiresAuth: true,
+    },
+    {
+      label: t('myPolls'),
+      icon: BarChart3,
+      onClick: () => navigate('/my-polls'),
+      requiresAuth: true,
+    },
+  ];
 
   useEffect(() => {
     const currentUser = getCurrentUser();
@@ -41,7 +62,7 @@ export const Header = ({ subtitle }: HeaderProps) => {
 
   return (
     <nav className="sticky top-0 z-40 border-b border-white/40 bg-white/70 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
+      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5 gap-6">
         <div
           className="group flex cursor-pointer items-center gap-4 transition-transform duration-300 hover:-translate-y-0.5"
           onClick={() => navigate('/')}
@@ -55,7 +76,67 @@ export const Header = ({ subtitle }: HeaderProps) => {
           </div>
         </div>
 
+        <div className="hidden flex-1 items-center justify-center gap-1 md:flex">
+          {navigationItems
+            .filter((item) => (item.requiresAuth ? Boolean(user) : true))
+            .map((item) => {
+              const Icon = item.icon;
+              return (
+                <Button
+                  key={item.label}
+                  variant="ghost"
+                  size="sm"
+                  onClick={item.onClick}
+                  className="gap-2 rounded-full px-4 text-sm font-medium text-foreground/80 transition-colors hover:text-foreground"
+                >
+                  <Icon className="h-4 w-4" />
+                  <span>{item.label}</span>
+                </Button>
+              );
+            })}
+        </div>
+
         <div className="flex items-center gap-3">
+          <div className="md:hidden">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-10 w-10 rounded-full border-white/60 bg-white/60 text-foreground/70 shadow-[0_10px_30px_-18px_rgba(15,26,61,0.5)] transition-all duration-300 hover:border-[#0f1a3d]/30 hover:text-foreground"
+                >
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="z-50 w-56 rounded-2xl border border-white/50 bg-white/80 p-2 backdrop-blur-xl">
+                {navigationItems
+                  .filter((item) => (item.requiresAuth ? Boolean(user) : true))
+                  .map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <DropdownMenuItem
+                        key={item.label}
+                        className="gap-2 rounded-xl text-sm text-foreground/80 transition-colors hover:bg-foreground/5"
+                        onSelect={item.onClick}
+                      >
+                        <Icon className="h-4 w-4" />
+                        {item.label}
+                      </DropdownMenuItem>
+                    );
+                  })}
+                {user && (
+                  <DropdownMenuItem
+                    className="gap-2 rounded-xl text-sm text-foreground/80 transition-colors hover:bg-foreground/5"
+                    onSelect={() => navigate('/profile')}
+                  >
+                    <User className="h-4 w-4" />
+                    {t('profile')}
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -86,27 +167,19 @@ export const Header = ({ subtitle }: HeaderProps) => {
             <>
               <Button
                 variant="outline"
-                size="icon"
-                onClick={() => navigate('/my-quizzes')}
-                className="h-10 w-10 rounded-full border-white/60 bg-white/60 text-foreground/70 shadow-[0_10px_30px_-18px_rgba(15,26,61,0.5)] transition-all duration-300 hover:border-[#0f1a3d]/25 hover:text-foreground"
-                title={t('myQuizzes')}
+                size="sm"
+                onClick={() => navigate('/profile')}
+                className="hidden h-10 rounded-full border-white/60 bg-white/60 px-4 text-sm font-medium text-foreground/80 shadow-[0_10px_30px_-18px_rgba(15,26,61,0.5)] transition-all duration-300 hover:border-[#0f1a3d]/25 hover:text-foreground sm:flex"
+                title={user.username}
               >
-                <BookOpen className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => navigate('/my-polls')}
-                className="h-10 w-10 rounded-full border-white/60 bg-white/60 text-foreground/70 shadow-[0_10px_30px_-18px_rgba(15,26,61,0.5)] transition-all duration-300 hover:border-[#0f1a3d]/25 hover:text-foreground"
-                title={t('myPolls')}
-              >
-                <BarChart3 className="h-4 w-4" />
+                <User className="mr-2 h-4 w-4" />
+                {t('profile')}
               </Button>
               <Button
                 variant="outline"
                 size="icon"
                 onClick={() => navigate('/profile')}
-                className="h-10 w-10 rounded-full border-white/60 bg-white/60 text-foreground/80 shadow-[0_10px_30px_-18px_rgba(15,26,61,0.5)] transition-all duration-300 hover:border-[#0f1a3d]/25 hover:text-foreground"
+                className="sm:hidden h-10 w-10 rounded-full border-white/60 bg-white/60 text-foreground/80 shadow-[0_10px_30px_-18px_rgba(15,26,61,0.5)] transition-all duration-300 hover:border-[#0f1a3d]/25 hover:text-foreground"
                 title={user.username}
               >
                 <User className="h-4 w-4" />
@@ -118,6 +191,7 @@ export const Header = ({ subtitle }: HeaderProps) => {
                 className="h-10 rounded-full text-foreground/70 transition-colors hover:text-foreground"
               >
                 <LogOut className="h-4 w-4" />
+                <span className="ml-2 hidden sm:inline">{t('logout')}</span>
               </Button>
             </>
           ) : (

@@ -11,11 +11,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Trash2, Save, Upload, HelpCircle, GripVertical, Settings, Menu, X, Home, BarChart3, User, LogOut, Play, Copy } from "lucide-react";
+import { Plus, Trash2, Save, Upload, HelpCircle, GripVertical, Settings, Menu, X, Play, Copy } from "lucide-react";
 import { QuizPreview } from "./QuizPreview";
 import { QuestionTypeSelector } from "./QuestionTypeSelector";
 import { Header } from "./Header";
-import { getCurrentUser, logout } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/auth";
 import { saveQuiz, updateQuiz, getQuizById } from "@/lib/quizStorage";
 import { getPollTemplate } from "@/lib/pollTemplates";
 import { getQuizTemplate } from "@/lib/quizTemplates";
@@ -757,19 +757,19 @@ export const QuizBuilder = () => {
                     </Select>
                     
                     {/* Theme Preview */}
-                    <div className="mt-4 p-4 rounded-lg border overflow-hidden">
-                      <p className="text-xs text-muted-foreground mb-2">Aperçu du thème :</p>
+                    <div className="mt-4 overflow-hidden rounded-lg border p-4">
+                      <p className="mb-2 text-xs text-muted-foreground">Aperçu du thème :</p>
                       <div
-                        className="h-32 rounded-md flex items-center justify-center"
+                        className="flex h-32 items-center justify-center rounded-md"
                         style={{
-                          background: activeTheme?.background || 'linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary)) 100%)',
+                          backgroundImage: activeTheme?.preview,
                           backgroundSize: 'cover',
                           backgroundPosition: 'center',
                           backgroundRepeat: 'no-repeat'
                         }}
                         title={activeTheme?.imageDescription}
                       >
-                        <span className="text-white font-bold text-lg drop-shadow-lg">
+                        <span className="text-lg font-bold text-white drop-shadow-lg">
                           {activeTheme?.name || 'Thème'}
                         </span>
                       </div>
@@ -798,96 +798,62 @@ export const QuizBuilder = () => {
       <div className="flex-1 flex overflow-hidden">
         {/* Left Sidebar - Navigation */}
         <div className={`${sidebarOpen ? 'w-64' : 'w-0'} border-r bg-card overflow-hidden transition-all duration-200`}>
-          <div className="p-4 h-full flex flex-col">
-            {/* Navigation Links */}
-            <nav className="flex-1 space-y-2 pt-2">
-              <Button
-                variant="ghost"
-                className="w-full justify-start"
-                onClick={() => navigate('/')}
-              >
-                <Home className="w-5 h-5 mr-3" />
-                {t('home')}
-              </Button>
-              <Button
-                variant="ghost"
-                className="w-full justify-start"
-                onClick={() => navigate('/my-quizzes')}
-              >
-                <BarChart3 className="w-5 h-5 mr-3" />
-                {t('myQuizzes')}
-              </Button>
-              <Button
-                variant="ghost"
-                className="w-full justify-start"
-                onClick={() => navigate('/my-polls')}
-              >
-                <BarChart3 className="w-5 h-5 mr-3" />
-                {t('myPolls')}
-              </Button>
-              <Button
-                variant="ghost"
-                className="w-full justify-start"
-                onClick={() => navigate('/profile')}
-              >
-                <User className="w-5 h-5 mr-3" />
-                {t('profile')}
-              </Button>
-              
-              {/* Thèmes Section */}
-              <div className="pt-4 border-t">
-                <p className="text-xs font-semibold text-muted-foreground mb-2 px-3">Thèmes</p>
-                <Select value={theme} onValueChange={setTheme}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover z-50">
-                    {THEMES.map((t) => (
-                      <SelectItem key={t.id} value={t.id}>
-                        <div className="flex items-center justify-between gap-3">
-                          <span>{t.name}</span>
-                          <div className="flex items-center gap-1">
-                            {t.palette.map((color, index) => (
-                              <span
-                                key={`${t.id}-sidebar-palette-${index}`}
-                                className="h-3 w-3 rounded-sm border border-black/10 dark:border-white/30"
-                                style={{ backgroundColor: color }}
-                              />
-                            ))}
-                          </div>
+          <div className="flex h-full flex-col gap-6 overflow-y-auto p-4">
+            <div>
+              <p className="px-3 text-xs font-semibold text-muted-foreground mb-2">Thèmes</p>
+              <Select value={theme} onValueChange={setTheme}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="z-50 bg-popover">
+                  {THEMES.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      <div className="flex items-center justify-between gap-3">
+                        <span>{t.name}</span>
+                        <div className="flex items-center gap-1">
+                          {t.palette.map((color, index) => (
+                            <span
+                              key={`${t.id}-sidebar-palette-${index}`}
+                              className="h-3 w-3 rounded-sm border border-black/10 dark:border-white/30"
+                              style={{ backgroundColor: color }}
+                            />
+                          ))}
                         </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Templates Section */}
-              <div className="pt-4">
-                <p className="text-xs font-semibold text-muted-foreground mb-2 px-3">Templates</p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full justify-start"
-                  onClick={() => navigate(`/quiz-builder-start?type=${quizType}`)}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <div className="mt-4 rounded-lg border p-4">
+                <p className="mb-2 text-xs text-muted-foreground">Aperçu du thème :</p>
+                <div
+                  className="flex h-32 items-center justify-center rounded-md"
+                  style={{
+                    backgroundImage: activeTheme?.preview,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    backgroundRepeat: 'no-repeat'
+                  }}
+                  title={activeTheme?.imageDescription}
                 >
-                  Changer de template
-                </Button>
+                  <span className="text-lg font-bold text-white drop-shadow-lg">
+                    {activeTheme?.name || 'Thème'}
+                  </span>
+                </div>
               </div>
-            </nav>
+            </div>
 
-            {/* Logout Button */}
-            <Button
-              variant="ghost"
-              className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10"
-              onClick={() => {
-                logout();
-                navigate('/auth');
-              }}
-            >
-              <LogOut className="w-5 h-5 mr-3" />
-              {t('logout')}
-            </Button>
+            <div>
+              <p className="px-3 text-xs font-semibold text-muted-foreground mb-2">Templates</p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full justify-start"
+                onClick={() => navigate(`/quiz-builder-start?type=${quizType}`)}
+              >
+                Changer de template
+              </Button>
+            </div>
           </div>
         </div>
 
