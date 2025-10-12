@@ -29,9 +29,9 @@ export const QuizPreview = ({
 }: QuizPreviewLiveProps) => {
   const selectedTheme = THEMES.find((themeOption) => themeOption.id === theme) ?? THEMES[0];
   const themeOverlay = selectedTheme?.palette?.[2]
-    ? hexToRgba(selectedTheme.palette[2], 0.18)
+    ? hexToRgba(selectedTheme.palette[2], 0.12)
     : "rgba(15, 23, 42, 0.08)";
-  const neutralOverlay = "rgba(255, 255, 255, 0.82)";
+  const neutralOverlay = "rgba(255, 255, 255, 0.88)";
   const backgroundStyle = selectedTheme
     ? {
         backgroundImage: selectedTheme.background,
@@ -40,6 +40,23 @@ export const QuizPreview = ({
         backgroundRepeat: "no-repeat",
       }
     : { background: themeOverlay };
+
+  const headerBackgroundStyle = headerImage
+    ? {
+        backgroundImage: `linear-gradient(120deg, ${hexToRgba("#0f172a", 0.7)}, ${hexToRgba(
+          "#1e293b",
+          0.35,
+        )}), url(${headerImage})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      }
+    : selectedTheme
+      ? {
+          backgroundImage: selectedTheme.preview,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }
+      : { background: themeOverlay };
 
   const questionToShow =
     selectedQuestionIndex !== null &&
@@ -206,7 +223,7 @@ export const QuizPreview = ({
   };
 
   return (
-    <div className="relative flex h-full flex-col overflow-hidden rounded-3xl">
+    <div className="relative flex h-full flex-col overflow-hidden rounded-3xl border border-border/60 shadow-sm">
       <div className="absolute inset-0" style={backgroundStyle} aria-hidden />
       <div
         className="absolute inset-0 backdrop-blur-sm"
@@ -218,51 +235,66 @@ export const QuizPreview = ({
         style={{ background: themeOverlay, mixBlendMode: "multiply" }}
         aria-hidden
       />
-      <div className="relative z-10 mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-2 py-4 text-foreground sm:px-4 md:px-8">
-        <div className="space-y-2">
-          <h1 className="text-2xl font-bold leading-tight">{title}</h1>
-          {description && <p className="text-base text-muted-foreground">{description}</p>}
-        </div>
+      <div className="relative z-10 mx-auto flex w-full max-w-5xl flex-1 flex-col overflow-hidden text-foreground">
+        <header className="relative overflow-hidden">
+          <div className="absolute inset-0" style={headerBackgroundStyle} aria-hidden />
+          <div className="absolute inset-0 bg-slate-900/45" aria-hidden />
+          <div className="relative z-10 flex flex-col gap-4 px-5 py-8 text-white sm:px-10">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+                  {category && (
+                    <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-white/80 backdrop-blur-sm">
+                      {category}
+                    </span>
+                  )}
+                  {category?.trim() && title?.trim() && <span className="text-white/60">/</span>}
+                  <span className="text-base font-semibold sm:text-lg">
+                    {title?.trim() || t("untitled")}
+                  </span>
+                </div>
+                {description && (
+                  <p className="max-w-2xl text-sm text-white/85 sm:text-base">{description}</p>
+                )}
+              </div>
+              <div className="rounded-full bg-white/15 px-4 py-2 text-sm font-medium text-white shadow-sm backdrop-blur">
+                {t("question")} {questionIndex + 1} / {questions.length}
+              </div>
+            </div>
+          </div>
+        </header>
 
-        <div className="space-y-3">
-          <p className="text-xs uppercase tracking-wide text-muted-foreground">
-            {t("question")} {questionIndex + 1} / {questions.length}
-          </p>
-          <h2 className="text-3xl font-semibold leading-tight">
-            {questionToShow.question?.trim() || t("noQuestionText")}
-          </h2>
-          {category && <p className="text-sm text-muted-foreground">{category}</p>}
-          {!isPoll && (
-            <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-              <span className="flex items-center gap-2">
-                <Clock className="h-4 w-4" />
-                {questionToShow.timeLimit}s
-              </span>
-              <span className="flex items-center gap-2">
-                <Trophy className="h-4 w-4" />
-                {questionToShow.points} pts
-              </span>
+        <div className="flex-1 space-y-6 bg-white/75 px-5 py-6 backdrop-blur sm:px-10 sm:py-8">
+          <div className="space-y-4">
+            <h2 className="text-2xl font-semibold leading-snug sm:text-3xl">
+              {questionToShow.question?.trim() || t("noQuestionText")}
+            </h2>
+            {!isPoll && (
+              <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+                <span className="flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  {questionToShow.timeLimit}s
+                </span>
+                <span className="flex items-center gap-2">
+                  <Trophy className="h-4 w-4" />
+                  {questionToShow.points} pts
+                </span>
+              </div>
+            )}
+          </div>
+
+          {questionToShow.image && (
+            <div className="max-h-72 w-full overflow-hidden rounded-3xl border border-white/60 bg-white/90 shadow-sm">
+              <img
+                src={questionToShow.image}
+                alt={questionToShow.question || t("question")}
+                className="h-full w-full object-cover"
+              />
             </div>
           )}
+
+          {renderAnswers()}
         </div>
-
-        {questionToShow.image && (
-          <div className="max-h-72 w-full overflow-hidden rounded-3xl border border-white/40 bg-white/80 shadow-sm">
-            <img
-              src={questionToShow.image}
-              alt={questionToShow.question || t("question")}
-              className="h-full w-full object-cover"
-            />
-          </div>
-        )}
-
-        {headerImage && (
-          <div className="max-h-72 w-full overflow-hidden">
-            <img src={headerImage} alt={title} className="h-full w-full object-cover" />
-          </div>
-        )}
-
-        {renderAnswers()}
       </div>
     </div>
   );

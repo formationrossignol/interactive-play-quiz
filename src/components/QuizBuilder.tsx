@@ -319,12 +319,6 @@ export const QuizBuilder = () => {
       action: () => navigate('/my-polls'),
       requiresAuth: true,
     },
-    {
-      label: t('profile'),
-      icon: User,
-      action: () => navigate('/profile'),
-      requiresAuth: true,
-    },
   ];
 
   const handleSidebarLogout = () => {
@@ -1106,7 +1100,21 @@ export const QuizBuilder = () => {
                       </Button>
                     );
                   })}
-                {user && (
+              </nav>
+              {user && (
+                <div className="mt-6 space-y-2 rounded-xl border border-border/60 bg-muted/30 p-3">
+                  <p className="px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    {t('accountActions')}
+                  </p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => navigate('/profile')}
+                    className="w-full justify-start gap-2 rounded-lg text-sm text-foreground/80 transition-colors hover:bg-muted/40 hover:text-foreground"
+                  >
+                    <User className="h-4 w-4" />
+                    <span>{t('profile')}</span>
+                  </Button>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -1116,8 +1124,8 @@ export const QuizBuilder = () => {
                     <LogOut className="h-4 w-4" />
                     <span>{t('logout')}</span>
                   </Button>
-                )}
-              </nav>
+                </div>
+              )}
             </div>
             <div className="flex-1 space-y-6 p-4">
               <div>
