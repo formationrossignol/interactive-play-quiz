@@ -54,6 +54,8 @@ export const translations = {
     headerImage: "Header Image",
     changeImage: "Change image",
     addImage: "Add image",
+    questionImage: "Question image",
+    removeImage: "Remove image",
     tags: "Tags",
     addTag: "Add a tag...",
     public: "Public",
@@ -72,6 +74,7 @@ export const translations = {
     hideQuestionEditor: "Hide question editor",
     showQuestionEditor: "Show question editor",
     launchPreview: "Open preview",
+    dragToReorder: "Drag to reorder",
     
     // Question Types
     questionType: "Question Type",
@@ -239,6 +242,8 @@ export const translations = {
     headerImage: "Image d'en-tête",
     changeImage: "Changer l'image",
     addImage: "Ajouter une image",
+    questionImage: "Image de la question",
+    removeImage: "Supprimer l'image",
     tags: "Tags",
     addTag: "Ajouter un tag...",
     public: "Public",
@@ -257,6 +262,7 @@ export const translations = {
     hideQuestionEditor: "Masquer l'éditeur de questions",
     showQuestionEditor: "Afficher l'éditeur de questions",
     launchPreview: "Ouvrir l'aperçu",
+    dragToReorder: "Glisser pour réorganiser",
     
     // Question Types
     questionType: "Type de question",
