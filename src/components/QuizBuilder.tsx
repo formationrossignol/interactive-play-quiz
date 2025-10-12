@@ -38,7 +38,7 @@ import { getCurrentUser, logout } from "@/lib/auth";
 import { saveQuiz, updateQuiz, getQuizById } from "@/lib/quizStorage";
 import { getPollTemplate } from "@/lib/pollTemplates";
 import { getQuizTemplate } from "@/lib/quizTemplates";
-import { DEFAULT_THEME_ID, THEMES } from "@/lib/themes";
+import { DEFAULT_THEME_ID, THEMES, type Theme } from "@/lib/themes";
 import { hexToRgba } from "@/lib/color";
 import { toast } from "sonner";
 import { getQuestionTypeLabel } from "@/lib/questionTypes";
@@ -96,8 +96,8 @@ const SortableQuestionItem = ({ question, index, onEdit, onDelete, onDuplicate }
         <p className="text-xs text-muted-foreground">{getQuestionTypeLabel(question.type)}</p>
       </div>
       <div className="flex gap-1">
-        <Button 
-          variant="ghost" 
+        <Button
+          variant="ghost"
           size="icon"
           className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
           onClick={(e) => {
@@ -108,8 +108,8 @@ const SortableQuestionItem = ({ question, index, onEdit, onDelete, onDuplicate }
         >
           <Copy className="w-4 h-4" />
         </Button>
-        <Button 
-          variant="ghost" 
+        <Button
+          variant="ghost"
           size="icon"
           className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
           onClick={(e) => {
@@ -120,6 +120,82 @@ const SortableQuestionItem = ({ question, index, onEdit, onDelete, onDuplicate }
         >
           <Trash2 className="w-4 h-4" />
         </Button>
+      </div>
+    </div>
+  );
+};
+
+const getThemeOverlay = (theme?: Theme) => {
+  if (!theme) {
+    return "linear-gradient(135deg, rgba(0,0,0,0.45), rgba(0,0,0,0.6))";
+  }
+
+  const startColor = hexToRgba(theme.palette[0], 0.55);
+  const endColor = hexToRgba(theme.palette[theme.palette.length - 1], 0.65);
+
+  return `linear-gradient(135deg, ${startColor}, ${endColor})`;
+};
+
+const ThemePaletteChips = ({ theme }: { theme: Theme }) => (
+  <div className="flex items-center gap-1">
+    {theme.palette.map((color, index) => (
+      <span
+        key={`${theme.id}-palette-${index}`}
+        className="h-3.5 w-3.5 rounded-sm border border-black/10 shadow-sm dark:border-white/20"
+        style={{ backgroundColor: color }}
+      />
+    ))}
+  </div>
+);
+
+const ThemeOption = ({ theme }: { theme: Theme }) => (
+  <div className="flex items-center gap-3">
+    <div className="relative h-12 w-20 flex-shrink-0 overflow-hidden rounded-lg border border-border/60 shadow-sm">
+      <img
+        src={theme.imageUrl}
+        alt={theme.imageDescription}
+        className="h-full w-full object-cover"
+        loading="lazy"
+      />
+      <div className="absolute inset-0" aria-hidden style={{ background: getThemeOverlay(theme) }} />
+    </div>
+    <div className="min-w-0 flex-1">
+      <p className="text-sm font-medium text-foreground">{theme.name}</p>
+      <p className="text-xs text-muted-foreground line-clamp-2">{theme.imageDescription}</p>
+    </div>
+    <ThemePaletteChips theme={theme} />
+  </div>
+);
+
+const ThemePreviewPanel = ({ theme }: { theme?: Theme }) => {
+  if (!theme) {
+    return (
+      <div className="flex h-36 items-center justify-center rounded-2xl bg-muted/20 text-sm text-muted-foreground">
+        Sélectionnez un thème pour prévisualiser le rendu visuel
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="relative h-36 w-full overflow-hidden rounded-2xl border border-border/70">
+        <img
+          src={theme.imageUrl}
+          alt={theme.imageDescription}
+          className="h-full w-full object-cover"
+          loading="lazy"
+        />
+        <div className="absolute inset-0" aria-hidden style={{ background: getThemeOverlay(theme) }} />
+        <div className="absolute inset-0 flex flex-col justify-end gap-1 p-4 text-white drop-shadow-md">
+          <span className="text-base font-semibold tracking-wide">{theme.name}</span>
+          <span className="text-xs font-medium text-white/85">{theme.imageDescription}</span>
+        </div>
+      </div>
+      <div className="flex items-center justify-between gap-3">
+        <ThemePaletteChips theme={theme} />
+        <span className="text-[0.65rem] font-semibold uppercase tracking-widest text-muted-foreground">
+          Palette
+        </span>
       </div>
     </div>
   );
@@ -832,38 +908,14 @@ export const QuizBuilder = () => {
                   <SelectContent className="bg-popover z-50">
                     {THEMES.map((t) => (
                       <SelectItem key={t.id} value={t.id}>
-                        <div className="flex items-center justify-between gap-3">
-                          <span>{t.name}</span>
-                          <div className="flex items-center gap-1">
-                            {t.palette.map((color, index) => (
-                              <span
-                                key={`${t.id}-palette-${index}`}
-                                className="h-3 w-3 rounded-sm border border-black/10 dark:border-white/30"
-                                style={{ backgroundColor: color }}
-                              />
-                            ))}
-                          </div>
-                        </div>
+                        <ThemeOption theme={t} />
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
 
-                <div className="mt-4 overflow-hidden rounded-lg border p-4">
-                  <div
-                    className="flex h-32 items-center justify-center rounded-md"
-                    style={{
-                      backgroundImage: activeTheme?.background,
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'center',
-                      backgroundRepeat: 'no-repeat'
-                    }}
-                    title={activeTheme?.imageDescription}
-                  >
-                    <span className="text-lg font-bold text-white drop-shadow-lg">
-                      {activeTheme?.name || 'Thème'}
-                    </span>
-                  </div>
+                <div className="mt-4 rounded-2xl border border-border/60 bg-muted/30 p-4">
+                  <ThemePreviewPanel theme={activeTheme} />
                 </div>
               </div>
             </div>
@@ -944,37 +996,13 @@ export const QuizBuilder = () => {
                   <SelectContent className="z-50 bg-popover">
                     {THEMES.map((t) => (
                       <SelectItem key={t.id} value={t.id}>
-                        <div className="flex items-center justify-between gap-3">
-                          <span>{t.name}</span>
-                          <div className="flex items-center gap-1">
-                            {t.palette.map((color, index) => (
-                              <span
-                                key={`${t.id}-sidebar-palette-${index}`}
-                                className="h-3 w-3 rounded-sm border border-black/10 dark:border-white/30"
-                                style={{ backgroundColor: color }}
-                              />
-                            ))}
-                          </div>
-                        </div>
+                        <ThemeOption theme={t} />
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                <div className="mt-4 rounded-lg border p-4">
-                  <div
-                    className="flex h-32 items-center justify-center rounded-md"
-                    style={{
-                      backgroundImage: activeTheme?.background,
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'center',
-                      backgroundRepeat: 'no-repeat'
-                    }}
-                    title={activeTheme?.imageDescription}
-                  >
-                    <span className="text-lg font-bold text-white drop-shadow-lg">
-                      {activeTheme?.name || 'Thème'}
-                    </span>
-                  </div>
+                <div className="mt-4 rounded-2xl border border-border/60 bg-muted/30 p-4">
+                  <ThemePreviewPanel theme={activeTheme} />
                 </div>
               </div>
 
