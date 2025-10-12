@@ -1,4 +1,4 @@
-import { useState, useEffect, type CSSProperties } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,7 +29,6 @@ import {
   BarChart3,
   User,
   LogOut,
-  Sparkles,
 } from "lucide-react";
 import { QuizPreview } from "./QuizPreview";
 import { QuestionTypeSelector } from "./QuestionTypeSelector";
@@ -231,23 +230,6 @@ export const QuizBuilder = () => {
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
   const [activeTemplateId, setActiveTemplateId] = useState<string | null>(templateId);
   const activeTheme = THEMES.find((t) => t.id === theme) ?? THEMES[0];
-
-  const previewBackgroundStyle: CSSProperties = activeTheme
-    ? {
-        background: activeTheme.background,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
-      }
-    : {};
-
-  const previewOverlayStyle: CSSProperties = activeTheme?.palette
-    ? {
-        background: `linear-gradient(135deg, ${hexToRgba(activeTheme.palette[0], 0.35)}, ${hexToRgba(activeTheme.palette[2], 0.55)})`,
-      }
-    : {
-        background: "linear-gradient(135deg, rgba(15,26,61,0.25), rgba(29,42,85,0.45))",
-      };
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -1083,42 +1065,18 @@ export const QuizBuilder = () => {
           </div>
 
           {/* Preview */}
-          <div className="relative flex-1 overflow-hidden rounded-3xl border border-white/20 shadow-xl">
-            <div className="absolute inset-0" style={previewBackgroundStyle} aria-hidden />
-            <div className="absolute inset-0" style={previewOverlayStyle} aria-hidden />
-            <div
-              className="absolute inset-0 backdrop-blur-md"
-              aria-hidden
-              style={{ background: "hsla(var(--background), 0.82)" }}
-            />
-            <div className="relative z-10 h-full overflow-y-auto p-6">
-              <div className="mx-auto flex max-w-3xl flex-col gap-4">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <h3 className="text-lg font-semibold text-foreground">{t('preview')}</h3>
-                    <p className="text-sm text-muted-foreground">{t('previewDescription')}</p>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex items-center gap-2"
-                    onClick={() => setTemplateDialogOpen(true)}
-                  >
-                    <Sparkles className="h-4 w-4" />
-                    {t('changeTemplate')}
-                  </Button>
-                </div>
-                <QuizPreview
-                  title={title || (isPoll ? "Mon Sondage" : "Mon Quiz") }
-                  description={description}
-                  category={category}
-                  headerImage={headerImage}
-                  questions={questions}
-                  isPoll={isPoll}
-                  theme={theme}
-                  selectedQuestionIndex={selectedQuestionIndex}
-                />
-              </div>
+          <div className="flex-1 overflow-hidden">
+            <div className="h-full overflow-y-auto p-6">
+              <QuizPreview
+                title={title || (isPoll ? "Mon Sondage" : "Mon Quiz") }
+                description={description}
+                category={category}
+                headerImage={headerImage}
+                questions={questions}
+                isPoll={isPoll}
+                theme={theme}
+                selectedQuestionIndex={selectedQuestionIndex}
+              />
             </div>
           </div>
       </div>
