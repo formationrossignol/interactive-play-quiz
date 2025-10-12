@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Clock, Trophy } from "lucide-react";
 import { getQuestionTypeLabel } from "@/lib/questionTypes";
-import { THEMES } from "@/lib/themes";
+import { DEFAULT_THEME_ID, THEMES } from "@/lib/themes";
 import { t } from "@/lib/i18n";
 
 interface QuizPreviewProps {
@@ -19,8 +19,8 @@ interface QuizPreviewLiveProps extends QuizPreviewProps {
   selectedQuestionIndex?: number | null;
 }
 
-export const QuizPreview = ({ title, description, category, headerImage, questions, isPoll, theme = "default", selectedQuestionIndex }: QuizPreviewLiveProps) => {
-  const selectedTheme = THEMES.find(t => t.id === theme);
+export const QuizPreview = ({ title, description, category, headerImage, questions, isPoll, theme = DEFAULT_THEME_ID, selectedQuestionIndex }: QuizPreviewLiveProps) => {
+  const selectedTheme = THEMES.find(t => t.id === theme) ?? THEMES[0];
   
   // Afficher la question sélectionnée ou la première si aucune sélection
   const questionToShow = selectedQuestionIndex !== null && selectedQuestionIndex !== undefined && questions[selectedQuestionIndex]
@@ -59,11 +59,15 @@ export const QuizPreview = ({ title, description, category, headerImage, questio
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Question preview comme en mode live */}
-        <div 
+        <div
           className="rounded-lg overflow-hidden p-6"
           style={{
-            background: selectedTheme?.background || 'linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary)) 100%)'
+            background: selectedTheme?.background || 'linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary)) 100%)',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat'
           }}
+          title={selectedTheme?.imageDescription}
         >
           <div className="mb-4">
             <Badge variant="secondary" className="bg-white/20 text-white border-white/30">

@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Trash2, Save, Upload, HelpCircle, GripVertical, Settings, Menu, X, Home, BarChart3, User, LogOut, Zap, Play, Copy } from "lucide-react";
+import { Plus, Trash2, Save, Upload, HelpCircle, GripVertical, Settings, Menu, X, Home, BarChart3, User, LogOut, Play, Copy } from "lucide-react";
 import { QuizPreview } from "./QuizPreview";
 import { QuestionTypeSelector } from "./QuestionTypeSelector";
 import { Header } from "./Header";
@@ -19,7 +19,7 @@ import { getCurrentUser, logout } from "@/lib/auth";
 import { saveQuiz, updateQuiz, getQuizById } from "@/lib/quizStorage";
 import { getPollTemplate } from "@/lib/pollTemplates";
 import { getQuizTemplate } from "@/lib/quizTemplates";
-import { THEMES } from "@/lib/themes";
+import { DEFAULT_THEME_ID, THEMES } from "@/lib/themes";
 import { toast } from "sonner";
 import { getQuestionTypeLabel } from "@/lib/questionTypes";
 import { t } from "@/lib/i18n";
@@ -124,9 +124,10 @@ export const QuizBuilder = () => {
   const [tags, setTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState("");
   const [headerImage, setHeaderImage] = useState("");
-  const [theme, setTheme] = useState("default");
+  const [theme, setTheme] = useState<string>(DEFAULT_THEME_ID);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [selectedQuestionIndex, setSelectedQuestionIndex] = useState<number | null>(null);
+  const activeTheme = THEMES.find((t) => t.id === theme) ?? THEMES[0];
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -154,7 +155,10 @@ export const QuizBuilder = () => {
         setTransitionTime(existingQuiz.transitionTime);
         setTags(existingQuiz.tags || []);
         setHeaderImage(existingQuiz.headerImage || "");
-        setTheme(existingQuiz.theme || "default");
+        const existingTheme = existingQuiz.theme && THEMES.some(t => t.id === existingQuiz.theme)
+          ? existingQuiz.theme
+          : DEFAULT_THEME_ID;
+        setTheme(existingTheme);
         setQuestions(existingQuiz.questions.map((q, index) => ({
           id: q.id || Date.now().toString() + index,
           ...q
@@ -735,7 +739,18 @@ export const QuizBuilder = () => {
                       <SelectContent className="bg-popover z-50">
                         {THEMES.map((t) => (
                           <SelectItem key={t.id} value={t.id}>
-                            {t.name}
+                            <div className="flex items-center justify-between gap-3">
+                              <span>{t.name}</span>
+                              <div className="flex items-center gap-1">
+                                {t.palette.map((color, index) => (
+                                  <span
+                                    key={`${t.id}-palette-${index}`}
+                                    className="h-3 w-3 rounded-sm border border-black/10 dark:border-white/30"
+                                    style={{ backgroundColor: color }}
+                                  />
+                                ))}
+                              </div>
+                            </div>
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -744,14 +759,18 @@ export const QuizBuilder = () => {
                     {/* Theme Preview */}
                     <div className="mt-4 p-4 rounded-lg border overflow-hidden">
                       <p className="text-xs text-muted-foreground mb-2">Aperçu du thème :</p>
-                      <div 
+                      <div
                         className="h-32 rounded-md flex items-center justify-center"
                         style={{
-                          background: THEMES.find(t => t.id === theme)?.background || 'linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary)) 100%)'
+                          background: activeTheme?.background || 'linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary)) 100%)',
+                          backgroundSize: 'cover',
+                          backgroundPosition: 'center',
+                          backgroundRepeat: 'no-repeat'
                         }}
+                        title={activeTheme?.imageDescription}
                       >
                         <span className="text-white font-bold text-lg drop-shadow-lg">
-                          {THEMES.find(t => t.id === theme)?.name}
+                          {activeTheme?.name || 'Thème'}
                         </span>
                       </div>
                     </div>
@@ -780,14 +799,8 @@ export const QuizBuilder = () => {
         {/* Left Sidebar - Navigation */}
         <div className={`${sidebarOpen ? 'w-64' : 'w-0'} border-r bg-card overflow-hidden transition-all duration-200`}>
           <div className="p-4 h-full flex flex-col">
-            {/* Logo */}
-            <div className="flex items-center gap-2 mb-8 px-2">
-              <Zap className="w-8 h-8 text-primary" />
-              <span className="font-bold text-xl text-foreground">QuizMaster</span>
-            </div>
-
             {/* Navigation Links */}
-            <nav className="flex-1 space-y-2">
+            <nav className="flex-1 space-y-2 pt-2">
               <Button
                 variant="ghost"
                 className="w-full justify-start"
@@ -831,7 +844,18 @@ export const QuizBuilder = () => {
                   <SelectContent className="bg-popover z-50">
                     {THEMES.map((t) => (
                       <SelectItem key={t.id} value={t.id}>
-                        {t.name}
+                        <div className="flex items-center justify-between gap-3">
+                          <span>{t.name}</span>
+                          <div className="flex items-center gap-1">
+                            {t.palette.map((color, index) => (
+                              <span
+                                key={`${t.id}-sidebar-palette-${index}`}
+                                className="h-3 w-3 rounded-sm border border-black/10 dark:border-white/30"
+                                style={{ backgroundColor: color }}
+                              />
+                            ))}
+                          </div>
+                        </div>
                       </SelectItem>
                     ))}
                   </SelectContent>
