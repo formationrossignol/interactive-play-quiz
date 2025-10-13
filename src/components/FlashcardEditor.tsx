@@ -70,7 +70,7 @@ export const FlashcardEditor = ({ flashcard, onChange }: FlashcardEditorProps) =
         )}
 
         <label htmlFor="recto-image">
-          <Button variant="outline" size="sm" asChild className="w-full">
+          <Button variant="outline" size="sm" asChild className="w-full mt-2">
             <span className="flex items-center justify-center gap-2">
               <Upload className="h-4 w-4" />
               {flashcard.rectoImage ? t('changeImage') : t('addImage')}
@@ -127,7 +127,7 @@ export const FlashcardEditor = ({ flashcard, onChange }: FlashcardEditorProps) =
         )}
 
         <label htmlFor="verso-image">
-          <Button variant="outline" size="sm" asChild className="w-full">
+          <Button variant="outline" size="sm" asChild className="w-full mt-2">
             <span className="flex items-center justify-center gap-2">
               <Upload className="h-4 w-4" />
               {flashcard.versoImage ? t('changeImage') : t('addImage')}

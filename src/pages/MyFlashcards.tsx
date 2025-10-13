@@ -1,4 +1,4 @@
-import { useEffect, useState, type MouseEvent } from "react";
+import { useCallback, useEffect, useState, type MouseEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { getCurrentUser } from "@/lib/auth";
 import {
   deleteQuiz,
   getFavoriteFlashcardSets,
+  getPublicFlashcardSets,
   getUserFlashcardSets,
   toggleFavorite,
   type SavedQuiz,
@@ -23,14 +24,16 @@ const MyFlashcards = () => {
   const user = getCurrentUser();
   const [myFlashcards, setMyFlashcards] = useState<SavedQuiz[]>([]);
   const [favoriteFlashcards, setFavoriteFlashcards] = useState<SavedQuiz[]>([]);
+  const [publicFlashcards, setPublicFlashcards] = useState<SavedQuiz[]>([]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [setToDelete, setSetToDelete] = useState<SavedQuiz | null>(null);
 
-  const loadFlashcards = () => {
+  const loadFlashcards = useCallback(() => {
     if (!user) return;
     setMyFlashcards(getUserFlashcardSets(user.id));
     setFavoriteFlashcards(getFavoriteFlashcardSets(user.id));
-  };
+    setPublicFlashcards(getPublicFlashcardSets());
+  }, [user]);
 
   useEffect(() => {
     if (!user) {
@@ -38,7 +41,7 @@ const MyFlashcards = () => {
       return;
     }
     loadFlashcards();
-  }, [user, navigate]);
+  }, [user, navigate, loadFlashcards]);
 
   const handleDeleteClick = (set: SavedQuiz) => {
     setSetToDelete(set);
@@ -90,6 +93,11 @@ const MyFlashcards = () => {
           <Badge variant="outline" className="rounded-full">
             {cardSet.questions.length} {cardSet.questions.length > 1 ? t("cards") : t("card")}
           </Badge>
+          {cardSet.isPublic && (
+            <Badge variant="secondary" className="rounded-full bg-primary/10 text-primary border border-primary/20">
+              {t("publicBadge")}
+            </Badge>
+          )}
           {cardSet.tags?.map((tag) => (
             <Badge key={tag} variant="outline" className="rounded-full">
               #{tag}
@@ -155,10 +163,11 @@ const MyFlashcards = () => {
         </div>
 
         <Tabs defaultValue="my" className="mt-8 space-y-4">
-        <TabsList>
-          <TabsTrigger value="my">{`${t("myFlashcardsTab")} (${myFlashcards.length})`}</TabsTrigger>
-          <TabsTrigger value="favorites">{`${t("favoritesTab")} (${favoriteFlashcards.length})`}</TabsTrigger>
-        </TabsList>
+          <TabsList>
+            <TabsTrigger value="my">{`${t("myFlashcardsTab")} (${myFlashcards.length})`}</TabsTrigger>
+            <TabsTrigger value="favorites">{`${t("favoritesTab")} (${favoriteFlashcards.length})`}</TabsTrigger>
+            <TabsTrigger value="public">{`${t("publicFlashcardsTab")} (${publicFlashcards.length})`}</TabsTrigger>
+          </TabsList>
 
           <TabsContent value="my">
             {myFlashcards.length === 0 ? (
@@ -183,6 +192,18 @@ const MyFlashcards = () => {
             ) : (
               <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
                 {favoriteFlashcards.map((cardSet) => renderCard(cardSet, false))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="public">
+            {publicFlashcards.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-border/60 bg-muted/20 p-10 text-center">
+                <p className="text-sm text-muted-foreground">{t("noPublicFlashcards")}</p>
+              </div>
+            ) : (
+              <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+                {publicFlashcards.map((cardSet) => renderCard(cardSet, false))}
               </div>
             )}
           </TabsContent>

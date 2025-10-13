@@ -766,7 +766,7 @@ export const QuizBuilder = () => {
 
       if (isFlashcard) {
         setShouldBlockNavigation(false);
-        navigate('/my-quizzes');
+        navigate('/my-flashcards');
       } else {
         setShouldBlockNavigation(false);
         navigate(isPoll ? '/my-polls' : '/my-quizzes');
