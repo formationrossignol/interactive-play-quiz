@@ -51,6 +51,7 @@ import type { PollTemplate } from "@/lib/pollTemplates";
 import type { QuizTemplate } from "@/lib/quizTemplates";
 import { PollTemplateSelectorEnhanced } from "./PollTemplateSelectorEnhanced";
 import { QuizTemplateSelectorEnhanced } from "./QuizTemplateSelectorEnhanced";
+import { FlashcardEditor } from "./FlashcardEditor";
 import { cn } from "@/lib/utils";
 import {
   DndContext,
@@ -123,6 +124,10 @@ const SortableQuestionItem = ({ question, index, onEdit, onDelete, onDuplicate, 
 
   const Icon = questionTypeIconMap[question.type as QuizQuestionType | PollQuestionType] || CheckSquare;
   const iconColors = questionTypeColorMap[question.type as QuizQuestionType | PollQuestionType] || 'bg-primary/10 text-primary';
+  
+  const displayText = question.type === 'flashcard' 
+    ? (question.recto?.trim() || 'Flashcard vide')
+    : (question.question?.trim() || t('noQuestionText'));
 
   return (
     <div ref={setNodeRef} style={style} className="flex items-center gap-2">
@@ -148,7 +153,7 @@ const SortableQuestionItem = ({ question, index, onEdit, onDelete, onDuplicate, 
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold truncate text-foreground">
-              {question.question?.trim() || t('noQuestionText')}
+              {displayText}
             </p>
           </div>
         </div>
@@ -471,6 +476,16 @@ export const QuizBuilder = () => {
   }, [templateId, isPoll, quizId]);
 
   function getDefaultQuestion(type?: QuizQuestionType | PollQuestionType): any {
+    if (isFlashcard) {
+      return {
+        type: 'flashcard',
+        recto: '',
+        verso: '',
+        rectoImage: '',
+        versoImage: '',
+      };
+    }
+    
     if (isPoll) {
       const pollType = type || 'single-choice';
 
@@ -544,7 +559,12 @@ export const QuizBuilder = () => {
   };
 
   const handleAddQuestion = () => {
-    if (!currentQuestion.question?.trim()) {
+    if (isFlashcard) {
+      if (!currentQuestion.recto?.trim() || !currentQuestion.verso?.trim()) {
+        toast.error("Le recto et le verso sont requis");
+        return;
+      }
+    } else if (!currentQuestion.question?.trim()) {
       toast.error(t('questionRequired'));
       return;
     }
@@ -653,7 +673,11 @@ export const QuizBuilder = () => {
         toast.success(isPoll ? t('pollSaved') : t('quizSaved'));
       }
 
-      navigate(isPoll ? '/my-polls' : '/my-quizzes');
+      if (isFlashcard) {
+        navigate('/my-quizzes');
+      } else {
+        navigate(isPoll ? '/my-polls' : '/my-quizzes');
+      }
     } catch (error) {
       toast.error("Erreur lors de l'enregistrement");
     }
@@ -769,6 +793,15 @@ export const QuizBuilder = () => {
   );
 
   const renderQuestionForm = () => {
+    if (isFlashcard) {
+      return (
+        <FlashcardEditor
+          flashcard={currentQuestion}
+          onChange={(updated) => setCurrentQuestion(updated)}
+        />
+      );
+    }
+
     switch (currentQuestion.type) {
       case 'multiple-choice':
       case 'single-choice':
