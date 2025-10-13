@@ -1033,13 +1033,24 @@ export const QuizBuilder = () => {
   };
 
   const builderToolbar = (
-    <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
-      <Dialog>
-        <DialogTrigger asChild>
-          <Button variant="outline" size="icon" title={t('settings')}>
-            <Settings className="w-5 h-5" />
-          </Button>
-        </DialogTrigger>
+    <div className="flex w-full flex-col gap-3 md:flex-row md:items-center md:justify-between">
+      <div className="flex w-full flex-1 flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="flex w-full items-center gap-2">
+          <Input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder={isPoll ? t('pollTitle') : t('quizTitle')}
+            className="font-medium sm:max-w-md flex-1"
+          />
+        </div>
+      </div>
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button variant="outline" size="icon" title={t('settings')}>
+              <Settings className="w-5 h-5" />
+            </Button>
+          </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{t('settings')}</DialogTitle>
@@ -1259,6 +1270,7 @@ export const QuizBuilder = () => {
         <Button onClick={handleSaveQuiz} size="icon" title={t('save')}>
           <Save className="w-5 h-5" />
         </Button>
+      </div>
     </div>
   );
 
@@ -1271,7 +1283,6 @@ export const QuizBuilder = () => {
         toolbarPlacement="main"
         showNavigation={false}
         alignLeft
-        actionStyle="icons-only"
       />
       {/* Main Content */}
       <div className="relative flex-1 flex overflow-hidden">
@@ -1357,20 +1368,12 @@ export const QuizBuilder = () => {
         <div className="flex-1 flex overflow-hidden">
           {/* Questions List */}
           <div className="w-80 border-r bg-muted/30 overflow-y-auto p-4">
-            <div className="mb-4 space-y-3">
-              <Input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder={isPoll ? t('pollTitle') : t('quizTitle')}
-                className="font-medium"
-              />
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-foreground">
-                  {isFlashcard ? "Cartes" : "Questions"}
-                </h3>
-              </div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-foreground">
+                {isFlashcard ? "Cartes" : "Questions"}
+              </h3>
             </div>
-
+            
             {/* Nouvelle question/carte button */}
             <Button
               onClick={() => {

@@ -18,7 +18,6 @@ interface HeaderProps {
   toolbarPlacement?: "secondary" | "main";
   showNavigation?: boolean;
   alignLeft?: boolean;
-  actionStyle?: "default" | "icons-only";
 }
 
 export const Header = ({
@@ -27,7 +26,6 @@ export const Header = ({
   toolbarPlacement = "secondary",
   showNavigation = true,
   alignLeft = false,
-  actionStyle = "default",
 }: HeaderProps) => {
   const navigate = useNavigate();
   const [user, setUser] = useState(getCurrentUser());
@@ -244,59 +242,36 @@ export const Header = ({
           </DropdownMenu>
 
           {user ? (
-            actionStyle === "icons-only" ? (
-              <>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => navigate('/profile')}
-                  className="h-10 w-10 rounded-full border-white/60 bg-white/60 text-foreground/80 shadow-[0_10px_30px_-18px_rgba(15,26,61,0.5)] transition-all duration-300 hover:border-[#0f1a3d]/25 hover:text-foreground"
-                  title={user.username}
-                >
-                  <User className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleLogout}
-                  className="h-10 w-10 rounded-full text-foreground/70 transition-colors hover:text-foreground"
-                  title={t('logout')}
-                >
-                  <LogOut className="h-4 w-4" />
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => navigate('/profile')}
-                  className="hidden h-10 rounded-full border-white/60 bg-white/60 px-4 text-sm font-medium text-foreground/80 shadow-[0_10px_30px_-18px_rgba(15,26,61,0.5)] transition-all duration-300 hover:border-[#0f1a3d]/25 hover:text-foreground sm:flex"
-                  title={user.username}
-                >
-                  <User className="mr-2 h-4 w-4" />
-                  {t('profile')}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => navigate('/profile')}
-                  className="sm:hidden h-10 w-10 rounded-full border-white/60 bg-white/60 text-foreground/80 shadow-[0_10px_30px_-18px_rgba(15,26,61,0.5)] transition-all duration-300 hover:border-[#0f1a3d]/25 hover:text-foreground"
-                  title={user.username}
-                >
-                  <User className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleLogout}
-                  className="h-10 rounded-full text-foreground/70 transition-colors hover:text-foreground"
-                >
-                  <LogOut className="h-4 w-4" />
-                  <span className="ml-2 hidden sm:inline">{t('logout')}</span>
-                </Button>
-              </>
-            )
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate('/profile')}
+                className="hidden h-10 rounded-full border-white/60 bg-white/60 px-4 text-sm font-medium text-foreground/80 shadow-[0_10px_30px_-18px_rgba(15,26,61,0.5)] transition-all duration-300 hover:border-[#0f1a3d]/25 hover:text-foreground sm:flex"
+                title={user.username}
+              >
+                <User className="mr-2 h-4 w-4" />
+                {t('profile')}
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => navigate('/profile')}
+                className="sm:hidden h-10 w-10 rounded-full border-white/60 bg-white/60 text-foreground/80 shadow-[0_10px_30px_-18px_rgba(15,26,61,0.5)] transition-all duration-300 hover:border-[#0f1a3d]/25 hover:text-foreground"
+                title={user.username}
+              >
+                <User className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLogout}
+                className="h-10 rounded-full text-foreground/70 transition-colors hover:text-foreground"
+              >
+                <LogOut className="h-4 w-4" />
+                <span className="ml-2 hidden sm:inline">{t('logout')}</span>
+              </Button>
+            </>
           ) : (
             <Button
               variant="outline"
