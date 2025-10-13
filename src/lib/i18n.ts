@@ -103,7 +103,8 @@ export const translations = {
     showQuestionEditor: "Show question editor",
     launchPreview: "Open preview",
     dragToReorder: "Drag to reorder",
-    
+    confirmLeaveBuilder: "You have unsaved changes. Leave the builder?",
+
     // Question Types
     questionType: "Question Type",
     question: "Question",
@@ -179,6 +180,11 @@ export const translations = {
     questionTagsHelper: "Separate tags with commas",
     questionNotes: "Notes",
     questionNotesHelper: "Add internal notes or explanations",
+    myQuizQuestions: "Questions from my quizzes",
+    myQuizQuestionsDescription: "Browse every question stored in your saved quizzes.",
+    myQuizQuestionsEmpty: "Your quizzes do not contain any saved questions yet.",
+    fromQuiz: "Saved in a quiz",
+    untitledQuiz: "Untitled quiz",
     
     // Profile
     myProfile: "My Profile",
@@ -352,6 +358,7 @@ export const translations = {
     showQuestionEditor: "Afficher l'éditeur de questions",
     launchPreview: "Ouvrir l'aperçu",
     dragToReorder: "Glisser pour réorganiser",
+    confirmLeaveBuilder: "Vous avez des modifications en cours. Quitter le builder ?",
     
     // Question Types
     questionType: "Type de question",
@@ -428,6 +435,11 @@ export const translations = {
     questionTagsHelper: "Séparez les tags par des virgules",
     questionNotes: "Notes",
     questionNotesHelper: "Ajoutez des notes internes ou des explications",
+    myQuizQuestions: "Questions de mes quiz",
+    myQuizQuestionsDescription: "Retrouvez toutes les questions enregistrées dans vos quiz.",
+    myQuizQuestionsEmpty: "Aucune question n'est enregistrée dans vos quiz pour le moment.",
+    fromQuiz: "Enregistrée dans un quiz",
+    untitledQuiz: "Quiz sans titre",
     
     // Profile
     myProfile: "Mon Profil",

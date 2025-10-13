@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -152,59 +152,70 @@ const SortableQuestionItem = ({ question, index, onEdit, onDelete, onDuplicate, 
     : (question.question?.trim() || t('noQuestionText'));
 
   return (
-    <div ref={setNodeRef} style={style} className="flex items-center gap-2">
-      <span className="w-5 text-xs font-semibold text-muted-foreground text-right">{index + 1}</span>
+    <div ref={setNodeRef} style={style} className="group relative w-full">
       <div
-        className={`group flex w-full min-h-[4.25rem] items-center justify-between gap-3 rounded-xl border-2 px-3 py-3 transition-all cursor-pointer ${
-          isActive ? 'border-primary bg-primary/10 shadow-sm' : 'border-transparent bg-muted/40 hover:border-primary/40 hover:bg-muted/60'
-        }`}
+        className={cn(
+          "relative w-full overflow-hidden rounded-2xl border-2 bg-gradient-to-br from-background via-muted/40 to-background/80 p-4 transition-all duration-200 cursor-pointer",
+          isActive
+            ? "border-primary shadow-[0_18px_30px_-20px_rgba(30,64,175,0.6)]"
+            : "border-transparent hover:border-primary/40 hover:shadow-[0_12px_30px_-22px_rgba(30,64,175,0.4)]"
+        )}
         onClick={() => onEdit(index)}
       >
-        <div className="flex flex-1 items-center gap-3 min-w-0">
-          <button
-            {...attributes}
-            {...listeners}
-            onClick={(e) => e.stopPropagation()}
-            className="rounded-md p-1 text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing"
-            title={t('dragToReorder')}
-          >
-            <GripVertical className="w-4 h-4" />
-          </button>
-          <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${iconColors}`}>
-            <Icon className="h-5 w-5" />
+        <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.24),rgba(255,255,255,0.05))]" aria-hidden />
+        <div className="relative flex min-h-[4.75rem] flex-col justify-between gap-4">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <button
+                {...attributes}
+                {...listeners}
+                onClick={(e) => e.stopPropagation()}
+                className="rounded-full border border-border/40 bg-background/80 p-2 text-muted-foreground shadow-sm transition-colors hover:text-foreground cursor-grab active:cursor-grabbing"
+                title={t('dragToReorder')}
+              >
+                <GripVertical className="w-3.5 h-3.5" />
+              </button>
+              <span className="rounded-full bg-background/80 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground shadow-sm">
+                #{index + 1}
+              </span>
+              <div className={cn("flex h-10 w-10 items-center justify-center rounded-xl shadow-sm", iconColors)}>
+                <Icon className="h-5 w-5" />
+              </div>
+            </div>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-full bg-background/70 opacity-0 shadow-sm backdrop-blur group-hover:opacity-100 transition-opacity"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDuplicate(index);
+                }}
+                title={t('duplicate')}
+              >
+                <Copy className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-full bg-background/70 opacity-0 shadow-sm backdrop-blur group-hover:opacity-100 transition-opacity"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(index);
+                }}
+                title={t('delete')}
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold truncate text-foreground">
+          <div className="pr-2">
+            <p className="text-sm font-semibold text-foreground/90 line-clamp-2">
               {displayText}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDuplicate(index);
-            }}
-            title="Dupliquer"
-          >
-            <Copy className="w-4 h-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete(index);
-            }}
-            title="Supprimer"
-          >
-            <Trash2 className="w-4 h-4" />
-          </Button>
-        </div>
+        <div className="absolute inset-x-0 bottom-0 h-3 bg-gradient-to-r from-primary/20 via-primary/10 to-primary/20" aria-hidden />
       </div>
     </div>
   );
@@ -309,25 +320,11 @@ const ThemeSelectionDropdown = ({
 }) => {
   const selectedTheme = THEMES.find((themeOption) => themeOption.id === value);
 
-  const getPreviewStyle = (theme?: Theme) =>
-    theme
-      ? {
-          background: theme.preview,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }
-      : undefined;
-
   return (
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger className="h-auto min-h-12 items-center justify-between rounded-xl border border-border/60 bg-background px-3 py-3 text-left">
         <SelectValue aria-hidden className="sr-only" />
-        <div className="flex flex-1 items-center gap-3">
-          <div
-            className="h-10 w-16 shrink-0 overflow-hidden rounded-lg border border-border/60"
-            style={getPreviewStyle(selectedTheme)}
-            aria-hidden
-          />
+        <div className="flex flex-1 items-center justify-between gap-3">
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-foreground">
               {selectedTheme?.name ?? t('selectTheme')}
@@ -336,20 +333,31 @@ const ThemeSelectionDropdown = ({
               {selectedTheme?.imageDescription ?? t('selectThemeDescription')}
             </p>
           </div>
+          {selectedTheme && (
+            <div className="flex shrink-0 items-center gap-1 rounded-full border border-border/40 bg-muted/30 px-3 py-1">
+              <ThemePaletteChips theme={selectedTheme} />
+            </div>
+          )}
         </div>
       </SelectTrigger>
       <SelectContent className="bg-popover z-50 max-h-[320px]">
         {THEMES.map((themeOption) => (
           <SelectItem key={themeOption.id} value={themeOption.id} className="py-2">
             <div className="flex items-center gap-3">
-              <div
-                className="h-10 w-16 shrink-0 overflow-hidden rounded-lg border border-border/60"
-                style={getPreviewStyle(themeOption)}
-                aria-hidden
-              />
+              <div className="h-12 w-20 shrink-0 overflow-hidden rounded-xl border border-border/60">
+                <img
+                  src={themeOption.imageUrl}
+                  alt={themeOption.imageDescription}
+                  className="h-full w-full object-cover"
+                  loading="lazy"
+                />
+              </div>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-foreground">{themeOption.name}</p>
                 <p className="text-xs text-muted-foreground line-clamp-1">{themeOption.imageDescription}</p>
+                <div className="mt-2">
+                  <ThemePaletteChips theme={themeOption} />
+                </div>
               </div>
             </div>
           </SelectItem>
@@ -394,6 +402,42 @@ export const QuizBuilder = () => {
   const activeFont = FONT_OPTIONS.find((option) => option.value === previewFont) ?? FONT_OPTIONS[0];
   const [questionBankItems, setQuestionBankItems] = useState<QuestionBankItem[]>([]);
   const [questionBankDialogOpen, setQuestionBankDialogOpen] = useState(false);
+  const [shouldBlockNavigation, setShouldBlockNavigation] = useState(true);
+
+  const confirmLeaveBuilder = useCallback(() => {
+    if (!shouldBlockNavigation) {
+      return true;
+    }
+
+    return window.confirm(t('confirmLeaveBuilder'));
+  }, [shouldBlockNavigation]);
+
+  const handleNavigateAway = useCallback((path: string, onBeforeNavigate?: () => void) => {
+    if (!confirmLeaveBuilder()) {
+      return;
+    }
+
+    setShouldBlockNavigation(false);
+    onBeforeNavigate?.();
+    navigate(path);
+  }, [confirmLeaveBuilder, navigate]);
+
+  useEffect(() => {
+    if (!shouldBlockNavigation) {
+      return;
+    }
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = t('confirmLeaveBuilder');
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [shouldBlockNavigation]);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -402,38 +446,38 @@ export const QuizBuilder = () => {
     })
   );
 
-  const sidebarNavigationItems = [
+  const sidebarNavigationItems = useMemo(() => ([
     {
       label: t('home'),
       icon: Home,
-      action: () => navigate('/'),
+      action: () => handleNavigateAway('/'),
       requiresAuth: false,
     },
     {
       label: t('myQuizzes'),
       icon: BookOpen,
-      action: () => navigate('/my-quizzes'),
+      action: () => handleNavigateAway('/my-quizzes'),
       requiresAuth: true,
     },
     {
       label: t('myPolls'),
       icon: BarChart3,
-      action: () => navigate('/my-polls'),
+      action: () => handleNavigateAway('/my-polls'),
       requiresAuth: true,
     },
     {
       label: t('myFlashcards'),
       icon: Library,
-      action: () => navigate('/my-flashcards'),
+      action: () => handleNavigateAway('/my-flashcards'),
       requiresAuth: true,
     },
     {
       label: t('questionBank'),
       icon: Database,
-      action: () => navigate('/question-bank'),
+      action: () => handleNavigateAway('/question-bank'),
       requiresAuth: true,
     },
-  ];
+  ]), [handleNavigateAway]);
 
   function applyTemplate(template: PollTemplate | QuizTemplate) {
     setTitle(template.name);
@@ -456,6 +500,7 @@ export const QuizBuilder = () => {
 
   useEffect(() => {
     if (!user) {
+      setShouldBlockNavigation(false);
       navigate("/auth");
     }
   }, [user, navigate]);
@@ -720,8 +765,10 @@ export const QuizBuilder = () => {
       }
 
       if (isFlashcard) {
+        setShouldBlockNavigation(false);
         navigate('/my-quizzes');
       } else {
+        setShouldBlockNavigation(false);
         navigate(isPoll ? '/my-polls' : '/my-quizzes');
       }
     } catch (error) {
@@ -746,6 +793,7 @@ export const QuizBuilder = () => {
       font: previewFont,
     };
     localStorage.setItem(`quiz-${tempQuiz.id}`, JSON.stringify(tempQuiz));
+    setShouldBlockNavigation(false);
     navigate(`/quiz/${tempQuiz.id}`);
   };
 
@@ -1353,7 +1401,7 @@ export const QuizBuilder = () => {
                 items={questions.map(q => q.id)}
                 strategy={verticalListSortingStrategy}
               >
-                <div className="space-y-2">
+                <div className="space-y-3 pr-1">
                   {questions.map((question, index) => (
                      <SortableQuestionItem
                       key={question.id}
@@ -1510,8 +1558,7 @@ export const QuizBuilder = () => {
                   className="mt-4"
                   variant="outline"
                   onClick={() => {
-                    setQuestionBankDialogOpen(false);
-                    navigate('/question-bank');
+                    handleNavigateAway('/question-bank', () => setQuestionBankDialogOpen(false));
                   }}
                 >
                   {t('manageQuestionBank')}
