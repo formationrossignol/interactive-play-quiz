@@ -41,8 +41,8 @@ export const FlashcardPreview = ({ flashcard, theme }: FlashcardPreviewProps) =>
 
   return (
     <div className="relative flex h-full items-center justify-center p-8">
-      <div className="absolute inset-0 rounded-3xl" style={backgroundStyle} aria-hidden />
-      <div className="absolute inset-0 rounded-3xl" style={{ background: overlay }} aria-hidden />
+      <div className="absolute inset-0" style={backgroundStyle} aria-hidden />
+      <div className="absolute inset-0" style={{ background: overlay }} aria-hidden />
       <div className="relative z-10 w-full max-w-3xl">
         <div
           className="relative w-full max-w-2xl cursor-pointer"

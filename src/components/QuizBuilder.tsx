@@ -1032,6 +1032,9 @@ export const QuizBuilder = () => {
     }
   };
 
+  const toolbarIconButtonClass =
+    "h-11 w-11 rounded-2xl border border-border/60 bg-white/70 text-foreground/70 shadow-[0_10px_30px_-18px_rgba(15,26,61,0.45)] transition-all duration-300 hover:border-primary/30 hover:text-foreground";
+
   const builderToolbar = (
     <div className="flex w-full flex-col gap-3 md:flex-row md:items-center md:justify-between">
       <div className="flex w-full flex-1 flex-col gap-3 sm:flex-row sm:items-center">
@@ -1047,7 +1050,12 @@ export const QuizBuilder = () => {
       <div className="flex flex-wrap items-center justify-end gap-2">
         <Dialog>
           <DialogTrigger asChild>
-            <Button variant="outline" size="icon" title={t('settings')}>
+            <Button
+              variant="outline"
+              size="icon"
+              title={t('settings')}
+              className={toolbarIconButtonClass}
+            >
               <Settings className="w-5 h-5" />
             </Button>
           </DialogTrigger>
@@ -1264,10 +1272,17 @@ export const QuizBuilder = () => {
           onClick={handlePreviewQuiz}
           disabled={questions.length === 0}
           title={t('launchPreview')}
+          className={toolbarIconButtonClass}
         >
           <Play className="w-5 h-5" />
         </Button>
-        <Button onClick={handleSaveQuiz} size="icon" title={t('save')}>
+        <Button
+          onClick={handleSaveQuiz}
+          size="icon"
+          title={t('save')}
+          variant="outline"
+          className={toolbarIconButtonClass}
+        >
           <Save className="w-5 h-5" />
         </Button>
       </div>
