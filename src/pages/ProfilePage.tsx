@@ -39,7 +39,7 @@ const ProfilePage = () => {
     setLanguage(currentUser.language || 'en');
 
     // Calculate stats
-    const userQuizzes = getUserQuizzes(currentUser.id);
+    const userQuizzes = getUserQuizzes(currentUser.id).filter((quiz) => quiz.type === 'quiz');
     setStats({
       totalQuizzes: userQuizzes.length,
       publicQuizzes: userQuizzes.filter(q => q.isPublic).length,

@@ -9,7 +9,8 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Plus,
   Trash2,
@@ -34,6 +35,8 @@ import {
   List,
   Star,
   MessageSquare,
+  Library,
+  Database,
 } from "lucide-react";
 import { QuizPreview } from "./QuizPreview";
 import { QuestionTypeSelector } from "./QuestionTypeSelector";
@@ -54,6 +57,8 @@ import { QuizTemplateSelectorEnhanced } from "./QuizTemplateSelectorEnhanced";
 import { FlashcardEditor } from "./FlashcardEditor";
 import { FlashcardPreview } from "./FlashcardPreview";
 import { cn } from "@/lib/utils";
+import { createDefaultQuizQuestion } from "@/lib/questionDefaults";
+import { getQuestionBankForUser, type QuestionBankItem, type QuestionDifficulty } from "@/lib/questionBank";
 import {
   DndContext,
   closestCenter,
@@ -106,6 +111,22 @@ const questionTypeColorMap: Partial<Record<QuizQuestionType | PollQuestionType, 
   'star-rating': 'bg-yellow-100 text-yellow-700',
   'open-text': 'bg-rose-100 text-rose-700',
   'nps-scale': 'bg-emerald-100 text-emerald-700',
+};
+
+const questionTypeTranslationKeyMap: Partial<Record<QuizQuestionType, string>> = {
+  'multiple-choice': 'multipleChoice',
+  'true-false': 'trueFalse',
+  'short-answer': 'shortAnswer',
+  'ranking': 'ranking',
+  'matching': 'matching',
+  'fill-blank': 'fillBlank',
+  'slider': 'slider',
+};
+
+const difficultyTranslationKeyMap: Record<QuestionDifficulty, string> = {
+  easy: 'difficultyEasy',
+  medium: 'difficultyMedium',
+  hard: 'difficultyHard',
 };
 
 // Sortable Question Item Component
@@ -371,6 +392,8 @@ export const QuizBuilder = () => {
   const activeTheme = THEMES.find((t) => t.id === theme) ?? THEMES[0];
   const [previewFont, setPreviewFont] = useState<string>(FONT_OPTIONS[0].value);
   const activeFont = FONT_OPTIONS.find((option) => option.value === previewFont) ?? FONT_OPTIONS[0];
+  const [questionBankItems, setQuestionBankItems] = useState<QuestionBankItem[]>([]);
+  const [questionBankDialogOpen, setQuestionBankDialogOpen] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -396,6 +419,18 @@ export const QuizBuilder = () => {
       label: t('myPolls'),
       icon: BarChart3,
       action: () => navigate('/my-polls'),
+      requiresAuth: true,
+    },
+    {
+      label: t('myFlashcards'),
+      icon: Library,
+      action: () => navigate('/my-flashcards'),
+      requiresAuth: true,
+    },
+    {
+      label: t('questionBank'),
+      icon: Database,
+      action: () => navigate('/question-bank'),
       requiresAuth: true,
     },
   ];
@@ -476,6 +511,15 @@ export const QuizBuilder = () => {
     }
   }, [templateId, isPoll, quizId]);
 
+  useEffect(() => {
+    if (user) {
+      setQuestionBankItems(getQuestionBankForUser(user.id));
+    } else {
+      setQuestionBankItems([]);
+    }
+  }, [user]);
+
+
   function getDefaultQuestion(type?: QuizQuestionType | PollQuestionType): any {
     if (isFlashcard) {
       return {
@@ -516,39 +560,8 @@ export const QuizBuilder = () => {
           return { ...base, answers: ['', '', '', ''] };
       }
     } else {
-      const quizType = type || 'multiple-choice';
-
-      const base = {
-        type: quizType,
-        question: '',
-        timeLimit: 30,
-        points: 100,
-        image: '',
-      };
-
-      switch (quizType) {
-        case 'multiple-choice':
-          return { ...base, answers: ['', '', '', ''], correctAnswer: 0 };
-        case 'true-false':
-          return { ...base, answers: ['Vrai', 'Faux'], correctAnswer: 'true' };
-        case 'short-answer':
-          return { ...base, correctAnswer: '', acceptableAnswers: [] };
-        case 'ranking':
-          return { ...base, items: ['', '', '', ''], correctOrder: [0, 1, 2, 3] };
-        case 'matching':
-          return {
-            ...base,
-            leftColumn: [{ id: '1', text: '' }, { id: '2', text: '' }],
-            rightColumn: [{ id: 'a', text: '' }, { id: 'b', text: '' }],
-            correctMatches: [{ leftId: '1', rightId: 'a' }, { leftId: '2', rightId: 'b' }]
-          };
-        case 'fill-blank':
-          return { ...base, text: '', blanks: [{ id: '1', correctAnswer: '', acceptableAnswers: [] }] };
-        case 'slider':
-          return { ...base, min: 0, max: 100, step: 1, correctValue: 50, minLabel: "", maxLabel: "" };
-        default:
-          return { ...base, answers: ['', '', '', ''], correctAnswer: 0 };
-      }
+      const quizType = (type as QuizQuestionType) || 'multiple-choice';
+      return createDefaultQuizQuestion(quizType);
     }
   }
 
@@ -634,6 +647,38 @@ export const QuizBuilder = () => {
         return arrayMove(items, oldIndex, newIndex);
       });
     }
+  };
+
+  const refreshQuestionBank = () => {
+    if (user) {
+      setQuestionBankItems(getQuestionBankForUser(user.id));
+    }
+  };
+
+  const handleImportFromQuestionBank = (item: QuestionBankItem) => {
+    const newQuestion = {
+      ...item.question,
+      id: `${item.id}-${Date.now()}`,
+    };
+
+    const updated = [...questions, newQuestion];
+    setQuestions(updated);
+    setSelectedQuestionIndex(updated.length - 1);
+    setEditingIndex(null);
+    setCurrentQuestion(getDefaultQuestion(newQuestion.type));
+    setQuestionBankDialogOpen(false);
+    toast.success(t('questionImported'));
+  };
+
+  useEffect(() => {
+    if (questionBankDialogOpen) {
+      refreshQuestionBank();
+    }
+  }, [questionBankDialogOpen]);
+
+  const getQuestionTypeName = (type: QuizQuestionType) => {
+    const translationKey = questionTypeTranslationKeyMap[type];
+    return translationKey ? t(translationKey) : type;
   };
 
   const handleSaveQuiz = () => {
@@ -1288,6 +1333,17 @@ export const QuizBuilder = () => {
               {isFlashcard ? "Nouvelle carte" : "Nouvelle question"}
             </Button>
 
+            {!isPoll && !isFlashcard && user && (
+              <Button
+                onClick={() => setQuestionBankDialogOpen(true)}
+                className="w-full mb-4"
+                variant="ghost"
+              >
+                <Library className="w-4 h-4 mr-2" />
+                {t('importFromQuestionBank')}
+              </Button>
+            )}
+
             <DndContext
               sensors={sensors}
               collisionDetection={closestCenter}
@@ -1315,7 +1371,9 @@ export const QuizBuilder = () => {
               </SortableContext>
             </DndContext>
             {questions.length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-8">{t('noQuestions')}</p>
+              <p className="text-sm text-muted-foreground text-center py-8">
+                {t(isFlashcard ? 'noFlashcards' : 'noQuestions')}
+              </p>
             )}
           </div>
 
@@ -1329,7 +1387,7 @@ export const QuizBuilder = () => {
                 />
               ) : isFlashcard ? (
                 <div className="flex h-full items-center justify-center text-muted-foreground">
-                  Sélectionnez ou créez une carte pour la prévisualiser
+                  {t('selectFlashcardToPreview')}
                 </div>
               ) : (
                 <QuizPreview
@@ -1437,6 +1495,71 @@ export const QuizBuilder = () => {
         {questionEditorOpen ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
       </Button>
     </div>
+
+      <Dialog open={questionBankDialogOpen} onOpenChange={setQuestionBankDialogOpen}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>{t('importFromQuestionBank')}</DialogTitle>
+            <DialogDescription>{t('questionBankImportDescription')}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {questionBankItems.length === 0 ? (
+              <div className="rounded-lg border border-dashed border-border/60 bg-muted/30 p-6 text-center">
+                <p className="text-sm text-muted-foreground">{t('questionBankEmpty')}</p>
+                <Button
+                  className="mt-4"
+                  variant="outline"
+                  onClick={() => {
+                    setQuestionBankDialogOpen(false);
+                    navigate('/question-bank');
+                  }}
+                >
+                  {t('manageQuestionBank')}
+                </Button>
+              </div>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2">
+                {questionBankItems.map((item) => (
+                  <Card key={item.id} className="flex h-full flex-col border-border/60 bg-card">
+                    <CardHeader>
+                      <CardTitle className="text-lg text-foreground">{item.title}</CardTitle>
+                      {item.topic && (
+                        <CardDescription className="text-muted-foreground">{item.topic}</CardDescription>
+                      )}
+                    </CardHeader>
+                    <CardContent className="flex flex-1 flex-col gap-4">
+                      <div>
+                        <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">{t('question')}</p>
+                        <p className="mt-1 text-sm text-foreground line-clamp-3">
+                          {item.question.question?.trim() || t('noQuestionText')}
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Badge variant="secondary" className="rounded-full">
+                          {getQuestionTypeName(item.question.type as QuizQuestionType)}
+                        </Badge>
+                        {item.topic && (
+                          <Badge variant="outline" className="rounded-full">
+                            {item.topic}
+                          </Badge>
+                        )}
+                        {item.difficulty && (
+                          <Badge variant="outline" className="rounded-full">
+                            {t(difficultyTranslationKeyMap[item.difficulty])}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="mt-auto flex justify-end">
+                        <Button onClick={() => handleImportFromQuestionBank(item)}>{t('importQuestion')}</Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={templateDialogOpen} onOpenChange={setTemplateDialogOpen}>
         <DialogContent className="max-w-4xl">

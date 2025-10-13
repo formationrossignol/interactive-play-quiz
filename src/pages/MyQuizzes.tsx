@@ -31,9 +31,13 @@ const MyQuizzes = () => {
 
   const loadQuizzes = () => {
     if (!user) return;
-    setMyQuizzes(getUserQuizzes(user.id));
-    setPublicQuizzes(getPublicQuizzes());
-    setFavoriteQuizzes(getFavoriteQuizzes(user.id));
+    const userQuizzes = getUserQuizzes(user.id);
+    const publicQuizzes = getPublicQuizzes();
+    const favorite = getFavoriteQuizzes(user.id);
+
+    setMyQuizzes(userQuizzes.filter((quiz) => quiz.type === 'quiz'));
+    setPublicQuizzes(publicQuizzes.filter((quiz) => quiz.type === 'quiz'));
+    setFavoriteQuizzes(favorite.filter((quiz) => quiz.type === 'quiz'));
   };
 
   const handleDeleteClick = (quiz: SavedQuiz) => {
