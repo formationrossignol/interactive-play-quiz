@@ -1,7 +1,21 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { getCurrentUser, logout } from "@/lib/auth";
-import { Zap, LogOut, User, BookOpen, BarChart3, Globe, Home, Menu, Layers, Library, ChevronDown } from "lucide-react";
+import {
+  Zap,
+  LogOut,
+  User,
+  BookOpen,
+  BarChart3,
+  Globe,
+  Home,
+  Menu,
+  Layers,
+  Library,
+  ChevronDown,
+  Sparkles,
+  CreditCard,
+} from "lucide-react";
 import { useState, useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
 import { getLanguage, setLanguage, t, type Language } from "@/lib/i18n";
 import {
@@ -39,6 +53,18 @@ export const Header = ({
       label: t('home'),
       icon: Home,
       onClick: () => navigate('/'),
+      requiresAuth: false,
+    },
+    {
+      label: t('features'),
+      icon: Sparkles,
+      onClick: () => navigate('/features'),
+      requiresAuth: false,
+    },
+    {
+      label: t('pricing'),
+      icon: CreditCard,
+      onClick: () => navigate('/pricing'),
       requiresAuth: false,
     },
   ];
@@ -106,6 +132,8 @@ export const Header = ({
   }, []);
 
   const showMainToolbar = Boolean(toolbar && toolbarPlacement === "main");
+  const mainNavigationIconClass =
+    "h-12 w-12 rounded-full border border-white/60 bg-white/70 text-foreground/70 shadow-[0_10px_30px_-18px_rgba(15,26,61,0.45)] transition-all duration-300 hover:border-[#0f1a3d]/30 hover:text-foreground";
 
   return (
     <header
@@ -144,22 +172,27 @@ export const Header = ({
         </div>
 
         {showNavigation && (
-          <div className="hidden flex-1 items-center justify-center gap-1 md:flex">
+          <div className="hidden flex-1 items-center justify-center gap-6 md:flex">
             {primaryNavigationItems
               .filter((item) => (item.requiresAuth ? Boolean(user) : true))
               .map((item) => {
                 const Icon = item.icon;
                 return (
-                  <Button
-                    key={item.label}
-                    variant="ghost"
-                    size="sm"
-                    onClick={item.onClick}
-                    className="gap-2 rounded-full px-4 text-sm font-medium text-foreground/80 transition-colors hover:text-foreground"
-                  >
-                    <Icon className="h-4 w-4" />
-                    <span>{item.label}</span>
-                  </Button>
+                  <div key={item.label} className="flex flex-col items-center gap-1">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={item.onClick}
+                      title={item.label}
+                      className={mainNavigationIconClass}
+                    >
+                      <Icon className="h-5 w-5" />
+                      <span className="sr-only">{item.label}</span>
+                    </Button>
+                    <span className="text-xs font-medium uppercase tracking-[0.25em] text-foreground/50">
+                      {item.label}
+                    </span>
+                  </div>
                 );
               })}
             {availableCreationItems.length > 0 && (
