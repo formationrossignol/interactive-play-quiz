@@ -285,7 +285,12 @@ export const Header = ({
       )}
       {toolbar && toolbarPlacement === "main" && (
         <div className="w-full px-6 pb-4 lg:hidden">
-          <div className="flex flex-wrap items-center justify-end gap-2 border-t border-white/40 bg-white/60 px-4 py-3 backdrop-blur-xl">
+          <div
+            className={cn(
+              "flex flex-wrap items-center gap-2 border-t border-white/40 bg-white/60 px-4 py-3 backdrop-blur-xl",
+              alignLeft ? "justify-start" : "justify-end"
+            )}
+          >
             {toolbar}
           </div>
         </div>
