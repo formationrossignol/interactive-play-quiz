@@ -12,6 +12,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { QuestionBankQuestionForm } from "@/components/QuestionBankQuestionForm";
 import { createDefaultQuizQuestion } from "@/lib/questionDefaults";
+import { getUserQuizzes } from "@/lib/quizStorage";
 import {
   addQuestionToBank,
   deleteQuestionBankItem,
@@ -48,6 +49,14 @@ const QuestionBank = () => {
   const navigate = useNavigate();
   const user = useMemo(() => getCurrentUser(), []);
   const [items, setItems] = useState<QuestionBankItem[]>([]);
+  const [quizQuestions, setQuizQuestions] = useState<{
+    id: string;
+    quizId: string;
+    quizTitle: string;
+    position: number;
+    type: QuizQuestionType;
+    question: any;
+  }[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<QuestionBankItem | null>(null);
   const [questionType, setQuestionType] = useState<QuizQuestionType>("multiple-choice");
@@ -61,6 +70,24 @@ const QuestionBank = () => {
   const refreshItems = () => {
     if (!user) return;
     setItems(getQuestionBankForUser(user.id));
+
+    const quizzes = getUserQuizzes(user.id).filter((quiz) => quiz.type !== "flashcard");
+    const aggregated = quizzes.flatMap((quiz) => {
+      if (!Array.isArray(quiz.questions)) {
+        return [];
+      }
+
+      return quiz.questions.map((question, index) => ({
+        id: `${quiz.id}-${index}`,
+        quizId: quiz.id,
+        quizTitle: quiz.title || t("untitledQuiz"),
+        position: index + 1,
+        type: (question?.type as QuizQuestionType) ?? "multiple-choice",
+        question,
+      }));
+    });
+
+    setQuizQuestions(aggregated);
   };
 
   useEffect(() => {
@@ -261,6 +288,61 @@ const QuestionBank = () => {
               </Card>
             ))
           )}
+        </div>
+        <div className="mt-16">
+          <div className="flex flex-col gap-2">
+            <h2 className="text-2xl font-bold text-foreground">{t("myQuizQuestions")}</h2>
+            <p className="text-muted-foreground">{t("myQuizQuestionsDescription")}</p>
+          </div>
+
+          <div className="mt-6 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {quizQuestions.length === 0 ? (
+              <div className="col-span-full rounded-xl border border-dashed border-border/60 bg-muted/20 p-10 text-center">
+                <p className="text-sm text-muted-foreground">{t("myQuizQuestionsEmpty")}</p>
+                <Button className="mt-4" variant="outline" onClick={() => navigate("/builder?type=quiz")}>
+                  {t("createQuiz")}
+                </Button>
+              </div>
+            ) : (
+              quizQuestions.map((item) => {
+                const typeLabel = QUESTION_TYPE_OPTIONS.find((option) => option.value === item.type)?.label;
+                const questionText =
+                  item.question?.question?.trim() ||
+                  item.question?.prompt?.trim() ||
+                  item.question?.title?.trim() ||
+                  t("noQuestionText");
+
+                return (
+                  <Card key={item.id} className="flex h-full flex-col border-border/60 bg-card/80">
+                    <CardHeader>
+                      <div className="flex items-center justify-between gap-2">
+                        <Badge variant="outline" className="rounded-full">#{item.position}</Badge>
+                        <Badge variant="secondary" className="rounded-full" title={item.quizTitle}>
+                          {item.quizTitle}
+                        </Badge>
+                      </div>
+                      <CardTitle className="mt-3 text-lg text-foreground line-clamp-2">{questionText}</CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex flex-1 flex-col justify-between gap-4">
+                      <div className="flex flex-wrap items-center gap-2">
+                        {typeLabel && (
+                          <Badge variant="secondary" className="rounded-full">
+                            {t(typeLabel)}
+                          </Badge>
+                        )}
+                        <Badge variant="outline" className="rounded-full">
+                          {t("fromQuiz")}
+                        </Badge>
+                      </div>
+                      {item.question?.description && (
+                        <p className="text-sm text-muted-foreground line-clamp-3">{item.question.description}</p>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })
+            )}
+          </div>
         </div>
       </div>
 
