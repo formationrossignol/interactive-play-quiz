@@ -52,6 +52,7 @@ import type { QuizTemplate } from "@/lib/quizTemplates";
 import { PollTemplateSelectorEnhanced } from "./PollTemplateSelectorEnhanced";
 import { QuizTemplateSelectorEnhanced } from "./QuizTemplateSelectorEnhanced";
 import { FlashcardEditor } from "./FlashcardEditor";
+import { FlashcardPreview } from "./FlashcardPreview";
 import { cn } from "@/lib/utils";
 import {
   DndContext,
@@ -1179,7 +1180,7 @@ export const QuizBuilder = () => {
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header with integrated toolbar */}
       <Header
-        subtitle={isPoll ? t('pollBuilder') : t('quizBuilder')}
+        subtitle={isFlashcard ? "Créateur de Flashcards" : (isPoll ? t('pollBuilder') : t('quizBuilder'))}
         toolbar={builderToolbar}
         toolbarPlacement="main"
         showNavigation={false}
@@ -1268,10 +1269,12 @@ export const QuizBuilder = () => {
           {/* Questions List */}
           <div className="w-80 border-r bg-muted/30 overflow-y-auto p-4">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-foreground">Questions</h3>
+              <h3 className="font-semibold text-foreground">
+                {isFlashcard ? "Cartes" : "Questions"}
+              </h3>
             </div>
             
-            {/* Nouvelle question button */}
+            {/* Nouvelle question/carte button */}
             <Button
               onClick={() => {
                 setCurrentQuestion(getDefaultQuestion());
@@ -1282,7 +1285,7 @@ export const QuizBuilder = () => {
               variant="outline"
             >
               <Plus className="w-4 h-4 mr-2" />
-              Nouvelle question
+              {isFlashcard ? "Nouvelle carte" : "Nouvelle question"}
             </Button>
 
             <DndContext
@@ -1319,17 +1322,28 @@ export const QuizBuilder = () => {
           {/* Preview */}
           <div className="flex-1 overflow-hidden">
             <div className="h-full overflow-y-auto p-0">
-              <QuizPreview
-                title={title || (isPoll ? "Mon Sondage" : "Mon Quiz") }
-                description={description}
-                category={category}
-                headerImage={headerImage}
-                questions={questions}
-                isPoll={isPoll}
-                theme={theme}
-                selectedQuestionIndex={selectedQuestionIndex}
-                fontFamily={activeFont.stack}
-              />
+              {isFlashcard && selectedQuestionIndex !== null && questions[selectedQuestionIndex] ? (
+                <FlashcardPreview
+                  flashcard={questions[selectedQuestionIndex]}
+                  theme={activeTheme}
+                />
+              ) : isFlashcard ? (
+                <div className="flex h-full items-center justify-center text-muted-foreground">
+                  Sélectionnez ou créez une carte pour la prévisualiser
+                </div>
+              ) : (
+                <QuizPreview
+                  title={title || (isPoll ? "Mon Sondage" : "Mon Quiz") }
+                  description={description}
+                  category={category}
+                  headerImage={headerImage}
+                  questions={questions}
+                  isPoll={isPoll}
+                  theme={theme}
+                  selectedQuestionIndex={selectedQuestionIndex}
+                  fontFamily={activeFont.stack}
+                />
+              )}
             </div>
           </div>
       </div>
@@ -1343,29 +1357,18 @@ export const QuizBuilder = () => {
             aria-hidden={!questionEditorOpen}
           >
             <h3 className="font-semibold text-foreground mb-4">
-              {editingIndex !== null ? t('editQuestion') : t('addQuestion')}
+              {isFlashcard 
+                ? (editingIndex !== null ? "Modifier la carte" : "Ajouter une carte")
+                : (editingIndex !== null ? t('editQuestion') : t('addQuestion'))
+              }
             </h3>
 
-            <Tabs defaultValue="type" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="type">Type</TabsTrigger>
-                <TabsTrigger value="content">{t('content')}</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="type" className="mt-4">
-                <QuestionTypeSelector
-                  questionTypes={getAvailableQuestionTypes()}
-                  selectedType={currentQuestion.type}
-                  onSelectType={(type) => setCurrentQuestion(getDefaultQuestion(type))}
-                />
-              </TabsContent>
-
-              <TabsContent value="content" className="mt-4">
+            {isFlashcard ? (
+              <div className="mt-4">
                 {renderQuestionForm()}
-
                 <div className="flex gap-2 mt-6">
                   <Button onClick={handleAddQuestion} className="flex-1">
-                    {editingIndex !== null ? t('updateQuestion') : t('addQuestion')}
+                    {editingIndex !== null ? "Modifier" : "Ajouter"}
                   </Button>
                   {editingIndex !== null && (
                     <Button
@@ -1379,8 +1382,44 @@ export const QuizBuilder = () => {
                     </Button>
                   )}
                 </div>
-              </TabsContent>
-            </Tabs>
+              </div>
+            ) : (
+              <Tabs defaultValue="type" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="type">Type</TabsTrigger>
+                  <TabsTrigger value="content">{t('content')}</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="type" className="mt-4">
+                  <QuestionTypeSelector
+                    questionTypes={getAvailableQuestionTypes()}
+                    selectedType={currentQuestion.type}
+                    onSelectType={(type) => setCurrentQuestion(getDefaultQuestion(type))}
+                  />
+                </TabsContent>
+
+                <TabsContent value="content" className="mt-4">
+                  {renderQuestionForm()}
+
+                  <div className="flex gap-2 mt-6">
+                    <Button onClick={handleAddQuestion} className="flex-1">
+                      {editingIndex !== null ? t('updateQuestion') : t('addQuestion')}
+                    </Button>
+                    {editingIndex !== null && (
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setCurrentQuestion(getDefaultQuestion());
+                          setEditingIndex(null);
+                        }}
+                      >
+                        {t('cancel')}
+                      </Button>
+                    )}
+                  </div>
+                </TabsContent>
+              </Tabs>
+            )}
         </div>
       </div>
 
