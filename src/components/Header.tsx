@@ -98,6 +98,8 @@ export const Header = ({
     };
   }, []);
 
+  const showMainToolbar = Boolean(toolbar && toolbarPlacement === "main");
+
   return (
     <header
       ref={(node) => {
@@ -152,32 +154,25 @@ export const Header = ({
                     <span>{item.label}</span>
                   </Button>
                 );
-              })}
+            })}
+          </div>
+        )}
+
+        {showMainToolbar && (
+          <div className="flex flex-1 justify-center px-4">
+            <div className="w-full max-w-4xl">
+              {toolbar}
+            </div>
           </div>
         )}
 
         <div
           className={cn(
             "flex items-center gap-3",
-            toolbarPlacement === "main"
-              ? alignLeft
-                ? "flex-1 flex-wrap justify-start"
-                : "flex-1 flex-wrap justify-end"
-              : "",
-            alignLeft && toolbarPlacement !== "main" && "ml-auto"
+            alignLeft && "ml-auto",
+            toolbarPlacement === "main" ? "flex-wrap justify-end" : ""
           )}
         >
-          {toolbar && toolbarPlacement === "main" && (
-            <div
-              className={cn(
-                "flex flex-wrap items-center gap-2",
-                alignLeft ? "justify-start" : "justify-end"
-              )}
-            >
-              {toolbar}
-            </div>
-          )}
-
           {showNavigation && (
             <div className="md:hidden">
               <DropdownMenu>
