@@ -230,7 +230,7 @@ export const QuizPreview = ({
       className="relative flex h-full flex-col overflow-hidden border border-border/60 bg-white shadow-sm"
       style={fontFamily ? { fontFamily } : undefined}
     >
-      <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col overflow-hidden text-foreground">
+      <div className="flex h-full w-full flex-1 flex-col overflow-hidden text-foreground">
         <header className="relative overflow-hidden">
           <div className="absolute inset-0" style={headerBackgroundStyle} aria-hidden />
           <div className="absolute inset-0 bg-slate-900/45" aria-hidden />
