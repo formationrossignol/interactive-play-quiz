@@ -404,6 +404,11 @@ export const QuizBuilder = () => {
   const [questionBankDialogOpen, setQuestionBankDialogOpen] = useState(false);
   const [shouldBlockNavigation, setShouldBlockNavigation] = useState(true);
 
+  const sidebarTogglePositionStyle = useMemo(
+    () => ({ top: 'calc(50vh - var(--app-header-height, 0px))' }),
+    []
+  );
+
   const confirmLeaveBuilder = useCallback(() => {
     if (!shouldBlockNavigation) {
       return true;
@@ -1277,6 +1282,7 @@ export const QuizBuilder = () => {
         toolbar={builderToolbar}
         toolbarPlacement="main"
         showNavigation={false}
+        alignLeft
       />
       {/* Main Content */}
       <div className="relative flex-1 flex overflow-hidden">
@@ -1350,9 +1356,10 @@ export const QuizBuilder = () => {
           title={sidebarOpen ? t('hideThemes') : t('showThemes')}
           aria-label={sidebarOpen ? t('hideThemes') : t('showThemes')}
           className={cn(
-            "absolute top-1/2 z-20 h-9 w-9 -translate-x-1/2 -translate-y-1/2 rounded-full border border-border/60 bg-background text-muted-foreground shadow-sm transition-all hover:text-foreground",
+            "absolute z-20 h-9 w-9 -translate-x-1/2 -translate-y-1/2 rounded-full border border-border/60 bg-background text-muted-foreground shadow-sm transition-all hover:text-foreground",
             sidebarOpen ? "left-[288px]" : "left-6"
           )}
+          style={sidebarTogglePositionStyle}
         >
           {sidebarOpen ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
         </Button>
@@ -1536,9 +1543,10 @@ export const QuizBuilder = () => {
         title={questionEditorOpen ? t('hideQuestionEditor') : t('showQuestionEditor')}
         aria-label={questionEditorOpen ? t('hideQuestionEditor') : t('showQuestionEditor')}
         className={cn(
-          "absolute top-1/2 z-20 h-9 w-9 translate-x-1/2 -translate-y-1/2 rounded-full border border-border/60 bg-background text-muted-foreground shadow-sm transition-all hover:text-foreground",
+          "absolute z-20 h-9 w-9 translate-x-1/2 -translate-y-1/2 rounded-full border border-border/60 bg-background text-muted-foreground shadow-sm transition-all hover:text-foreground",
           questionEditorOpen ? "right-[384px]" : "right-6"
         )}
+        style={sidebarTogglePositionStyle}
       >
         {questionEditorOpen ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
       </Button>
