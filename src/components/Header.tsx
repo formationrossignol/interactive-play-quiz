@@ -1,13 +1,15 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { getCurrentUser, logout } from "@/lib/auth";
-import { Zap, LogOut, User, BookOpen, BarChart3, Globe, Home, Menu, Layers, Library } from "lucide-react";
+import { Zap, LogOut, User, BookOpen, BarChart3, Globe, Home, Menu, Layers, Library, ChevronDown } from "lucide-react";
 import { useState, useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
 import { getLanguage, setLanguage, t, type Language } from "@/lib/i18n";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
@@ -32,13 +34,16 @@ export const Header = ({
   const [currentLanguage, setCurrentLanguage] = useState<Language>(getLanguage());
   const headerRef = useRef<HTMLElement | null>(null);
 
-  const navigationItems = [
+  const primaryNavigationItems = [
     {
       label: t('home'),
       icon: Home,
       onClick: () => navigate('/'),
       requiresAuth: false,
     },
+  ];
+
+  const creationMenuItems = [
     {
       label: t('myQuizzes'),
       icon: BookOpen,
@@ -64,6 +69,8 @@ export const Header = ({
       requiresAuth: true,
     },
   ];
+
+  const availableCreationItems = creationMenuItems.filter((item) => (item.requiresAuth ? Boolean(user) : true));
 
   useEffect(() => {
     const currentUser = getCurrentUser();
@@ -138,7 +145,7 @@ export const Header = ({
 
         {showNavigation && (
           <div className="hidden flex-1 items-center justify-center gap-1 md:flex">
-            {navigationItems
+            {primaryNavigationItems
               .filter((item) => (item.requiresAuth ? Boolean(user) : true))
               .map((item) => {
                 const Icon = item.icon;
@@ -154,7 +161,37 @@ export const Header = ({
                     <span>{item.label}</span>
                   </Button>
                 );
-            })}
+              })}
+            {availableCreationItems.length > 0 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="gap-2 rounded-full px-4 text-sm font-medium text-foreground/80 transition-colors hover:text-foreground"
+                  >
+                    <Layers className="h-4 w-4" />
+                    <span>{t('myCreations')}</span>
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="z-50 w-56 rounded-2xl border border-white/50 bg-white/80 p-2 backdrop-blur-xl">
+                  {availableCreationItems.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <DropdownMenuItem
+                        key={item.label}
+                        className="gap-2 rounded-xl text-sm text-foreground/80 transition-colors hover:bg-foreground/5"
+                        onSelect={item.onClick}
+                      >
+                        <Icon className="h-4 w-4" />
+                        {item.label}
+                      </DropdownMenuItem>
+                    );
+                  })}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         )}
 
@@ -186,7 +223,7 @@ export const Header = ({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="z-50 w-56 rounded-2xl border border-white/50 bg-white/80 p-2 backdrop-blur-xl">
-                  {navigationItems
+                  {primaryNavigationItems
                     .filter((item) => (item.requiresAuth ? Boolean(user) : true))
                     .map((item) => {
                       const Icon = item.icon;
@@ -201,6 +238,27 @@ export const Header = ({
                         </DropdownMenuItem>
                       );
                     })}
+                  {availableCreationItems.length > 0 && (
+                    <>
+                      <DropdownMenuSeparator className="bg-foreground/10" />
+                      <DropdownMenuLabel className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        {t('myCreations')}
+                      </DropdownMenuLabel>
+                      {availableCreationItems.map((item) => {
+                        const Icon = item.icon;
+                        return (
+                          <DropdownMenuItem
+                            key={item.label}
+                            className="gap-2 rounded-xl text-sm text-foreground/80 transition-colors hover:bg-foreground/5"
+                            onSelect={item.onClick}
+                          >
+                            <Icon className="h-4 w-4" />
+                            {item.label}
+                          </DropdownMenuItem>
+                        );
+                      })}
+                    </>
+                  )}
                   {user && (
                     <DropdownMenuItem
                       className="gap-2 rounded-xl text-sm text-foreground/80 transition-colors hover:bg-foreground/5"
