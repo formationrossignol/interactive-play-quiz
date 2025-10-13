@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Header } from "@/components/Header";
+import { Footer } from "@/components/Footer";
 import { Plus, QrCode, Compass } from "lucide-react";
 import { t } from "@/lib/i18n";
 
@@ -24,16 +25,16 @@ const Index = () => {
 
       <Header />
 
-      <main className="relative z-10 mx-auto max-w-6xl px-6 pb-24">
-        <section className="glass-panel overflow-hidden px-8 py-20 text-center md:px-16">
+      <main className="relative z-10 mx-auto max-w-6xl px-6 pb-24 pt-14 md:pt-16">
+        <section className="glass-panel mt-6 overflow-hidden px-8 py-16 text-center md:mt-8 md:px-16 md:py-20">
           <div className="mx-auto max-w-3xl">
             <span className="inline-flex items-center justify-center rounded-full border border-white/50 bg-white/60 px-4 py-1 text-xs tracking-[0.4em] text-foreground/60">
               {t('heroInteractive')}
             </span>
-            <h2 className="font-heading mt-10 text-5xl leading-[1.05] text-foreground md:text-7xl">
+            <h2 className="font-heading mt-6 text-4xl leading-[1.08] text-foreground md:mt-8 md:text-6xl">
               {t('heroTitle')} <span className="text-foreground/60">{t('heroInteractive')}</span> {t('heroQuizzes')}
             </h2>
-            <p className="mt-8 text-lg leading-relaxed text-foreground/70 md:text-xl">
+            <p className="mt-6 text-base leading-relaxed text-foreground/70 md:mt-8 md:text-xl">
               {t('heroDescription')}
             </p>
           </div>
@@ -155,6 +156,7 @@ const Index = () => {
           </div>
         </section>
       </main>
+      <Footer />
     </div>
   );
 };

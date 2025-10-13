@@ -16,6 +16,8 @@ import MyFlashcards from "./pages/MyFlashcards";
 import DiscoverQuizzes from "./pages/DiscoverQuizzes";
 import ProfilePage from "./pages/ProfilePage";
 import QuestionBank from "./pages/QuestionBank";
+import Features from "./pages/Features";
+import Pricing from "./pages/Pricing";
 
 const queryClient = new QueryClient();
 
@@ -36,6 +38,8 @@ const App = () => (
           <Route path="/discover" element={<DiscoverQuizzes />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/question-bank" element={<QuestionBank />} />
+          <Route path="/features" element={<Features />} />
+          <Route path="/pricing" element={<Pricing />} />
           <Route path="/quiz/:gameCode" element={<LiveQuizPage />} />
           <Route path="/join/:gameCode" element={<JoinQuiz />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
