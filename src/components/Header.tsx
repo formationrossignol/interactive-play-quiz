@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { getCurrentUser, logout } from "@/lib/auth";
 import { Zap, LogOut, User, BookOpen, BarChart3, Globe, Home, Menu, Layers, Library } from "lucide-react";
-import { useState, useEffect, type ReactNode } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
 import { getLanguage, setLanguage, t, type Language } from "@/lib/i18n";
 import {
   DropdownMenu,
@@ -17,6 +17,7 @@ interface HeaderProps {
   toolbar?: ReactNode;
   toolbarPlacement?: "secondary" | "main";
   showNavigation?: boolean;
+  alignLeft?: boolean;
 }
 
 export const Header = ({
@@ -24,10 +25,12 @@ export const Header = ({
   toolbar,
   toolbarPlacement = "secondary",
   showNavigation = true,
+  alignLeft = false,
 }: HeaderProps) => {
   const navigate = useNavigate();
   const [user, setUser] = useState(getCurrentUser());
   const [currentLanguage, setCurrentLanguage] = useState<Language>(getLanguage());
+  const headerRef = useRef<HTMLElement | null>(null);
 
   const navigationItems = [
     {
@@ -81,8 +84,27 @@ export const Header = ({
     window.location.reload(); // Reload to apply language changes
   };
 
+  useLayoutEffect(() => {
+    const updateHeaderHeight = () => {
+      const headerHeight = headerRef.current?.offsetHeight ?? 0;
+      document.documentElement.style.setProperty('--app-header-height', `${headerHeight}px`);
+    };
+
+    updateHeaderHeight();
+    window.addEventListener('resize', updateHeaderHeight);
+
+    return () => {
+      window.removeEventListener('resize', updateHeaderHeight);
+    };
+  }, []);
+
   return (
-    <header className="relative sticky top-0 z-40 bg-white/70 backdrop-blur-xl border-b border-border/60">
+    <header
+      ref={(node) => {
+        headerRef.current = node;
+      }}
+      className="relative sticky top-0 z-40 bg-white/70 backdrop-blur-xl border-b border-border/60"
+    >
       <div
         className="pointer-events-none absolute inset-x-0 bottom-0 h-px"
         aria-hidden
@@ -91,7 +113,12 @@ export const Header = ({
             "linear-gradient(90deg, hsla(var(--border), 0) 0%, hsla(var(--border), 0.45) 45%, hsla(var(--border), 0.45) 55%, hsla(var(--border), 0) 100%)",
         }}
       />
-      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-6 px-6 py-5">
+      <div
+        className={cn(
+          "flex flex-wrap items-center justify-between gap-6 px-6 py-5",
+          alignLeft ? "mx-0 w-full" : "mx-auto max-w-6xl"
+        )}
+      >
         <div
           className="group flex cursor-pointer items-center gap-4 transition-transform duration-300 hover:-translate-y-0.5"
           onClick={() => navigate('/')}
