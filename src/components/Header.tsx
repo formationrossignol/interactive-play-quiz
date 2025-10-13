@@ -159,12 +159,21 @@ export const Header = ({
         <div
           className={cn(
             "flex items-center gap-3",
-            alignLeft && "ml-auto",
-            toolbarPlacement === "main" ? "flex-1 flex-wrap justify-end" : ""
+            toolbarPlacement === "main"
+              ? alignLeft
+                ? "flex-1 flex-wrap justify-start"
+                : "flex-1 flex-wrap justify-end"
+              : "",
+            alignLeft && toolbarPlacement !== "main" && "ml-auto"
           )}
         >
           {toolbar && toolbarPlacement === "main" && (
-            <div className="flex flex-wrap items-center justify-end gap-2">
+            <div
+              className={cn(
+                "flex flex-wrap items-center gap-2",
+                alignLeft ? "justify-start" : "justify-end"
+              )}
+            >
               {toolbar}
             </div>
           )}
@@ -281,7 +290,12 @@ export const Header = ({
       )}
       {toolbar && toolbarPlacement === "main" && (
         <div className="w-full px-6 pb-4 lg:hidden">
-          <div className="flex flex-wrap items-center justify-end gap-2 border-t border-white/40 bg-white/60 px-4 py-3 backdrop-blur-xl">
+          <div
+            className={cn(
+              "flex flex-wrap items-center gap-2 border-t border-white/40 bg-white/60 px-4 py-3 backdrop-blur-xl",
+              alignLeft ? "justify-start" : "justify-end"
+            )}
+          >
             {toolbar}
           </div>
         </div>
