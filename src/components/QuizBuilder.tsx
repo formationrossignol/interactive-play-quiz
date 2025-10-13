@@ -405,7 +405,7 @@ export const QuizBuilder = () => {
   const [shouldBlockNavigation, setShouldBlockNavigation] = useState(true);
 
   const sidebarTogglePositionStyle = useMemo(
-    () => ({ top: 'calc(50vh - var(--app-header-height, 0px))' }),
+    () => ({ top: 'calc(var(--app-header-height, 0px) + 3rem)' }),
     []
   );
 

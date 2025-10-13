@@ -115,8 +115,10 @@ export const Header = ({
       />
       <div
         className={cn(
-          "flex flex-wrap items-center justify-between gap-6 px-6 py-5",
-          alignLeft ? "mx-0 w-full" : "mx-auto max-w-6xl"
+          "flex flex-wrap items-center px-6 py-5",
+          alignLeft
+            ? "mx-0 w-full justify-start gap-4"
+            : "mx-auto max-w-6xl justify-between gap-6"
         )}
       >
         <div
@@ -157,7 +159,12 @@ export const Header = ({
         <div
           className={cn(
             "flex items-center gap-3",
-            toolbarPlacement === "main" ? "flex-1 flex-wrap justify-end" : ""
+            toolbarPlacement === "main"
+              ? cn(
+                  "flex-1 flex-wrap",
+                  alignLeft ? "justify-start" : "justify-end"
+                )
+              : ""
           )}
         >
           {toolbar && toolbarPlacement === "main" && (
