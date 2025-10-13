@@ -40,6 +40,14 @@ export const getFavoriteQuizzes = (userId: string): SavedQuiz[] => {
   return getSavedQuizzes().filter(q => q.userId === userId && q.isFavorite);
 };
 
+export const getUserFlashcardSets = (userId: string): SavedQuiz[] => {
+  return getSavedQuizzes().filter((q) => q.userId === userId && q.type === 'flashcard');
+};
+
+export const getFavoriteFlashcardSets = (userId: string): SavedQuiz[] => {
+  return getSavedQuizzes().filter((q) => q.userId === userId && q.type === 'flashcard' && q.isFavorite);
+};
+
 export const saveQuiz = (quiz: Omit<SavedQuiz, 'id' | 'createdAt' | 'userId'>): SavedQuiz => {
   const user = getCurrentUser();
   if (!user) throw new Error('User not authenticated');

@@ -13,7 +13,7 @@ interface DeleteQuizDialogProps {
   onOpenChange: (open: boolean) => void;
   onConfirm: () => void;
   title: string;
-  type: 'quiz' | 'poll';
+  type: 'quiz' | 'poll' | 'flashcard';
 }
 
 export const DeleteQuizDialog = ({ open, onOpenChange, onConfirm, title, type }: DeleteQuizDialogProps) => {
@@ -23,7 +23,10 @@ export const DeleteQuizDialog = ({ open, onOpenChange, onConfirm, title, type }:
         <DialogHeader>
           <DialogTitle>Confirmer la suppression</DialogTitle>
           <DialogDescription>
-            Êtes-vous sûr de vouloir supprimer {type === 'quiz' ? 'le quiz' : 'le sondage'} "{title}" ? Cette action est irréversible.
+            Êtes-vous sûr de vouloir supprimer
+            {" "}
+            {type === 'quiz' ? 'le quiz' : type === 'poll' ? 'le sondage' : 'le set de flashcards'} "{title}" ? Cette action est
+            irréversible.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>

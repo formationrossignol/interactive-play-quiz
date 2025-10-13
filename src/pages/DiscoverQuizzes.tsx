@@ -33,7 +33,7 @@ const DiscoverQuizzes = () => {
   const [selectedCategory, setSelectedCategory] = useState("Tous");
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [typeFilter, setTypeFilter] = useState<"all" | "quiz" | "poll">("all");
-  const publicQuizzes = getPublicQuizzes();
+  const publicQuizzes = getPublicQuizzes().filter((quiz) => quiz.type === 'quiz');
 
   const allTags = useMemo(() => {
     const tags = new Set<string>();

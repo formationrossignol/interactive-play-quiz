@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { getCurrentUser, logout } from "@/lib/auth";
-import { Zap, LogOut, User, BookOpen, BarChart3, Globe, Home, Menu } from "lucide-react";
+import { Zap, LogOut, User, BookOpen, BarChart3, Globe, Home, Menu, Layers, Library } from "lucide-react";
 import { useState, useEffect, type ReactNode } from "react";
 import { getLanguage, setLanguage, t, type Language } from "@/lib/i18n";
 import {
@@ -46,6 +46,18 @@ export const Header = ({
       label: t('myPolls'),
       icon: BarChart3,
       onClick: () => navigate('/my-polls'),
+      requiresAuth: true,
+    },
+    {
+      label: t('myFlashcards'),
+      icon: Layers,
+      onClick: () => navigate('/my-flashcards'),
+      requiresAuth: true,
+    },
+    {
+      label: t('questionBank'),
+      icon: Library,
+      onClick: () => navigate('/question-bank'),
       requiresAuth: true,
     },
   ];
