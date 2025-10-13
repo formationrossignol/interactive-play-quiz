@@ -1033,7 +1033,7 @@ export const QuizBuilder = () => {
   };
 
   const toolbarIconButtonClass =
-    "h-11 w-11 rounded-2xl border border-border/60 bg-white/70 text-foreground/70 shadow-[0_10px_30px_-18px_rgba(15,26,61,0.45)] transition-all duration-300 hover:border-primary/30 hover:text-foreground";
+    "h-12 w-12 flex-shrink-0 rounded-full border border-border/60 bg-white/70 text-foreground/70 shadow-[0_10px_30px_-18px_rgba(15,26,61,0.45)] transition-all duration-300 hover:border-primary/30 hover:text-foreground";
 
   const builderToolbar = (
     <div className="flex w-full flex-col gap-3 md:flex-row md:items-center md:justify-between">
