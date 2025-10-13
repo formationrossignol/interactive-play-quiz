@@ -336,12 +336,13 @@ export const QuizBuilder = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
-  const quizType = (searchParams.get('type') || 'quiz') as 'quiz' | 'poll';
+  const quizType = (searchParams.get('type') || 'quiz') as 'quiz' | 'poll' | 'flashcard';
   const templateId = searchParams.get('templateId');
   const quizId = searchParams.get('quizId');
   const user = getCurrentUser();
   
   const isPoll = quizType === 'poll';
+  const isFlashcard = quizType === 'flashcard';
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");

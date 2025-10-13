@@ -57,7 +57,7 @@ const Index = () => {
           </div>
         </section>
 
-        <section className="mt-20 grid gap-8 md:grid-cols-2">
+        <section className="mt-20 grid gap-8 md:grid-cols-3">
           <div
             className="glass-tile cursor-pointer p-10 text-left"
             onClick={() => navigate('/builder-start?type=quiz')}
@@ -98,6 +98,28 @@ const Index = () => {
                 className="rounded-full border-white/60 bg-white/60 px-6 py-2 text-sm font-medium text-foreground/80 shadow-[0_12px_40px_-24px_rgba(15,26,61,0.6)] transition-all duration-300 hover:border-[#0f1a3d]/25 hover:text-foreground"
               >
                 {t('newPoll')}
+              </Button>
+            </div>
+          </div>
+
+          <div
+            className="glass-tile cursor-pointer p-10 text-left"
+            onClick={() => navigate('/builder-start?type=flashcard')}
+          >
+            <div className="mb-10 flex items-center justify-between">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#30407a] to-[#4a5f9a] text-white shadow-[0_16px_40px_-18px_rgba(15,26,61,0.6)]">
+                <Plus className="h-7 w-7" />
+              </div>
+              <span className="text-xs font-medium uppercase tracking-[0.35em] text-foreground/40">Flashcard</span>
+            </div>
+            <h3 className="font-heading text-4xl text-foreground">{t('createFlashcard')}</h3>
+            <p className="mt-4 text-base leading-relaxed text-foreground/65">{t('createFlashcardDesc')}</p>
+            <div className="mt-10">
+              <Button
+                variant="outline"
+                className="rounded-full border-white/60 bg-white/60 px-6 py-2 text-sm font-medium text-foreground/80 shadow-[0_12px_40px_-24px_rgba(15,26,61,0.6)] transition-all duration-300 hover:border-[#0f1a3d]/25 hover:text-foreground"
+              >
+                {t('newFlashcard')}
               </Button>
             </div>
           </div>

@@ -14,10 +14,11 @@ export const QuizBuilderStart = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
-  const quizType = (searchParams.get('type') || 'quiz') as 'quiz' | 'poll';
+  const quizType = (searchParams.get('type') || 'quiz') as 'quiz' | 'poll' | 'flashcard';
   
   const [showTemplates, setShowTemplates] = useState(false);
   const isPoll = quizType === 'poll';
+  const isFlashcard = quizType === 'flashcard';
 
   const handleFromScratch = () => {
     navigate(`/builder?type=${quizType}`);
@@ -29,15 +30,15 @@ export const QuizBuilderStart = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header subtitle={isPoll ? t('pollBuilder') : t('quizBuilder')} />
+      <Header subtitle={isFlashcard ? t('flashcardBuilder') : (isPoll ? t('pollBuilder') : t('quizBuilder'))} />
       
       <div className="max-w-4xl mx-auto p-6 space-y-6">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-foreground mb-2">
-            {isPoll ? t('createNewPoll') : t('createNewQuiz')}
+            {isFlashcard ? t('createNewFlashcard') : (isPoll ? t('createNewPoll') : t('createNewQuiz'))}
           </h1>
           <p className="text-muted-foreground">
-            {isPoll ? t('choosePollStart') : t('chooseQuizStart')}
+            {isFlashcard ? t('chooseFlashcardStart') : (isPoll ? t('choosePollStart') : t('chooseQuizStart'))}
           </p>
         </div>
 
@@ -50,7 +51,7 @@ export const QuizBuilderStart = () => {
                 </div>
                 <CardTitle>{t('fromScratch')}</CardTitle>
                 <CardDescription>
-                  {isPoll ? t('createPollFromScratchDesc') : t('createQuizFromScratchDesc')}
+                  {isFlashcard ? t('createFlashcardFromScratchDesc') : (isPoll ? t('createPollFromScratchDesc') : t('createQuizFromScratchDesc'))}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -71,7 +72,7 @@ export const QuizBuilderStart = () => {
                 </div>
                 <CardTitle>{t('fromTemplate')}</CardTitle>
                 <CardDescription>
-                  {isPoll ? t('createPollFromTemplateDesc') : t('createQuizFromTemplateDesc')}
+                  {isFlashcard ? t('createFlashcardFromTemplateDesc') : (isPoll ? t('createPollFromTemplateDesc') : t('createQuizFromTemplateDesc'))}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -100,6 +101,10 @@ export const QuizBuilderStart = () => {
                 selectedTemplateId={null}
                 onSelectTemplate={handleSelectTemplate}
               />
+            ) : isFlashcard ? (
+              <div className="text-center p-8 bg-muted/20 rounded-lg">
+                <p className="text-muted-foreground">Les templates de flashcards arrivent bientôt !</p>
+              </div>
             ) : (
               <QuizTemplateSelectorEnhanced
                 selectedTemplateId={null}

@@ -31,6 +31,15 @@ export const translations = {
     createPoll: "Create a Poll",
     createPollDesc: "Create surveys to gather feedback and opinions",
     newPoll: "New Poll",
+    createFlashcard: "Create Flashcards",
+    createFlashcardDesc: "Design flashcards to help memorization and learning",
+    newFlashcard: "New Flashcard",
+    flashcardBuilder: "Flashcard Builder",
+    myFlashcards: "My Flashcards",
+    createNewFlashcard: "Create a New Flashcard Set",
+    chooseFlashcardStart: "Choose how you want to start your flashcard set",
+    createFlashcardFromScratchDesc: "Start with a blank canvas and build your own flashcard deck",
+    createFlashcardFromTemplateDesc: "Choose from pre-made templates to get started quickly",
     
     // Join Section
     joinTitle: "Join a Quiz or Poll",
@@ -221,6 +230,15 @@ export const translations = {
     createPoll: "Créer un Sondage",
     createPollDesc: "Créez des sondages pour recueillir des avis et opinions",
     newPoll: "Nouveau Sondage",
+    createFlashcard: "Créer des Flashcards",
+    createFlashcardDesc: "Concevez des flashcards pour faciliter la mémorisation et l'apprentissage",
+    newFlashcard: "Nouvelle Flashcard",
+    flashcardBuilder: "Flashcard Builder",
+    myFlashcards: "Mes Flashcards",
+    createNewFlashcard: "Créer un Nouveau Set de Flashcards",
+    chooseFlashcardStart: "Choisissez comment vous souhaitez commencer votre set de flashcards",
+    createFlashcardFromScratchDesc: "Commencez avec une page blanche et créez votre propre deck de flashcards",
+    createFlashcardFromTemplateDesc: "Choisissez parmi des modèles pré-faits pour démarrer rapidement",
     
     // Join Section
     joinTitle: "Rejoindre un Quiz ou Sondage",
