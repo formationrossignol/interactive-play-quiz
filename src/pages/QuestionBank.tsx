@@ -255,7 +255,7 @@ const QuestionBank = () => {
                       const typeLabelKey = QUESTION_TYPE_OPTIONS.find((option) => option.value === item.question.type)?.label;
                       return typeLabelKey ? (
                         <Badge variant="secondary" className="rounded-full">
-                          {t(typeLabelKey)}
+                          {t(typeLabelKey as any)}
                         </Badge>
                       ) : null;
                     })()}
@@ -264,7 +264,7 @@ const QuestionBank = () => {
                       const difficultyLabel = DIFFICULTY_OPTIONS.find((option) => option.value === item.difficulty)?.label;
                       return difficultyLabel ? (
                         <Badge variant="outline" className="rounded-full">
-                          {t(difficultyLabel)}
+                          {t(difficultyLabel as any)}
                         </Badge>
                       ) : null;
                     })()}
@@ -327,7 +327,7 @@ const QuestionBank = () => {
                       <div className="flex flex-wrap items-center gap-2">
                         {typeLabel && (
                           <Badge variant="secondary" className="rounded-full">
-                            {t(typeLabel)}
+                            {t(typeLabel as any)}
                           </Badge>
                         )}
                         <Badge variant="outline" className="rounded-full">
@@ -373,7 +373,7 @@ const QuestionBank = () => {
                     <SelectContent className="bg-popover">
                       {QUESTION_TYPE_OPTIONS.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
-                          {t(option.label)}
+                          {t(option.label as any)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -388,7 +388,7 @@ const QuestionBank = () => {
                     <SelectContent className="bg-popover">
                       {DIFFICULTY_OPTIONS.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
-                          {t(option.label)}
+                          {t(option.label as any)}
                         </SelectItem>
                       ))}
                     </SelectContent>

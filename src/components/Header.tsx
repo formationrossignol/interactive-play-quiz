@@ -15,6 +15,8 @@ import {
   ChevronDown,
   Sparkles,
   CreditCard,
+  Users,
+  Mail,
 } from "lucide-react";
 import { useState, useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
 import { getLanguage, setLanguage, t, type Language } from "@/lib/i18n";
@@ -65,6 +67,18 @@ export const Header = ({
       label: t('pricing'),
       icon: CreditCard,
       onClick: () => navigate('/pricing'),
+      requiresAuth: false,
+    },
+    {
+      label: t('footerAbout'),
+      icon: Users,
+      onClick: () => navigate('/about'),
+      requiresAuth: false,
+    },
+    {
+      label: t('footerContact'),
+      icon: Mail,
+      onClick: () => navigate('/contact'),
       requiresAuth: false,
     },
   ];

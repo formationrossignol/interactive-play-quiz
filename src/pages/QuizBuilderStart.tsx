@@ -6,9 +6,11 @@ import { FileText, Sparkles, ArrowRight } from "lucide-react";
 import { Header } from "@/components/Header";
 import { PollTemplateSelectorEnhanced } from "@/components/PollTemplateSelectorEnhanced";
 import { QuizTemplateSelectorEnhanced } from "@/components/QuizTemplateSelectorEnhanced";
+import { FlashcardTemplateSelectorEnhanced } from "@/components/FlashcardTemplateSelectorEnhanced";
 import { t } from "@/lib/i18n";
 import type { PollTemplate } from "@/lib/pollTemplates";
 import type { QuizTemplate } from "@/lib/quizTemplates";
+import type { FlashcardTemplate } from "@/lib/flashcardTemplates";
 
 export const QuizBuilderStart = () => {
   const navigate = useNavigate();
@@ -24,7 +26,7 @@ export const QuizBuilderStart = () => {
     navigate(`/builder?type=${quizType}`);
   };
 
-  const handleSelectTemplate = (template: PollTemplate | QuizTemplate) => {
+  const handleSelectTemplate = (template: PollTemplate | QuizTemplate | FlashcardTemplate) => {
     navigate(`/builder?type=${quizType}&templateId=${template.id}`);
   };
 
@@ -102,9 +104,10 @@ export const QuizBuilderStart = () => {
                 onSelectTemplate={handleSelectTemplate}
               />
             ) : isFlashcard ? (
-              <div className="text-center p-8 bg-muted/20 rounded-lg">
-                <p className="text-muted-foreground">Les templates de flashcards arrivent bientôt !</p>
-              </div>
+              <FlashcardTemplateSelectorEnhanced
+                selectedTemplateId={null}
+                onSelectTemplate={handleSelectTemplate}
+              />
             ) : (
               <QuizTemplateSelectorEnhanced
                 selectedTemplateId={null}

@@ -728,7 +728,7 @@ export const QuizBuilder = () => {
 
   const getQuestionTypeName = (type: QuizQuestionType) => {
     const translationKey = questionTypeTranslationKeyMap[type];
-    return translationKey ? t(translationKey) : type;
+    return translationKey ? t(translationKey as any) : type;
   };
 
   const handleSaveQuiz = () => {
@@ -1615,7 +1615,7 @@ export const QuizBuilder = () => {
                         )}
                         {item.difficulty && (
                           <Badge variant="outline" className="rounded-full">
-                            {t(difficultyTranslationKeyMap[item.difficulty])}
+                            {t(difficultyTranslationKeyMap[item.difficulty] as any)}
                           </Badge>
                         )}
                       </div>

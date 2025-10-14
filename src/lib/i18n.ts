@@ -231,6 +231,7 @@ export const translations = {
     frequencyScale: "Frequency Scale",
     starRating: "Star Rating",
     openText: "Open Text",
+    npsScale: "NPS Scale",
     
     // Templates
     pollTemplates: "Poll Templates",
@@ -252,6 +253,7 @@ export const translations = {
     questionBankDuplicated: "Question duplicated",
     questionBankSaveError: "Unable to save this question",
     openQuizBuilder: "Open quiz builder",
+    duplicate: "Duplicate",
     questionTitleRequired: "A title is required",
     authRequired: "Please sign in to continue",
     questionTitle: "Question title",
@@ -591,6 +593,7 @@ export const translations = {
     questionBankDuplicated: "Question dupliquée",
     questionBankSaveError: "Impossible d'enregistrer cette question",
     openQuizBuilder: "Ouvrir le builder de quiz",
+    duplicate: "Dupliquer",
     questionTitleRequired: "Un titre est requis",
     authRequired: "Veuillez vous connecter pour continuer",
     questionTitle: "Titre de la question",
