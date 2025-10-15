@@ -1,4 +1,5 @@
-import { Clock, Trophy } from "lucide-react";
+import { Clock, Trophy, Edit2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { DEFAULT_THEME_ID, THEMES } from "@/lib/themes";
 import { hexToRgba } from "@/lib/color";
 import { t } from "@/lib/i18n";
@@ -12,6 +13,7 @@ interface QuizPreviewProps {
   isPoll: boolean;
   theme?: string;
   fontFamily?: string;
+  onEditQuestion?: (index: number) => void;
 }
 
 interface QuizPreviewLiveProps extends QuizPreviewProps {
@@ -28,6 +30,7 @@ export const QuizPreview = ({
   theme = DEFAULT_THEME_ID,
   selectedQuestionIndex,
   fontFamily,
+  onEditQuestion,
 }: QuizPreviewLiveProps) => {
   const selectedTheme = THEMES.find((themeOption) => themeOption.id === theme) ?? THEMES[0];
   const themeOverlay = selectedTheme?.palette?.[2]
@@ -286,6 +289,17 @@ export const QuizPreview = ({
             aria-hidden
           />
           <div className="relative z-10 flex h-full flex-col px-5 py-6 text-center backdrop-blur-sm sm:px-10 sm:py-8">
+            {onEditQuestion !== undefined && selectedQuestionIndex !== null && (
+              <Button
+                variant="secondary"
+                size="sm"
+                className="absolute top-4 right-4 z-20"
+                onClick={() => onEditQuestion(selectedQuestionIndex)}
+              >
+                <Edit2 className="h-4 w-4 mr-2" />
+                Éditer
+              </Button>
+            )}
             <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-4">
               <div className="space-y-3">
                 <h2 className="text-2xl font-semibold leading-snug text-foreground sm:text-3xl">

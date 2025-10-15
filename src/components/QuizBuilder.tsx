@@ -56,6 +56,8 @@ import { PollTemplateSelectorEnhanced } from "./PollTemplateSelectorEnhanced";
 import { QuizTemplateSelectorEnhanced } from "./QuizTemplateSelectorEnhanced";
 import { FlashcardEditor } from "./FlashcardEditor";
 import { FlashcardPreview } from "./FlashcardPreview";
+import { SlideEditor } from "./SlideEditor";
+import { SlidePreview } from "./SlidePreview";
 import { cn } from "@/lib/utils";
 import { createDefaultQuizQuestion } from "@/lib/questionDefaults";
 import { getQuestionBankForUser, type QuestionBankItem, type QuestionDifficulty } from "@/lib/questionBank";
@@ -147,7 +149,9 @@ const SortableQuestionItem = ({ question, index, onEdit, onDelete, onDuplicate, 
   const Icon = questionTypeIconMap[question.type as QuizQuestionType | PollQuestionType] || CheckSquare;
   const iconColors = questionTypeColorMap[question.type as QuizQuestionType | PollQuestionType] || 'bg-primary/10 text-primary';
   
-  const displayText = question.type === 'flashcard' 
+  const displayText = question.type === 'slide'
+    ? (question.title?.trim() || 'Diapositive vide')
+    : question.type === 'flashcard' 
     ? (question.recto?.trim() || 'Flashcard vide')
     : (question.question?.trim() || t('noQuestionText'));
 
@@ -371,13 +375,14 @@ export const QuizBuilder = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
-  const quizType = (searchParams.get('type') || 'quiz') as 'quiz' | 'poll' | 'flashcard';
+  const quizType = (searchParams.get('type') || 'quiz') as 'quiz' | 'poll' | 'flashcard' | 'slide';
   const templateId = searchParams.get('templateId');
   const quizId = searchParams.get('quizId');
   const user = getCurrentUser();
   
   const isPoll = quizType === 'poll';
   const isFlashcard = quizType === 'flashcard';
+  const isSlide = quizType === 'slide';
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -547,10 +552,51 @@ export const QuizBuilder = () => {
   // Load template
   useEffect(() => {
     if (templateId && !quizId) {
-      if (isPoll) {
+      if (isSlide) {
+        const { getSlideTemplate } = require('@/lib/slideTemplates');
+        const template = getSlideTemplate(templateId);
+        if (template) {
+          setTitle(template.name);
+          setDescription(template.description);
+          setCategory("Présentation");
+          const templateSlides = template.slides.map((slide: any, index: number) => ({
+            id: `${template.id}-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 8)}`,
+            ...slide,
+          }));
+          setQuestions(templateSlides as any[]);
+          setSelectedQuestionIndex(templateSlides.length > 0 ? 0 : null);
+          setEditingIndex(null);
+          setCurrentQuestion(getDefaultQuestion());
+          setTags([]);
+          setTemplateDialogOpen(false);
+          setActiveTemplateId(template.id);
+          toast.success("Modèle de présentation chargé");
+        }
+      } else if (isPoll) {
         const template = getPollTemplate(templateId);
         if (template) {
           applyTemplate(template);
+        }
+      } else if (isFlashcard) {
+        const { getFlashcardTemplate } = require('@/lib/flashcardTemplates');
+        const template = getFlashcardTemplate(templateId);
+        if (template) {
+          setTitle(template.name);
+          setDescription(template.description);
+          setCategory(template.category);
+          const templateFlashcards = template.flashcards.map((flashcard: any, index: number) => ({
+            id: `${template.id}-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 8)}`,
+            ...flashcard,
+            type: 'flashcard',
+          }));
+          setQuestions(templateFlashcards as any[]);
+          setSelectedQuestionIndex(templateFlashcards.length > 0 ? 0 : null);
+          setEditingIndex(null);
+          setCurrentQuestion(getDefaultQuestion());
+          setTags([]);
+          setTemplateDialogOpen(false);
+          setActiveTemplateId(template.id);
+          toast.success("Modèle de flashcards chargé");
         }
       } else {
         const template = getQuizTemplate(templateId);
@@ -559,7 +605,7 @@ export const QuizBuilder = () => {
         }
       }
     }
-  }, [templateId, isPoll, quizId]);
+  }, [templateId, isPoll, isFlashcard, isSlide, quizId]);
 
   useEffect(() => {
     if (user) {
@@ -571,6 +617,15 @@ export const QuizBuilder = () => {
 
 
   function getDefaultQuestion(type?: QuizQuestionType | PollQuestionType): any {
+    if (isSlide) {
+      return {
+        type: 'slide',
+        title: '',
+        content: '',
+        image: '',
+      };
+    }
+    
     if (isFlashcard) {
       return {
         type: 'flashcard',
@@ -623,7 +678,12 @@ export const QuizBuilder = () => {
   };
 
   const handleAddQuestion = () => {
-    if (isFlashcard) {
+    if (isSlide) {
+      if (!currentQuestion.title?.trim()) {
+        toast.error("Le titre de la diapositive est requis");
+        return;
+      }
+    } else if (isFlashcard) {
       if (!currentQuestion.recto?.trim() || !currentQuestion.verso?.trim()) {
         toast.error("Le recto et le verso sont requis");
         return;
@@ -892,6 +952,15 @@ export const QuizBuilder = () => {
   );
 
   const renderQuestionForm = () => {
+    if (isSlide) {
+      return (
+        <SlideEditor
+          slide={currentQuestion}
+          onChange={(updated) => setCurrentQuestion(updated)}
+        />
+      );
+    }
+    
     if (isFlashcard) {
       return (
         <FlashcardEditor
@@ -1293,7 +1362,7 @@ export const QuizBuilder = () => {
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header with integrated toolbar */}
       <Header
-        subtitle={isFlashcard ? "Créateur de Flashcards" : (isPoll ? t('pollBuilder') : t('quizBuilder'))}
+        subtitle={isSlide ? "Créateur de Présentations" : isFlashcard ? "Créateur de Flashcards" : (isPoll ? t('pollBuilder') : t('quizBuilder'))}
         toolbar={builderToolbar}
         toolbarPlacement="main"
         showNavigation={false}
@@ -1450,7 +1519,22 @@ export const QuizBuilder = () => {
           {/* Preview */}
           <div className="flex-1 overflow-hidden">
             <div className="h-full overflow-y-auto p-0">
-              {isFlashcard && selectedQuestionIndex !== null && questions[selectedQuestionIndex] ? (
+              {isSlide && selectedQuestionIndex !== null && questions[selectedQuestionIndex] ? (
+                <SlidePreview
+                  slide={questions[selectedQuestionIndex]}
+                  theme={activeTheme}
+                  editable
+                  onEdit={() => {
+                    setEditingIndex(selectedQuestionIndex);
+                    setCurrentQuestion(questions[selectedQuestionIndex]);
+                    setQuestionEditorOpen(true);
+                  }}
+                />
+              ) : isSlide ? (
+                <div className="flex h-full items-center justify-center text-muted-foreground">
+                  Sélectionnez une diapositive pour la prévisualiser
+                </div>
+              ) : isFlashcard && selectedQuestionIndex !== null && questions[selectedQuestionIndex] ? (
                 <FlashcardPreview
                   flashcard={questions[selectedQuestionIndex]}
                   theme={activeTheme}
@@ -1470,6 +1554,11 @@ export const QuizBuilder = () => {
                   theme={theme}
                   selectedQuestionIndex={selectedQuestionIndex}
                   fontFamily={activeFont.stack}
+                  onEditQuestion={(index) => {
+                    setEditingIndex(index);
+                    setCurrentQuestion(questions[index]);
+                    setQuestionEditorOpen(true);
+                  }}
                 />
               )}
             </div>
@@ -1485,13 +1574,15 @@ export const QuizBuilder = () => {
             aria-hidden={!questionEditorOpen}
           >
             <h3 className="font-semibold text-foreground mb-4">
-              {isFlashcard 
+              {isSlide
+                ? (editingIndex !== null ? "Modifier la diapositive" : "Ajouter une diapositive")
+                : isFlashcard 
                 ? (editingIndex !== null ? "Modifier la carte" : "Ajouter une carte")
                 : (editingIndex !== null ? t('editQuestion') : t('addQuestion'))
               }
             </h3>
 
-            {isFlashcard ? (
+            {isSlide || isFlashcard ? (
               <div className="mt-4">
                 {renderQuestionForm()}
                 <div className="flex gap-2 mt-6">

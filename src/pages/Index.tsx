@@ -58,7 +58,7 @@ const Index = () => {
           </div>
         </section>
 
-        <section className="mt-20 grid gap-8 md:grid-cols-3">
+        <section className="mt-20 grid gap-8 md:grid-cols-2 lg:grid-cols-4">
           <div
             className="glass-tile cursor-pointer p-10 text-left"
             onClick={() => navigate('/builder-start?type=quiz')}
@@ -83,10 +83,32 @@ const Index = () => {
 
           <div
             className="glass-tile cursor-pointer p-10 text-left"
-            onClick={() => navigate('/builder-start?type=poll')}
+            onClick={() => navigate('/builder-start?type=slide')}
           >
             <div className="mb-10 flex items-center justify-between">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#1d2a55] to-[#30407a] text-white shadow-[0_16px_40px_-18px_rgba(15,26,61,0.6)]">
+                <Plus className="h-7 w-7" />
+              </div>
+              <span className="text-xs font-medium uppercase tracking-[0.35em] text-foreground/40">Slides</span>
+            </div>
+            <h3 className="font-heading text-4xl text-foreground">Créer une présentation</h3>
+            <p className="mt-4 text-base leading-relaxed text-foreground/65">Créez des présentations interactives et engageantes</p>
+            <div className="mt-10">
+              <Button
+                variant="outline"
+                className="rounded-full border-white/60 bg-white/60 px-6 py-2 text-sm font-medium text-foreground/80 shadow-[0_12px_40px_-24px_rgba(15,26,61,0.6)] transition-all duration-300 hover:border-[#0f1a3d]/25 hover:text-foreground"
+              >
+                Nouvelle présentation
+              </Button>
+            </div>
+          </div>
+
+          <div
+            className="glass-tile cursor-pointer p-10 text-left"
+            onClick={() => navigate('/builder-start?type=poll')}
+          >
+            <div className="mb-10 flex items-center justify-between">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#30407a] to-[#4a5f9a] text-white shadow-[0_16px_40px_-18px_rgba(15,26,61,0.6)]">
                 <Plus className="h-7 w-7" />
               </div>
               <span className="text-xs font-medium uppercase tracking-[0.35em] text-foreground/40">Poll</span>
@@ -108,7 +130,7 @@ const Index = () => {
             onClick={() => navigate('/builder-start?type=flashcard')}
           >
             <div className="mb-10 flex items-center justify-between">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#30407a] to-[#4a5f9a] text-white shadow-[0_16px_40px_-18px_rgba(15,26,61,0.6)]">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#4a5f9a] to-[#6276b8] text-white shadow-[0_16px_40px_-18px_rgba(15,26,61,0.6)]">
                 <Plus className="h-7 w-7" />
               </div>
               <span className="text-xs font-medium uppercase tracking-[0.35em] text-foreground/40">Flashcard</span>

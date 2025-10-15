@@ -13,7 +13,7 @@ export interface SavedQuiz {
   speedBonus: boolean;
   transitionTime: number;
   category: string;
-  type: 'quiz' | 'poll' | 'flashcard';
+  type: 'quiz' | 'poll' | 'flashcard' | 'slide';
   headerImage?: string;
   theme?: string;
   font?: string;
