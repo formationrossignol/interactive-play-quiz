@@ -11,6 +11,10 @@ export interface FlashcardTemplate {
   }>;
 }
 
+export const getFlashcardTemplate = (id: string): FlashcardTemplate | undefined => {
+  return flashcardTemplates.find((template) => template.id === id);
+};
+
 export const flashcardTemplates: FlashcardTemplate[] = [
   {
     id: "vocabulary-english",

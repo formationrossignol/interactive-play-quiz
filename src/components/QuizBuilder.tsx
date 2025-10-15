@@ -45,6 +45,8 @@ import { getCurrentUser } from "@/lib/auth";
 import { saveQuiz, updateQuiz, getQuizById } from "@/lib/quizStorage";
 import { getPollTemplate } from "@/lib/pollTemplates";
 import { getQuizTemplate } from "@/lib/quizTemplates";
+import { getFlashcardTemplate } from "@/lib/flashcardTemplates";
+import { getSlideTemplate } from "@/lib/slideTemplates";
 import { DEFAULT_THEME_ID, THEMES, type Theme } from "@/lib/themes";
 import { hexToRgba } from "@/lib/color";
 import { toast } from "sonner";
@@ -553,7 +555,6 @@ export const QuizBuilder = () => {
   useEffect(() => {
     if (templateId && !quizId) {
       if (isSlide) {
-        const { getSlideTemplate } = require('@/lib/slideTemplates');
         const template = getSlideTemplate(templateId);
         if (template) {
           setTitle(template.name);
@@ -563,7 +564,7 @@ export const QuizBuilder = () => {
             id: `${template.id}-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 8)}`,
             ...slide,
           }));
-          setQuestions(templateSlides as any[]);
+          setQuestions(templateSlides);
           setSelectedQuestionIndex(templateSlides.length > 0 ? 0 : null);
           setEditingIndex(null);
           setCurrentQuestion(getDefaultQuestion());
@@ -578,15 +579,14 @@ export const QuizBuilder = () => {
           applyTemplate(template);
         }
       } else if (isFlashcard) {
-        const { getFlashcardTemplate } = require('@/lib/flashcardTemplates');
         const template = getFlashcardTemplate(templateId);
         if (template) {
           setTitle(template.name);
           setDescription(template.description);
           setCategory(template.category);
-          const templateFlashcards = template.flashcards.map((flashcard: any, index: number) => ({
+          const templateFlashcards = template.cards.map((card: any, index: number) => ({
             id: `${template.id}-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 8)}`,
-            ...flashcard,
+            ...card,
             type: 'flashcard',
           }));
           setQuestions(templateFlashcards as any[]);
