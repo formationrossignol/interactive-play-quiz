@@ -1522,7 +1522,6 @@ export const QuizBuilder = () => {
               {isSlide && selectedQuestionIndex !== null && questions[selectedQuestionIndex] ? (
                 <SlidePreview
                   slide={questions[selectedQuestionIndex]}
-                  theme={activeTheme}
                   editable
                   onEdit={() => {
                     setEditingIndex(selectedQuestionIndex);
