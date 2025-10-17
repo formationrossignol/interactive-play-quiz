@@ -29,6 +29,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { circularIconButtonClass } from "./iconButtonStyles";
 
 interface HeaderProps {
   subtitle?: string;
@@ -146,8 +147,7 @@ export const Header = ({
   }, []);
 
   const showMainToolbar = Boolean(toolbar && toolbarPlacement === "main");
-  const mainNavigationIconClass =
-    "h-12 w-12 rounded-full border border-white/60 bg-white/70 text-foreground/70 shadow-[0_10px_30px_-18px_rgba(15,26,61,0.45)] transition-all duration-300 hover:border-[#0f1a3d]/30 hover:text-foreground";
+  const mainNavigationIconClass = circularIconButtonClass;
 
   return (
     <header
