@@ -10,6 +10,10 @@ interface SlideContent {
   title: string;
   content: string;
   image?: string;
+  backgroundColor?: string;
+  layout?: 'title-content' | 'title-image' | 'two-column' | 'centered';
+  titleSize?: 'small' | 'medium' | 'large';
+  contentAlign?: 'left' | 'center' | 'right';
 }
 
 interface SlidePreviewProps {
@@ -23,27 +27,144 @@ export const SlidePreview = ({ slide, theme, onEdit, editable = false }: SlidePr
   const palette = theme?.palette ?? [];
   const primaryColor = palette[0] ?? "#0f172a";
   const secondaryColor = palette[palette.length - 1] ?? "#1d4ed8";
-  const overlay = hexToRgba(secondaryColor, 0.25);
+  const overlay = hexToRgba(secondaryColor, 0.1);
+
+  const layout = slide.layout || 'title-content';
+  const titleSize = slide.titleSize || 'large';
+  const contentAlign = slide.contentAlign || 'left';
+  const bgColor = slide.backgroundColor || '#ffffff';
 
   const backgroundStyle = useMemo(() => {
     if (!theme) {
       return {
-        background: "linear-gradient(135deg, rgba(15,23,42,0.85), rgba(30,64,175,0.75))",
+        background: bgColor,
       };
     }
 
     return {
-      backgroundImage: theme.background,
-      backgroundSize: "cover",
-      backgroundPosition: "center",
+      backgroundColor: bgColor,
     };
-  }, [theme]);
+  }, [theme, bgColor]);
+
+  const titleSizeClass = {
+    small: 'text-2xl',
+    medium: 'text-3xl',
+    large: 'text-5xl',
+  }[titleSize];
+
+  const alignClass = {
+    left: 'text-left',
+    center: 'text-center',
+    right: 'text-right',
+  }[contentAlign];
+
+  const formatContent = (text: string) => {
+    return text.split('\n').map((line, i) => {
+      const trimmed = line.trim();
+      if (trimmed.startsWith('•')) {
+        return (
+          <li key={i} className="ml-4">
+            {trimmed.substring(1).trim()}
+          </li>
+        );
+      }
+      if (/^\d+\./.test(trimmed)) {
+        return (
+          <li key={i} className="ml-4 list-decimal">
+            {trimmed.replace(/^\d+\.\s*/, '')}
+          </li>
+        );
+      }
+      return <p key={i}>{trimmed || <br />}</p>;
+    });
+  };
+
+  const renderLayout = () => {
+    switch (layout) {
+      case 'title-image':
+        return (
+          <div className="space-y-8">
+            {slide.title && (
+              <h1 className={cn("font-bold", titleSizeClass, alignClass)} style={{ color: primaryColor }}>
+                {slide.title}
+              </h1>
+            )}
+            {slide.image && (
+              <div className="w-full overflow-hidden rounded-lg shadow-lg">
+                <img src={slide.image} alt={slide.title} className="w-full h-96 object-cover" />
+              </div>
+            )}
+          </div>
+        );
+
+      case 'two-column':
+        return (
+          <div className="space-y-6">
+            {slide.title && (
+              <h1 className={cn("font-bold text-center", titleSizeClass)} style={{ color: primaryColor }}>
+                {slide.title}
+              </h1>
+            )}
+            <div className="grid grid-cols-2 gap-8">
+              <div className={cn("prose prose-lg max-w-none", alignClass)}>
+                {slide.content && (
+                  <div className="text-lg space-y-2">
+                    {formatContent(slide.content)}
+                  </div>
+                )}
+              </div>
+              <div>
+                {slide.image && (
+                  <img src={slide.image} alt={slide.title} className="w-full h-full object-cover rounded-lg shadow-lg" />
+                )}
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'centered':
+        return (
+          <div className="flex flex-col items-center justify-center min-h-[400px] space-y-6">
+            {slide.title && (
+              <h1 className={cn("font-bold text-center", titleSizeClass)} style={{ color: primaryColor }}>
+                {slide.title}
+              </h1>
+            )}
+            {slide.content && (
+              <div className={cn("prose prose-lg text-center max-w-2xl", alignClass)}>
+                <div className="text-xl">{formatContent(slide.content)}</div>
+              </div>
+            )}
+          </div>
+        );
+
+      default: // title-content
+        return (
+          <div className="space-y-8">
+            {slide.title && (
+              <h1 className={cn("font-bold", titleSizeClass, alignClass)} style={{ color: primaryColor }}>
+                {slide.title}
+              </h1>
+            )}
+            {slide.image && (
+              <div className="w-full overflow-hidden rounded-lg shadow-lg mb-6">
+                <img src={slide.image} alt={slide.title} className="w-full h-64 object-cover" />
+              </div>
+            )}
+            {slide.content && (
+              <div className={cn("prose prose-lg max-w-none", alignClass)}>
+                <div className="text-lg leading-relaxed space-y-2">
+                  {formatContent(slide.content)}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+    }
+  };
 
   return (
-    <div className="relative flex h-full items-center justify-center p-8">
-      <div className="absolute inset-0" style={backgroundStyle} aria-hidden />
-      <div className="absolute inset-0" style={{ background: overlay }} aria-hidden />
-      
+    <div className="relative flex h-full items-center justify-center p-8" style={backgroundStyle}>
       {editable && onEdit && (
         <Button
           variant="secondary"
@@ -56,43 +177,16 @@ export const SlidePreview = ({ slide, theme, onEdit, editable = false }: SlidePr
         </Button>
       )}
       
-      <div className="relative z-10 w-full max-w-4xl">
-        <Card className="overflow-hidden bg-white/95 shadow-2xl p-12">
-          <div className="space-y-6">
-            {slide.title && (
-              <h1 
-                className="text-4xl font-bold text-center"
-                style={{ color: primaryColor }}
-              >
-                {slide.title}
-              </h1>
-            )}
-
-            {slide.image && (
-              <div className="w-full overflow-hidden rounded-lg shadow-lg">
-                <img
-                  src={slide.image}
-                  alt={slide.title}
-                  className="w-full h-64 object-cover"
-                />
-              </div>
-            )}
-
-            {slide.content && (
-              <div className="prose prose-lg max-w-none">
-                <p className="text-lg text-foreground whitespace-pre-wrap">
-                  {slide.content}
-                </p>
-              </div>
-            )}
-
-            {!slide.title && !slide.content && (
-              <p className="text-center text-muted-foreground text-lg">
-                Diapositive vide - Cliquez sur Éditer pour ajouter du contenu
-              </p>
-            )}
-          </div>
-        </Card>
+      <div className="relative z-10 w-full max-w-5xl">
+        <div className="p-16">
+          {!slide.title && !slide.content ? (
+            <p className="text-center text-muted-foreground text-lg">
+              Diapositive vide - Cliquez sur Éditer pour ajouter du contenu
+            </p>
+          ) : (
+            renderLayout()
+          )}
+        </div>
       </div>
     </div>
   );
