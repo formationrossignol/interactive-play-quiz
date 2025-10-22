@@ -92,15 +92,19 @@ const LiveQuizPage = () => {
       isActive: true,
       createdAt: new Date(loadedQuiz.createdAt ?? new Date().toISOString()),
       questions: (loadedQuiz.questions || []).map((question: any, index: number) => ({
-        id: question.id ?? `${loadedQuiz.id}-${index}`,
-        type: question.type ?? "multiple-choice",
-        question: question.question ?? `Question ${index + 1}`,
-        answers: question.answers ?? [],
-        correctAnswer: question.correctAnswer,
-        timeLimit: question.timeLimit ?? 30,
-        points: question.points ?? 100,
-        items: question.items,
+        ...question,
+        id: question?.id ?? `${loadedQuiz.id}-${index}`,
+        type: question?.type ?? "multiple-choice",
+        question: question?.question ?? `Question ${index + 1}`,
+        answers: question?.answers ?? [],
+        correctAnswer: question?.correctAnswer,
+        timeLimit: question?.timeLimit ?? 30,
+        points: question?.points ?? 100,
       })),
+      headerImage: loadedQuiz.headerImage,
+      theme: loadedQuiz.theme,
+      font: loadedQuiz.font,
+      transitionTime: loadedQuiz.transitionTime,
     };
   }, [loadedQuiz]);
 
