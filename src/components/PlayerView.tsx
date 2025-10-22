@@ -80,36 +80,36 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
 
   if (gameState === 'waiting') {
     return (
-      <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
-        <Card className="bg-white/10 backdrop-blur-lg border-white/20 max-w-md w-full">
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-4">
+        <Card className="max-w-md w-full border border-slate-700/80 bg-slate-900/85 text-slate-100 shadow-2xl">
           <CardContent className="p-8 text-center">
-            <div className="text-6xl mb-6">
+            <div className="text-6xl mb-6 drop-shadow-lg">
               {playerAvatar}
             </div>
-            
+
             <h1 className="text-2xl font-bold text-white mb-2">Connecté !</h1>
-            <div className="text-white/80 mb-6">
+            <div className="text-slate-300 mb-6">
               Bonjour <span className="font-bold text-white">{playerName}</span>
             </div>
-            
+
             <div className="space-y-4">
-              <div className="text-white/60">
-                <div className="text-3xl font-mono tracking-wider font-bold text-white mb-2">
+              <div className="text-slate-300">
+                <div className="text-3xl font-mono tracking-wider font-bold text-white mb-2 drop-shadow">
                   {gameCode}
                 </div>
-                <p>En attente du début du quiz...</p>
+                <p className="text-slate-300">En attente du début du quiz...</p>
               </div>
-              
-              <div className="flex items-center justify-center gap-4 text-white/60">
+
+              <div className="flex items-center justify-center gap-4 text-slate-300">
                 <div className="flex items-center gap-1">
                   <Users className="w-4 h-4" />
                   <span>{totalPlayers} joueurs</span>
                 </div>
               </div>
             </div>
-            
+
             <div className="mt-6 animate-pulse">
-              <div className="w-8 h-8 bg-primary/30 rounded-full mx-auto"></div>
+              <div className="w-8 h-8 rounded-full mx-auto bg-primary/70 shadow-lg"></div>
             </div>
           </CardContent>
         </Card>
@@ -119,12 +119,12 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
 
   if (gameState === 'question') {
     return (
-      <div className="min-h-screen bg-gradient-hero p-4">
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-4 text-slate-100">
         <div className="max-w-2xl mx-auto">
           {/* Header */}
           <div className="flex items-center justify-between mb-6 text-white">
             <div className="flex items-center gap-4">
-              <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
+              <Badge variant="secondary" className="border border-slate-700/70 bg-slate-800/80 text-white shadow">
                 Question {currentQuestion + 1}
               </Badge>
               <div className="flex items-center gap-1">
@@ -134,7 +134,12 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
             </div>
             <div className="flex items-center gap-2">
               <BackgroundMusic isPlaying={gameState === 'question'} />
-              <Button variant="ghost" size="sm" onClick={() => setShowExitDialog(true)} className="bg-white/10 hover:bg-white/20 text-white">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowExitDialog(true)}
+                className="border border-slate-700/70 bg-slate-800/80 text-white hover:bg-slate-700"
+              >
                 <LogOut className="w-4 h-4" />
               </Button>
             </div>
@@ -156,16 +161,16 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
           />
 
           {/* Question */}
-          <Card className="bg-white/30 backdrop-blur-xl border-white/40 shadow-2xl mb-6">
+          <Card className="mb-6 border border-slate-700/70 bg-slate-900/85 shadow-2xl">
             <CardContent className="p-6">
               <div className="flex justify-center mb-6">
                 <CircularTimer timeLeft={timeLeft} totalTime={mockQuestion.timeLimit} />
               </div>
-              
-              <h2 className="text-xl md:text-2xl font-bold text-white text-center mb-6 drop-shadow-lg">
+
+              <h2 className="mb-6 text-center text-xl font-bold text-white drop-shadow-lg md:text-2xl">
                 {mockQuestion.question}
               </h2>
-              
+
               {/* Multiple Choice Answers */}
               {mockQuestion.type === 'multiple-choice' && mockQuestion.answers && (
                 <div className="grid gap-3">
@@ -175,14 +180,14 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
                       variant={selectedAnswer === index ? "hero" : "quiz"}
                       size="lg"
                       className={cn(
-                        "h-16 text-left justify-start text-lg p-4 transition-all bg-white/30 hover:bg-white/40 text-white font-semibold shadow-lg",
+                        "h-16 justify-start p-4 text-left text-lg font-semibold text-white transition-all bg-slate-800/90 hover:bg-slate-700 shadow-xl",
                         hasAnswered && "pointer-events-none opacity-70",
-                        selectedAnswer === index && "ring-4 ring-white/50 bg-white/50 scale-105"
+                        selectedAnswer === index && "scale-105 bg-primary/80 ring-4 ring-primary/60"
                       )}
                       onClick={() => submitAnswer(index)}
                       disabled={hasAnswered}
                     >
-                      <div className="w-8 h-8 bg-white/40 rounded-full flex items-center justify-center mr-4 text-sm font-bold backdrop-blur-sm">
+                      <div className="mr-4 flex h-8 w-8 items-center justify-center rounded-full bg-primary/80 text-sm font-bold text-white shadow-inner">
                         {String.fromCharCode(65 + index)}
                       </div>
                       {answer}
@@ -196,31 +201,33 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
           {/* Answer Feedback */}
           {hasAnswered && (
             <Card className={cn(
-              "bg-white/30 backdrop-blur-xl animate-scale-in shadow-2xl border-4",
-              isCorrect ? "border-green-400/80 bg-green-500/20" : "border-red-400/80 bg-red-500/20"
+              "animate-scale-in border-4 shadow-2xl",
+              isCorrect
+                ? "border-emerald-500/80 bg-emerald-600/20"
+                : "border-rose-500/80 bg-rose-600/20"
             )}>
               <CardContent className="p-6 text-center">
                 <div className="text-4xl mb-4">
                   {isCorrect ? (
-                    <CheckCircle className="w-16 h-16 text-green-300 mx-auto animate-bounce drop-shadow-lg" />
+                    <CheckCircle className="mx-auto h-16 w-16 animate-bounce text-emerald-300 drop-shadow-lg" />
                   ) : (
-                    <XCircle className="w-16 h-16 text-red-300 mx-auto animate-pulse drop-shadow-lg" />
+                    <XCircle className="mx-auto h-16 w-16 animate-pulse text-rose-300 drop-shadow-lg" />
                   )}
                 </div>
-                <h3 className="text-2xl font-bold text-white mb-2 drop-shadow-lg">
+                <h3 className="mb-2 text-2xl font-bold text-white drop-shadow-lg">
                   {isCorrect ? "🎉 Bonne réponse !" : "😔 Mauvaise réponse"}
                 </h3>
                 {isCorrect && mockQuestion.correctAnswer !== undefined && (
-                  <p className="text-white text-base mb-2 font-medium">
-                    La bonne réponse était: <span className="font-bold text-green-200">{mockQuestion.answers[mockQuestion.correctAnswer]}</span>
+                  <p className="mb-2 text-base font-medium text-white">
+                    La bonne réponse était: <span className="font-bold text-emerald-200">{mockQuestion.answers[mockQuestion.correctAnswer]}</span>
                   </p>
                 )}
                 {!isCorrect && mockQuestion.correctAnswer !== undefined && (
-                  <p className="text-white text-base mb-2 font-medium">
-                    La bonne réponse était: <span className="font-bold text-green-300 bg-green-900/30 px-2 py-1 rounded">{mockQuestion.answers[mockQuestion.correctAnswer]}</span>
+                  <p className="mb-2 text-base font-medium text-white">
+                    La bonne réponse était: <span className="rounded bg-slate-900/60 px-2 py-1 font-bold text-emerald-200">{mockQuestion.answers[mockQuestion.correctAnswer]}</span>
                   </p>
                 )}
-                <p className="text-white text-xl font-bold mt-3 bg-white/20 inline-block px-4 py-2 rounded-full">
+                <p className="mt-3 inline-block rounded-full bg-slate-900/60 px-4 py-2 text-xl font-bold text-white">
                   {isCorrect ? `+${mockQuestion.points} points 🎯` : "0 point"}
                 </p>
               </CardContent>
@@ -233,28 +240,28 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
 
   if (gameState === 'leaderboard') {
     return (
-      <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
-        <Card className="bg-white/30 backdrop-blur-xl border-white/40 max-w-md w-full shadow-2xl">
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-4">
+        <Card className="max-w-md w-full border border-slate-700/70 bg-slate-900/85 text-slate-100 shadow-2xl">
           <CardContent className="p-8 text-center">
-            <div className="text-6xl mb-4 animate-bounce">🏆</div>
-            <h2 className="text-3xl font-bold text-white mb-6 drop-shadow-lg">Classement</h2>
-            
+            <div className="mb-4 text-6xl drop-shadow-xl animate-bounce">🏆</div>
+            <h2 className="mb-6 text-3xl font-bold text-white drop-shadow-lg">Classement</h2>
+
             <div className="space-y-4 mb-6">
-              <div className="bg-gradient-to-r from-yellow-500/30 to-orange-500/30 rounded-xl p-5 border-2 border-yellow-400/50 backdrop-blur-sm shadow-lg animate-pulse">
-                <div className="text-white font-bold text-xl mb-2">{playerName}</div>
-                <div className="text-white text-lg">
-                  <span className="font-bold text-2xl">#{playerRank}</span> • <span className="font-bold text-yellow-200">{playerScore} points</span>
+              <div className="rounded-xl border-2 border-yellow-400/50 bg-gradient-to-r from-yellow-500/40 to-orange-500/30 p-5 shadow-lg animate-pulse">
+                <div className="mb-2 text-xl font-bold text-white">{playerName}</div>
+                <div className="text-lg text-white">
+                  <span className="text-2xl font-bold">#{playerRank}</span> • <span className="font-bold text-yellow-200">{playerScore} points</span>
                 </div>
               </div>
-              
-              <div className="text-white text-base font-medium bg-white/20 rounded-lg p-3 backdrop-blur-sm">
+
+              <div className="rounded-lg border border-slate-700/70 bg-slate-800/80 p-3 text-base font-medium text-slate-200">
                 ⏳ Attendez la prochaine question...
               </div>
             </div>
 
-            <Button 
-              variant="hero" 
-              className="text-lg font-bold shadow-lg animate-pulse"
+            <Button
+              variant="hero"
+              className="text-lg font-bold text-white shadow-lg animate-pulse"
               onClick={() => {
                 setGameState('question');
                 setHasAnswered(false);
@@ -273,15 +280,15 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
-      <Card className="bg-white/10 backdrop-blur-lg border-white/20 max-w-md w-full">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-4">
+      <Card className="max-w-md w-full border border-slate-700/70 bg-slate-900/85 text-slate-100 shadow-2xl">
         <CardContent className="p-8 text-center">
-          <div className="text-4xl mb-4">🎉</div>
-          <h2 className="text-2xl font-bold text-white mb-4">Quiz terminé !</h2>
-          <div className="text-white/80 mb-6">
+          <div className="mb-4 text-4xl drop-shadow-lg">🎉</div>
+          <h2 className="mb-4 text-2xl font-bold text-white">Quiz terminé !</h2>
+          <div className="mb-6 text-slate-200">
             Score final: <span className="font-bold text-white">{playerScore} points</span>
           </div>
-          <div className="text-white/60">
+          <div className="text-slate-300">
             Rang final: #{playerRank} sur {totalPlayers}
           </div>
         </CardContent>
