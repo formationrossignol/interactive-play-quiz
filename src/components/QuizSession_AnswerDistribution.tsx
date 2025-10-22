@@ -17,7 +17,7 @@ export const QuizSessionAnswerDistribution = ({
   if (!currentQuestion.answers) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-hero p-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-4 text-slate-100">
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-white mb-6 animate-fade-in">
