@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { ENHANCED_AVATARS, AvatarDisplay } from "./BetterAvatars";
+import { ensureSessionState, upsertPlayerInSession } from "@/lib/sessionState";
 
 interface AvatarSelectorProps {
   onComplete: (name: string, avatar: string) => void;
@@ -16,9 +17,36 @@ export const AvatarSelector = ({ onComplete, gameCode }: AvatarSelectorProps) =>
   const [playerName, setPlayerName] = useState("");
 
   const handleSubmit = () => {
-    if (playerName.trim()) {
-      onComplete(playerName, selectedAvatar);
+    const trimmedName = playerName.trim();
+
+    if (!trimmedName) {
+      return;
     }
+
+    ensureSessionState(gameCode);
+
+    const playerId = typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `player-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+    const playerRecord = {
+      id: playerId,
+      name: trimmedName,
+      avatar: selectedAvatar,
+      score: 0,
+      correctAnswers: 0,
+      joinedAt: new Date().toISOString(),
+    };
+
+    try {
+      sessionStorage.setItem(`quiz-player-${gameCode}`, JSON.stringify(playerRecord));
+    } catch (error) {
+      console.warn("Unable to persist player info in sessionStorage", error);
+    }
+
+    upsertPlayerInSession(gameCode, playerRecord);
+
+    onComplete(trimmedName, selectedAvatar);
   };
 
   return (
