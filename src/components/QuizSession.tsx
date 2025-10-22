@@ -398,18 +398,18 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
 
           {/* Standard Question Types */}
           {['multiple-choice', 'true-false', 'short-answer'].includes(currentQuestion.type) && (
-            <Card className="bg-white/10 backdrop-blur-lg border-white/20 shadow-glow">
+            <Card className="bg-white/30 backdrop-blur-xl border-white/40 shadow-2xl">
               <CardContent className="p-8">
                 <div className="text-center mb-8">
-                  <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
+                  <h2 className="text-3xl md:text-4xl font-bold text-white mb-6 drop-shadow-lg">
                     {currentQuestion.question}
                   </h2>
                   
                   <div className="flex items-center justify-center gap-6 mb-6">
                     <CircularTimer timeLeft={timeLeft} totalTime={currentQuestion.timeLimit} />
-                    <div className="text-white/80">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Trophy className="w-5 h-5" />
+                    <div className="text-white">
+                      <div className="flex items-center gap-2 mb-2 bg-white/20 rounded-full px-4 py-2 backdrop-blur-sm">
+                        <Trophy className="w-5 h-5 text-yellow-300" />
                         <span className="text-xl font-bold">{currentQuestion.points} points</span>
                       </div>
                     </div>
@@ -424,10 +424,13 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
                         key={index}
                         variant="quiz"
                         size="lg"
-                        className="h-20 text-lg p-6 hover:scale-105 transition-transform"
+                        className="h-20 text-lg p-6 hover:scale-105 transition-transform bg-white/30 hover:bg-white/40 text-white font-semibold shadow-lg backdrop-blur-sm"
                         onClick={() => console.log('Answer:', index)}
                       >
-                        {String.fromCharCode(65 + index)}. {answer}
+                        <div className="w-8 h-8 bg-white/40 rounded-full flex items-center justify-center mr-3 text-sm font-bold">
+                          {String.fromCharCode(65 + index)}
+                        </div>
+                        {answer}
                       </Button>
                     ))}
                   </div>
@@ -439,18 +442,18 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
                     <Button
                       variant="quiz"
                       size="lg"
-                      className="flex-1 h-20 text-xl hover:scale-105 transition-transform bg-success/20 hover:bg-success/30"
+                      className="flex-1 h-20 text-xl hover:scale-105 transition-transform bg-green-500/40 hover:bg-green-500/50 text-white font-bold shadow-lg backdrop-blur-sm border-2 border-green-300/50"
                       onClick={() => console.log('Answer: true')}
                     >
-                      Vrai
+                      ✓ Vrai
                     </Button>
                     <Button
                       variant="quiz"
                       size="lg"
-                      className="flex-1 h-20 text-xl hover:scale-105 transition-transform bg-destructive/20 hover:bg-destructive/30"
+                      className="flex-1 h-20 text-xl hover:scale-105 transition-transform bg-red-500/40 hover:bg-red-500/50 text-white font-bold shadow-lg backdrop-blur-sm border-2 border-red-300/50"
                       onClick={() => console.log('Answer: false')}
                     >
-                      Faux
+                      ✗ Faux
                     </Button>
                   </div>
                 )}

@@ -156,13 +156,13 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
           />
 
           {/* Question */}
-          <Card className="bg-white/10 backdrop-blur-lg border-white/20 shadow-glow mb-6">
+          <Card className="bg-white/30 backdrop-blur-xl border-white/40 shadow-2xl mb-6">
             <CardContent className="p-6">
               <div className="flex justify-center mb-6">
                 <CircularTimer timeLeft={timeLeft} totalTime={mockQuestion.timeLimit} />
               </div>
               
-              <h2 className="text-xl md:text-2xl font-bold text-white text-center mb-6">
+              <h2 className="text-xl md:text-2xl font-bold text-white text-center mb-6 drop-shadow-lg">
                 {mockQuestion.question}
               </h2>
               
@@ -175,14 +175,14 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
                       variant={selectedAnswer === index ? "hero" : "quiz"}
                       size="lg"
                       className={cn(
-                        "h-16 text-left justify-start text-lg p-4 transition-all",
-                        hasAnswered && "pointer-events-none",
-                        selectedAnswer === index && "ring-2 ring-primary"
+                        "h-16 text-left justify-start text-lg p-4 transition-all bg-white/30 hover:bg-white/40 text-white font-semibold shadow-lg",
+                        hasAnswered && "pointer-events-none opacity-70",
+                        selectedAnswer === index && "ring-4 ring-white/50 bg-white/50 scale-105"
                       )}
                       onClick={() => submitAnswer(index)}
                       disabled={hasAnswered}
                     >
-                      <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center mr-4 text-sm font-bold">
+                      <div className="w-8 h-8 bg-white/40 rounded-full flex items-center justify-center mr-4 text-sm font-bold backdrop-blur-sm">
                         {String.fromCharCode(65 + index)}
                       </div>
                       {answer}
@@ -196,28 +196,32 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
           {/* Answer Feedback */}
           {hasAnswered && (
             <Card className={cn(
-              "bg-white/10 backdrop-blur-lg border-white/20 animate-scale-in",
-              isCorrect ? "border-success/50" : "border-destructive/50"
+              "bg-white/30 backdrop-blur-xl animate-scale-in shadow-2xl border-4",
+              isCorrect ? "border-green-400/80 bg-green-500/20" : "border-red-400/80 bg-red-500/20"
             )}>
               <CardContent className="p-6 text-center">
                 <div className="text-4xl mb-4">
-                  {isCorrect ? <CheckCircle className="w-12 h-12 text-success mx-auto" /> : <XCircle className="w-12 h-12 text-destructive mx-auto" />}
+                  {isCorrect ? (
+                    <CheckCircle className="w-16 h-16 text-green-300 mx-auto animate-bounce drop-shadow-lg" />
+                  ) : (
+                    <XCircle className="w-16 h-16 text-red-300 mx-auto animate-pulse drop-shadow-lg" />
+                  )}
                 </div>
-                <h3 className="text-xl font-bold text-white mb-2">
-                  {isCorrect ? "Bonne réponse !" : "Mauvaise réponse"}
+                <h3 className="text-2xl font-bold text-white mb-2 drop-shadow-lg">
+                  {isCorrect ? "🎉 Bonne réponse !" : "😔 Mauvaise réponse"}
                 </h3>
                 {isCorrect && mockQuestion.correctAnswer !== undefined && (
-                  <p className="text-white/80 text-sm mb-2">
-                    La bonne réponse était: <span className="font-bold">{mockQuestion.answers[mockQuestion.correctAnswer]}</span>
+                  <p className="text-white text-base mb-2 font-medium">
+                    La bonne réponse était: <span className="font-bold text-green-200">{mockQuestion.answers[mockQuestion.correctAnswer]}</span>
                   </p>
                 )}
                 {!isCorrect && mockQuestion.correctAnswer !== undefined && (
-                  <p className="text-white/80 text-sm mb-2">
-                    La bonne réponse était: <span className="font-bold text-success">{mockQuestion.answers[mockQuestion.correctAnswer]}</span>
+                  <p className="text-white text-base mb-2 font-medium">
+                    La bonne réponse était: <span className="font-bold text-green-300 bg-green-900/30 px-2 py-1 rounded">{mockQuestion.answers[mockQuestion.correctAnswer]}</span>
                   </p>
                 )}
-                <p className="text-white/80 text-lg font-bold">
-                  {isCorrect ? `+${mockQuestion.points} points` : "0 point"}
+                <p className="text-white text-xl font-bold mt-3 bg-white/20 inline-block px-4 py-2 rounded-full">
+                  {isCorrect ? `+${mockQuestion.points} points 🎯` : "0 point"}
                 </p>
               </CardContent>
             </Card>
@@ -230,24 +234,27 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
   if (gameState === 'leaderboard') {
     return (
       <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
-        <Card className="bg-white/10 backdrop-blur-lg border-white/20 max-w-md w-full">
+        <Card className="bg-white/30 backdrop-blur-xl border-white/40 max-w-md w-full shadow-2xl">
           <CardContent className="p-8 text-center">
-            <div className="text-4xl mb-4">🏆</div>
-            <h2 className="text-2xl font-bold text-white mb-6">Classement</h2>
+            <div className="text-6xl mb-4 animate-bounce">🏆</div>
+            <h2 className="text-3xl font-bold text-white mb-6 drop-shadow-lg">Classement</h2>
             
             <div className="space-y-4 mb-6">
-              <div className="bg-gradient-primary/20 rounded-lg p-4 border border-primary/30">
-                <div className="text-white font-bold text-lg mb-1">{playerName}</div>
-                <div className="text-white/80">#{playerRank} • {playerScore} points</div>
+              <div className="bg-gradient-to-r from-yellow-500/30 to-orange-500/30 rounded-xl p-5 border-2 border-yellow-400/50 backdrop-blur-sm shadow-lg animate-pulse">
+                <div className="text-white font-bold text-xl mb-2">{playerName}</div>
+                <div className="text-white text-lg">
+                  <span className="font-bold text-2xl">#{playerRank}</span> • <span className="font-bold text-yellow-200">{playerScore} points</span>
+                </div>
               </div>
               
-              <div className="text-white/60 text-sm">
-                Attendez la prochaine question...
+              <div className="text-white text-base font-medium bg-white/20 rounded-lg p-3 backdrop-blur-sm">
+                ⏳ Attendez la prochaine question...
               </div>
             </div>
 
             <Button 
               variant="hero" 
+              className="text-lg font-bold shadow-lg animate-pulse"
               onClick={() => {
                 setGameState('question');
                 setHasAnswered(false);
@@ -257,7 +264,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
                 setCurrentQuestion(prev => prev + 1);
               }}
             >
-              Prêt pour la suite
+              🚀 Prêt pour la suite
             </Button>
           </CardContent>
         </Card>
