@@ -388,7 +388,7 @@ export const Header = ({
           </div>
         </div>
       )}
-      {toolbar && toolbarPlacement === "main" && (
+      {toolbar && toolbarPlacement === "main" && !alignLeft && (
         <div className="w-full px-6 pb-4 lg:hidden">
           <div
             className={cn(
