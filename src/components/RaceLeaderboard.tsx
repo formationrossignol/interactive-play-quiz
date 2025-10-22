@@ -47,19 +47,39 @@ export const RaceLeaderboard = ({ players, onComplete }: RaceLeaderboardProps) =
 
   return (
     <div className="min-h-screen bg-gradient-hero p-4 relative overflow-hidden">
-      {/* Animated Background Particles */}
+      {/* Animated Background Particles with Movement */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(20)].map((_, i) => (
+        {[...Array(30)].map((_, i) => (
           <div
             key={i}
-            className="absolute w-2 h-2 bg-white/20 rounded-full animate-bounce"
+            className="absolute rounded-full animate-float"
             style={{
               left: `${Math.random() * 100}%`,
               top: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 2}s`,
-              animationDuration: `${2 + Math.random() * 3}s`
+              width: `${4 + Math.random() * 12}px`,
+              height: `${4 + Math.random() * 12}px`,
+              backgroundColor: ['rgba(255,255,255,0.3)', 'rgba(251,191,36,0.4)', 'rgba(249,115,22,0.4)'][Math.floor(Math.random() * 3)],
+              animationDelay: `${Math.random() * 3}s`,
+              animationDuration: `${3 + Math.random() * 4}s`
             }}
           />
+        ))}
+      </div>
+      
+      {/* Flying stars */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {[...Array(15)].map((_, i) => (
+          <div
+            key={`star-${i}`}
+            className="absolute text-yellow-300 text-2xl animate-fly-across"
+            style={{
+              top: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 5}s`,
+              animationDuration: `${4 + Math.random() * 3}s`
+            }}
+          >
+            ⭐
+          </div>
         ))}
       </div>
 
@@ -223,6 +243,40 @@ export const RaceLeaderboard = ({ players, onComplete }: RaceLeaderboardProps) =
           @keyframes shimmer {
             0% { transform: translateX(-100%); }
             100% { transform: translateX(100%); }
+          }
+          @keyframes float {
+            0%, 100% { 
+              transform: translate(0, 0) rotate(0deg);
+              opacity: 0.3;
+            }
+            25% { 
+              transform: translate(20px, -30px) rotate(90deg);
+              opacity: 0.6;
+            }
+            50% { 
+              transform: translate(-20px, -60px) rotate(180deg);
+              opacity: 0.8;
+            }
+            75% { 
+              transform: translate(30px, -30px) rotate(270deg);
+              opacity: 0.6;
+            }
+          }
+          @keyframes fly-across {
+            0% { 
+              transform: translateX(-100vw) translateY(0) rotate(0deg);
+              opacity: 0;
+            }
+            10% {
+              opacity: 1;
+            }
+            90% {
+              opacity: 1;
+            }
+            100% { 
+              transform: translateX(100vw) translateY(-50px) rotate(360deg);
+              opacity: 0;
+            }
           }
         `
       }} />

@@ -513,20 +513,36 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
     const winner = sortedPlayers[0];
     
     return (
-      <div className="min-h-screen bg-gradient-hero p-4">
-        <div className="max-w-4xl mx-auto text-center">
+      <div className="min-h-screen bg-gradient-hero p-4 relative overflow-hidden">
+        {/* Confetti Animation */}
+        <div className="absolute inset-0 pointer-events-none">
+          {Array.from({ length: 80 }).map((_, i) => (
+            <div
+              key={i}
+              className="absolute w-3 h-3 rounded-full animate-confetti"
+              style={{
+                left: `${Math.random() * 100}%`,
+                backgroundColor: ['#fbbf24', '#f59e0b', '#ef4444', '#3b82f6', '#8b5cf6'][Math.floor(Math.random() * 5)],
+                animationDelay: `${Math.random() * 3}s`,
+                animationDuration: `${2 + Math.random() * 2}s`
+              }}
+            />
+          ))}
+        </div>
+
+        <div className="max-w-4xl mx-auto text-center relative z-10">
           <div className="mb-8 animate-scale-in">
-            <div className="text-6xl mb-4">🎉</div>
-            <h1 className="text-5xl md:text-6xl font-bold text-white mb-4">
+            <div className="text-8xl mb-4 animate-bounce">🎉</div>
+            <h1 className="text-6xl md:text-7xl font-bold text-white mb-6 drop-shadow-2xl">
               Quiz Terminé !
             </h1>
             {winner && (
-              <div className="bg-gradient-primary/20 backdrop-blur-lg rounded-lg p-8 border border-primary/30 mb-8">
-                <div className="text-4xl mb-4">👑</div>
-                <h2 className="text-3xl font-bold text-white mb-2">Félicitations</h2>
-                <div className="text-2xl text-white font-bold">{winner.name}</div>
-                <div className="text-white/80">
-                  {winner.score} points • {winner.correctAnswers} bonnes réponses
+              <div className="bg-gradient-to-r from-yellow-500/40 to-orange-500/30 backdrop-blur-xl rounded-2xl p-10 border-2 border-yellow-400/50 mb-8 shadow-2xl animate-pulse">
+                <div className="text-6xl mb-4 animate-bounce">👑</div>
+                <h2 className="text-4xl font-bold text-white mb-3 drop-shadow-lg">Félicitations</h2>
+                <div className="text-3xl text-white font-bold drop-shadow-lg">{winner.name}</div>
+                <div className="text-white text-xl font-semibold mt-2">
+                  {winner.score} points 🎯 • {winner.correctAnswers} bonnes réponses ✅
                 </div>
               </div>
             )}
@@ -534,13 +550,18 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
 
           <div className="grid md:grid-cols-3 gap-6 mb-8">
             {sortedPlayers.slice(0, 3).map((player, index) => (
-              <Card key={player.id} className="bg-white/10 backdrop-blur-lg border-white/20">
-                <CardContent className="p-6 text-center">
-                  <div className="text-3xl mb-2">
+              <Card key={player.id} className={cn(
+                "bg-white/30 backdrop-blur-xl shadow-xl transform hover:scale-105 transition-all",
+                index === 0 && "border-yellow-400/50 border-2 bg-yellow-500/30",
+                index === 1 && "border-gray-300/50 border-2 bg-gray-300/30",
+                index === 2 && "border-orange-400/50 border-2 bg-orange-500/30"
+              )}>
+                <CardContent className="p-8 text-center">
+                  <div className="text-5xl mb-3">
                     {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
                   </div>
-                  <div className="text-white font-bold text-lg mb-1">{player.name}</div>
-                  <div className="text-white/80">{player.score} points</div>
+                  <div className="text-white font-bold text-2xl mb-2 drop-shadow-lg">{player.name}</div>
+                  <div className="text-white text-lg font-semibold">{player.score} points</div>
                 </CardContent>
               </Card>
             ))}
@@ -548,12 +569,12 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
 
           {isHost && (
             <div className="flex justify-center gap-4">
-              <Button variant="outline" onClick={exportResults}>
-                <Download className="w-4 h-4 mr-2" />
+              <Button variant="outline" onClick={exportResults} className="text-lg font-bold shadow-xl bg-white/30 hover:bg-white/40 text-white border-white/40">
+                <Download className="w-5 h-5 mr-2" />
                 Exporter les résultats
               </Button>
-              <Button variant="hero" onClick={() => window.location.href = '/'}>
-                Nouveau Quiz
+              <Button variant="hero" onClick={() => window.location.href = '/'} className="text-lg font-bold shadow-xl">
+                🎮 Nouveau Quiz
               </Button>
             </div>
           )}
