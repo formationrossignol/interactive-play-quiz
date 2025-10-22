@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,13 @@ import { TransitionTimer } from "./TransitionTimer";
 import { cn } from "@/lib/utils";
 import { DEFAULT_THEME_ID, THEMES } from "@/lib/themes";
 import { hexToRgba } from "@/lib/color";
+import {
+  ensureSessionState,
+  getSessionStorageKey,
+  patchSessionState,
+  readSessionState,
+  type SharedPlayer,
+} from "@/lib/sessionState";
 
 interface Player {
   id: string;
@@ -72,11 +79,7 @@ interface QuizSessionProps {
 
 export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
   const navigate = useNavigate();
-  const [players, setPlayers] = useState<Player[]>([
-    { id: '1', name: 'Alice', avatar: '🦁', score: 0, correctAnswers: 0, joinedAt: new Date() },
-    { id: '2', name: 'Bob', avatar: '🐯', score: 0, correctAnswers: 0, joinedAt: new Date() },
-    { id: '3', name: 'Charlie', avatar: '🐻', score: 0, correctAnswers: 0, joinedAt: new Date() },
-  ]);
+  const [players, setPlayers] = useState<Player[]>([]);
   
   const [gameState, setGameState] = useState<'waiting' | 'transition' | 'question' | 'answer-distribution' | 'leaderboard' | 'final'>('waiting');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -143,30 +146,78 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
     </div>
   );
 
-  // Simulate real-time player updates
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (gameState === 'waiting') {
-        setPlayers(prev => {
-          if (prev.length < 10 && Math.random() > 0.7) {
-            const avatars = ['🦁', '🐯', '🐻', '🐼', '🐨', '🐸', '🐵', '🦊'];
-            const newPlayer: Player = {
-              id: Date.now().toString(),
-              name: `Player${prev.length + 1}`,
-              avatar: avatars[Math.floor(Math.random() * avatars.length)],
-              score: 0,
-              correctAnswers: 0,
-              joinedAt: new Date()
-            };
-            return [...prev, newPlayer];
-          }
-          return prev;
-        });
-      }
-    }, 3000);
+  const [hasSyncedPlayers, setHasSyncedPlayers] = useState(false);
 
-    return () => clearInterval(interval);
-  }, [gameState]);
+  const normalizeSharedPlayer = useCallback((shared: SharedPlayer): Player => ({
+    id: shared.id,
+    name: shared.name,
+    avatar: shared.avatar,
+    score: shared.score ?? 0,
+    correctAnswers: shared.correctAnswers ?? 0,
+    previousScore: shared.previousScore,
+    joinedAt: shared.joinedAt ? new Date(shared.joinedAt) : new Date(),
+  }), []);
+
+  const syncFromStorage = useCallback(() => {
+    const session = readSessionState(quiz.gameCode);
+    const mappedPlayers = session.players.map(normalizeSharedPlayer);
+    setPlayers(mappedPlayers);
+
+    if (session.gameState && session.gameState !== gameState) {
+      setGameState(session.gameState);
+    }
+
+    if (
+      typeof session.currentQuestionIndex === 'number' &&
+      session.currentQuestionIndex !== currentQuestionIndex &&
+      session.currentQuestionIndex >= 0 &&
+      session.currentQuestionIndex < quiz.questions.length
+    ) {
+      setCurrentQuestionIndex(session.currentQuestionIndex);
+      const nextQuestion = quiz.questions[session.currentQuestionIndex];
+      if (nextQuestion?.timeLimit) {
+        setTimeLeft(nextQuestion.timeLimit);
+      }
+    }
+
+    if (gameState === 'question') {
+      setTimeLeft(session.timeLeft);
+    }
+
+    setHasSyncedPlayers(true);
+  }, [gameState, currentQuestionIndex, normalizeSharedPlayer, quiz.gameCode, quiz.questions]);
+
+  useEffect(() => {
+    ensureSessionState(quiz.gameCode);
+    syncFromStorage();
+
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === getSessionStorageKey(quiz.gameCode)) {
+        syncFromStorage();
+      }
+    };
+
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, [quiz.gameCode, syncFromStorage]);
+
+  useEffect(() => {
+    if (!isHost || !hasSyncedPlayers) {
+      return;
+    }
+
+    const playersForStorage: SharedPlayer[] = players.map((player) => ({
+      id: player.id,
+      name: player.name,
+      avatar: player.avatar,
+      score: player.score,
+      correctAnswers: player.correctAnswers,
+      previousScore: player.previousScore,
+      joinedAt: player.joinedAt.toISOString(),
+    }));
+
+    patchSessionState(quiz.gameCode, { players: playersForStorage });
+  }, [hasSyncedPlayers, isHost, players, quiz.gameCode]);
 
   // Timer effect for questions
   useEffect(() => {
@@ -180,6 +231,16 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
       showAnswerDistribution();
     }
   }, [gameState, timeLeft]);
+
+  useEffect(() => {
+    if (!isHost || gameState !== 'question') {
+      return;
+    }
+
+    patchSessionState(quiz.gameCode, {
+      timeLeft,
+    });
+  }, [gameState, isHost, quiz.gameCode, timeLeft]);
 
   // Check if all players have answered
   useEffect(() => {
@@ -210,6 +271,13 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
     setGameState('question');
     setTimeLeft(currentQuestion.timeLimit);
     console.log('Game state changed to: question', 'Timer set to:', currentQuestion.timeLimit);
+    if (isHost) {
+      patchSessionState(quiz.gameCode, {
+        gameState: 'question',
+        currentQuestionIndex,
+        timeLeft: currentQuestion.timeLimit,
+      });
+    }
   };
 
   const nextQuestion = () => {
@@ -217,8 +285,20 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
       // Save previous scores before updating
       setPlayers(prev => prev.map(p => ({ ...p, previousScore: p.score })));
       setGameState('transition');
+      if (isHost) {
+        patchSessionState(quiz.gameCode, {
+          gameState: 'transition',
+          currentQuestionIndex,
+        });
+      }
     } else {
       setGameState('final');
+      if (isHost) {
+        patchSessionState(quiz.gameCode, {
+          gameState: 'final',
+          currentQuestionIndex,
+        });
+      }
     }
   };
 
@@ -226,19 +306,38 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
     setCurrentQuestionIndex(prev => prev + 1);
     setGameState('question');
     setTimeLeft(quiz.questions[currentQuestionIndex + 1].timeLimit);
+    if (isHost) {
+      patchSessionState(quiz.gameCode, {
+        gameState: 'question',
+        currentQuestionIndex: currentQuestionIndex + 1,
+        timeLeft: quiz.questions[currentQuestionIndex + 1].timeLimit,
+      });
+    }
   };
 
   const showAnswerDistribution = () => {
     // Mock answer distribution (in real app this would come from actual answers)
-    const mockDistribution = currentQuestion.answers 
+    const mockDistribution = currentQuestion.answers
       ? currentQuestion.answers.map(() => Math.floor(Math.random() * 50))
       : [];
     setAnswerDistribution(mockDistribution);
     setGameState('answer-distribution');
+    if (isHost) {
+      patchSessionState(quiz.gameCode, {
+        gameState: 'answer-distribution',
+        currentQuestionIndex,
+      });
+    }
   };
 
   const showLeaderboard = () => {
     setGameState('leaderboard');
+    if (isHost) {
+      patchSessionState(quiz.gameCode, {
+        gameState: 'leaderboard',
+        currentQuestionIndex,
+      });
+    }
   };
 
   const handleExitQuiz = () => {

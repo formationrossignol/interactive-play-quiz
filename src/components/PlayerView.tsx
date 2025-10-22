@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -9,6 +9,13 @@ import { BackgroundMusic } from "./BackgroundMusic";
 import { ExitQuizDialog } from "./ExitQuizDialog";
 import { CircularTimer } from "./CircularTimer";
 import { cn } from "@/lib/utils";
+import {
+  ensureSessionState,
+  getSessionStorageKey,
+  readSessionState,
+  upsertPlayerInSession,
+  type SharedPlayer,
+} from "@/lib/sessionState";
 
 interface PlayerViewProps {
   gameCode: string;
@@ -19,13 +26,14 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const playerAvatar = searchParams.get('avatar') || '🎮';
+  const [playerId, setPlayerId] = useState<string | null>(null);
   const [gameState, setGameState] = useState<'waiting' | 'question' | 'answer-feedback' | 'leaderboard' | 'final'>('waiting');
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | string | null>(null);
   const [hasAnswered, setHasAnswered] = useState(false);
   const [playerScore, setPlayerScore] = useState(0);
   const [playerRank, setPlayerRank] = useState(1);
-  const [totalPlayers, setTotalPlayers] = useState(5);
+  const [totalPlayers, setTotalPlayers] = useState(0);
   const [timeLeft, setTimeLeft] = useState(30);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [showExitDialog, setShowExitDialog] = useState(false);
@@ -41,6 +49,87 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
     timeLimit: 30,
     points: 100
   };
+
+  // Ensure a session state exists for this quiz
+  useEffect(() => {
+    ensureSessionState(gameCode);
+  }, [gameCode]);
+
+  const syncFromSession = useCallback(() => {
+    const session = readSessionState(gameCode);
+    setTotalPlayers(session.players.length);
+    setGameState((prev) => (prev !== session.gameState ? session.gameState : prev));
+    if (session.gameState === 'question') {
+      setCurrentQuestion(session.currentQuestionIndex ?? 0);
+      if (session.timeLeft > 0) {
+        setTimeLeft(session.timeLeft);
+      }
+    }
+
+    if (playerId) {
+      const player = session.players.find((p) => p.id === playerId);
+      if (player) {
+        setPlayerScore(player.score ?? 0);
+        const sorted = [...session.players].sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+        const index = sorted.findIndex((p) => p.id === playerId);
+        setPlayerRank(index >= 0 ? index + 1 : 1);
+      }
+    }
+  }, [gameCode, playerId]);
+
+  // Register the player if needed and synchronise initial state
+  useEffect(() => {
+    const storedPlayerRaw = sessionStorage.getItem(`quiz-player-${gameCode}`);
+    if (storedPlayerRaw) {
+      try {
+        const storedPlayer = JSON.parse(storedPlayerRaw) as SharedPlayer;
+        setPlayerId(storedPlayer.id);
+        upsertPlayerInSession(gameCode, storedPlayer);
+      } catch (error) {
+        console.warn('Failed to parse stored player information', error);
+      }
+    } else {
+      const fallbackId = typeof crypto !== 'undefined' && 'randomUUID' in crypto
+        ? crypto.randomUUID()
+        : `player-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      const trimmedName = playerName?.trim() || 'Participant';
+      const fallbackPlayer: SharedPlayer = {
+        id: fallbackId,
+        name: trimmedName,
+        avatar: playerAvatar,
+        score: 0,
+        correctAnswers: 0,
+        joinedAt: new Date().toISOString(),
+      };
+      try {
+        sessionStorage.setItem(`quiz-player-${gameCode}`, JSON.stringify(fallbackPlayer));
+      } catch (error) {
+        console.warn('Unable to persist fallback player info in sessionStorage', error);
+      }
+      upsertPlayerInSession(gameCode, fallbackPlayer);
+      setPlayerId(fallbackId);
+    }
+
+    syncFromSession();
+  }, [gameCode, playerAvatar, playerName, syncFromSession]);
+
+  useEffect(() => {
+    if (playerId) {
+      syncFromSession();
+    }
+  }, [playerId, syncFromSession]);
+
+  // Listen for updates from other tabs (host/admin)
+  useEffect(() => {
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === getSessionStorageKey(gameCode)) {
+        syncFromSession();
+      }
+    };
+
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, [gameCode, syncFromSession]);
 
   // Timer countdown
   useEffect(() => {
