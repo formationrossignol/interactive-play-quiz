@@ -204,21 +204,29 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
 
   if (gameState === 'waiting') {
     return (
-      <div className="min-h-screen bg-gradient-hero p-4">
-        <div className="max-w-6xl mx-auto">
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-4 text-slate-100">
+        <div className="mx-auto max-w-6xl">
           {/* Host Controls */}
           {isHost && (
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h1 className="text-3xl font-bold text-white">{quiz.title}</h1>
-                <p className="text-white/80">{quiz.description}</p>
+                <h1 className="text-3xl font-bold text-white drop-shadow">{quiz.title}</h1>
+                <p className="text-slate-300">{quiz.description}</p>
               </div>
               <div className="flex gap-3">
-                <Button variant="outline" onClick={() => setShowExitDialog(true)}>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowExitDialog(true)}
+                  className="border-slate-700 bg-slate-900/70 text-slate-100 hover:bg-slate-800"
+                >
                   <LogOut className="w-4 h-4 mr-2" />
                   Quitter
                 </Button>
-                <Button variant="outline" onClick={() => setShowSettings(!showSettings)}>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowSettings(!showSettings)}
+                  className="border-slate-700 bg-slate-900/70 text-slate-100 hover:bg-slate-800"
+                >
                   <Settings className="w-4 h-4 mr-2" />
                   Settings
                 </Button>
@@ -235,7 +243,7 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
             onConfirm={handleExitQuiz}
           />
 
-          <div className="grid lg:grid-cols-3 gap-6">
+          <div className="grid gap-6 lg:grid-cols-3">
             {/* QR Code & Join Info */}
             <div className="lg:col-span-1">
               <QRCodeGenerator gameCode={quiz.gameCode} joinUrl={joinUrl} />
@@ -243,26 +251,31 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
 
             {/* Players List */}
             <div className="lg:col-span-2">
-              <Card className="bg-white/10 backdrop-blur-lg border-white/20">
+              <Card className="border border-slate-700/70 bg-slate-900/80 shadow-xl">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                    <h3 className="flex items-center gap-2 text-xl font-bold text-white">
                       <Users className="w-5 h-5" />
                       Players ({players.length})
                     </h3>
                     {isHost && (
-                      <Button variant="outline" size="sm" onClick={exportResults}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={exportResults}
+                        className="border-slate-700 bg-slate-900/70 text-slate-100 hover:bg-slate-800"
+                      >
                         <Download className="w-4 h-4 mr-2" />
                         Export
                       </Button>
                     )}
                   </div>
 
-                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
+                  <div className="grid max-h-96 gap-3 overflow-y-auto md:grid-cols-2 lg:grid-cols-3">
                     {players.map((player) => (
-                      <div 
-                        key={player.id} 
-                        className="bg-white/10 rounded-lg p-3 text-white text-sm animate-fade-in flex items-center gap-2"
+                      <div
+                        key={player.id}
+                        className="flex items-center gap-2 rounded-lg border border-slate-700/60 bg-slate-800/80 p-3 text-sm text-slate-100 shadow-sm animate-fade-in"
                       >
                         <div className="text-2xl">
                           {player.avatar}
@@ -271,9 +284,9 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
                       </div>
                     ))}
                     {players.length === 0 && (
-                      <div className="col-span-full text-center py-8 text-white/60">
+                      <div className="col-span-full py-8 text-center text-slate-300">
                         <p>Waiting for players to join...</p>
-                        <p className="text-sm mt-2">Share the QR code or game code</p>
+                        <p className="mt-2 text-sm text-slate-400">Share the QR code or game code</p>
                       </div>
                     )}
                   </div>
@@ -284,29 +297,29 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
 
           {/* Quiz Preview */}
           {isHost && (
-            <Card className="mt-6 bg-white/10 backdrop-blur-lg border-white/20">
+            <Card className="mt-6 border border-slate-700/70 bg-slate-900/80 shadow-xl">
               <CardContent className="p-6">
-                <h3 className="text-xl font-bold text-white mb-4">Quiz Preview</h3>
-                <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <h3 className="mb-4 text-xl font-bold text-white">Quiz Preview</h3>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-white">{quiz.questions.length}</div>
-                    <div className="text-white/60 text-sm">Questions</div>
+                    <div className="text-2xl font-bold text-white drop-shadow">{quiz.questions.length}</div>
+                    <div className="text-sm text-slate-400">Questions</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-white">
+                    <div className="text-2xl font-bold text-white drop-shadow">
                       {Math.round(quiz.questions.reduce((sum, q) => sum + q.timeLimit, 0) / 60)}m
                     </div>
-                    <div className="text-white/60 text-sm">Est. Duration</div>
+                    <div className="text-sm text-slate-400">Est. Duration</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-white">
+                    <div className="text-2xl font-bold text-white drop-shadow">
                       {quiz.questions.reduce((sum, q) => sum + q.points, 0)}
                     </div>
-                    <div className="text-white/60 text-sm">Total Points</div>
+                    <div className="text-sm text-slate-400">Total Points</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-white">{players.length}</div>
-                    <div className="text-white/60 text-sm">Joined Players</div>
+                    <div className="text-2xl font-bold text-white drop-shadow">{players.length}</div>
+                    <div className="text-sm text-slate-400">Joined Players</div>
                   </div>
                 </div>
               </CardContent>
@@ -328,12 +341,12 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
 
   if (gameState === 'question') {
     return (
-      <div className="min-h-screen bg-gradient-hero p-4">
-        <div className="max-w-4xl mx-auto">
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-4 text-slate-100">
+        <div className="mx-auto max-w-4xl">
           {/* Quiz Header */}
           <div className="flex items-center justify-between mb-6 text-white">
             <div className="flex items-center gap-4">
-              <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
+              <Badge variant="secondary" className="border border-slate-700/70 bg-slate-800/80 text-white shadow">
                 Question {currentQuestionIndex + 1} of {quiz.questions.length}
               </Badge>
               <div className="flex items-center gap-2">
@@ -345,7 +358,12 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
             {isHost && (
               <div className="flex gap-2">
                 <BackgroundMusic isPlaying={gameState === 'question'} />
-                <Button variant="outline" size="sm" onClick={() => setShowExitDialog(true)} className="bg-white/10 hover:bg-white/20 text-white">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowExitDialog(true)}
+                  className="border-slate-700 bg-slate-900/70 text-slate-100 hover:bg-slate-800"
+                >
                   <LogOut className="w-4 h-4 mr-2" />
                   Quitter
                 </Button>
@@ -398,17 +416,17 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
 
           {/* Standard Question Types */}
           {['multiple-choice', 'true-false', 'short-answer'].includes(currentQuestion.type) && (
-            <Card className="bg-white/30 backdrop-blur-xl border-white/40 shadow-2xl">
+            <Card className="border border-slate-700/70 bg-slate-900/85 shadow-2xl">
               <CardContent className="p-8">
-                <div className="text-center mb-8">
-                  <h2 className="text-3xl md:text-4xl font-bold text-white mb-6 drop-shadow-lg">
+                <div className="mb-8 text-center">
+                  <h2 className="mb-6 text-3xl font-bold text-white drop-shadow-lg md:text-4xl">
                     {currentQuestion.question}
                   </h2>
-                  
+
                   <div className="flex items-center justify-center gap-6 mb-6">
                     <CircularTimer timeLeft={timeLeft} totalTime={currentQuestion.timeLimit} />
                     <div className="text-white">
-                      <div className="flex items-center gap-2 mb-2 bg-white/20 rounded-full px-4 py-2 backdrop-blur-sm">
+                      <div className="mb-2 flex items-center gap-2 rounded-full border border-slate-700/70 bg-slate-800/70 px-4 py-2 backdrop-blur-sm">
                         <Trophy className="w-5 h-5 text-yellow-300" />
                         <span className="text-xl font-bold">{currentQuestion.points} points</span>
                       </div>
@@ -418,16 +436,16 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
 
                 {/* Multiple Choice */}
                 {currentQuestion.type === 'multiple-choice' && currentQuestion.answers && (
-                  <div className="grid md:grid-cols-2 gap-4 max-w-2xl mx-auto">
+                  <div className="mx-auto grid max-w-2xl gap-4 md:grid-cols-2">
                     {currentQuestion.answers.map((answer, index) => (
                       <Button
                         key={index}
                         variant="quiz"
                         size="lg"
-                        className="h-20 text-lg p-6 hover:scale-105 transition-transform bg-white/30 hover:bg-white/40 text-white font-semibold shadow-lg backdrop-blur-sm"
+                        className="h-20 p-6 text-lg font-semibold text-white transition-transform bg-slate-800/90 hover:scale-105 hover:bg-slate-700 shadow-xl"
                         onClick={() => console.log('Answer:', index)}
                       >
-                        <div className="w-8 h-8 bg-white/40 rounded-full flex items-center justify-center mr-3 text-sm font-bold">
+                        <div className="mr-3 flex h-8 w-8 items-center justify-center rounded-full bg-primary/80 text-sm font-bold text-white shadow-inner">
                           {String.fromCharCode(65 + index)}
                         </div>
                         {answer}
@@ -438,11 +456,11 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
 
                 {/* True/False */}
                 {currentQuestion.type === 'true-false' && (
-                  <div className="flex gap-4 justify-center max-w-md mx-auto">
+                  <div className="mx-auto flex max-w-md gap-4 justify-center">
                     <Button
                       variant="quiz"
                       size="lg"
-                      className="flex-1 h-20 text-xl hover:scale-105 transition-transform bg-green-500/40 hover:bg-green-500/50 text-white font-bold shadow-lg backdrop-blur-sm border-2 border-green-300/50"
+                      className="flex-1 h-20 border-2 border-emerald-400/60 bg-emerald-600/40 text-xl font-bold text-white shadow-xl transition-transform hover:scale-105 hover:bg-emerald-500/60"
                       onClick={() => console.log('Answer: true')}
                     >
                       ✓ Vrai
@@ -450,7 +468,7 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
                     <Button
                       variant="quiz"
                       size="lg"
-                      className="flex-1 h-20 text-xl hover:scale-105 transition-transform bg-red-500/40 hover:bg-red-500/50 text-white font-bold shadow-lg backdrop-blur-sm border-2 border-red-300/50"
+                      className="flex-1 h-20 border-2 border-rose-400/60 bg-rose-600/40 text-xl font-bold text-white shadow-xl transition-transform hover:scale-105 hover:bg-rose-500/60"
                       onClick={() => console.log('Answer: false')}
                     >
                       ✗ Faux
@@ -460,12 +478,12 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
 
                 {/* Short Answer */}
                 {currentQuestion.type === 'short-answer' && (
-                  <div className="max-w-md mx-auto">
-                    <div className="bg-white/10 rounded-lg p-4 mb-4">
+                  <div className="mx-auto max-w-md">
+                    <div className="mb-4 rounded-lg border border-slate-700/70 bg-slate-800/80 p-4">
                       <input
                         type="text"
                         placeholder="Tapez votre réponse..."
-                        className="w-full bg-transparent text-white placeholder:text-white/60 text-xl text-center border-none outline-none"
+                        className="w-full border-none bg-transparent text-center text-xl text-white outline-none placeholder:text-slate-300"
                         maxLength={100}
                         onKeyPress={(e) => e.key === 'Enter' && console.log('Answer:', e.currentTarget.value)}
                       />
@@ -511,9 +529,9 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
   if (gameState === 'final') {
     const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
     const winner = sortedPlayers[0];
-    
+
     return (
-      <div className="min-h-screen bg-gradient-hero p-4 relative overflow-hidden">
+      <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-4 text-slate-100">
         {/* Confetti Animation */}
         <div className="absolute inset-0 pointer-events-none">
           {Array.from({ length: 80 }).map((_, i) => (
@@ -530,38 +548,38 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
           ))}
         </div>
 
-        <div className="max-w-4xl mx-auto text-center relative z-10">
+        <div className="relative z-10 mx-auto max-w-4xl text-center">
           <div className="mb-8 animate-scale-in">
-            <div className="text-8xl mb-4 animate-bounce">🎉</div>
-            <h1 className="text-6xl md:text-7xl font-bold text-white mb-6 drop-shadow-2xl">
+            <div className="mb-4 text-8xl drop-shadow-2xl animate-bounce">🎉</div>
+            <h1 className="mb-6 text-6xl font-bold text-white drop-shadow-2xl md:text-7xl">
               Quiz Terminé !
             </h1>
             {winner && (
-              <div className="bg-gradient-to-r from-yellow-500/40 to-orange-500/30 backdrop-blur-xl rounded-2xl p-10 border-2 border-yellow-400/50 mb-8 shadow-2xl animate-pulse">
-                <div className="text-6xl mb-4 animate-bounce">👑</div>
-                <h2 className="text-4xl font-bold text-white mb-3 drop-shadow-lg">Félicitations</h2>
-                <div className="text-3xl text-white font-bold drop-shadow-lg">{winner.name}</div>
-                <div className="text-white text-xl font-semibold mt-2">
+              <div className="mb-8 rounded-2xl border-2 border-yellow-400/50 bg-gradient-to-r from-yellow-500/45 to-orange-500/35 p-10 shadow-2xl backdrop-blur-xl animate-pulse">
+                <div className="mb-4 text-6xl drop-shadow-xl animate-bounce">👑</div>
+                <h2 className="mb-3 text-4xl font-bold text-white drop-shadow-lg">Félicitations</h2>
+                <div className="text-3xl font-bold text-white drop-shadow-lg">{winner.name}</div>
+                <div className="mt-2 text-xl font-semibold text-white">
                   {winner.score} points 🎯 • {winner.correctAnswers} bonnes réponses ✅
                 </div>
               </div>
             )}
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6 mb-8">
+          <div className="mb-8 grid gap-6 md:grid-cols-3">
             {sortedPlayers.slice(0, 3).map((player, index) => (
               <Card key={player.id} className={cn(
-                "bg-white/30 backdrop-blur-xl shadow-xl transform hover:scale-105 transition-all",
-                index === 0 && "border-yellow-400/50 border-2 bg-yellow-500/30",
-                index === 1 && "border-gray-300/50 border-2 bg-gray-300/30",
-                index === 2 && "border-orange-400/50 border-2 bg-orange-500/30"
+                "transform border border-slate-700/70 bg-slate-900/85 backdrop-blur-xl shadow-xl transition-all hover:scale-105",
+                index === 0 && "border-yellow-400/60 bg-yellow-500/25",
+                index === 1 && "border-slate-300/60 bg-slate-400/20",
+                index === 2 && "border-orange-400/60 bg-orange-500/25"
               )}>
                 <CardContent className="p-8 text-center">
-                  <div className="text-5xl mb-3">
+                  <div className="mb-3 text-5xl drop-shadow">
                     {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
                   </div>
-                  <div className="text-white font-bold text-2xl mb-2 drop-shadow-lg">{player.name}</div>
-                  <div className="text-white text-lg font-semibold">{player.score} points</div>
+                  <div className="mb-2 text-2xl font-bold text-white drop-shadow-lg">{player.name}</div>
+                  <div className="text-lg font-semibold text-white">{player.score} points</div>
                 </CardContent>
               </Card>
             ))}
@@ -569,7 +587,11 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
 
           {isHost && (
             <div className="flex justify-center gap-4">
-              <Button variant="outline" onClick={exportResults} className="text-lg font-bold shadow-xl bg-white/30 hover:bg-white/40 text-white border-white/40">
+              <Button
+                variant="outline"
+                onClick={exportResults}
+                className="border-slate-700 bg-slate-900/70 text-lg font-bold text-slate-100 shadow-xl hover:bg-slate-800"
+              >
                 <Download className="w-5 h-5 mr-2" />
                 Exporter les résultats
               </Button>

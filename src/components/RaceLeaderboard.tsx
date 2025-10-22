@@ -46,7 +46,7 @@ export const RaceLeaderboard = ({ players, onComplete }: RaceLeaderboardProps) =
   const maxScore = Math.max(...sortedPlayers.map(p => p.score), 1);
 
   return (
-    <div className="min-h-screen bg-gradient-hero p-4 relative overflow-hidden">
+    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-4 text-slate-100">
       {/* Animated Background Particles with Movement */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {[...Array(30)].map((_, i) => (
@@ -58,7 +58,7 @@ export const RaceLeaderboard = ({ players, onComplete }: RaceLeaderboardProps) =
               top: `${Math.random() * 100}%`,
               width: `${4 + Math.random() * 12}px`,
               height: `${4 + Math.random() * 12}px`,
-              backgroundColor: ['rgba(255,255,255,0.3)', 'rgba(251,191,36,0.4)', 'rgba(249,115,22,0.4)'][Math.floor(Math.random() * 3)],
+              backgroundColor: ['rgba(148, 163, 184, 0.35)', 'rgba(251, 191, 36, 0.45)', 'rgba(56, 189, 248, 0.35)'][Math.floor(Math.random() * 3)],
               animationDelay: `${Math.random() * 3}s`,
               animationDuration: `${3 + Math.random() * 4}s`
             }}
@@ -71,7 +71,7 @@ export const RaceLeaderboard = ({ players, onComplete }: RaceLeaderboardProps) =
         {[...Array(15)].map((_, i) => (
           <div
             key={`star-${i}`}
-            className="absolute text-yellow-300 text-2xl animate-fly-across"
+            className="absolute text-2xl text-yellow-300 animate-fly-across"
             style={{
               top: `${Math.random() * 100}%`,
               animationDelay: `${Math.random() * 5}s`,
@@ -85,30 +85,30 @@ export const RaceLeaderboard = ({ players, onComplete }: RaceLeaderboardProps) =
 
       <div className="max-w-4xl mx-auto relative z-10">
         <div className="text-center mb-8">
-          <h1 className="text-4xl md:text-6xl font-bold text-white mb-4 animate-fade-in drop-shadow-lg">
+          <h1 className="mb-4 text-4xl font-bold text-white drop-shadow-2xl animate-fade-in md:text-6xl">
             🏁 Classement !
           </h1>
-          <p className="text-white/90 text-lg animate-fade-in" style={{ animationDelay: '200ms' }}>
+          <p className="text-lg text-slate-200 animate-fade-in" style={{ animationDelay: '200ms' }}>
             Les champions du moment
           </p>
         </div>
 
-        <Card className="bg-white/20 backdrop-blur-xl border-white/30 shadow-2xl">
+        <Card className="border border-slate-700/70 bg-slate-900/85 backdrop-blur-xl shadow-2xl">
           <CardContent className="p-6">
             <div className="space-y-4">
               {sortedPlayers.map((player, index) => {
                 const position = index + 1;
                 const progress = (player.score / maxScore) * 100;
-                
+
                 return (
                   <div
                     key={player.id}
                     className={cn(
-                      "relative bg-gradient-to-r rounded-2xl p-5 overflow-hidden animate-fade-in shadow-xl transform hover:scale-[1.02] transition-all duration-300",
+                      "relative overflow-hidden rounded-2xl border border-slate-700/70 bg-gradient-to-r p-5 text-slate-100 shadow-xl transition-all duration-300 hover:scale-[1.02] animate-fade-in",
                       position === 1 && "from-yellow-500/40 via-yellow-400/30 to-yellow-300/20 animate-pulse",
-                      position === 2 && "from-gray-400/40 via-gray-300/30 to-gray-200/20",
+                      position === 2 && "from-slate-500/40 via-slate-400/30 to-slate-300/20",
                       position === 3 && "from-orange-600/40 via-orange-500/30 to-orange-400/20",
-                      position > 3 && "from-white/20 via-white/15 to-white/10"
+                      position > 3 && "from-slate-900/90 via-slate-900/75 to-slate-900/60"
                     )}
                     style={{ animationDelay: `${index * 150}ms` }}
                   >
@@ -117,17 +117,17 @@ export const RaceLeaderboard = ({ players, onComplete }: RaceLeaderboardProps) =
                       <div
                         className={cn(
                           "absolute inset-y-0 left-0 transition-all duration-1500 ease-out",
-                          position === 1 && "bg-gradient-to-r from-yellow-400/50 via-yellow-300/30 to-transparent",
-                          position === 2 && "bg-gradient-to-r from-gray-300/50 via-gray-200/30 to-transparent",
-                          position === 3 && "bg-gradient-to-r from-orange-500/50 via-orange-400/30 to-transparent",
-                          position > 3 && "bg-gradient-to-r from-primary/30 via-primary/20 to-transparent"
+                          position === 1 && "bg-gradient-to-r from-yellow-400/60 via-yellow-300/40 to-transparent",
+                          position === 2 && "bg-gradient-to-r from-slate-300/60 via-slate-200/40 to-transparent",
+                          position === 3 && "bg-gradient-to-r from-orange-500/60 via-orange-400/40 to-transparent",
+                          position > 3 && "bg-gradient-to-r from-primary/50 via-primary/30 to-transparent"
                         )}
                         style={{ width: `${progress}%` }}
                       >
                         {/* Multiple shimmer effects */}
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse" />
-                        <div 
-                          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse" />
+                        <div
+                          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent"
                           style={{
                             animation: 'shimmer 2s infinite',
                             animationDelay: '1s'
@@ -160,9 +160,9 @@ export const RaceLeaderboard = ({ players, onComplete }: RaceLeaderboardProps) =
                         className={cn(
                           "w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl shrink-0 shadow-lg transform transition-transform",
                           position === 1 && "bg-yellow-500 text-yellow-900 animate-bounce shadow-yellow-500/50",
-                          position === 2 && "bg-gray-300 text-gray-900 shadow-gray-400/50",
+                          position === 2 && "bg-slate-300 text-slate-900 shadow-slate-400/50",
                           position === 3 && "bg-orange-600 text-white shadow-orange-600/50",
-                          position > 3 && "bg-white/30 text-white backdrop-blur-sm"
+                          position > 3 && "bg-slate-800/80 text-slate-100 backdrop-blur-sm"
                         )}
                         style={{
                           animationDelay: position === 1 ? '0s' : 'none'
@@ -208,7 +208,7 @@ export const RaceLeaderboard = ({ players, onComplete }: RaceLeaderboardProps) =
                         )}>
                           {player.name}
                         </div>
-                        <div className="text-white/80 text-sm font-medium">
+                        <div className="text-slate-200 text-sm font-medium">
                           Position #{position}
                         </div>
                       </div>
@@ -223,7 +223,7 @@ export const RaceLeaderboard = ({ players, onComplete }: RaceLeaderboardProps) =
                             {player.score}
                           </div>
                           {player.previousScore !== undefined && player.score > player.previousScore && (
-                            <div className="text-green-300 text-sm font-bold animate-bounce">
+                            <div className="text-emerald-300 text-sm font-bold animate-bounce">
                               +{player.score - player.previousScore} 🎯
                             </div>
                           )}

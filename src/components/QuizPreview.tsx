@@ -34,9 +34,9 @@ export const QuizPreview = ({
 }: QuizPreviewLiveProps) => {
   const selectedTheme = THEMES.find((themeOption) => themeOption.id === theme) ?? THEMES[0];
   const themeOverlay = selectedTheme?.palette?.[2]
-    ? hexToRgba(selectedTheme.palette[2], 0.12)
-    : "rgba(15, 23, 42, 0.08)";
-  const neutralOverlay = "rgba(255, 255, 255, 0.6)";
+    ? hexToRgba(selectedTheme.palette[2], 0.28)
+    : "rgba(15, 23, 42, 0.35)";
+  const neutralOverlay = "rgba(15, 23, 42, 0.6)";
   const backgroundStyle = selectedTheme
     ? {
         backgroundImage: selectedTheme.background,
@@ -90,7 +90,7 @@ export const QuizPreview = ({
           style={{ background: themeOverlay, mixBlendMode: "multiply" }}
           aria-hidden
         />
-        <div className="relative z-10 flex h-full items-center justify-center px-6 text-center text-sm text-muted-foreground">
+        <div className="relative z-10 flex h-full items-center justify-center px-6 text-center text-sm text-slate-200">
           {t("noQuestionsYet")}
         </div>
       </div>
@@ -104,9 +104,9 @@ export const QuizPreview = ({
       {answers.map((answer, index) => (
         <div
           key={index}
-          className="flex min-h-[4.25rem] items-center gap-4 rounded-2xl border border-white/40 bg-white/90 px-5 py-4 text-lg font-semibold text-foreground shadow-sm"
+          className="flex min-h-[4.25rem] items-center gap-4 rounded-2xl border border-slate-700/70 bg-slate-900/85 px-5 py-4 text-lg font-semibold text-slate-100 shadow-lg"
         >
-          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-base font-bold text-muted-foreground">
+          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/80 text-base font-bold text-white shadow-inner">
             {optionShapes[index % optionShapes.length]}
           </span>
           <span className="flex-1 break-words">
@@ -125,20 +125,25 @@ export const QuizPreview = ({
         return renderChoiceAnswers(questionToShow.answers || []);
       case "short-answer":
         return (
-          <div className="bg-muted px-5 py-5 text-base text-muted-foreground">
+          <div className="rounded-2xl border border-slate-700/70 bg-slate-900/80 px-5 py-5 text-base text-slate-100 shadow">
             {questionToShow.correctAnswer?.trim() || t("answer")}
           </div>
         );
       case "open-text":
         return (
-          <div className="bg-muted px-5 py-5 text-base text-muted-foreground">{t("yourQuestion")}</div>
+          <div className="rounded-2xl border border-slate-700/70 bg-slate-900/80 px-5 py-5 text-base text-slate-100 shadow">
+            {t("yourQuestion")}
+          </div>
         );
       case "ranking":
         return (
           <div className="space-y-3">
             {questionToShow.items?.map((item: string, index: number) => (
-              <div key={index} className="flex items-center gap-3 bg-muted px-4 py-4 text-base font-medium text-foreground">
-                <span className="w-8 text-center text-sm font-semibold text-muted-foreground">{index + 1}</span>
+              <div
+                key={index}
+                className="flex items-center gap-3 rounded-2xl border border-slate-700/70 bg-slate-900/80 px-4 py-4 text-base font-medium text-slate-100 shadow-md"
+              >
+                <span className="w-8 text-center text-sm font-semibold text-slate-300">{index + 1}</span>
                 <span className="flex-1 break-words">
                   {item?.trim() || `${t("answer")} ${index + 1}`}
                 </span>
@@ -151,14 +156,20 @@ export const QuizPreview = ({
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-3">
               {questionToShow.leftColumn?.map((item: any, index: number) => (
-                <div key={item.id ?? index} className="bg-muted px-4 py-4 text-foreground">
+                <div
+                  key={item.id ?? index}
+                  className="rounded-xl border border-slate-700/70 bg-slate-900/80 px-4 py-4 text-slate-100 shadow"
+                >
                   {item.text?.trim() || `${t("answer")} ${index + 1}`}
                 </div>
               ))}
             </div>
             <div className="space-y-3">
               {questionToShow.rightColumn?.map((item: any, index: number) => (
-                <div key={item.id ?? index} className="bg-muted px-4 py-4 text-foreground">
+                <div
+                  key={item.id ?? index}
+                  className="rounded-xl border border-slate-700/70 bg-slate-900/80 px-4 py-4 text-slate-100 shadow"
+                >
                   {item.text?.trim() || `${t("answer")} ${index + 1}`}
                 </div>
               ))}
@@ -167,11 +178,14 @@ export const QuizPreview = ({
         );
       case "fill-blank":
         return (
-          <div className="space-y-3 text-base text-foreground">
+          <div className="space-y-3 text-base text-slate-100">
             <p>{questionToShow.text?.trim() || t("noQuestionText")}</p>
-            <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
+            <div className="flex flex-wrap gap-2 text-sm text-slate-200">
               {questionToShow.blanks?.map((blank: any, index: number) => (
-                <span key={blank.id ?? index} className="bg-muted px-3 py-1">
+                <span
+                  key={blank.id ?? index}
+                  className="rounded-full border border-slate-700/70 bg-slate-900/80 px-3 py-1 text-slate-100 shadow-sm"
+                >
                   {blank.correctAnswer?.trim() || `${t("answer")} ${index + 1}`}
                 </span>
               ))}
@@ -180,8 +194,8 @@ export const QuizPreview = ({
         );
       case "slider":
         return (
-          <div className="space-y-3 text-sm text-muted-foreground">
-            <div className="h-2 w-full bg-muted" />
+          <div className="space-y-3 text-sm text-slate-200">
+            <div className="h-2 w-full rounded-full bg-slate-800" />
             <div className="flex justify-between">
               <span>{questionToShow.minLabel || questionToShow.min}</span>
               <span>{questionToShow.maxLabel || questionToShow.max}</span>
@@ -193,7 +207,10 @@ export const QuizPreview = ({
         return (
           <div className="space-y-2">
             {questionToShow.scale?.map((option: string, index: number) => (
-              <div key={index} className="bg-muted px-4 py-3 text-center text-foreground">
+              <div
+                key={index}
+                className="rounded-xl border border-slate-700/70 bg-slate-900/80 px-4 py-3 text-center text-slate-100 shadow"
+              >
                 {option}
               </div>
             ))}
@@ -210,13 +227,13 @@ export const QuizPreview = ({
       case "nps-scale":
         return (
           <div className="space-y-4">
-            <div className="flex justify-between text-sm text-muted-foreground">
+            <div className="flex justify-between text-sm text-slate-200">
               <span>{questionToShow.minLabel || "0"}</span>
               <span>{questionToShow.maxLabel || "10"}</span>
             </div>
-            <div className="grid grid-cols-11 gap-2 text-center text-sm font-semibold text-foreground">
+            <div className="grid grid-cols-11 gap-2 text-center text-sm font-semibold text-slate-100">
               {Array.from({ length: 11 }).map((_, index) => (
-                <div key={index} className="bg-muted px-3 py-2">
+                <div key={index} className="rounded-lg border border-slate-700/70 bg-slate-900/80 px-3 py-2">
                   {index}
                 </div>
               ))}
@@ -230,13 +247,13 @@ export const QuizPreview = ({
 
   return (
     <div
-      className="relative flex h-full flex-col overflow-hidden border border-border/60 bg-white shadow-sm"
+      className="relative flex h-full flex-col overflow-hidden border border-slate-800 bg-slate-950 text-slate-100 shadow-xl"
       style={fontFamily ? { fontFamily } : undefined}
     >
-      <div className="flex h-full w-full flex-1 flex-col overflow-hidden text-foreground">
+      <div className="flex h-full w-full flex-1 flex-col overflow-hidden text-slate-100">
         <header className="relative overflow-hidden">
           <div className="absolute inset-0" style={headerBackgroundStyle} aria-hidden />
-          <div className="absolute inset-0 bg-slate-900/45" aria-hidden />
+          <div className="absolute inset-0 bg-slate-950/65" aria-hidden />
           <div className="relative z-10 flex flex-col gap-4 px-5 py-8 text-white sm:px-10">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="space-y-2">
@@ -246,13 +263,13 @@ export const QuizPreview = ({
                       {category}
                     </span>
                   )}
-                  {category?.trim() && title?.trim() && <span className="text-white/60">/</span>}
-                  <span className="text-base font-semibold sm:text-lg">
+                  {category?.trim() && title?.trim() && <span className="text-white/70">/</span>}
+                  <span className="text-base font-semibold sm:text-lg text-white">
                     {title?.trim() || t("untitled")}
                   </span>
                 </div>
                 {description && (
-                  <p className="max-w-2xl text-sm text-white/85 sm:text-base">{description}</p>
+                  <p className="max-w-2xl text-sm text-white/90 sm:text-base">{description}</p>
                 )}
               </div>
               <div className="flex flex-col items-end gap-3 text-sm text-white/90">
@@ -293,7 +310,7 @@ export const QuizPreview = ({
               <Button
                 variant="secondary"
                 size="sm"
-                className="absolute top-4 right-4 z-20"
+                className="absolute top-4 right-4 z-20 bg-white/10 text-white hover:bg-white/20"
                 onClick={() => onEditQuestion(selectedQuestionIndex)}
               >
                 <Edit2 className="h-4 w-4 mr-2" />
@@ -302,13 +319,13 @@ export const QuizPreview = ({
             )}
             <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-4">
               <div className="space-y-3">
-                <h2 className="text-2xl font-semibold leading-snug text-foreground sm:text-3xl">
+                <h2 className="text-2xl font-semibold leading-snug text-white sm:text-3xl drop-shadow">
                   {questionToShow.question?.trim() || t("noQuestionText")}
                 </h2>
               </div>
 
               {questionToShow.image && (
-                <div className="mx-auto max-h-72 w-full overflow-hidden rounded-3xl border border-white/60 bg-white/90 shadow-sm sm:w-4/5">
+                <div className="mx-auto max-h-72 w-full overflow-hidden rounded-3xl border border-slate-700/70 bg-slate-900/90 shadow-lg sm:w-4/5">
                   <img
                     src={questionToShow.image}
                     alt={questionToShow.question || t("question")}
@@ -318,7 +335,7 @@ export const QuizPreview = ({
               )}
             </div>
 
-            <div className="mx-auto w-full max-w-3xl text-left mt-auto">
+            <div className="mx-auto mt-auto w-full max-w-3xl text-left">
               {renderAnswers()}
             </div>
           </div>
