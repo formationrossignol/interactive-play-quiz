@@ -114,11 +114,11 @@ export const Header = ({
           className="flex cursor-pointer items-center gap-3 transition-opacity hover:opacity-80"
           onClick={() => navigate("/")}
         >
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-600 text-white">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[hsl(var(--hero-bg))] text-white">
             <Zap className="h-5 w-5" />
           </div>
           <div>
-            <span className="font-bold text-xl text-slate-900 leading-none">{t("quizMaster")}</span>
+            <span className="font-display font-extrabold text-xl text-[hsl(var(--hero-bg))] leading-none tracking-tight">{t("quizMaster")}</span>
             {subtitle && (
               <p className="text-xs text-slate-400 font-medium mt-0.5">{subtitle}</p>
             )}
@@ -290,7 +290,7 @@ export const Header = ({
           ) : (
             <Button
               onClick={() => navigate("/auth")}
-              className="h-9 rounded-lg bg-indigo-600 text-white text-sm font-semibold px-4 hover:bg-indigo-700 transition-colors"
+              className="h-9 rounded-full bg-[hsl(var(--hero-bg))] text-white text-sm font-semibold px-5 hover:opacity-85 transition-opacity"
             >
               <User className="mr-1.5 h-3.5 w-3.5" />
               {t("login")}

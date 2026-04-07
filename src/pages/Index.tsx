@@ -4,9 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { BookOpen, BarChart3, Layers, QrCode, Compass, Layout } from "lucide-react";
+import { BookOpen, BarChart3, Layers, QrCode, Compass, Layout, ArrowRight } from "lucide-react";
 import { t } from "@/lib/i18n";
-import { cn } from "@/lib/utils";
 
 const contentTypes = [
   {
@@ -16,8 +15,7 @@ const contentTypes = [
     descKey: "createQuizDesc" as const,
     ctaKey: "newQuiz" as const,
     icon: BookOpen,
-    iconClass: "bg-rose-100 text-rose-600",
-    borderClass: "card-quiz",
+    tileClass: "tile-quiz",
     route: "/builder-start?type=quiz",
   },
   {
@@ -30,8 +28,7 @@ const contentTypes = [
     ctaKey: null,
     cta: "Nouvelle présentation",
     icon: Layout,
-    iconClass: "bg-emerald-100 text-emerald-600",
-    borderClass: "card-slide",
+    tileClass: "tile-slide",
     route: "/builder-start?type=slide",
   },
   {
@@ -41,8 +38,7 @@ const contentTypes = [
     descKey: "createPollDesc" as const,
     ctaKey: "newPoll" as const,
     icon: BarChart3,
-    iconClass: "bg-cyan-100 text-cyan-600",
-    borderClass: "card-poll",
+    tileClass: "tile-poll",
     route: "/builder-start?type=poll",
   },
   {
@@ -52,8 +48,7 @@ const contentTypes = [
     descKey: "createFlashcardDesc" as const,
     ctaKey: "newFlashcard" as const,
     icon: Layers,
-    iconClass: "bg-amber-100 text-amber-600",
-    borderClass: "card-flashcard",
+    tileClass: "tile-flashcard",
     route: "/builder-start?type=flashcard",
   },
 ] as const;
@@ -69,91 +64,132 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC]">
+    <div className="min-h-screen bg-background">
       <Header />
 
-      <main className="mx-auto max-w-6xl px-6 pb-24 pt-12">
-        {/* Hero */}
-        <section className="mb-16 rounded-2xl border border-indigo-100 bg-indigo-50 px-8 py-14 text-center">
-          <span className="mb-6 inline-flex items-center rounded-full bg-indigo-100 px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-indigo-700">
-            {t("heroInteractive")}
-          </span>
-          <h1 className="mb-4 text-4xl font-extrabold leading-tight text-slate-900 md:text-5xl">
-            {t("heroTitle")}{" "}
-            <span className="text-indigo-600">{t("heroInteractive")}</span>{" "}
-            {t("heroQuizzes")}
-          </h1>
-          <p className="mx-auto mb-10 max-w-xl text-lg text-slate-500">
-            {t("heroDescription")}
-          </p>
-          <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Button
-              size="lg"
-              onClick={() => navigate("/builder-start?type=quiz")}
-              className="h-12 rounded-full bg-indigo-600 px-8 text-sm font-semibold text-white hover:bg-indigo-700 transition-colors"
-            >
-              {t("newQuiz")}
-            </Button>
-            <Button
-              variant="outline"
-              size="lg"
-              onClick={() => navigate("/discover")}
-              className="h-12 rounded-full border-slate-200 px-8 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
-            >
-              <Compass className="mr-2 h-4 w-4" />
-              {t("discoverPublic")}
-            </Button>
+      <main className="mx-auto max-w-6xl px-6 pb-24 pt-10">
+
+        {/* ── HERO ─────────────────────────────────────────────── */}
+        <section className="mb-14 overflow-hidden rounded-3xl bg-[hsl(var(--hero-bg))] px-8 py-16 text-center relative">
+          {/* Decorative dots grid */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 opacity-[0.06]"
+            style={{
+              backgroundImage: "radial-gradient(circle, #fff 1px, transparent 1px)",
+              backgroundSize: "28px 28px",
+            }}
+          />
+          {/* Color splashes */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -top-24 -left-24 h-64 w-64 rounded-full opacity-20"
+            style={{ background: "hsl(var(--quiz-color))", filter: "blur(80px)" }}
+          />
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -bottom-16 -right-16 h-64 w-64 rounded-full opacity-15"
+            style={{ background: "hsl(var(--poll-color))", filter: "blur(80px)" }}
+          />
+
+          <div className="relative z-10">
+            <span className="chroma-badge mb-6 border border-white/20 bg-white/10 text-white/80">
+              {t("heroInteractive")}
+            </span>
+            <h1 className="font-display mb-5 text-4xl font-extrabold leading-tight text-white md:text-6xl">
+              {t("heroTitle")}{" "}
+              <span
+                style={{ color: "hsl(var(--quiz-color))" }}
+              >
+                {t("heroInteractive")}
+              </span>{" "}
+              {t("heroQuizzes")}
+            </h1>
+            <p className="mx-auto mb-10 max-w-xl text-lg leading-relaxed text-white/60">
+              {t("heroDescription")}
+            </p>
+            <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <button
+                onClick={() => navigate("/builder-start?type=quiz")}
+                className="btn-chroma"
+                style={{ background: "hsl(var(--quiz-color))" }}
+              >
+                {t("newQuiz")}
+                <ArrowRight className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => navigate("/discover")}
+                className="btn-chroma-outline"
+                style={{ color: "#fff", borderColor: "rgba(255,255,255,0.3)" }}
+                onMouseEnter={e => {
+                  (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.1)";
+                }}
+                onMouseLeave={e => {
+                  (e.currentTarget as HTMLButtonElement).style.background = "transparent";
+                }}
+              >
+                <Compass className="h-4 w-4" />
+                {t("discoverPublic")}
+              </button>
+            </div>
           </div>
         </section>
 
-        {/* Content type tiles */}
-        <section className="mb-16 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-          {contentTypes.map(({ key, label, titleKey, title, descKey, desc, ctaKey, cta, icon: Icon, iconClass, borderClass, route }) => {
+        {/* ── CONTENT TYPE TILES ───────────────────────────────── */}
+        <section className="mb-14 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {contentTypes.map(({ key, label, titleKey, title, descKey, desc, ctaKey, cta, icon: Icon, tileClass, route }) => {
             const resolvedTitle = titleKey ? t(titleKey) : (title as string);
             const resolvedDesc = descKey ? t(descKey) : (desc as string);
             const resolvedCta = ctaKey ? t(ctaKey) : (cta as string);
+
+            /* flashcard uses dark text (marigold bg) */
+            const isDark = key === "flashcard";
+
             return (
               <div
                 key={key}
                 onClick={() => navigate(route)}
-                className={cn(
-                  "cursor-pointer rounded-2xl border border-slate-100 bg-white p-6 shadow-card transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card-hover",
-                  borderClass
-                )}
+                className={`${tileClass} group cursor-pointer rounded-2xl p-6 transition-all duration-200 hover:-translate-y-1 hover:shadow-chroma`}
               >
                 <div className="mb-5 flex items-center justify-between">
-                  <div className={cn("flex h-11 w-11 items-center justify-center rounded-xl", iconClass)}>
+                  <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${isDark ? "bg-black/10" : "bg-white/20"}`}>
                     <Icon className="h-5 w-5" />
                   </div>
-                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                  <span className={`text-xs font-bold uppercase tracking-widest ${isDark ? "text-black/50" : "text-white/50"}`}>
                     {label}
                   </span>
                 </div>
-                <h3 className="mb-2 text-lg font-bold text-slate-900">{resolvedTitle}</h3>
-                <p className="mb-5 text-sm leading-relaxed text-slate-500">{resolvedDesc}</p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="rounded-full border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+                <h3 className={`mb-2 font-display text-lg font-bold leading-snug ${isDark ? "text-[#0F0E17]" : "text-white"}`}>
+                  {resolvedTitle}
+                </h3>
+                <p className={`mb-5 text-sm leading-relaxed ${isDark ? "text-black/60" : "text-white/70"}`}>
+                  {resolvedDesc}
+                </p>
+                <span
+                  className={`inline-flex items-center gap-1.5 text-sm font-semibold ${isDark ? "text-black/70" : "text-white/90"} group-hover:gap-2.5 transition-all`}
                   onClick={(e) => { e.stopPropagation(); navigate(route); }}
                 >
                   {resolvedCta}
-                </Button>
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </span>
               </div>
             );
           })}
         </section>
 
-        {/* Join section */}
+        {/* ── JOIN SECTION ─────────────────────────────────────── */}
         <section className="mx-auto max-w-lg">
-          <div className="rounded-2xl border border-slate-100 bg-white p-8 shadow-card">
+          <div className="rounded-2xl border border-border bg-card p-8 shadow-card">
             <div className="mb-5 flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-100">
-                <QrCode className="h-5 w-5 text-indigo-600" />
+              <div
+                className="flex h-10 w-10 items-center justify-center rounded-xl"
+                style={{ background: "hsl(var(--poll-color))", color: "#fff" }}
+              >
+                <QrCode className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="font-bold text-slate-900">{t("joinTitle")}</h3>
-                <p className="text-sm text-slate-500">{t("joinDesc")}</p>
+                <h3 className="font-display font-bold text-foreground">{t("joinTitle")}</h3>
+                <p className="text-sm text-muted-foreground">{t("joinDesc")}</p>
               </div>
             </div>
             <div className="flex gap-3">
@@ -162,13 +198,14 @@ const Index = () => {
                 value={gameCode}
                 onChange={(e) => setGameCode(e.target.value.toUpperCase())}
                 onKeyDown={(e) => e.key === "Enter" && joinQuiz()}
-                className="h-12 rounded-xl border-slate-200 text-lg font-semibold tracking-[0.25em] focus-visible:ring-indigo-500"
+                className="h-12 rounded-xl border-border text-lg font-bold tracking-[0.25em] focus-visible:ring-[hsl(var(--poll-color))]"
                 maxLength={6}
               />
               <Button
                 onClick={joinQuiz}
                 disabled={!gameCode.trim()}
-                className="h-12 rounded-xl bg-indigo-600 px-6 font-semibold text-white hover:bg-indigo-700 transition-colors disabled:opacity-40"
+                className="h-12 rounded-xl px-6 font-semibold text-white transition-opacity hover:opacity-85 disabled:opacity-40"
+                style={{ background: "hsl(var(--poll-color))" }}
               >
                 {t("join")}
               </Button>

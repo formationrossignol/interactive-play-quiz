@@ -17,7 +17,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['"Plus Jakarta Sans"', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'sans-serif'],
+        sans: ['"DM Sans"', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'sans-serif'],
+        display: ['Syne', '"DM Sans"', 'sans-serif'],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -71,6 +72,11 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        /* Chroma content-type colors */
+        quiz: "hsl(349 100% 61%)",
+        poll: "hsl(227 68% 54%)",
+        flash: "hsl(38 100% 48%)",
+        slide: "hsl(148 82% 37%)",
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -79,7 +85,8 @@ export default {
       },
       boxShadow: {
         card: "0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.06)",
-        "card-hover": "0 4px 16px rgba(99,102,241,0.15)",
+        "card-hover": "0 8px 24px rgba(0,0,0,0.14)",
+        chroma: "0 4px 20px rgba(0,0,0,0.18)",
       },
       keyframes: {
         "accordion-down": {
