@@ -33,7 +33,7 @@ export const PollSession = ({ poll }: PollSessionProps) => {
 
   if (totalQuestions === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-4 text-slate-100">
+      <div className="min-h-screen bg-slate-950 p-4 text-slate-100">
         <div className="mx-auto max-w-4xl">
           <Card className="border border-slate-700/60 bg-slate-900/80 shadow-2xl">
             <CardContent className="space-y-4 p-8 text-center">
@@ -173,7 +173,7 @@ export const PollSession = ({ poll }: PollSessionProps) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-4 text-slate-100">
+    <div className="min-h-screen bg-slate-950 p-4 text-slate-100">
       <div className="mx-auto flex max-w-4xl flex-col gap-6">
         <header className="flex flex-col gap-4 text-center">
           <div className="flex items-center justify-between gap-4 text-sm text-slate-300">

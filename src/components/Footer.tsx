@@ -34,15 +34,15 @@ export const Footer = () => {
   ];
 
   return (
-    <footer className="border-t border-white/60 bg-white/70 backdrop-blur-xl">
+    <footer className="border-t border-slate-100 bg-white">
       <div className="mx-auto flex max-w-6xl flex-col gap-10 px-6 py-12 md:flex-row md:justify-between">
         <div className="max-w-sm">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-[#0f1a3d] to-[#1d2a55] text-white shadow-[0_12px_30px_-12px_rgba(15,26,61,0.5)]">
-              <span className="font-heading text-lg">Q</span>
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-card">
+              <span className="font-extrabold text-lg">Q</span>
             </div>
             <div>
-              <p className="font-heading text-xl text-foreground">{t('quizMaster')}</p>
+              <p className="font-extrabold text-xl text-foreground">{t('quizMaster')}</p>
               <p className="text-xs uppercase tracking-[0.3em] text-foreground/50">{t('footerTagline')}</p>
             </div>
           </div>
@@ -74,7 +74,7 @@ export const Footer = () => {
           ))}
         </div>
       </div>
-      <div className="border-t border-white/50 bg-white/60">
+      <div className="border-t border-slate-100 bg-slate-50">
         <div className="mx-auto max-w-6xl px-6 py-4 text-xs text-foreground/50">
           © {currentYear} {t('footerRights')}
         </div>

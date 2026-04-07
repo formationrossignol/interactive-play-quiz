@@ -74,7 +74,7 @@ export const WordCloudQuestion = ({
                   key={index}
                   variant="secondary"
                   className={cn(
-                    "bg-gradient-primary text-white border-white/20 px-4 py-2 animate-fade-in",
+                    "bg-indigo-600 text-white border-indigo-700/20 px-4 py-2 animate-fade-in",
                     `text-${getWordSize(response.count, maxCount)}xl`
                   )}
                   style={{ 

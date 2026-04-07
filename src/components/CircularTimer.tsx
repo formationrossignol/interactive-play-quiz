@@ -12,7 +12,7 @@ export const CircularTimer = ({ timeLeft, totalTime, className }: CircularTimerP
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (percentage / 100) * circumference;
   
-  const isWarning = timeLeft <= 10;
+  const isWarning = timeLeft <= 5;
 
   return (
     <div className={cn("relative inline-flex items-center justify-center", className)}>

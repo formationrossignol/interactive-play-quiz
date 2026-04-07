@@ -116,13 +116,20 @@ export const LiveQuiz = () => {
     return <FinalResults players={players} />;
   }
 
+  const answerColors = [
+    'bg-rose-500 hover:bg-rose-600',
+    'bg-blue-500 hover:bg-blue-600',
+    'bg-amber-500 hover:bg-amber-600',
+    'bg-emerald-500 hover:bg-emerald-600',
+  ];
+
   return (
-    <div className="min-h-screen bg-gradient-hero p-4">
+    <div className="min-h-screen bg-indigo-600 p-4">
       <div className="max-w-4xl mx-auto">
         {/* Quiz Header */}
         <div className="flex items-center justify-between mb-6 text-white">
           <div className="flex items-center gap-4">
-            <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
+            <Badge variant="secondary" className="bg-white/15 text-white border-0">
               Question {currentQuestionIndex + 1} of {questions.length}
             </Badge>
             <div className="flex items-center gap-2">
@@ -130,7 +137,7 @@ export const LiveQuiz = () => {
               <span>{players.length} players</span>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <Clock className="w-5 h-5" />
@@ -145,20 +152,20 @@ export const LiveQuiz = () => {
 
         {/* Progress Bar */}
         <div className="mb-8">
-          <Progress 
-            value={(currentQuestionIndex / questions.length) * 100} 
+          <Progress
+            value={(currentQuestionIndex / questions.length) * 100}
             className="h-2 bg-white/20"
           />
         </div>
 
         {/* Question Card */}
-        <Card className="bg-white/10 backdrop-blur-lg border-white/20 mb-6 shadow-glow">
-          <CardContent className="p-8">
+        <Card className="rounded-2xl bg-white shadow-2xl mb-6">
+          <CardContent className="p-6 md:p-8">
             <div className="text-center mb-8">
-              <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+              <h2 className="text-2xl font-bold text-slate-900 mb-4">
                 {currentQuestion.question}
               </h2>
-              <div className="flex items-center justify-center gap-4 text-white/80">
+              <div className="flex items-center justify-center gap-4 text-slate-500">
                 <div className="flex items-center gap-1">
                   <Zap className="w-4 h-4" />
                   <span>{currentQuestion.points} points</span>
@@ -173,26 +180,25 @@ export const LiveQuiz = () => {
             {/* Answer Options */}
             <div className="grid md:grid-cols-2 gap-4">
               {currentQuestion.answers.map((answer, index) => (
-                <Button
+                <button
                   key={index}
-                  variant="quiz"
-                  size="lg"
                   className={cn(
-                    "h-auto p-6 text-left justify-start text-lg font-semibold transition-all duration-300",
-                    selectedAnswer === index && "ring-2 ring-white",
-                    showCorrectAnswer && index === currentQuestion.correctAnswer && "bg-success/80 hover:bg-success/80",
-                    showCorrectAnswer && selectedAnswer === index && index !== currentQuestion.correctAnswer && "bg-danger/80 hover:bg-danger/80"
+                    "cursor-pointer min-h-[56px] rounded-xl p-4 text-left text-white font-semibold text-sm transition-all duration-150",
+                    answerColors[index % answerColors.length],
+                    selectedAnswer === index && "ring-4 ring-white ring-offset-2",
+                    showCorrectAnswer && index === currentQuestion.correctAnswer && "ring-4 ring-white ring-offset-2",
+                    gameState === 'results' && "cursor-default"
                   )}
                   onClick={() => handleAnswerSelect(index)}
                   disabled={gameState === 'results'}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-sm font-bold">
+                    <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-sm font-bold flex-shrink-0">
                       {String.fromCharCode(65 + index)}
                     </div>
                     <span>{answer}</span>
                   </div>
-                </Button>
+                </button>
               ))}
             </div>
 
@@ -201,25 +207,25 @@ export const LiveQuiz = () => {
               <div className="text-center mt-8">
                 <div className="mb-6">
                   {selectedAnswer === currentQuestion.correctAnswer ? (
-                    <div className="text-white">
+                    <div className="text-slate-900">
                       <div className="text-4xl mb-2">🎉</div>
-                      <h3 className="text-2xl font-bold text-success">Correct!</h3>
-                      <p>You earned {currentQuestion.points} points</p>
+                      <h3 className="text-2xl font-bold text-emerald-600">Correct!</h3>
+                      <p className="text-slate-600">You earned {currentQuestion.points} points</p>
                     </div>
                   ) : (
-                    <div className="text-white">
+                    <div className="text-slate-900">
                       <div className="text-4xl mb-2">😔</div>
-                      <h3 className="text-2xl font-bold text-danger">Incorrect</h3>
-                      <p>The correct answer was: {currentQuestion.answers[currentQuestion.correctAnswer as number]}</p>
+                      <h3 className="text-2xl font-bold text-rose-600">Incorrect</h3>
+                      <p className="text-slate-600">The correct answer was: {currentQuestion.answers[currentQuestion.correctAnswer as number]}</p>
                     </div>
                   )}
                 </div>
-                
+
                 <div className="flex gap-4 justify-center">
                   <Button variant="quiz" onClick={showLeaderboard}>
                     View Leaderboard
                   </Button>
-                  <Button variant="quiz" onClick={nextQuestion}>
+                  <Button className="bg-white text-indigo-600 font-bold hover:bg-indigo-50 rounded-full h-12 px-6" onClick={nextQuestion}>
                     {currentQuestionIndex < questions.length - 1 ? 'Next Question' : 'Final Results'}
                   </Button>
                 </div>
@@ -234,38 +240,34 @@ export const LiveQuiz = () => {
 
 const WaitingRoom = ({ onStart, players }: { onStart: () => void; players: Player[] }) => {
   return (
-    <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
+    <div className="min-h-screen bg-indigo-600 flex items-center justify-center p-4">
       <div className="max-w-2xl mx-auto text-center">
-        <Card className="bg-white/30 backdrop-blur-xl border-white/40 shadow-2xl">
-          <CardContent className="p-8">
-            <div className="mb-8">
-              <h1 className="text-5xl font-bold text-white mb-4 drop-shadow-lg">Geography Quiz</h1>
-              <p className="text-white text-xl font-medium">En attente des joueurs...</p>
-            </div>
+        <div className="mb-8">
+          <h1 className="text-5xl font-bold text-white mb-4 drop-shadow-lg">Geography Quiz</h1>
+          <p className="text-indigo-200 text-xl font-medium">En attente des joueurs...</p>
+        </div>
 
-            <div className="mb-8 bg-white/20 rounded-xl p-6 backdrop-blur-sm">
-              <div className="text-7xl font-mono text-white mb-2 tracking-wider font-bold drop-shadow-lg animate-pulse">ABC123</div>
-              <p className="text-white text-lg font-semibold">Code du jeu</p>
-            </div>
+        <div className="mb-8 bg-white/10 border border-white/20 rounded-2xl p-6">
+          <div className="text-7xl font-mono text-white mb-2 tracking-wider font-bold drop-shadow-lg animate-pulse">ABC123</div>
+          <p className="text-indigo-200 text-lg font-semibold">Code du jeu</p>
+        </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-8">
-              {players.map((player) => (
-                <div key={player.id} className="bg-white/30 rounded-lg p-4 text-white text-base font-semibold backdrop-blur-sm shadow-lg animate-fade-in">
-                  {player.avatar} {player.name}
-                </div>
-              ))}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-8">
+          {players.map((player) => (
+            <div key={player.id} className="bg-white/10 border border-white/20 rounded-xl p-4 text-white text-base font-semibold animate-fade-in">
+              {player.avatar} {player.name}
             </div>
+          ))}
+        </div>
 
-            <div className="flex items-center justify-center gap-2 mb-6 text-white text-lg font-medium bg-white/20 rounded-full px-6 py-3 backdrop-blur-sm">
-              <Users className="w-6 h-6" />
-              <span>{players.length} joueurs connectés</span>
-            </div>
+        <div className="flex items-center justify-center gap-2 mb-6 text-indigo-200 text-lg font-medium">
+          <Users className="w-6 h-6" />
+          <span>{players.length} joueurs connectés</span>
+        </div>
 
-            <Button variant="hero" size="lg" onClick={onStart} className="px-12 text-xl font-bold shadow-xl">
-              🚀 Démarrer le Quiz
-            </Button>
-          </CardContent>
-        </Card>
+        <Button onClick={onStart} className="bg-white text-indigo-600 font-bold hover:bg-indigo-50 rounded-full px-12 text-xl h-14 shadow-xl">
+          🚀 Démarrer le Quiz
+        </Button>
       </div>
     </div>
   );
@@ -273,57 +275,53 @@ const WaitingRoom = ({ onStart, players }: { onStart: () => void; players: Playe
 
 const LeaderboardView = ({ players, onContinue }: { players: Player[]; onContinue: () => void }) => {
   return (
-    <div className="min-h-screen bg-gradient-hero p-4">
+    <div className="min-h-screen bg-indigo-600 p-4">
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-8">
           <h1 className="text-6xl font-bold text-white mb-4 animate-fade-in drop-shadow-lg">🏆 Classement</h1>
-          <p className="text-white text-xl font-semibold">Positions actuelles</p>
+          <p className="text-indigo-200 text-xl font-semibold">Positions actuelles</p>
         </div>
 
         <div className="space-y-4 mb-8">
           {players.map((player, index) => (
-            <Card 
-              key={player.id} 
+            <div
+              key={player.id}
               className={cn(
-                "bg-white/30 backdrop-blur-xl border-white/40 transition-all duration-500 animate-slide-up shadow-xl hover:scale-[1.02]",
-                index === 0 && "bg-gradient-to-r from-yellow-500/40 to-orange-500/30 border-yellow-400/50 shadow-2xl animate-pulse",
-                index === 1 && "bg-white/35 border-gray-300/50",
-                index === 2 && "bg-white/30 border-orange-400/50"
+                "bg-white/10 border border-white/20 rounded-2xl p-4 text-white transition-all duration-500 animate-slide-up hover:scale-[1.02]",
+                index === 0 && "border-yellow-400/50"
               )}
               style={{ animationDelay: `${index * 100}ms` }}
             >
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className={cn(
-                      "w-14 h-14 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg",
-                      index === 0 && "bg-yellow-500 animate-bounce",
-                      index === 1 && "bg-gray-300", 
-                      index === 2 && "bg-orange-600",
-                      index > 2 && "bg-white/40"
-                    )}>
-                      {index === 0 ? <Crown className="w-7 h-7" /> :
-                       index === 1 ? <Medal className="w-7 h-7" /> :
-                       index === 2 ? <Award className="w-7 h-7" /> :
-                       player.position}
-                    </div>
-                    <div>
-                      <h3 className="text-2xl font-bold text-white drop-shadow-lg">{player.name}</h3>
-                      <p className="text-white text-base font-medium">{player.correctAnswers} bonnes réponses</p>
-                    </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className={cn(
+                    "w-14 h-14 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg",
+                    index === 0 && "bg-yellow-500 animate-bounce",
+                    index === 1 && "bg-gray-300",
+                    index === 2 && "bg-orange-600",
+                    index > 2 && "bg-white/20"
+                  )}>
+                    {index === 0 ? <Crown className="w-7 h-7" /> :
+                     index === 1 ? <Medal className="w-7 h-7" /> :
+                     index === 2 ? <Award className="w-7 h-7" /> :
+                     player.position}
                   </div>
-                  <div className="text-right">
-                    <div className="text-3xl font-bold text-white drop-shadow-lg">{player.score.toLocaleString()}</div>
-                    <div className="text-white text-sm font-semibold">points</div>
+                  <div>
+                    <h3 className="text-2xl font-bold text-white drop-shadow-lg">{player.name}</h3>
+                    <p className="text-indigo-200 text-base font-medium">{player.correctAnswers} bonnes réponses</p>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+                <div className="text-right">
+                  <div className="text-3xl font-bold text-white drop-shadow-lg">{player.score.toLocaleString()}</div>
+                  <div className="text-indigo-200 text-sm font-semibold">points</div>
+                </div>
+              </div>
+            </div>
           ))}
         </div>
 
         <div className="text-center">
-          <Button variant="hero" size="lg" onClick={onContinue} className="px-12 text-xl font-bold shadow-xl animate-pulse">
+          <Button onClick={onContinue} className="bg-white text-indigo-600 font-bold hover:bg-indigo-50 rounded-full w-full h-12 text-xl shadow-xl">
             ▶️ Continuer
           </Button>
         </div>
@@ -336,7 +334,7 @@ const FinalResults = ({ players }: { players: Player[] }) => {
   const winner = players[0];
 
   return (
-    <div className="min-h-screen bg-gradient-hero p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-indigo-600 p-4 relative overflow-hidden">
       {/* Confetti Animation */}
       <div className="absolute inset-0 pointer-events-none">
         {Array.from({ length: 80 }).map((_, i) => (
@@ -357,11 +355,11 @@ const FinalResults = ({ players }: { players: Player[] }) => {
         <div className="mb-12 animate-fade-in">
           <div className="text-9xl mb-4 animate-bounce">🏆</div>
           <h1 className="text-7xl font-bold text-white mb-6 drop-shadow-2xl">Quiz Terminé !</h1>
-          <p className="text-3xl text-white font-semibold mb-8 drop-shadow-lg">Félicitations au vainqueur !</p>
+          <p className="text-3xl text-indigo-200 font-semibold mb-8 drop-shadow-lg">Félicitations au vainqueur !</p>
         </div>
 
         {/* Winner Spotlight */}
-        <Card className="bg-gradient-to-r from-yellow-500/40 to-orange-500/30 backdrop-blur-xl border-yellow-300/50 shadow-2xl mb-8 animate-scale-bounce">
+        <Card className="bg-white/10 border border-white/20 shadow-2xl mb-8">
           <CardContent className="p-10">
             <div className="flex items-center justify-center gap-8">
               <div className="w-24 h-24 bg-yellow-500 rounded-full flex items-center justify-center animate-pulse shadow-xl">
@@ -369,7 +367,7 @@ const FinalResults = ({ players }: { players: Player[] }) => {
               </div>
               <div>
                 <h2 className="text-5xl font-bold text-white mb-3 drop-shadow-lg">{winner.name}</h2>
-                <div className="text-3xl text-yellow-100 font-bold drop-shadow-lg">{winner.score.toLocaleString()} points 🎯</div>
+                <div className="text-3xl text-indigo-200 font-bold drop-shadow-lg">{winner.score.toLocaleString()} points 🎯</div>
                 <div className="text-white text-xl font-medium">{winner.correctAnswers} bonnes réponses</div>
               </div>
             </div>
@@ -379,13 +377,11 @@ const FinalResults = ({ players }: { players: Player[] }) => {
         {/* Top 3 Podium */}
         <div className="grid md:grid-cols-3 gap-6 mb-8">
           {players.slice(0, 3).map((player, index) => (
-            <Card 
+            <Card
               key={player.id}
               className={cn(
-                "bg-white/30 backdrop-blur-xl border-white/40 shadow-xl transform hover:scale-105 transition-all",
-                index === 0 && "bg-yellow-500/30 border-yellow-400/50 animate-pulse",
-                index === 1 && "bg-gray-300/30 border-gray-300/50",
-                index === 2 && "bg-orange-500/30 border-orange-400/50"
+                "bg-white/10 border border-white/20 shadow-xl transform hover:scale-105 transition-all",
+                index === 0 && "border-yellow-400/50"
               )}
             >
               <CardContent className="p-8 text-center">
@@ -398,17 +394,17 @@ const FinalResults = ({ players }: { players: Player[] }) => {
                   {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
                 </div>
                 <h3 className="text-2xl font-bold text-white mb-2 drop-shadow-lg">{player.name}</h3>
-                <div className="text-xl text-white font-semibold">{player.score.toLocaleString()} pts</div>
+                <div className="text-xl text-indigo-200 font-semibold">{player.score.toLocaleString()} pts</div>
               </CardContent>
             </Card>
           ))}
         </div>
 
         <div className="flex gap-4 justify-center">
-          <Button variant="hero" size="lg" onClick={() => window.location.reload()} className="text-xl font-bold shadow-xl">
+          <Button onClick={() => window.location.reload()} className="bg-white text-indigo-600 font-bold hover:bg-indigo-50 rounded-full text-xl h-12 px-8 shadow-xl">
             🔄 Rejouer
           </Button>
-          <Button variant="quiz" size="lg" className="text-xl font-bold shadow-xl bg-white/30 hover:bg-white/40 text-white">
+          <Button className="bg-white/10 border border-white/20 hover:bg-white/20 text-white rounded-full text-xl h-12 px-8 shadow-xl">
             📊 Résultats détaillés
           </Button>
         </div>

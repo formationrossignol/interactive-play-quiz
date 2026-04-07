@@ -46,7 +46,7 @@ export const RaceLeaderboard = ({ players, onComplete }: RaceLeaderboardProps) =
   const maxScore = Math.max(...sortedPlayers.map(p => p.score), 1);
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-4 text-slate-100">
+    <div className="relative min-h-screen overflow-hidden bg-slate-950 p-4 text-slate-100">
       {/* Animated Background Particles with Movement */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {[...Array(30)].map((_, i) => (

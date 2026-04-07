@@ -8,15 +8,10 @@ import {
   BookOpen,
   BarChart3,
   Globe,
-  Home,
   Menu,
   Layers,
   Library,
   ChevronDown,
-  Sparkles,
-  CreditCard,
-  Users,
-  Mail,
 } from "lucide-react";
 import { useState, useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
 import { getLanguage, setLanguage, t, type Language } from "@/lib/i18n";
@@ -29,7 +24,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { circularIconButtonClass } from "./iconButtonStyles";
 
 interface HeaderProps {
   subtitle?: string;
@@ -52,66 +46,23 @@ export const Header = ({
   const headerRef = useRef<HTMLElement | null>(null);
 
   const primaryNavigationItems = [
-    {
-      label: t('home'),
-      icon: Home,
-      onClick: () => navigate('/'),
-      requiresAuth: false,
-    },
-    {
-      label: t('features'),
-      icon: Sparkles,
-      onClick: () => navigate('/features'),
-      requiresAuth: false,
-    },
-    {
-      label: t('pricing'),
-      icon: CreditCard,
-      onClick: () => navigate('/pricing'),
-      requiresAuth: false,
-    },
-    {
-      label: t('footerAbout'),
-      icon: Users,
-      onClick: () => navigate('/about'),
-      requiresAuth: false,
-    },
-    {
-      label: t('footerContact'),
-      icon: Mail,
-      onClick: () => navigate('/contact'),
-      requiresAuth: false,
-    },
+    { label: t("home"), onClick: () => navigate("/"), requiresAuth: false },
+    { label: t("features"), onClick: () => navigate("/features"), requiresAuth: false },
+    { label: t("pricing"), onClick: () => navigate("/pricing"), requiresAuth: false },
+    { label: t("footerAbout"), onClick: () => navigate("/about"), requiresAuth: false },
+    { label: t("footerContact"), onClick: () => navigate("/contact"), requiresAuth: false },
   ];
 
   const creationMenuItems = [
-    {
-      label: t('myQuizzes'),
-      icon: BookOpen,
-      onClick: () => navigate('/my-quizzes'),
-      requiresAuth: true,
-    },
-    {
-      label: t('myPolls'),
-      icon: BarChart3,
-      onClick: () => navigate('/my-polls'),
-      requiresAuth: true,
-    },
-    {
-      label: t('myFlashcards'),
-      icon: Layers,
-      onClick: () => navigate('/my-flashcards'),
-      requiresAuth: true,
-    },
-    {
-      label: t('questionBank'),
-      icon: Library,
-      onClick: () => navigate('/question-bank'),
-      requiresAuth: true,
-    },
+    { label: t("myQuizzes"), icon: BookOpen, onClick: () => navigate("/my-quizzes"), requiresAuth: true },
+    { label: t("myPolls"), icon: BarChart3, onClick: () => navigate("/my-polls"), requiresAuth: true },
+    { label: t("myFlashcards"), icon: Layers, onClick: () => navigate("/my-flashcards"), requiresAuth: true },
+    { label: t("questionBank"), icon: Library, onClick: () => navigate("/question-bank"), requiresAuth: true },
   ];
 
-  const availableCreationItems = creationMenuItems.filter((item) => (item.requiresAuth ? Boolean(user) : true));
+  const availableCreationItems = creationMenuItems.filter((item) =>
+    item.requiresAuth ? Boolean(user) : true
+  );
 
   useEffect(() => {
     const currentUser = getCurrentUser();
@@ -129,109 +80,92 @@ export const Header = ({
   const handleLanguageChange = (lang: Language) => {
     setLanguage(lang);
     setCurrentLanguage(lang);
-    window.location.reload(); // Reload to apply language changes
+    window.location.reload();
   };
 
   useLayoutEffect(() => {
     const updateHeaderHeight = () => {
       const headerHeight = headerRef.current?.offsetHeight ?? 0;
-      document.documentElement.style.setProperty('--app-header-height', `${headerHeight}px`);
+      document.documentElement.style.setProperty("--app-header-height", `${headerHeight}px`);
     };
-
     updateHeaderHeight();
-    window.addEventListener('resize', updateHeaderHeight);
-
-    return () => {
-      window.removeEventListener('resize', updateHeaderHeight);
-    };
+    window.addEventListener("resize", updateHeaderHeight);
+    return () => window.removeEventListener("resize", updateHeaderHeight);
   }, []);
 
-  const showMainToolbar = Boolean(toolbar && toolbarPlacement === "main");
-  const mainNavigationIconClass = circularIconButtonClass;
+  // Suppress unused variable warning — kept intentionally for re-render reactivity
+  void currentLanguage;
 
   return (
     <header
-      ref={(node) => {
-        headerRef.current = node;
-      }}
-      className="relative sticky top-0 z-40 bg-white/70 backdrop-blur-xl border-b border-border/60"
+      ref={(node) => { headerRef.current = node; }}
+      className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-slate-100"
     >
       <div
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-px"
-        aria-hidden
-        style={{
-          background:
-            "linear-gradient(90deg, hsla(var(--border), 0) 0%, hsla(var(--border), 0.45) 45%, hsla(var(--border), 0.45) 55%, hsla(var(--border), 0) 100%)",
-        }}
-      />
-      <div
         className={cn(
-          "flex flex-wrap items-center px-6 py-5",
+          "flex items-center px-6 py-4",
           alignLeft
             ? "mx-0 w-full justify-start gap-4"
             : "mx-auto max-w-6xl justify-between gap-6"
         )}
       >
+        {/* Logo */}
         <div
-          className="group flex cursor-pointer items-center gap-4 transition-transform duration-300 hover:-translate-y-0.5"
-          onClick={() => navigate('/')}
+          className="flex cursor-pointer items-center gap-3 transition-opacity hover:opacity-80"
+          onClick={() => navigate("/")}
         >
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-[#0f1a3d] to-[#1d2a55] text-white shadow-[0_12px_30px_-12px_rgba(15,26,61,0.5)]">
-            <Zap className="h-6 w-6" />
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-600 text-white">
+            <Zap className="h-5 w-5" />
           </div>
-          <div className="leading-tight">
-            <h1 className="font-heading text-2xl text-foreground">{t('quizMaster')}</h1>
-            {subtitle && <p className="text-xs uppercase tracking-[0.3em] text-foreground/60">{subtitle}</p>}
+          <div>
+            <span className="font-bold text-xl text-slate-900 leading-none">{t("quizMaster")}</span>
+            {subtitle && (
+              <p className="text-xs text-slate-400 font-medium mt-0.5">{subtitle}</p>
+            )}
           </div>
         </div>
 
+        {/* Main toolbar placement */}
+        {toolbar && toolbarPlacement === "main" && (
+          <div className="flex flex-1 justify-center px-4">
+            <div className="w-full max-w-4xl">{toolbar}</div>
+          </div>
+        )}
+
+        {/* Desktop navigation */}
         {showNavigation && (
-          <div className="hidden flex-1 items-center justify-center gap-6 md:flex">
+          <nav className="hidden md:flex flex-1 items-center justify-center gap-1">
             {primaryNavigationItems
               .filter((item) => (item.requiresAuth ? Boolean(user) : true))
-              .map((item) => {
-                const Icon = item.icon;
-                return (
-                  <div key={item.label} className="flex flex-col items-center gap-1">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={item.onClick}
-                      title={item.label}
-                      className={mainNavigationIconClass}
-                    >
-                      <Icon className="h-5 w-5" />
-                      <span className="sr-only">{item.label}</span>
-                    </Button>
-                    <span className="text-xs font-medium uppercase tracking-[0.25em] text-foreground/50">
-                      {item.label}
-                    </span>
-                  </div>
-                );
-              })}
+              .map((item) => (
+                <button
+                  key={item.label}
+                  onClick={item.onClick}
+                  className="px-3 py-2 text-sm font-medium text-slate-600 rounded-lg hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
+                >
+                  {item.label}
+                </button>
+              ))}
+
             {availableCreationItems.length > 0 && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="gap-2 rounded-full px-4 text-sm font-medium text-foreground/80 transition-colors hover:text-foreground"
-                  >
+                  <button className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-slate-600 rounded-lg hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer">
                     <Layers className="h-4 w-4" />
-                    <span>{t('myCreations')}</span>
-                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                  </Button>
+                    {t("myCreations")}
+                    <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
+                  </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="z-50 w-56 rounded-2xl border border-white/50 bg-white/80 p-2 backdrop-blur-xl">
+                <DropdownMenuContent className="z-50 w-52 rounded-xl border border-slate-100 bg-white p-1.5 shadow-lg">
                   {availableCreationItems.map((item) => {
                     const Icon = item.icon;
                     return (
                       <DropdownMenuItem
                         key={item.label}
-                        className="gap-2 rounded-xl text-sm text-foreground/80 transition-colors hover:bg-foreground/5"
+                        className="gap-2 rounded-lg text-sm text-slate-700 transition-colors hover:bg-slate-50 cursor-pointer"
                         onSelect={item.onClick}
                       >
-                        <Icon className="h-4 w-4" />
+                        <Icon className="h-4 w-4 text-slate-400" />
                         {item.label}
                       </DropdownMenuItem>
                     );
@@ -239,67 +173,48 @@ export const Header = ({
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
-          </div>
+          </nav>
         )}
 
-        {showMainToolbar && (
-          <div className="flex flex-1 justify-center px-4">
-            <div className="w-full max-w-4xl">
-              {toolbar}
-            </div>
-          </div>
-        )}
-
-        <div
-          className={cn(
-            "flex items-center gap-3",
-            alignLeft && "ml-auto",
-            toolbarPlacement === "main" ? "flex-wrap justify-end" : ""
-          )}
-        >
+        {/* Right actions */}
+        <div className={cn("flex items-center gap-2", alignLeft && "ml-auto")}>
+          {/* Mobile menu */}
           {showNavigation && (
             <div className="md:hidden">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-10 w-10 rounded-full border-white/60 bg-white/60 text-foreground/70 shadow-[0_10px_30px_-18px_rgba(15,26,61,0.5)] transition-all duration-300 hover:border-[#0f1a3d]/30 hover:text-foreground"
-                  >
-                    <Menu className="h-5 w-5" />
+                  <Button variant="outline" size="icon" className="h-9 w-9 rounded-lg border-slate-200">
+                    <Menu className="h-4 w-4" />
+                    <span className="sr-only">Menu</span>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="z-50 w-56 rounded-2xl border border-white/50 bg-white/80 p-2 backdrop-blur-xl">
+                <DropdownMenuContent className="z-50 w-56 rounded-xl border border-slate-100 bg-white p-1.5 shadow-lg">
                   {primaryNavigationItems
                     .filter((item) => (item.requiresAuth ? Boolean(user) : true))
-                    .map((item) => {
-                      const Icon = item.icon;
-                      return (
-                        <DropdownMenuItem
-                          key={item.label}
-                          className="gap-2 rounded-xl text-sm text-foreground/80 transition-colors hover:bg-foreground/5"
-                          onSelect={item.onClick}
-                        >
-                          <Icon className="h-4 w-4" />
-                          {item.label}
-                        </DropdownMenuItem>
-                      );
-                    })}
+                    .map((item) => (
+                      <DropdownMenuItem
+                        key={item.label}
+                        className="rounded-lg text-sm text-slate-700 hover:bg-slate-50 cursor-pointer"
+                        onSelect={item.onClick}
+                      >
+                        {item.label}
+                      </DropdownMenuItem>
+                    ))}
                   {availableCreationItems.length > 0 && (
                     <>
-                      <DropdownMenuSeparator className="bg-foreground/10" />
-                      <DropdownMenuLabel className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                        {t('myCreations')}
+                      <DropdownMenuSeparator className="bg-slate-100" />
+                      <DropdownMenuLabel className="px-2 py-1.5 text-xs font-semibold text-slate-400 uppercase tracking-wide">
+                        {t("myCreations")}
                       </DropdownMenuLabel>
                       {availableCreationItems.map((item) => {
                         const Icon = item.icon;
                         return (
                           <DropdownMenuItem
                             key={item.label}
-                            className="gap-2 rounded-xl text-sm text-foreground/80 transition-colors hover:bg-foreground/5"
+                            className="gap-2 rounded-lg text-sm text-slate-700 hover:bg-slate-50 cursor-pointer"
                             onSelect={item.onClick}
                           >
-                            <Icon className="h-4 w-4" />
+                            <Icon className="h-4 w-4 text-slate-400" />
                             {item.label}
                           </DropdownMenuItem>
                         );
@@ -308,11 +223,11 @@ export const Header = ({
                   )}
                   {user && (
                     <DropdownMenuItem
-                      className="gap-2 rounded-xl text-sm text-foreground/80 transition-colors hover:bg-foreground/5"
-                      onSelect={() => navigate('/profile')}
+                      className="gap-2 rounded-lg text-sm text-slate-700 hover:bg-slate-50 cursor-pointer"
+                      onSelect={() => navigate("/profile")}
                     >
-                      <User className="h-4 w-4" />
-                      {t('profile')}
+                      <User className="h-4 w-4 text-slate-400" />
+                      {t("profile")}
                     </DropdownMenuItem>
                   )}
                 </DropdownMenuContent>
@@ -320,82 +235,81 @@ export const Header = ({
             </div>
           )}
 
+          {/* Language switcher */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="outline"
                 size="sm"
-                className="h-10 rounded-full border-white/60 bg-white/60 text-foreground/70 shadow-[0_10px_30px_-18px_rgba(15,26,61,0.5)] transition-all duration-300 hover:border-[#0f1a3d]/30 hover:text-foreground"
+                className="h-9 rounded-lg border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50"
               >
                 <Globe className="h-4 w-4" />
+                <span className="sr-only">Language</span>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="z-50 rounded-2xl border border-white/50 bg-white/80 p-2 backdrop-blur-xl">
+            <DropdownMenuContent className="z-50 rounded-xl border border-slate-100 bg-white p-1.5 shadow-lg">
               <DropdownMenuItem
-                className="rounded-xl text-sm text-foreground/80 transition-colors hover:bg-foreground/5"
-                onClick={() => handleLanguageChange('en')}
+                className="rounded-lg text-sm text-slate-700 hover:bg-slate-50 cursor-pointer"
+                onClick={() => handleLanguageChange("en")}
               >
                 🇬🇧 English
               </DropdownMenuItem>
               <DropdownMenuItem
-                className="rounded-xl text-sm text-foreground/80 transition-colors hover:bg-foreground/5"
-                onClick={() => handleLanguageChange('fr')}
+                className="rounded-lg text-sm text-slate-700 hover:bg-slate-50 cursor-pointer"
+                onClick={() => handleLanguageChange("fr")}
               >
                 🇫🇷 Français
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
+          {/* Auth */}
           {user ? (
             <>
               <Button
                 variant="outline"
                 size="icon"
-                onClick={() => navigate('/profile')}
-                className="h-10 w-10 rounded-full border-white/60 bg-white/60 text-foreground/80 shadow-[0_10px_30px_-18px_rgba(15,26,61,0.5)] transition-all duration-300 hover:border-[#0f1a3d]/25 hover:text-foreground"
+                onClick={() => navigate("/profile")}
+                className="h-9 w-9 rounded-lg border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50"
                 title={user.username}
               >
                 <User className="h-4 w-4" />
-                <span className="sr-only">{t('profile')}</span>
+                <span className="sr-only">{t("profile")}</span>
               </Button>
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={handleLogout}
-                className="h-10 w-10 rounded-full text-foreground/70 transition-colors hover:text-foreground"
-                title={t('logout')}
+                className="h-9 w-9 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100"
+                title={t("logout")}
               >
                 <LogOut className="h-4 w-4" />
-                <span className="sr-only">{t('logout')}</span>
+                <span className="sr-only">{t("logout")}</span>
               </Button>
             </>
           ) : (
             <Button
-              variant="outline"
-              onClick={() => navigate('/auth')}
-              className="rounded-full border-white/60 bg-white/60 px-6 text-sm font-medium text-foreground/80 shadow-[0_10px_30px_-18px_rgba(15,26,61,0.5)] transition-all duration-300 hover:border-[#0f1a3d]/25 hover:text-foreground"
+              onClick={() => navigate("/auth")}
+              className="h-9 rounded-lg bg-indigo-600 text-white text-sm font-semibold px-4 hover:bg-indigo-700 transition-colors"
             >
-              <User className="mr-2 h-4 w-4" />
-              {t('login')}
+              <User className="mr-1.5 h-3.5 w-3.5" />
+              {t("login")}
             </Button>
           )}
         </div>
       </div>
+
+      {/* Secondary toolbar row */}
       {toolbar && toolbarPlacement === "secondary" && (
-        <div className="border-t border-white/40 bg-white/60 backdrop-blur-xl">
-          <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-3">
+        <div className="border-t border-slate-100 bg-white">
+          <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-2.5">
             {toolbar}
           </div>
         </div>
       )}
       {toolbar && toolbarPlacement === "main" && !alignLeft && (
-        <div className="w-full px-6 pb-4 lg:hidden">
-          <div
-            className={cn(
-              "flex flex-wrap items-center gap-2 border-t border-white/40 bg-white/60 px-4 py-3 backdrop-blur-xl",
-              alignLeft ? "justify-start" : "justify-end"
-            )}
-          >
+        <div className="w-full px-6 pb-3 lg:hidden">
+          <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 bg-white px-4 py-2.5">
             {toolbar}
           </div>
         </div>

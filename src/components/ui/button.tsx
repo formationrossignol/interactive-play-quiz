@@ -9,14 +9,14 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-gradient-primary text-primary-foreground shadow-sm hover:shadow-quiz hover:opacity-90",
-        destructive: "bg-danger text-danger-foreground shadow-sm hover:bg-danger/90 hover:shadow-lg",
+        default: "bg-indigo-600 text-white shadow-sm hover:bg-indigo-700 hover:shadow-card",
+        destructive: "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90 hover:shadow-lg",
         outline: "border-2 border-primary bg-background text-primary hover:bg-primary/5 hover:border-primary/80",
-        secondary: "bg-gradient-secondary text-secondary-foreground shadow-sm hover:shadow-quiz hover:opacity-90",
-        success: "bg-gradient-success text-success-foreground shadow-sm hover:shadow-quiz hover:opacity-90",
+        secondary: "bg-indigo-100 text-indigo-700 shadow-sm hover:bg-indigo-200",
+        success: "bg-emerald-600 text-white shadow-sm hover:bg-emerald-700",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline hover:text-primary/80",
-        hero: "bg-gradient-hero text-white text-lg font-bold shadow-glow hover:shadow-quiz hover:opacity-95",
+        hero: "bg-indigo-600 text-white text-lg font-bold hover:bg-indigo-700 transition-colors",
         quiz: "bg-white/10 backdrop-blur-sm border border-white/20 text-white hover:bg-white/20 hover:border-white/30",
       },
       size: {

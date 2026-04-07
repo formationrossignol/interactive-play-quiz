@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState, type MouseEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getCurrentUser } from "@/lib/auth";
@@ -67,89 +66,86 @@ const MyFlashcards = () => {
   };
 
   const renderCard = (cardSet: SavedQuiz, showActions = true) => (
-    <Card
+    <div
       key={cardSet.id}
-      className="group flex h-full flex-col justify-between border-border/60 bg-card/80 shadow-sm transition-all duration-200 hover:border-primary/30"
+      className="card-flashcard flex h-full cursor-pointer flex-col rounded-2xl border border-slate-100 bg-white shadow-card transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card-hover overflow-hidden"
       onClick={() => navigate(`/builder?type=flashcard&quizId=${cardSet.id}`)}
     >
-      <CardHeader>
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <CardTitle className="text-foreground text-xl">{cardSet.title}</CardTitle>
-            <p className="text-sm text-muted-foreground line-clamp-2">{cardSet.description}</p>
+      <div className="flex flex-1 flex-col p-5">
+        <div className="mb-3 flex items-start justify-between gap-3">
+          <div className="flex-1">
+            <h3 className="text-base font-bold text-slate-900">{cardSet.title}</h3>
+            <p className="mt-0.5 text-sm text-slate-500 line-clamp-2">{cardSet.description}</p>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
+          <button
             onClick={(e) => handleToggleFavorite(e, cardSet)}
-            className="text-yellow-500 hover:bg-yellow-500/10 hover:text-yellow-400"
+            className="text-amber-400 hover:text-amber-500 transition-colors cursor-pointer p-1"
+            aria-label="Toggle favorite"
           >
-            <Star className={`h-5 w-5 ${cardSet.isFavorite ? "fill-yellow-500" : ""}`} />
-          </Button>
+            <Star className={`h-4 w-4 ${cardSet.isFavorite ? "fill-amber-400" : ""}`} />
+          </button>
         </div>
-      </CardHeader>
-      <CardContent className="flex flex-1 flex-col gap-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="outline" className="rounded-full">
+        <div className="flex flex-wrap items-center gap-1.5 mb-3">
+          <Badge variant="outline" className="rounded-full text-xs border-slate-200 text-slate-500">
             {cardSet.questions.length} {cardSet.questions.length > 1 ? t("cards") : t("card")}
           </Badge>
           {cardSet.isPublic && (
-            <Badge variant="secondary" className="rounded-full bg-primary/10 text-primary border border-primary/20">
+            <Badge variant="outline" className="rounded-full text-xs border-indigo-200 bg-indigo-50 text-indigo-700">
               {t("publicBadge")}
             </Badge>
           )}
           {cardSet.tags?.map((tag) => (
-            <Badge key={tag} variant="outline" className="rounded-full">
+            <Badge key={tag} variant="outline" className="rounded-full text-xs border-slate-200 text-slate-500">
               #{tag}
             </Badge>
           ))}
         </div>
-      </CardContent>
-      {showActions && (
-        <CardFooter className="flex items-center justify-between gap-2 border-t border-border/40 pt-4">
-          <div className="flex gap-2">
+        {showActions && (
+          <div className="mt-auto flex items-center justify-between gap-2 border-t border-slate-100 pt-3">
+            <div className="flex gap-1">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`/builder?type=flashcard&quizId=${cardSet.id}`);
+                }}
+                title={t("edit")}
+                className="cursor-pointer p-2 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                aria-label={t("edit")}
+              >
+                <Edit className="h-4 w-4" />
+              </button>
+              <button
+                className="cursor-pointer p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteClick(cardSet);
+                }}
+                title={t("delete")}
+                aria-label={t("delete")}
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
             <Button
-              variant="ghost"
-              size="icon"
+              size="sm"
               onClick={(e) => {
                 e.stopPropagation();
                 navigate(`/builder?type=flashcard&quizId=${cardSet.id}`);
               }}
-              title={t("edit")}
+              className="rounded-full bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 transition-colors px-4"
             >
-              <Edit className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-destructive hover:bg-destructive/10"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleDeleteClick(cardSet);
-              }}
-              title={t("delete")}
-            >
-              <Trash2 className="h-4 w-4" />
+              {t("editSet")}
             </Button>
           </div>
-          <Button
-            variant="default"
-            onClick={(e) => {
-              e.stopPropagation();
-              navigate(`/builder?type=flashcard&quizId=${cardSet.id}`);
-            }}
-          >
-            {t("editSet")}
-          </Button>
-        </CardFooter>
-      )}
-    </Card>
+        )}
+      </div>
+    </div>
   );
 
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[#F8FAFC]">
       <Header subtitle={t("myFlashcards")} />
       <div className="mx-auto max-w-6xl px-6 py-10">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -171,7 +167,7 @@ const MyFlashcards = () => {
 
           <TabsContent value="my">
             {myFlashcards.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-border/60 bg-muted/20 p-10 text-center">
+              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-12 text-center">
                 <p className="text-sm text-muted-foreground">{t("noFlashcardsSaved")}</p>
                 <Button className="mt-4" onClick={() => navigate('/builder-start?type=flashcard')}>
                   {t("createFlashcardSet")}
@@ -186,7 +182,7 @@ const MyFlashcards = () => {
 
           <TabsContent value="favorites">
             {favoriteFlashcards.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-border/60 bg-muted/20 p-10 text-center">
+              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-12 text-center">
                 <p className="text-sm text-muted-foreground">{t("noFavoriteFlashcards")}</p>
               </div>
             ) : (
@@ -198,7 +194,7 @@ const MyFlashcards = () => {
 
           <TabsContent value="public">
             {publicFlashcards.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-border/60 bg-muted/20 p-10 text-center">
+              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-12 text-center">
                 <p className="text-sm text-muted-foreground">{t("noPublicFlashcards")}</p>
               </div>
             ) : (

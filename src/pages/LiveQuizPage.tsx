@@ -6,8 +6,6 @@ import { PlayerView } from "@/components/PlayerView";
 import { PollSession } from "@/components/PollSession";
 import { FlashcardSession } from "@/components/FlashcardSession";
 import { SlidePresentationSession } from "@/components/SlidePresentationSession";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { getQuizById, type SavedQuiz } from "@/lib/quizStorage";
 
 const fallbackKeysForType = (id: string) => [
@@ -110,15 +108,13 @@ const LiveQuizPage = () => {
 
   if (!gameCode) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-4 text-slate-100">
-        <Card className="border border-slate-700/60 bg-slate-900/80 shadow-2xl">
-          <CardContent className="p-8 text-center space-y-4">
-            <AlertTriangle className="w-12 h-12 text-warning mx-auto" />
-            <h2 className="text-2xl font-bold text-white">Code invalide</h2>
-            <p className="text-slate-300">Le quiz que vous recherchez n'existe pas.</p>
-            <Button variant="hero" onClick={() => (window.location.href = "/")}>Retour à l'accueil</Button>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen bg-indigo-600 flex items-center justify-center p-6">
+        <div className="rounded-2xl bg-white/10 border border-white/20 p-8 text-center text-white max-w-md w-full">
+          <AlertTriangle className="w-12 h-12 text-indigo-200 mx-auto" />
+          <h2 className="text-2xl font-bold text-white mt-4">Code invalide</h2>
+          <p className="text-indigo-200 mt-2">Le quiz que vous recherchez n'existe pas.</p>
+          <button className="mt-6 bg-white text-indigo-600 font-bold rounded-full px-6 h-11 hover:bg-indigo-50" onClick={() => (window.location.href = "/")}>Retour à l'accueil</button>
+        </div>
       </div>
     );
   }
@@ -129,25 +125,23 @@ const LiveQuizPage = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-4 text-slate-100">
-        <Card className="border border-slate-700/60 bg-slate-900/80 shadow-2xl">
-          <CardContent className="p-8 text-center text-lg">Chargement de votre contenu interactif…</CardContent>
-        </Card>
+      <div className="min-h-screen bg-indigo-600 flex items-center justify-center p-6">
+        <div className="rounded-2xl bg-white/10 border border-white/20 p-8 text-center text-white max-w-md w-full">
+          <p className="text-lg text-white">Chargement de votre contenu interactif…</p>
+        </div>
       </div>
     );
   }
 
   if (!loadedQuiz) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-4 text-slate-100">
-        <Card className="border border-slate-700/60 bg-slate-900/80 shadow-2xl">
-          <CardContent className="p-8 text-center space-y-4">
-            <AlertTriangle className="w-12 h-12 text-warning mx-auto" />
-            <h2 className="text-2xl font-bold text-white">Contenu introuvable</h2>
-            <p className="text-slate-300">Impossible de charger le quiz ou le sondage demandé.</p>
-            <Button variant="hero" onClick={() => (window.location.href = "/")}>Retour à l'accueil</Button>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen bg-indigo-600 flex items-center justify-center p-6">
+        <div className="rounded-2xl bg-white/10 border border-white/20 p-8 text-center text-white max-w-md w-full">
+          <AlertTriangle className="w-12 h-12 text-indigo-200 mx-auto" />
+          <h2 className="text-2xl font-bold text-white mt-4">Contenu introuvable</h2>
+          <p className="text-indigo-200 mt-2">Impossible de charger le quiz ou le sondage demandé.</p>
+          <button className="mt-6 bg-white text-indigo-600 font-bold rounded-full px-6 h-11 hover:bg-indigo-50" onClick={() => (window.location.href = "/")}>Retour à l'accueil</button>
+        </div>
       </div>
     );
   }
@@ -162,12 +156,10 @@ const LiveQuizPage = () => {
     default:
       if (!quizSession) {
         return (
-          <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-4 text-slate-100">
-            <Card className="border border-slate-700/60 bg-slate-900/80 shadow-2xl">
-              <CardContent className="p-8 text-center text-lg">
-                Ce quiz ne contient aucune question exploitable pour le moment.
-              </CardContent>
-            </Card>
+          <div className="min-h-screen bg-indigo-600 flex items-center justify-center p-6">
+            <div className="rounded-2xl bg-white/10 border border-white/20 p-8 text-center text-white max-w-md w-full">
+              <p className="text-lg text-white">Ce quiz ne contient aucune question exploitable pour le moment.</p>
+            </div>
           </div>
         );
       }

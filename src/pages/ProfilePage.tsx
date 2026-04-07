@@ -96,7 +96,7 @@ const ProfilePage = () => {
           <div className="grid md:grid-cols-3 gap-6">
             <Card>
               <CardContent className="p-6 text-center">
-                <div className="w-12 h-12 bg-gradient-primary rounded-lg mx-auto mb-3 flex items-center justify-center">
+                <div className="w-12 h-12 bg-indigo-600 rounded-lg mx-auto mb-3 flex items-center justify-center">
                   <Trophy className="w-6 h-6 text-white" />
                 </div>
                 <div className="text-3xl font-bold text-foreground mb-1">{stats.totalQuizzes}</div>
@@ -106,7 +106,7 @@ const ProfilePage = () => {
 
             <Card>
               <CardContent className="p-6 text-center">
-                <div className="w-12 h-12 bg-gradient-secondary rounded-lg mx-auto mb-3 flex items-center justify-center">
+                <div className="w-12 h-12 bg-indigo-500 rounded-lg mx-auto mb-3 flex items-center justify-center">
                   <BookOpen className="w-6 h-6 text-white" />
                 </div>
                 <div className="text-3xl font-bold text-foreground mb-1">{stats.publicQuizzes}</div>
@@ -116,7 +116,7 @@ const ProfilePage = () => {
 
             <Card>
               <CardContent className="p-6 text-center">
-                <div className="w-12 h-12 bg-gradient-success rounded-lg mx-auto mb-3 flex items-center justify-center">
+                <div className="w-12 h-12 bg-emerald-600 rounded-lg mx-auto mb-3 flex items-center justify-center">
                   <Clock className="w-6 h-6 text-white" />
                 </div>
                 <div className="text-3xl font-bold text-foreground mb-1">{stats.totalQuestions}</div>
