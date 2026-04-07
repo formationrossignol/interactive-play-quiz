@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState, type MouseEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getCurrentUser } from "@/lib/auth";
@@ -81,9 +80,9 @@ const MyPolls = () => {
   };
 
   const renderPollCard = (poll: SavedQuiz, showActions = true) => (
-    <Card
+    <div
       key={poll.id}
-      className="group flex h-full flex-col overflow-hidden border-border/60 bg-card/80 shadow-sm transition-all duration-200 hover:border-primary/30"
+      className="card-poll flex h-full cursor-pointer flex-col rounded-2xl border border-slate-100 bg-white shadow-card transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card-hover overflow-hidden"
       onClick={() => navigate(`/builder?type=poll&quizId=${poll.id}`)}
     >
       {poll.headerImage && (
@@ -95,80 +94,70 @@ const MyPolls = () => {
           />
         </div>
       )}
-      <CardHeader>
-        <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-1 flex-col p-5">
+        <div className="mb-3 flex items-start justify-between gap-3">
           <div className="flex-1">
-            <CardTitle className="text-xl text-foreground">{poll.title}</CardTitle>
-            <p className="text-sm text-muted-foreground line-clamp-2">{poll.description}</p>
+            <h3 className="text-base font-bold text-slate-900">{poll.title}</h3>
+            <p className="mt-0.5 text-sm text-slate-500 line-clamp-2">{poll.description}</p>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
+          <button
             onClick={(event) => handleToggleFavorite(event, poll)}
-            className="text-yellow-500 hover:bg-yellow-500/10 hover:text-yellow-400"
+            className="text-amber-400 hover:text-amber-500 transition-colors cursor-pointer p-1"
+            aria-label="Toggle favorite"
           >
-            <Star className={`h-5 w-5 ${poll.isFavorite ? "fill-yellow-500" : ""}`} />
-          </Button>
+            <Star className={`h-4 w-4 ${poll.isFavorite ? "fill-amber-400" : ""}`} />
+          </button>
         </div>
-      </CardHeader>
-      <CardContent className="flex flex-1 flex-col gap-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="outline" className="rounded-full">
+        <div className="flex flex-wrap items-center gap-1.5 mb-3">
+          <Badge variant="outline" className="rounded-full text-xs border-slate-200 text-slate-500">
             {poll.questions.length} {poll.questions.length > 1 ? t("questions") : t("question")}
           </Badge>
           {poll.tags?.map((tag) => (
-            <Badge key={tag} variant="outline" className="rounded-full">
+            <Badge key={tag} variant="outline" className="rounded-full text-xs border-slate-200 text-slate-500">
               #{tag}
             </Badge>
           ))}
         </div>
-      </CardContent>
-      <CardFooter className="flex items-center justify-between gap-2 border-t border-border/40 pt-4">
-        <div className="flex gap-2">
-          {showActions && (
-            <>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={(event) => handleEditPoll(event, poll.id)}
-                title={t("edit")}
-              >
-                <Edit className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-destructive hover:bg-destructive/10"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  handleDeleteClick(poll);
-                }}
-                title={t("delete")}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </>
-          )}
+        <div className="mt-auto flex items-center justify-between gap-2 border-t border-slate-100 pt-3">
+          <div className="flex gap-1">
+            {showActions && (
+              <>
+                <button
+                  onClick={(event) => handleEditPoll(event, poll.id)}
+                  title={t("edit")}
+                  className="cursor-pointer p-2 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                  aria-label={t("edit")}
+                >
+                  <Edit className="h-4 w-4" />
+                </button>
+                <button
+                  className="cursor-pointer p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                  onClick={(event) => { event.stopPropagation(); handleDeleteClick(poll); }}
+                  title={t("delete")}
+                  aria-label={t("delete")}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </>
+            )}
+          </div>
+          <Button
+            size="sm"
+            onClick={(event) => { event.stopPropagation(); handleLaunchPoll(poll); }}
+            className="rounded-full bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 transition-colors gap-1.5 px-4"
+          >
+            <Play className="h-3.5 w-3.5" />
+            {t("launchPoll")}
+          </Button>
         </div>
-        <Button
-          variant="default"
-          onClick={(event) => {
-            event.stopPropagation();
-            handleLaunchPoll(poll);
-          }}
-          className="gap-2"
-        >
-          <Play className="h-4 w-4" />
-          {t("launchPoll")}
-        </Button>
-      </CardFooter>
-    </Card>
+      </div>
+    </div>
   );
 
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[#F8FAFC]">
       <Header subtitle={t("myPolls")} />
       <div className="mx-auto max-w-6xl px-6 py-10">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -190,7 +179,7 @@ const MyPolls = () => {
 
           <TabsContent value="my">
             {myPolls.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-border/60 bg-muted/20 p-10 text-center">
+              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-12 text-center">
                 <p className="text-sm text-muted-foreground">{t("noPollsSaved")}</p>
                 <Button className="mt-4" onClick={() => navigate('/builder-start?type=poll')}>
                   {t("createPollCta")}
@@ -205,7 +194,7 @@ const MyPolls = () => {
 
           <TabsContent value="favorites">
             {favoritePolls.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-border/60 bg-muted/20 p-10 text-center">
+              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-12 text-center">
                 <p className="text-sm text-muted-foreground">{t("noFavoritePolls")}</p>
               </div>
             ) : (
@@ -217,7 +206,7 @@ const MyPolls = () => {
 
           <TabsContent value="public">
             {publicPolls.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-border/60 bg-muted/20 p-10 text-center">
+              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-12 text-center">
                 <p className="text-sm text-muted-foreground">{t("noPublicPolls")}</p>
               </div>
             ) : (
