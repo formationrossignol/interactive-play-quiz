@@ -34,7 +34,7 @@ export const Footer = () => {
   ];
 
   return (
-    <footer className="border-t border-white/60 bg-white/70 backdrop-blur-xl">
+    <footer className="border-t border-slate-100 bg-white">
       <div className="mx-auto flex max-w-6xl flex-col gap-10 px-6 py-12 md:flex-row md:justify-between">
         <div className="max-w-sm">
           <div className="flex items-center gap-3">
@@ -74,7 +74,7 @@ export const Footer = () => {
           ))}
         </div>
       </div>
-      <div className="border-t border-white/50 bg-white/60">
+      <div className="border-t border-slate-100 bg-slate-50">
         <div className="mx-auto max-w-6xl px-6 py-4 text-xs text-foreground/50">
           © {currentYear} {t('footerRights')}
         </div>
