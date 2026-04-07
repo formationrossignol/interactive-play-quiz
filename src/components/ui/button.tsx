@@ -16,7 +16,7 @@ const buttonVariants = cva(
         success: "bg-gradient-success text-success-foreground shadow-sm hover:shadow-quiz hover:opacity-90",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline hover:text-primary/80",
-        hero: "bg-gradient-hero text-white text-lg font-bold shadow-glow hover:shadow-quiz hover:opacity-95",
+        hero: "bg-indigo-600 text-white text-lg font-bold hover:bg-indigo-700 transition-colors",
         quiz: "bg-white/10 backdrop-blur-sm border border-white/20 text-white hover:bg-white/20 hover:border-white/30",
       },
       size: {
