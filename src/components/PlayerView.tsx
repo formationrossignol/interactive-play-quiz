@@ -227,6 +227,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
               <Button
                 variant="ghost"
                 size="sm"
+                aria-label="Quitter le quiz"
                 onClick={() => setShowExitDialog(true)}
                 className="rounded-full bg-white/10 border border-white/20 text-white hover:bg-white/20"
               >
@@ -295,9 +296,9 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
             )}>
               <div className="mb-4">
                 {isCorrect ? (
-                  <CheckCircle className="mx-auto h-12 w-12 animate-bounce text-emerald-300 drop-shadow-lg" />
+                  <CheckCircle className="mx-auto h-12 w-12 animate-bounce text-emerald-300 drop-shadow-lg" aria-hidden="true" />
                 ) : (
-                  <XCircle className="mx-auto h-12 w-12 animate-pulse text-rose-300 drop-shadow-lg" />
+                  <XCircle className="mx-auto h-12 w-12 animate-pulse text-rose-300 drop-shadow-lg" aria-hidden="true" />
                 )}
               </div>
               <h3 className="text-3xl font-extrabold text-white mb-2">
