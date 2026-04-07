@@ -1,9 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Users, Clock, Trophy, CheckCircle, XCircle, LogOut } from "lucide-react";
+import { Users, Trophy, CheckCircle, XCircle, LogOut } from "lucide-react";
 import { MultiStepProgress } from "./MultiStepProgress";
 import { BackgroundMusic } from "./BackgroundMusic";
 import { ExitQuizDialog } from "./ExitQuizDialog";
@@ -22,6 +20,13 @@ interface PlayerViewProps {
   playerName: string;
 }
 
+const buttonColors = [
+  "bg-rose-500 active:bg-rose-600 hover:bg-rose-600",
+  "bg-blue-500 active:bg-blue-600 hover:bg-blue-600",
+  "bg-amber-500 active:bg-amber-600 hover:bg-amber-600",
+  "bg-emerald-500 active:bg-emerald-600 hover:bg-emerald-600",
+];
+
 export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -37,7 +42,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
   const [timeLeft, setTimeLeft] = useState(30);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [showExitDialog, setShowExitDialog] = useState(false);
-  
+
   const totalQuestions = 10;
 
   // Mock current question data
@@ -145,14 +150,14 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
 
   const submitAnswer = (answer: number | string) => {
     if (hasAnswered) return;
-    
+
     setSelectedAnswer(answer);
     setHasAnswered(true);
-    
+
     // Mock scoring logic with speed bonus
     const correct = answer === mockQuestion.correctAnswer;
     setIsCorrect(correct);
-    
+
     if (correct) {
       // Calculate speed bonus: proportional to time remaining
       const speedBonusPercentage = timeLeft / mockQuestion.timeLimit;
@@ -160,7 +165,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
       const totalPoints = mockQuestion.points + speedBonus;
       setPlayerScore(prev => prev + totalPoints);
     }
-    
+
     // Auto-advance after showing feedback
     setTimeout(() => {
       setGameState('leaderboard');
@@ -169,53 +174,49 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
 
   if (gameState === 'waiting') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-4">
-        <Card className="max-w-md w-full border border-slate-700/80 bg-slate-900/85 text-slate-100 shadow-2xl">
-          <CardContent className="p-8 text-center">
-            <div className="text-6xl mb-6 drop-shadow-lg">
-              {playerAvatar}
+      <div className="min-h-screen bg-indigo-600 flex items-center justify-center p-4">
+        <div className="max-w-md w-full text-center">
+          <div className="text-7xl mb-6 drop-shadow-lg">
+            {playerAvatar}
+          </div>
+
+          <h1 className="text-2xl font-extrabold text-white mb-2">Connecté !</h1>
+          <div className="text-indigo-200 mb-8">
+            Bonjour <span className="font-bold text-white">{playerName}</span>
+          </div>
+
+          <div className="rounded-2xl bg-white/10 border border-white/20 p-5 text-indigo-200 space-y-4">
+            <div className="text-3xl font-mono tracking-wider font-bold text-white mb-2 drop-shadow">
+              {gameCode}
             </div>
+            <p className="text-indigo-200">En attente du début du quiz...</p>
 
-            <h1 className="text-2xl font-bold text-white mb-2">Connecté !</h1>
-            <div className="text-slate-300 mb-6">
-              Bonjour <span className="font-bold text-white">{playerName}</span>
-            </div>
-
-            <div className="space-y-4">
-              <div className="text-slate-300">
-                <div className="text-3xl font-mono tracking-wider font-bold text-white mb-2 drop-shadow">
-                  {gameCode}
-                </div>
-                <p className="text-slate-300">En attente du début du quiz...</p>
-              </div>
-
-              <div className="flex items-center justify-center gap-4 text-slate-300">
-                <div className="flex items-center gap-1">
-                  <Users className="w-4 h-4" />
-                  <span>{totalPlayers} joueurs</span>
-                </div>
+            <div className="flex items-center justify-center gap-4 text-indigo-200">
+              <div className="flex items-center gap-1">
+                <Users className="w-4 h-4" />
+                <span>{totalPlayers} joueurs</span>
               </div>
             </div>
+          </div>
 
-            <div className="mt-6 animate-pulse">
-              <div className="w-8 h-8 rounded-full mx-auto bg-primary/70 shadow-lg"></div>
-            </div>
-          </CardContent>
-        </Card>
+          <div className="mt-6 animate-pulse">
+            <div className="w-8 h-8 rounded-full mx-auto bg-white/30 shadow-lg"></div>
+          </div>
+        </div>
       </div>
     );
   }
 
   if (gameState === 'question') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-4 text-slate-100">
+      <div className="min-h-screen bg-indigo-600 p-4">
         <div className="max-w-2xl mx-auto">
           {/* Header */}
           <div className="flex items-center justify-between mb-6 text-white">
             <div className="flex items-center gap-4">
-              <Badge variant="secondary" className="border border-slate-700/70 bg-slate-800/80 text-white shadow">
+              <div className="rounded-full bg-white/10 border border-white/20 px-3 py-1 text-sm font-semibold text-white">
                 Question {currentQuestion + 1}
-              </Badge>
+              </div>
               <div className="flex items-center gap-1">
                 <Trophy className="w-4 h-4" />
                 <span>{playerScore}</span>
@@ -227,7 +228,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowExitDialog(true)}
-                className="border border-slate-700/70 bg-slate-800/80 text-white hover:bg-slate-700"
+                className="rounded-full bg-white/10 border border-white/20 text-white hover:bg-white/20"
               >
                 <LogOut className="w-4 h-4" />
               </Button>
@@ -236,91 +237,84 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
 
           {/* Progress */}
           <div className="mb-6">
-            <MultiStepProgress 
+            <MultiStepProgress
               totalSteps={totalQuestions}
               currentStep={currentQuestion}
               className="h-3"
             />
           </div>
-          
-          <ExitQuizDialog 
+
+          <ExitQuizDialog
             open={showExitDialog}
             onOpenChange={setShowExitDialog}
             onConfirm={handleExitQuiz}
           />
 
-          {/* Question */}
-          <Card className="mb-6 border border-slate-700/70 bg-slate-900/85 shadow-2xl">
-            <CardContent className="p-6">
-              <div className="flex justify-center mb-6">
-                <CircularTimer timeLeft={timeLeft} totalTime={mockQuestion.timeLimit} />
+          {/* Question card */}
+          <div className="rounded-2xl bg-white p-5 md:p-6 mb-4 shadow-xl">
+            <div className="flex justify-center mb-4">
+              <CircularTimer timeLeft={timeLeft} totalTime={mockQuestion.timeLimit} />
+            </div>
+
+            <h2 className="text-lg font-bold text-slate-900 text-center mb-6 md:text-xl">
+              {mockQuestion.question}
+            </h2>
+
+            {/* Multiple Choice Answers */}
+            {mockQuestion.type === 'multiple-choice' && mockQuestion.answers && (
+              <div className="grid gap-3">
+                {mockQuestion.answers.map((answer, index) => (
+                  <button
+                    key={index}
+                    className={cn(
+                      "cursor-pointer min-h-[56px] w-full rounded-xl p-4 text-left text-white font-semibold text-sm transition-all duration-150",
+                      buttonColors[index % buttonColors.length],
+                      selectedAnswer === index && "ring-4 ring-white ring-offset-2 ring-offset-indigo-600",
+                      hasAnswered && selectedAnswer !== index && "opacity-50"
+                    )}
+                    onClick={() => submitAnswer(index)}
+                    disabled={hasAnswered}
+                  >
+                    <span className="mr-3 inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/30 text-xs font-bold">
+                      {String.fromCharCode(65 + index)}
+                    </span>
+                    {answer}
+                  </button>
+                ))}
               </div>
-
-              <h2 className="mb-6 text-center text-xl font-bold text-white drop-shadow-lg md:text-2xl">
-                {mockQuestion.question}
-              </h2>
-
-              {/* Multiple Choice Answers */}
-              {mockQuestion.type === 'multiple-choice' && mockQuestion.answers && (
-                <div className="grid gap-3">
-                  {mockQuestion.answers.map((answer, index) => (
-                    <Button
-                      key={index}
-                      variant={selectedAnswer === index ? "hero" : "quiz"}
-                      size="lg"
-                      className={cn(
-                        "h-16 justify-start p-4 text-left text-lg font-semibold text-white transition-all bg-slate-800/90 hover:bg-slate-700 shadow-xl",
-                        hasAnswered && "pointer-events-none opacity-70",
-                        selectedAnswer === index && "scale-105 bg-primary/80 ring-4 ring-primary/60"
-                      )}
-                      onClick={() => submitAnswer(index)}
-                      disabled={hasAnswered}
-                    >
-                      <div className="mr-4 flex h-8 w-8 items-center justify-center rounded-full bg-primary/80 text-sm font-bold text-white shadow-inner">
-                        {String.fromCharCode(65 + index)}
-                      </div>
-                      {answer}
-                    </Button>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+            )}
+          </div>
 
           {/* Answer Feedback */}
           {hasAnswered && (
-            <Card className={cn(
-              "animate-scale-in border-4 shadow-2xl",
+            <div className={cn(
+              "animate-scale-in rounded-2xl p-6 text-center",
               isCorrect
-                ? "border-emerald-500/80 bg-emerald-600/20"
-                : "border-rose-500/80 bg-rose-600/20"
+                ? "bg-white/10 border border-white/20"
+                : "bg-white/10 border border-white/20"
             )}>
-              <CardContent className="p-6 text-center">
-                <div className="text-4xl mb-4">
-                  {isCorrect ? (
-                    <CheckCircle className="mx-auto h-16 w-16 animate-bounce text-emerald-300 drop-shadow-lg" />
-                  ) : (
-                    <XCircle className="mx-auto h-16 w-16 animate-pulse text-rose-300 drop-shadow-lg" />
-                  )}
-                </div>
-                <h3 className="mb-2 text-2xl font-bold text-white drop-shadow-lg">
-                  {isCorrect ? "🎉 Bonne réponse !" : "😔 Mauvaise réponse"}
-                </h3>
-                {isCorrect && mockQuestion.correctAnswer !== undefined && (
-                  <p className="mb-2 text-base font-medium text-white">
-                    La bonne réponse était: <span className="font-bold text-emerald-200">{mockQuestion.answers[mockQuestion.correctAnswer]}</span>
-                  </p>
+              <div className="mb-4">
+                {isCorrect ? (
+                  <CheckCircle className="mx-auto h-12 w-12 animate-bounce text-emerald-300 drop-shadow-lg" />
+                ) : (
+                  <XCircle className="mx-auto h-12 w-12 animate-pulse text-rose-300 drop-shadow-lg" />
                 )}
-                {!isCorrect && mockQuestion.correctAnswer !== undefined && (
-                  <p className="mb-2 text-base font-medium text-white">
-                    La bonne réponse était: <span className="rounded bg-slate-900/60 px-2 py-1 font-bold text-emerald-200">{mockQuestion.answers[mockQuestion.correctAnswer]}</span>
-                  </p>
-                )}
-                <p className="mt-3 inline-block rounded-full bg-slate-900/60 px-4 py-2 text-xl font-bold text-white">
-                  {isCorrect ? `+${mockQuestion.points} points 🎯` : "0 point"}
+              </div>
+              <h3 className="text-3xl font-extrabold text-white mb-2">
+                {isCorrect ? "🎉 Bonne réponse !" : "😔 Mauvaise réponse"}
+              </h3>
+              {mockQuestion.correctAnswer !== undefined && (
+                <p className="mb-3 text-sm font-medium text-indigo-200">
+                  La bonne réponse était: <span className="font-bold text-white">{mockQuestion.answers[mockQuestion.correctAnswer]}</span>
                 </p>
-              </CardContent>
-            </Card>
+              )}
+              <div className="rounded-2xl bg-white/10 border border-white/20 p-5 inline-block mt-2">
+                <div className="text-4xl font-extrabold text-white">
+                  {isCorrect ? `+${mockQuestion.points}` : "0"}
+                </div>
+                <div className="text-indigo-200 text-sm mt-1">points</div>
+              </div>
+            </div>
           )}
         </div>
       </div>
@@ -329,59 +323,62 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
 
   if (gameState === 'leaderboard') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-4">
-        <Card className="max-w-md w-full border border-slate-700/70 bg-slate-900/85 text-slate-100 shadow-2xl">
-          <CardContent className="p-8 text-center">
-            <div className="mb-4 text-6xl drop-shadow-xl animate-bounce">🏆</div>
-            <h2 className="mb-6 text-3xl font-bold text-white drop-shadow-lg">Classement</h2>
+      <div className="min-h-screen bg-indigo-600 flex items-center justify-center p-4">
+        <div className="max-w-md w-full text-center">
+          <div className="mb-4 text-6xl drop-shadow-xl animate-bounce">🏆</div>
+          <h2 className="mb-6 text-3xl font-extrabold text-white drop-shadow-lg">Classement</h2>
 
-            <div className="space-y-4 mb-6">
-              <div className="rounded-xl border-2 border-yellow-400/50 bg-gradient-to-r from-yellow-500/40 to-orange-500/30 p-5 shadow-lg animate-pulse">
-                <div className="mb-2 text-xl font-bold text-white">{playerName}</div>
-                <div className="text-lg text-white">
-                  <span className="text-2xl font-bold">#{playerRank}</span> • <span className="font-bold text-yellow-200">{playerScore} points</span>
-                </div>
-              </div>
-
-              <div className="rounded-lg border border-slate-700/70 bg-slate-800/80 p-3 text-base font-medium text-slate-200">
-                ⏳ Attendez la prochaine question...
-              </div>
+          <div className="space-y-4 mb-6">
+            <div className="flex items-center gap-4 rounded-2xl bg-white/10 border border-white/20 p-4 text-white">
+              <span className="text-2xl font-bold text-amber-300">#{playerRank}</span>
+              <span className="flex-1 text-left font-semibold">{playerName}</span>
+              <span className="font-bold text-indigo-200">{playerScore} pts</span>
             </div>
 
-            <Button
-              variant="hero"
-              className="text-lg font-bold text-white shadow-lg animate-pulse"
-              onClick={() => {
-                setGameState('question');
-                setHasAnswered(false);
-                setSelectedAnswer(null);
-                setIsCorrect(null);
-                setTimeLeft(30);
-                setCurrentQuestion(prev => prev + 1);
-              }}
-            >
-              🚀 Prêt pour la suite
-            </Button>
-          </CardContent>
-        </Card>
+            <div className="rounded-2xl bg-white/10 border border-white/20 p-4 text-indigo-200 text-sm font-medium">
+              ⏳ Attendez la prochaine question...
+            </div>
+          </div>
+
+          <button
+            className="bg-white text-indigo-600 font-bold rounded-full w-full h-12 transition-all duration-150 hover:bg-indigo-50 active:bg-indigo-100 shadow-xl"
+            onClick={() => {
+              setGameState('question');
+              setHasAnswered(false);
+              setSelectedAnswer(null);
+              setIsCorrect(null);
+              setTimeLeft(30);
+              setCurrentQuestion(prev => prev + 1);
+            }}
+          >
+            🚀 Prêt pour la suite
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-4">
-      <Card className="max-w-md w-full border border-slate-700/70 bg-slate-900/85 text-slate-100 shadow-2xl">
-        <CardContent className="p-8 text-center">
-          <div className="mb-4 text-4xl drop-shadow-lg">🎉</div>
-          <h2 className="mb-4 text-2xl font-bold text-white">Quiz terminé !</h2>
-          <div className="mb-6 text-slate-200">
-            Score final: <span className="font-bold text-white">{playerScore} points</span>
+    <div className="min-h-screen bg-indigo-600 flex items-center justify-center p-4">
+      <div className="max-w-md w-full text-center">
+        <div className="mb-4 text-6xl drop-shadow-lg">🎉</div>
+        <h2 className="mb-6 text-3xl font-extrabold text-white">Quiz terminé !</h2>
+
+        <div className="rounded-2xl bg-white/10 border border-white/20 p-6 mb-6">
+          <div className="text-6xl font-extrabold text-white mb-2">{playerScore}</div>
+          <div className="text-indigo-200 text-sm">points</div>
+          <div className="mt-4 text-indigo-200">
+            Rang final: <span className="font-bold text-white">#{playerRank}</span> sur {totalPlayers}
           </div>
-          <div className="text-slate-300">
-            Rang final: #{playerRank} sur {totalPlayers}
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+
+        <button
+          className="bg-white text-indigo-600 font-bold rounded-full px-8 h-12 transition-all duration-150 hover:bg-indigo-50 active:bg-indigo-100 shadow-xl"
+          onClick={() => navigate("/")}
+        >
+          Retour à l&apos;accueil
+        </button>
+      </div>
     </div>
   );
 };
