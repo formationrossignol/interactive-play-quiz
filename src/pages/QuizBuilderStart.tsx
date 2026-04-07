@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FileText, Sparkles, ArrowRight } from "lucide-react";
 import { Header } from "@/components/Header";
@@ -18,109 +17,127 @@ export const QuizBuilderStart = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
-  const quizType = (searchParams.get('type') || 'quiz') as 'quiz' | 'poll' | 'flashcard' | 'slide';
-  
+  const quizType = (searchParams.get("type") || "quiz") as "quiz" | "poll" | "flashcard" | "slide";
+
   const [showTemplates, setShowTemplates] = useState(false);
-  const isPoll = quizType === 'poll';
-  const isFlashcard = quizType === 'flashcard';
-  const isSlide = quizType === 'slide';
+  const isPoll = quizType === "poll";
+  const isFlashcard = quizType === "flashcard";
+  const isSlide = quizType === "slide";
 
-  const handleFromScratch = () => {
-    navigate(`/builder?type=${quizType}`);
-  };
-
+  const handleFromScratch = () => navigate(`/builder?type=${quizType}`);
   const handleSelectTemplate = (template: PollTemplate | QuizTemplate | FlashcardTemplate | SlideTemplate) => {
     navigate(`/builder?type=${quizType}&templateId=${template.id}`);
   };
 
+  const pageTitle = isSlide
+    ? "Créer une nouvelle présentation"
+    : isFlashcard
+    ? t("createNewFlashcard")
+    : isPoll
+    ? t("createNewPoll")
+    : t("createNewQuiz");
+
+  const pageSubtitle = isSlide
+    ? "Choisissez comment commencer votre présentation"
+    : isFlashcard
+    ? t("chooseFlashcardStart")
+    : isPoll
+    ? t("choosePollStart")
+    : t("chooseQuizStart");
+
   return (
-    <div className="min-h-screen bg-background">
-      <Header subtitle={isSlide ? "Créateur de Présentations" : isFlashcard ? t('flashcardBuilder') : (isPoll ? t('pollBuilder') : t('quizBuilder'))} />
-      
-      <div className="max-w-4xl mx-auto p-6 space-y-6">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-foreground mb-2">
-            {isSlide ? "Créer une nouvelle présentation" : isFlashcard ? t('createNewFlashcard') : (isPoll ? t('createNewPoll') : t('createNewQuiz'))}
-          </h1>
-          <p className="text-muted-foreground">
-            {isSlide ? "Choisissez comment commencer votre présentation" : isFlashcard ? t('chooseFlashcardStart') : (isPoll ? t('choosePollStart') : t('chooseQuizStart'))}
-          </p>
+    <div className="min-h-screen bg-[#F8FAFC]">
+      <Header
+        subtitle={
+          isSlide
+            ? "Créateur de Présentations"
+            : isFlashcard
+            ? t("flashcardBuilder")
+            : isPoll
+            ? t("pollBuilder")
+            : t("quizBuilder")
+        }
+      />
+
+      <div className="mx-auto max-w-3xl px-6 py-12">
+        <div className="mb-10 text-center">
+          <h1 className="text-3xl font-extrabold text-slate-900 mb-2">{pageTitle}</h1>
+          <p className="text-slate-500">{pageSubtitle}</p>
         </div>
 
         {!showTemplates ? (
-          <div className="grid md:grid-cols-2 gap-6">
-            <Card className="cursor-pointer hover:shadow-lg transition-all border-2 hover:border-primary">
-              <CardHeader>
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                  <FileText className="w-6 h-6 text-primary" />
-                </div>
-                <CardTitle>{t('fromScratch')}</CardTitle>
-                <CardDescription>
-                  {isSlide ? "Créez votre présentation de zéro, diapositive par diapositive" : isFlashcard ? t('createFlashcardFromScratchDesc') : (isPoll ? t('createPollFromScratchDesc') : t('createQuizFromScratchDesc'))}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button 
-                  className="w-full" 
-                  onClick={handleFromScratch}
-                >
-                  {t('startFromScratch')}
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </CardContent>
-            </Card>
+          <div className="grid md:grid-cols-2 gap-5">
+            {/* From scratch */}
+            <div
+              className="cursor-pointer rounded-2xl border-2 border-slate-100 bg-white p-7 shadow-card transition-all duration-200 hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-card-hover"
+              onClick={handleFromScratch}
+            >
+              <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-100">
+                <FileText className="h-6 w-6 text-indigo-600" />
+              </div>
+              <h2 className="mb-2 text-lg font-bold text-slate-900">{t("fromScratch")}</h2>
+              <p className="mb-6 text-sm leading-relaxed text-slate-500">
+                {isSlide
+                  ? "Créez votre présentation de zéro, diapositive par diapositive"
+                  : isFlashcard
+                  ? t("createFlashcardFromScratchDesc")
+                  : isPoll
+                  ? t("createPollFromScratchDesc")
+                  : t("createQuizFromScratchDesc")}
+              </p>
+              <Button
+                className="rounded-full bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition-colors gap-1.5 px-5"
+                onClick={(e) => { e.stopPropagation(); handleFromScratch(); }}
+              >
+                {t("startFromScratch")}
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </div>
 
-            <Card className="cursor-pointer hover:shadow-lg transition-all border-2 hover:border-primary">
-              <CardHeader>
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                  <Sparkles className="w-6 h-6 text-primary" />
-                </div>
-                <CardTitle>{t('fromTemplate')}</CardTitle>
-                <CardDescription>
-                  {isSlide ? "Démarrez avec un modèle de présentation prêt à l'emploi" : isFlashcard ? t('createFlashcardFromTemplateDesc') : (isPoll ? t('createPollFromTemplateDesc') : t('createQuizFromTemplateDesc'))}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button 
-                  className="w-full" 
-                  variant="outline"
-                  onClick={() => setShowTemplates(true)}
-                >
-                  {t('browseTemplates')}
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </CardContent>
-            </Card>
+            {/* From template */}
+            <div
+              className="cursor-pointer rounded-2xl border-2 border-slate-100 bg-white p-7 shadow-card transition-all duration-200 hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-card-hover"
+              onClick={() => setShowTemplates(true)}
+            >
+              <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-violet-100">
+                <Sparkles className="h-6 w-6 text-violet-600" />
+              </div>
+              <h2 className="mb-2 text-lg font-bold text-slate-900">{t("fromTemplate")}</h2>
+              <p className="mb-6 text-sm leading-relaxed text-slate-500">
+                {isSlide
+                  ? "Démarrez avec un modèle de présentation prêt à l'emploi"
+                  : isFlashcard
+                  ? t("createFlashcardFromTemplateDesc")
+                  : isPoll
+                  ? t("createPollFromTemplateDesc")
+                  : t("createQuizFromTemplateDesc")}
+              </p>
+              <Button
+                variant="outline"
+                className="rounded-full border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors gap-1.5 px-5"
+                onClick={(e) => { e.stopPropagation(); setShowTemplates(true); }}
+              >
+                {t("browseTemplates")}
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         ) : (
-          <div className="space-y-4">
-            <Button 
-              variant="ghost" 
+          <div className="space-y-5">
+            <button
               onClick={() => setShowTemplates(false)}
-              className="mb-4"
+              className="cursor-pointer text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors flex items-center gap-1"
             >
-              ← {t('back')}
-            </Button>
+              ← {t("back")}
+            </button>
             {isPoll ? (
-              <PollTemplateSelectorEnhanced
-                selectedTemplateId={null}
-                onSelectTemplate={handleSelectTemplate}
-              />
+              <PollTemplateSelectorEnhanced selectedTemplateId={null} onSelectTemplate={handleSelectTemplate} />
             ) : isSlide ? (
-              <SlideTemplateSelectorEnhanced
-                selectedTemplateId={null}
-                onSelectTemplate={handleSelectTemplate}
-              />
+              <SlideTemplateSelectorEnhanced selectedTemplateId={null} onSelectTemplate={handleSelectTemplate} />
             ) : isFlashcard ? (
-              <FlashcardTemplateSelectorEnhanced
-                selectedTemplateId={null}
-                onSelectTemplate={handleSelectTemplate}
-              />
+              <FlashcardTemplateSelectorEnhanced selectedTemplateId={null} onSelectTemplate={handleSelectTemplate} />
             ) : (
-              <QuizTemplateSelectorEnhanced
-                selectedTemplateId={null}
-                onSelectTemplate={handleSelectTemplate}
-              />
+              <QuizTemplateSelectorEnhanced selectedTemplateId={null} onSelectTemplate={handleSelectTemplate} />
             )}
           </div>
         )}
