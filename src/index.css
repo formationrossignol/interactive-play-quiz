@@ -42,9 +42,6 @@
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 10%;
 
-    --danger: 0 84% 60%;
-    --danger-foreground: 0 0% 100%;
-
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 222 47% 17%;
     --sidebar-primary: 239 84% 67%;
@@ -53,10 +50,13 @@
     --sidebar-accent-foreground: 222 47% 17%;
     --sidebar-border: 214 32% 91%;
     --sidebar-ring: 239 84% 67%;
-  }
-}
 
-@layer base {
+    --quiz-accent: 0 100% 71%;      /* #FF6B6B coral */
+    --poll-accent: 189 94% 43%;     /* #06B6D4 cyan */
+    --flashcard-accent: 38 92% 50%; /* #F59E0B amber */
+    --slide-accent: 160 84% 39%;    /* #10B981 emerald */
+  }
+
   * {
     @apply border-border;
   }
@@ -69,8 +69,8 @@
 
 @layer components {
   /* Left accent border by content type */
-  .card-quiz      { border-left: 4px solid #FF6B6B; }
-  .card-poll      { border-left: 4px solid #06B6D4; }
-  .card-flashcard { border-left: 4px solid #F59E0B; }
-  .card-slide     { border-left: 4px solid #10B981; }
+  .card-quiz      { border-left: 4px solid hsl(var(--quiz-accent)); }
+  .card-poll      { border-left: 4px solid hsl(var(--poll-accent)); }
+  .card-flashcard { border-left: 4px solid hsl(var(--flashcard-accent)); }
+  .card-slide     { border-left: 4px solid hsl(var(--slide-accent)); }
 }
