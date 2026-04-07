@@ -1,128 +1,58 @@
-@import url("https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700&family=Merriweather:wght@400;700&family=Playfair+Display:wght@400;600;700&family=Poppins:wght@400;500;600&family=Space+Grotesk:wght@400;500;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap");
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Premium minimalist design language */
-
 @layer base {
   :root {
-    --background: 220 20% 97%;
-    --foreground: 220 24% 18%;
+    --background: 210 40% 98%;
+    --foreground: 222 47% 17%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 24% 18%;
+    --card-foreground: 222 47% 17%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 24% 18%;
+    --popover-foreground: 222 47% 17%;
 
-    --primary: 221 64% 18%; /* Midnight blue */
-    --primary-foreground: 0 0% 98%;
-    --primary-glow: 221 64% 24%;
+    --primary: 239 84% 67%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 16% 90%;
-    --secondary-foreground: 220 24% 20%;
+    --secondary: 234 89% 74%;
+    --secondary-foreground: 222 47% 17%;
 
-    --success: 158 33% 46%;
-    --success-foreground: 0 0% 98%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
 
-    --warning: 36 82% 58%;
+    --accent: 235 100% 97%;
+    --accent-foreground: 239 84% 67%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 239 84% 67%;
+
+    --radius: 0.875rem;
+
+    --success: 160 84% 39%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
     --warning-foreground: 0 0% 10%;
 
-    --danger: 0 65% 54%;
-    --danger-foreground: 0 0% 98%;
-
-    --muted: 220 16% 92%;
-    --muted-foreground: 220 12% 45%;
-
-    --accent: 221 45% 88%;
-    --accent-foreground: 221 64% 18%;
-
-    --destructive: 0 65% 54%;
-    --destructive-foreground: 0 0% 98%;
-
-    --border: 220 12% 88%;
-    --input: 220 16% 92%;
-    --ring: 221 64% 28%;
-
-    --radius: 1.5rem;
-
-    --gradient-primary: linear-gradient(135deg, rgba(15, 26, 61, 0.94), rgba(32, 47, 94, 0.88));
-    --gradient-secondary: linear-gradient(135deg, rgba(255, 255, 255, 0.65), rgba(243, 244, 248, 0.45));
-    --gradient-success: linear-gradient(135deg, rgba(15, 26, 61, 0.12), rgba(32, 47, 94, 0.08));
-    --gradient-hero: radial-gradient(circle at top right, rgba(15, 26, 61, 0.14), transparent 55%);
-
-    --shadow-quiz: 0 40px 120px -60px rgba(15, 26, 61, 0.45);
-    --shadow-glow: 0 28px 80px -40px rgba(15, 26, 61, 0.55);
-    --shadow-card: 0 24px 60px -35px rgba(15, 26, 61, 0.35);
+    --danger: 0 84% 60%;
+    --danger-foreground: 0 0% 100%;
 
     --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 220 24% 18%;
-    --sidebar-primary: 221 64% 18%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 220 16% 90%;
-    --sidebar-accent-foreground: 221 24% 24%;
-    --sidebar-border: 220 12% 88%;
-    --sidebar-ring: 221 64% 28%;
-  }
-
-  .dark {
-    --background: 221 38% 12%;
-    --foreground: 220 15% 90%;
-
-    --card: 221 45% 16%;
-    --card-foreground: 220 15% 92%;
-
-    --popover: 221 45% 16%;
-    --popover-foreground: 220 15% 92%;
-
-    --primary: 221 64% 68%;
-    --primary-foreground: 221 45% 12%;
-    --primary-glow: 221 64% 72%;
-
-    --secondary: 221 28% 22%;
-    --secondary-foreground: 220 15% 92%;
-
-    --muted: 221 28% 22%;
-    --muted-foreground: 220 15% 65%;
-
-    --accent: 221 45% 24%;
-    --accent-foreground: 220 15% 92%;
-
-    --destructive: 0 65% 60%;
-    --destructive-foreground: 0 0% 98%;
-
-    --border: 221 28% 26%;
-    --input: 221 28% 26%;
-    --ring: 221 64% 68%;
-
-    --success: 158 33% 52%;
-    --success-foreground: 0 0% 98%;
-
-    --warning: 36 82% 62%;
-    --warning-foreground: 221 45% 12%;
-
-    --danger: 0 65% 60%;
-    --danger-foreground: 0 0% 98%;
-
-    --gradient-primary: linear-gradient(145deg, rgba(14, 19, 36, 0.92), rgba(21, 34, 66, 0.88));
-    --gradient-secondary: linear-gradient(145deg, rgba(21, 34, 66, 0.75), rgba(14, 19, 36, 0.75));
-    --gradient-success: linear-gradient(135deg, rgba(21, 34, 66, 0.35), rgba(14, 19, 36, 0.45));
-    --gradient-hero: radial-gradient(circle at top right, rgba(64, 82, 140, 0.35), transparent 60%);
-
-    --shadow-quiz: 0 40px 120px -60px rgba(3, 8, 24, 0.7);
-    --shadow-glow: 0 28px 80px -40px rgba(41, 68, 124, 0.65);
-    --shadow-card: 0 24px 60px -35px rgba(3, 8, 24, 0.6);
-
-    --sidebar-background: 221 45% 16%;
-    --sidebar-foreground: 220 15% 92%;
-    --sidebar-primary: 221 64% 68%;
-    --sidebar-primary-foreground: 221 45% 12%;
-    --sidebar-accent: 221 28% 22%;
-    --sidebar-accent-foreground: 220 15% 92%;
-    --sidebar-border: 221 28% 26%;
-    --sidebar-ring: 221 64% 68%;
+    --sidebar-foreground: 222 47% 17%;
+    --sidebar-primary: 239 84% 67%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 40% 96%;
+    --sidebar-accent-foreground: 222 47% 17%;
+    --sidebar-border: 214 32% 91%;
+    --sidebar-ring: 239 84% 67%;
   }
 }
 
@@ -132,183 +62,15 @@
   }
 
   body {
-    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    font-feature-settings: "cv02" 1, "cv03" 1, "cv04" 1;
+    font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     @apply bg-background text-foreground antialiased;
-  }
-
-  .font-heading {
-    font-family: "Bebas Neue", "Inter", sans-serif;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-
-  .text-soft {
-    color: hsla(var(--foreground), 0.7);
   }
 }
 
 @layer components {
-  .glass-panel {
-    position: relative;
-    border-radius: 2.5rem;
-    border: 1px solid rgba(255, 255, 255, 0.45);
-    background: linear-gradient(160deg, rgba(255, 255, 255, 0.7), rgba(246, 247, 251, 0.55));
-    box-shadow: 0 48px 120px -60px rgba(15, 26, 61, 0.32);
-    backdrop-filter: blur(28px);
-  }
-
-  .glass-tile {
-    position: relative;
-    border-radius: 1.75rem;
-    border: 1px solid rgba(255, 255, 255, 0.55);
-    background: linear-gradient(160deg, rgba(255, 255, 255, 0.75), rgba(244, 246, 250, 0.55));
-    box-shadow: 0 32px 90px -65px rgba(15, 26, 61, 0.42);
-    backdrop-filter: blur(24px);
-    transition: transform 0.45s ease, box-shadow 0.45s ease, border-color 0.45s ease;
-  }
-
-  .glass-tile:hover {
-    transform: translateY(-8px);
-    border-color: rgba(15, 26, 61, 0.18);
-    box-shadow: 0 38px 110px -60px rgba(15, 26, 61, 0.52);
-  }
-
-  .floating-orb {
-    position: absolute;
-    border-radius: 9999px;
-    filter: blur(60px);
-    opacity: 0.8;
-  }
-
-  /* Palette pour motifs géométriques */
-  .theme-pattern {
-    --c1: 14 116 144; /* principal - cyan-700 en HSL */
-    --c2: 165 243 252; /* secondaire - cyan-200 en HSL */
-    --c3: 17 24 39;    /* foncé - gray-900 en HSL */
-    --c4: 249 250 251; /* clair - gray-50 en HSL */
-  }
-
-  /* Base commune pour motifs */
-  [class^="bg-pattern-"] {
-    min-height: 260px;
-    border-radius: 16px;
-  }
-
-  /* 1) Rayures horizontales */
-  .bg-pattern-stripes {
-    background: repeating-linear-gradient(
-      0deg,
-      hsl(var(--c1)) 0 16px,
-      hsl(var(--c2)) 16px 32px
-    );
-  }
-
-  /* 2) Rayures diagonales 45° */
-  .bg-pattern-diag {
-    background: repeating-linear-gradient(
-      45deg,
-      hsl(var(--c1)) 0 14px,
-      hsl(var(--c2)) 14px 28px
-    );
-  }
-
-  /* 3) Pois (polka dots) */
-  .bg-pattern-polka {
-    --s: 28px;
-    background:
-      radial-gradient(circle 4px at 7px 7px, hsl(var(--c1)) 98%, transparent) 0 0/var(--s) var(--s),
-      radial-gradient(circle 4px at 21px 21px, hsl(var(--c1)) 98%, transparent) 0 0/var(--s) var(--s),
-      hsl(var(--c4));
-  }
-
-  /* 4) Damier (checkerboard) */
-  .bg-pattern-checker {
-    --s: 32px;
-    background: conic-gradient(
-      from 90deg,
-      hsl(var(--c1)) 90deg,
-      hsl(var(--c2)) 0
-    ) 0 0 / var(--s) var(--s);
-  }
-
-  /* 5) Grille fine (graph paper) */
-  .bg-pattern-grid {
-    --s: 28px;
-    background:
-      linear-gradient(hsl(var(--c2)) 1px, transparent 1px) 0 0/100% var(--s),
-      linear-gradient(90deg, hsl(var(--c2)) 1px, transparent 1px) 0 0/var(--s) 100%,
-      hsl(var(--c4));
-  }
-
-  /* 6) Grille croisée épaisse */
-  .bg-pattern-cross {
-    --s: 36px;
-    background:
-      linear-gradient(hsl(var(--c1)) 2px, transparent 2px) 0 0/100% var(--s),
-      linear-gradient(90deg, hsl(var(--c1)) 2px, transparent 2px) 0 0/var(--s) 100%,
-      hsl(var(--c4));
-  }
-
-  /* 7) Zigzag */
-  .bg-pattern-zigzag {
-    --s: 24px;
-    background:
-      conic-gradient(
-        from 135deg at 12px 12px,
-        hsl(var(--c1)) 90deg,
-        transparent 0 180deg,
-        hsl(var(--c1)) 0 270deg,
-        transparent 0
-      ) 0 0/var(--s) var(--s),
-      hsl(var(--c4));
-  }
-
-  /* 8) Chevron (herringbone léger) */
-  .bg-pattern-herringbone {
-    --s: 28px;
-    background:
-      repeating-linear-gradient(135deg, hsl(var(--c1)) 0 6px, transparent 6px 14px) 0 0/var(--s) var(--s),
-      repeating-linear-gradient(225deg, hsl(var(--c2)) 0 6px, transparent 6px 14px) 0 0/var(--s) var(--s),
-      hsl(var(--c4));
-  }
-
-  /* 9) Cubes isométriques */
-  .bg-pattern-cubes {
-    --s: 48px;
-    --g: #0000 52%, hsl(var(--c1)) 0 56%, #0000 0;
-    background:
-      linear-gradient(30deg, var(--g)) 0 0/var(--s) var(--s),
-      linear-gradient(150deg, var(--g)) 0 0/var(--s) var(--s),
-      linear-gradient(90deg, var(--g)) 0 0/var(--s) var(--s),
-      hsl(var(--c4));
-  }
-
-  /* 10) Ondes fluides (waves) */
-  .bg-pattern-waves {
-    --s: 48px;
-    background:
-      radial-gradient(ellipse 60% 40% at 50% -10%, hsl(var(--c2)), #0000 70%),
-      radial-gradient(ellipse 60% 40% at 50% 110%, hsl(var(--c2)), #0000 70%),
-      repeating-radial-gradient(circle at 50% 50%, #0000 0 10px, hsl(var(--c1)) 10px 20px);
-    background-blend-mode: screen, multiply, normal;
-  }
-
-  /* 11) "Confetti" (points multi-tailles) */
-  .bg-pattern-confetti {
-    --s: 36px;
-    background:
-      radial-gradient(circle 2px, hsl(var(--c1)) 98%, #0000) 6px 6px/var(--s) var(--s),
-      radial-gradient(circle 3px, hsl(var(--c2)) 98%, #0000) 18px 18px/var(--s) var(--s),
-      radial-gradient(circle 1.5px, hsl(var(--c3)) 98%, #0000) 24px 12px/var(--s) var(--s),
-      hsl(var(--c4));
-  }
-
-  /* 12) Soleil/conique (accent héro) */
-  .bg-pattern-rays {
-    background:
-      radial-gradient(circle at 30% 30%, hsl(var(--c2)), #0000 40%),
-      conic-gradient(from -10deg at 30% 30%, hsl(var(--c1)) 0 10deg, #0000 10deg 20deg) 0 0/120px 120px,
-      hsl(var(--c4));
-  }
+  /* Left accent border by content type */
+  .card-quiz      { border-left: 4px solid #FF6B6B; }
+  .card-poll      { border-left: 4px solid #06B6D4; }
+  .card-flashcard { border-left: 4px solid #F59E0B; }
+  .card-slide     { border-left: 4px solid #10B981; }
 }
