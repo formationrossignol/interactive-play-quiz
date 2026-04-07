@@ -50,12 +50,12 @@ export const AvatarSelector = ({ onComplete, gameCode }: AvatarSelectorProps) =>
   };
 
   return (
-    <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
-      <Card className="bg-white/10 backdrop-blur-lg border-white/20 max-w-md w-full">
+    <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-4">
+      <Card className="bg-white border-slate-100 shadow-card max-w-md w-full">
         <CardContent className="p-8">
           <div className="text-center mb-6">
-            <h1 className="text-3xl font-bold text-white mb-2">Rejoindre le Quiz</h1>
-            <div className="text-4xl font-mono text-white/80 tracking-wider font-bold">
+            <h1 className="text-3xl font-bold text-slate-900 mb-2">Rejoindre le Quiz</h1>
+            <div className="text-4xl font-mono text-indigo-600 tracking-wider font-bold">
               {gameCode}
             </div>
           </div>
@@ -63,7 +63,7 @@ export const AvatarSelector = ({ onComplete, gameCode }: AvatarSelectorProps) =>
           <div className="space-y-6">
             {/* Avatar Selection */}
             <div>
-              <Label className="text-white mb-3 block">Choisis ton avatar</Label>
+              <Label className="text-slate-700 mb-3 block">Choisis ton avatar</Label>
               <div className="grid grid-cols-5 gap-3">
                 {ENHANCED_AVATARS.map((avatar) => (
                   <button
@@ -81,7 +81,7 @@ export const AvatarSelector = ({ onComplete, gameCode }: AvatarSelectorProps) =>
                       size="md"
                       showGlow={selectedAvatar === avatar.emoji}
                     />
-                    <div className="text-white/60 text-xs mt-1 text-center truncate">
+                    <div className="text-slate-400 text-xs mt-1 text-center truncate">
                       {avatar.name}
                     </div>
                   </button>
@@ -91,7 +91,7 @@ export const AvatarSelector = ({ onComplete, gameCode }: AvatarSelectorProps) =>
 
             {/* Name Input */}
             <div>
-              <Label htmlFor="player-name" className="text-white">
+              <Label htmlFor="player-name" className="text-slate-700">
                 Ton pseudo
               </Label>
               <Input
@@ -100,17 +100,17 @@ export const AvatarSelector = ({ onComplete, gameCode }: AvatarSelectorProps) =>
                 value={playerName}
                 onChange={(e) => setPlayerName(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSubmit()}
-                className="bg-white/10 border-white/20 text-white placeholder:text-white/60 mt-2"
+                className="bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 mt-2"
                 maxLength={20}
               />
             </div>
 
             {/* Preview */}
-            <div className="bg-white/10 rounded-lg p-4 flex items-center gap-3">
+            <div className="bg-indigo-50 rounded-lg p-4 flex items-center gap-3">
               <AvatarDisplay emoji={selectedAvatar} size="lg" />
               <div className="flex-1">
-                <div className="text-white/60 text-sm">Ton profil</div>
-                <div className="text-white font-bold text-xl">
+                <div className="text-slate-500 text-sm">Ton profil</div>
+                <div className="text-slate-900 font-bold text-xl">
                   {playerName || "Ton pseudo"}
                 </div>
               </div>

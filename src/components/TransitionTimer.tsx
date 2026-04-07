@@ -26,7 +26,7 @@ export const TransitionTimer = ({ duration, onComplete }: TransitionTimerProps) 
   const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-4 text-slate-100">
+    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 text-slate-100">
       <div className="text-center">
         <h1 className="text-4xl md:text-6xl font-bold text-white mb-12 animate-fade-in">
           Préparez-vous pour la question suivante !

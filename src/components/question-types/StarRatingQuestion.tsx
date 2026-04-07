@@ -73,7 +73,7 @@ export const StarRatingQuestion = ({ question, onAnswer, showResults, results }:
                   </div>
                   <div className="flex-1 bg-white/10 rounded-full h-4 overflow-hidden">
                     <div 
-                      className="bg-gradient-primary h-full transition-all"
+                      className="bg-indigo-500 h-full transition-all"
                       style={{ width: `${percentage}%` }}
                     />
                   </div>

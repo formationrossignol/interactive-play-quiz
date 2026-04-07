@@ -35,14 +35,14 @@ const JoinQuiz = () => {
 
   if (!gameCode || quizExists === false) {
     return (
-      <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
-        <Card className="bg-white/30 backdrop-blur-xl border-white/40 shadow-2xl">
+      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-4">
+        <Card className="bg-white border-slate-100 shadow-card">
           <CardContent className="p-8 text-center">
-            <AlertTriangle className="w-16 h-16 text-yellow-300 mx-auto mb-4 animate-pulse drop-shadow-lg" />
-            <h2 className="text-3xl font-bold text-white mb-4 drop-shadow-lg">Code invalide</h2>
-            <p className="text-white text-lg mb-6 font-medium">Ce code de quiz ou sondage n'existe pas.</p>
-            <Button variant="hero" onClick={() => navigate("/")} className="text-lg font-bold shadow-lg">
-              🏠 Retour
+            <AlertTriangle className="w-16 h-16 text-yellow-500 mx-auto mb-4 animate-pulse" />
+            <h2 className="text-3xl font-bold text-slate-900 mb-4">Code invalide</h2>
+            <p className="text-slate-500 text-lg mb-6">Ce code de quiz ou sondage n'existe pas.</p>
+            <Button variant="hero" onClick={() => navigate("/")} className="text-lg font-bold shadow-sm">
+              Retour
             </Button>
           </CardContent>
         </Card>

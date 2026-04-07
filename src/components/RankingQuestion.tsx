@@ -199,7 +199,7 @@ export const RankingQuestion = ({
                   submitted && "cursor-default"
                 )}
               >
-                <div className="w-8 h-8 rounded-full bg-gradient-primary flex items-center justify-center text-sm font-bold">
+                <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-sm font-bold">
                   {index + 1}
                 </div>
                 <GripVertical className="w-5 h-5 text-white/60" />

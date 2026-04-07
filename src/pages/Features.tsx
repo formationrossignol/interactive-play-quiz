@@ -42,15 +42,12 @@ const Features = () => {
   ];
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex min-h-screen flex-col bg-[#F8FAFC]">
       <Header />
-      <main className="relative z-10 flex-1 overflow-hidden">
-        <div className="floating-orb -left-24 top-40 h-72 w-72 bg-[#0f1a3d]/12" />
-        <div className="floating-orb -right-32 top-20 h-96 w-96 bg-[#1d2a55]/10" />
-        <div className="floating-orb bottom-0 left-1/2 h-80 w-80 -translate-x-1/2 bg-[#0f1a3d]/8" />
+      <main className="relative z-10 flex-1">
 
         <section className="relative mx-auto max-w-5xl px-6 pt-16 pb-20 text-center md:pt-20">
-          <h1 className="font-heading text-4xl leading-tight text-foreground md:text-6xl">
+          <h1 className="font-extrabold text-4xl leading-tight text-foreground md:text-6xl">
             {t('featuresTitle')}
           </h1>
           <p className="mx-auto mt-6 max-w-3xl text-base leading-relaxed text-foreground/70 md:text-lg">
@@ -60,7 +57,7 @@ const Features = () => {
             <Button
               size="lg"
               onClick={() => navigate('/builder-start?type=quiz')}
-              className="h-14 rounded-full bg-gradient-to-r from-[#0f1a3d] to-[#1d2a55] px-10 text-base font-medium text-white shadow-[0_24px_60px_-30px_rgba(15,26,61,0.8)] hover:-translate-y-0.5"
+              className="h-14 rounded-full bg-indigo-600 px-10 text-base font-medium text-white shadow-card hover:bg-indigo-700 hover:-translate-y-0.5 transition-all"
             >
               {t('featuresHeroCta')}
             </Button>
@@ -68,7 +65,7 @@ const Features = () => {
               size="lg"
               variant="outline"
               onClick={() => navigate('/pricing')}
-              className="h-14 rounded-full border-white/60 bg-white/60 px-10 text-base font-medium text-foreground/80 shadow-[0_22px_60px_-30px_rgba(15,26,61,0.6)] transition-all duration-300 hover:border-[#0f1a3d]/30 hover:text-foreground"
+              className="h-14 rounded-full border-slate-200 bg-white px-10 text-base font-medium text-foreground/80 shadow-card transition-all duration-300 hover:border-indigo-200 hover:text-foreground"
             >
               {t('featuresHeroSecondary')}
             </Button>
@@ -82,12 +79,12 @@ const Features = () => {
               return (
                 <div
                   key={feature.title}
-                  className="glass-tile flex flex-col gap-4 p-8 text-left transition-transform duration-300 hover:-translate-y-1"
+                  className="rounded-2xl border border-slate-100 bg-white shadow-card flex flex-col gap-4 p-8 text-left transition-transform duration-300 hover:-translate-y-1"
                 >
-                  <div className="flex h-14 w-14 items-center justify-center rounded-full border border-white/60 bg-white/70 text-foreground/80 shadow-[0_12px_30px_-16px_rgba(15,26,61,0.45)]">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-full border border-slate-200 bg-indigo-50 text-indigo-600 shadow-card">
                     <Icon className="h-6 w-6" />
                   </div>
-                  <h3 className="font-heading text-2xl text-foreground">{feature.title}</h3>
+                  <h3 className="font-extrabold text-2xl text-foreground">{feature.title}</h3>
                   <p className="text-sm leading-relaxed text-foreground/70">{feature.description}</p>
                 </div>
               );

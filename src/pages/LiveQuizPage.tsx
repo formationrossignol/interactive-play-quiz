@@ -110,7 +110,7 @@ const LiveQuizPage = () => {
 
   if (!gameCode) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-4 text-slate-100">
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 text-slate-100">
         <Card className="border border-slate-700/60 bg-slate-900/80 shadow-2xl">
           <CardContent className="p-8 text-center space-y-4">
             <AlertTriangle className="w-12 h-12 text-warning mx-auto" />
@@ -129,7 +129,7 @@ const LiveQuizPage = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-4 text-slate-100">
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 text-slate-100">
         <Card className="border border-slate-700/60 bg-slate-900/80 shadow-2xl">
           <CardContent className="p-8 text-center text-lg">Chargement de votre contenu interactif…</CardContent>
         </Card>
@@ -139,7 +139,7 @@ const LiveQuizPage = () => {
 
   if (!loadedQuiz) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-4 text-slate-100">
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 text-slate-100">
         <Card className="border border-slate-700/60 bg-slate-900/80 shadow-2xl">
           <CardContent className="p-8 text-center space-y-4">
             <AlertTriangle className="w-12 h-12 text-warning mx-auto" />
@@ -162,7 +162,7 @@ const LiveQuizPage = () => {
     default:
       if (!quizSession) {
         return (
-          <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-4 text-slate-100">
+          <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 text-slate-100">
             <Card className="border border-slate-700/60 bg-slate-900/80 shadow-2xl">
               <CardContent className="p-8 text-center text-lg">
                 Ce quiz ne contient aucune question exploitable pour le moment.
