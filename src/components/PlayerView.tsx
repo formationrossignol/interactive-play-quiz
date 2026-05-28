@@ -16,7 +16,9 @@ import {
   upsertPlayerInSession,
   writeSessionState,
   type SharedPlayer,
+  type SharedGameState,
 } from "@/lib/sessionState";
+import { supabase } from "@/lib/supabase";
 
 interface PlayerViewProps {
   gameCode: string;
@@ -158,6 +160,33 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
       channel.unsubscribe();
     };
   }, [gameCode]); // stable — only recreated if gameCode changes
+
+  // Polling fallback — works even if Supabase realtime is not configured.
+  // Realtime subscription fires immediately when available; polling catches the rest.
+  useEffect(() => {
+    const poll = async () => {
+      const { data } = await supabase
+        .from('session_state')
+        .select('players, game_state, current_question_index, time_left, updated_at')
+        .eq('game_code', gameCode)
+        .single();
+
+      if (!data) return;
+
+      const state = {
+        players: Array.isArray(data.players) ? (data.players as SharedPlayer[]) : [],
+        gameState: (data.game_state as SharedGameState) ?? 'waiting',
+        currentQuestionIndex: typeof data.current_question_index === 'number' ? data.current_question_index : 0,
+        timeLeft: typeof data.time_left === 'number' ? data.time_left : 0,
+        updatedAt: typeof data.updated_at === 'string' ? data.updated_at : new Date().toISOString(),
+      };
+      writeSessionState(gameCode, state);
+      syncRef.current();
+    };
+
+    const interval = setInterval(poll, 2000);
+    return () => clearInterval(interval);
+  }, [gameCode]);
 
   // Timer countdown
   useEffect(() => {
