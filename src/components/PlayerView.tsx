@@ -165,12 +165,13 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
   // Realtime subscription fires immediately when available; polling catches the rest.
   useEffect(() => {
     const poll = async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('session_state')
         .select('players, game_state, current_question_index, time_left, updated_at')
         .eq('game_code', gameCode)
         .single();
 
+      console.log('[PlayerView poll]', { game_state: data?.game_state, error });
       if (!data) return;
 
       const state = {

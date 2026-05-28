@@ -85,7 +85,9 @@ const pushStateToSupabase = (gameCode: string, state: SharedSessionState) => {
       time_left: state.timeLeft,
       updated_at: state.updatedAt,
     }, { onConflict: "game_code" })
-    .then(() => {});
+    .then(({ error }) => {
+      if (error) console.error("[Supabase write error]", gameCode, state.gameState, error);
+    });
 };
 
 export const patchSessionState = (
