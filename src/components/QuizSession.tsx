@@ -680,68 +680,37 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
                   </div>
                 </div>
 
-                {/* Multiple Choice */}
+                {/* Host preview — non-interactive answer display */}
                 {['multiple-choice', 'single-choice'].includes(currentQuestion.type) && currentQuestion.answers && (
                   <div className="mx-auto grid max-w-2xl gap-4 md:grid-cols-2">
                     {currentQuestion.answers.map((answer, index) => (
-                      <Button
+                      <div
                         key={index}
-                        variant="quiz"
-                        size="lg"
-                        className="h-20 p-6 text-lg font-semibold text-white transition-transform border border-white/10 bg-black/40 backdrop-blur hover:scale-105 hover:bg-black/60 shadow-xl"
-                        onClick={() => console.log('Answer:', index)}
+                        className="flex h-20 cursor-default items-center rounded-lg border border-white/10 bg-black/40 p-6 text-lg font-semibold text-white shadow-xl backdrop-blur select-none"
                       >
-                        <div className="mr-3 flex h-8 w-8 items-center justify-center rounded-full bg-primary/80 text-sm font-bold text-white shadow-inner">
+                        <div className="mr-3 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/80 text-sm font-bold text-white shadow-inner">
                           {String.fromCharCode(65 + index)}
                         </div>
                         {answer}
-                      </Button>
+                      </div>
                     ))}
                   </div>
                 )}
 
-                {/* True/False */}
                 {currentQuestion.type === 'true-false' && (
                   <div className="mx-auto flex max-w-md gap-4 justify-center">
-                    <Button
-                      variant="quiz"
-                      size="lg"
-                      className="flex-1 h-20 border-2 border-emerald-400/60 bg-emerald-600/40 text-xl font-bold text-white shadow-xl transition-transform hover:scale-105 hover:bg-emerald-500/60"
-                      onClick={() => console.log('Answer: true')}
-                    >
+                    <div className="flex flex-1 cursor-default select-none items-center justify-center rounded-lg border-2 border-emerald-400/60 bg-emerald-600/40 p-6 text-xl font-bold text-white shadow-xl">
                       ✓ Vrai
-                    </Button>
-                    <Button
-                      variant="quiz"
-                      size="lg"
-                      className="flex-1 h-20 border-2 border-rose-400/60 bg-rose-600/40 text-xl font-bold text-white shadow-xl transition-transform hover:scale-105 hover:bg-rose-500/60"
-                      onClick={() => console.log('Answer: false')}
-                    >
+                    </div>
+                    <div className="flex flex-1 cursor-default select-none items-center justify-center rounded-lg border-2 border-rose-400/60 bg-rose-600/40 p-6 text-xl font-bold text-white shadow-xl">
                       ✗ Faux
-                    </Button>
+                    </div>
                   </div>
                 )}
 
-                {/* Short Answer */}
                 {currentQuestion.type === 'short-answer' && (
-                  <div className="mx-auto max-w-md">
-                    <div className="mb-4 rounded-lg border border-white/10 bg-black/30 p-4 backdrop-blur">
-                      <input
-                        type="text"
-                        placeholder="Tapez votre réponse..."
-                        className="w-full border-none bg-transparent text-center text-xl text-white outline-none placeholder:text-slate-300"
-                        maxLength={100}
-                        onKeyPress={(e) => e.key === 'Enter' && console.log('Answer:', e.currentTarget.value)}
-                      />
-                    </div>
-                    <Button
-                      variant="hero"
-                      size="lg"
-                      className="w-full"
-                      onClick={() => console.log('Submit answer')}
-                    >
-                      Envoyer la réponse
-                    </Button>
+                  <div className="mx-auto max-w-md rounded-lg border border-white/10 bg-black/30 p-4 text-center text-slate-300 backdrop-blur">
+                    Réponse libre — les joueurs tapent leur réponse
                   </div>
                 )}
               </CardContent>
