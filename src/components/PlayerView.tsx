@@ -130,6 +130,9 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
     }
   }, [playerId, syncFromSession]);
 
+  // Tracks which question index the player has already answered — prevents poll from re-enabling buttons
+  const answeredForIndexRef = useRef<number | null>(null);
+
   // Keep a stable ref so the subscription never needs to be recreated when playerId changes.
   // Re-creating the channel causes a gap where the "quiz started" event can be missed.
   const syncRef = useRef(syncFromSession);
@@ -186,8 +189,9 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
       else if (remoteState === 'final') mapped = 'final';
       else if (remoteState === 'answer-distribution' || remoteState === 'transition') mapped = 'leaderboard';
 
-      // Reset answer state when a new question starts — never call setState inside another setter
-      if (mapped === 'question') {
+      // Reset answer state only when a NEW question starts (index changed)
+      const newIndex = data.current_question_index ?? 0;
+      if (mapped === 'question' && newIndex !== answeredForIndexRef.current) {
         setHasAnswered(false);
         setSelectedAnswer(null);
         setIsCorrect(null);
@@ -234,6 +238,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
 
     setSelectedAnswer(answer);
     setHasAnswered(true);
+    answeredForIndexRef.current = currentQuestion;
 
     // Mock scoring logic with speed bonus
     const correct = liveQuestion != null && answer === liveQuestion.correctAnswer;
