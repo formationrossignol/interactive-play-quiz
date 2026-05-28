@@ -191,7 +191,7 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
 
   useEffect(() => {
     ensureSessionState(quiz.gameCode);
-    ensureSessionInSupabase(quiz.gameCode);
+    ensureSessionInSupabase(quiz.gameCode, { questions: quiz.questions, title: quiz.title });
     syncFromStorage();
 
     const handleStorage = (event: StorageEvent) => {

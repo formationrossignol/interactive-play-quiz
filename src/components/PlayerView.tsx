@@ -48,17 +48,9 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [showExitDialog, setShowExitDialog] = useState(false);
 
-  const totalQuestions = 10;
-
-  // Mock current question data
-  const mockQuestion = {
-    type: 'multiple-choice' as const,
-    question: "Quelle est la capitale de la France ?",
-    answers: ["Londres", "Berlin", "Paris", "Madrid"],
-    correctAnswer: 2,
-    timeLimit: 30,
-    points: 100
-  };
+  const [quizQuestions, setQuizQuestions] = useState<any[]>([]);
+  const totalQuestions = quizQuestions.length || 1;
+  const liveQuestion = quizQuestions[currentQuestion] ?? null;
 
   // Ensure a session state exists; fetch from Supabase if localStorage empty (cross-device join)
   useEffect(() => {
@@ -169,12 +161,18 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
     const poll = async () => {
       const { data } = await supabase
         .from('session_state')
-        .select('players, game_state, current_question_index, time_left, updated_at')
+        .select('players, game_state, current_question_index, time_left, updated_at, quiz_data')
         .eq('game_code', gameCode)
         .single();
 
       if (!data) return;
-      // Skip if nothing changed
+
+      // Load quiz questions once when available
+      if (data.quiz_data?.questions && Array.isArray(data.quiz_data.questions)) {
+        setQuizQuestions((prev) => prev.length === 0 ? data.quiz_data.questions : prev);
+      }
+
+      // Skip state sync if nothing changed
       if (data.updated_at === prevUpdatedAt) return;
       prevUpdatedAt = data.updated_at;
 
@@ -241,14 +239,14 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
     setHasAnswered(true);
 
     // Mock scoring logic with speed bonus
-    const correct = answer === mockQuestion.correctAnswer;
+    const correct = answer === liveQuestion.correctAnswer;
     setIsCorrect(correct);
 
     if (correct) {
       // Calculate speed bonus: proportional to time remaining
-      const speedBonusPercentage = timeLeft / mockQuestion.timeLimit;
-      const speedBonus = Math.floor(mockQuestion.points * speedBonusPercentage * 0.5);
-      const totalPoints = mockQuestion.points + speedBonus;
+      const speedBonusPercentage = timeLeft / liveQuestion.timeLimit;
+      const speedBonus = Math.floor(liveQuestion.points * speedBonusPercentage * 0.5);
+      const totalPoints = liveQuestion.points + speedBonus;
       setPlayerScore(prev => prev + totalPoints);
     }
 
@@ -289,6 +287,14 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
             <div className="w-8 h-8 rounded-full mx-auto bg-white/30 shadow-lg"></div>
           </div>
         </div>
+      </div>
+    );
+  }
+
+  if (gameState === 'question' && !liveQuestion) {
+    return (
+      <div className="min-h-screen bg-indigo-600 flex items-center justify-center">
+        <p className="text-white text-lg animate-pulse">Chargement de la question…</p>
       </div>
     );
   }
@@ -340,17 +346,17 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
           {/* Question card */}
           <div className="rounded-2xl bg-white p-5 md:p-6 mb-4 shadow-xl">
             <div className="flex justify-center mb-4">
-              <CircularTimer timeLeft={timeLeft} totalTime={mockQuestion.timeLimit} />
+              <CircularTimer timeLeft={timeLeft} totalTime={liveQuestion.timeLimit} />
             </div>
 
             <h2 className="text-lg font-bold text-slate-900 text-center mb-6 md:text-xl">
-              {mockQuestion.question}
+              {liveQuestion.question}
             </h2>
 
             {/* Multiple Choice Answers */}
-            {mockQuestion.type === 'multiple-choice' && mockQuestion.answers && (
+            {liveQuestion.type === 'multiple-choice' && liveQuestion.answers && (
               <div className="grid gap-3">
-                {mockQuestion.answers.map((answer, index) => (
+                {liveQuestion.answers.map((answer, index) => (
                   <button
                     key={index}
                     className={cn(
@@ -390,14 +396,14 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
               <h3 className="text-3xl font-extrabold text-white mb-2">
                 {isCorrect ? "🎉 Bonne réponse !" : "😔 Mauvaise réponse"}
               </h3>
-              {mockQuestion.correctAnswer !== undefined && (
+              {liveQuestion.correctAnswer !== undefined && (
                 <p className="mb-3 text-sm font-medium text-indigo-200">
-                  La bonne réponse était: <span className="font-bold text-white">{mockQuestion.answers[mockQuestion.correctAnswer]}</span>
+                  La bonne réponse était: <span className="font-bold text-white">{liveQuestion.answers[liveQuestion.correctAnswer]}</span>
                 </p>
               )}
               <div className="rounded-2xl bg-white/10 border border-white/20 p-5 inline-block mt-2">
                 <div className="text-4xl font-extrabold text-white">
-                  {isCorrect ? `+${mockQuestion.points}` : "0"}
+                  {isCorrect ? `+${liveQuestion.points}` : "0"}
                 </div>
                 <div className="text-indigo-200 text-sm mt-1">points</div>
               </div>
