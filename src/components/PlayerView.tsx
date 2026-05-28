@@ -161,33 +161,66 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
     };
   }, [gameCode]); // stable — only recreated if gameCode changes
 
-  // Polling fallback — works even if Supabase realtime is not configured.
-  // Realtime subscription fires immediately when available; polling catches the rest.
+  // Poll Supabase directly and update React state — bypasses localStorage chain.
+  // Runs every 2s as fallback when realtime is unavailable (e.g. mobile background throttle).
   useEffect(() => {
+    let prevUpdatedAt = '';
+
     const poll = async () => {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('session_state')
         .select('players, game_state, current_question_index, time_left, updated_at')
         .eq('game_code', gameCode)
         .single();
 
-      console.log('[PlayerView poll]', { game_state: data?.game_state, error });
       if (!data) return;
+      // Skip if nothing changed
+      if (data.updated_at === prevUpdatedAt) return;
+      prevUpdatedAt = data.updated_at;
 
-      const state = {
-        players: Array.isArray(data.players) ? (data.players as SharedPlayer[]) : [],
-        gameState: (data.game_state as SharedGameState) ?? 'waiting',
-        currentQuestionIndex: typeof data.current_question_index === 'number' ? data.current_question_index : 0,
-        timeLeft: typeof data.time_left === 'number' ? data.time_left : 0,
-        updatedAt: typeof data.updated_at === 'string' ? data.updated_at : new Date().toISOString(),
-      };
-      writeSessionState(gameCode, state);
-      syncRef.current();
+      const remoteState = (data.game_state ?? 'waiting') as SharedGameState;
+      const players = Array.isArray(data.players) ? (data.players as SharedPlayer[]) : [];
+
+      // Map host game states → player game states
+      const mapped = ((): 'waiting' | 'question' | 'answer-feedback' | 'leaderboard' | 'final' => {
+        if (remoteState === 'question') return 'question';
+        if (remoteState === 'leaderboard') return 'leaderboard';
+        if (remoteState === 'final') return 'final';
+        if (remoteState === 'answer-distribution' || remoteState === 'transition') return 'leaderboard';
+        return 'waiting';
+      })();
+
+      setGameState((prev) => {
+        if (mapped === 'question' && prev !== 'question') {
+          setHasAnswered(false);
+          setSelectedAnswer(null);
+          setIsCorrect(null);
+        }
+        return mapped;
+      });
+
+      setTotalPlayers(players.length);
+
+      if (remoteState === 'question') {
+        setCurrentQuestion(data.current_question_index ?? 0);
+        setTimeLeft(data.time_left ?? 0);
+      }
+
+      if (playerId) {
+        const me = players.find((p) => p.id === playerId);
+        if (me) {
+          setPlayerScore(me.score ?? 0);
+          const sorted = [...players].sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+          const idx = sorted.findIndex((p) => p.id === playerId);
+          setPlayerRank(idx >= 0 ? idx + 1 : 1);
+        }
+      }
     };
 
+    poll(); // immediate first fetch
     const interval = setInterval(poll, 2000);
     return () => clearInterval(interval);
-  }, [gameCode]);
+  }, [gameCode, playerId]);
 
   // Timer countdown
   useEffect(() => {
