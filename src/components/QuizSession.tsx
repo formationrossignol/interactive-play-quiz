@@ -201,13 +201,19 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
     };
 
     window.addEventListener('storage', handleStorage);
-    const channel = subscribeToSessionState(quiz.gameCode, syncFromStorage);
+    // Host only syncs player list from Supabase — NOT game state.
+    // Subscribing to game state creates a write→event→sync→write feedback loop
+    // because the host's own patchSessionState calls trigger the subscription.
+    const channel = subscribeToSessionState(quiz.gameCode, (state) => {
+      const mappedPlayers = state.players.map(normalizeSharedPlayer);
+      setPlayers(mappedPlayers);
+    });
 
     return () => {
       window.removeEventListener('storage', handleStorage);
       channel.unsubscribe();
     };
-  }, [quiz.gameCode, syncFromStorage]);
+  }, [quiz.gameCode, syncFromStorage, normalizeSharedPlayer]);
 
   useEffect(() => {
     if (!isHost || !hasSyncedPlayers) {

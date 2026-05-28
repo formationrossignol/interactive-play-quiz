@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Users, Trophy, CheckCircle, XCircle, LogOut } from "lucide-react";
@@ -136,22 +136,28 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
     }
   }, [playerId, syncFromSession]);
 
-  // Listen for updates — same device (storage event) + cross-device (Supabase realtime)
+  // Keep a stable ref so the subscription never needs to be recreated when playerId changes.
+  // Re-creating the channel causes a gap where the "quiz started" event can be missed.
+  const syncRef = useRef(syncFromSession);
+  useEffect(() => {
+    syncRef.current = syncFromSession;
+  }, [syncFromSession]);
+
   useEffect(() => {
     const handleStorage = (event: StorageEvent) => {
       if (event.key === getSessionStorageKey(gameCode)) {
-        syncFromSession();
+        syncRef.current();
       }
     };
 
     window.addEventListener('storage', handleStorage);
-    const channel = subscribeToSessionState(gameCode, syncFromSession);
+    const channel = subscribeToSessionState(gameCode, () => syncRef.current());
 
     return () => {
       window.removeEventListener('storage', handleStorage);
       channel.unsubscribe();
     };
-  }, [gameCode, syncFromSession]);
+  }, [gameCode]); // stable — only recreated if gameCode changes
 
   // Timer countdown
   useEffect(() => {
