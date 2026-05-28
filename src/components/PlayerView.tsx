@@ -52,20 +52,6 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
   const totalQuestions = quizQuestions.length || 1;
   const liveQuestion = quizQuestions[currentQuestion] ?? null;
 
-  // Ensure a session state exists; fetch from Supabase if localStorage empty (cross-device join)
-  useEffect(() => {
-    ensureSessionState(gameCode);
-    const localState = readSessionState(gameCode);
-    if (localState.gameState === "waiting" && localState.players.length === 0) {
-      fetchSessionStateFromSupabase(gameCode).then((remote) => {
-        if (remote) {
-          writeSessionState(gameCode, remote);
-          syncFromSession();
-        }
-      });
-    }
-  }, [gameCode, syncFromSession]);
-
   const syncFromSession = useCallback(() => {
     const session = readSessionState(gameCode);
     setTotalPlayers(session.players.length);
@@ -87,6 +73,20 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
       }
     }
   }, [gameCode, playerId]);
+
+  // Ensure session exists; fetch from Supabase if localStorage empty (cross-device join)
+  useEffect(() => {
+    ensureSessionState(gameCode);
+    const localState = readSessionState(gameCode);
+    if (localState.gameState === "waiting" && localState.players.length === 0) {
+      fetchSessionStateFromSupabase(gameCode).then((remote) => {
+        if (remote) {
+          writeSessionState(gameCode, remote);
+          syncFromSession();
+        }
+      });
+    }
+  }, [gameCode, syncFromSession]);
 
   // Register the player if needed and synchronise initial state
   useEffect(() => {
