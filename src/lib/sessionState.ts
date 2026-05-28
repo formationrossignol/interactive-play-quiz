@@ -1,4 +1,5 @@
 import { isValid } from "date-fns";
+import { supabase } from "./supabase";
 
 export type SharedGameState =
   | "waiting"
@@ -73,6 +74,20 @@ export const writeSessionState = (gameCode: string, state: SharedSessionState) =
   }));
 };
 
+const pushStateToSupabase = (gameCode: string, state: SharedSessionState) => {
+  supabase
+    .from("session_state")
+    .upsert({
+      game_code: gameCode,
+      players: state.players,
+      game_state: state.gameState,
+      current_question_index: state.currentQuestionIndex,
+      time_left: state.timeLeft,
+      updated_at: state.updatedAt,
+    }, { onConflict: "game_code" })
+    .then(() => {});
+};
+
 export const patchSessionState = (
   gameCode: string,
   patch: Partial<Omit<SharedSessionState, "players">> & { players?: SharedPlayer[] }
@@ -85,6 +100,7 @@ export const patchSessionState = (
     updatedAt: new Date().toISOString(),
   };
   writeSessionState(gameCode, next);
+  pushStateToSupabase(gameCode, next);
   return next;
 };
 
@@ -126,3 +142,71 @@ export const clearSessionState = (gameCode: string) => {
 };
 
 export const getSessionStorageKey = (gameCode: string) => getSessionKey(gameCode);
+
+export const ensureSessionInSupabase = (gameCode: string) => {
+  supabase
+    .from("session_state")
+    .upsert(
+      {
+        game_code: gameCode,
+        players: [],
+        game_state: "waiting",
+        current_question_index: 0,
+        time_left: 0,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "game_code", ignoreDuplicates: true }
+    )
+    .then(() => {});
+};
+
+export const fetchSessionStateFromSupabase = async (gameCode: string): Promise<SharedSessionState | null> => {
+  const { data } = await supabase
+    .from("session_state")
+    .select("*")
+    .eq("game_code", gameCode)
+    .single();
+
+  if (!data) return null;
+
+  return {
+    players: Array.isArray(data.players) ? (data.players as SharedPlayer[]) : [],
+    gameState: (data.game_state as SharedGameState) ?? "waiting",
+    currentQuestionIndex: typeof data.current_question_index === "number" ? data.current_question_index : 0,
+    timeLeft: typeof data.time_left === "number" ? data.time_left : 0,
+    updatedAt: typeof data.updated_at === "string" ? data.updated_at : new Date().toISOString(),
+  };
+};
+
+export const subscribeToSessionState = (
+  gameCode: string,
+  callback: (state: SharedSessionState) => void
+) => {
+  const channel = supabase
+    .channel(`session-${gameCode}`)
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "session_state",
+        filter: `game_code=eq.${gameCode}`,
+      },
+      (payload) => {
+        if (!payload.new || typeof payload.new !== "object") return;
+        const row = payload.new as Record<string, unknown>;
+        const state: SharedSessionState = {
+          players: Array.isArray(row.players) ? (row.players as SharedPlayer[]) : [],
+          gameState: (row.game_state as SharedGameState) ?? "waiting",
+          currentQuestionIndex: typeof row.current_question_index === "number" ? row.current_question_index : 0,
+          timeLeft: typeof row.time_left === "number" ? row.time_left : 0,
+          updatedAt: typeof row.updated_at === "string" ? row.updated_at : new Date().toISOString(),
+        };
+        writeSessionState(gameCode, state);
+        callback(state);
+      }
+    )
+    .subscribe();
+
+  return channel;
+};

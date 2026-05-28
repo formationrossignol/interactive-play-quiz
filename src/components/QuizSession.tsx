@@ -20,9 +20,11 @@ import { DEFAULT_THEME_ID, THEMES } from "@/lib/themes";
 import { hexToRgba } from "@/lib/color";
 import {
   ensureSessionState,
+  ensureSessionInSupabase,
   getSessionStorageKey,
   patchSessionState,
   readSessionState,
+  subscribeToSessionState,
   type SharedPlayer,
 } from "@/lib/sessionState";
 
@@ -189,6 +191,7 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
 
   useEffect(() => {
     ensureSessionState(quiz.gameCode);
+    ensureSessionInSupabase(quiz.gameCode);
     syncFromStorage();
 
     const handleStorage = (event: StorageEvent) => {
@@ -198,7 +201,12 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
     };
 
     window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
+    const channel = subscribeToSessionState(quiz.gameCode, syncFromStorage);
+
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      channel.unsubscribe();
+    };
   }, [quiz.gameCode, syncFromStorage]);
 
   useEffect(() => {

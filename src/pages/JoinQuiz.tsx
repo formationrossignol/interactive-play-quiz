@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/lib/supabase";
 
 const JoinQuiz = () => {
   const { gameCode } = useParams<{ gameCode: string }>();
@@ -12,20 +13,37 @@ const JoinQuiz = () => {
   const [quizExists, setQuizExists] = useState<boolean | null>(null);
 
   useEffect(() => {
-    if (gameCode) {
-      // Check if quiz/poll exists in localStorage
-      const quizData = localStorage.getItem(`quiz-${gameCode}`);
-      const pollData = localStorage.getItem(`poll-${gameCode}`);
-      
-      if (!quizData && !pollData) {
-        setQuizExists(false);
-        toast.error("Quiz ou sondage introuvable", {
-          description: "Le code que vous avez entré n'existe pas ou a expiré."
-        });
-      } else {
-        setQuizExists(true);
-      }
+    if (!gameCode) return;
+
+    // Check localStorage first (same device as host)
+    const quizData = localStorage.getItem(`quiz-${gameCode}`);
+    const pollData = localStorage.getItem(`poll-${gameCode}`);
+    const savedQuizzes = localStorage.getItem("saved_quizzes");
+    const inSaved = savedQuizzes
+      ? (JSON.parse(savedQuizzes) as { id: string }[]).some((q) => q.id === gameCode)
+      : false;
+
+    if (quizData || pollData || inSaved) {
+      setQuizExists(true);
+      return;
     }
+
+    // Cross-device: check Supabase for active session
+    supabase
+      .from("session_state")
+      .select("game_code")
+      .eq("game_code", gameCode)
+      .single()
+      .then(({ data }) => {
+        if (data) {
+          setQuizExists(true);
+        } else {
+          setQuizExists(false);
+          toast.error("Quiz ou sondage introuvable", {
+            description: "Le code que vous avez entré n'existe pas ou a expiré.",
+          });
+        }
+      });
   }, [gameCode]);
 
   const handleAvatarComplete = (name: string, avatar: string) => {

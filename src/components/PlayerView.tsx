@@ -9,9 +9,12 @@ import { CircularTimer } from "./CircularTimer";
 import { cn } from "@/lib/utils";
 import {
   ensureSessionState,
+  fetchSessionStateFromSupabase,
   getSessionStorageKey,
   readSessionState,
+  subscribeToSessionState,
   upsertPlayerInSession,
+  writeSessionState,
   type SharedPlayer,
 } from "@/lib/sessionState";
 
@@ -55,10 +58,19 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
     points: 100
   };
 
-  // Ensure a session state exists for this quiz
+  // Ensure a session state exists; fetch from Supabase if localStorage empty (cross-device join)
   useEffect(() => {
     ensureSessionState(gameCode);
-  }, [gameCode]);
+    const localState = readSessionState(gameCode);
+    if (localState.gameState === "waiting" && localState.players.length === 0) {
+      fetchSessionStateFromSupabase(gameCode).then((remote) => {
+        if (remote) {
+          writeSessionState(gameCode, remote);
+          syncFromSession();
+        }
+      });
+    }
+  }, [gameCode, syncFromSession]);
 
   const syncFromSession = useCallback(() => {
     const session = readSessionState(gameCode);
@@ -124,7 +136,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
     }
   }, [playerId, syncFromSession]);
 
-  // Listen for updates from other tabs (host/admin)
+  // Listen for updates — same device (storage event) + cross-device (Supabase realtime)
   useEffect(() => {
     const handleStorage = (event: StorageEvent) => {
       if (event.key === getSessionStorageKey(gameCode)) {
@@ -133,7 +145,12 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
     };
 
     window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
+    const channel = subscribeToSessionState(gameCode, syncFromSession);
+
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      channel.unsubscribe();
+    };
   }, [gameCode, syncFromSession]);
 
   // Timer countdown
