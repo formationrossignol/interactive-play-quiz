@@ -146,12 +146,12 @@ export const clearSessionState = (gameCode: string) => {
 export const getSessionStorageKey = (gameCode: string) => getSessionKey(gameCode);
 
 export const ensureSessionInSupabase = (gameCode: string, quizData?: object) => {
+  // Create row if not exists
   supabase
     .from("session_state")
     .upsert(
       {
         game_code: gameCode,
-        quiz_data: quizData ?? null,
         players: [],
         game_state: "waiting",
         current_question_index: 0,
@@ -163,6 +163,17 @@ export const ensureSessionInSupabase = (gameCode: string, quizData?: object) => 
     .then(({ error }) => {
       if (error) console.error("[Supabase ensureSession error]", error);
     });
+
+  // Always overwrite quiz_data so players get fresh questions
+  if (quizData) {
+    supabase
+      .from("session_state")
+      .update({ quiz_data: quizData })
+      .eq("game_code", gameCode)
+      .then(({ error }) => {
+        if (error) console.error("[Supabase quiz_data write error]", error);
+      });
+  }
 };
 
 export const fetchSessionStateFromSupabase = async (gameCode: string): Promise<SharedSessionState | null> => {

@@ -286,6 +286,11 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
           <div className="mt-6 animate-pulse">
             <div className="w-8 h-8 rounded-full mx-auto bg-white/30 shadow-lg"></div>
           </div>
+
+          {/* Temp debug — remove after fix confirmed */}
+          <div className="mt-4 text-xs text-indigo-300 opacity-60">
+            state: {gameState} | q: {quizQuestions.length}
+          </div>
         </div>
       </div>
     );
