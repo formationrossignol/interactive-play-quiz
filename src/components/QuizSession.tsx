@@ -24,9 +24,9 @@ import {
   getSessionStorageKey,
   patchSessionState,
   readSessionState,
-  subscribeToSessionState,
   type SharedPlayer,
 } from "@/lib/sessionState";
+import { supabase } from "@/lib/supabase";
 
 interface Player {
   id: string;
@@ -201,19 +201,37 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
     };
 
     window.addEventListener('storage', handleStorage);
-    // Host only syncs player list from Supabase — NOT game state.
-    // Subscribing to game state creates a write→event→sync→write feedback loop
-    // because the host's own patchSessionState calls trigger the subscription.
-    const channel = subscribeToSessionState(quiz.gameCode, (state) => {
-      const mappedPlayers = state.players.map(normalizeSharedPlayer);
-      setPlayers(mappedPlayers);
-    });
 
     return () => {
       window.removeEventListener('storage', handleStorage);
-      channel.unsubscribe();
     };
-  }, [quiz.gameCode, syncFromStorage, normalizeSharedPlayer]);
+  }, [quiz.gameCode, syncFromStorage]);
+
+  // Poll Supabase for joining players (cross-device) only while in waiting room.
+  // Using realtime here causes a write→event→sync→write feedback loop via the
+  // players useEffect, so polling is the safe alternative.
+  useEffect(() => {
+    if (!isHost || gameState !== 'waiting') return;
+
+    const poll = async () => {
+      const { data } = await supabase
+        .from('session_state')
+        .select('players')
+        .eq('game_code', quiz.gameCode)
+        .single();
+      if (data?.players && Array.isArray(data.players)) {
+        const remote = (data.players as SharedPlayer[]).map(normalizeSharedPlayer);
+        setPlayers((prev) => {
+          const prevIds = new Set(prev.map((p) => p.id));
+          const hasNew = remote.some((p) => !prevIds.has(p.id));
+          return hasNew ? remote : prev;
+        });
+      }
+    };
+
+    const interval = setInterval(poll, 2000);
+    return () => clearInterval(interval);
+  }, [isHost, gameState, quiz.gameCode, normalizeSharedPlayer]);
 
   useEffect(() => {
     if (!isHost || !hasSyncedPlayers) {
