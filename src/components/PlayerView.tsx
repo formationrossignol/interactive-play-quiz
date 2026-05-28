@@ -161,7 +161,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
     const poll = async () => {
       const { data } = await supabase
         .from('session_state')
-        .select('players, game_state, current_question_index, time_left, updated_at, quiz_data')
+        .select('*')
         .eq('game_code', gameCode)
         .single();
 
@@ -180,22 +180,19 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
       const players = Array.isArray(data.players) ? (data.players as SharedPlayer[]) : [];
 
       // Map host game states → player game states
-      const mapped = ((): 'waiting' | 'question' | 'answer-feedback' | 'leaderboard' | 'final' => {
-        if (remoteState === 'question') return 'question';
-        if (remoteState === 'leaderboard') return 'leaderboard';
-        if (remoteState === 'final') return 'final';
-        if (remoteState === 'answer-distribution' || remoteState === 'transition') return 'leaderboard';
-        return 'waiting';
-      })();
+      let mapped: 'waiting' | 'question' | 'answer-feedback' | 'leaderboard' | 'final' = 'waiting';
+      if (remoteState === 'question') mapped = 'question';
+      else if (remoteState === 'leaderboard') mapped = 'leaderboard';
+      else if (remoteState === 'final') mapped = 'final';
+      else if (remoteState === 'answer-distribution' || remoteState === 'transition') mapped = 'leaderboard';
 
-      setGameState((prev) => {
-        if (mapped === 'question' && prev !== 'question') {
-          setHasAnswered(false);
-          setSelectedAnswer(null);
-          setIsCorrect(null);
-        }
-        return mapped;
-      });
+      // Reset answer state when a new question starts — never call setState inside another setter
+      if (mapped === 'question') {
+        setHasAnswered(false);
+        setSelectedAnswer(null);
+        setIsCorrect(null);
+      }
+      setGameState(mapped);
 
       setTotalPlayers(players.length);
 
@@ -239,14 +236,13 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
     setHasAnswered(true);
 
     // Mock scoring logic with speed bonus
-    const correct = answer === liveQuestion.correctAnswer;
+    const correct = liveQuestion != null && answer === liveQuestion.correctAnswer;
     setIsCorrect(correct);
 
     if (correct) {
-      // Calculate speed bonus: proportional to time remaining
-      const speedBonusPercentage = timeLeft / liveQuestion.timeLimit;
-      const speedBonus = Math.floor(liveQuestion.points * speedBonusPercentage * 0.5);
-      const totalPoints = liveQuestion.points + speedBonus;
+      const speedBonusPercentage = timeLeft / (liveQuestion?.timeLimit ?? 30);
+      const speedBonus = Math.floor((liveQuestion?.points ?? 100) * speedBonusPercentage * 0.5);
+      const totalPoints = (liveQuestion?.points ?? 100) + speedBonus;
       setPlayerScore(prev => prev + totalPoints);
     }
 
