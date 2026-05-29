@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { HelpCircle, Upload, X, FileText } from "lucide-react";
+import { HelpCircle, Upload, FileText, ClipboardPaste } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { saveQuiz } from "@/lib/quizStorage";
@@ -217,13 +217,19 @@ const DocsModal = ({ open, onClose, quizType }: DocsModalProps) => {
 
 // ── Main import modal ───────────────────────────────────────────────────────
 
+type Tab = "file" | "text";
+type TextFormat = "yaml" | "csv" | "markdown";
+
 export const ImportFileModal = ({ open, onClose, quizType, onImport }: Props) => {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
   const [docsOpen, setDocsOpen] = useState(false);
-
+  const [tab, setTab] = useState<Tab>("file");
+  const [textContent, setTextContent] = useState("");
   const isMarkdown = quizType === "flashcard" || quizType === "slide";
+  const [textFormat, setTextFormat] = useState<TextFormat>(isMarkdown ? "markdown" : "yaml");
+
   const acceptedExts = isMarkdown ? ".md,.markdown" : ".yaml,.yml,.csv";
 
   const typeLabel = {
@@ -233,38 +239,46 @@ export const ImportFileModal = ({ open, onClose, quizType, onImport }: Props) =>
     slide: "Présentation",
   }[quizType];
 
+  const parseDraft = (content: string, formatHint: TextFormat) => {
+    if (quizType === "flashcard") return parseFlashcardMarkdown(content);
+    if (quizType === "slide") return parseSlideMarkdown(content);
+    if (formatHint === "csv") return parseQuizCsv(content, quizType);
+    return parseQuizYaml(content, quizType);
+  };
+
+  const finalize = (draft: ReturnType<typeof parseDraft>) => {
+    toast.success(
+      `${draft.questions.length} élément${draft.questions.length > 1 ? "s" : ""} importé${draft.questions.length > 1 ? "s" : ""}`,
+      { description: draft.title }
+    );
+    if (onImport) {
+      onImport(draft);
+      onClose();
+    } else {
+      const saved = saveQuiz(draft);
+      onClose();
+      navigate(`/builder?type=${quizType}&quizId=${saved.id}`);
+    }
+  };
+
   const handleFile = async (file: File) => {
     const content = await file.text();
     const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
-
+    const fmt: TextFormat = ext === "csv" ? "csv" : ext === "md" || ext === "markdown" ? "markdown" : "yaml";
     try {
-      let draft;
-      if (quizType === "flashcard") {
-        draft = parseFlashcardMarkdown(content);
-      } else if (quizType === "slide") {
-        draft = parseSlideMarkdown(content);
-      } else if (ext === "csv") {
-        draft = parseQuizCsv(content, quizType);
-      } else {
-        draft = parseQuizYaml(content, quizType);
-      }
-
-      toast.success(
-        `${draft.questions.length} élément${draft.questions.length > 1 ? "s" : ""} importé${draft.questions.length > 1 ? "s" : ""}`,
-        { description: draft.title }
-      );
-      if (onImport) {
-        onImport(draft);
-        onClose();
-      } else {
-        const saved = saveQuiz(draft);
-        onClose();
-        navigate(`/builder?type=${quizType}&quizId=${saved.id}`);
-      }
+      finalize(parseDraft(content, fmt));
     } catch (err: any) {
-      toast.error("Erreur d'import", {
-        description: err?.message ?? "Vérifiez le format du fichier.",
-      });
+      toast.error("Erreur d'import", { description: err?.message ?? "Vérifiez le format." });
+    }
+  };
+
+  const handleTextImport = () => {
+    const content = textContent.trim();
+    if (!content) { toast.error("Collez du contenu d'abord."); return; }
+    try {
+      finalize(parseDraft(content, textFormat));
+    } catch (err: any) {
+      toast.error("Erreur d'import", { description: err?.message ?? "Vérifiez le format." });
     }
   };
 
@@ -284,7 +298,7 @@ export const ImportFileModal = ({ open, onClose, quizType, onImport }: Props) =>
   return (
     <>
       <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <div className="flex items-center justify-between">
               <DialogTitle>Importer — {typeLabel}</DialogTitle>
@@ -299,67 +313,118 @@ export const ImportFileModal = ({ open, onClose, quizType, onImport }: Props) =>
             </div>
           </DialogHeader>
 
-          <p className="text-sm text-slate-500">
-            {isMarkdown
-              ? "Importez un fichier Markdown (.md) pour créer vos "
-              : "Importez un fichier YAML ou CSV pour créer votre "}
-            {typeLabel.toLowerCase()}.
-          </p>
-
-          {/* Drop zone */}
-          <div
-            className={cn(
-              "mt-2 flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed p-10 transition-colors cursor-pointer",
-              dragOver
-                ? "border-indigo-400 bg-indigo-50"
-                : "border-slate-200 bg-slate-50 hover:border-indigo-300 hover:bg-indigo-50/40"
-            )}
-            onClick={() => fileInputRef.current?.click()}
-            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-            onDragLeave={() => setDragOver(false)}
-            onDrop={handleDrop}
-          >
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-100">
-              {dragOver ? (
-                <Upload className="h-6 w-6 text-indigo-600 animate-bounce" />
-              ) : (
-                <FileText className="h-6 w-6 text-indigo-600" />
+          {/* Tabs */}
+          <div className="flex rounded-xl border border-slate-200 bg-slate-50 p-1 gap-1">
+            <button
+              onClick={() => setTab("file")}
+              className={cn(
+                "flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-sm font-medium transition-colors",
+                tab === "file"
+                  ? "bg-white shadow-sm text-slate-900"
+                  : "text-slate-500 hover:text-slate-700"
               )}
-            </div>
-            <div className="text-center">
-              <p className="font-semibold text-slate-800">
-                Glissez votre fichier ici
-              </p>
-              <p className="mt-1 text-xs text-slate-400">
-                ou cliquez pour sélectionner
-              </p>
-              <p className="mt-2 text-xs font-medium text-indigo-500">
-                {isMarkdown ? ".md · .markdown" : ".yaml · .yml · .csv"}
-              </p>
-            </div>
+            >
+              <Upload className="w-4 h-4" />
+              Fichier
+            </button>
+            <button
+              onClick={() => setTab("text")}
+              className={cn(
+                "flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-sm font-medium transition-colors",
+                tab === "text"
+                  ? "bg-white shadow-sm text-slate-900"
+                  : "text-slate-500 hover:text-slate-700"
+              )}
+            >
+              <ClipboardPaste className="w-4 h-4" />
+              Coller du texte
+            </button>
           </div>
 
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept={acceptedExts}
-            className="hidden"
-            onChange={handleInputChange}
-          />
+          {tab === "file" && (
+            <>
+              {/* Drop zone */}
+              <div
+                className={cn(
+                  "flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed p-10 transition-colors cursor-pointer",
+                  dragOver
+                    ? "border-indigo-400 bg-indigo-50"
+                    : "border-slate-200 bg-slate-50 hover:border-indigo-300 hover:bg-indigo-50/40"
+                )}
+                onClick={() => fileInputRef.current?.click()}
+                onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={handleDrop}
+              >
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-100">
+                  {dragOver ? (
+                    <Upload className="h-6 w-6 text-indigo-600 animate-bounce" />
+                  ) : (
+                    <FileText className="h-6 w-6 text-indigo-600" />
+                  )}
+                </div>
+                <div className="text-center">
+                  <p className="font-semibold text-slate-800">Glissez votre fichier ici</p>
+                  <p className="mt-1 text-xs text-slate-400">ou cliquez pour sélectionner</p>
+                  <p className="mt-2 text-xs font-medium text-indigo-500">
+                    {isMarkdown ? ".md · .markdown" : ".yaml · .yml · .csv"}
+                  </p>
+                </div>
+              </div>
+              <input ref={fileInputRef} type="file" accept={acceptedExts} className="hidden" onChange={handleInputChange} />
+            </>
+          )}
 
-          <div className="flex justify-end gap-2 pt-1">
-            <Button variant="outline" className="rounded-full" onClick={onClose}>
+          {tab === "text" && (
+            <div className="space-y-3">
+              {!isMarkdown && (
+                <div className="flex gap-2">
+                  {(["yaml", "csv"] as TextFormat[]).map((fmt) => (
+                    <button
+                      key={fmt}
+                      onClick={() => setTextFormat(fmt)}
+                      className={cn(
+                        "rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wide transition-colors",
+                        textFormat === fmt
+                          ? "border-indigo-500 bg-indigo-50 text-indigo-700"
+                          : "border-slate-200 text-slate-500 hover:border-indigo-300 hover:text-indigo-600"
+                      )}
+                    >
+                      {fmt}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <textarea
+                value={textContent}
+                onChange={(e) => setTextContent(e.target.value)}
+                placeholder={
+                  isMarkdown
+                    ? "# Titre\n\nQ: Question ?\nR: Réponse"
+                    : textFormat === "yaml"
+                    ? "title: Mon Quiz\nquestions:\n  - type: multiple-choice\n    question: ..."
+                    : "type,question,answer1,answer2,correctAnswer\nmultiple-choice,Question ?,A,B,0"
+                }
+                className="h-52 w-full resize-none rounded-xl border border-slate-200 bg-slate-50 p-3 font-mono text-xs text-slate-800 placeholder:text-slate-400 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+              />
+              <Button
+                onClick={handleTextImport}
+                className="w-full rounded-full bg-indigo-600 text-white hover:bg-indigo-700"
+              >
+                Importer
+              </Button>
+            </div>
+          )}
+
+          <div className="flex justify-end">
+            <Button variant="ghost" className="rounded-full text-slate-500" onClick={onClose}>
               Annuler
             </Button>
           </div>
         </DialogContent>
       </Dialog>
 
-      <DocsModal
-        open={docsOpen}
-        onClose={() => setDocsOpen(false)}
-        quizType={quizType}
-      />
+      <DocsModal open={docsOpen} onClose={() => setDocsOpen(false)} quizType={quizType} />
     </>
   );
 };
