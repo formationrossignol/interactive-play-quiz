@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { FileText, Sparkles, ArrowRight } from "lucide-react";
+import { FileText, Sparkles, ArrowRight, Upload } from "lucide-react";
 import { Header } from "@/components/Header";
 import { PollTemplateSelectorEnhanced } from "@/components/PollTemplateSelectorEnhanced";
 import { QuizTemplateSelectorEnhanced } from "@/components/QuizTemplateSelectorEnhanced";
 import { FlashcardTemplateSelectorEnhanced } from "@/components/FlashcardTemplateSelectorEnhanced";
 import { SlideTemplateSelectorEnhanced } from "@/components/SlideTemplateSelectorEnhanced";
+import { ImportFileModal } from "@/components/ImportFileModal";
 import { t } from "@/lib/i18n";
 import type { PollTemplate } from "@/lib/pollTemplates";
 import type { QuizTemplate } from "@/lib/quizTemplates";
@@ -20,6 +21,7 @@ export const QuizBuilderStart = () => {
   const quizType = (searchParams.get("type") || "quiz") as "quiz" | "poll" | "flashcard" | "slide";
 
   const [showTemplates, setShowTemplates] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const isPoll = quizType === "poll";
   const isFlashcard = quizType === "flashcard";
   const isSlide = quizType === "slide";
@@ -66,6 +68,7 @@ export const QuizBuilderStart = () => {
         </div>
 
         {!showTemplates ? (
+          <div className="space-y-5">
           <div className="grid md:grid-cols-2 gap-5">
             {/* From scratch */}
             <div
@@ -122,6 +125,22 @@ export const QuizBuilderStart = () => {
               </Button>
             </div>
           </div>
+
+          {/* Import from file */}
+          <div className="relative flex items-center gap-3">
+            <div className="flex-1 border-t border-slate-100" />
+            <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">ou</span>
+            <div className="flex-1 border-t border-slate-100" />
+          </div>
+
+          <button
+            onClick={() => setImportOpen(true)}
+            className="flex w-full items-center justify-center gap-2.5 rounded-2xl border-2 border-dashed border-slate-200 bg-white px-6 py-4 text-sm font-semibold text-slate-600 transition-all duration-200 hover:border-indigo-300 hover:bg-indigo-50/40 hover:text-indigo-700"
+          >
+            <Upload className="h-4 w-4" />
+            Importer depuis la banque
+          </button>
+          </div>
         ) : (
           <div className="space-y-5">
             <button
@@ -142,6 +161,11 @@ export const QuizBuilderStart = () => {
           </div>
         )}
       </div>
+      <ImportFileModal
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        quizType={quizType}
+      />
     </div>
   );
 };
