@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { FileText, Sparkles, ArrowRight, Upload } from "lucide-react";
+import { FileText, Sparkles, ArrowRight, Upload, Database } from "lucide-react";
 import { Header } from "@/components/Header";
 import { PollTemplateSelectorEnhanced } from "@/components/PollTemplateSelectorEnhanced";
 import { QuizTemplateSelectorEnhanced } from "@/components/QuizTemplateSelectorEnhanced";
@@ -126,20 +126,30 @@ export const QuizBuilderStart = () => {
             </div>
           </div>
 
-          {/* Import from file */}
+          {/* Import buttons */}
           <div className="relative flex items-center gap-3">
             <div className="flex-1 border-t border-slate-100" />
             <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">ou</span>
             <div className="flex-1 border-t border-slate-100" />
           </div>
 
-          <button
-            onClick={() => setImportOpen(true)}
-            className="flex w-full items-center justify-center gap-2.5 rounded-2xl border-2 border-dashed border-slate-200 bg-white px-6 py-4 text-sm font-semibold text-slate-600 transition-all duration-200 hover:border-indigo-300 hover:bg-indigo-50/40 hover:text-indigo-700"
-          >
-            <Upload className="h-4 w-4" />
-            Importer depuis la banque
-          </button>
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={() => navigate("/question-bank")}
+              className="flex w-full items-center justify-center gap-2.5 rounded-2xl border-2 border-slate-200 bg-white px-6 py-4 text-sm font-semibold text-slate-600 transition-all duration-200 hover:border-indigo-300 hover:bg-indigo-50/40 hover:text-indigo-700"
+            >
+              <Database className="h-4 w-4" />
+              Importer depuis la banque
+            </button>
+
+            <button
+              onClick={() => setImportOpen(true)}
+              className="flex w-full items-center justify-center gap-2.5 rounded-2xl border-2 border-dashed border-slate-200 bg-white px-6 py-4 text-sm font-semibold text-slate-600 transition-all duration-200 hover:border-indigo-300 hover:bg-indigo-50/40 hover:text-indigo-700"
+            >
+              <Upload className="h-4 w-4" />
+              Importer depuis un fichier
+            </button>
+          </div>
           </div>
         ) : (
           <div className="space-y-5">
