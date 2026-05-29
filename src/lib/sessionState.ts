@@ -17,6 +17,8 @@ export interface SharedPlayer {
   correctAnswers?: number;
   previousScore?: number;
   joinedAt: string;
+  lastAnswer?: number;
+  lastAnswerQuestionIndex?: number;
 }
 
 export interface SharedSessionState {

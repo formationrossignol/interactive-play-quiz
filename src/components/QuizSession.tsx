@@ -36,6 +36,8 @@ interface Player {
   previousScore?: number;
   correctAnswers: number;
   joinedAt: Date;
+  lastAnswer?: number;
+  lastAnswerQuestionIndex?: number;
 }
 
 const FONT_STACKS: Record<string, string> = {
@@ -158,6 +160,8 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
     correctAnswers: shared.correctAnswers ?? 0,
     previousScore: shared.previousScore,
     joinedAt: shared.joinedAt ? new Date(shared.joinedAt) : new Date(),
+    lastAnswer: shared.lastAnswer,
+    lastAnswerQuestionIndex: shared.lastAnswerQuestionIndex,
   }), []);
 
   const syncFromStorage = useCallback(() => {
@@ -246,6 +250,8 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
       correctAnswers: player.correctAnswers,
       previousScore: player.previousScore,
       joinedAt: player.joinedAt.toISOString(),
+      lastAnswer: player.lastAnswer,
+      lastAnswerQuestionIndex: player.lastAnswerQuestionIndex,
     }));
 
     patchSessionState(quiz.gameCode, { players: playersForStorage });
@@ -274,19 +280,6 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
     });
   }, [gameState, isHost, quiz.gameCode, timeLeft]);
 
-  // Check if all players have answered
-  useEffect(() => {
-    if (gameState === 'question') {
-      // In a real app, track answered players
-      // For demo: simulate checking if all answered
-      // If all answered, skip timer
-      const checkAllAnswered = () => {
-        // This would be connected to real player answers
-        // For now, this is a placeholder for the logic
-      };
-      checkAllAnswered();
-    }
-  }, [gameState, players]);
 
   // Update session stats
   useEffect(() => {
@@ -348,11 +341,21 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
   };
 
   const showAnswerDistribution = () => {
-    // Mock answer distribution (in real app this would come from actual answers)
-    const mockDistribution = currentQuestion.answers
-      ? currentQuestion.answers.map(() => Math.floor(Math.random() * 50))
+    // Read fresh from Supabase-backed session to get latest player answers
+    const freshPlayers: SharedPlayer[] = readSessionState(quiz.gameCode).players;
+    const answeredPlayers = freshPlayers.filter(
+      (p) => p.lastAnswerQuestionIndex === currentQuestionIndex
+    );
+    const counts = currentQuestion.answers
+      ? currentQuestion.answers.map((_: unknown, i: number) =>
+          answeredPlayers.filter((p) => p.lastAnswer === i).length
+        )
       : [];
-    setAnswerDistribution(mockDistribution);
+    const total = counts.reduce((s: number, c: number) => s + c, 0);
+    const distribution = counts.map((c: number) =>
+      total > 0 ? Math.round((c / total) * 100) : 0
+    );
+    setAnswerDistribution(distribution);
     setGameState('answer-distribution');
     if (isHost) {
       patchSessionState(quiz.gameCode, {

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Users, Trophy, CheckCircle, XCircle, LogOut } from "lucide-react";
+import { Users, Trophy, LogOut } from "lucide-react";
 import { MultiStepProgress } from "./MultiStepProgress";
 import { BackgroundMusic } from "./BackgroundMusic";
 import { ExitQuizDialog } from "./ExitQuizDialog";
@@ -45,7 +45,6 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
   const [playerRank, setPlayerRank] = useState(1);
   const [totalPlayers, setTotalPlayers] = useState(0);
   const [timeLeft, setTimeLeft] = useState(30);
-  const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [showExitDialog, setShowExitDialog] = useState(false);
 
   const [quizQuestions, setQuizQuestions] = useState<any[]>([]);
@@ -194,7 +193,6 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
       if (mapped === 'question' && newIndex !== answeredForIndexRef.current) {
         setHasAnswered(false);
         setSelectedAnswer(null);
-        setIsCorrect(null);
       }
       setGameState(mapped);
 
@@ -234,27 +232,36 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
   };
 
   const submitAnswer = (answer: number | string) => {
-    if (hasAnswered) return;
+    if (hasAnswered || !liveQuestion) return;
 
     setSelectedAnswer(answer);
     setHasAnswered(true);
     answeredForIndexRef.current = currentQuestion;
 
-    // Mock scoring logic with speed bonus
-    const correct = liveQuestion != null && answer === liveQuestion.correctAnswer;
-    setIsCorrect(correct);
-
-    if (correct) {
-      const speedBonusPercentage = timeLeft / (liveQuestion?.timeLimit ?? 30);
-      const speedBonus = Math.floor((liveQuestion?.points ?? 100) * speedBonusPercentage * 0.5);
-      const totalPoints = (liveQuestion?.points ?? 100) + speedBonus;
-      setPlayerScore(prev => prev + totalPoints);
+    const correct = answer === liveQuestion.correctAnswer;
+    const earnedPoints = correct
+      ? Math.round(
+          (liveQuestion.points ?? 100) +
+          (liveQuestion.points ?? 100) * 0.5 * (timeLeft / (liveQuestion.timeLimit ?? 30))
+        )
+      : 0;
+    const newScore = playerScore + earnedPoints;
+    const storedPlayerRaw = sessionStorage.getItem(`quiz-player-${gameCode}`);
+    if (storedPlayerRaw) {
+      try {
+        const storedPlayer = JSON.parse(storedPlayerRaw) as SharedPlayer;
+        const updated: SharedPlayer = {
+          ...storedPlayer,
+          score: newScore,
+          correctAnswers: (storedPlayer.correctAnswers ?? 0) + (correct ? 1 : 0),
+          lastAnswer: typeof answer === 'number' ? answer : undefined,
+          lastAnswerQuestionIndex: currentQuestion,
+        };
+        sessionStorage.setItem(`quiz-player-${gameCode}`, JSON.stringify(updated));
+        upsertPlayerInSession(gameCode, updated);
+        setPlayerScore(newScore);
+      } catch {}
     }
-
-    // Auto-advance after showing feedback
-    setTimeout(() => {
-      setGameState('leaderboard');
-    }, 2500);
   };
 
   if (gameState === 'waiting') {
@@ -384,35 +391,12 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
             )}
           </div>
 
-          {/* Answer Feedback */}
+          {/* Waiting confirmation — no correct answer revealed on player device */}
           {hasAnswered && (
-            <div className={cn(
-              "animate-scale-in rounded-2xl p-6 text-center",
-              isCorrect
-                ? "bg-white/10 border border-white/20"
-                : "bg-white/10 border border-white/20"
-            )}>
-              <div className="mb-4">
-                {isCorrect ? (
-                  <CheckCircle className="mx-auto h-12 w-12 animate-bounce text-emerald-300 drop-shadow-lg" aria-hidden="true" />
-                ) : (
-                  <XCircle className="mx-auto h-12 w-12 animate-pulse text-rose-300 drop-shadow-lg" aria-hidden="true" />
-                )}
-              </div>
-              <h3 className="text-3xl font-extrabold text-white mb-2">
-                {isCorrect ? "🎉 Bonne réponse !" : "😔 Mauvaise réponse"}
-              </h3>
-              {liveQuestion.correctAnswer !== undefined && (
-                <p className="mb-3 text-sm font-medium text-indigo-200">
-                  La bonne réponse était: <span className="font-bold text-white">{liveQuestion.answers[liveQuestion.correctAnswer]}</span>
-                </p>
-              )}
-              <div className="rounded-2xl bg-white/10 border border-white/20 p-5 inline-block mt-2">
-                <div className="text-4xl font-extrabold text-white">
-                  {isCorrect ? `+${liveQuestion.points}` : "0"}
-                </div>
-                <div className="text-indigo-200 text-sm mt-1">points</div>
-              </div>
+            <div className="animate-scale-in rounded-2xl p-6 text-center bg-white/10 border border-white/20">
+              <div className="text-4xl mb-3">⏳</div>
+              <h3 className="text-xl font-bold text-white">Réponse envoyée !</h3>
+              <p className="text-indigo-200 text-sm mt-2">En attente des autres joueurs…</p>
             </div>
           )}
         </div>
@@ -445,7 +429,6 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
               setGameState('question');
               setHasAnswered(false);
               setSelectedAnswer(null);
-              setIsCorrect(null);
               setTimeLeft(30);
               setCurrentQuestion(prev => prev + 1);
             }}
