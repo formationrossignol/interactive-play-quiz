@@ -211,11 +211,11 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
     };
   }, [quiz.gameCode, syncFromStorage]);
 
-  // Poll Supabase for joining players (cross-device) only while in waiting room.
-  // Using realtime here causes a write→event→sync→write feedback loop via the
-  // players useEffect, so polling is the safe alternative.
+  // Poll Supabase for player updates (joins in waiting, answers+scores during question).
+  // Polling avoids the write→event→sync→write feedback loop that realtime would cause.
   useEffect(() => {
-    if (!isHost || gameState !== 'waiting') return;
+    if (!isHost) return;
+    if (gameState !== 'waiting' && gameState !== 'question') return;
 
     const poll = async () => {
       const { data } = await supabase
@@ -226,9 +226,24 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
       if (data?.players && Array.isArray(data.players)) {
         const remote = (data.players as SharedPlayer[]).map(normalizeSharedPlayer);
         setPlayers((prev) => {
-          const prevIds = new Set(prev.map((p) => p.id));
-          const hasNew = remote.some((p) => !prevIds.has(p.id));
-          return hasNew ? remote : prev;
+          if (gameState === 'waiting') {
+            const prevIds = new Set(prev.map((p) => p.id));
+            const hasNew = remote.some((p) => !prevIds.has(p.id));
+            return hasNew ? remote : prev;
+          }
+          // During question: merge scores and answers from Supabase without full replace
+          // to avoid overwriting host-managed fields (previousScore etc.)
+          return prev.map((p) => {
+            const fresh = remote.find((r) => r.id === p.id);
+            if (!fresh) return p;
+            return {
+              ...p,
+              score: fresh.score ?? p.score,
+              correctAnswers: fresh.correctAnswers ?? p.correctAnswers,
+              lastAnswer: fresh.lastAnswer,
+              lastAnswerQuestionIndex: fresh.lastAnswerQuestionIndex,
+            };
+          });
         });
       }
     };
@@ -340,9 +355,20 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
     }
   };
 
-  const showAnswerDistribution = () => {
-    // Read fresh from Supabase-backed session to get latest player answers
-    const freshPlayers: SharedPlayer[] = readSessionState(quiz.gameCode).players;
+  const showAnswerDistribution = async () => {
+    // Fetch latest player answers directly from Supabase (cross-device safe)
+    let freshPlayers: SharedPlayer[] = readSessionState(quiz.gameCode).players;
+    try {
+      const { data } = await supabase
+        .from('session_state')
+        .select('players')
+        .eq('game_code', quiz.gameCode)
+        .single();
+      if (data?.players && Array.isArray(data.players)) {
+        freshPlayers = data.players as SharedPlayer[];
+      }
+    } catch {}
+
     const answeredPlayers = freshPlayers.filter(
       (p) => p.lastAnswerQuestionIndex === currentQuestionIndex
     );
@@ -355,6 +381,22 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
     const distribution = counts.map((c: number) =>
       total > 0 ? Math.round((c / total) * 100) : 0
     );
+
+    // Also sync scores into host players state from fresh Supabase data
+    setPlayers((prev) =>
+      prev.map((p) => {
+        const fresh = freshPlayers.find((r) => r.id === p.id);
+        if (!fresh) return p;
+        return {
+          ...p,
+          score: fresh.score ?? p.score,
+          correctAnswers: fresh.correctAnswers ?? p.correctAnswers,
+          lastAnswer: fresh.lastAnswer,
+          lastAnswerQuestionIndex: fresh.lastAnswerQuestionIndex,
+        };
+      })
+    );
+
     setAnswerDistribution(distribution);
     setGameState('answer-distribution');
     if (isHost) {
