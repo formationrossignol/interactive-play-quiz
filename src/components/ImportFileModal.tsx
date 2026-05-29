@@ -17,6 +17,8 @@ interface Props {
   open: boolean;
   onClose: () => void;
   quizType: "quiz" | "poll" | "flashcard" | "slide";
+  /** If provided, called with parsed draft instead of save+navigate */
+  onImport?: (draft: import("@/lib/importParsers").ImportDraft) => void;
 }
 
 // ── Format documentation ────────────────────────────────────────────────────
@@ -215,7 +217,7 @@ const DocsModal = ({ open, onClose, quizType }: DocsModalProps) => {
 
 // ── Main import modal ───────────────────────────────────────────────────────
 
-export const ImportFileModal = ({ open, onClose, quizType }: Props) => {
+export const ImportFileModal = ({ open, onClose, quizType, onImport }: Props) => {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -247,13 +249,18 @@ export const ImportFileModal = ({ open, onClose, quizType }: Props) => {
         draft = parseQuizYaml(content, quizType);
       }
 
-      const saved = saveQuiz(draft);
       toast.success(
         `${draft.questions.length} élément${draft.questions.length > 1 ? "s" : ""} importé${draft.questions.length > 1 ? "s" : ""}`,
         { description: draft.title }
       );
-      onClose();
-      navigate(`/builder?type=${quizType}&quizId=${saved.id}`);
+      if (onImport) {
+        onImport(draft);
+        onClose();
+      } else {
+        const saved = saveQuiz(draft);
+        onClose();
+        navigate(`/builder?type=${quizType}&quizId=${saved.id}`);
+      }
     } catch (err: any) {
       toast.error("Erreur d'import", {
         description: err?.message ?? "Vérifiez le format du fichier.",

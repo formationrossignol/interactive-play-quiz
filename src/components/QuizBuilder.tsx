@@ -41,6 +41,7 @@ import {
 import { QuizPreview } from "./QuizPreview";
 import { QuestionTypeSelector } from "./QuestionTypeSelector";
 import { Header } from "./Header";
+import { ImportFileModal } from "./ImportFileModal";
 import { getCurrentUser } from "@/lib/auth";
 import { saveQuiz, updateQuiz, getQuizById } from "@/lib/quizStorage";
 import { getPollTemplate } from "@/lib/pollTemplates";
@@ -410,6 +411,7 @@ export const QuizBuilder = () => {
   const activeFont = FONT_OPTIONS.find((option) => option.value === previewFont) ?? FONT_OPTIONS[0];
   const [questionBankItems, setQuestionBankItems] = useState<QuestionBankItem[]>([]);
   const [questionBankDialogOpen, setQuestionBankDialogOpen] = useState(false);
+  const [importFileOpen, setImportFileOpen] = useState(false);
   const [shouldBlockNavigation, setShouldBlockNavigation] = useState(true);
 
   const sidebarTogglePositionStyle = useMemo(
@@ -764,6 +766,19 @@ export const QuizBuilder = () => {
     if (user) {
       setQuestionBankItems(getQuestionBankForUser(user.id));
     }
+  };
+
+  const handleImportFromFile = (draft: import("@/lib/importParsers").ImportDraft) => {
+    const mapped = draft.questions.map((q: any, i: number) => ({
+      ...q,
+      id: q.id || `imported-${Date.now()}-${i}`,
+    }));
+    setTitle(draft.title || title);
+    setDescription(draft.description || description);
+    setQuestions(mapped);
+    setSelectedQuestionIndex(mapped.length > 0 ? 0 : null);
+    setEditingIndex(null);
+    setCurrentQuestion(getDefaultQuestion());
   };
 
   const handleImportFromQuestionBank = (item: QuestionBankItem) => {
@@ -1475,13 +1490,22 @@ export const QuizBuilder = () => {
             {!isPoll && !isFlashcard && user && (
               <Button
                 onClick={() => setQuestionBankDialogOpen(true)}
-                className="w-full mb-4"
+                className="w-full mb-2"
                 variant="ghost"
               >
                 <Library className="w-4 h-4 mr-2" />
                 {t('importFromQuestionBank')}
               </Button>
             )}
+
+            <Button
+              onClick={() => setImportFileOpen(true)}
+              className="w-full mb-4"
+              variant="ghost"
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              Importer depuis un fichier
+            </Button>
 
             <DndContext
               sensors={sensors}
@@ -1741,6 +1765,13 @@ export const QuizBuilder = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      <ImportFileModal
+        open={importFileOpen}
+        onClose={() => setImportFileOpen(false)}
+        quizType={quizType}
+        onImport={handleImportFromFile}
+      />
     </div>
   );
 };
