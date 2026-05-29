@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Header } from "@/components/Header";
+import { Pagination } from "@/components/Pagination";
 import { RatingStars } from "@/components/RatingStars";
 import { getPublicQuizzes, rateQuiz } from "@/lib/quizStorage";
 import { Search, Play, Clock, Users, Filter } from "lucide-react";
@@ -26,6 +27,8 @@ const QUIZ_CATEGORIES = [
   "Autre"
 ];
 
+const PAGE_SIZE = 12;
+
 const DiscoverQuizzes = () => {
   const navigate = useNavigate();
   const user = getCurrentUser();
@@ -33,6 +36,7 @@ const DiscoverQuizzes = () => {
   const [selectedCategory, setSelectedCategory] = useState("Tous");
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [typeFilter, setTypeFilter] = useState<"all" | "quiz" | "poll">("all");
+  const [page, setPage] = useState(1);
   const publicQuizzes = getPublicQuizzes().filter((quiz) => quiz.type === 'quiz');
 
   const allTags = useMemo(() => {
@@ -54,6 +58,11 @@ const DiscoverQuizzes = () => {
       return matchesSearch && matchesCategory && matchesTag && matchesType;
     });
   }, [publicQuizzes, searchQuery, selectedCategory, selectedTag, typeFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredQuizzes.length / PAGE_SIZE));
+  const paginatedQuizzes = filteredQuizzes.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  useEffect(() => { setPage(1); }, [searchQuery, selectedCategory, selectedTag, typeFilter]);
 
   const playQuiz = (quizId: string) => {
     const quiz = publicQuizzes.find(q => q.id === quizId);
@@ -144,7 +153,7 @@ const DiscoverQuizzes = () => {
         </Card>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredQuizzes.map((quiz) => (
+          {paginatedQuizzes.map((quiz) => (
             <Card key={quiz.id} className="hover:border-primary transition-all group overflow-hidden">
               {quiz.headerImage && (
                 <div className="w-full h-48 overflow-hidden">
@@ -229,6 +238,8 @@ const DiscoverQuizzes = () => {
             <p className="text-muted-foreground text-lg">Aucun résultat trouvé</p>
           </div>
         )}
+
+        <Pagination page={page} totalPages={totalPages} onPageChange={setPage} className="mt-10" />
       </div>
     </div>
   );
