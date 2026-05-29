@@ -1374,7 +1374,7 @@ export const QuizBuilder = () => {
   );
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="h-screen overflow-hidden bg-background flex flex-col">
       {/* Header with integrated toolbar */}
       <Header
         subtitle={isSlide ? "Créateur de Présentations" : isFlashcard ? "Créateur de Flashcards" : (isPoll ? t('pollBuilder') : t('quizBuilder'))}
