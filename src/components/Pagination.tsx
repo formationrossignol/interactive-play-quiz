@@ -21,31 +21,80 @@ export const Pagination = ({ page, totalPages, onPageChange, className }: Pagina
     return pages;
   };
 
+  const baseBtn: React.CSSProperties = {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: 36,
+    height: 36,
+    borderRadius: "var(--ap-r-sm)",
+    border: "2px solid var(--ap-line)",
+    background: "var(--ap-card)",
+    color: "var(--ap-ink)",
+    fontFamily: "var(--ap-font-display)",
+    fontWeight: 600,
+    fontSize: "14px",
+    cursor: "pointer",
+    transition: "all .1s var(--ap-ease)",
+    boxShadow: "0 3px 0 var(--ap-line)",
+  };
+
   return (
-    <div className={cn("flex items-center justify-center gap-1", className)}>
+    <div className={cn("flex items-center justify-center gap-1.5", className)}>
       <button
         onClick={() => onPageChange(page - 1)}
         disabled={page === 1}
-        className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-colors hover:border-indigo-300 hover:text-indigo-600 disabled:cursor-not-allowed disabled:opacity-40"
+        style={{ ...baseBtn, opacity: page === 1 ? 0.35 : 1, cursor: page === 1 ? "not-allowed" : "pointer" }}
+        onMouseEnter={(e) => {
+          if (page !== 1) {
+            (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--ap-brand)";
+            (e.currentTarget as HTMLButtonElement).style.color = "var(--ap-brand)";
+          }
+        }}
+        onMouseLeave={(e) => {
+          (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--ap-line)";
+          (e.currentTarget as HTMLButtonElement).style.color = "var(--ap-ink)";
+        }}
       >
         <ChevronLeft className="h-4 w-4" />
       </button>
 
       {getPages().map((p, i) =>
         p === "…" ? (
-          <span key={`ellipsis-${i}`} className="flex h-9 w-9 items-center justify-center text-sm text-slate-400">
+          <span
+            key={`ellipsis-${i}`}
+            style={{ ...baseBtn, border: "none", boxShadow: "none", background: "transparent", color: "var(--ap-muted)" }}
+          >
             …
           </span>
         ) : (
           <button
             key={p}
             onClick={() => onPageChange(p as number)}
-            className={cn(
-              "flex h-9 w-9 items-center justify-center rounded-xl border text-sm font-medium transition-colors",
+            style={
               p === page
-                ? "border-indigo-500 bg-indigo-600 text-white"
-                : "border-slate-200 bg-white text-slate-600 hover:border-indigo-300 hover:text-indigo-600"
-            )}
+                ? {
+                    ...baseBtn,
+                    background: "var(--ap-brand)",
+                    border: "2px solid var(--ap-brand)",
+                    boxShadow: "0 3px 0 var(--ap-brand-deep)",
+                    color: "#fff",
+                    cursor: "default",
+                  }
+                : baseBtn
+            }
+            onMouseEnter={(e) => {
+              if (p !== page) {
+                (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--ap-brand)";
+                (e.currentTarget as HTMLButtonElement).style.color = "var(--ap-brand)";
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (p !== page) {
+                (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--ap-line)";
+                (e.currentTarget as HTMLButtonElement).style.color = "var(--ap-ink)";
+              }
+            }}
           >
             {p}
           </button>
@@ -55,7 +104,17 @@ export const Pagination = ({ page, totalPages, onPageChange, className }: Pagina
       <button
         onClick={() => onPageChange(page + 1)}
         disabled={page === totalPages}
-        className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-colors hover:border-indigo-300 hover:text-indigo-600 disabled:cursor-not-allowed disabled:opacity-40"
+        style={{ ...baseBtn, opacity: page === totalPages ? 0.35 : 1, cursor: page === totalPages ? "not-allowed" : "pointer" }}
+        onMouseEnter={(e) => {
+          if (page !== totalPages) {
+            (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--ap-brand)";
+            (e.currentTarget as HTMLButtonElement).style.color = "var(--ap-brand)";
+          }
+        }}
+        onMouseLeave={(e) => {
+          (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--ap-line)";
+          (e.currentTarget as HTMLButtonElement).style.color = "var(--ap-ink)";
+        }}
       >
         <ChevronRight className="h-4 w-4" />
       </button>

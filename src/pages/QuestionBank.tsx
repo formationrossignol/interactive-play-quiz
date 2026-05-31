@@ -1,15 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Pagination } from "@/components/Pagination";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { QuestionBankQuestionForm } from "@/components/QuestionBankQuestionForm";
 import { createDefaultQuizQuestion } from "@/lib/questionDefaults";
 import { getUserQuizzes } from "@/lib/quizStorage";
@@ -26,7 +21,7 @@ import {
 import { getCurrentUser } from "@/lib/auth";
 import { t } from "@/lib/i18n";
 import { toast } from "sonner";
-import { Copy, Edit, Plus, Trash2 } from "lucide-react";
+import { Copy, Edit, Plus, Search, Trash2, ExternalLink } from "lucide-react";
 import type { QuizQuestionType } from "@/lib/questionTypes";
 
 const QUESTION_TYPE_OPTIONS: { value: QuizQuestionType; label: string }[] = [
@@ -45,6 +40,40 @@ const DIFFICULTY_OPTIONS: { value: QuestionDifficulty; label: string }[] = [
   { value: "hard", label: "difficultyHard" },
 ];
 
+const DIFFICULTY_BADGE: Record<QuestionDifficulty, string> = {
+  easy: "ap-badge--pres",
+  medium: "ap-badge--flash",
+  hard: "ap-badge--quiz",
+};
+
+const PAGE_SIZE = 12;
+
+const inputStyle: React.CSSProperties = {
+  width: "100%",
+  fontFamily: "var(--ap-font-body)",
+  fontWeight: 700,
+  fontSize: "14px",
+  color: "var(--ap-ink)",
+  background: "var(--ap-card)",
+  border: "2px solid var(--ap-line)",
+  borderRadius: "var(--ap-r-sm)",
+  padding: "10px 14px",
+  outline: "none",
+  boxSizing: "border-box",
+  transition: "border-color .12s, box-shadow .12s",
+};
+
+const labelStyle: React.CSSProperties = {
+  display: "block",
+  fontWeight: 800,
+  fontSize: "11px",
+  letterSpacing: "0.5px",
+  textTransform: "uppercase",
+  color: "var(--ap-muted)",
+  marginBottom: "7px",
+  fontFamily: "var(--ap-font-body)",
+};
+
 const QuestionBank = () => {
   const navigate = useNavigate();
   const user = useMemo(() => getCurrentUser(), []);
@@ -57,6 +86,8 @@ const QuestionBank = () => {
     type: QuizQuestionType;
     question: any;
   }[]>([]);
+
+  /* ---- dialog ---- */
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<QuestionBankItem | null>(null);
   const [questionType, setQuestionType] = useState<QuizQuestionType>("multiple-choice");
@@ -67,61 +98,83 @@ const QuestionBank = () => {
   const [tagsInput, setTagsInput] = useState("");
   const [description, setDescription] = useState("");
 
+  /* ---- bank filters ---- */
+  const [bankSearch, setBankSearch] = useState("");
+  const [bankTypeFilter, setBankTypeFilter] = useState("all");
+  const [bankDiffFilter, setBankDiffFilter] = useState("all");
+  const [bankPage, setBankPage] = useState(1);
+
+  /* ---- quiz questions filters ---- */
+  const [qqSearch, setQqSearch] = useState("");
+  const [qqPage, setQqPage] = useState(1);
+
   const refreshItems = () => {
     if (!user) return;
     setItems(getQuestionBankForUser(user.id));
-
     const quizzes = getUserQuizzes(user.id).filter((quiz) => quiz.type !== "flashcard");
-    const aggregated = quizzes.flatMap((quiz) => {
-      if (!Array.isArray(quiz.questions)) {
-        return [];
-      }
-
-      return quiz.questions.map((question, index) => ({
-        id: `${quiz.id}-${index}`,
-        quizId: quiz.id,
-        quizTitle: quiz.title || t("untitledQuiz"),
-        position: index + 1,
-        type: (question?.type as QuizQuestionType) ?? "multiple-choice",
-        question,
-      }));
-    });
-
+    const aggregated = quizzes.flatMap((quiz) =>
+      Array.isArray(quiz.questions)
+        ? quiz.questions.map((question, index) => ({
+            id: `${quiz.id}-${index}`,
+            quizId: quiz.id,
+            quizTitle: quiz.title || t("untitledQuiz"),
+            position: index + 1,
+            type: (question?.type as QuizQuestionType) ?? "multiple-choice",
+            question,
+          }))
+        : []
+    );
     setQuizQuestions(aggregated);
   };
 
   useEffect(() => {
-    if (!user) {
-      navigate("/auth");
-      return;
-    }
-
+    if (!user) { navigate("/auth"); return; }
     refreshItems();
   }, [user, navigate]);
 
+  /* ---- filtered bank ---- */
+  const filteredBank = useMemo(() => {
+    const q = bankSearch.toLowerCase();
+    return items.filter((item) => {
+      const matchSearch = !q || item.title.toLowerCase().includes(q) || (item.topic ?? "").toLowerCase().includes(q) || (item.tags ?? []).some((tg) => tg.toLowerCase().includes(q));
+      const matchType = bankTypeFilter === "all" || item.question?.type === bankTypeFilter;
+      const matchDiff = bankDiffFilter === "all" || item.difficulty === bankDiffFilter;
+      return matchSearch && matchType && matchDiff;
+    });
+  }, [items, bankSearch, bankTypeFilter, bankDiffFilter]);
+
+  const bankTotalPages = Math.max(1, Math.ceil(filteredBank.length / PAGE_SIZE));
+  const bankPaginated = filteredBank.slice((bankPage - 1) * PAGE_SIZE, bankPage * PAGE_SIZE);
+  useEffect(() => { setBankPage(1); }, [bankSearch, bankTypeFilter, bankDiffFilter]);
+
+  /* ---- filtered quiz questions ---- */
+  const filteredQQ = useMemo(() => {
+    const q = qqSearch.toLowerCase();
+    return !q ? quizQuestions : quizQuestions.filter((item) => {
+      const text = item.question?.question || item.question?.prompt || item.question?.title || "";
+      return text.toLowerCase().includes(q) || item.quizTitle.toLowerCase().includes(q);
+    });
+  }, [quizQuestions, qqSearch]);
+
+  const qqTotalPages = Math.max(1, Math.ceil(filteredQQ.length / PAGE_SIZE));
+  const qqPaginated = filteredQQ.slice((qqPage - 1) * PAGE_SIZE, qqPage * PAGE_SIZE);
+  useEffect(() => { setQqPage(1); }, [qqSearch]);
+
+  /* ---- form helpers ---- */
   const resetForm = () => {
     setEditingItem(null);
     setQuestionType("multiple-choice");
     setCurrentQuestion(createDefaultQuizQuestion());
-    setTitle("");
-    setTopic("");
-    setDifficulty("medium");
-    setTagsInput("");
-    setDescription("");
+    setTitle(""); setTopic(""); setDifficulty("medium"); setTagsInput(""); setDescription("");
   };
 
-  const openCreateDialog = () => {
-    resetForm();
-    setDialogOpen(true);
-  };
-
+  const openCreateDialog = () => { resetForm(); setDialogOpen(true); };
   const openEditDialog = (item: QuestionBankItem) => {
     setEditingItem(item);
     const typedQuestion = sanitizeQuestionForBank(item.question);
     setQuestionType(typedQuestion.type as QuizQuestionType);
     setCurrentQuestion(typedQuestion);
-    setTitle(item.title);
-    setTopic(item.topic || "");
+    setTitle(item.title); setTopic(item.topic || "");
     setDifficulty(item.difficulty || "medium");
     setTagsInput(item.tags?.join(", ") || "");
     setDescription(item.question?.explanation || item.question?.description || "");
@@ -129,298 +182,420 @@ const QuestionBank = () => {
   };
 
   const handleSave = () => {
-    if (!user) {
-      toast.error(t("authRequired"));
-      return;
-    }
-
-    if (!title.trim()) {
-      toast.error(t("questionTitleRequired"));
-      return;
-    }
-
-    if (!currentQuestion.question?.trim()) {
-      toast.error(t("questionRequired"));
-      return;
-    }
-
+    if (!user) { toast.error(t("authRequired")); return; }
+    if (!title.trim()) { toast.error(t("questionTitleRequired")); return; }
+    if (!currentQuestion.question?.trim()) { toast.error(t("questionRequired")); return; }
     const payload = {
-      title: title.trim(),
-      topic: topic.trim() || undefined,
-      difficulty,
-      tags: tagsInput
-        .split(",")
-        .map((tag) => tag.trim())
-        .filter(Boolean),
-      question: {
-        ...sanitizeQuestionForBank(currentQuestion),
-        type: questionType,
-        explanation: description.trim() || undefined,
-      },
+      title: title.trim(), topic: topic.trim() || undefined, difficulty,
+      tags: tagsInput.split(",").map((tag) => tag.trim()).filter(Boolean),
+      question: { ...sanitizeQuestionForBank(currentQuestion), type: questionType, explanation: description.trim() || undefined },
     };
-
     try {
-      if (editingItem) {
-        updateQuestionBankItem(editingItem.id, payload);
-        toast.success(t("questionBankUpdated"));
-      } else {
-        addQuestionToBank(payload);
-        toast.success(t("questionBankAdded"));
-      }
-      setDialogOpen(false);
-      resetForm();
-      refreshItems();
-    } catch (error) {
-      toast.error(t("questionBankSaveError"));
-    }
+      if (editingItem) { updateQuestionBankItem(editingItem.id, payload); toast.success(t("questionBankUpdated")); }
+      else { addQuestionToBank(payload); toast.success(t("questionBankAdded")); }
+      setDialogOpen(false); resetForm(); refreshItems();
+    } catch { toast.error(t("questionBankSaveError")); }
   };
 
   const handleDelete = (item: QuestionBankItem) => {
-    if (deleteQuestionBankItem(item.id)) {
-      toast.success(t("questionBankDeleted"));
-      refreshItems();
-    }
+    if (deleteQuestionBankItem(item.id)) { toast.success(t("questionBankDeleted")); refreshItems(); }
   };
-
   const handleDuplicate = (item: QuestionBankItem) => {
-    const duplicated = duplicateQuestionBankItem(item.id);
-    if (duplicated) {
-      toast.success(t("questionBankDuplicated"));
-      refreshItems();
-    }
+    if (duplicateQuestionBankItem(item.id)) { toast.success(t("questionBankDuplicated")); refreshItems(); }
   };
-
   const handleTypeChange = (value: QuizQuestionType) => {
     setQuestionType(value);
     setCurrentQuestion(createDefaultQuizQuestion(value));
   };
 
-  const renderTags = (item: QuestionBankItem) => {
-    if (!item.tags || item.tags.length === 0) {
-      return null;
-    }
-
-    return (
-      <div className="flex flex-wrap gap-2">
-        {item.tags.map((tag) => (
-          <Badge key={tag} variant="outline" className="rounded-full">
-            #{tag}
-          </Badge>
-        ))}
-      </div>
-    );
+  /* ---- shared UI helpers ---- */
+  const focusInput = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    e.currentTarget.style.borderColor = "var(--ap-brand)";
+    e.currentTarget.style.boxShadow = "0 0 0 4px var(--ap-brand-soft)";
+  };
+  const blurInput = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    e.currentTarget.style.borderColor = "var(--ap-line)";
+    e.currentTarget.style.boxShadow = "none";
   };
 
+  const FilterRow = ({
+    search, onSearch, typeFilter, onTypeFilter, diffFilter, onDiffFilter, showDiff = true,
+  }: {
+    search: string; onSearch: (v: string) => void;
+    typeFilter?: string; onTypeFilter?: (v: string) => void;
+    diffFilter?: string; onDiffFilter?: (v: string) => void;
+    showDiff?: boolean;
+  }) => (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginBottom: "24px" }}>
+      {/* search */}
+      <div style={{ position: "relative", flex: "1 1 220px", minWidth: 0 }}>
+        <Search
+          style={{
+            position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)",
+            width: 16, height: 16, color: "var(--ap-muted)", pointerEvents: "none",
+          }}
+        />
+        <input
+          style={{ ...inputStyle, paddingLeft: "38px" }}
+          placeholder="Rechercher…"
+          value={search}
+          onChange={(e) => onSearch(e.target.value)}
+          onFocus={focusInput}
+          onBlur={blurInput}
+        />
+      </div>
+      {/* type */}
+      {onTypeFilter && (
+        <Select value={typeFilter} onValueChange={onTypeFilter}>
+          <SelectTrigger
+            style={{
+              flex: "0 0 auto",
+              width: 180,
+              fontFamily: "var(--ap-font-body)",
+              fontWeight: 700,
+              fontSize: "14px",
+              border: "2px solid var(--ap-line)",
+              borderRadius: "var(--ap-r-sm)",
+              background: "var(--ap-card)",
+              color: "var(--ap-ink)",
+              height: "42px",
+            }}
+          >
+            <SelectValue placeholder="Type" />
+          </SelectTrigger>
+          <SelectContent style={{ background: "var(--ap-card)", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-md)" }}>
+            <SelectItem value="all">Tous les types</SelectItem>
+            {QUESTION_TYPE_OPTIONS.map((o) => (
+              <SelectItem key={o.value} value={o.value}>{t(o.label as any)}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
+      {/* difficulty */}
+      {showDiff && onDiffFilter && (
+        <Select value={diffFilter} onValueChange={onDiffFilter}>
+          <SelectTrigger
+            style={{
+              flex: "0 0 auto",
+              width: 160,
+              fontFamily: "var(--ap-font-body)",
+              fontWeight: 700,
+              fontSize: "14px",
+              border: "2px solid var(--ap-line)",
+              borderRadius: "var(--ap-r-sm)",
+              background: "var(--ap-card)",
+              color: "var(--ap-ink)",
+              height: "42px",
+            }}
+          >
+            <SelectValue placeholder="Difficulté" />
+          </SelectTrigger>
+          <SelectContent style={{ background: "var(--ap-card)", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-md)" }}>
+            <SelectItem value="all">Toutes</SelectItem>
+            {DIFFICULTY_OPTIONS.map((o) => (
+              <SelectItem key={o.value} value={o.value}>{t(o.label as any)}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
+    </div>
+  );
+
   return (
-    <div className="min-h-screen bg-background">
+    <div style={{ minHeight: "100vh", background: "var(--ap-paper)" }}>
       <Header subtitle={t("questionBank")} />
+
       <div className="mx-auto max-w-6xl px-6 py-10">
-        <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+
+        {/* ── Page header ── */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "16px", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "36px" }}>
           <div>
-            <h1 className="text-3xl font-bold text-foreground">{t("questionBank")}</h1>
-            <p className="text-muted-foreground">{t("questionBankSubtitle")}</p>
+            <h1 className="ap-h2" style={{ fontSize: "28px", marginBottom: "6px" }}>{t("questionBank")}</h1>
+            <p className="ap-muted" style={{ fontSize: "14px" }}>{t("questionBankSubtitle")}</p>
           </div>
-          <div className="flex gap-3">
-            <Button variant="outline" onClick={() => navigate("/builder?type=quiz")}>
+          <div style={{ display: "flex", gap: "10px" }}>
+            <button className="ap-btn ap-btn--ghost ap-btn--sm" onClick={() => navigate("/builder?type=quiz")}>
+              <ExternalLink className="h-4 w-4" />
               {t("openQuizBuilder")}
-            </Button>
-            <Button onClick={openCreateDialog}>
-              <Plus className="mr-2 h-4 w-4" />
+            </button>
+            <button className="ap-btn ap-btn--sm ap-btn--pill" onClick={openCreateDialog}>
+              <Plus className="h-4 w-4" />
               {t("addQuestionToBank")}
-            </Button>
+            </button>
           </div>
         </div>
 
-        <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {items.length === 0 ? (
-            <div className="col-span-full rounded-xl border border-dashed border-border/60 bg-muted/20 p-10 text-center">
-              <p className="text-sm text-muted-foreground">{t("questionBankEmptyManage")}</p>
-              <Button className="mt-4" onClick={openCreateDialog}>
-                {t("addFirstQuestion")}
-              </Button>
+        {/* ── Bank section ── */}
+        <section style={{ marginBottom: "56px" }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: "10px", marginBottom: "20px" }}>
+            <h2 className="ap-h3">{t("questionBank")}</h2>
+            <span className="ap-badge ap-badge--brand">{filteredBank.length}</span>
+          </div>
+
+          <FilterRow
+            search={bankSearch} onSearch={setBankSearch}
+            typeFilter={bankTypeFilter} onTypeFilter={setBankTypeFilter}
+            diffFilter={bankDiffFilter} onDiffFilter={setBankDiffFilter}
+          />
+
+          {filteredBank.length === 0 ? (
+            <div
+              style={{
+                borderRadius: "var(--ap-r-lg)", border: "2px dashed var(--ap-line-2)",
+                background: "var(--ap-paper-2)", padding: "48px 24px", textAlign: "center",
+              }}
+            >
+              <p className="ap-muted" style={{ marginBottom: "16px", fontSize: "14px" }}>
+                {items.length === 0 ? t("questionBankEmptyManage") : "Aucun résultat pour cette recherche."}
+              </p>
+              {items.length === 0 && (
+                <button className="ap-btn ap-btn--sm ap-btn--pill" onClick={openCreateDialog}>
+                  {t("addFirstQuestion")}
+                </button>
+              )}
             </div>
           ) : (
-            items.map((item) => (
-              <Card key={item.id} className="flex h-full flex-col border-border/60 bg-card/80">
-                <CardHeader>
-                  <CardTitle className="text-xl text-foreground">{item.title}</CardTitle>
-                  {item.topic && <p className="text-sm text-muted-foreground">{item.topic}</p>}
-                </CardHeader>
-                <CardContent className="flex-1 space-y-4">
-                  <p className="text-sm text-muted-foreground">
-                    {item.question.question || t("noQuestionText")}
-                  </p>
-                  <div className="flex flex-wrap items-center gap-2">
-                    {(() => {
-                      const typeLabelKey = QUESTION_TYPE_OPTIONS.find((option) => option.value === item.question.type)?.label;
-                      return typeLabelKey ? (
-                        <Badge variant="secondary" className="rounded-full">
-                          {t(typeLabelKey as any)}
-                        </Badge>
-                      ) : null;
-                    })()}
-                    {(() => {
-                      if (!item.difficulty) return null;
-                      const difficultyLabel = DIFFICULTY_OPTIONS.find((option) => option.value === item.difficulty)?.label;
-                      return difficultyLabel ? (
-                        <Badge variant="outline" className="rounded-full">
-                          {t(difficultyLabel as any)}
-                        </Badge>
-                      ) : null;
-                    })()}
-                  </div>
-                  {renderTags(item)}
-                </CardContent>
-                <CardFooter className="flex items-center justify-between gap-2 border-t border-border/40 pt-4">
-                  <div className="flex gap-2">
-                    <Button variant="ghost" size="icon" onClick={() => handleDuplicate(item)} title={t("duplicate")}>
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => openEditDialog(item)} title={t("edit")}>
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDelete(item)} title={t("delete")}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <div />
-                </CardFooter>
-              </Card>
-            ))
-          )}
-        </div>
-        <div className="mt-16">
-          <div className="flex flex-col gap-2">
-            <h2 className="text-2xl font-bold text-foreground">{t("myQuizQuestions")}</h2>
-            <p className="text-muted-foreground">{t("myQuizQuestionsDescription")}</p>
-          </div>
-
-          <div className="mt-6 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {quizQuestions.length === 0 ? (
-              <div className="col-span-full rounded-xl border border-dashed border-border/60 bg-muted/20 p-10 text-center">
-                <p className="text-sm text-muted-foreground">{t("myQuizQuestionsEmpty")}</p>
-                <Button className="mt-4" variant="outline" onClick={() => navigate("/builder?type=quiz")}>
-                  {t("createQuiz")}
-                </Button>
-              </div>
-            ) : (
-              quizQuestions.map((item) => {
-                const typeLabel = QUESTION_TYPE_OPTIONS.find((option) => option.value === item.type)?.label;
-                const questionText =
-                  item.question?.question?.trim() ||
-                  item.question?.prompt?.trim() ||
-                  item.question?.title?.trim() ||
-                  t("noQuestionText");
-
-                return (
-                  <Card key={item.id} className="flex h-full flex-col border-border/60 bg-card/80">
-                    <CardHeader>
-                      <div className="flex items-center justify-between gap-2">
-                        <Badge variant="outline" className="rounded-full">#{item.position}</Badge>
-                        <Badge variant="secondary" className="rounded-full" title={item.quizTitle}>
-                          {item.quizTitle}
-                        </Badge>
+            <>
+              <div style={{ display: "grid", gap: "18px", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))" }}>
+                {bankPaginated.map((item) => {
+                  const typeLabel = QUESTION_TYPE_OPTIONS.find((o) => o.value === item.question?.type)?.label;
+                  return (
+                    <div key={item.id} className="ap-card ap-card--hover" style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                      {/* header */}
+                      <div>
+                        <h3 className="ap-h3" style={{ fontSize: "16px", marginBottom: "4px" }}>{item.title}</h3>
+                        {item.topic && <p className="ap-muted" style={{ fontSize: "12px" }}>{item.topic}</p>}
                       </div>
-                      <CardTitle className="mt-3 text-lg text-foreground line-clamp-2">{questionText}</CardTitle>
-                    </CardHeader>
-                    <CardContent className="flex flex-1 flex-col justify-between gap-4">
-                      <div className="flex flex-wrap items-center gap-2">
+                      {/* question text */}
+                      <p className="ap-muted" style={{ fontSize: "13px", lineHeight: 1.45, flex: 1 }}>
+                        {item.question?.question || t("noQuestionText")}
+                      </p>
+                      {/* badges */}
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
                         {typeLabel && (
-                          <Badge variant="secondary" className="rounded-full">
-                            {t(typeLabel as any)}
-                          </Badge>
+                          <span className="ap-badge ap-badge--brand">{t(typeLabel as any)}</span>
                         )}
-                        <Badge variant="outline" className="rounded-full">
-                          {t("fromQuiz")}
-                        </Badge>
+                        {item.difficulty && (
+                          <span className={`ap-badge ${DIFFICULTY_BADGE[item.difficulty]}`}>
+                            {t(DIFFICULTY_OPTIONS.find((o) => o.value === item.difficulty)?.label as any)}
+                          </span>
+                        )}
+                        {(item.tags ?? []).map((tag) => (
+                          <span key={tag} className="ap-pill" style={{ fontSize: "11px", padding: "3px 9px" }}>
+                            #{tag}
+                          </span>
+                        ))}
+                      </div>
+                      {/* actions */}
+                      <div
+                        style={{
+                          display: "flex", alignItems: "center", gap: "4px",
+                          paddingTop: "12px", borderTop: "2px solid var(--ap-line)",
+                        }}
+                      >
+                        <button
+                          className="ap-btn ap-btn--ghost ap-btn--sm"
+                          style={{ padding: "7px 10px" }}
+                          onClick={() => handleDuplicate(item)}
+                          title={t("duplicate")}
+                        >
+                          <Copy className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          className="ap-btn ap-btn--ghost ap-btn--sm"
+                          style={{ padding: "7px 10px" }}
+                          onClick={() => openEditDialog(item)}
+                          title={t("edit")}
+                        >
+                          <Edit className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          className="ap-btn ap-btn--ghost ap-btn--sm"
+                          style={{ padding: "7px 10px", color: "var(--ap-quiz)" }}
+                          onClick={() => handleDelete(item)}
+                          title={t("delete")}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <Pagination page={bankPage} totalPages={bankTotalPages} onPageChange={setBankPage} className="mt-8" />
+            </>
+          )}
+        </section>
+
+        {/* ── Quiz questions section ── */}
+        <section>
+          <div style={{ display: "flex", alignItems: "baseline", gap: "10px", marginBottom: "8px" }}>
+            <h2 className="ap-h3">{t("myQuizQuestions")}</h2>
+            <span className="ap-badge ap-badge--quiz">{filteredQQ.length}</span>
+          </div>
+          <p className="ap-muted" style={{ fontSize: "13.5px", marginBottom: "20px" }}>{t("myQuizQuestionsDescription")}</p>
+
+          <FilterRow
+            search={qqSearch} onSearch={setQqSearch}
+            showDiff={false}
+          />
+
+          {filteredQQ.length === 0 ? (
+            <div
+              style={{
+                borderRadius: "var(--ap-r-lg)", border: "2px dashed var(--ap-line-2)",
+                background: "var(--ap-paper-2)", padding: "48px 24px", textAlign: "center",
+              }}
+            >
+              <p className="ap-muted" style={{ fontSize: "14px", marginBottom: "16px" }}>
+                {quizQuestions.length === 0 ? t("myQuizQuestionsEmpty") : "Aucun résultat."}
+              </p>
+              {quizQuestions.length === 0 && (
+                <button className="ap-btn ap-btn--ghost ap-btn--sm ap-btn--pill" onClick={() => navigate("/builder?type=quiz")}>
+                  {t("createQuiz")}
+                </button>
+              )}
+            </div>
+          ) : (
+            <>
+              <div style={{ display: "grid", gap: "18px", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))" }}>
+                {qqPaginated.map((item) => {
+                  const typeLabel = QUESTION_TYPE_OPTIONS.find((o) => o.value === item.type)?.label;
+                  const questionText = item.question?.question?.trim() || item.question?.prompt?.trim() || item.question?.title?.trim() || t("noQuestionText");
+                  return (
+                    <div key={item.id} className="ap-card ap-card--hover" style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
+                        <span className="ap-pill" style={{ fontSize: "11px", padding: "3px 9px" }}>#{item.position}</span>
+                        <span
+                          className="ap-pill"
+                          style={{ fontSize: "11px", padding: "3px 9px", maxWidth: 150, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                          title={item.quizTitle}
+                        >
+                          {item.quizTitle}
+                        </span>
+                      </div>
+                      <h3 className="ap-h3" style={{ fontSize: "15px", lineHeight: 1.35 }}>{questionText}</h3>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginTop: "auto" }}>
+                        {typeLabel && <span className="ap-badge ap-badge--poll">{t(typeLabel as any)}</span>}
+                        <span className="ap-badge ap-badge--pres">{t("fromQuiz")}</span>
                       </div>
                       {item.question?.description && (
-                        <p className="text-sm text-muted-foreground line-clamp-3">{item.question.description}</p>
+                        <p className="ap-muted" style={{ fontSize: "12px", lineHeight: 1.4 }}>{item.question.description}</p>
                       )}
-                    </CardContent>
-                  </Card>
-                );
-              })
-            )}
-          </div>
-        </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <Pagination page={qqPage} totalPages={qqTotalPages} onPageChange={setQqPage} className="mt-8" />
+            </>
+          )}
+        </section>
       </div>
 
+      {/* ── Dialog ── */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent
+          className="max-w-3xl"
+          style={{
+            background: "var(--ap-card)",
+            border: "2px solid var(--ap-line)",
+            borderRadius: "var(--ap-r-xl)",
+            boxShadow: "var(--ap-shadow-card)",
+          }}
+        >
           <DialogHeader>
-            <DialogTitle>{editingItem ? t("editBankQuestion") : t("addQuestionToBank")}</DialogTitle>
+            <DialogTitle
+              style={{ fontFamily: "var(--ap-font-display)", fontWeight: 600, fontSize: "20px", color: "var(--ap-ink)" }}
+            >
+              {editingItem ? t("editBankQuestion") : t("addQuestionToBank")}
+            </DialogTitle>
           </DialogHeader>
-          <ScrollArea className="max-h-[75vh] pr-4">
-            <div className="space-y-6 py-2">
-              <div className="grid gap-4 md:grid-cols-2">
+
+          <ScrollArea className="max-h-[72vh] pr-4">
+            <div style={{ display: "flex", flexDirection: "column", gap: "20px", paddingBottom: "8px" }}>
+              <div style={{ display: "grid", gap: "16px", gridTemplateColumns: "1fr 1fr" }}>
                 <div>
-                  <Label>{t("questionTitle")}</Label>
-                  <Input value={title} onChange={(e) => setTitle(e.target.value)} className="mt-2" />
+                  <label style={labelStyle}>{t("questionTitle")}</label>
+                  <input
+                    style={inputStyle}
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    onFocus={focusInput} onBlur={blurInput}
+                  />
                 </div>
                 <div>
-                  <Label>{t("questionTopic")}</Label>
-                  <Input value={topic} onChange={(e) => setTopic(e.target.value)} className="mt-2" />
+                  <label style={labelStyle}>{t("questionTopic")}</label>
+                  <input
+                    style={inputStyle}
+                    value={topic}
+                    onChange={(e) => setTopic(e.target.value)}
+                    onFocus={focusInput} onBlur={blurInput}
+                  />
                 </div>
               </div>
-              <div className="grid gap-4 md:grid-cols-2">
+
+              <div style={{ display: "grid", gap: "16px", gridTemplateColumns: "1fr 1fr" }}>
                 <div>
-                  <Label>{t("questionType")}</Label>
-                  <Select value={questionType} onValueChange={(value: QuizQuestionType) => handleTypeChange(value)}>
-                    <SelectTrigger className="mt-2">
+                  <label style={labelStyle}>{t("questionType")}</label>
+                  <Select value={questionType} onValueChange={(v: QuizQuestionType) => handleTypeChange(v)}>
+                    <SelectTrigger style={{ marginTop: "8px", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-sm)", background: "var(--ap-card)", fontFamily: "var(--ap-font-body)", fontWeight: 700, fontSize: "14px" }}>
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-popover">
-                      {QUESTION_TYPE_OPTIONS.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {t(option.label as any)}
-                        </SelectItem>
+                    <SelectContent style={{ background: "var(--ap-card)", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-md)" }}>
+                      {QUESTION_TYPE_OPTIONS.map((o) => (
+                        <SelectItem key={o.value} value={o.value}>{t(o.label as any)}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label>{t("questionDifficulty")}</Label>
-                  <Select value={difficulty} onValueChange={(value: QuestionDifficulty) => setDifficulty(value)}>
-                    <SelectTrigger className="mt-2">
+                  <label style={labelStyle}>{t("questionDifficulty")}</label>
+                  <Select value={difficulty} onValueChange={(v: QuestionDifficulty) => setDifficulty(v)}>
+                    <SelectTrigger style={{ marginTop: "8px", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-sm)", background: "var(--ap-card)", fontFamily: "var(--ap-font-body)", fontWeight: 700, fontSize: "14px" }}>
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-popover">
-                      {DIFFICULTY_OPTIONS.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {t(option.label as any)}
-                        </SelectItem>
+                    <SelectContent style={{ background: "var(--ap-card)", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-md)" }}>
+                      {DIFFICULTY_OPTIONS.map((o) => (
+                        <SelectItem key={o.value} value={o.value}>{t(o.label as any)}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
               </div>
+
               <div>
-                <Label>{t("questionTags")}</Label>
-                <Input
+                <label style={labelStyle}>{t("questionTags")}</label>
+                <input
+                  style={inputStyle}
                   value={tagsInput}
                   onChange={(e) => setTagsInput(e.target.value)}
                   placeholder={t("questionTagsHelper")}
-                  className="mt-2"
+                  onFocus={focusInput} onBlur={blurInput}
                 />
               </div>
+
               <div>
-                <Label>{t("questionNotes")}</Label>
-                <Textarea
+                <label style={labelStyle}>{t("questionNotes")}</label>
+                <textarea
+                  style={{ ...inputStyle, resize: "vertical", minHeight: "80px", lineHeight: 1.4 }}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder={t("questionNotesHelper")}
-                  className="mt-2"
+                  onFocus={focusInput} onBlur={blurInput}
                 />
               </div>
+
               <QuestionBankQuestionForm question={currentQuestion} onChange={setCurrentQuestion} />
             </div>
           </ScrollArea>
-          <div className="flex justify-end gap-3">
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", paddingTop: "16px", borderTop: "2px solid var(--ap-line)" }}>
+            <button className="ap-btn ap-btn--ghost ap-btn--sm ap-btn--pill" onClick={() => setDialogOpen(false)}>
               {t("cancel")}
-            </Button>
-            <Button onClick={handleSave}>{t("save")}</Button>
+            </button>
+            <button className="ap-btn ap-btn--sm ap-btn--pill" onClick={handleSave}>
+              {t("save")}
+            </button>
           </div>
         </DialogContent>
       </Dialog>
