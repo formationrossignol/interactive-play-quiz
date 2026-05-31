@@ -108,7 +108,7 @@ const LiveQuizPage = () => {
 
   if (!gameCode) {
     return (
-      <div className="min-h-screen bg-indigo-600 flex items-center justify-center p-6">
+      <div className="min-h-screen flex items-center justify-center p-6">
         <div className="rounded-2xl bg-white/10 border border-white/20 p-8 text-center text-white max-w-md w-full">
           <AlertTriangle className="w-12 h-12 text-indigo-200 mx-auto" />
           <h2 className="text-2xl font-bold text-white mt-4">Code invalide</h2>
@@ -125,7 +125,7 @@ const LiveQuizPage = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-indigo-600 flex items-center justify-center p-6">
+      <div className="min-h-screen flex items-center justify-center p-6">
         <div className="rounded-2xl bg-white/10 border border-white/20 p-8 text-center text-white max-w-md w-full">
           <p className="text-lg text-white">Chargement de votre contenu interactif…</p>
         </div>
@@ -135,7 +135,7 @@ const LiveQuizPage = () => {
 
   if (!loadedQuiz) {
     return (
-      <div className="min-h-screen bg-indigo-600 flex items-center justify-center p-6">
+      <div className="min-h-screen flex items-center justify-center p-6">
         <div className="rounded-2xl bg-white/10 border border-white/20 p-8 text-center text-white max-w-md w-full">
           <AlertTriangle className="w-12 h-12 text-indigo-200 mx-auto" />
           <h2 className="text-2xl font-bold text-white mt-4">Contenu introuvable</h2>
@@ -156,7 +156,7 @@ const LiveQuizPage = () => {
     default:
       if (!quizSession) {
         return (
-          <div className="min-h-screen bg-indigo-600 flex items-center justify-center p-6">
+          <div className="min-h-screen flex items-center justify-center p-6">
             <div className="rounded-2xl bg-white/10 border border-white/20 p-8 text-center text-white max-w-md w-full">
               <p className="text-lg text-white">Ce quiz ne contient aucune question exploitable pour le moment.</p>
             </div>

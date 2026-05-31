@@ -1,15 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { login, register } from "@/lib/auth";
 import { toast } from "sonner";
-import { Zap } from "lucide-react";
 
 const AuthPage = () => {
   const navigate = useNavigate();
+  const [tab, setTab] = useState<"login" | "register">("login");
   const [loginData, setLoginData] = useState({ email: "", password: "" });
   const [registerData, setRegisterData] = useState({ email: "", username: "", password: "" });
 
@@ -35,109 +31,206 @@ const AuthPage = () => {
     }
   };
 
+  const inputStyle: React.CSSProperties = {
+    width: "100%",
+    fontFamily: "var(--ap-font-body)",
+    fontWeight: 700,
+    fontSize: "15px",
+    color: "var(--ap-ink)",
+    background: "var(--ap-card)",
+    border: "2px solid var(--ap-line)",
+    borderRadius: "var(--ap-r-sm)",
+    padding: "12px 15px",
+    outline: "none",
+    boxSizing: "border-box",
+    transition: "border-color .12s, box-shadow .12s",
+  };
+
+  const labelStyle: React.CSSProperties = {
+    display: "block",
+    fontWeight: 800,
+    fontSize: "11px",
+    letterSpacing: "0.5px",
+    textTransform: "uppercase",
+    color: "var(--ap-muted)",
+    marginBottom: "7px",
+    fontFamily: "var(--ap-font-body)",
+  };
+
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "var(--ap-paper)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "16px",
+      }}
+    >
+      <div style={{ width: "100%", maxWidth: "420px" }}>
         {/* Logo */}
-        <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-lg">
-            <Zap className="h-7 w-7" />
+        <div style={{ marginBottom: "32px", textAlign: "center" }}>
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: "16px" }}>
+            <span
+              className="ap-logo"
+              style={{ width: 58, height: 58, borderRadius: "18px", cursor: "pointer" }}
+              onClick={() => navigate("/")}
+            >
+              <svg viewBox="0 0 24 24"><path d="M13 2L4.5 13.5H11l-1 8.5L19.5 10H13l0-8z"/></svg>
+            </span>
           </div>
-          <h1 className="text-3xl font-extrabold text-slate-900 mb-1">QuizMaster</h1>
-          <p className="text-slate-500 text-sm">Bienvenue sur la plateforme de quiz interactifs</p>
+          <h1 className="ap-h2" style={{ fontSize: "28px", marginBottom: "6px" }}>QuizMaster</h1>
+          <p className="ap-muted" style={{ fontSize: "14px" }}>Bienvenue sur la plateforme de quiz interactifs</p>
         </div>
 
-        {/* Auth card */}
-        <div className="rounded-2xl border border-slate-100 bg-white shadow-card p-8">
-          <Tabs defaultValue="login">
-            <TabsList className="mb-6 w-full rounded-xl bg-slate-100 p-1">
-              <TabsTrigger value="login" className="flex-1 rounded-lg text-sm font-semibold data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm">
+        {/* Card */}
+        <div className="ap-card ap-card--floaty" style={{ padding: "32px" }}>
+          {/* Tab switcher */}
+          <div className="ap-seg" style={{ marginBottom: "24px" }}>
+            <button
+              className={tab === "login" ? "is-on" : ""}
+              onClick={() => setTab("login")}
+            >
+              Se connecter
+            </button>
+            <button
+              className={tab === "register" ? "is-on" : ""}
+              onClick={() => setTab("register")}
+            >
+              S'inscrire
+            </button>
+          </div>
+
+          {tab === "login" && (
+            <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div>
+                <label style={labelStyle}>Email</label>
+                <input
+                  type="email"
+                  required
+                  value={loginData.email}
+                  onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
+                  style={inputStyle}
+                  placeholder="votre@email.com"
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = "var(--ap-brand)";
+                    e.currentTarget.style.boxShadow = "0 0 0 4px var(--ap-brand-soft)";
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = "var(--ap-line)";
+                    e.currentTarget.style.boxShadow = "none";
+                  }}
+                />
+              </div>
+              <div>
+                <label style={labelStyle}>Mot de passe</label>
+                <input
+                  type="password"
+                  required
+                  value={loginData.password}
+                  onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
+                  style={inputStyle}
+                  placeholder="••••••••"
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = "var(--ap-brand)";
+                    e.currentTarget.style.boxShadow = "0 0 0 4px var(--ap-brand-soft)";
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = "var(--ap-line)";
+                    e.currentTarget.style.boxShadow = "none";
+                  }}
+                />
+              </div>
+              <button
+                type="submit"
+                className="ap-btn ap-btn--pill"
+                style={{ width: "100%", marginTop: "4px" }}
+              >
                 Se connecter
-              </TabsTrigger>
-              <TabsTrigger value="register" className="flex-1 rounded-lg text-sm font-semibold data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm">
+              </button>
+            </form>
+          )}
+
+          {tab === "register" && (
+            <form onSubmit={handleRegister} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div>
+                <label style={labelStyle}>Nom d'utilisateur</label>
+                <input
+                  type="text"
+                  required
+                  value={registerData.username}
+                  onChange={(e) => setRegisterData({ ...registerData, username: e.target.value })}
+                  style={inputStyle}
+                  placeholder="JohnDoe"
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = "var(--ap-brand)";
+                    e.currentTarget.style.boxShadow = "0 0 0 4px var(--ap-brand-soft)";
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = "var(--ap-line)";
+                    e.currentTarget.style.boxShadow = "none";
+                  }}
+                />
+              </div>
+              <div>
+                <label style={labelStyle}>Email</label>
+                <input
+                  type="email"
+                  required
+                  value={registerData.email}
+                  onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
+                  style={inputStyle}
+                  placeholder="votre@email.com"
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = "var(--ap-brand)";
+                    e.currentTarget.style.boxShadow = "0 0 0 4px var(--ap-brand-soft)";
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = "var(--ap-line)";
+                    e.currentTarget.style.boxShadow = "none";
+                  }}
+                />
+              </div>
+              <div>
+                <label style={labelStyle}>Mot de passe</label>
+                <input
+                  type="password"
+                  required
+                  value={registerData.password}
+                  onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
+                  style={inputStyle}
+                  placeholder="••••••••"
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = "var(--ap-brand)";
+                    e.currentTarget.style.boxShadow = "0 0 0 4px var(--ap-brand-soft)";
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = "var(--ap-line)";
+                    e.currentTarget.style.boxShadow = "none";
+                  }}
+                />
+              </div>
+              <button
+                type="submit"
+                className="ap-btn ap-btn--pill"
+                style={{ width: "100%", marginTop: "4px" }}
+              >
                 S'inscrire
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="login">
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div>
-                  <Label htmlFor="login-email" className="text-sm font-medium text-slate-700 mb-1.5 block">Email</Label>
-                  <Input
-                    id="login-email"
-                    type="email"
-                    required
-                    value={loginData.email}
-                    onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
-                    className="h-11 rounded-xl border-slate-200 focus-visible:ring-indigo-500"
-                    placeholder="votre@email.com"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="login-password" className="text-sm font-medium text-slate-700 mb-1.5 block">Mot de passe</Label>
-                  <Input
-                    id="login-password"
-                    type="password"
-                    required
-                    value={loginData.password}
-                    onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
-                    className="h-11 rounded-xl border-slate-200 focus-visible:ring-indigo-500"
-                    placeholder="••••••••"
-                  />
-                </div>
-                <Button type="submit" className="w-full h-11 rounded-xl bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition-colors mt-2">
-                  Se connecter
-                </Button>
-              </form>
-            </TabsContent>
-
-            <TabsContent value="register">
-              <form onSubmit={handleRegister} className="space-y-4">
-                <div>
-                  <Label htmlFor="register-username" className="text-sm font-medium text-slate-700 mb-1.5 block">Nom d'utilisateur</Label>
-                  <Input
-                    id="register-username"
-                    type="text"
-                    required
-                    value={registerData.username}
-                    onChange={(e) => setRegisterData({ ...registerData, username: e.target.value })}
-                    className="h-11 rounded-xl border-slate-200 focus-visible:ring-indigo-500"
-                    placeholder="JohnDoe"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="register-email" className="text-sm font-medium text-slate-700 mb-1.5 block">Email</Label>
-                  <Input
-                    id="register-email"
-                    type="email"
-                    required
-                    value={registerData.email}
-                    onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
-                    className="h-11 rounded-xl border-slate-200 focus-visible:ring-indigo-500"
-                    placeholder="votre@email.com"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="register-password" className="text-sm font-medium text-slate-700 mb-1.5 block">Mot de passe</Label>
-                  <Input
-                    id="register-password"
-                    type="password"
-                    required
-                    value={registerData.password}
-                    onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
-                    className="h-11 rounded-xl border-slate-200 focus-visible:ring-indigo-500"
-                    placeholder="••••••••"
-                  />
-                </div>
-                <Button type="submit" className="w-full h-11 rounded-xl bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition-colors mt-2">
-                  S'inscrire
-                </Button>
-              </form>
-            </TabsContent>
-          </Tabs>
+              </button>
+            </form>
+          )}
         </div>
 
-        <p className="mt-6 text-center text-xs text-slate-400">
+        <p
+          style={{
+            marginTop: "20px",
+            textAlign: "center",
+            fontSize: "12px",
+            fontWeight: 700,
+            color: "var(--ap-muted)",
+          }}
+        >
           En continuant, vous acceptez nos conditions d'utilisation.
         </p>
       </div>

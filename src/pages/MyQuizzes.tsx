@@ -160,7 +160,7 @@ const MyQuizzes = () => {
               </>
             )}
           </div>
-          <Button size="sm" onClick={(e) => { e.stopPropagation(); handlePlayQuiz(quiz); }} className="rounded-full bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 gap-1.5 px-4">
+          <Button size="sm" onClick={(e) => { e.stopPropagation(); handlePlayQuiz(quiz); }} className="ap-btn ap-btn--sm ap-btn--pill ap-btn--quiz gap-1.5 px-4">
             <Play className="h-3.5 w-3.5" />{t("playQuiz")}
           </Button>
         </div>
@@ -194,7 +194,7 @@ const MyQuizzes = () => {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC]">
+    <div className="min-h-screen ">
       <Header subtitle={t("myQuizzes")} />
       <div className="mx-auto max-w-6xl px-6 py-10">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">

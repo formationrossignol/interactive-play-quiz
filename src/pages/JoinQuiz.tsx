@@ -53,17 +53,15 @@ const JoinQuiz = () => {
 
   if (!gameCode || quizExists === false) {
     return (
-      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-4">
-        <Card className="bg-white border-slate-100 shadow-card">
-          <CardContent className="p-8 text-center">
-            <AlertTriangle className="w-16 h-16 text-yellow-500 mx-auto mb-4 animate-pulse" />
-            <h2 className="text-3xl font-bold text-slate-900 mb-4">Code invalide</h2>
-            <p className="text-slate-500 text-lg mb-6">Ce code de quiz ou sondage n'existe pas.</p>
-            <Button variant="hero" onClick={() => navigate("/")} className="text-lg font-bold shadow-sm">
-              Retour
-            </Button>
-          </CardContent>
-        </Card>
+      <div style={{ minHeight: "100vh", background: "var(--ap-paper)", display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
+        <div className="ap-card ap-card--floaty" style={{ maxWidth: 440, width: "100%", textAlign: "center", padding: "40px" }}>
+          <AlertTriangle className="w-16 h-16 mx-auto mb-4 animate-pulse" style={{ color: "var(--ap-flash)" }} />
+          <h2 className="ap-h2" style={{ fontSize: "24px", marginBottom: "12px" }}>Code invalide</h2>
+          <p className="ap-muted" style={{ fontSize: "15px", marginBottom: "24px" }}>Ce code de quiz ou sondage n'existe pas.</p>
+          <button className="ap-btn ap-btn--pill" onClick={() => navigate("/")}>
+            Retour
+          </button>
+        </div>
       </div>
     );
   }

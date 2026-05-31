@@ -48,7 +48,7 @@ export const QuizBuilderStart = () => {
     : t("chooseQuizStart");
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC]">
+    <div style={{ minHeight: "100vh", background: "var(--ap-paper)" }}>
       <Header
         subtitle={
           isSlide
@@ -63,8 +63,8 @@ export const QuizBuilderStart = () => {
 
       <div className="mx-auto max-w-3xl px-6 py-12">
         <div className="mb-10 text-center">
-          <h1 className="text-3xl font-extrabold text-slate-900 mb-2">{pageTitle}</h1>
-          <p className="text-slate-500">{pageSubtitle}</p>
+          <h1 className="ap-h2" style={{ fontSize: "28px", marginBottom: "8px" }}>{pageTitle}</h1>
+          <p className="ap-muted">{pageSubtitle}</p>
         </div>
 
         {!showTemplates ? (
@@ -72,14 +72,18 @@ export const QuizBuilderStart = () => {
           <div className="grid md:grid-cols-2 gap-5">
             {/* From scratch */}
             <div
-              className="cursor-pointer rounded-2xl border-2 border-slate-100 bg-white p-7 shadow-card transition-all duration-200 hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-card-hover"
+              className="ap-card ap-card--hover"
+              style={{ cursor: "pointer", padding: "28px" }}
               onClick={handleFromScratch}
             >
-              <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-100">
-                <FileText className="h-6 w-6 text-indigo-600" />
+              <div
+                className="ap-tile__icon"
+                style={{ background: "var(--ap-brand)", boxShadow: "0 5px 0 var(--ap-brand-deep)", marginBottom: "20px" }}
+              >
+                <FileText className="h-6 w-6" color="#fff" />
               </div>
-              <h2 className="mb-2 text-lg font-bold text-slate-900">{t("fromScratch")}</h2>
-              <p className="mb-6 text-sm leading-relaxed text-slate-500">
+              <h2 className="ap-h3" style={{ marginBottom: "8px" }}>{t("fromScratch")}</h2>
+              <p className="ap-muted" style={{ fontSize: "13.5px", lineHeight: 1.5, marginBottom: "24px" }}>
                 {isSlide
                   ? "Créez votre présentation de zéro, diapositive par diapositive"
                   : isFlashcard
@@ -88,25 +92,29 @@ export const QuizBuilderStart = () => {
                   ? t("createPollFromScratchDesc")
                   : t("createQuizFromScratchDesc")}
               </p>
-              <Button
-                className="rounded-full bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition-colors gap-1.5 px-5"
+              <button
+                className="ap-btn ap-btn--pill ap-btn--sm"
                 onClick={(e) => { e.stopPropagation(); handleFromScratch(); }}
               >
                 {t("startFromScratch")}
                 <ArrowRight className="h-4 w-4" />
-              </Button>
+              </button>
             </div>
 
             {/* From template */}
             <div
-              className="cursor-pointer rounded-2xl border-2 border-slate-100 bg-white p-7 shadow-card transition-all duration-200 hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-card-hover"
+              className="ap-card ap-card--hover"
+              style={{ cursor: "pointer", padding: "28px" }}
               onClick={() => setShowTemplates(true)}
             >
-              <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-violet-100">
-                <Sparkles className="h-6 w-6 text-violet-600" />
+              <div
+                className="ap-tile__icon"
+                style={{ background: "var(--ap-flash)", boxShadow: "0 5px 0 var(--ap-flash-deep)", marginBottom: "20px" }}
+              >
+                <Sparkles className="h-6 w-6" color="#fff" />
               </div>
-              <h2 className="mb-2 text-lg font-bold text-slate-900">{t("fromTemplate")}</h2>
-              <p className="mb-6 text-sm leading-relaxed text-slate-500">
+              <h2 className="ap-h3" style={{ marginBottom: "8px" }}>{t("fromTemplate")}</h2>
+              <p className="ap-muted" style={{ fontSize: "13.5px", lineHeight: 1.5, marginBottom: "24px" }}>
                 {isSlide
                   ? "Démarrez avec un modèle de présentation prêt à l'emploi"
                   : isFlashcard
@@ -115,14 +123,13 @@ export const QuizBuilderStart = () => {
                   ? t("createPollFromTemplateDesc")
                   : t("createQuizFromTemplateDesc")}
               </p>
-              <Button
-                variant="outline"
-                className="rounded-full border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors gap-1.5 px-5"
+              <button
+                className="ap-btn ap-btn--ghost ap-btn--pill ap-btn--sm"
                 onClick={(e) => { e.stopPropagation(); setShowTemplates(true); }}
               >
                 {t("browseTemplates")}
                 <ArrowRight className="h-4 w-4" />
-              </Button>
+              </button>
             </div>
           </div>
 
@@ -136,7 +143,8 @@ export const QuizBuilderStart = () => {
           <div className="flex flex-col gap-3">
             <button
               onClick={() => navigate("/question-bank")}
-              className="flex w-full items-center justify-center gap-2.5 rounded-2xl border-2 border-slate-200 bg-white px-6 py-4 text-sm font-semibold text-slate-600 transition-all duration-200 hover:border-indigo-300 hover:bg-indigo-50/40 hover:text-indigo-700"
+              className="ap-btn ap-btn--ghost"
+              style={{ width: "100%", justifyContent: "center" }}
             >
               <Database className="h-4 w-4" />
               Importer depuis la banque
@@ -144,7 +152,15 @@ export const QuizBuilderStart = () => {
 
             <button
               onClick={() => setImportOpen(true)}
-              className="flex w-full items-center justify-center gap-2.5 rounded-2xl border-2 border-dashed border-slate-200 bg-white px-6 py-4 text-sm font-semibold text-slate-600 transition-all duration-200 hover:border-indigo-300 hover:bg-indigo-50/40 hover:text-indigo-700"
+              style={{
+                display: "flex", width: "100%", alignItems: "center", justifyContent: "center",
+                gap: "10px", borderRadius: "var(--ap-r-md)", border: "2px dashed var(--ap-line-2)",
+                background: "var(--ap-card)", padding: "16px 24px", fontSize: "14px",
+                fontWeight: 700, fontFamily: "var(--ap-font-body)", color: "var(--ap-muted)",
+                cursor: "pointer", transition: "border-color .12s",
+              }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--ap-brand)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--ap-line-2)"; }}
             >
               <Upload className="h-4 w-4" />
               Importer depuis un fichier
@@ -155,7 +171,8 @@ export const QuizBuilderStart = () => {
           <div className="space-y-5">
             <button
               onClick={() => setShowTemplates(false)}
-              className="cursor-pointer text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors flex items-center gap-1"
+              className="ap-btn ap-btn--ghost ap-btn--sm"
+              style={{ alignSelf: "flex-start" }}
             >
               ← {t("back")}
             </button>

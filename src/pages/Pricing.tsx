@@ -1,9 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { Button } from "@/components/ui/button";
 import { t } from "@/lib/i18n";
-import { cn } from "@/lib/utils";
 import { Check, Rocket, Crown, Building2 } from "lucide-react";
 
 const Pricing = () => {
@@ -16,11 +14,10 @@ const Pricing = () => {
       price: t('pricingPlanStarterPrice'),
       cta: t('pricingPlanStarterCta'),
       icon: Rocket,
-      features: [
-        t('pricingStarterFeature1'),
-        t('pricingStarterFeature2'),
-        t('pricingStarterFeature3'),
-      ],
+      accent: "--ap-pres",
+      accentDeep: "--ap-pres-deep",
+      accentSoft: "--ap-pres-soft",
+      features: [t('pricingStarterFeature1'), t('pricingStarterFeature2'), t('pricingStarterFeature3')],
       onClick: () => navigate('/builder-start?type=quiz'),
       billing: t('pricingPerMonth'),
       highlight: false,
@@ -31,11 +28,10 @@ const Pricing = () => {
       price: t('pricingPlanProPrice'),
       cta: t('pricingPlanProCta'),
       icon: Crown,
-      features: [
-        t('pricingProFeature1'),
-        t('pricingProFeature2'),
-        t('pricingProFeature3'),
-      ],
+      accent: "--ap-brand",
+      accentDeep: "--ap-brand-deep",
+      accentSoft: "--ap-brand-soft",
+      features: [t('pricingProFeature1'), t('pricingProFeature2'), t('pricingProFeature3')],
       onClick: () => navigate('/auth'),
       billing: t('pricingPerMonth'),
       highlight: true,
@@ -46,11 +42,10 @@ const Pricing = () => {
       price: t('pricingPlanEnterprisePrice'),
       cta: t('pricingPlanEnterpriseCta'),
       icon: Building2,
-      features: [
-        t('pricingEnterpriseFeature1'),
-        t('pricingEnterpriseFeature2'),
-        t('pricingEnterpriseFeature3'),
-      ],
+      accent: "--ap-poll",
+      accentDeep: "--ap-poll-deep",
+      accentSoft: "--ap-poll-soft",
+      features: [t('pricingEnterpriseFeature1'), t('pricingEnterpriseFeature2'), t('pricingEnterpriseFeature3')],
       onClick: () => window.open('mailto:contact@quizmaster.app', '_blank'),
       billing: t('pricingContactUs'),
       highlight: false,
@@ -58,62 +53,105 @@ const Pricing = () => {
   ];
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#F8FAFC]">
+    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", background: "var(--ap-paper)" }}>
       <Header />
-      <main className="relative z-10 flex-1">
-
-        <section className="relative mx-auto max-w-4xl px-6 pt-16 pb-20 text-center md:pt-20">
-          <h1 className="font-extrabold text-4xl leading-tight text-foreground md:text-6xl">{t('pricingTitle')}</h1>
-          <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-foreground/70 md:text-lg">
+      <main style={{ flex: 1 }}>
+        {/* Hero */}
+        <section style={{ maxWidth: 640, margin: "0 auto", padding: "72px 24px 56px", textAlign: "center" }}>
+          <span className="ap-badge ap-badge--brand" style={{ marginBottom: "20px", display: "inline-flex" }}>
+            Tarifs
+          </span>
+          <h1 className="ap-h1" style={{ fontSize: "clamp(36px,5vw,56px)", marginBottom: "16px" }}>
+            {t('pricingTitle')}
+          </h1>
+          <p className="ap-lead" style={{ maxWidth: 500, margin: "0 auto" }}>
             {t('pricingSubtitle')}
           </p>
         </section>
 
-        <section className="relative z-10 mx-auto max-w-6xl px-6 pb-24">
-          <div className="grid gap-6 md:grid-cols-3">
+        {/* Pricing cards */}
+        <section style={{ maxWidth: 1100, margin: "0 auto", padding: "0 24px 96px" }}>
+          <div style={{ display: "grid", gap: "24px", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))" }}>
             {plans.map((plan) => {
               const Icon = plan.icon;
               return (
                 <div
                   key={plan.name}
-                  className={cn(
-                    'rounded-2xl border border-slate-100 bg-white shadow-card flex h-full flex-col gap-6 p-8 text-left transition-transform duration-300 hover:-translate-y-1',
-                    plan.highlight && 'border-2 border-indigo-200 shadow-card-hover'
-                  )}
+                  className={plan.highlight ? "ap-card ap-card--floaty" : "ap-card ap-card--hover"}
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "20px",
+                    padding: "32px",
+                    border: plan.highlight ? `2px solid var(${plan.accent})` : undefined,
+                    position: "relative",
+                    overflow: "hidden",
+                  }}
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full border border-slate-200 bg-indigo-50 text-indigo-600 shadow-card">
-                      <Icon className="h-6 w-6" />
+                  {plan.highlight && (
+                    <span
+                      className="ap-badge ap-badge--brand"
+                      style={{
+                        position: "absolute", top: 16, right: 16, fontSize: "10px",
+                      }}
+                    >
+                      Populaire
+                    </span>
+                  )}
+                  {/* icon + name */}
+                  <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+                    <div
+                      className="ap-tile__icon"
+                      style={{
+                        background: `var(${plan.accent})`,
+                        boxShadow: `0 5px 0 var(${plan.accentDeep})`,
+                        flexShrink: 0,
+                      }}
+                    >
+                      <Icon className="h-6 w-6" color="#fff" />
                     </div>
                     <div>
-                      <h3 className="font-extrabold text-2xl text-foreground">{plan.name}</h3>
-                      <p className="text-sm text-foreground/60">{plan.description}</p>
+                      <h3 className="ap-h3">{plan.name}</h3>
+                      <p className="ap-muted" style={{ fontSize: "13px", marginTop: "2px" }}>{plan.description}</p>
                     </div>
                   </div>
+
+                  {/* price */}
                   <div>
-                    <span className="text-3xl font-semibold text-foreground">{plan.price}</span>
-                    <p className="text-sm text-foreground/50">{plan.billing}</p>
+                    <span
+                      style={{
+                        fontFamily: "var(--ap-font-display)", fontWeight: 600,
+                        fontSize: "36px", color: "var(--ap-ink)", letterSpacing: "-1px",
+                      }}
+                    >
+                      {plan.price}
+                    </span>
+                    <p className="ap-muted" style={{ fontSize: "13px", marginTop: "2px" }}>{plan.billing}</p>
                   </div>
-                  <ul className="space-y-3 text-sm text-foreground/70">
+
+                  {/* features */}
+                  <ul style={{ display: "flex", flexDirection: "column", gap: "10px", flex: 1 }}>
                     {plan.features.map((feature) => (
-                      <li key={feature} className="flex items-start gap-2">
-                        <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-indigo-600" />
-                        <span>{feature}</span>
+                      <li key={feature} style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
+                        <Check
+                          className="mt-0.5 h-4 w-4 flex-shrink-0"
+                          style={{ color: `var(${plan.accent})` }}
+                        />
+                        <span style={{ fontFamily: "var(--ap-font-body)", fontWeight: 700, fontSize: "14px", color: "var(--ap-ink)" }}>
+                          {feature}
+                        </span>
                       </li>
                     ))}
                   </ul>
-                  <Button
+
+                  {/* CTA */}
+                  <button
                     onClick={plan.onClick}
-                    className={cn(
-                      'mt-auto h-12 rounded-full transition-all duration-300',
-                      plan.highlight
-                        ? 'bg-indigo-600 text-white hover:bg-indigo-700 hover:-translate-y-0.5'
-                        : 'border-slate-200 bg-white text-foreground/80 hover:border-indigo-200 hover:text-foreground'
-                    )}
-                    variant={plan.highlight ? 'default' : 'outline'}
+                    className={plan.highlight ? "ap-btn ap-btn--pill" : "ap-btn ap-btn--ghost ap-btn--pill"}
+                    style={{ width: "100%" }}
                   >
                     {plan.cta}
-                  </Button>
+                  </button>
                 </div>
               );
             })}
