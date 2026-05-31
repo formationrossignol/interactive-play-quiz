@@ -1,183 +1,213 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getCurrentUser, setCurrentUser, User as AuthUser, type Theme, type Language } from "@/lib/auth";
 import { getUserQuizzes } from "@/lib/quizStorage";
 import { setLanguage as setI18nLanguage, t } from "@/lib/i18n";
 import { Header } from "@/components/Header";
-import { Save, Trophy, Clock, BookOpen, Moon, Sun } from "lucide-react";
+import { Save, Trophy, BookOpen, Clock, Sun, Moon } from "lucide-react";
 import { toast } from "sonner";
+
+const inputStyle: React.CSSProperties = {
+  width: "100%",
+  fontFamily: "var(--ap-font-body)",
+  fontWeight: 700,
+  fontSize: "14px",
+  color: "var(--ap-ink)",
+  background: "var(--ap-card)",
+  border: "2px solid var(--ap-line)",
+  borderRadius: "var(--ap-r-sm)",
+  padding: "11px 14px",
+  outline: "none",
+  boxSizing: "border-box",
+  transition: "border-color .12s, box-shadow .12s",
+};
+
+const labelStyle: React.CSSProperties = {
+  display: "block",
+  fontWeight: 800,
+  fontSize: "11px",
+  letterSpacing: "0.5px",
+  textTransform: "uppercase",
+  color: "var(--ap-muted)",
+  marginBottom: "7px",
+  fontFamily: "var(--ap-font-body)",
+};
+
+const triggerStyle = {
+  fontFamily: "var(--ap-font-body)", fontWeight: 700, fontSize: "14px",
+  border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-sm)",
+  background: "var(--ap-card)", color: "var(--ap-ink)", height: "44px",
+  width: "100%",
+};
+
+const statCards = [
+  { key: "totalQuizzes",   labelKey: "quizzesCreated", icon: Trophy,   accent: "--ap-brand",  accentDeep: "--ap-brand-deep" },
+  { key: "publicQuizzes",  labelKey: "publicQuizzes",  icon: BookOpen, accent: "--ap-poll",   accentDeep: "--ap-poll-deep" },
+  { key: "totalQuestions", labelKey: "questions",      icon: Clock,    accent: "--ap-pres",   accentDeep: "--ap-pres-deep" },
+] as const;
 
 const ProfilePage = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
-  const [theme, setTheme] = useState<Theme>('light');
-  const [language, setLanguage] = useState<Language>('en');
-  const [stats, setStats] = useState({
-    totalQuizzes: 0,
-    publicQuizzes: 0,
-    totalQuestions: 0
-  });
+  const [theme, setTheme] = useState<Theme>("light");
+  const [language, setLanguage] = useState<Language>("en");
+  const [stats, setStats] = useState({ totalQuizzes: 0, publicQuizzes: 0, totalQuestions: 0 });
 
   useEffect(() => {
     const currentUser = getCurrentUser();
-    if (!currentUser) {
-      navigate("/auth");
-      return;
-    }
-    
+    if (!currentUser) { navigate("/auth"); return; }
     setUser(currentUser);
     setUsername(currentUser.username);
     setEmail(currentUser.email);
-    setTheme(currentUser.theme || 'light');
-    setLanguage(currentUser.language || 'en');
-
-    // Calculate stats
-    const userQuizzes = getUserQuizzes(currentUser.id).filter((quiz) => quiz.type === 'quiz');
+    setTheme(currentUser.theme || "light");
+    setLanguage(currentUser.language || "en");
+    const userQuizzes = getUserQuizzes(currentUser.id).filter((q) => q.type === "quiz");
     setStats({
       totalQuizzes: userQuizzes.length,
-      publicQuizzes: userQuizzes.filter(q => q.isPublic).length,
-      totalQuestions: userQuizzes.reduce((sum, q) => sum + q.questions.length, 0)
+      publicQuizzes: userQuizzes.filter((q) => q.isPublic).length,
+      totalQuestions: userQuizzes.reduce((sum, q) => sum + q.questions.length, 0),
     });
   }, [navigate]);
 
   const handleSave = () => {
     if (!user) return;
-    
-    if (!username.trim()) {
-      toast.error(t('usernameRequired'));
-      return;
-    }
-
-    const updatedUser: AuthUser = {
-      ...user,
-      username: username.trim(),
-      theme,
-      language
-    };
-
+    if (!username.trim()) { toast.error(t("usernameRequired")); return; }
+    const updatedUser: AuthUser = { ...user, username: username.trim(), theme, language };
     setCurrentUser(updatedUser);
     setUser(updatedUser);
     setI18nLanguage(language);
-    
-    // Apply theme
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-    
-    toast.success(t('profileUpdated'));
-    
-    // Reload to apply language
+    if (theme === "dark") document.documentElement.classList.add("dark");
+    else document.documentElement.classList.remove("dark");
+    toast.success(t("profileUpdated"));
     setTimeout(() => window.location.reload(), 500);
+  };
+
+  const onFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    e.currentTarget.style.borderColor = "var(--ap-brand)";
+    e.currentTarget.style.boxShadow = "0 0 0 4px var(--ap-brand-soft)";
+  };
+  const onBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    e.currentTarget.style.borderColor = "var(--ap-line)";
+    e.currentTarget.style.boxShadow = "none";
   };
 
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header subtitle={t('myProfile')} />
+    <div style={{ minHeight: "100vh", background: "var(--ap-paper)" }}>
+      <Header subtitle={t("myProfile")} />
 
-      <div className="max-w-4xl mx-auto p-6">
-        <div className="text-center mb-8">
-          <h2 className="text-4xl font-bold text-foreground mb-2">{t('myProfile')}</h2>
-          <p className="text-muted-foreground">{t('manageInfo')}</p>
+      <div className="mx-auto max-w-4xl px-6 py-10">
+
+        {/* Page header */}
+        <div style={{ textAlign: "center", marginBottom: "40px" }}>
+          {/* Avatar circle */}
+          <div
+            style={{
+              width: 72, height: 72, borderRadius: "50%",
+              background: "var(--ap-brand)",
+              boxShadow: "0 6px 0 var(--ap-brand-deep), 0 12px 24px rgba(112,72,255,.3)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              margin: "0 auto 16px",
+            }}
+          >
+            <span
+              style={{
+                fontFamily: "var(--ap-font-display)", fontWeight: 600,
+                fontSize: "28px", color: "#fff", textTransform: "uppercase",
+              }}
+            >
+              {user.username?.[0] ?? "?"}
+            </span>
+          </div>
+          <h1 className="ap-h2" style={{ fontSize: "26px", marginBottom: "6px" }}>{user.username}</h1>
+          <p className="ap-muted" style={{ fontSize: "14px" }}>{user.email}</p>
         </div>
 
-        <div className="grid gap-6">
+        <div style={{ display: "grid", gap: "20px" }}>
+
           {/* Stats */}
-          <div className="grid md:grid-cols-3 gap-6">
-            <Card>
-              <CardContent className="p-6 text-center">
-                <div className="w-12 h-12 bg-indigo-600 rounded-lg mx-auto mb-3 flex items-center justify-center">
-                  <Trophy className="w-6 h-6 text-white" />
+          <div style={{ display: "grid", gap: "16px", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))" }}>
+            {statCards.map(({ key, labelKey, icon: Icon, accent, accentDeep }) => (
+              <div
+                key={key}
+                className="ap-card"
+                style={{ textAlign: "center", padding: "24px 20px" }}
+              >
+                <div
+                  className="ap-tile__icon"
+                  style={{
+                    background: `var(${accent})`,
+                    boxShadow: `0 5px 0 var(${accentDeep})`,
+                    margin: "0 auto 14px",
+                  }}
+                >
+                  <Icon className="h-6 w-6" color="#fff" />
                 </div>
-                <div className="text-3xl font-bold text-foreground mb-1">{stats.totalQuizzes}</div>
-                <div className="text-muted-foreground text-sm">{t('quizzesCreated')}</div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-6 text-center">
-                <div className="w-12 h-12 bg-indigo-500 rounded-lg mx-auto mb-3 flex items-center justify-center">
-                  <BookOpen className="w-6 h-6 text-white" />
+                <div
+                  style={{
+                    fontFamily: "var(--ap-font-display)", fontWeight: 600,
+                    fontSize: "36px", color: "var(--ap-ink)", lineHeight: 1,
+                    marginBottom: "6px",
+                  }}
+                >
+                  {stats[key]}
                 </div>
-                <div className="text-3xl font-bold text-foreground mb-1">{stats.publicQuizzes}</div>
-                <div className="text-muted-foreground text-sm">{t('publicQuizzes')}</div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-6 text-center">
-                <div className="w-12 h-12 bg-emerald-600 rounded-lg mx-auto mb-3 flex items-center justify-center">
-                  <Clock className="w-6 h-6 text-white" />
+                <div className="ap-muted" style={{ fontSize: "13px", fontWeight: 700 }}>
+                  {t(labelKey as any)}
                 </div>
-                <div className="text-3xl font-bold text-foreground mb-1">{stats.totalQuestions}</div>
-                <div className="text-muted-foreground text-sm">{t('questions')}</div>
-              </CardContent>
-            </Card>
+              </div>
+            ))}
           </div>
 
-          {/* Profile Info */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-foreground">{t('profileInfo')}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          {/* Profile info */}
+          <div className="ap-card ap-card--floaty" style={{ padding: "28px 32px" }}>
+            <h2 className="ap-h3" style={{ marginBottom: "20px" }}>{t("profileInfo")}</h2>
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               <div>
-                <Label htmlFor="username">{t('username')}</Label>
-                <Input
-                  id="username"
+                <label style={labelStyle}>{t("username")}</label>
+                <input
+                  style={inputStyle}
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="mt-2"
+                  onFocus={onFocus} onBlur={onBlur}
                 />
               </div>
-
               <div>
-                <Label htmlFor="email">{t('email')}</Label>
-                <Input
-                  id="email"
+                <label style={labelStyle}>{t("email")}</label>
+                <input
                   type="email"
+                  style={{ ...inputStyle, opacity: 0.55, cursor: "not-allowed" }}
                   value={email}
                   disabled
-                  className="mt-2 cursor-not-allowed opacity-60"
                 />
-                <p className="text-muted-foreground text-xs mt-1">{t('emailReadonly')}</p>
+                <p className="ap-muted" style={{ fontSize: "11px", marginTop: "5px" }}>{t("emailReadonly")}</p>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
           {/* Preferences */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-foreground">{t('preferences')}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <div className="ap-card ap-card--floaty" style={{ padding: "28px 32px" }}>
+            <h2 className="ap-h3" style={{ marginBottom: "20px" }}>{t("preferences")}</h2>
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               <div>
-                <Label htmlFor="theme">{t('theme')}</Label>
-                <Select value={theme} onValueChange={(value: Theme) => setTheme(value)}>
-                  <SelectTrigger id="theme" className="mt-2">
+                <label style={labelStyle}>{t("theme")}</label>
+                <Select value={theme} onValueChange={(v: Theme) => setTheme(v)}>
+                  <SelectTrigger style={{ ...triggerStyle, marginTop: "8px" }}>
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-popover z-50">
+                  <SelectContent style={{ background: "var(--ap-card)", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-md)" }}>
                     <SelectItem value="light">
-                      <div className="flex items-center gap-2">
-                        <Sun className="w-4 h-4" />
-                        {t('lightMode')}
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <Sun className="w-4 h-4" />{t("lightMode")}
                       </div>
                     </SelectItem>
                     <SelectItem value="dark">
-                      <div className="flex items-center gap-2">
-                        <Moon className="w-4 h-4" />
-                        {t('darkMode')}
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <Moon className="w-4 h-4" />{t("darkMode")}
                       </div>
                     </SelectItem>
                   </SelectContent>
@@ -185,30 +215,27 @@ const ProfilePage = () => {
               </div>
 
               <div>
-                <Label htmlFor="language">{t('language')}</Label>
-                <Select value={language} onValueChange={(value: Language) => setLanguage(value)}>
-                  <SelectTrigger id="language" className="mt-2">
+                <label style={labelStyle}>{t("language")}</label>
+                <Select value={language} onValueChange={(v: Language) => setLanguage(v)}>
+                  <SelectTrigger style={{ ...triggerStyle, marginTop: "8px" }}>
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-popover z-50">
+                  <SelectContent style={{ background: "var(--ap-card)", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-md)" }}>
                     <SelectItem value="en">🇬🇧 English</SelectItem>
                     <SelectItem value="fr">🇫🇷 Français</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              <div className="pt-4">
-                <Button
-                  variant="default"
-                  className="w-full"
-                  onClick={handleSave}
-                >
-                  <Save className="w-4 h-4 mr-2" />
-                  {t('saveChanges')}
-                </Button>
+              <div style={{ paddingTop: "8px" }}>
+                <button className="ap-btn ap-btn--pill" style={{ width: "100%", gap: "8px" }} onClick={handleSave}>
+                  <Save className="w-4 h-4" />
+                  {t("saveChanges")}
+                </button>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
