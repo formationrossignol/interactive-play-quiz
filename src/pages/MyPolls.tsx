@@ -15,9 +15,10 @@ import {
 } from "@/lib/quizStorage";
 import { DeleteQuizDialog } from "@/components/DeleteQuizDialog";
 import { toast } from "sonner";
-import { Edit, Play, Search, Star, Trash2 } from "lucide-react";
+import { BarChart2, Edit, Play, Search, Star, Trash2 } from "lucide-react";
 import { t } from "@/lib/i18n";
 import { useCollectionFilters } from "@/hooks/useCollectionFilters";
+import { hasPollResults } from "@/lib/pollResults";
 
 const triggerStyle = {
   fontFamily: "var(--ap-font-body)", fontWeight: 700, fontSize: "14px",
@@ -146,9 +147,22 @@ const MyPolls = () => {
               </>
             )}
           </div>
-          <button className="ap-btn ap-btn--sm ap-btn--pill ap-btn--poll" onClick={(e) => { e.stopPropagation(); handleLaunchPoll(poll); }} style={{ gap: "6px" }}>
-            <Play style={{ width: 13, height: 13 }} />{t("launchPoll")}
-          </button>
+          <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+            {hasPollResults(poll.id) && (
+              <button
+                onClick={(e) => { e.stopPropagation(); navigate(`/poll-results/${poll.id}`); }}
+                title="Voir les résultats"
+                className="ap-btn ap-btn--ghost ap-btn--sm"
+                style={{ padding: "6px 10px", display: "flex", alignItems: "center", gap: "4px" }}
+              >
+                <BarChart2 style={{ width: 13, height: 13 }} />
+                Résultats
+              </button>
+            )}
+            <button className="ap-btn ap-btn--sm ap-btn--pill ap-btn--poll" onClick={(e) => { e.stopPropagation(); handleLaunchPoll(poll); }} style={{ gap: "6px" }}>
+              <Play style={{ width: 13, height: 13 }} />{t("launchPoll")}
+            </button>
+          </div>
         </div>
       </div>
     </div>

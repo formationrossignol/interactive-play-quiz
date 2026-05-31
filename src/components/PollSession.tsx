@@ -1,10 +1,18 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { MultiStepProgress } from "@/components/MultiStepProgress";
 import type { SavedQuiz } from "@/lib/quizStorage";
 import { cn } from "@/lib/utils";
+import {
+  ensureSessionState,
+  ensureSessionInSupabase,
+  readSessionState,
+  patchSessionState,
+  subscribeToSessionState,
+  type SharedPlayer,
+} from "@/lib/sessionState";
+import { savePollSession, type PollQuestionResult, type PollResultSession } from "@/lib/pollResults";
 
 interface PollSessionProps {
   poll: SavedQuiz;
@@ -26,10 +34,96 @@ type PollQuestion = {
 };
 
 export const PollSession = ({ poll }: PollSessionProps) => {
+  const navigate = useNavigate();
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [players, setPlayers] = useState<SharedPlayer[]>([]);
+  const [sessionStarted, setSessionStarted] = useState(false);
+  const sessionIdRef = useRef(`${poll.id}-${Date.now()}`);
+  const startTimeRef = useRef(new Date().toISOString());
+  // accumulated answer counts per question: Map<questionIndex, Map<answerKey, count>>
+  const responsesRef = useRef<Map<number, Map<string, number>>>(new Map());
+  // track which player+question combos we've already counted
+  const seenRef = useRef<Set<string>>(new Set());
 
   const totalQuestions = poll.questions.length;
   const currentQuestion = useMemo(() => poll.questions[currentIndex] as PollQuestion, [poll.questions, currentIndex]);
+
+  const collectAnswers = useCallback((sessionPlayers: SharedPlayer[]) => {
+    sessionPlayers.forEach((player) => {
+      if (
+        typeof player.lastAnswerQuestionIndex !== "number" ||
+        player.lastAnswer === undefined ||
+        player.lastAnswer === null
+      ) return;
+
+      const qIdx = player.lastAnswerQuestionIndex;
+      const key = `${player.id}:${qIdx}`;
+      if (seenRef.current.has(key)) return;
+      seenRef.current.add(key);
+
+      if (!responsesRef.current.has(qIdx)) {
+        responsesRef.current.set(qIdx, new Map());
+      }
+      const qMap = responsesRef.current.get(qIdx)!;
+      const answerKey = String(player.lastAnswer);
+      qMap.set(answerKey, (qMap.get(answerKey) ?? 0) + 1);
+    });
+  }, []);
+
+  const buildResults = useCallback((): PollQuestionResult[] => {
+    return poll.questions.map((q: PollQuestion, idx: number) => {
+      const qMap = responsesRef.current.get(idx);
+      const answers = q.answers?.filter((a) => a?.trim()) ?? [];
+      const distribution = answers.map((_, i) => qMap?.get(String(i)) ?? 0);
+      const totalResponses = distribution.reduce((s, n) => s + n, 0);
+      return {
+        questionIndex: idx,
+        question: q.question ?? `Question ${idx + 1}`,
+        type: q.type,
+        answers,
+        distribution,
+        totalResponses,
+      };
+    });
+  }, [poll.questions]);
+
+  const saveResults = useCallback(() => {
+    const session: PollResultSession = {
+      sessionId: sessionIdRef.current,
+      date: startTimeRef.current,
+      totalParticipants: players.length,
+      questions: buildResults(),
+    };
+    savePollSession(poll.id, poll.title, session);
+  }, [players.length, buildResults, poll.id, poll.title]);
+
+  useEffect(() => {
+    ensureSessionState(poll.id);
+    ensureSessionInSupabase(poll.id, { questions: poll.questions, title: poll.title });
+    patchSessionState(poll.id, { gameState: "waiting" });
+
+    const initial = readSessionState(poll.id);
+    setPlayers(initial.players);
+    collectAnswers(initial.players);
+
+    const channel = subscribeToSessionState(poll.id, (state) => {
+      setPlayers(state.players);
+      collectAnswers(state.players);
+    });
+
+    return () => {
+      channel.unsubscribe();
+    };
+  }, [poll.id, poll.title, poll.questions, collectAnswers]);
+
+  // Auto-save results whenever we advance questions or on unmount
+  useEffect(() => {
+    if (sessionStarted) saveResults();
+  }, [currentIndex, sessionStarted, saveResults]);
+
+  useEffect(() => {
+    return () => { saveResults(); };
+  }, [saveResults]);
 
   if (totalQuestions === 0) {
     return (
@@ -47,21 +141,30 @@ export const PollSession = ({ poll }: PollSessionProps) => {
       </div>
     );
   }
+
   const hasPrevious = currentIndex > 0;
   const isLast = currentIndex === totalQuestions - 1;
-
   const filteredAnswers = (currentQuestion?.answers || []).filter((answer) => answer?.trim());
 
   const goNext = () => {
-    if (!isLast) {
-      setCurrentIndex((index) => Math.min(index + 1, totalQuestions - 1));
-    }
+    if (!sessionStarted) setSessionStarted(true);
+    patchSessionState(poll.id, { gameState: "question", currentQuestionIndex: currentIndex + 1 });
+    setCurrentIndex((i) => Math.min(i + 1, totalQuestions - 1));
   };
 
   const goPrevious = () => {
-    if (hasPrevious) {
-      setCurrentIndex((index) => Math.max(index - 1, 0));
-    }
+    if (!sessionStarted) setSessionStarted(true);
+    setCurrentIndex((i) => Math.max(i - 1, 0));
+  };
+
+  const handleStart = () => {
+    setSessionStarted(true);
+    patchSessionState(poll.id, { gameState: "question", currentQuestionIndex: 0 });
+  };
+
+  const handleViewResults = () => {
+    saveResults();
+    navigate(`/poll-results/${poll.id}`);
   };
 
   const renderChoiceAnswers = (multiple: boolean) => (
@@ -92,10 +195,7 @@ export const PollSession = ({ poll }: PollSessionProps) => {
   const renderScale = (scale: string[] | undefined) => (
     <div className="space-y-3">
       {scale?.map((item, index) => (
-        <div
-          key={`${item}-${index}`}
-          className="rounded-2xl border border-slate-700/60 bg-slate-900/80 px-4 py-4 text-center text-slate-100 shadow-lg"
-        >
+        <div key={`${item}-${index}`} className="rounded-2xl border border-slate-700/60 bg-slate-900/80 px-4 py-4 text-center text-slate-100 shadow-lg">
           {item}
         </div>
       )) || (
@@ -116,10 +216,7 @@ export const PollSession = ({ poll }: PollSessionProps) => {
         return (
           <div className="space-y-3">
             {(currentQuestion.items || []).filter((item) => item?.trim()).map((item, index) => (
-              <div
-                key={`${item}-${index}`}
-                className="flex items-center gap-3 rounded-2xl border border-slate-700/60 bg-slate-900/80 px-4 py-4 text-slate-100 shadow-lg"
-              >
+              <div key={`${item}-${index}`} className="flex items-center gap-3 rounded-2xl border border-slate-700/60 bg-slate-900/80 px-4 py-4 text-slate-100 shadow-lg">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/80 text-lg font-bold text-white shadow-inner">
                   {index + 1}
                 </div>
@@ -141,10 +238,8 @@ export const PollSession = ({ poll }: PollSessionProps) => {
         );
       case "open-text":
         return (
-          <div className="space-y-4">
-            <div className="rounded-2xl border border-slate-700/60 bg-slate-900/70 px-5 py-6 text-slate-300">
-              Réponse libre – les participants peuvent saisir jusqu'à {currentQuestion.maxLength || 500} caractères.
-            </div>
+          <div className="rounded-2xl border border-slate-700/60 bg-slate-900/70 px-5 py-6 text-slate-300">
+            Réponse libre – les participants peuvent saisir jusqu'à {currentQuestion.maxLength || 500} caractères.
           </div>
         );
       case "nps-scale":
@@ -177,12 +272,15 @@ export const PollSession = ({ poll }: PollSessionProps) => {
       <div className="mx-auto flex max-w-4xl flex-col gap-6">
         <header className="flex flex-col gap-4 text-center">
           <div className="flex items-center justify-between gap-4 text-sm text-slate-300">
-            <Badge variant="secondary" className="border border-slate-700/60 bg-slate-800/70 text-slate-200">
-              Sondage en direct
-            </Badge>
-            <span>
-              Question {currentIndex + 1} / {totalQuestions}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="rounded-full border border-slate-700/60 bg-slate-800/70 px-3 py-1 text-slate-200 text-xs font-medium">
+                Sondage en direct
+              </span>
+              {players.length > 0 && (
+                <span className="text-xs text-slate-400">{players.length} participant{players.length > 1 ? "s" : ""}</span>
+              )}
+            </div>
+            <span>Question {currentIndex + 1} / {totalQuestions}</span>
           </div>
           <MultiStepProgress totalSteps={totalQuestions} currentStep={currentIndex} />
         </header>
@@ -199,23 +297,35 @@ export const PollSession = ({ poll }: PollSessionProps) => {
                 </div>
               )}
             </div>
-
             {renderContent()}
           </CardContent>
         </Card>
 
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <Button
-            variant="ghost"
+          <button
+            className="ap-btn ap-btn--ghost ap-btn--sm"
             onClick={goPrevious}
             disabled={!hasPrevious}
-            className="border border-slate-700/60 bg-slate-800/70 text-slate-200 hover:bg-slate-700"
+            style={{ borderColor: "rgba(255,255,255,0.15)", color: "#cbd5e1" }}
           >
             Précédent
-          </Button>
-          <Button variant="hero" onClick={goNext} disabled={isLast}>
-            {isLast ? "Fin du sondage" : "Question suivante"}
-          </Button>
+          </button>
+          <div className="flex gap-3">
+            {!sessionStarted && (
+              <button className="ap-btn ap-btn--poll ap-btn--pill" onClick={handleStart}>
+                Démarrer
+              </button>
+            )}
+            {isLast ? (
+              <button className="ap-btn ap-btn--poll ap-btn--pill" onClick={handleViewResults}>
+                Voir les résultats
+              </button>
+            ) : (
+              <button className="ap-btn ap-btn--poll ap-btn--pill" onClick={goNext} disabled={!sessionStarted && currentIndex === 0}>
+                Question suivante
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>
