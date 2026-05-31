@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap");
+@import "./arcade-pop.css";
 
 @tailwind base;
 @tailwind components;
@@ -6,55 +6,57 @@
 
 @layer base {
   :root {
-    --background: 210 40% 98%;
-    --foreground: 222 47% 17%;
+    /* Arcade Pop tokens mapped to Tailwind/shadcn variables */
+    --background: 37 100% 97%;       /* --ap-paper   #fff8ee */
+    --foreground: 258 36% 16%;       /* --ap-ink     #241b3a */
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 17%;
+    --card-foreground: 258 36% 16%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 17%;
+    --popover-foreground: 258 36% 16%;
 
-    --primary: 239 84% 67%;
+    --primary: 258 100% 65%;         /* --ap-brand   #7048ff */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 234 89% 74%;
-    --secondary-foreground: 222 47% 17%;
+    --secondary: 37 43% 92%;         /* --ap-paper-2 #f3ecdd */
+    --secondary-foreground: 258 36% 16%;
 
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 37 43% 92%;             /* --ap-paper-2 */
+    --muted-foreground: 261 18% 58%; /* --ap-muted   #8a7fa6 */
 
-    --accent: 235 100% 97%;
-    --accent-foreground: 239 84% 67%;
+    --accent: 258 100% 96%;          /* --ap-brand-soft #efe9ff */
+    --accent-foreground: 258 100% 65%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 3 100% 65%;       /* --ap-quiz    #ff5a4d */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 239 84% 67%;
+    --border: 37 43% 88%;            /* --ap-line    #efe6d3 */
+    --input: 37 43% 88%;
+    --ring: 258 100% 65%;
 
-    --radius: 0.875rem;
+    --radius: 1rem;
 
-    --success: 160 84% 39%;
+    --success: 160 79% 42%;          /* --ap-pres    #15c08a */
     --success-foreground: 0 0% 100%;
 
-    --warning: 38 92% 50%;
+    --warning: 38 100% 56%;          /* --ap-flash   #ffb020 */
     --warning-foreground: 0 0% 10%;
 
     --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 222 47% 17%;
-    --sidebar-primary: 239 84% 67%;
+    --sidebar-foreground: 258 36% 16%;
+    --sidebar-primary: 258 100% 65%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 40% 96%;
-    --sidebar-accent-foreground: 222 47% 17%;
-    --sidebar-border: 214 32% 91%;
-    --sidebar-ring: 239 84% 67%;
+    --sidebar-accent: 37 43% 92%;
+    --sidebar-accent-foreground: 258 36% 16%;
+    --sidebar-border: 37 43% 88%;
+    --sidebar-ring: 258 100% 65%;
 
-    --quiz-accent: 0 100% 71%;      /* #FF6B6B coral */
-    --poll-accent: 189 94% 43%;     /* #06B6D4 cyan */
-    --flashcard-accent: 38 92% 50%; /* #F59E0B amber */
-    --slide-accent: 160 84% 39%;    /* #10B981 emerald */
+    /* Content-type colors — Arcade Pop palette */
+    --quiz-accent:      3 100% 65%;    /* --ap-quiz   #ff5a4d */
+    --poll-accent:      215 100% 59%;  /* --ap-poll   #2f7bff */
+    --flashcard-accent: 38 100% 56%;   /* --ap-flash  #ffb020 */
+    --slide-accent:     160 79% 42%;   /* --ap-pres   #15c08a */
   }
 
   * {
@@ -62,15 +64,19 @@
   }
 
   body {
-    font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-family: var(--ap-font-body, 'Nunito', system-ui, sans-serif);
     @apply bg-background text-foreground antialiased;
+    font-weight: 600;
   }
 }
 
 @layer components {
-  /* Left accent border by content type */
-  .card-quiz      { border-left: 4px solid hsl(var(--quiz-accent)); }
-  .card-poll      { border-left: 4px solid hsl(var(--poll-accent)); }
-  .card-flashcard { border-left: 4px solid hsl(var(--flashcard-accent)); }
-  .card-slide     { border-left: 4px solid hsl(var(--slide-accent)); }
+  .card-quiz      { border-left: 4px solid var(--ap-quiz); }
+  .card-poll      { border-left: 4px solid var(--ap-poll); }
+  .card-flashcard { border-left: 4px solid var(--ap-flash); }
+  .card-slide     { border-left: 4px solid var(--ap-pres); }
+
+  /* Utility — shadow tokens mapped from Arcade Pop */
+  .shadow-card       { box-shadow: var(--ap-shadow-soft); }
+  .shadow-card-hover { box-shadow: var(--ap-shadow-card); }
 }

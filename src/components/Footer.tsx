@@ -34,25 +34,34 @@ export const Footer = () => {
   ];
 
   return (
-    <footer className="border-t border-slate-100 bg-white">
+    <footer style={{ borderTop: "2px solid var(--ap-line)", background: "var(--ap-paper-2)" }}>
       <div className="mx-auto flex max-w-6xl flex-col gap-10 px-6 py-12 md:flex-row md:justify-between">
         <div className="max-w-sm">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-card">
-              <span className="font-extrabold text-lg">Q</span>
-            </div>
+          <div className="ap-row ap-gap-12" style={{ marginBottom: "16px" }}>
+            <span className="ap-logo">
+              <svg viewBox="0 0 24 24"><path d="M13 2L4.5 13.5H11l-1 8.5L19.5 10H13l0-8z"/></svg>
+            </span>
             <div>
-              <p className="font-extrabold text-xl text-foreground">{t('quizMaster')}</p>
-              <p className="text-xs uppercase tracking-[0.3em] text-foreground/50">{t('footerTagline')}</p>
+              <p className="ap-brandname" style={{ fontSize: "18px" }}>{t('quizMaster')}</p>
+              <p className="text-xs font-bold uppercase tracking-widest mt-0.5" style={{ color: "var(--ap-muted)" }}>
+                {t('footerTagline')}
+              </p>
             </div>
           </div>
-          <p className="mt-6 text-sm leading-relaxed text-foreground/65">{t('footerDescription')}</p>
+          <p className="text-sm leading-relaxed" style={{ color: "var(--ap-muted)" }}>
+            {t('footerDescription')}
+          </p>
         </div>
 
         <div className="grid flex-1 gap-8 sm:grid-cols-3">
           {footerSections.map((section) => (
             <div key={section.title}>
-              <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-foreground/60">{section.title}</h3>
+              <h3
+                className="text-xs font-bold uppercase tracking-widest"
+                style={{ color: "var(--ap-muted)" }}
+              >
+                {section.title}
+              </h3>
               <ul className="mt-4 space-y-3">
                 {section.links.map((link) => (
                   <li key={link.label}>
@@ -60,12 +69,21 @@ export const Footer = () => {
                       <button
                         type="button"
                         onClick={link.onClick}
-                        className="text-sm text-foreground/70 transition-colors hover:text-foreground"
+                        className="text-sm font-semibold transition-colors"
+                        style={{ color: "var(--ap-ink)", fontFamily: "var(--ap-font-body)" }}
+                        onMouseEnter={(e) => {
+                          (e.currentTarget as HTMLButtonElement).style.color = "var(--ap-brand)";
+                        }}
+                        onMouseLeave={(e) => {
+                          (e.currentTarget as HTMLButtonElement).style.color = "var(--ap-ink)";
+                        }}
                       >
                         {link.label}
                       </button>
                     ) : (
-                      <span className="text-sm text-foreground/40">{link.label}</span>
+                      <span className="text-sm font-semibold" style={{ color: "var(--ap-muted)" }}>
+                        {link.label}
+                      </span>
                     )}
                   </li>
                 ))}
@@ -74,8 +92,12 @@ export const Footer = () => {
           ))}
         </div>
       </div>
-      <div className="border-t border-slate-100 bg-slate-50">
-        <div className="mx-auto max-w-6xl px-6 py-4 text-xs text-foreground/50">
+
+      <div style={{ borderTop: "2px solid var(--ap-line)" }}>
+        <div
+          className="mx-auto max-w-6xl px-6 py-4 text-xs font-bold"
+          style={{ color: "var(--ap-muted)" }}
+        >
           © {currentYear} {t('footerRights')}
         </div>
       </div>

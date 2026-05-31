@@ -93,17 +93,21 @@ export const Header = ({
     return () => window.removeEventListener("resize", updateHeaderHeight);
   }, []);
 
-  // Suppress unused variable warning — kept intentionally for re-render reactivity
   void currentLanguage;
 
   return (
     <header
       ref={(node) => { headerRef.current = node; }}
-      className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-slate-100"
+      className="sticky top-0 z-40"
+      style={{
+        background: "var(--ap-paper)",
+        borderBottom: "2px solid var(--ap-line)",
+        boxShadow: "0 2px 0 var(--ap-line)",
+      }}
     >
       <div
         className={cn(
-          "flex items-center px-6 py-4",
+          "flex items-center px-6 py-3",
           alignLeft
             ? "mx-0 w-full justify-start gap-4"
             : "mx-auto max-w-6xl justify-between gap-6"
@@ -114,13 +118,13 @@ export const Header = ({
           className="flex cursor-pointer items-center gap-3 transition-opacity hover:opacity-80"
           onClick={() => navigate("/")}
         >
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-600 text-white">
-            <Zap className="h-5 w-5" />
-          </div>
+          <span className="ap-logo">
+            <svg viewBox="0 0 24 24"><path d="M13 2L4.5 13.5H11l-1 8.5L19.5 10H13l0-8z"/></svg>
+          </span>
           <div>
-            <span className="font-bold text-xl text-slate-900 leading-none">{t("quizMaster")}</span>
+            <span className="ap-brandname" style={{ fontSize: "20px" }}>{t("quizMaster")}</span>
             {subtitle && (
-              <p className="text-xs text-slate-400 font-medium mt-0.5">{subtitle}</p>
+              <p className="text-xs font-semibold mt-0.5" style={{ color: "var(--ap-muted)" }}>{subtitle}</p>
             )}
           </div>
         </div>
@@ -141,7 +145,14 @@ export const Header = ({
                 <button
                   key={item.label}
                   onClick={item.onClick}
-                  className="px-3 py-2 text-sm font-medium text-slate-600 rounded-lg hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
+                  className="px-3 py-2 text-sm font-semibold rounded-xl transition-colors cursor-pointer"
+                  style={{ color: "var(--ap-ink)", fontFamily: "var(--ap-font-display)" }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.background = "var(--ap-paper-2)";
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.background = "transparent";
+                  }}
                 >
                   {item.label}
                 </button>
@@ -150,22 +161,40 @@ export const Header = ({
             {availableCreationItems.length > 0 && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-slate-600 rounded-lg hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer">
+                  <button
+                    className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-xl transition-colors cursor-pointer"
+                    style={{ color: "var(--ap-ink)", fontFamily: "var(--ap-font-display)" }}
+                    onMouseEnter={(e) => {
+                      (e.currentTarget as HTMLButtonElement).style.background = "var(--ap-paper-2)";
+                    }}
+                    onMouseLeave={(e) => {
+                      (e.currentTarget as HTMLButtonElement).style.background = "transparent";
+                    }}
+                  >
                     <Layers className="h-4 w-4" />
                     {t("myCreations")}
-                    <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
+                    <ChevronDown className="h-3.5 w-3.5" style={{ color: "var(--ap-muted)" }} />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="z-50 w-52 rounded-xl border border-slate-100 bg-white p-1.5 shadow-lg">
+                <DropdownMenuContent
+                  className="z-50 w-52 p-1.5"
+                  style={{
+                    background: "var(--ap-card)",
+                    border: "2px solid var(--ap-line)",
+                    borderRadius: "var(--ap-r-lg)",
+                    boxShadow: "var(--ap-shadow-card)",
+                  }}
+                >
                   {availableCreationItems.map((item) => {
                     const Icon = item.icon;
                     return (
                       <DropdownMenuItem
                         key={item.label}
-                        className="gap-2 rounded-lg text-sm text-slate-700 transition-colors hover:bg-slate-50 cursor-pointer"
+                        className="gap-2 rounded-xl text-sm cursor-pointer"
+                        style={{ color: "var(--ap-ink)", fontFamily: "var(--ap-font-body)" }}
                         onSelect={item.onClick}
                       >
-                        <Icon className="h-4 w-4 text-slate-400" />
+                        <Icon className="h-4 w-4" style={{ color: "var(--ap-muted)" }} />
                         {item.label}
                       </DropdownMenuItem>
                     );
@@ -183,18 +212,30 @@ export const Header = ({
             <div className="md:hidden">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="icon" className="h-9 w-9 rounded-lg border-slate-200">
+                  <button
+                    className="ap-btn ap-btn--ghost ap-btn--sm"
+                    style={{ padding: "8px 10px" }}
+                    aria-label="Menu"
+                  >
                     <Menu className="h-4 w-4" />
-                    <span className="sr-only">Menu</span>
-                  </Button>
+                  </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="z-50 w-56 rounded-xl border border-slate-100 bg-white p-1.5 shadow-lg">
+                <DropdownMenuContent
+                  className="z-50 w-56 p-1.5"
+                  style={{
+                    background: "var(--ap-card)",
+                    border: "2px solid var(--ap-line)",
+                    borderRadius: "var(--ap-r-lg)",
+                    boxShadow: "var(--ap-shadow-card)",
+                  }}
+                >
                   {primaryNavigationItems
                     .filter((item) => (item.requiresAuth ? Boolean(user) : true))
                     .map((item) => (
                       <DropdownMenuItem
                         key={item.label}
-                        className="rounded-lg text-sm text-slate-700 hover:bg-slate-50 cursor-pointer"
+                        className="rounded-xl text-sm cursor-pointer"
+                        style={{ color: "var(--ap-ink)" }}
                         onSelect={item.onClick}
                       >
                         {item.label}
@@ -202,8 +243,11 @@ export const Header = ({
                     ))}
                   {availableCreationItems.length > 0 && (
                     <>
-                      <DropdownMenuSeparator className="bg-slate-100" />
-                      <DropdownMenuLabel className="px-2 py-1.5 text-xs font-semibold text-slate-400 uppercase tracking-wide">
+                      <DropdownMenuSeparator style={{ background: "var(--ap-line)" }} />
+                      <DropdownMenuLabel
+                        className="px-2 py-1.5 text-xs font-bold uppercase tracking-wide"
+                        style={{ color: "var(--ap-muted)" }}
+                      >
                         {t("myCreations")}
                       </DropdownMenuLabel>
                       {availableCreationItems.map((item) => {
@@ -211,10 +255,11 @@ export const Header = ({
                         return (
                           <DropdownMenuItem
                             key={item.label}
-                            className="gap-2 rounded-lg text-sm text-slate-700 hover:bg-slate-50 cursor-pointer"
+                            className="gap-2 rounded-xl text-sm cursor-pointer"
+                            style={{ color: "var(--ap-ink)" }}
                             onSelect={item.onClick}
                           >
-                            <Icon className="h-4 w-4 text-slate-400" />
+                            <Icon className="h-4 w-4" style={{ color: "var(--ap-muted)" }} />
                             {item.label}
                           </DropdownMenuItem>
                         );
@@ -223,10 +268,11 @@ export const Header = ({
                   )}
                   {user && (
                     <DropdownMenuItem
-                      className="gap-2 rounded-lg text-sm text-slate-700 hover:bg-slate-50 cursor-pointer"
+                      className="gap-2 rounded-xl text-sm cursor-pointer"
+                      style={{ color: "var(--ap-ink)" }}
                       onSelect={() => navigate("/profile")}
                     >
-                      <User className="h-4 w-4 text-slate-400" />
+                      <User className="h-4 w-4" style={{ color: "var(--ap-muted)" }} />
                       {t("profile")}
                     </DropdownMenuItem>
                   )}
@@ -238,24 +284,33 @@ export const Header = ({
           {/* Language switcher */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-9 rounded-lg border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+              <button
+                className="ap-btn ap-btn--ghost ap-btn--sm"
+                style={{ padding: "8px 10px" }}
+                aria-label="Language"
               >
                 <Globe className="h-4 w-4" />
-                <span className="sr-only">Language</span>
-              </Button>
+              </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="z-50 rounded-xl border border-slate-100 bg-white p-1.5 shadow-lg">
+            <DropdownMenuContent
+              className="z-50 p-1.5"
+              style={{
+                background: "var(--ap-card)",
+                border: "2px solid var(--ap-line)",
+                borderRadius: "var(--ap-r-lg)",
+                boxShadow: "var(--ap-shadow-card)",
+              }}
+            >
               <DropdownMenuItem
-                className="rounded-lg text-sm text-slate-700 hover:bg-slate-50 cursor-pointer"
+                className="rounded-xl text-sm cursor-pointer"
+                style={{ color: "var(--ap-ink)" }}
                 onClick={() => handleLanguageChange("en")}
               >
                 🇬🇧 English
               </DropdownMenuItem>
               <DropdownMenuItem
-                className="rounded-lg text-sm text-slate-700 hover:bg-slate-50 cursor-pointer"
+                className="rounded-xl text-sm cursor-pointer"
+                style={{ color: "var(--ap-ink)" }}
                 onClick={() => handleLanguageChange("fr")}
               >
                 🇫🇷 Français
@@ -266,42 +321,38 @@ export const Header = ({
           {/* Auth */}
           {user ? (
             <>
-              <Button
-                variant="outline"
-                size="icon"
+              <button
+                className="ap-btn ap-btn--ghost ap-btn--sm"
+                style={{ padding: "8px 10px" }}
                 onClick={() => navigate("/profile")}
-                className="h-9 w-9 rounded-lg border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50"
                 title={user.username}
               >
                 <User className="h-4 w-4" />
-                <span className="sr-only">{t("profile")}</span>
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
+              </button>
+              <button
+                className="ap-btn ap-btn--ghost ap-btn--sm"
+                style={{ padding: "8px 10px" }}
                 onClick={handleLogout}
-                className="h-9 w-9 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100"
                 title={t("logout")}
               >
                 <LogOut className="h-4 w-4" />
-                <span className="sr-only">{t("logout")}</span>
-              </Button>
+              </button>
             </>
           ) : (
-            <Button
+            <button
+              className="ap-btn ap-btn--sm"
               onClick={() => navigate("/auth")}
-              className="h-9 rounded-lg bg-indigo-600 text-white text-sm font-semibold px-4 hover:bg-indigo-700 transition-colors"
             >
-              <User className="mr-1.5 h-3.5 w-3.5" />
+              <User className="h-3.5 w-3.5" />
               {t("login")}
-            </Button>
+            </button>
           )}
         </div>
       </div>
 
       {/* Secondary toolbar row */}
       {toolbar && toolbarPlacement === "secondary" && (
-        <div className="border-t border-slate-100 bg-white">
+        <div style={{ borderTop: "2px solid var(--ap-line)", background: "var(--ap-paper)" }}>
           <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-2.5">
             {toolbar}
           </div>
@@ -309,7 +360,10 @@ export const Header = ({
       )}
       {toolbar && toolbarPlacement === "main" && !alignLeft && (
         <div className="w-full px-6 pb-3 lg:hidden">
-          <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 bg-white px-4 py-2.5">
+          <div
+            className="flex flex-wrap items-center gap-2 px-4 py-2.5"
+            style={{ borderTop: "2px solid var(--ap-line)", background: "var(--ap-paper)" }}
+          >
             {toolbar}
           </div>
         </div>

@@ -25,12 +25,7 @@ interface PlayerViewProps {
   playerName: string;
 }
 
-const buttonColors = [
-  "bg-rose-500 active:bg-rose-600 hover:bg-rose-600",
-  "bg-blue-500 active:bg-blue-600 hover:bg-blue-600",
-  "bg-amber-500 active:bg-amber-600 hover:bg-amber-600",
-  "bg-emerald-500 active:bg-emerald-600 hover:bg-emerald-600",
-];
+const answerShapes = ["▲", "◆", "●", "■"];
 
 export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
   const navigate = useNavigate();
@@ -266,24 +261,33 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
 
   if (gameState === 'waiting') {
     return (
-      <div className="min-h-screen bg-indigo-600 flex items-center justify-center p-4">
+      <div
+        className="min-h-screen flex items-center justify-center p-4"
+        style={{ background: "var(--ap-brand)" }}
+      >
         <div className="max-w-md w-full text-center">
-          <div className="text-7xl mb-6 drop-shadow-lg">
-            {playerAvatar}
-          </div>
+          <div className="text-7xl mb-6 drop-shadow-lg">{playerAvatar}</div>
 
-          <h1 className="text-2xl font-extrabold text-white mb-2">Connecté !</h1>
-          <div className="text-indigo-200 mb-8">
+          <h1 className="ap-h2 text-white mb-2">Connecté !</h1>
+          <div className="mb-8" style={{ color: "rgba(255,255,255,0.75)", fontFamily: "var(--ap-font-body)", fontWeight: 700 }}>
             Bonjour <span className="font-bold text-white">{playerName}</span>
           </div>
 
-          <div className="rounded-2xl bg-white/10 border border-white/20 p-5 text-indigo-200 space-y-4">
-            <div className="text-3xl font-mono tracking-wider font-bold text-white mb-2 drop-shadow">
+          <div
+            className="p-5 space-y-4"
+            style={{
+              background: "rgba(255,255,255,0.12)",
+              border: "2px solid rgba(255,255,255,0.2)",
+              borderRadius: "var(--ap-r-xl)",
+            }}
+          >
+            <div className="ap-code" style={{ color: "#fff", background: "rgba(255,255,255,0.15)", border: "none", fontSize: "28px" }}>
               {gameCode}
             </div>
-            <p className="text-indigo-200">En attente du début du quiz...</p>
-
-            <div className="flex items-center justify-center gap-4 text-indigo-200">
+            <p style={{ color: "rgba(255,255,255,0.75)", fontFamily: "var(--ap-font-body)", fontWeight: 700 }}>
+              En attente du début du quiz...
+            </p>
+            <div className="flex items-center justify-center gap-4" style={{ color: "rgba(255,255,255,0.75)" }}>
               <div className="flex items-center gap-1">
                 <Users className="w-4 h-4" />
                 <span>{totalPlayers} joueurs</span>
@@ -292,12 +296,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
           </div>
 
           <div className="mt-6 animate-pulse">
-            <div className="w-8 h-8 rounded-full mx-auto bg-white/30 shadow-lg"></div>
-          </div>
-
-          {/* Temp debug — remove after fix confirmed */}
-          <div className="mt-4 text-xs text-indigo-300 opacity-60">
-            state: {gameState} | q: {quizQuestions.length}
+            <div className="w-8 h-8 rounded-full mx-auto" style={{ background: "rgba(255,255,255,0.3)" }}></div>
           </div>
         </div>
       </div>
@@ -306,38 +305,58 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
 
   if (gameState === 'question' && !liveQuestion) {
     return (
-      <div className="min-h-screen bg-indigo-600 flex items-center justify-center">
-        <p className="text-white text-lg animate-pulse">Chargement de la question…</p>
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: "var(--ap-brand)" }}
+      >
+        <p className="text-white text-lg animate-pulse" style={{ fontFamily: "var(--ap-font-display)" }}>
+          Chargement de la question…
+        </p>
       </div>
     );
   }
 
   if (gameState === 'question') {
     return (
-      <div className="min-h-screen bg-indigo-600 p-4">
+      <div
+        className="min-h-screen p-4"
+        style={{ background: "var(--ap-brand)" }}
+      >
         <div className="max-w-2xl mx-auto">
           {/* Header */}
           <div className="flex items-center justify-between mb-6 text-white">
             <div className="flex items-center gap-4">
-              <div className="rounded-full bg-white/10 border border-white/20 px-3 py-1 text-sm font-semibold text-white">
+              <span
+                className="ap-pill"
+                style={{
+                  background: "rgba(255,255,255,0.15)",
+                  border: "2px solid rgba(255,255,255,0.2)",
+                  color: "#fff",
+                }}
+              >
                 Question {currentQuestion + 1}
-              </div>
-              <div className="flex items-center gap-1">
+              </span>
+              <div className="flex items-center gap-1" style={{ fontFamily: "var(--ap-font-display)", fontWeight: 600 }}>
                 <Trophy className="w-4 h-4" />
                 <span>{playerScore}</span>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <BackgroundMusic isPlaying={gameState === 'question'} />
-              <Button
-                variant="ghost"
-                size="sm"
+              <button
+                className="ap-btn ap-btn--ghost ap-btn--sm"
+                style={{
+                  background: "rgba(255,255,255,0.15)",
+                  border: "2px solid rgba(255,255,255,0.2)",
+                  color: "#fff",
+                  boxShadow: "none",
+                  padding: "8px 10px",
+                }}
                 aria-label="Quitter le quiz"
                 onClick={() => setShowExitDialog(true)}
-                className="rounded-full bg-white/10 border border-white/20 text-white hover:bg-white/20"
               >
                 <LogOut className="w-4 h-4" />
-              </Button>
+              </button>
             </div>
           </div>
 
@@ -357,33 +376,30 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
           />
 
           {/* Question card */}
-          <div className="rounded-2xl bg-white p-5 md:p-6 mb-4 shadow-xl">
+          <div className="ap-card ap-card--floaty mb-4">
             <div className="flex justify-center mb-4">
               <CircularTimer timeLeft={timeLeft} totalTime={liveQuestion.timeLimit} />
             </div>
 
-            <h2 className="text-lg font-bold text-slate-900 text-center mb-6 md:text-xl">
+            <h2 className="ap-h3 text-center mb-6" style={{ fontSize: "18px", lineHeight: 1.4 }}>
               {liveQuestion.question}
             </h2>
 
-            {/* Multiple Choice Answers */}
+            {/* Multiple Choice Answers — Arcade Pop style */}
             {liveQuestion.type === 'multiple-choice' && liveQuestion.answers && (
-              <div className="grid gap-3">
-                {liveQuestion.answers.map((answer, index) => (
+              <div className="ap-answers">
+                {liveQuestion.answers.map((answer: string, index: number) => (
                   <button
                     key={index}
                     className={cn(
-                      "cursor-pointer min-h-[56px] w-full rounded-xl p-4 text-left text-white font-semibold text-sm transition-all duration-150",
-                      buttonColors[index % buttonColors.length],
-                      selectedAnswer === index && "ring-4 ring-white ring-offset-2 ring-offset-indigo-600",
+                      `ap-answer ap-answer--${(index % 4) + 1}`,
+                      selectedAnswer === index && "outline outline-4 outline-white outline-offset-2",
                       hasAnswered && selectedAnswer !== index && "opacity-50"
                     )}
                     onClick={() => submitAnswer(index)}
                     disabled={hasAnswered}
                   >
-                    <span className="mr-3 inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/30 text-xs font-bold">
-                      {String.fromCharCode(65 + index)}
-                    </span>
+                    <span className="ap-answer__shape">{answerShapes[index % 4]}</span>
                     {answer}
                   </button>
                 ))}
@@ -391,12 +407,21 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
             )}
           </div>
 
-          {/* Waiting confirmation — no correct answer revealed on player device */}
+          {/* Waiting confirmation */}
           {hasAnswered && (
-            <div className="animate-scale-in rounded-2xl p-6 text-center bg-white/10 border border-white/20">
+            <div
+              className="p-6 text-center"
+              style={{
+                background: "rgba(255,255,255,0.12)",
+                border: "2px solid rgba(255,255,255,0.2)",
+                borderRadius: "var(--ap-r-xl)",
+              }}
+            >
               <div className="text-4xl mb-3">⏳</div>
-              <h3 className="text-xl font-bold text-white">Réponse envoyée !</h3>
-              <p className="text-indigo-200 text-sm mt-2">En attente des autres joueurs…</p>
+              <h3 className="ap-h3 text-white">Réponse envoyée !</h3>
+              <p className="mt-2" style={{ color: "rgba(255,255,255,0.75)", fontFamily: "var(--ap-font-body)", fontSize: "14px" }}>
+                En attente des autres joueurs…
+              </p>
             </div>
           )}
         </div>
@@ -406,25 +431,46 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
 
   if (gameState === 'leaderboard') {
     return (
-      <div className="min-h-screen bg-indigo-600 flex items-center justify-center p-4">
+      <div
+        className="min-h-screen flex items-center justify-center p-4"
+        style={{ background: "var(--ap-flash)" }}
+      >
         <div className="max-w-md w-full text-center">
           <div className="mb-4 text-6xl drop-shadow-xl animate-bounce">🏆</div>
-          <h2 className="mb-6 text-3xl font-extrabold text-white drop-shadow-lg">Classement</h2>
+          <h2 className="ap-h2 text-white mb-6">Classement</h2>
 
           <div className="space-y-4 mb-6">
-            <div className="flex items-center gap-4 rounded-2xl bg-white/10 border border-white/20 p-4 text-white">
-              <span className="text-2xl font-bold text-amber-300">#{playerRank}</span>
-              <span className="flex-1 text-left font-semibold">{playerName}</span>
-              <span className="font-bold text-indigo-200">{playerScore} pts</span>
+            <div
+              className="flex items-center gap-4 p-4 text-white"
+              style={{
+                background: "rgba(255,255,255,0.15)",
+                border: "2px solid rgba(255,255,255,0.25)",
+                borderRadius: "var(--ap-r-lg)",
+              }}
+            >
+              <span className="text-2xl" style={{ fontFamily: "var(--ap-font-display)", fontWeight: 600, color: "var(--ap-ink)" }}>
+                #{playerRank}
+              </span>
+              <span className="flex-1 text-left font-bold">{playerName}</span>
+              <span className="font-bold" style={{ color: "var(--ap-ink)" }}>{playerScore} pts</span>
             </div>
 
-            <div className="rounded-2xl bg-white/10 border border-white/20 p-4 text-indigo-200 text-sm font-medium">
+            <div
+              className="p-4 text-sm font-bold"
+              style={{
+                background: "rgba(255,255,255,0.12)",
+                border: "2px solid rgba(255,255,255,0.2)",
+                borderRadius: "var(--ap-r-lg)",
+                color: "rgba(255,255,255,0.85)",
+              }}
+            >
               ⏳ Attendez la prochaine question...
             </div>
           </div>
 
           <button
-            className="bg-white text-indigo-600 font-bold rounded-full w-full h-12 transition-all duration-150 hover:bg-indigo-50 active:bg-indigo-100 shadow-xl"
+            className="ap-btn ap-btn--lg ap-btn--pill"
+            style={{ background: "var(--ap-ink)", boxShadow: "0 5px 0 rgba(0,0,0,0.3)", width: "100%" }}
             onClick={() => {
               setGameState('question');
               setHasAnswered(false);
@@ -441,21 +487,32 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
   }
 
   return (
-    <div className="min-h-screen bg-indigo-600 flex items-center justify-center p-4">
+    <div
+      className="min-h-screen flex items-center justify-center p-4"
+      style={{ background: "var(--ap-pres)" }}
+    >
       <div className="max-w-md w-full text-center">
         <div className="mb-4 text-6xl drop-shadow-lg">🎉</div>
-        <h2 className="mb-6 text-3xl font-extrabold text-white">Quiz terminé !</h2>
+        <h2 className="ap-h2 text-white mb-6">Quiz terminé !</h2>
 
-        <div className="rounded-2xl bg-white/10 border border-white/20 p-6 mb-6">
-          <div className="text-6xl font-extrabold text-white mb-2">{playerScore}</div>
-          <div className="text-indigo-200 text-sm">points</div>
-          <div className="mt-4 text-indigo-200">
-            Rang final: <span className="font-bold text-white">#{playerRank}</span> sur {totalPlayers}
+        <div
+          className="p-6 mb-6"
+          style={{
+            background: "rgba(255,255,255,0.15)",
+            border: "2px solid rgba(255,255,255,0.25)",
+            borderRadius: "var(--ap-r-xl)",
+          }}
+        >
+          <div className="ap-h1 text-white mb-2">{playerScore}</div>
+          <div className="font-bold text-sm" style={{ color: "rgba(255,255,255,0.75)" }}>points</div>
+          <div className="mt-4 font-bold" style={{ color: "rgba(255,255,255,0.85)" }}>
+            Rang final: <span className="text-white">#{playerRank}</span> sur {totalPlayers}
           </div>
         </div>
 
         <button
-          className="bg-white text-indigo-600 font-bold rounded-full px-8 h-12 transition-all duration-150 hover:bg-indigo-50 active:bg-indigo-100 shadow-xl"
+          className="ap-btn ap-btn--lg ap-btn--pill"
+          style={{ background: "var(--ap-ink)", boxShadow: "0 5px 0 rgba(0,0,0,0.3)" }}
           onClick={() => navigate("/")}
         >
           Retour à l&apos;accueil

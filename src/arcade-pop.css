@@ -1,0 +1,300 @@
+/* ============================================================
+   QuizMaster · « Arcade Pop » — Design System
+   ------------------------------------------------------------
+   Feuille de style autonome, framework-agnostique.
+   Import :  <link rel="stylesheet" href="arcade-pop.css">
+   Ou en React :  import "./arcade-pop.css";
+
+   Toutes les classes sont préfixées .ap-* pour ne rien casser
+   dans votre app existante. Les tokens vivent dans :root, vous
+   pouvez donc les réutiliser dans vos propres styles / Tailwind.
+   ============================================================ */
+
+/* --- Polices (Google Fonts) -------------------------------- */
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800;900&display=swap');
+
+/* ============================================================
+   1. TOKENS
+   ============================================================ */
+:root {
+  /* Couleurs par TYPE de contenu — le fil conducteur du produit */
+  --ap-quiz:        #ff5a4d;  --ap-quiz-deep:   #d63b2f;  --ap-quiz-soft:  #fff3f0;
+  --ap-pres:        #15c08a;  --ap-pres-deep:   #0f9d72;  --ap-pres-soft:  #e8faf3;
+  --ap-poll:        #2f7bff;  --ap-poll-deep:   #1f5fd0;  --ap-poll-soft:  #eef4ff;
+  --ap-flash:       #ffb020;  --ap-flash-deep:  #d68f00;  --ap-flash-soft: #fff7e6;
+
+  /* Marque + neutres chauds */
+  --ap-brand:       #7048ff;  --ap-brand-deep:  #4f2fd0;  --ap-brand-soft: #efe9ff;
+  --ap-ink:         #241b3a;  /* texte principal */
+  --ap-muted:       #8a7fa6;  /* texte secondaire */
+  --ap-paper:       #fff8ee;  /* fond crème de l'app */
+  --ap-paper-2:     #f3ecdd;  /* fond crème plus soutenu (zones) */
+  --ap-card:        #ffffff;  /* surfaces */
+  --ap-line:        #efe6d3;  /* bordures / séparateurs */
+  --ap-line-2:      #d8ccb5;  /* bordures pointillées / dropzones */
+
+  /* Rayons — tout est rond */
+  --ap-r-sm: 12px;
+  --ap-r-md: 16px;
+  --ap-r-lg: 24px;
+  --ap-r-xl: 30px;
+  --ap-r-pill: 999px;
+
+  /* Ombres « 3D douce » : un offset plein (la couleur) + une diffuse */
+  --ap-shadow-soft:  0 4px 0 var(--ap-line);
+  --ap-shadow-card:  0 30px 60px rgba(60,40,120,.12), 0 4px 0 var(--ap-line);
+  --ap-shadow-float: 0 14px 30px rgba(60,40,120,.16);
+
+  /* Typo */
+  --ap-font-display: 'Fredoka', system-ui, sans-serif;  /* titres, boutons, chiffres */
+  --ap-font-body:    'Nunito', system-ui, sans-serif;   /* texte courant */
+
+  /* Transitions */
+  --ap-ease: cubic-bezier(.2,.7,.3,1);
+}
+
+/* ============================================================
+   2. BASE
+   ============================================================ */
+.ap-app {
+  background: var(--ap-paper);
+  color: var(--ap-ink);
+  font-family: var(--ap-font-body);
+  font-weight: 600;
+  -webkit-font-smoothing: antialiased;
+}
+.ap-app *, .ap-app *::before, .ap-app *::after { box-sizing: border-box; }
+
+.ap-display { font-family: var(--ap-font-display); font-weight: 600; letter-spacing: -.5px; margin: 0; }
+.ap-h1 { font-family: var(--ap-font-display); font-weight: 600; font-size: 56px; line-height: 1; letter-spacing: -1.5px; margin: 0; }
+.ap-h2 { font-family: var(--ap-font-display); font-weight: 600; font-size: 38px; line-height: 1.05; letter-spacing: -1px; margin: 0; }
+.ap-h3 { font-family: var(--ap-font-display); font-weight: 600; font-size: 20px; margin: 0; }
+.ap-lead { font-size: 19px; line-height: 1.5; color: #5f5675; font-weight: 600; }
+.ap-muted { color: var(--ap-muted); }
+
+/* ============================================================
+   3. BOUTONS — le ressort « pop » (offset plein qui s'écrase au clic)
+   ============================================================ */
+.ap-btn {
+  font-family: var(--ap-font-display);
+  font-weight: 600;
+  font-size: 15.5px;
+  border: none;
+  cursor: pointer;
+  border-radius: var(--ap-r-md);
+  padding: 13px 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  color: #fff;
+  background: var(--ap-brand);
+  box-shadow: 0 5px 0 var(--ap-brand-deep);
+  transition: transform .08s var(--ap-ease), box-shadow .08s var(--ap-ease);
+}
+.ap-btn:hover  { transform: translateY(-1px); box-shadow: 0 6px 0 var(--ap-brand-deep); }
+.ap-btn:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--ap-brand-deep); }
+
+/* Tailles */
+.ap-btn--lg { font-size: 18px; padding: 17px 30px; border-radius: var(--ap-r-lg); }
+.ap-btn--sm { font-size: 14px; padding: 9px 16px; border-radius: var(--ap-r-sm); }
+.ap-btn--pill { border-radius: var(--ap-r-pill); }
+
+/* Variantes par type — réutilisent les tokens */
+.ap-btn--quiz  { background: var(--ap-quiz);  box-shadow: 0 5px 0 var(--ap-quiz-deep); }
+.ap-btn--quiz:hover  { box-shadow: 0 6px 0 var(--ap-quiz-deep); }
+.ap-btn--quiz:active { box-shadow: 0 1px 0 var(--ap-quiz-deep); }
+.ap-btn--pres  { background: var(--ap-pres);  box-shadow: 0 5px 0 var(--ap-pres-deep); }
+.ap-btn--pres:hover  { box-shadow: 0 6px 0 var(--ap-pres-deep); }
+.ap-btn--pres:active { box-shadow: 0 1px 0 var(--ap-pres-deep); }
+.ap-btn--poll  { background: var(--ap-poll);  box-shadow: 0 5px 0 var(--ap-poll-deep); }
+.ap-btn--poll:hover  { box-shadow: 0 6px 0 var(--ap-poll-deep); }
+.ap-btn--poll:active { box-shadow: 0 1px 0 var(--ap-poll-deep); }
+.ap-btn--flash { background: var(--ap-flash); box-shadow: 0 5px 0 var(--ap-flash-deep); color: #fff; }
+.ap-btn--flash:hover  { box-shadow: 0 6px 0 var(--ap-flash-deep); }
+.ap-btn--flash:active { box-shadow: 0 1px 0 var(--ap-flash-deep); }
+
+/* Ghost / secondaire (sur fond crème) */
+.ap-btn--ghost {
+  background: var(--ap-card); color: var(--ap-ink);
+  border: 2px solid var(--ap-line); box-shadow: 0 3px 0 var(--ap-line);
+}
+.ap-btn--ghost:hover  { box-shadow: 0 4px 0 var(--ap-line); }
+.ap-btn--ghost:active { box-shadow: 0 1px 0 var(--ap-line); }
+
+/* ============================================================
+   4. CARTES & SURFACES
+   ============================================================ */
+.ap-card {
+  background: var(--ap-card);
+  border: 2px solid var(--ap-line);
+  border-radius: var(--ap-r-lg);
+  box-shadow: var(--ap-shadow-soft);
+  padding: 24px;
+}
+.ap-card--floaty { box-shadow: var(--ap-shadow-card); border-radius: var(--ap-r-xl); }
+.ap-card--hover { transition: transform .12s var(--ap-ease); }
+.ap-card--hover:hover { transform: translateY(-3px); }
+
+/* Carte « type de contenu » avec blob décoratif d'angle */
+.ap-tile { position: relative; overflow: hidden; }
+.ap-tile__blob {
+  position: absolute; width: 90px; height: 90px; border-radius: 50%;
+  right: -24px; top: -24px; opacity: .12; pointer-events: none;
+}
+.ap-tile__icon {
+  width: 54px; height: 54px; border-radius: var(--ap-r-md);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; margin-bottom: 16px;
+}
+.ap-tile__icon svg { width: 26px; height: 26px; }
+
+/* ============================================================
+   5. PILLS / BADGES
+   ============================================================ */
+.ap-pill {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-family: var(--ap-font-display); font-weight: 600;
+  font-size: 13px; padding: 6px 14px; border-radius: var(--ap-r-pill);
+  background: var(--ap-card); color: var(--ap-ink);
+  border: 2px solid var(--ap-line);
+}
+.ap-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-weight: 800; font-size: 11px; letter-spacing: .5px;
+  text-transform: uppercase; padding: 4px 11px; border-radius: var(--ap-r-pill);
+}
+.ap-badge--quiz  { background: var(--ap-quiz-soft);  color: var(--ap-quiz-deep); }
+.ap-badge--pres  { background: var(--ap-pres-soft);  color: var(--ap-pres-deep); }
+.ap-badge--poll  { background: var(--ap-poll-soft);  color: var(--ap-poll-deep); }
+.ap-badge--flash { background: var(--ap-flash-soft); color: var(--ap-flash-deep); }
+.ap-badge--brand { background: var(--ap-brand-soft); color: var(--ap-brand-deep); }
+
+/* Pastille couleur (swatch) */
+.ap-dot { width: 11px; height: 11px; border-radius: 50%; display: inline-block; flex: 0 0 auto; }
+
+/* ============================================================
+   6. RÉPONSES DE QUIZ — tuiles color-codées à forme
+   ============================================================ */
+.ap-answers { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; }
+.ap-answer {
+  display: flex; align-items: center; gap: 13px;
+  padding: 16px; border-radius: var(--ap-r-md);
+  color: #fff; font-weight: 800; font-size: 16px;
+  border: none; cursor: pointer; text-align: left;
+  box-shadow: 0 5px 0 rgba(0,0,0,.16);
+  transition: transform .08s var(--ap-ease), box-shadow .08s var(--ap-ease);
+}
+.ap-answer:hover  { transform: translateY(-1px); }
+.ap-answer:active { transform: translateY(4px); box-shadow: 0 1px 0 rgba(0,0,0,.16); }
+.ap-answer__shape {
+  width: 30px; height: 30px; border-radius: 9px; flex: 0 0 auto;
+  background: rgba(255,255,255,.28); display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+}
+.ap-answer--1 { background: var(--ap-quiz);  box-shadow: 0 5px 0 var(--ap-quiz-deep); }
+.ap-answer--1:active { box-shadow: 0 1px 0 var(--ap-quiz-deep); }
+.ap-answer--2 { background: var(--ap-poll);  box-shadow: 0 5px 0 var(--ap-poll-deep); }
+.ap-answer--2:active { box-shadow: 0 1px 0 var(--ap-poll-deep); }
+.ap-answer--3 { background: var(--ap-flash); box-shadow: 0 5px 0 var(--ap-flash-deep); }
+.ap-answer--3:active { box-shadow: 0 1px 0 var(--ap-flash-deep); }
+.ap-answer--4 { background: var(--ap-pres);  box-shadow: 0 5px 0 var(--ap-pres-deep); }
+.ap-answer--4:active { box-shadow: 0 1px 0 var(--ap-pres-deep); }
+
+/* ============================================================
+   7. CHAMPS DE FORMULAIRE
+   ============================================================ */
+.ap-input, .ap-textarea {
+  width: 100%; font-family: var(--ap-font-body); font-weight: 700; font-size: 15px;
+  color: var(--ap-ink); background: var(--ap-card);
+  border: 2px solid var(--ap-line); border-radius: var(--ap-r-sm);
+  padding: 12px 15px; outline: none;
+  transition: border-color .12s, box-shadow .12s;
+}
+.ap-input::placeholder, .ap-textarea::placeholder { color: #bcb09a; }
+.ap-input:focus, .ap-textarea:focus {
+  border-color: var(--ap-brand); box-shadow: 0 0 0 4px var(--ap-brand-soft);
+}
+.ap-textarea { resize: vertical; min-height: 90px; line-height: 1.4; }
+
+.ap-label { display: block; font-weight: 800; font-size: 12px; letter-spacing: .5px;
+  text-transform: uppercase; color: var(--ap-muted); margin-bottom: 8px; }
+
+/* Zone de dépôt média */
+.ap-dropzone {
+  border: 2px dashed var(--ap-line-2); border-radius: var(--ap-r-md);
+  background: #fdfaf2; color: var(--ap-muted); font-weight: 700; font-size: 13px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 7px; padding: 24px; cursor: pointer; text-align: center;
+  transition: border-color .12s, background .12s;
+}
+.ap-dropzone:hover { border-color: var(--ap-brand); background: #fff; }
+
+/* Champ code de partie (gros chiffres espacés) */
+.ap-code {
+  font-family: var(--ap-font-display); font-weight: 600; font-size: 25px;
+  letter-spacing: 6px; text-align: center;
+  border: 2px solid var(--ap-line); border-radius: var(--ap-r-md);
+  padding: 14px 18px; color: var(--ap-ink); background: var(--ap-card); outline: none;
+}
+.ap-code:focus { border-color: var(--ap-brand); box-shadow: 0 0 0 4px var(--ap-brand-soft); }
+
+/* ============================================================
+   8. INTERRUPTEUR (toggle)
+   ============================================================ */
+.ap-switch {
+  width: 46px; height: 26px; border-radius: var(--ap-r-pill);
+  background: #d9cdb6; position: relative; cursor: pointer; flex: 0 0 auto;
+  border: none; padding: 0; transition: background .15s var(--ap-ease);
+  box-shadow: inset 0 1px 3px rgba(0,0,0,.15);
+}
+.ap-switch::after {
+  content: ''; position: absolute; top: 3px; left: 3px;
+  width: 20px; height: 20px; border-radius: 50%; background: #fff;
+  box-shadow: 0 2px 4px rgba(0,0,0,.2); transition: left .15s var(--ap-ease);
+}
+.ap-switch[aria-checked="true"], .ap-switch.is-on { background: var(--ap-pres); }
+.ap-switch[aria-checked="true"]::after, .ap-switch.is-on::after { left: 23px; }
+
+/* Segmented control */
+.ap-seg { display: flex; gap: 6px; }
+.ap-seg button {
+  flex: 1; border: 2px solid var(--ap-line); background: #fdfaf2;
+  border-radius: var(--ap-r-sm); padding: 8px 0;
+  font-family: var(--ap-font-display); font-weight: 600; font-size: 13px;
+  color: var(--ap-muted); cursor: pointer; transition: all .12s;
+}
+.ap-seg button.is-on { background: var(--ap-brand); border-color: var(--ap-brand); color: #fff; }
+
+/* ============================================================
+   9. LOGO / MARQUE
+   ============================================================ */
+.ap-logo {
+  width: 46px; height: 46px; border-radius: 15px; background: var(--ap-brand);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 6px 0 var(--ap-brand-deep), 0 10px 18px rgba(112,72,255,.35);
+  flex: 0 0 auto;
+}
+.ap-logo svg { width: 24px; height: 24px; fill: #fff; }
+.ap-brandname { font-family: var(--ap-font-display); font-weight: 600; font-size: 24px; letter-spacing: -.5px; }
+
+/* ============================================================
+   10. UTILITAIRES
+   ============================================================ */
+.ap-confetti { position: absolute; border-radius: 50%; z-index: 0; pointer-events: none; }
+.ap-underline { position: relative; white-space: nowrap; color: var(--ap-brand); }
+.ap-stack { display: flex; flex-direction: column; }
+.ap-row   { display: flex; align-items: center; }
+.ap-gap-8  { gap: 8px; }  .ap-gap-12 { gap: 12px; }  .ap-gap-16 { gap: 16px; }  .ap-gap-24 { gap: 24px; }
+
+/* Helpers couleur de texte par type */
+.ap-text-quiz  { color: var(--ap-quiz); }
+.ap-text-pres  { color: var(--ap-pres); }
+.ap-text-poll  { color: var(--ap-poll); }
+.ap-text-flash { color: var(--ap-flash-deep); }
+.ap-text-brand { color: var(--ap-brand); }
+
+/* Réduction des animations si l'utilisateur le demande */
+@media (prefers-reduced-motion: reduce) {
+  .ap-btn, .ap-answer, .ap-card--hover, .ap-switch, .ap-switch::after { transition: none; }
+}
