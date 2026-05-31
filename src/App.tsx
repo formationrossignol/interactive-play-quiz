@@ -21,6 +21,7 @@ import Pricing from "./pages/Pricing";
 import Contact from "./pages/Contact";
 import About from "./pages/About";
 import PollResults from "./pages/PollResults";
+import Help from "./pages/Help";
 
 const queryClient = new QueryClient();
 
@@ -47,6 +48,7 @@ const App = () => (
           <Route path="/contact" element={<Contact />} />
           <Route path="/about" element={<About />} />
           <Route path="/poll-results/:pollId" element={<PollResults />} />
+          <Route path="/help" element={<Help />} />
           <Route path="/quiz/:gameCode" element={<LiveQuizPage />} />
           <Route path="/join/:gameCode" element={<JoinQuiz />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

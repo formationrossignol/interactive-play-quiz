@@ -418,7 +418,7 @@ const Index = () => {
               className="ap-btn ap-btn--quiz"
               onClick={joinQuiz}
               disabled={!gameCode.trim()}
-              style={{ opacity: gameCode.trim() ? 1 : 0.5, borderRadius: "var(--ap-r-lg)", alignSelf: "stretch" }}
+              style={{ opacity: gameCode.trim() ? 1 : 0.5, borderRadius: "var(--ap-r-lg)", boxShadow: "none", alignSelf: "center" }}
             >
               Rejoindre
             </button>
