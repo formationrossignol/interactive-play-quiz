@@ -312,7 +312,7 @@ const Index = () => {
                 key={key}
                 onClick={() => navigate(route)}
                 className="ap-card ap-tile ap-card--hover"
-                style={{ cursor: "pointer" }}
+                style={{ cursor: "pointer", display: "flex", flexDirection: "column" }}
               >
                 <span className="ap-tile__blob" style={{ background: `var(${accentVar})` }} />
                 <div
@@ -332,6 +332,7 @@ const Index = () => {
                 <button
                   className={btnClass}
                   onClick={(e) => { e.stopPropagation(); navigate(route); }}
+                  style={{ marginTop: "auto", alignSelf: "flex-start" }}
                 >
                   {resolvedCta}
                 </button>
