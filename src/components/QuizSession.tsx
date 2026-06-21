@@ -186,6 +186,10 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
   // Tracks the wall-clock end time of the current question (set when question starts)
   const questionEndTimeRef = useRef<number | null>(null);
 
+  // Always-fresh ref to showAnswerDistribution — avoids stale-closure in interval/effects
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const showAnswerDistRef = useRef<() => any>(() => {});
+
   const syncFromStorage = useCallback(() => {
     const session = readSessionState(quiz.gameCode);
     const mappedPlayers = session.players.map(normalizeSharedPlayer);
@@ -323,26 +327,22 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
     patchSessionState(quiz.gameCode, { players: playersForStorage });
   }, [hasSyncedPlayers, isHost, gameState, players, quiz.gameCode]);
 
-  // Timer: interval-based with Date.now() — no drift, updates 4× per second
+  // Timer: interval-based with Date.now() — no drift, updates 4× per second.
+  // Integrates auto-advance via showAnswerDistRef to avoid stale-closure issues.
   useEffect(() => {
     if (gameState !== 'question') return;
     const interval = setInterval(() => {
       if (questionEndTimeRef.current === null) return;
       const remaining = Math.max(0, Math.ceil((questionEndTimeRef.current - Date.now()) / 1000));
       setTimeLeft(remaining);
+      if (remaining <= 0 && !hasAutoAdvancedRef.current) {
+        hasAutoAdvancedRef.current = true;
+        clearInterval(interval);
+        showAnswerDistRef.current();
+      }
     }, 250);
     return () => clearInterval(interval);
   }, [gameState, currentQuestionIndex]);
-
-  // Auto-advance when timer hits 0
-  useEffect(() => {
-    if (gameState !== 'question' || timeLeft !== 0) return;
-    if (!hasAutoAdvancedRef.current) {
-      hasAutoAdvancedRef.current = true;
-      showAnswerDistribution();
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gameState, timeLeft]);
 
   // Auto-advance when every player has answered the current question
   useEffect(() => {
@@ -354,9 +354,8 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
     );
     if (allAnswered) {
       hasAutoAdvancedRef.current = true;
-      showAnswerDistribution();
+      showAnswerDistRef.current();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [players, gameState, currentQuestionIndex, isHost]);
 
   // Write timeLeft to Supabase only every 5s (not every second) to reduce write load.
@@ -481,6 +480,9 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
       });
     }
   };
+
+  // Keep ref fresh every render so interval/effects always call the latest version
+  showAnswerDistRef.current = showAnswerDistribution;
 
   const showLeaderboard = () => {
     setGameState('leaderboard');
@@ -779,59 +781,116 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
     const answeredCount = players.filter(
       (p) => p.lastAnswerQuestionIndex === currentQuestionIndex
     ).length;
+    const allAnswered = players.length > 0 && answeredCount === players.length;
+
+    const ANSWER_STYLES = [
+      { bg: '#E74C3C', shadow: 'rgba(231,76,60,0.45)', shape: '▲' },
+      { bg: '#2980B9', shadow: 'rgba(41,128,185,0.45)', shape: '◆' },
+      { bg: '#F39C12', shadow: 'rgba(243,156,18,0.45)', shape: '●' },
+      { bg: '#27AE60', shadow: 'rgba(39,174,96,0.45)', shape: '■' },
+    ];
 
     return (
-      <ThemedBackground className="p-4 text-slate-100">
-        <div className="mx-auto max-w-6xl flex gap-4 items-start">
-        {/* Main question area */}
-        <div className="flex-1 min-w-0">
-          {/* Quiz Header */}
-          <div className="flex items-center justify-between mb-6 text-white">
-            <div className="flex items-center gap-4">
-              <Badge variant="secondary" className="border border-white/20 bg-black/40 text-white shadow">
-                Question {currentQuestionIndex + 1} / {quiz.questions.length}
-              </Badge>
-              <div className="flex items-center gap-2">
-                <Users className="w-4 h-4" />
-                <span>{players.length} joueurs</span>
-              </div>
-            </div>
+      <ThemedBackground className="min-h-screen flex flex-col text-white">
+        <ExitQuizDialog
+          open={showExitDialog}
+          onOpenChange={setShowExitDialog}
+          onConfirm={handleExitQuiz}
+        />
 
+        {/* ── Top bar ── */}
+        <div className="flex items-center justify-between px-5 py-3 bg-black/50 backdrop-blur-sm border-b border-white/10 flex-shrink-0">
+          <div className="flex items-center gap-4">
+            <span
+              className="text-sm font-bold text-white/70"
+              style={{ fontFamily: 'var(--ap-font-display)' }}
+            >
+              Q {currentQuestionIndex + 1}/{quiz.questions.length}
+            </span>
+            <MultiStepProgress
+              totalSteps={quiz.questions.length}
+              currentStep={currentQuestionIndex}
+              className="w-28 h-2"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            {/* Live answered count */}
+            <div
+              className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-bold transition-all duration-500"
+              style={{
+                background: allAnswered ? 'rgba(39,174,96,0.3)' : 'rgba(255,255,255,0.12)',
+                border: allAnswered ? '1px solid rgba(39,174,96,0.5)' : '1px solid rgba(255,255,255,0.15)',
+              }}
+            >
+              <Users className="w-4 h-4" />
+              <span>
+                {answeredCount}
+                <span className="text-white/50">/{players.length}</span>
+              </span>
+              {allAnswered && <span className="text-green-400 ml-0.5">✓</span>}
+            </div>
             {isHost && (
-              <div className="flex gap-2">
-                <BackgroundMusic isPlaying={gameState === 'question'} />
+              <>
+                <BackgroundMusic isPlaying />
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setShowExitDialog(true)}
-                  className="border-white/30 bg-black/40 text-slate-100 backdrop-blur hover:bg-black/60"
+                  className="border-white/20 bg-white/10 text-white hover:bg-white/20"
                 >
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Quitter
+                  <LogOut className="w-4 h-4" />
                 </Button>
-                <Button variant="quiz" onClick={showAnswerDistribution}>
-                  Afficher les résultats
+                <Button variant="quiz" size="sm" onClick={showAnswerDistribution}>
+                  Résultats
                 </Button>
-              </div>
+              </>
             )}
           </div>
+        </div>
 
-          {/* Progress Bar */}
-          <div className="mb-8">
-            <MultiStepProgress 
-              totalSteps={quiz.questions.length}
-              currentStep={currentQuestionIndex}
-              className="h-3"
-            />
+        {/* ── Question zone (center) ── */}
+        <div className="flex-1 flex flex-col items-center justify-center px-8 py-6 gap-5">
+          {/* Timer + points row */}
+          <div className="flex items-center gap-5">
+            <CircularTimer timeLeft={timeLeft} totalTime={currentQuestion.timeLimit} />
+            <div
+              className="flex items-center gap-2 rounded-2xl border border-white/20 bg-black/30 px-5 py-2.5 backdrop-blur"
+            >
+              <Trophy className="w-5 h-5 text-yellow-300" />
+              <span
+                className="text-2xl font-bold text-yellow-200"
+                style={{ fontFamily: 'var(--ap-font-display)' }}
+              >
+                {currentQuestion.points} pts
+              </span>
+            </div>
           </div>
-          
-          <ExitQuizDialog 
-            open={showExitDialog}
-            onOpenChange={setShowExitDialog}
-            onConfirm={handleExitQuiz}
-          />
 
-          {/* Dynamic Question Component */}
+          {/* Question image */}
+          {questionImage && (
+            <div className="overflow-hidden rounded-2xl border border-white/10 bg-black/30 shadow-xl max-h-48 w-full max-w-3xl">
+              <img
+                src={questionImage}
+                alt={currentQuestion.question}
+                className="h-full w-full object-cover"
+              />
+            </div>
+          )}
+
+          {/* Question text */}
+          <h1
+            className="text-center text-white drop-shadow-2xl max-w-4xl leading-snug"
+            style={{
+              fontFamily: 'var(--ap-font-display)',
+              fontSize: 'clamp(1.4rem, 3.5vw, 2.6rem)',
+              fontWeight: 700,
+              textShadow: '0 2px 16px rgba(0,0,0,0.4)',
+            }}
+          >
+            {currentQuestion.question}
+          </h1>
+
+          {/* Word-cloud / ranking types (non-standard) */}
           {currentQuestion.type === 'word-cloud' && (
             <WordCloudQuestion
               question={currentQuestion.question}
@@ -845,7 +904,6 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
               showResults={false}
             />
           )}
-
           {currentQuestion.type === 'ranking' && currentQuestion.items && (
             <RankingQuestion
               question={currentQuestion.question}
@@ -855,117 +913,98 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
               showResults={false}
             />
           )}
+        </div>
 
-          {/* Standard Question Types */}
-          {['multiple-choice', 'single-choice', 'true-false', 'short-answer'].includes(currentQuestion.type) && (
-            <Card className="border border-white/10 bg-black/40 shadow-2xl backdrop-blur">
-              <CardContent className="p-8">
-                <div className="mb-8 text-center">
-                  {questionImage && (
-                    <div className="mb-6 overflow-hidden rounded-2xl border border-white/10 bg-black/30 shadow-xl">
-                      <img
-                        src={questionImage}
-                        alt={currentQuestion.question}
-                        className="max-h-72 w-full object-cover"
-                      />
-                    </div>
-                  )}
+        {/* ── Answer grid (Kahoot-style bottom) ── */}
+        {['multiple-choice', 'single-choice'].includes(currentQuestion.type) && currentQuestion.answers && (
+          <div className="grid grid-cols-2 gap-3 p-4 pt-0 flex-shrink-0">
+            {(currentQuestion.answers as string[]).map((answer, index) => (
+              <div
+                key={index}
+                className="flex items-center gap-4 rounded-2xl px-6 py-4 text-white font-bold text-lg select-none"
+                style={{
+                  background: ANSWER_STYLES[index % 4].bg,
+                  boxShadow: `0 6px 24px ${ANSWER_STYLES[index % 4].shadow}`,
+                  minHeight: '72px',
+                  fontFamily: 'var(--ap-font-body)',
+                }}
+              >
+                <span className="text-2xl opacity-90 flex-shrink-0">
+                  {ANSWER_STYLES[index % 4].shape}
+                </span>
+                <span className="leading-tight">{answer}</span>
+              </div>
+            ))}
+          </div>
+        )}
 
-                  <h2 className="mb-6 text-3xl font-bold text-white drop-shadow-lg md:text-4xl">
-                    {currentQuestion.question}
-                  </h2>
-
-                  <div className="flex items-center justify-center gap-6 mb-6">
-                    <CircularTimer timeLeft={timeLeft} totalTime={currentQuestion.timeLimit} />
-                    <div className="text-white">
-                      <div className="mb-2 flex items-center gap-2 rounded-full border border-white/20 bg-black/40 px-4 py-2 backdrop-blur-sm">
-                        <Trophy className="w-5 h-5 text-yellow-300" />
-                        <span className="text-xl font-bold">{currentQuestion.points} points</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Host preview — non-interactive answer display */}
-                {['multiple-choice', 'single-choice'].includes(currentQuestion.type) && currentQuestion.answers && (
-                  <div className="mx-auto grid max-w-2xl gap-4 md:grid-cols-2">
-                    {currentQuestion.answers.map((answer, index) => (
-                      <div
-                        key={index}
-                        className="flex h-20 cursor-default items-center rounded-lg border border-white/10 bg-black/40 p-6 text-lg font-semibold text-white shadow-xl backdrop-blur select-none"
-                      >
-                        <div className="mr-3 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/80 text-sm font-bold text-white shadow-inner">
-                          {String.fromCharCode(65 + index)}
-                        </div>
-                        {answer}
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {currentQuestion.type === 'true-false' && (
-                  <div className="mx-auto flex max-w-md gap-4 justify-center">
-                    <div className="flex flex-1 cursor-default select-none items-center justify-center rounded-lg border-2 border-emerald-400/60 bg-emerald-600/40 p-6 text-xl font-bold text-white shadow-xl">
-                      ✓ Vrai
-                    </div>
-                    <div className="flex flex-1 cursor-default select-none items-center justify-center rounded-lg border-2 border-rose-400/60 bg-rose-600/40 p-6 text-xl font-bold text-white shadow-xl">
-                      ✗ Faux
-                    </div>
-                  </div>
-                )}
-
-                {currentQuestion.type === 'short-answer' && (
-                  <div className="mx-auto max-w-md rounded-lg border border-white/10 bg-black/30 p-4 text-center text-slate-300 backdrop-blur">
-                    Réponse libre — les joueurs tapent leur réponse
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-        </div>{/* end main question area */}
-
-        {/* Sidebar: participant list with answered status */}
-        {isHost && (
-          <div className="w-64 flex-shrink-0 sticky top-4">
+        {currentQuestion.type === 'true-false' && (
+          <div className="grid grid-cols-2 gap-3 p-4 pt-0 flex-shrink-0">
             <div
-              className="rounded-2xl border border-white/10 bg-black/40 backdrop-blur p-4"
+              className="flex items-center justify-center gap-3 rounded-2xl px-6 py-5 text-white font-bold text-xl select-none"
+              style={{ background: '#27AE60', boxShadow: '0 6px 24px rgba(39,174,96,0.5)', fontFamily: 'var(--ap-font-display)' }}
             >
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-bold text-white flex items-center gap-1">
-                  <Users className="w-4 h-4" />
-                  Joueurs
-                </span>
-                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-white/10 text-white">
-                  {answeredCount}/{players.length}
-                </span>
-              </div>
-              <div className="space-y-2 max-h-[70vh] overflow-y-auto">
-                {players.map((p) => {
-                  const answered = p.lastAnswerQuestionIndex === currentQuestionIndex;
-                  return (
-                    <div
-                      key={p.id}
-                      className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition-all"
-                      style={{
-                        background: answered ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.03)',
-                        opacity: answered ? 1 : 0.4,
-                      }}
-                    >
-                      <AvatarDisplay emoji={p.avatar} size="sm" />
-                      <span className="flex-1 truncate text-sm font-medium text-white">
-                        {p.name}
-                      </span>
-                      {answered && (
-                        <span className="text-green-400 text-xs">✓</span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+              <span className="text-3xl">✓</span> Vrai
+            </div>
+            <div
+              className="flex items-center justify-center gap-3 rounded-2xl px-6 py-5 text-white font-bold text-xl select-none"
+              style={{ background: '#E74C3C', boxShadow: '0 6px 24px rgba(231,76,60,0.5)', fontFamily: 'var(--ap-font-display)' }}
+            >
+              <span className="text-3xl">✗</span> Faux
             </div>
           </div>
         )}
-        </div>{/* end flex container */}
+
+        {currentQuestion.type === 'short-answer' && (
+          <div
+            className="mx-4 mb-4 rounded-2xl border-2 border-dashed border-white/30 bg-white/10 p-5 text-center text-white text-lg font-bold backdrop-blur flex-shrink-0"
+            style={{ fontFamily: 'var(--ap-font-display)' }}
+          >
+            ✏️ Les joueurs tapent leur réponse
+          </div>
+        )}
+
+        {/* ── Floating player sidebar ── */}
+        {isHost && (
+          <div
+            className="fixed right-3 top-20 bottom-3 w-44 rounded-2xl border border-white/10 bg-black/60 backdrop-blur-md p-3 flex flex-col"
+            style={{ zIndex: 40 }}
+          >
+            <div className="flex items-center justify-between mb-2 flex-shrink-0">
+              <span className="text-xs font-bold text-white/60" style={{ fontFamily: 'var(--ap-font-display)' }}>
+                Joueurs
+              </span>
+              <span
+                className="text-xs font-bold px-1.5 py-0.5 rounded-full"
+                style={{
+                  background: allAnswered ? 'rgba(39,174,96,0.3)' : 'rgba(255,255,255,0.1)',
+                  color: allAnswered ? '#6ee7b7' : 'white',
+                }}
+              >
+                {answeredCount}/{players.length}
+              </span>
+            </div>
+            <div className="overflow-y-auto space-y-1 flex-1">
+              {players.map((p) => {
+                const answered = p.lastAnswerQuestionIndex === currentQuestionIndex;
+                return (
+                  <div
+                    key={p.id}
+                    className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition-all duration-300"
+                    style={{
+                      background: answered ? 'rgba(39,174,96,0.18)' : 'rgba(255,255,255,0.04)',
+                      opacity: answered ? 1 : 0.45,
+                    }}
+                  >
+                    <AvatarDisplay emoji={p.avatar} size="sm" />
+                    <span className="flex-1 truncate text-xs font-bold text-white">{p.name}</span>
+                    {answered && <span className="text-green-400 text-xs">✓</span>}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </ThemedBackground>
     );
   }
