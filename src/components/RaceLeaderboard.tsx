@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AvatarDisplay } from "./BetterAvatars";
 
 interface Player {
@@ -22,9 +22,13 @@ const MEDAL: Record<number, { bg: string; shadow: string; text: string; emoji: s
   3: { bg: 'var(--ap-quiz)',       shadow: 'var(--ap-quiz-deep)',     text: '#fff',    emoji: '🥉' },
 };
 
+const AUTO_ADVANCE_MS = 6000;
+
 export const RaceLeaderboard = ({ players, onComplete, isHost = false, isLastQuestion = false }: RaceLeaderboardProps) => {
   const [animatingPlayers, setAnimatingPlayers] = useState<Player[]>([]);
   const [showScores, setShowScores] = useState(false);
+  const [countdown, setCountdown] = useState(AUTO_ADVANCE_MS);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     setAnimatingPlayers(players.map(p => ({ ...p, score: p.previousScore ?? 0 })));
@@ -34,6 +38,23 @@ export const RaceLeaderboard = ({ players, onComplete, isHost = false, isLastQue
     }, 500);
     return () => clearTimeout(t);
   }, [players]);
+
+  // Auto-advance on intermediate leaderboards (host only)
+  useEffect(() => {
+    if (!showScores || isLastQuestion || !isHost) return;
+    setCountdown(AUTO_ADVANCE_MS);
+    const start = Date.now();
+    intervalRef.current = setInterval(() => {
+      const remaining = AUTO_ADVANCE_MS - (Date.now() - start);
+      if (remaining <= 0) {
+        clearInterval(intervalRef.current!);
+        onComplete?.();
+      } else {
+        setCountdown(remaining);
+      }
+    }, 50);
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+  }, [showScores, isLastQuestion, isHost, onComplete]);
 
   const sorted = [...animatingPlayers].sort((a, b) => b.score - a.score);
   const maxScore = Math.max(...sorted.map(p => p.score), 1);
@@ -63,6 +84,20 @@ export const RaceLeaderboard = ({ players, onComplete, isHost = false, isLastQue
             Les champions du moment
           </p>
         </div>
+
+        {/* Auto-advance progress bar */}
+        {isHost && showScores && !isLastQuestion && (
+          <div style={{ marginBottom: 16, borderRadius: 4, overflow: 'hidden', background: 'var(--ap-line)', height: 5 }}>
+            <div
+              style={{
+                height: '100%',
+                background: 'var(--ap-brand)',
+                width: `${(countdown / AUTO_ADVANCE_MS) * 100}%`,
+                transition: 'width 50ms linear',
+              }}
+            />
+          </div>
+        )}
 
         {/* Player rows */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 32 }}>
@@ -155,18 +190,15 @@ export const RaceLeaderboard = ({ players, onComplete, isHost = false, isLastQue
           })}
         </div>
 
-        {isHost && showScores && (
+        {/* Last question only: manual button to final screen */}
+        {isHost && showScores && isLastQuestion && (
           <div style={{ display: 'flex', justifyContent: 'center' }}>
             <button
               onClick={onComplete}
               className="ap-btn ap-btn--lg ap-btn--pill"
-              style={
-                isLastQuestion
-                  ? { background: 'var(--ap-quiz)', boxShadow: '0 5px 0 var(--ap-quiz-deep)' }
-                  : { background: 'var(--ap-brand)', boxShadow: '0 5px 0 var(--ap-brand-deep)' }
-              }
+              style={{ background: 'var(--ap-quiz)', boxShadow: '0 5px 0 var(--ap-quiz-deep)' }}
             >
-              {isLastQuestion ? '🏁 Voir les résultats finaux' : '➡️ Question suivante'}
+              🏁 Voir les résultats finaux
             </button>
           </div>
         )}
