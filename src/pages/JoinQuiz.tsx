@@ -1,11 +1,23 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { AvatarSelector } from "@/components/AvatarSelector";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
+
+const checkSupabase = async (gameCode: string): Promise<boolean | null> => {
+  const { data, error } = await supabase
+    .from("session_state")
+    .select("game_code")
+    .eq("game_code", gameCode)
+    .single();
+
+  if (data) return true;
+  // PGRST116 = "0 rows" → truly not found
+  if (error?.code === "PGRST116") return false;
+  // Any other error (network, RLS, etc.) → unknown, caller will retry
+  return null;
+};
 
 const JoinQuiz = () => {
   const { gameCode } = useParams<{ gameCode: string }>();
@@ -15,7 +27,7 @@ const JoinQuiz = () => {
   useEffect(() => {
     if (!gameCode) return;
 
-    // Check localStorage first (same device as host)
+    // Same-device check (synchronous)
     const quizData = localStorage.getItem(`quiz-${gameCode}`);
     const pollData = localStorage.getItem(`poll-${gameCode}`);
     const savedQuizzes = localStorage.getItem("saved_quizzes");
@@ -28,26 +40,34 @@ const JoinQuiz = () => {
       return;
     }
 
-    // Cross-device: check Supabase for active session
-    supabase
-      .from("session_state")
-      .select("game_code")
-      .eq("game_code", gameCode)
-      .single()
-      .then(({ data }) => {
-        if (data) {
-          setQuizExists(true);
-        } else {
-          setQuizExists(false);
-          toast.error("Quiz ou sondage introuvable", {
-            description: "Le code que vous avez entré n'existe pas ou a expiré.",
-          });
-        }
-      });
+    // Cross-device: check Supabase with one retry to handle race conditions
+    // (host may not have finished writing the session row yet)
+    const run = async () => {
+      let result = await checkSupabase(gameCode);
+
+      if (result === null) {
+        // Unknown error — wait 2s and retry once
+        await new Promise((r) => setTimeout(r, 2000));
+        result = await checkSupabase(gameCode);
+      }
+
+      if (result === true) {
+        setQuizExists(true);
+      } else if (result === false) {
+        setQuizExists(false);
+        toast.error("Quiz ou sondage introuvable", {
+          description: "Le code que vous avez entré n'existe pas ou a expiré.",
+        });
+      } else {
+        // Still unknown after retry — let them try anyway, PlayerView will handle it
+        setQuizExists(true);
+      }
+    };
+
+    run();
   }, [gameCode]);
 
   const handleAvatarComplete = (name: string, avatar: string) => {
-    // Navigate with both name and avatar
     navigate(`/quiz/${gameCode}?player=${encodeURIComponent(name)}&avatar=${encodeURIComponent(avatar)}`);
   };
 
@@ -67,7 +87,16 @@ const JoinQuiz = () => {
   }
 
   if (quizExists === null) {
-    return null; // Loading state
+    return (
+      <div style={{ minHeight: "100vh", background: "var(--ap-brand)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 mx-auto mb-4 animate-spin text-white" />
+          <p className="text-white font-bold text-lg" style={{ fontFamily: "var(--ap-font-display)" }}>
+            Vérification du code…
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return <AvatarSelector gameCode={gameCode} onComplete={handleAvatarComplete} />;

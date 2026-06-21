@@ -84,7 +84,8 @@ interface QuizSessionProps {
 export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
   const navigate = useNavigate();
   const [players, setPlayers] = useState<Player[]>([]);
-  
+  const [sessionReady, setSessionReady] = useState(false);
+
   const [gameState, setGameState] = useState<'waiting' | 'transition' | 'question' | 'answer-distribution' | 'leaderboard' | 'final'>('waiting');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
@@ -202,7 +203,9 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
   // Run once on mount: init session and register storage listener
   useEffect(() => {
     ensureSessionState(quiz.gameCode);
-    ensureSessionInSupabase(quiz.gameCode, { questions: quiz.questions, title: quiz.title });
+    ensureSessionInSupabase(quiz.gameCode, { questions: quiz.questions, title: quiz.title })
+      .then(() => setSessionReady(true))
+      .catch(() => setSessionReady(true)); // Show QR even if Supabase fails (same-device still works)
     syncFromStorage();
 
     const handleStorage = (event: StorageEvent) => {
@@ -517,7 +520,16 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
           <div className="grid gap-6 lg:grid-cols-3">
             {/* QR Code & Join Info */}
             <div className="space-y-4 lg:col-span-1">
-              <QRCodeGenerator gameCode={quiz.gameCode} joinUrl={joinUrl} />
+              {sessionReady ? (
+                <QRCodeGenerator gameCode={quiz.gameCode} joinUrl={joinUrl} />
+              ) : (
+                <Card className="border border-white/10 bg-black/30 text-slate-100 backdrop-blur">
+                  <CardContent className="flex flex-col items-center justify-center p-10 gap-3 text-slate-200">
+                    <Settings className="w-8 h-8 animate-spin opacity-60" />
+                    <span className="text-sm font-semibold">Synchronisation…</span>
+                  </CardContent>
+                </Card>
+              )}
               <Card className="border border-white/10 bg-black/30 text-slate-100 backdrop-blur">
                 <CardContent className="space-y-2 p-4 text-sm">
                   <div className="flex items-center gap-2 text-slate-200">

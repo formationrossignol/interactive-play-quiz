@@ -147,9 +147,9 @@ export const clearSessionState = (gameCode: string) => {
 
 export const getSessionStorageKey = (gameCode: string) => getSessionKey(gameCode);
 
-export const ensureSessionInSupabase = (gameCode: string, quizData?: object) => {
-  // Create row if not exists
-  supabase
+export const ensureSessionInSupabase = async (gameCode: string, quizData?: object): Promise<boolean> => {
+  // Create row only if it doesn't exist (ignoreDuplicates prevents resetting active sessions)
+  const { error: upsertError } = await supabase
     .from("session_state")
     .upsert(
       {
@@ -161,21 +161,27 @@ export const ensureSessionInSupabase = (gameCode: string, quizData?: object) => 
         updated_at: new Date().toISOString(),
       },
       { onConflict: "game_code", ignoreDuplicates: true }
-    )
-    .then(({ error }) => {
-      if (error) console.error("[Supabase ensureSession error]", error);
-    });
+    );
+
+  if (upsertError) {
+    console.error("[Supabase ensureSession error]", upsertError);
+    return false;
+  }
 
   // Always overwrite quiz_data so players get fresh questions
   if (quizData) {
-    supabase
+    const { error: updateError } = await supabase
       .from("session_state")
       .update({ quiz_data: quizData })
-      .eq("game_code", gameCode)
-      .then(({ error }) => {
-        if (error) console.error("[Supabase quiz_data write error]", error);
-      });
+      .eq("game_code", gameCode);
+
+    if (updateError) {
+      console.error("[Supabase quiz_data write error]", updateError);
+      return false;
+    }
   }
+
+  return true;
 };
 
 export const fetchSessionStateFromSupabase = async (gameCode: string): Promise<SharedSessionState | null> => {
