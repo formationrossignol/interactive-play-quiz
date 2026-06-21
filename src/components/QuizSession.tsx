@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -205,11 +206,14 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
     ensureSessionState(quiz.gameCode);
     ensureSessionInSupabase(quiz.gameCode, { questions: quiz.questions, title: quiz.title })
       .then((ok) => {
-        if (!ok) console.error('[QuizSession] Supabase session init failed — cross-device join will not work. Check table exists and RLS policies allow anon access.');
+        if (!ok) {
+          toast.error('Erreur Supabase — les joueurs ne pourront pas rejoindre depuis un autre appareil. Vérifiez la console pour les détails.');
+        }
         setSessionReady(true);
       })
       .catch((err) => {
         console.error('[QuizSession] Supabase error:', err);
+        toast.error(`Supabase: ${err?.message ?? 'erreur inconnue'}`);
         setSessionReady(true);
       });
     syncFromStorage();

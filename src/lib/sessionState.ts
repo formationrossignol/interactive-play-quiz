@@ -164,8 +164,8 @@ export const ensureSessionInSupabase = async (gameCode: string, quizData?: objec
     );
 
   if (upsertError) {
-    console.error("[Supabase ensureSession error]", upsertError);
-    return false;
+    console.error("[Supabase ensureSession error]", upsertError.code, upsertError.message, upsertError.details);
+    throw new Error(`${upsertError.code}: ${upsertError.message}`);
   }
 
   // Always overwrite quiz_data so players get fresh questions
@@ -176,8 +176,8 @@ export const ensureSessionInSupabase = async (gameCode: string, quizData?: objec
       .eq("game_code", gameCode);
 
     if (updateError) {
-      console.error("[Supabase quiz_data write error]", updateError);
-      return false;
+      console.error("[Supabase quiz_data write error]", updateError.code, updateError.message);
+      throw new Error(`quiz_data: ${updateError.code}: ${updateError.message}`);
     }
   }
 
