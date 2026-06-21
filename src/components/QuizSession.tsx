@@ -351,7 +351,8 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
       }
     };
 
-    const interval = setInterval(poll, 2000);
+    // Poll faster during 'question' to detect allAnswered quickly; 2s is enough for waiting
+    const interval = setInterval(poll, gameState === 'question' ? 800 : 2000);
     return () => clearInterval(interval);
   }, [isHost, gameState, quiz.gameCode, normalizeSharedPlayer]);
 
@@ -393,19 +394,23 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
     return () => clearInterval(interval);
   }, [gameState, currentQuestionIndex]);
 
-  // Auto-advance when every player has answered the current question
+  // Auto-advance when every active (non-disconnected) player has answered
   useEffect(() => {
     if (!isHost || gameState !== 'question' || players.length === 0) return;
     if (hasAutoAdvancedRef.current) return;
 
-    const allAnswered = players.every(
+    // Exclude players flagged as offline — they can't block the quiz
+    const activePlayers = players.filter(p => !disconnectedIds.has(p.id));
+    if (activePlayers.length === 0) return;
+
+    const allAnswered = activePlayers.every(
       (p) => p.lastAnswerQuestionIndex === currentQuestionIndex
     );
     if (allAnswered) {
       hasAutoAdvancedRef.current = true;
       showAnswerDistRef.current();
     }
-  }, [players, gameState, currentQuestionIndex, isHost]);
+  }, [players, disconnectedIds, gameState, currentQuestionIndex, isHost]);
 
   // Write timeLeft to Supabase only every 5s (not every second) to reduce write load.
   // Players sync their local countdown independently; this is just a fallback resync.
