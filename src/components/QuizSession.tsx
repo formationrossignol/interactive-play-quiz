@@ -17,6 +17,7 @@ import { CircularTimer } from "./CircularTimer";
 import { QuizSessionAnswerDistribution } from "./QuizSession_AnswerDistribution";
 import { RaceLeaderboard } from "./RaceLeaderboard";
 import { TransitionTimer } from "./TransitionTimer";
+import { AvatarDisplay } from "./BetterAvatars";
 import { cn } from "@/lib/utils";
 import { DEFAULT_THEME_ID, THEMES } from "@/lib/themes";
 import { hexToRgba } from "@/lib/color";
@@ -178,6 +179,10 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
   useEffect(() => { gameStateRef.current = gameState; }, [gameState]);
   useEffect(() => { currentQuestionIndexRef.current = currentQuestionIndex; }, [currentQuestionIndex]);
 
+  // Auto-advance guard — reset each time a new question starts
+  const hasAutoAdvancedRef = useRef(false);
+  useEffect(() => { hasAutoAdvancedRef.current = false; }, [currentQuestionIndex]);
+
   const syncFromStorage = useCallback(() => {
     const session = readSessionState(quiz.gameCode);
     const mappedPlayers = session.players.map(normalizeSharedPlayer);
@@ -328,6 +333,21 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
       showAnswerDistribution();
     }
   }, [gameState, timeLeft]);
+
+  // Auto-advance when every player has answered the current question
+  useEffect(() => {
+    if (!isHost || gameState !== 'question' || players.length === 0) return;
+    if (hasAutoAdvancedRef.current) return;
+
+    const allAnswered = players.every(
+      (p) => p.lastAnswerQuestionIndex === currentQuestionIndex
+    );
+    if (allAnswered) {
+      hasAutoAdvancedRef.current = true;
+      showAnswerDistribution();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [players, gameState, currentQuestionIndex, isHost]);
 
   // Write timeLeft to Supabase only every 5s (not every second) to reduce write load.
   // Players sync their local countdown independently; this is just a fallback resync.
@@ -644,9 +664,7 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
                         key={player.id}
                         className="flex items-center gap-3 rounded-lg border border-white/10 bg-slate-900/40 p-3 text-sm text-slate-100 shadow-sm backdrop-blur-md animate-fade-in"
                       >
-                        <div className="text-2xl">
-                          {player.avatar}
-                        </div>
+                        <AvatarDisplay emoji={player.avatar} size="sm" />
                         <span className="flex-1 truncate">{player.name}</span>
                       </div>
                     ))}
@@ -685,7 +703,7 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
                           {sorted.map((p, idx) => (
                             <div key={p.id} className="flex items-center gap-2 rounded border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-100">
                               <span className="w-5 text-center">{idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}.`}</span>
-                              <span className="text-lg">{p.avatar}</span>
+                              <AvatarDisplay emoji={p.avatar} size="sm" />
                               <span className="flex-1 truncate">{p.name}</span>
                               <span className="font-semibold text-yellow-300">{p.score} pts</span>
                             </div>
@@ -746,9 +764,15 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
   }
 
   if (gameState === 'question') {
+    const answeredCount = players.filter(
+      (p) => p.lastAnswerQuestionIndex === currentQuestionIndex
+    ).length;
+
     return (
       <ThemedBackground className="p-4 text-slate-100">
-        <div className="mx-auto max-w-4xl">
+        <div className="mx-auto max-w-6xl flex gap-4 items-start">
+        {/* Main question area */}
+        <div className="flex-1 min-w-0">
           {/* Quiz Header */}
           <div className="flex items-center justify-between mb-6 text-white">
             <div className="flex items-center gap-4">
@@ -886,7 +910,50 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
               </CardContent>
             </Card>
           )}
-        </div>
+        </div>{/* end main question area */}
+
+        {/* Sidebar: participant list with answered status */}
+        {isHost && (
+          <div className="w-64 flex-shrink-0 sticky top-4">
+            <div
+              className="rounded-2xl border border-white/10 bg-black/40 backdrop-blur p-4"
+            >
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm font-bold text-white flex items-center gap-1">
+                  <Users className="w-4 h-4" />
+                  Joueurs
+                </span>
+                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-white/10 text-white">
+                  {answeredCount}/{players.length}
+                </span>
+              </div>
+              <div className="space-y-2 max-h-[70vh] overflow-y-auto">
+                {players.map((p) => {
+                  const answered = p.lastAnswerQuestionIndex === currentQuestionIndex;
+                  return (
+                    <div
+                      key={p.id}
+                      className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition-all"
+                      style={{
+                        background: answered ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.03)',
+                        opacity: answered ? 1 : 0.4,
+                      }}
+                    >
+                      <AvatarDisplay emoji={p.avatar} size="sm" />
+                      <span className="flex-1 truncate text-sm font-medium text-white">
+                        {p.name}
+                      </span>
+                      {answered && (
+                        <span className="text-green-400 text-xs">✓</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+        </div>{/* end flex container */}
       </ThemedBackground>
     );
   }

@@ -10,9 +10,10 @@ import { ensureSessionState, upsertPlayerInSession } from "@/lib/sessionState";
 interface AvatarSelectorProps {
   onComplete: (name: string, avatar: string) => void;
   gameCode: string;
+  quizTitle?: string;
 }
 
-export const AvatarSelector = ({ onComplete, gameCode }: AvatarSelectorProps) => {
+export const AvatarSelector = ({ onComplete, gameCode, quizTitle }: AvatarSelectorProps) => {
   const [selectedAvatar, setSelectedAvatar] = useState(ENHANCED_AVATARS[0].emoji);
   const [playerName, setPlayerName] = useState("");
 
@@ -54,10 +55,12 @@ export const AvatarSelector = ({ onComplete, gameCode }: AvatarSelectorProps) =>
       <Card className="bg-white border-slate-100 shadow-card max-w-md w-full">
         <CardContent className="p-8">
           <div className="text-center mb-6">
-            <h1 className="text-3xl font-bold text-slate-900 mb-2">Rejoindre le Quiz</h1>
-            <div className="text-4xl font-mono text-indigo-600 tracking-wider font-bold">
-              {gameCode}
-            </div>
+            <h1 className="text-3xl font-bold text-slate-900 mb-1">Rejoindre le quiz</h1>
+            {quizTitle ? (
+              <div className="text-xl font-semibold text-indigo-600 mb-1">{quizTitle}</div>
+            ) : (
+              <div className="text-4xl font-mono text-indigo-600 tracking-wider font-bold">{gameCode}</div>
+            )}
           </div>
 
           <div className="space-y-6">
@@ -71,9 +74,7 @@ export const AvatarSelector = ({ onComplete, gameCode }: AvatarSelectorProps) =>
                     onClick={() => setSelectedAvatar(avatar.emoji)}
                     className={cn(
                       "relative group transition-all hover:scale-110 rounded-xl p-2",
-                      selectedAvatar === avatar.emoji
-                        ? "ring-2 ring-primary scale-110"
-                        : ""
+                      selectedAvatar === avatar.emoji ? "scale-110" : ""
                     )}
                   >
                     <AvatarDisplay 

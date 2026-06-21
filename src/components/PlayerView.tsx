@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Users, Trophy, LogOut } from "lucide-react";
+import { AvatarDisplay } from "./BetterAvatars";
 import { MultiStepProgress } from "./MultiStepProgress";
 import { BackgroundMusic } from "./BackgroundMusic";
 import { ExitQuizDialog } from "./ExitQuizDialog";
@@ -41,6 +42,9 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
   const [totalPlayers, setTotalPlayers] = useState(0);
   const [timeLeft, setTimeLeft] = useState(30);
   const [showExitDialog, setShowExitDialog] = useState(false);
+  const [lastEarnedPoints, setLastEarnedPoints] = useState(0);
+  const [lastAnswerCorrect, setLastAnswerCorrect] = useState(false);
+  const [lastAnsweredQuestion, setLastAnsweredQuestion] = useState<any>(null);
 
   const [quizQuestions, setQuizQuestions] = useState<any[]>([]);
   const totalQuestions = quizQuestions.length || 1;
@@ -179,7 +183,8 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
       if (remoteState === 'question') mapped = 'question';
       else if (remoteState === 'leaderboard') mapped = 'leaderboard';
       else if (remoteState === 'final') mapped = 'final';
-      else if (remoteState === 'answer-distribution' || remoteState === 'transition') mapped = 'leaderboard';
+      else if (remoteState === 'answer-distribution') mapped = 'answer-feedback';
+      else if (remoteState === 'transition') mapped = 'leaderboard';
 
       // Reset answer state only when a NEW question starts (index changed)
       const newIndex = data.current_question_index ?? 0;
@@ -227,6 +232,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
   const submitAnswer = (answer: number | string) => {
     if (hasAnswered || !liveQuestion) return;
 
+    setLastAnsweredQuestion(liveQuestion);
     setSelectedAnswer(answer);
     setHasAnswered(true);
     answeredForIndexRef.current = currentQuestion;
@@ -238,10 +244,12 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
 
     const earnedPoints = correct
       ? Math.round(
-          (liveQuestion.points ?? 100) +
-          (liveQuestion.points ?? 100) * 0.5 * (timeLeft / (liveQuestion.timeLimit ?? 30))
+          (liveQuestion.points ?? 100) * (1 + 0.33 * (timeLeft / (liveQuestion.timeLimit ?? 30)))
         )
       : 0;
+
+    setLastAnswerCorrect(correct);
+    setLastEarnedPoints(earnedPoints);
     const newScore = playerScore + earnedPoints;
     const storedPlayerRaw = sessionStorage.getItem(`quiz-player-${gameCode}`);
     if (storedPlayerRaw) {
@@ -268,7 +276,9 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
         style={{ background: "var(--ap-brand)" }}
       >
         <div className="max-w-md w-full text-center">
-          <div className="text-7xl mb-6 drop-shadow-lg">{playerAvatar}</div>
+          <div className="flex justify-center mb-6">
+            <AvatarDisplay emoji={playerAvatar} size="xl" />
+          </div>
 
           <h1 className="ap-h2 text-white mb-2">Connecté !</h1>
           <div className="mb-8" style={{ color: "rgba(255,255,255,0.75)", fontFamily: "var(--ap-font-body)", fontWeight: 700 }}>
@@ -475,6 +485,78 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
               </p>
             </div>
           )}
+        </div>
+      </div>
+    );
+  }
+
+  if (gameState === 'answer-feedback') {
+    const correctAnswerText = (() => {
+      if (!lastAnsweredQuestion) return '';
+      const q = lastAnsweredQuestion;
+      if (q.type === 'multiple-choice' || q.type === 'single-choice') {
+        const idx = typeof q.correctAnswer === 'number' ? q.correctAnswer : Number(q.correctAnswer);
+        return q.answers?.[idx] ?? '';
+      }
+      if (q.type === 'true-false') {
+        return q.correctAnswer === 'true' ? (q.answers?.[0] ?? 'Vrai') : (q.answers?.[1] ?? 'Faux');
+      }
+      return String(q.correctAnswer ?? '');
+    })();
+
+    return (
+      <div
+        className="min-h-screen flex items-center justify-center p-4"
+        style={{ background: lastAnswerCorrect ? "var(--ap-brand)" : "#1a1a2e" }}
+      >
+        <div className="max-w-md w-full text-center">
+          <div className="text-8xl mb-4 drop-shadow-xl">{lastAnswerCorrect ? '✅' : '❌'}</div>
+          <h2 className="ap-h2 text-white mb-3">
+            {lastAnswerCorrect ? 'Bonne réponse !' : 'Mauvaise réponse !'}
+          </h2>
+
+          {!lastAnswerCorrect && correctAnswerText && (
+            <p className="mb-4" style={{ color: 'rgba(255,255,255,0.75)', fontFamily: 'var(--ap-font-body)', fontWeight: 600 }}>
+              La bonne réponse était :{' '}
+              <span className="font-bold text-white">{correctAnswerText}</span>
+            </p>
+          )}
+
+          <div
+            className="p-6"
+            style={{
+              background: 'rgba(255,255,255,0.15)',
+              border: '2px solid rgba(255,255,255,0.25)',
+              borderRadius: 'var(--ap-r-xl)',
+              marginTop: '8px',
+            }}
+          >
+            <div
+              className="text-5xl font-bold text-white mb-1"
+              style={{ fontFamily: 'var(--ap-font-display)' }}
+            >
+              +{lastEarnedPoints}
+            </div>
+            <div style={{ color: 'rgba(255,255,255,0.75)', fontWeight: 700, fontFamily: 'var(--ap-font-body)' }}>
+              points gagnés
+            </div>
+            <div
+              style={{
+                borderTop: '1px solid rgba(255,255,255,0.2)',
+                marginTop: '16px',
+                paddingTop: '16px',
+                color: 'rgba(255,255,255,0.85)',
+                fontWeight: 700,
+                fontFamily: 'var(--ap-font-body)',
+              }}
+            >
+              Total : <span className="text-white font-bold">{playerScore} pts</span>
+            </div>
+          </div>
+
+          <p className="mt-4 text-sm" style={{ color: 'rgba(255,255,255,0.5)', fontFamily: 'var(--ap-font-body)' }}>
+            En attente de la suite…
+          </p>
         </div>
       </div>
     );

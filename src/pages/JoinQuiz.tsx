@@ -23,6 +23,7 @@ const JoinQuiz = () => {
   const { gameCode } = useParams<{ gameCode: string }>();
   const navigate = useNavigate();
   const [quizExists, setQuizExists] = useState<boolean | null>(null);
+  const [quizTitle, setQuizTitle] = useState<string>("");
 
   useEffect(() => {
     if (!gameCode) return;
@@ -67,6 +68,19 @@ const JoinQuiz = () => {
     run();
   }, [gameCode]);
 
+  useEffect(() => {
+    if (!gameCode || quizExists !== true) return;
+    supabase
+      .from("session_state")
+      .select("quiz_data")
+      .eq("game_code", gameCode)
+      .single()
+      .then(({ data }) => {
+        const title = (data?.quiz_data as { title?: string } | null)?.title;
+        if (title) setQuizTitle(title);
+      });
+  }, [gameCode, quizExists]);
+
   const handleAvatarComplete = (name: string, avatar: string) => {
     navigate(`/quiz/${gameCode}?player=${encodeURIComponent(name)}&avatar=${encodeURIComponent(avatar)}`);
   };
@@ -99,7 +113,7 @@ const JoinQuiz = () => {
     );
   }
 
-  return <AvatarSelector gameCode={gameCode} onComplete={handleAvatarComplete} />;
+  return <AvatarSelector gameCode={gameCode} onComplete={handleAvatarComplete} quizTitle={quizTitle} />;
 };
 
 export default JoinQuiz;
