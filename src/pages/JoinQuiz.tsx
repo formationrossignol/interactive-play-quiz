@@ -70,6 +70,20 @@ const JoinQuiz = () => {
 
   useEffect(() => {
     if (!gameCode || quizExists !== true) return;
+
+    // If this device already joined, skip avatar selector and go straight to player view
+    const stored = sessionStorage.getItem(`quiz-player-${gameCode}`);
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored) as { name: string; avatar: string };
+        navigate(`/quiz/${gameCode}?player=${encodeURIComponent(parsed.name)}&avatar=${encodeURIComponent(parsed.avatar)}`, { replace: true });
+        return;
+      } catch {
+        // corrupt data — let them re-register
+        sessionStorage.removeItem(`quiz-player-${gameCode}`);
+      }
+    }
+
     supabase
       .from("session_state")
       .select("quiz_data")
@@ -79,7 +93,7 @@ const JoinQuiz = () => {
         const title = (data?.quiz_data as { title?: string } | null)?.title;
         if (title) setQuizTitle(title);
       });
-  }, [gameCode, quizExists]);
+  }, [gameCode, quizExists, navigate]);
 
   const handleAvatarComplete = (name: string, avatar: string) => {
     navigate(`/quiz/${gameCode}?player=${encodeURIComponent(name)}&avatar=${encodeURIComponent(avatar)}`);

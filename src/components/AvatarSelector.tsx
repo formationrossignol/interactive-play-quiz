@@ -77,14 +77,11 @@ export const AvatarSelector = ({ onComplete, gameCode, quizTitle }: AvatarSelect
                       selectedAvatar === avatar.emoji ? "scale-110" : ""
                     )}
                   >
-                    <AvatarDisplay 
-                      emoji={avatar.emoji} 
+                    <AvatarDisplay
+                      emoji={avatar.emoji}
                       size="md"
                       showGlow={selectedAvatar === avatar.emoji}
                     />
-                    <div className="text-slate-400 text-xs mt-1 text-center truncate">
-                      {avatar.name}
-                    </div>
                   </button>
                 ))}
               </div>

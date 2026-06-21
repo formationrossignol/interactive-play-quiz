@@ -242,10 +242,9 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
       ? typeof expected === 'string' && String(answer).toLowerCase().trim() === expected.toLowerCase().trim()
       : answer === expected;
 
+    const base = liveQuestion.points ?? 100;
     const earnedPoints = correct
-      ? Math.round(
-          (liveQuestion.points ?? 100) * (1 + 0.33 * (timeLeft / (liveQuestion.timeLimit ?? 30)))
-        )
+      ? Math.max(Math.round(base * (timeLeft / (liveQuestion.timeLimit ?? 30))), Math.round(base * 0.1))
       : 0;
 
     setLastAnswerCorrect(correct);

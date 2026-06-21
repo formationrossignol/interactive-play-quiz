@@ -218,17 +218,16 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
       ensureSessionState(quiz.gameCode);
       const existing = readSessionState(quiz.gameCode);
 
-      if (isHost && existing.gameState === 'final') {
-        // Save results of the previous run before resetting
+      if (isHost) {
+        // Save results of any previous run before resetting
         if (existing.players.length > 0) {
           appendSessionHistory(quiz.gameCode, existing.players, quiz.questions.length);
         }
-        // Force-reset session for a clean new run
+        // Always reset — clears stale players from previous sessions
         const ok = await resetSessionForNewRun(quiz.gameCode, { questions: quiz.questions, title: quiz.title });
         if (!ok) {
           toast.error('Erreur Supabase lors de la réinitialisation. Vérifiez la console.');
         }
-        // State is already reset in localStorage by resetSessionForNewRun
       } else {
         const ok = await ensureSessionInSupabase(quiz.gameCode, { questions: quiz.questions, title: quiz.title });
         if (!ok) {
