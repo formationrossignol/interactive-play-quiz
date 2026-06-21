@@ -249,6 +249,24 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
     return () => clearInterval(interval);
   }, [gameState, hasAnswered, currentQuestion]);
 
+  // Heartbeat: signals liveness to host every 5s so disconnects can be detected
+  useEffect(() => {
+    if (!playerId || gameState === 'final') return;
+    const beat = () => {
+      const raw = sessionStorage.getItem(`quiz-player-${gameCode}`);
+      if (!raw) return;
+      try {
+        const stored = JSON.parse(raw) as SharedPlayer;
+        const updated: SharedPlayer = { ...stored, lastHeartbeat: new Date().toISOString() };
+        sessionStorage.setItem(`quiz-player-${gameCode}`, JSON.stringify(updated));
+        upsertPlayerInSession(gameCode, updated);
+      } catch {}
+    };
+    beat();
+    const interval = setInterval(beat, 5000);
+    return () => clearInterval(interval);
+  }, [playerId, gameCode, gameState]);
+
   const handleExitQuiz = () => {
     navigate("/");
   };

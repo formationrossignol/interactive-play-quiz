@@ -106,6 +106,8 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
     questionsAnswered: 0,
     duration: 0
   });
+  const [disconnectedIds, setDisconnectedIds] = useState<Set<string>>(new Set());
+  const disconnectedIdsRef = useRef<Set<string>>(new Set());
 
   const joinUrl = `${window.location.origin}/join/${quiz.gameCode}`;
   const currentQuestion = quiz.questions[currentQuestionIndex];
@@ -299,6 +301,25 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
             };
           });
         });
+
+        // Disconnect detection: player is considered offline if heartbeat >15s stale
+        if (gameState === 'question') {
+          const THRESHOLD_MS = 15000;
+          const now = Date.now();
+          (data.players as SharedPlayer[]).forEach((p) => {
+            if (!p.lastHeartbeat) return;
+            const age = now - new Date(p.lastHeartbeat).getTime();
+            const wasDisconnected = disconnectedIdsRef.current.has(p.id);
+            if (age > THRESHOLD_MS && !wasDisconnected) {
+              disconnectedIdsRef.current.add(p.id);
+              setDisconnectedIds(new Set(disconnectedIdsRef.current));
+              toast.error(`${p.name} s'est déconnecté`, { duration: 5000 });
+            } else if (age <= THRESHOLD_MS && wasDisconnected) {
+              disconnectedIdsRef.current.delete(p.id);
+              setDisconnectedIds(new Set(disconnectedIdsRef.current));
+            }
+          });
+        }
       }
     };
 
@@ -990,18 +1011,25 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
               <div className="overflow-y-auto space-y-1 flex-1">
                 {players.map((p) => {
                   const answered = p.lastAnswerQuestionIndex === currentQuestionIndex;
+                  const offline = disconnectedIds.has(p.id);
                   return (
                     <div
                       key={p.id}
                       className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition-all duration-300"
                       style={{
-                        background: answered ? 'rgba(21,192,138,0.18)' : 'rgba(255,255,255,0.04)',
-                        opacity: answered ? 1 : 0.45,
+                        background: offline
+                          ? 'rgba(239,68,68,0.1)'
+                          : answered
+                          ? 'rgba(21,192,138,0.18)'
+                          : 'rgba(255,255,255,0.04)',
+                        opacity: offline ? 0.6 : answered ? 1 : 0.45,
+                        border: offline ? '1px solid rgba(239,68,68,0.25)' : '1px solid transparent',
                       }}
                     >
                       <AvatarDisplay emoji={p.avatar} size="sm" />
                       <span className="flex-1 truncate text-xs font-bold text-white">{p.name}</span>
-                      {answered && <span className="text-xs" style={{ color: '#6ee7b7' }}>✓</span>}
+                      {offline && <span className="text-red-400 text-xs flex-shrink-0">✗</span>}
+                      {!offline && answered && <span className="text-xs flex-shrink-0" style={{ color: '#6ee7b7' }}>✓</span>}
                     </div>
                   );
                 })}
@@ -1097,7 +1125,7 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
     );
 
     return (
-      <ThemedBackground className="min-h-screen overflow-auto text-slate-100">
+      <ThemedBackground className="min-h-screen text-slate-100">
         {/* Confetti */}
         <div className="fixed inset-0 pointer-events-none z-0">
           {Array.from({ length: 80 }).map((_, i) => (
@@ -1114,104 +1142,158 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
           ))}
         </div>
 
-        <div className="relative z-10 mx-auto max-w-3xl px-4 pt-8 pb-10 text-center">
-          {/* Title */}
-          <h1
-            className="mb-8"
-            style={{
-              fontFamily: 'var(--ap-font-display)',
-              fontSize: 'clamp(2.2rem, 5vw, 3.5rem)',
-              fontWeight: 700,
-              color: '#fff',
-              textShadow: '0 4px 20px rgba(0,0,0,0.4)',
-            }}
-          >
-            🎉 Quiz Terminé !
-          </h1>
+        <div className="relative z-10 flex min-h-screen">
+          {/* ── Main content ── */}
+          <div className="flex-1 overflow-auto px-4 pt-8 pb-10 text-center">
+            {/* Title */}
+            <h1
+              className="mb-8"
+              style={{
+                fontFamily: 'var(--ap-font-display)',
+                fontSize: 'clamp(2.2rem, 5vw, 3.5rem)',
+                fontWeight: 700,
+                color: '#fff',
+                textShadow: '0 4px 20px rgba(0,0,0,0.4)',
+              }}
+            >
+              🎉 Quiz Terminé !
+            </h1>
 
-          {/* Podium — order: 2nd | 1st | 3rd */}
-          <div className="flex items-end justify-center gap-0 mb-0">
-            {p2
-              ? podiumStep(p2.name, p2.score, p2.avatar, '🥈', 110, 140,
-                  'linear-gradient(170deg,#E8E8E8 0%,#B8B8B8 100%)',
-                  '#444', 'lg',
-                  'inset 0 1px 0 rgba(255,255,255,0.5)')
-              : <div style={{ width: 140 }} />}
+            {/* Podium — order: 2nd | 1st | 3rd */}
+            <div className="flex items-end justify-center gap-0 mb-0">
+              {p2
+                ? podiumStep(p2.name, p2.score, p2.avatar, '🥈', 110, 140,
+                    'linear-gradient(170deg,#E8E8E8 0%,#B8B8B8 100%)',
+                    '#444', 'lg',
+                    'inset 0 1px 0 rgba(255,255,255,0.5)')
+                : <div style={{ width: 140 }} />}
 
-            {p1
-              ? podiumStep(p1.name, p1.score, p1.avatar, '🥇', 160, 160,
-                  'linear-gradient(170deg,#FFE566 0%,#FFB800 100%)',
-                  '#7a4000', 'xl',
-                  'inset 0 1px 0 rgba(255,255,255,0.5), 0 -10px 36px rgba(255,184,0,0.55)')
-              : <div style={{ width: 160 }} />}
+              {p1
+                ? podiumStep(p1.name, p1.score, p1.avatar, '🥇', 160, 160,
+                    'linear-gradient(170deg,#FFE566 0%,#FFB800 100%)',
+                    '#7a4000', 'xl',
+                    'inset 0 1px 0 rgba(255,255,255,0.5), 0 -10px 36px rgba(255,184,0,0.55)')
+                : <div style={{ width: 160 }} />}
 
-            {p3
-              ? podiumStep(p3.name, p3.score, p3.avatar, '🥉', 80, 130,
-                  'linear-gradient(170deg,#E8A87C 0%,#CD7F32 100%)',
-                  '#4a2000', 'lg',
-                  'inset 0 1px 0 rgba(255,255,255,0.4)')
-              : <div style={{ width: 130 }} />}
+              {p3
+                ? podiumStep(p3.name, p3.score, p3.avatar, '🥉', 80, 130,
+                    'linear-gradient(170deg,#E8A87C 0%,#CD7F32 100%)',
+                    '#4a2000', 'lg',
+                    'inset 0 1px 0 rgba(255,255,255,0.4)')
+                : <div style={{ width: 130 }} />}
+            </div>
+
+            {/* Podium floor */}
+            <div
+              style={{
+                height: 7,
+                background: 'rgba(255,255,255,0.18)',
+                borderRadius: '0 0 10px 10px',
+                marginBottom: 28,
+              }}
+            />
+
+            {/* Players 4+ */}
+            {sortedPlayers.length > 3 && (
+              <div className="space-y-2 mb-8 max-w-lg mx-auto">
+                {sortedPlayers.slice(3).map((player, idx) => (
+                  <div
+                    key={player.id}
+                    className="flex items-center gap-3 rounded-xl px-4 py-2.5"
+                    style={{
+                      background: 'rgba(255,255,255,0.1)',
+                      border: '1px solid rgba(255,255,255,0.15)',
+                    }}
+                  >
+                    <span
+                      className="font-bold text-white/70 text-sm w-5 text-center"
+                      style={{ fontFamily: 'var(--ap-font-display)' }}
+                    >
+                      {idx + 4}
+                    </span>
+                    <AvatarDisplay emoji={player.avatar} size="sm" />
+                    <span
+                      className="flex-1 text-left font-bold text-white truncate text-sm"
+                      style={{ fontFamily: 'var(--ap-font-body)' }}
+                    >
+                      {player.name}
+                    </span>
+                    <span
+                      className="font-bold text-white/80 text-sm"
+                      style={{ fontFamily: 'var(--ap-font-display)' }}
+                    >
+                      {player.score.toLocaleString()} pts
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {isHost && (
+              <div className="flex justify-center gap-4">
+                <Button
+                  variant="outline"
+                  onClick={exportResults}
+                  className="border-white/30 bg-black/40 font-bold text-slate-100 shadow-xl backdrop-blur hover:bg-black/60"
+                >
+                  <Download className="w-5 h-5 mr-2" />
+                  Exporter
+                </Button>
+                <Button variant="hero" onClick={() => window.location.href = '/'} className="font-bold shadow-xl">
+                  🎮 Nouveau Quiz
+                </Button>
+              </div>
+            )}
           </div>
 
-          {/* Podium floor */}
-          <div
-            style={{
-              height: 7,
-              background: 'rgba(255,255,255,0.18)',
-              borderRadius: '0 0 10px 10px',
-              marginBottom: 28,
-            }}
-          />
-
-          {/* Players 4+ */}
-          {sortedPlayers.length > 3 && (
-            <div className="space-y-2 mb-8 max-w-lg mx-auto">
-              {sortedPlayers.slice(3).map((player, idx) => (
-                <div
-                  key={player.id}
-                  className="flex items-center gap-3 rounded-xl px-4 py-2.5"
-                  style={{
-                    background: 'rgba(255,255,255,0.1)',
-                    border: '1px solid rgba(255,255,255,0.15)',
-                  }}
-                >
-                  <span
-                    className="font-bold text-white/70 text-sm w-5 text-center"
-                    style={{ fontFamily: 'var(--ap-font-display)' }}
-                  >
-                    {idx + 4}
-                  </span>
-                  <AvatarDisplay emoji={player.avatar} size="sm" />
-                  <span
-                    className="flex-1 text-left font-bold text-white truncate text-sm"
-                    style={{ fontFamily: 'var(--ap-font-body)' }}
-                  >
-                    {player.name}
-                  </span>
-                  <span
-                    className="font-bold text-white/80 text-sm"
-                    style={{ fontFamily: 'var(--ap-font-display)' }}
-                  >
-                    {player.score.toLocaleString()} pts
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-
+          {/* ── Classement complet (host sidebar) ── */}
           {isHost && (
-            <div className="flex justify-center gap-4">
-              <Button
-                variant="outline"
-                onClick={exportResults}
-                className="border-white/30 bg-black/40 font-bold text-slate-100 shadow-xl backdrop-blur hover:bg-black/60"
+            <div className="w-60 border-l border-white/10 bg-black/45 backdrop-blur-md flex flex-col p-4 flex-shrink-0">
+              <div
+                className="mb-3 flex-shrink-0 uppercase tracking-wider text-xs font-bold"
+                style={{ color: 'rgba(255,255,255,0.5)', fontFamily: 'var(--ap-font-display)' }}
               >
-                <Download className="w-5 h-5 mr-2" />
-                Exporter
-              </Button>
-              <Button variant="hero" onClick={() => window.location.href = '/'} className="font-bold shadow-xl">
-                🎮 Nouveau Quiz
-              </Button>
+                Classement · {sortedPlayers.length} joueurs
+              </div>
+              <div className="overflow-y-auto space-y-1.5 flex-1">
+                {sortedPlayers.map((player, idx) => {
+                  const isOffline = disconnectedIds.has(player.id);
+                  return (
+                    <div
+                      key={player.id}
+                      className="flex items-center gap-2 rounded-xl px-2.5 py-2 transition-all"
+                      style={{
+                        background: isOffline ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.08)',
+                        border: isOffline ? '1px solid rgba(239,68,68,0.25)' : '1px solid rgba(255,255,255,0.08)',
+                        opacity: isOffline ? 0.65 : 1,
+                      }}
+                    >
+                      <span
+                        className="font-bold w-5 text-center flex-shrink-0 text-xs"
+                        style={{ color: 'rgba(255,255,255,0.5)', fontFamily: 'var(--ap-font-display)' }}
+                      >
+                        {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : idx + 1}
+                      </span>
+                      <AvatarDisplay emoji={player.avatar} size="sm" />
+                      <span
+                        className="flex-1 truncate text-white font-bold text-xs"
+                        style={{ fontFamily: 'var(--ap-font-body)' }}
+                      >
+                        {player.name}
+                      </span>
+                      <span
+                        className="font-bold text-xs flex-shrink-0"
+                        style={{ color: 'rgba(255,255,255,0.75)', fontFamily: 'var(--ap-font-display)' }}
+                      >
+                        {player.score.toLocaleString()}
+                      </span>
+                      {isOffline && (
+                        <span className="text-red-400 text-xs flex-shrink-0" title="Déconnecté">✗</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>

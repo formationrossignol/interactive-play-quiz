@@ -19,6 +19,7 @@ export interface SharedPlayer {
   joinedAt: string;
   lastAnswer?: number;
   lastAnswerQuestionIndex?: number;
+  lastHeartbeat?: string;
 }
 
 export interface SharedSessionState {
