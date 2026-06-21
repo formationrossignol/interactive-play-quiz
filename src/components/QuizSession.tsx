@@ -26,7 +26,11 @@ import {
   getSessionStorageKey,
   patchSessionState,
   readSessionState,
+  resetSessionForNewRun,
+  appendSessionHistory,
+  readSessionHistory,
   type SharedPlayer,
+  type SessionRun,
 } from "@/lib/sessionState";
 import { supabase } from "@/lib/supabase";
 
@@ -91,6 +95,7 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
   const [gameState, setGameState] = useState<'waiting' | 'transition' | 'question' | 'answer-distribution' | 'leaderboard' | 'final'>('waiting');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
+  const [sessionHistory, setSessionHistory] = useState<SessionRun[]>([]);
   const [timeLeft, setTimeLeft] = useState(0);
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [answerDistribution, setAnswerDistribution] = useState<number[]>([]);
@@ -204,20 +209,38 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
 
   // Run once on mount: init session and register storage listener
   useEffect(() => {
-    ensureSessionState(quiz.gameCode);
-    ensureSessionInSupabase(quiz.gameCode, { questions: quiz.questions, title: quiz.title })
-      .then((ok) => {
+    const init = async () => {
+      ensureSessionState(quiz.gameCode);
+      const existing = readSessionState(quiz.gameCode);
+
+      if (isHost && existing.gameState === 'final') {
+        // Save results of the previous run before resetting
+        if (existing.players.length > 0) {
+          appendSessionHistory(quiz.gameCode, existing.players, quiz.questions.length);
+        }
+        // Force-reset session for a clean new run
+        const ok = await resetSessionForNewRun(quiz.gameCode, { questions: quiz.questions, title: quiz.title });
+        if (!ok) {
+          toast.error('Erreur Supabase lors de la réinitialisation. Vérifiez la console.');
+        }
+        // State is already reset in localStorage by resetSessionForNewRun
+      } else {
+        const ok = await ensureSessionInSupabase(quiz.gameCode, { questions: quiz.questions, title: quiz.title });
         if (!ok) {
           toast.error('Erreur Supabase — les joueurs ne pourront pas rejoindre depuis un autre appareil. Vérifiez la console pour les détails.');
         }
-        setSessionReady(true);
-      })
-      .catch((err) => {
-        console.error('[QuizSession] Supabase error:', err);
-        toast.error(`Supabase: ${err?.message ?? 'erreur inconnue'}`);
-        setSessionReady(true);
-      });
-    syncFromStorage();
+        syncFromStorage();
+      }
+
+      setSessionHistory(readSessionHistory(quiz.gameCode));
+      setSessionReady(true);
+    };
+
+    init().catch((err) => {
+      console.error('[QuizSession] init error:', err);
+      toast.error(`Supabase: ${err?.message ?? 'erreur inconnue'}`);
+      setSessionReady(true);
+    });
 
     const handleStorage = (event: StorageEvent) => {
       if (event.key === getSessionStorageKey(quiz.gameCode)) {
@@ -638,6 +661,43 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
               </Card>
             </div>
           </div>
+
+          {/* Session History */}
+          {isHost && sessionHistory.length > 0 && (
+            <Card className="border border-white/10 bg-black/35 shadow-xl backdrop-blur">
+              <CardContent className="p-6">
+                <h3 className="mb-4 flex items-center gap-2 text-xl font-bold text-white">
+                  <Trophy className="w-5 h-5 text-yellow-400" />
+                  Sessions précédentes
+                </h3>
+                <div className="space-y-4">
+                  {sessionHistory.map((run) => {
+                    const sorted = [...run.players].sort((a, b) => b.score - a.score);
+                    return (
+                      <details key={run.id} className="group rounded-lg border border-white/10 bg-black/20 p-4">
+                        <summary className="flex cursor-pointer items-center justify-between text-slate-200 list-none">
+                          <span className="font-semibold">
+                            {new Date(run.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                          <span className="text-sm text-slate-400">{run.players.length} joueur(s) · {run.questionCount} questions</span>
+                        </summary>
+                        <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                          {sorted.map((p, idx) => (
+                            <div key={p.id} className="flex items-center gap-2 rounded border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-100">
+                              <span className="w-5 text-center">{idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}.`}</span>
+                              <span className="text-lg">{p.avatar}</span>
+                              <span className="flex-1 truncate">{p.name}</span>
+                              <span className="font-semibold text-yellow-300">{p.score} pts</span>
+                            </div>
+                          ))}
+                        </div>
+                      </details>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Quiz Preview */}
           {isHost && (

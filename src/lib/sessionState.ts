@@ -147,6 +147,81 @@ export const clearSessionState = (gameCode: string) => {
 
 export const getSessionStorageKey = (gameCode: string) => getSessionKey(gameCode);
 
+// --- Session history (past runs, stored in localStorage only) ---
+
+export interface SessionRun {
+  id: string;
+  date: string;
+  questionCount: number;
+  players: Array<{
+    id: string;
+    name: string;
+    avatar: string;
+    score: number;
+    correctAnswers: number;
+  }>;
+}
+
+const getHistoryKey = (gameCode: string) => `quiz-session-history-${gameCode}`;
+const MAX_HISTORY = 5;
+
+export const readSessionHistory = (gameCode: string): SessionRun[] => {
+  try {
+    const raw = localStorage.getItem(getHistoryKey(gameCode));
+    if (!raw) return [];
+    return JSON.parse(raw) as SessionRun[];
+  } catch {
+    return [];
+  }
+};
+
+export const appendSessionHistory = (gameCode: string, players: SharedPlayer[], questionCount: number) => {
+  const history = readSessionHistory(gameCode);
+  const run: SessionRun = {
+    id: new Date().toISOString(),
+    date: new Date().toISOString(),
+    questionCount,
+    players: players.map((p) => ({
+      id: p.id,
+      name: p.name,
+      avatar: p.avatar,
+      score: p.score,
+      correctAnswers: p.correctAnswers ?? 0,
+    })),
+  };
+  const next = [run, ...history].slice(0, MAX_HISTORY);
+  localStorage.setItem(getHistoryKey(gameCode), JSON.stringify(next));
+};
+
+export const resetSessionForNewRun = async (gameCode: string, quizData?: object): Promise<boolean> => {
+  const resetState: SharedSessionState = {
+    ...DEFAULT_SESSION_STATE,
+    updatedAt: new Date().toISOString(),
+  };
+  writeSessionState(gameCode, resetState);
+
+  const { error } = await supabase
+    .from("session_state")
+    .upsert(
+      {
+        game_code: gameCode,
+        players: [],
+        game_state: "waiting",
+        current_question_index: 0,
+        time_left: 0,
+        updated_at: resetState.updatedAt,
+        ...(quizData ? { quiz_data: quizData } : {}),
+      },
+      { onConflict: "game_code" }
+    );
+
+  if (error) {
+    console.error("[resetSessionForNewRun error]", error.code, error.message);
+    return false;
+  }
+  return true;
+};
+
 export const ensureSessionInSupabase = async (gameCode: string, quizData?: object): Promise<boolean> => {
   // Create row only if it doesn't exist (ignoreDuplicates prevents resetting active sessions)
   const { error: upsertError } = await supabase
