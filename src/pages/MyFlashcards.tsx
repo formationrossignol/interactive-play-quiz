@@ -14,10 +14,12 @@ import {
   type SavedQuiz,
 } from "@/lib/quizStorage";
 import { toast } from "sonner";
-import { Edit, Search, Star, Trash2 } from "lucide-react";
+import { Edit, LayoutGrid, List, Search, Star, Trash2 } from "lucide-react";
 import { DeleteQuizDialog } from "@/components/DeleteQuizDialog";
 import { t } from "@/lib/i18n";
 import { useCollectionFilters } from "@/hooks/useCollectionFilters";
+
+const VIEW_KEY = "view-mode-flashcards";
 
 const triggerStyle = {
   fontFamily: "var(--ap-font-body)", fontWeight: 700, fontSize: "14px",
@@ -34,6 +36,12 @@ const MyFlashcards = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [setToDelete, setSetToDelete] = useState<SavedQuiz | null>(null);
   const [activeTab, setActiveTab] = useState("my");
+  const [viewMode, setViewMode] = useState<"grid" | "list">(() => (localStorage.getItem(VIEW_KEY) as "grid" | "list") ?? "grid");
+
+  const setView = (mode: "grid" | "list") => {
+    setViewMode(mode);
+    localStorage.setItem(VIEW_KEY, mode);
+  };
 
   const loadFlashcards = useCallback(() => {
     if (!user) return;
@@ -62,6 +70,18 @@ const MyFlashcards = () => {
     const updated = toggleFavorite(cardSet.id);
     if (updated) { toast.success(updated.isFavorite ? t("addedToFavorites") : t("removedFromFavorites")); loadFlashcards(); }
   };
+
+  const toggleBtnStyle = (active: boolean): React.CSSProperties => ({
+    padding: "8px",
+    background: active ? "var(--ap-brand-soft)" : "transparent",
+    color: active ? "var(--ap-brand)" : "var(--ap-muted)",
+    border: `2px solid ${active ? "var(--ap-brand)" : "var(--ap-line)"}`,
+    borderRadius: "var(--ap-r-sm)",
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  });
 
   const renderFilters = (tab: string) => {
     const f = filtersFor(tab);
@@ -93,6 +113,10 @@ const MyFlashcards = () => {
             <SelectItem value="questions">Nb cartes</SelectItem>
           </SelectContent>
         </Select>
+        <div className="flex gap-1 flex-shrink-0">
+          <button onClick={() => setView("grid")} style={toggleBtnStyle(viewMode === "grid")} title="Vue grille"><LayoutGrid style={{ width: 16, height: 16 }} /></button>
+          <button onClick={() => setView("list")} style={toggleBtnStyle(viewMode === "list")} title="Vue liste"><List style={{ width: 16, height: 16 }} /></button>
+        </div>
       </div>
     );
   };
@@ -139,6 +163,42 @@ const MyFlashcards = () => {
     </div>
   );
 
+  const renderRow = (cardSet: SavedQuiz, showActions = true) => (
+    <div
+      key={cardSet.id}
+      className="flex items-center gap-4 cursor-pointer px-4 py-3 transition-colors"
+      style={{ borderBottom: "2px solid var(--ap-line)" }}
+      onClick={() => navigate(`/builder?type=flashcard&quizId=${cardSet.id}`)}
+      onMouseEnter={(e) => (e.currentTarget.style.background = "var(--ap-paper-2)")}
+      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+    >
+      <div className="flex-1 min-w-0">
+        <p className="ap-h3 truncate" style={{ fontSize: "14px", marginBottom: "2px" }}>{cardSet.title}</p>
+        {cardSet.description && <p className="ap-muted truncate" style={{ fontSize: "12px" }}>{cardSet.description}</p>}
+      </div>
+      <div className="hidden sm:flex items-center gap-1.5 flex-shrink-0">
+        <span className="ap-pill" style={{ fontSize: "11px", padding: "2px 8px" }}>
+          {cardSet.questions.length} {cardSet.questions.length > 1 ? t("cards") : t("card")}
+        </span>
+        {cardSet.isPublic && <span className="ap-badge ap-badge--flash" style={{ fontSize: "11px" }}>{t("publicBadge")}</span>}
+      </div>
+      <div className="flex items-center gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+        <button onClick={(e) => handleToggleFavorite(e, cardSet)} className="ap-btn ap-btn--ghost ap-btn--sm" style={{ padding: "5px", color: cardSet.isFavorite ? "var(--ap-flash)" : "var(--ap-muted)" }}>
+          <Star style={{ width: 14, height: 14, fill: cardSet.isFavorite ? "currentColor" : "none" }} />
+        </button>
+        {showActions && (
+          <>
+            <button onClick={(e) => { e.stopPropagation(); navigate(`/builder?type=flashcard&quizId=${cardSet.id}`); }} title={t("edit")} className="ap-btn ap-btn--ghost ap-btn--sm" style={{ padding: "5px" }}><Edit style={{ width: 14, height: 14 }} /></button>
+            <button onClick={(e) => { e.stopPropagation(); handleDeleteClick(cardSet); }} title={t("delete")} className="ap-btn ap-btn--ghost ap-btn--sm" style={{ padding: "5px", color: "var(--ap-quiz)" }}><Trash2 style={{ width: 14, height: 14 }} /></button>
+          </>
+        )}
+        <button className="ap-btn ap-btn--sm ap-btn--pill ap-btn--flash" onClick={(e) => { e.stopPropagation(); navigate(`/builder?type=flashcard&quizId=${cardSet.id}`); }} style={{ fontSize: "12px", padding: "4px 12px" }}>
+          {t("editSet")}
+        </button>
+      </div>
+    </div>
+  );
+
   const renderTabContent = (tab: string, allItems: SavedQuiz[], emptyKey: string, ctaKey?: string, showActions = true) => {
     const f = filtersFor(tab);
     if (allItems.length === 0) return (
@@ -152,9 +212,13 @@ const MyFlashcards = () => {
         {renderFilters(tab)}
         {f.paginated.length === 0 ? (
           <p className="py-10 text-center text-sm" style={{ color: "var(--ap-muted)" }}>Aucun résultat pour cette recherche.</p>
-        ) : (
+        ) : viewMode === "grid" ? (
           <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
             {f.paginated.map((s) => renderCard(s, showActions))}
+          </div>
+        ) : (
+          <div className="ap-card" style={{ padding: 0, overflow: "hidden" }}>
+            {f.paginated.map((s) => renderRow(s, showActions))}
           </div>
         )}
         <Pagination page={f.page} totalPages={f.totalPages} onPageChange={f.setPage} className="mt-8" />

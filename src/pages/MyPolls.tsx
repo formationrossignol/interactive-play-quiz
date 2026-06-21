@@ -15,10 +15,12 @@ import {
 } from "@/lib/quizStorage";
 import { DeleteQuizDialog } from "@/components/DeleteQuizDialog";
 import { toast } from "sonner";
-import { BarChart2, Edit, Play, Search, Star, Trash2 } from "lucide-react";
+import { BarChart2, Edit, LayoutGrid, List, Play, Search, Star, Trash2 } from "lucide-react";
 import { t } from "@/lib/i18n";
 import { useCollectionFilters } from "@/hooks/useCollectionFilters";
 import { hasPollResults } from "@/lib/pollResults";
+
+const VIEW_KEY = "view-mode-polls";
 
 const triggerStyle = {
   fontFamily: "var(--ap-font-body)", fontWeight: 700, fontSize: "14px",
@@ -35,6 +37,12 @@ const MyPolls = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [pollToDelete, setPollToDelete] = useState<SavedQuiz | null>(null);
   const [activeTab, setActiveTab] = useState("my");
+  const [viewMode, setViewMode] = useState<"grid" | "list">(() => (localStorage.getItem(VIEW_KEY) as "grid" | "list") ?? "grid");
+
+  const setView = (mode: "grid" | "list") => {
+    setViewMode(mode);
+    localStorage.setItem(VIEW_KEY, mode);
+  };
 
   const loadPolls = useCallback(() => {
     if (!user) return;
@@ -75,6 +83,18 @@ const MyPolls = () => {
     navigate(`/builder?type=poll&quizId=${pollId}`);
   };
 
+  const toggleBtnStyle = (active: boolean): React.CSSProperties => ({
+    padding: "8px",
+    background: active ? "var(--ap-brand-soft)" : "transparent",
+    color: active ? "var(--ap-brand)" : "var(--ap-muted)",
+    border: `2px solid ${active ? "var(--ap-brand)" : "var(--ap-line)"}`,
+    borderRadius: "var(--ap-r-sm)",
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  });
+
   const renderFilters = (tab: string) => {
     const f = filtersFor(tab);
     return (
@@ -105,6 +125,10 @@ const MyPolls = () => {
             <SelectItem value="questions">Nb questions</SelectItem>
           </SelectContent>
         </Select>
+        <div className="flex gap-1 flex-shrink-0">
+          <button onClick={() => setView("grid")} style={toggleBtnStyle(viewMode === "grid")} title="Vue grille"><LayoutGrid style={{ width: 16, height: 16 }} /></button>
+          <button onClick={() => setView("list")} style={toggleBtnStyle(viewMode === "list")} title="Vue liste"><List style={{ width: 16, height: 16 }} /></button>
+        </div>
       </div>
     );
   };
@@ -168,6 +192,51 @@ const MyPolls = () => {
     </div>
   );
 
+  const renderPollRow = (poll: SavedQuiz, showActions = true) => (
+    <div
+      key={poll.id}
+      className="flex items-center gap-4 cursor-pointer px-4 py-3 transition-colors"
+      style={{ borderBottom: "2px solid var(--ap-line)" }}
+      onClick={() => navigate(`/builder?type=poll&quizId=${poll.id}`)}
+      onMouseEnter={(e) => (e.currentTarget.style.background = "var(--ap-paper-2)")}
+      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+    >
+      <div className="flex-1 min-w-0">
+        <p className="ap-h3 truncate" style={{ fontSize: "14px", marginBottom: "2px" }}>{poll.title}</p>
+        {poll.description && <p className="ap-muted truncate" style={{ fontSize: "12px" }}>{poll.description}</p>}
+      </div>
+      <div className="hidden sm:flex items-center gap-1.5 flex-shrink-0">
+        <span className="ap-pill" style={{ fontSize: "11px", padding: "2px 8px" }}>
+          {poll.questions.length} {poll.questions.length > 1 ? t("questions") : t("question")}
+        </span>
+      </div>
+      <div className="flex items-center gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+        <button onClick={(e) => handleToggleFavorite(e, poll)} className="ap-btn ap-btn--ghost ap-btn--sm" style={{ padding: "5px", color: poll.isFavorite ? "var(--ap-flash)" : "var(--ap-muted)" }}>
+          <Star style={{ width: 14, height: 14, fill: poll.isFavorite ? "currentColor" : "none" }} />
+        </button>
+        {showActions && (
+          <>
+            <button onClick={(e) => handleEditPoll(e, poll.id)} title={t("edit")} className="ap-btn ap-btn--ghost ap-btn--sm" style={{ padding: "5px" }}><Edit style={{ width: 14, height: 14 }} /></button>
+            <button onClick={(e) => { e.stopPropagation(); handleDeleteClick(poll); }} title={t("delete")} className="ap-btn ap-btn--ghost ap-btn--sm" style={{ padding: "5px", color: "var(--ap-quiz)" }}><Trash2 style={{ width: 14, height: 14 }} /></button>
+          </>
+        )}
+        {hasPollResults(poll.id) && (
+          <button
+            onClick={(e) => { e.stopPropagation(); navigate(`/poll-results/${poll.id}`); }}
+            className="ap-btn ap-btn--ghost ap-btn--sm"
+            style={{ padding: "5px 8px", display: "flex", alignItems: "center", gap: "3px", fontSize: "12px" }}
+          >
+            <BarChart2 style={{ width: 13, height: 13 }} />
+            <span className="hidden sm:inline">Résultats</span>
+          </button>
+        )}
+        <button className="ap-btn ap-btn--sm ap-btn--pill ap-btn--poll" onClick={(e) => { e.stopPropagation(); handleLaunchPoll(poll); }} style={{ fontSize: "12px", padding: "4px 12px", display: "flex", alignItems: "center", gap: "4px" }}>
+          <Play style={{ width: 12, height: 12 }} />{t("launchPoll")}
+        </button>
+      </div>
+    </div>
+  );
+
   const renderTabContent = (tab: string, allItems: SavedQuiz[], emptyKey: string, ctaKey?: string, showActions = true) => {
     const f = filtersFor(tab);
     if (allItems.length === 0) return (
@@ -181,9 +250,13 @@ const MyPolls = () => {
         {renderFilters(tab)}
         {f.paginated.length === 0 ? (
           <p className="py-10 text-center text-sm ap-muted">Aucun résultat pour cette recherche.</p>
-        ) : (
+        ) : viewMode === "grid" ? (
           <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
             {f.paginated.map((p) => renderPollCard(p, showActions))}
+          </div>
+        ) : (
+          <div className="ap-card" style={{ padding: 0, overflow: "hidden" }}>
+            {f.paginated.map((p) => renderPollRow(p, showActions))}
           </div>
         )}
         <Pagination page={f.page} totalPages={f.totalPages} onPageChange={f.setPage} className="mt-8" />

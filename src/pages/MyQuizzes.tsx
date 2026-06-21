@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Pagination } from "@/components/Pagination";
@@ -20,9 +19,11 @@ import {
 } from "@/lib/quizStorage";
 import { DeleteQuizDialog } from "@/components/DeleteQuizDialog";
 import { toast } from "sonner";
-import { Edit, Play, Search, Star, Trash2 } from "lucide-react";
+import { Edit, LayoutGrid, List, Play, Search, Star, Trash2 } from "lucide-react";
 import { t } from "@/lib/i18n";
 import { useCollectionFilters } from "@/hooks/useCollectionFilters";
+
+const VIEW_KEY = "view-mode-quizzes";
 
 const MyQuizzes = () => {
   const navigate = useNavigate();
@@ -33,6 +34,12 @@ const MyQuizzes = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [quizToDelete, setQuizToDelete] = useState<SavedQuiz | null>(null);
   const [activeTab, setActiveTab] = useState("my");
+  const [viewMode, setViewMode] = useState<"grid" | "list">(() => (localStorage.getItem(VIEW_KEY) as "grid" | "list") ?? "grid");
+
+  const setView = (mode: "grid" | "list") => {
+    setViewMode(mode);
+    localStorage.setItem(VIEW_KEY, mode);
+  };
 
   const loadQuizzes = useCallback(() => {
     if (!user) return;
@@ -78,13 +85,26 @@ const MyQuizzes = () => {
     if (rateQuiz(quizId, rating)) { toast.success("Merci pour votre note !"); loadQuizzes(); }
   };
 
+  const triggerStyle = {
+    fontFamily: "var(--ap-font-body)", fontWeight: 700, fontSize: "14px",
+    border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-sm)",
+    background: "var(--ap-card)", color: "var(--ap-ink)", height: "42px",
+  };
+
+  const toggleBtnStyle = (active: boolean): React.CSSProperties => ({
+    padding: "8px",
+    background: active ? "var(--ap-brand-soft)" : "transparent",
+    color: active ? "var(--ap-brand)" : "var(--ap-muted)",
+    border: `2px solid ${active ? "var(--ap-brand)" : "var(--ap-line)"}`,
+    borderRadius: "var(--ap-r-sm)",
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  });
+
   const renderFilters = (tab: string) => {
     const f = filtersFor(tab);
-    const triggerStyle = {
-      fontFamily: "var(--ap-font-body)", fontWeight: 700, fontSize: "14px",
-      border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-sm)",
-      background: "var(--ap-card)", color: "var(--ap-ink)", height: "42px",
-    };
     return (
       <div className="flex flex-col sm:flex-row gap-3 mb-5">
         <div className="relative flex-1">
@@ -123,6 +143,10 @@ const MyQuizzes = () => {
             <SelectItem value="questions">Nb questions</SelectItem>
           </SelectContent>
         </Select>
+        <div className="flex gap-1 flex-shrink-0">
+          <button onClick={() => setView("grid")} style={toggleBtnStyle(viewMode === "grid")} title="Vue grille"><LayoutGrid className="w-4 h-4" /></button>
+          <button onClick={() => setView("list")} style={toggleBtnStyle(viewMode === "list")} title="Vue liste"><List className="w-4 h-4" /></button>
+        </div>
       </div>
     );
   };
@@ -181,6 +205,47 @@ const MyQuizzes = () => {
     </div>
   );
 
+  const renderQuizRow = (quiz: SavedQuiz, showActions = true) => (
+    <div
+      key={quiz.id}
+      className="flex items-center gap-4 cursor-pointer px-4 py-3 transition-colors"
+      style={{ borderBottom: "2px solid var(--ap-line)" }}
+      onClick={() => navigate(`/builder?type=quiz&quizId=${quiz.id}`)}
+      onMouseEnter={(e) => (e.currentTarget.style.background = "var(--ap-paper-2)")}
+      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+    >
+      {quiz.headerImage && (
+        <img src={quiz.headerImage} alt={quiz.title} className="w-12 h-12 rounded object-cover flex-shrink-0" />
+      )}
+      <div className="flex-1 min-w-0">
+        <p className="ap-h3 truncate" style={{ fontSize: "14px", marginBottom: "2px" }}>{quiz.title}</p>
+        {quiz.description && <p className="ap-muted truncate" style={{ fontSize: "12px" }}>{quiz.description}</p>}
+      </div>
+      <div className="hidden sm:flex items-center gap-1.5 flex-shrink-0">
+        <Badge variant="outline" className={`rounded-full text-xs ${quiz.isPublic ? "border-indigo-200 bg-indigo-50 text-indigo-700" : "border-slate-200 text-slate-500"}`}>
+          {quiz.isPublic ? t("publicBadge") : t("privateBadge")}
+        </Badge>
+        <span className="ap-pill" style={{ fontSize: "11px", padding: "2px 8px" }}>
+          {quiz.questions.length} {quiz.questions.length > 1 ? t("questions") : t("question")}
+        </span>
+      </div>
+      <div className="flex items-center gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+        <button onClick={(e) => handleToggleFavorite(e, quiz)} className="ap-btn ap-btn--ghost ap-btn--sm" style={{ padding: "5px", color: quiz.isFavorite ? "var(--ap-flash)" : "var(--ap-muted)" }}>
+          <Star className={`h-3.5 w-3.5 ${quiz.isFavorite ? "fill-current" : ""}`} />
+        </button>
+        {showActions && (
+          <>
+            <button onClick={(e) => handleEditQuiz(e, quiz.id)} title={t("edit")} className="ap-btn ap-btn--ghost ap-btn--sm" style={{ padding: "5px" }}><Edit className="h-3.5 w-3.5" /></button>
+            <button onClick={(e) => { e.stopPropagation(); handleDeleteClick(quiz); }} title={t("delete")} className="ap-btn ap-btn--ghost ap-btn--sm" style={{ padding: "5px", color: "var(--ap-quiz)" }}><Trash2 className="h-3.5 w-3.5" /></button>
+          </>
+        )}
+        <Button size="sm" onClick={(e) => { e.stopPropagation(); handlePlayQuiz(quiz); }} className="ap-btn ap-btn--sm ap-btn--pill ap-btn--quiz gap-1 px-3" style={{ fontSize: "12px" }}>
+          <Play className="h-3 w-3" />{t("playQuiz")}
+        </Button>
+      </div>
+    </div>
+  );
+
   const renderTabContent = (tab: string, allItems: SavedQuiz[], emptyKey: string, ctaKey?: string, showActions = true) => {
     const f = filtersFor(tab);
     if (allItems.length === 0) return (
@@ -194,9 +259,13 @@ const MyQuizzes = () => {
         {renderFilters(tab)}
         {f.paginated.length === 0 ? (
           <p className="py-10 text-center text-sm text-slate-400">Aucun résultat pour cette recherche.</p>
-        ) : (
+        ) : viewMode === "grid" ? (
           <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
             {f.paginated.map((q) => renderQuizCard(q, showActions))}
+          </div>
+        ) : (
+          <div className="ap-card" style={{ padding: 0, overflow: "hidden" }}>
+            {f.paginated.map((q) => renderQuizRow(q, showActions))}
           </div>
         )}
         <Pagination page={f.page} totalPages={f.totalPages} onPageChange={f.setPage} className="mt-8" />
