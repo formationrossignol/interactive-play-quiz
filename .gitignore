@@ -24,4 +24,4 @@ dist-ssr
 *.sw?
 .worktrees/
 .vercel
-".claude 2/"
+.claude 2/
