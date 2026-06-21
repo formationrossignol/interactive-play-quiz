@@ -204,8 +204,14 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
   useEffect(() => {
     ensureSessionState(quiz.gameCode);
     ensureSessionInSupabase(quiz.gameCode, { questions: quiz.questions, title: quiz.title })
-      .then(() => setSessionReady(true))
-      .catch(() => setSessionReady(true)); // Show QR even if Supabase fails (same-device still works)
+      .then((ok) => {
+        if (!ok) console.error('[QuizSession] Supabase session init failed — cross-device join will not work. Check table exists and RLS policies allow anon access.');
+        setSessionReady(true);
+      })
+      .catch((err) => {
+        console.error('[QuizSession] Supabase error:', err);
+        setSessionReady(true);
+      });
     syncFromStorage();
 
     const handleStorage = (event: StorageEvent) => {
@@ -226,11 +232,12 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
     if (gameState !== 'waiting' && gameState !== 'question') return;
 
     const poll = async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('session_state')
         .select('players')
         .eq('game_code', quiz.gameCode)
         .single();
+      if (error) console.error('[QuizSession poll error]', error.code, error.message);
       if (data?.players && Array.isArray(data.players)) {
         const remote = (data.players as SharedPlayer[]).map(normalizeSharedPlayer);
         setPlayers((prev) => {
