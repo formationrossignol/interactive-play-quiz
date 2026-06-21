@@ -391,6 +391,7 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
         patchSessionState(quiz.gameCode, {
           gameState: 'transition',
           currentQuestionIndex,
+          timeLeft: quiz.transitionTime ?? 5,
         });
       }
     } else {
@@ -964,6 +965,7 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
           currentQuestion={currentQuestion}
           answerDistribution={answerDistribution}
           onNext={showLeaderboard}
+          onSkipToNext={isHost ? nextQuestion : undefined}
           isHost={isHost || false}
         />
       </ThemedBackground>
@@ -976,6 +978,8 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
         <RaceLeaderboard
           players={players}
           onComplete={nextQuestion}
+          isHost={isHost}
+          isLastQuestion={currentQuestionIndex >= quiz.questions.length - 1}
         />
       </ThemedBackground>
     );

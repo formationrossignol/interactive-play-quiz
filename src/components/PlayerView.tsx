@@ -33,7 +33,8 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
   const [searchParams] = useSearchParams();
   const playerAvatar = searchParams.get('avatar') || '🎮';
   const [playerId, setPlayerId] = useState<string | null>(null);
-  const [gameState, setGameState] = useState<'waiting' | 'question' | 'answer-feedback' | 'leaderboard' | 'final'>('waiting');
+  const [gameState, setGameState] = useState<'waiting' | 'question' | 'answer-feedback' | 'leaderboard' | 'transition' | 'final'>('waiting');
+  const [allPlayers, setAllPlayers] = useState<{ id: string; name: string; avatar: string; score: number }[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | string | null>(null);
   const [hasAnswered, setHasAnswered] = useState(false);
@@ -179,12 +180,12 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
       const players = Array.isArray(data.players) ? (data.players as SharedPlayer[]) : [];
 
       // Map host game states → player game states
-      let mapped: 'waiting' | 'question' | 'answer-feedback' | 'leaderboard' | 'final' = 'waiting';
+      let mapped: 'waiting' | 'question' | 'answer-feedback' | 'leaderboard' | 'transition' | 'final' = 'waiting';
       if (remoteState === 'question') mapped = 'question';
       else if (remoteState === 'leaderboard') mapped = 'leaderboard';
       else if (remoteState === 'final') mapped = 'final';
       else if (remoteState === 'answer-distribution') mapped = 'answer-feedback';
-      else if (remoteState === 'transition') mapped = 'leaderboard';
+      else if (remoteState === 'transition') mapped = 'transition';
 
       // Reset answer state only when a NEW question starts (index changed)
       const newIndex = data.current_question_index ?? 0;
@@ -194,9 +195,17 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
       }
       setGameState(mapped);
 
+      if (mapped === 'final' && players.length > 0) {
+        setAllPlayers(
+          [...players]
+            .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
+            .map(p => ({ id: p.id, name: p.name, avatar: p.avatar, score: p.score ?? 0 }))
+        );
+      }
+
       setTotalPlayers(players.length);
 
-      if (remoteState === 'question') {
+      if (remoteState === 'question' || remoteState === 'transition') {
         setCurrentQuestion(data.current_question_index ?? 0);
         setTimeLeft(data.time_left ?? 0);
       }
@@ -217,9 +226,9 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
     return () => clearInterval(interval);
   }, [gameCode, playerId]);
 
-  // Timer countdown
+  // Timer countdown (question + transition)
   useEffect(() => {
-    if (gameState === 'question' && timeLeft > 0 && !hasAnswered) {
+    if ((gameState === 'question' && !hasAnswered || gameState === 'transition') && timeLeft > 0) {
       const timer = setTimeout(() => setTimeLeft(prev => prev - 1), 1000);
       return () => clearTimeout(timer);
     }
@@ -561,6 +570,29 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
     );
   }
 
+  if (gameState === 'transition') {
+    return (
+      <div
+        className="min-h-screen flex items-center justify-center p-4"
+        style={{ background: "var(--ap-pres)" }}
+      >
+        <div className="text-center">
+          <div className="text-6xl mb-6 drop-shadow-xl animate-bounce">⏳</div>
+          <h2 className="ap-h2 text-white mb-3">Prochaine question…</h2>
+          <div
+            className="text-6xl font-bold text-white mb-4"
+            style={{ fontFamily: "var(--ap-font-display)" }}
+          >
+            {timeLeft > 0 ? timeLeft : ''}
+          </div>
+          <p style={{ color: "rgba(255,255,255,0.65)", fontFamily: "var(--ap-font-body)", fontWeight: 600 }}>
+            Préparez-vous !
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   if (gameState === 'leaderboard') {
     return (
       <div
@@ -616,29 +648,58 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
     );
   }
 
+  // final state
   return (
     <div
-      className="min-h-screen flex items-center justify-center p-4"
+      className="min-h-screen p-4"
       style={{ background: "var(--ap-pres)" }}
     >
-      <div className="max-w-md w-full text-center">
+      <div className="max-w-md mx-auto text-center">
         <div className="mb-4 text-6xl drop-shadow-lg">🎉</div>
-        <h2 className="ap-h2 text-white mb-6">Quiz terminé !</h2>
+        <h2 className="ap-h2 text-white mb-2">Quiz terminé !</h2>
 
+        {/* Player's own result */}
         <div
-          className="p-6 mb-6"
+          className="p-4 mb-6"
           style={{
-            background: "rgba(255,255,255,0.15)",
-            border: "2px solid rgba(255,255,255,0.25)",
+            background: "rgba(255,255,255,0.18)",
+            border: "2px solid rgba(255,255,255,0.3)",
             borderRadius: "var(--ap-r-xl)",
           }}
         >
-          <div className="ap-h1 text-white mb-2">{playerScore}</div>
-          <div className="font-bold text-sm" style={{ color: "rgba(255,255,255,0.75)" }}>points</div>
-          <div className="mt-4 font-bold" style={{ color: "rgba(255,255,255,0.85)" }}>
-            Rang final: <span className="text-white">#{playerRank}</span> sur {totalPlayers}
+          <div className="ap-h1 text-white mb-1">{playerScore}</div>
+          <div className="font-bold text-sm mb-1" style={{ color: "rgba(255,255,255,0.75)" }}>points</div>
+          <div className="font-bold" style={{ color: "rgba(255,255,255,0.85)" }}>
+            Rang final : <span className="text-white">#{playerRank}</span> sur {totalPlayers}
           </div>
         </div>
+
+        {/* Full ranking */}
+        {allPlayers.length > 0 && (
+          <div className="mb-6 space-y-2">
+            {allPlayers.map((p, idx) => {
+              const isMe = p.id === playerId;
+              const medals = ['🥇', '🥈', '🥉'];
+              return (
+                <div
+                  key={p.id}
+                  className="flex items-center gap-3 rounded-xl px-4 py-3"
+                  style={{
+                    background: isMe ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.1)",
+                    border: isMe ? "2px solid rgba(255,255,255,0.5)" : "2px solid rgba(255,255,255,0.15)",
+                  }}
+                >
+                  <span className="w-8 text-center text-lg font-bold text-white">
+                    {idx < 3 ? medals[idx] : `${idx + 1}`}
+                  </span>
+                  <AvatarDisplay emoji={p.avatar} size="sm" />
+                  <span className="flex-1 text-left font-bold text-white truncate">{p.name}</span>
+                  <span className="font-bold" style={{ color: "rgba(255,255,255,0.9)" }}>{p.score} pts</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         <button
           className="ap-btn ap-btn--lg ap-btn--pill"

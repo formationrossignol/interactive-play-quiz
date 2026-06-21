@@ -15,32 +15,22 @@ interface Player {
 interface RaceLeaderboardProps {
   players: Player[];
   onComplete?: () => void;
+  isHost?: boolean;
+  isLastQuestion?: boolean;
 }
 
-export const RaceLeaderboard = ({ players, onComplete }: RaceLeaderboardProps) => {
+export const RaceLeaderboard = ({ players, onComplete, isHost = false, isLastQuestion = false }: RaceLeaderboardProps) => {
   const [animatingPlayers, setAnimatingPlayers] = useState<Player[]>([]);
   const [showScores, setShowScores] = useState(false);
 
   useEffect(() => {
-    // Start with previous positions
     setAnimatingPlayers(players.map(p => ({ ...p, score: p.previousScore || 0 })));
-    
-    // Animate to new positions after a delay
     const timer1 = setTimeout(() => {
       setAnimatingPlayers(players);
       setShowScores(true);
     }, 500);
-
-    // Complete animation
-    const timer2 = setTimeout(() => {
-      onComplete?.();
-    }, 3000);
-
-    return () => {
-      clearTimeout(timer1);
-      clearTimeout(timer2);
-    };
-  }, [players, onComplete]);
+    return () => clearTimeout(timer1);
+  }, [players]);
 
   const sortedPlayers = [...animatingPlayers].sort((a, b) => b.score - a.score);
   const maxScore = Math.max(...sortedPlayers.map(p => p.score), 1);
@@ -236,6 +226,17 @@ export const RaceLeaderboard = ({ players, onComplete }: RaceLeaderboardProps) =
             </div>
           </CardContent>
         </Card>
+      {isHost && showScores && (
+        <div className="flex justify-center mt-8">
+          <button
+            onClick={onComplete}
+            className="px-8 py-4 rounded-2xl font-bold text-lg text-white shadow-xl transition-all hover:scale-105 active:scale-95"
+            style={{ background: isLastQuestion ? '#e11d48' : '#6366f1', boxShadow: '0 6px 0 rgba(0,0,0,0.3)' }}
+          >
+            {isLastQuestion ? '🏁 Voir les résultats finaux' : '➡️ Question suivante'}
+          </button>
+        </div>
+      )}
       </div>
 
       <style dangerouslySetInnerHTML={{

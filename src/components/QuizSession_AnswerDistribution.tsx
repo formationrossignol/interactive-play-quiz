@@ -5,6 +5,7 @@ interface QuizSessionAnswerDistributionProps {
   currentQuestion: any;
   answerDistribution: number[];
   onNext: () => void;
+  onSkipToNext?: () => void;
   isHost: boolean;
 }
 
@@ -12,6 +13,7 @@ export const QuizSessionAnswerDistribution = ({
   currentQuestion,
   answerDistribution,
   onNext,
+  onSkipToNext,
   isHost
 }: QuizSessionAnswerDistributionProps) => {
   if (!currentQuestion.answers) return null;
@@ -32,9 +34,15 @@ export const QuizSessionAnswerDistribution = ({
         />
 
         {isHost && (
-          <div className="flex justify-center mt-8">
+          <div className="flex justify-center gap-4 mt-8">
+            {onSkipToNext && (
+              <Button variant="outline" size="lg" onClick={onSkipToNext}
+                className="border-white/30 bg-black/40 text-slate-100 backdrop-blur hover:bg-black/60">
+                ➡️ Question suivante
+              </Button>
+            )}
             <Button variant="hero" size="lg" onClick={onNext}>
-              Voir le classement
+              🏆 Voir le classement
             </Button>
           </div>
         )}
