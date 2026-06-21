@@ -130,6 +130,9 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
   // Last question index for which we set timerEndRef — prevents mid-question Supabase resyncs
   const lastTimerQuestionRef = useRef<number>(-1);
 
+  // Tracks when Supabase Realtime last fired — poll skips if realtime is healthy
+  const lastRealtimeFireRef = useRef<number>(0);
+
   // Keep a stable ref so the subscription never needs to be recreated when playerId changes.
   // Re-creating the channel causes a gap where the "quiz started" event can be missed.
   const syncRef = useRef(syncFromSession);
@@ -145,7 +148,10 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
     };
 
     window.addEventListener('storage', handleStorage);
-    const channel = subscribeToSessionState(gameCode, () => syncRef.current());
+    const channel = subscribeToSessionState(gameCode, () => {
+      lastRealtimeFireRef.current = Date.now();
+      syncRef.current();
+    });
 
     return () => {
       window.removeEventListener('storage', handleStorage);
@@ -155,21 +161,32 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
 
   // Poll Supabase directly and update React state — bypasses localStorage chain.
   // Runs every 2s as fallback when realtime is unavailable (e.g. mobile background throttle).
+  // Skips the round-trip when Supabase Realtime fired within the last 4s to avoid redundant reads.
+  // quiz_data (all questions) is fetched once then excluded from subsequent polls to save bandwidth.
   useEffect(() => {
     let prevUpdatedAt = '';
+    let hasQuizData = false;
 
     const poll = async () => {
+      // Realtime is healthy — skip this poll tick
+      if (Date.now() - lastRealtimeFireRef.current < 4000) return;
+
+      const cols = hasQuizData
+        ? 'game_state,current_question_index,time_left,players,updated_at'
+        : 'game_state,current_question_index,time_left,players,updated_at,quiz_data';
+
       const { data } = await supabase
         .from('session_state')
-        .select('*')
+        .select(cols)
         .eq('game_code', gameCode)
         .single();
 
       if (!data) return;
 
-      // Load quiz questions once when available
+      // Load quiz questions once when available, then stop requesting quiz_data
       if (data.quiz_data?.questions && Array.isArray(data.quiz_data.questions)) {
         setQuizQuestions((prev) => prev.length === 0 ? data.quiz_data.questions : prev);
+        hasQuizData = true;
       }
 
       // Skip state sync if nothing changed
@@ -249,9 +266,10 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
     return () => clearInterval(interval);
   }, [gameState, hasAnswered, currentQuestion]);
 
-  // Heartbeat: signals liveness to host every 5s so disconnects can be detected
+  // Heartbeat: signals liveness to host every 5s so disconnects can be detected.
+  // Only sent during 'question' — the only phase where the host checks for disconnects.
   useEffect(() => {
-    if (!playerId || gameState === 'final') return;
+    if (!playerId || gameState !== 'question') return;
     const beat = () => {
       const raw = sessionStorage.getItem(`quiz-player-${gameCode}`);
       if (!raw) return;
@@ -304,7 +322,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
           lastAnswerQuestionIndex: currentQuestion,
         };
         sessionStorage.setItem(`quiz-player-${gameCode}`, JSON.stringify(updated));
-        upsertPlayerInSession(gameCode, updated);
+        upsertPlayerInSession(gameCode, updated, true); // urgent — bypasses debounce
         setPlayerScore(newScore);
       } catch {}
     }

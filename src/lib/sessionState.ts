@@ -95,7 +95,15 @@ const pushStateToSupabase = (gameCode: string, state: SharedSessionState) => {
 
 // Players-only update: does NOT touch game_state/currentQuestionIndex/timeLeft.
 // Used by player devices so they never overwrite host-controlled fields.
-const pushPlayersOnlyToSupabase = (gameCode: string, players: SharedPlayer[]) => {
+//
+// Non-urgent writes are debounced per gameCode so rapid heartbeats (30 players × 1/5s)
+// collapse into a single Supabase call instead of hammering the write API.
+// Urgent writes (answer submissions) bypass the debounce and flush immediately.
+
+const pendingPlayerWrites = new Map<string, ReturnType<typeof setTimeout>>();
+const PLAYER_WRITE_DEBOUNCE_MS = 800;
+
+const flushPlayersToSupabase = (gameCode: string, players: SharedPlayer[]) => {
   supabase
     .from("session_state")
     .update({ players, updated_at: new Date().toISOString() })
@@ -103,6 +111,23 @@ const pushPlayersOnlyToSupabase = (gameCode: string, players: SharedPlayer[]) =>
     .then(({ error }) => {
       if (error) console.error("[Supabase players-only write error]", gameCode, error);
     });
+};
+
+const pushPlayersOnlyToSupabase = (gameCode: string, players: SharedPlayer[], urgent = false) => {
+  const pending = pendingPlayerWrites.get(gameCode);
+  if (pending) clearTimeout(pending);
+  pendingPlayerWrites.delete(gameCode);
+
+  if (urgent) {
+    flushPlayersToSupabase(gameCode, players);
+    return;
+  }
+
+  const timer = setTimeout(() => {
+    pendingPlayerWrites.delete(gameCode);
+    flushPlayersToSupabase(gameCode, players);
+  }, PLAYER_WRITE_DEBOUNCE_MS);
+  pendingPlayerWrites.set(gameCode, timer);
 };
 
 export const patchSessionState = (
@@ -121,7 +146,7 @@ export const patchSessionState = (
   return next;
 };
 
-export const upsertPlayerInSession = (gameCode: string, player: SharedPlayer) => {
+export const upsertPlayerInSession = (gameCode: string, player: SharedPlayer, urgent = false) => {
   const current = readSessionState(gameCode);
   const players = [...current.players];
   const index = players.findIndex((existing) => existing.id === player.id);
@@ -146,7 +171,7 @@ export const upsertPlayerInSession = (gameCode: string, player: SharedPlayer) =>
   const next: SharedSessionState = { ...current, players, updatedAt: new Date().toISOString() };
   writeSessionState(gameCode, next);
   // Only push players to Supabase — never overwrite host-controlled game_state
-  pushPlayersOnlyToSupabase(gameCode, players);
+  pushPlayersOnlyToSupabase(gameCode, players, urgent);
   return players;
 };
 

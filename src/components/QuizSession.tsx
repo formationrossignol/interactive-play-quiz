@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef, memo } from "react";
 import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -87,6 +87,40 @@ interface QuizSessionProps {
   quiz: QuizSession;
   isHost?: boolean;
 }
+
+// Pre-computed once so Math.random() doesn't re-run on every re-render of the final screen
+const CONFETTI_ITEMS = Array.from({ length: 80 }, () => ({
+  left: Math.random() * 100,
+  color: ['#ffb020', '#ff5a4d', '#15c08a', '#7048ff', '#2f7bff'][Math.floor(Math.random() * 5)],
+  delay: Math.random() * 3,
+  duration: 2 + Math.random() * 2,
+}));
+
+interface PlayerSidebarItemProps {
+  player: Player;
+  answered: boolean;
+  offline: boolean;
+}
+
+const PlayerSidebarItem = memo(({ player, answered, offline }: PlayerSidebarItemProps) => (
+  <div
+    className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition-all duration-300"
+    style={{
+      background: offline
+        ? 'rgba(239,68,68,0.1)'
+        : answered
+        ? 'rgba(21,192,138,0.18)'
+        : 'rgba(255,255,255,0.04)',
+      opacity: offline ? 0.6 : answered ? 1 : 0.45,
+      border: offline ? '1px solid rgba(239,68,68,0.25)' : '1px solid transparent',
+    }}
+  >
+    <AvatarDisplay emoji={player.avatar} size="sm" />
+    <span className="flex-1 truncate text-xs font-bold text-white">{player.name}</span>
+    {offline && <span className="text-red-400 text-xs flex-shrink-0">✗</span>}
+    {!offline && answered && <span className="text-xs flex-shrink-0" style={{ color: '#6ee7b7' }}>✓</span>}
+  </div>
+));
 
 export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
   const navigate = useNavigate();
@@ -1009,30 +1043,14 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
                 </span>
               </div>
               <div className="overflow-y-auto space-y-1 flex-1">
-                {players.map((p) => {
-                  const answered = p.lastAnswerQuestionIndex === currentQuestionIndex;
-                  const offline = disconnectedIds.has(p.id);
-                  return (
-                    <div
-                      key={p.id}
-                      className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition-all duration-300"
-                      style={{
-                        background: offline
-                          ? 'rgba(239,68,68,0.1)'
-                          : answered
-                          ? 'rgba(21,192,138,0.18)'
-                          : 'rgba(255,255,255,0.04)',
-                        opacity: offline ? 0.6 : answered ? 1 : 0.45,
-                        border: offline ? '1px solid rgba(239,68,68,0.25)' : '1px solid transparent',
-                      }}
-                    >
-                      <AvatarDisplay emoji={p.avatar} size="sm" />
-                      <span className="flex-1 truncate text-xs font-bold text-white">{p.name}</span>
-                      {offline && <span className="text-red-400 text-xs flex-shrink-0">✗</span>}
-                      {!offline && answered && <span className="text-xs flex-shrink-0" style={{ color: '#6ee7b7' }}>✓</span>}
-                    </div>
-                  );
-                })}
+                {players.map((p) => (
+                  <PlayerSidebarItem
+                    key={p.id}
+                    player={p}
+                    answered={p.lastAnswerQuestionIndex === currentQuestionIndex}
+                    offline={disconnectedIds.has(p.id)}
+                  />
+                ))}
               </div>
             </div>
           )}
@@ -1126,17 +1144,17 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
 
     return (
       <ThemedBackground className="min-h-screen text-slate-100">
-        {/* Confetti */}
+        {/* Confetti — config pre-computed at module level to avoid Math.random() per render */}
         <div className="fixed inset-0 pointer-events-none z-0">
-          {Array.from({ length: 80 }).map((_, i) => (
+          {CONFETTI_ITEMS.map((c, i) => (
             <div
               key={i}
               className="absolute w-3 h-3 rounded-full animate-confetti"
               style={{
-                left: `${Math.random() * 100}%`,
-                backgroundColor: ['#ffb020', '#ff5a4d', '#15c08a', '#7048ff', '#2f7bff'][Math.floor(Math.random() * 5)],
-                animationDelay: `${Math.random() * 3}s`,
-                animationDuration: `${2 + Math.random() * 2}s`,
+                left: `${c.left}%`,
+                backgroundColor: c.color,
+                animationDelay: `${c.delay}s`,
+                animationDuration: `${c.duration}s`,
               }}
             />
           ))}
