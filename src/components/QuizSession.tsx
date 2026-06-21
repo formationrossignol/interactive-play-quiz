@@ -261,9 +261,10 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
   }, [isHost, gameState, quiz.gameCode, normalizeSharedPlayer]);
 
   useEffect(() => {
-    if (!isHost || !hasSyncedPlayers) {
-      return;
-    }
+    if (!isHost || !hasSyncedPlayers) return;
+    // During waiting: players add themselves to Supabase directly via upsertPlayerInSession.
+    // Writing here would overwrite their entries with the host's (initially empty) local list.
+    if (gameState === 'waiting') return;
 
     const playersForStorage: SharedPlayer[] = players.map((player) => ({
       id: player.id,
@@ -278,7 +279,7 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
     }));
 
     patchSessionState(quiz.gameCode, { players: playersForStorage });
-  }, [hasSyncedPlayers, isHost, players, quiz.gameCode]);
+  }, [hasSyncedPlayers, isHost, gameState, players, quiz.gameCode]);
 
   // Timer effect for questions
   useEffect(() => {
