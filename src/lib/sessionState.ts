@@ -92,6 +92,18 @@ const pushStateToSupabase = (gameCode: string, state: SharedSessionState) => {
     });
 };
 
+// Players-only update: does NOT touch game_state/currentQuestionIndex/timeLeft.
+// Used by player devices so they never overwrite host-controlled fields.
+const pushPlayersOnlyToSupabase = (gameCode: string, players: SharedPlayer[]) => {
+  supabase
+    .from("session_state")
+    .update({ players, updated_at: new Date().toISOString() })
+    .eq("game_code", gameCode)
+    .then(({ error }) => {
+      if (error) console.error("[Supabase players-only write error]", gameCode, error);
+    });
+};
+
 export const patchSessionState = (
   gameCode: string,
   patch: Partial<Omit<SharedSessionState, "players">> & { players?: SharedPlayer[] }
@@ -129,14 +141,20 @@ export const upsertPlayerInSession = (gameCode: string, player: SharedPlayer) =>
     players.push(normalizedPlayer);
   }
 
-  patchSessionState(gameCode, { players });
+  // Only update players in localStorage (preserve local game state as-is)
+  const next: SharedSessionState = { ...current, players, updatedAt: new Date().toISOString() };
+  writeSessionState(gameCode, next);
+  // Only push players to Supabase — never overwrite host-controlled game_state
+  pushPlayersOnlyToSupabase(gameCode, players);
   return players;
 };
 
 export const removePlayerFromSession = (gameCode: string, playerId: string) => {
   const current = readSessionState(gameCode);
   const players = current.players.filter((player) => player.id !== playerId);
-  patchSessionState(gameCode, { players });
+  const next: SharedSessionState = { ...current, players, updatedAt: new Date().toISOString() };
+  writeSessionState(gameCode, next);
+  pushPlayersOnlyToSupabase(gameCode, players);
   return players;
 };
 
