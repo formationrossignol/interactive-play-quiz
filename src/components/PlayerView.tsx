@@ -117,18 +117,18 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
       upsertPlayerInSession(gameCode, fallbackPlayer);
       setPlayerId(fallbackId);
     }
-
-    syncFromSession();
-  }, [gameCode, playerAvatar, playerName, syncFromSession]);
-
-  useEffect(() => {
-    if (playerId) {
-      syncFromSession();
-    }
-  }, [playerId, syncFromSession]);
+    // Do NOT call syncFromSession() here — localStorage may be stale from a previous run
+    // (e.g. gameState = 'final'). Let the Supabase fetch in the mount effect + 2s polling
+    // drive the initial game state instead.
+  }, [gameCode, playerAvatar, playerName]);
 
   // Tracks which question index the player has already answered — prevents poll from re-enabling buttons
   const answeredForIndexRef = useRef<number | null>(null);
+
+  // Wall-clock end time of the current timed phase (question or transition)
+  const timerEndRef = useRef<number | null>(null);
+  // Last question index for which we set timerEndRef — prevents mid-question Supabase resyncs
+  const lastTimerQuestionRef = useRef<number>(-1);
 
   // Keep a stable ref so the subscription never needs to be recreated when playerId changes.
   // Re-creating the channel causes a gap where the "quiz started" event can be missed.
@@ -203,11 +203,22 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
         );
       }
 
-      setTotalPlayers(players.length);
+      // Only update totalPlayers when we have data — avoids overwriting with 0 on edge polls
+      if (players.length > 0) setTotalPlayers(players.length);
 
-      if (remoteState === 'question' || remoteState === 'transition') {
+      if (remoteState === 'question') {
+        const newIndex = data.current_question_index ?? 0;
+        setCurrentQuestion(newIndex);
+        // Set the wall-clock end time only when a NEW question starts.
+        // Skipping mid-question resyncs prevents jarring timer jumps.
+        if (newIndex !== lastTimerQuestionRef.current) {
+          timerEndRef.current = Date.now() + (data.time_left ?? 0) * 1000;
+          lastTimerQuestionRef.current = newIndex;
+        }
+      } else if (remoteState === 'transition') {
         setCurrentQuestion(data.current_question_index ?? 0);
-        setTimeLeft(data.time_left ?? 0);
+        // Always resync transition timer (short phase, host-driven)
+        timerEndRef.current = Date.now() + (data.time_left ?? 0) * 1000;
       }
 
       if (playerId) {
@@ -226,13 +237,17 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
     return () => clearInterval(interval);
   }, [gameCode, playerId]);
 
-  // Timer countdown (question + transition)
+  // Timer countdown — Date.now()-based interval, no drift, smooth 250ms updates
   useEffect(() => {
-    if ((gameState === 'question' && !hasAnswered || gameState === 'transition') && timeLeft > 0) {
-      const timer = setTimeout(() => setTimeLeft(prev => prev - 1), 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [gameState, timeLeft, hasAnswered]);
+    const isActive = (gameState === 'question' && !hasAnswered) || gameState === 'transition';
+    if (!isActive) return;
+    const interval = setInterval(() => {
+      if (timerEndRef.current === null) return;
+      const remaining = Math.max(0, Math.ceil((timerEndRef.current - Date.now()) / 1000));
+      setTimeLeft(remaining);
+    }, 250);
+    return () => clearInterval(interval);
+  }, [gameState, hasAnswered, currentQuestion]);
 
   const handleExitQuiz = () => {
     navigate("/");
@@ -670,7 +685,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
           <div className="ap-h1 text-white mb-1">{playerScore}</div>
           <div className="font-bold text-sm mb-1" style={{ color: "rgba(255,255,255,0.75)" }}>points</div>
           <div className="font-bold" style={{ color: "rgba(255,255,255,0.85)" }}>
-            Rang final : <span className="text-white">#{playerRank}</span> sur {totalPlayers}
+            Rang final : <span className="text-white">#{playerRank}</span> sur {allPlayers.length || totalPlayers}
           </div>
         </div>
 

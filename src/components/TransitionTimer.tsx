@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { cn } from "@/lib/utils";
 
 interface TransitionTimerProps {
   duration: number;
@@ -8,7 +7,7 @@ interface TransitionTimerProps {
 
 export const TransitionTimer = ({ duration, onComplete }: TransitionTimerProps) => {
   const [timeLeft, setTimeLeft] = useState(duration);
-  
+
   useEffect(() => {
     if (timeLeft > 0) {
       const timer = setTimeout(() => {
@@ -20,52 +19,74 @@ export const TransitionTimer = ({ duration, onComplete }: TransitionTimerProps) 
     }
   }, [timeLeft, onComplete]);
 
-  const percentage = (timeLeft / duration) * 100;
-  const radius = 100;
+  const percentage = duration > 0 ? (timeLeft / duration) * 100 : 0;
+  const radius = 80;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 text-slate-100">
+    <div
+      className="min-h-screen flex items-center justify-center p-6"
+      style={{ background: "var(--ap-brand)" }}
+    >
       <div className="text-center">
-        <h1 className="text-4xl md:text-6xl font-bold text-white mb-12 animate-fade-in">
-          Préparez-vous pour la question suivante !
+        <div className="text-5xl mb-8 animate-bounce">🚀</div>
+
+        <h1
+          className="ap-h2 text-white mb-10"
+          style={{ textShadow: "0 2px 8px rgba(0,0,0,0.2)" }}
+        >
+          Prochaine question…
         </h1>
 
-        <div className="relative inline-flex items-center justify-center">
-          <svg className="transform -rotate-90" width="280" height="280">
-            {/* Background circle */}
+        <div className="relative inline-flex items-center justify-center mb-8">
+          <svg
+            className="transform -rotate-90"
+            width="220"
+            height="220"
+            style={{ filter: "drop-shadow(0 8px 24px rgba(0,0,0,0.25))" }}
+          >
             <circle
-              cx="140"
-              cy="140"
+              cx="110"
+              cy="110"
               r={radius}
-              stroke="currentColor"
-              strokeWidth="16"
-              fill="none"
-              className="text-slate-700/60"
+              stroke="rgba(255,255,255,0.2)"
+              strokeWidth="14"
+              fill="rgba(255,255,255,0.08)"
             />
-            {/* Progress circle */}
             <circle
-              cx="140"
-              cy="140"
+              cx="110"
+              cy="110"
               r={radius}
-              stroke="currentColor"
-              strokeWidth="16"
+              stroke="white"
+              strokeWidth="14"
               fill="none"
               strokeDasharray={circumference}
               strokeDashoffset={strokeDashoffset}
-              className={cn(
-                "transition-all duration-1000 ease-linear text-primary drop-shadow-[0_0_18px_rgba(59,130,246,0.55)]"
-              )}
               strokeLinecap="round"
+              style={{ transition: "stroke-dashoffset 1s linear" }}
             />
           </svg>
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-8xl font-bold text-white animate-pulse drop-shadow-lg">
+            <span
+              className="text-7xl font-bold text-white"
+              style={{ fontFamily: "var(--ap-font-display)", textShadow: "0 2px 12px rgba(0,0,0,0.3)" }}
+            >
               {timeLeft}
-            </div>
+            </span>
           </div>
         </div>
+
+        <p
+          style={{
+            color: "rgba(255,255,255,0.75)",
+            fontFamily: "var(--ap-font-body)",
+            fontWeight: 700,
+            fontSize: "16px",
+          }}
+        >
+          Préparez-vous !
+        </p>
       </div>
     </div>
   );

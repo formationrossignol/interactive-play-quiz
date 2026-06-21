@@ -183,6 +183,9 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
   const hasAutoAdvancedRef = useRef(false);
   useEffect(() => { hasAutoAdvancedRef.current = false; }, [currentQuestionIndex]);
 
+  // Tracks the wall-clock end time of the current question (set when question starts)
+  const questionEndTimeRef = useRef<number | null>(null);
+
   const syncFromStorage = useCallback(() => {
     const session = readSessionState(quiz.gameCode);
     const mappedPlayers = session.players.map(normalizeSharedPlayer);
@@ -320,17 +323,25 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
     patchSessionState(quiz.gameCode, { players: playersForStorage });
   }, [hasSyncedPlayers, isHost, gameState, players, quiz.gameCode]);
 
-  // Timer effect for questions
+  // Timer: interval-based with Date.now() — no drift, updates 4× per second
   useEffect(() => {
-    if (gameState === 'question' && timeLeft > 0) {
-      const timer = setTimeout(() => {
-        setTimeLeft(prev => prev - 1);
-      }, 1000);
-      return () => clearTimeout(timer);
-    } else if (gameState === 'question' && timeLeft === 0) {
-      // Auto-advance when timer reaches 0
+    if (gameState !== 'question') return;
+    const interval = setInterval(() => {
+      if (questionEndTimeRef.current === null) return;
+      const remaining = Math.max(0, Math.ceil((questionEndTimeRef.current - Date.now()) / 1000));
+      setTimeLeft(remaining);
+    }, 250);
+    return () => clearInterval(interval);
+  }, [gameState, currentQuestionIndex]);
+
+  // Auto-advance when timer hits 0
+  useEffect(() => {
+    if (gameState !== 'question' || timeLeft !== 0) return;
+    if (!hasAutoAdvancedRef.current) {
+      hasAutoAdvancedRef.current = true;
       showAnswerDistribution();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameState, timeLeft]);
 
   // Auto-advance when every player has answered the current question
@@ -369,10 +380,9 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
   }, [players, currentQuestionIndex, quiz.createdAt]);
 
   const startQuiz = () => {
-    console.log('Start quiz clicked! Players:', players.length, 'Current game state:', gameState);
+    questionEndTimeRef.current = Date.now() + currentQuestion.timeLimit * 1000;
     setGameState('question');
     setTimeLeft(currentQuestion.timeLimit);
-    console.log('Game state changed to: question', 'Timer set to:', currentQuestion.timeLimit);
     if (isHost) {
       patchSessionState(quiz.gameCode, {
         gameState: 'question',
@@ -406,14 +416,16 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
   };
 
   const handleTransitionComplete = () => {
+    const nextTimeLimit = quiz.questions[currentQuestionIndex + 1].timeLimit;
+    questionEndTimeRef.current = Date.now() + nextTimeLimit * 1000;
     setCurrentQuestionIndex(prev => prev + 1);
     setGameState('question');
-    setTimeLeft(quiz.questions[currentQuestionIndex + 1].timeLimit);
+    setTimeLeft(nextTimeLimit);
     if (isHost) {
       patchSessionState(quiz.gameCode, {
         gameState: 'question',
         currentQuestionIndex: currentQuestionIndex + 1,
-        timeLeft: quiz.questions[currentQuestionIndex + 1].timeLimit,
+        timeLeft: nextTimeLimit,
       });
     }
   };
