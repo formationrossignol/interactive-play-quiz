@@ -1075,14 +1075,12 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
 
   if (gameState === 'leaderboard') {
     return (
-      <ThemedBackground className="p-4 text-slate-100">
-        <RaceLeaderboard
-          players={players}
-          onComplete={nextQuestion}
-          isHost={isHost}
-          isLastQuestion={currentQuestionIndex >= quiz.questions.length - 1}
-        />
-      </ThemedBackground>
+      <RaceLeaderboard
+        players={players}
+        onComplete={nextQuestion}
+        isHost={isHost}
+        isLastQuestion={currentQuestionIndex >= quiz.questions.length - 1}
+      />
     );
   }
 
@@ -1143,7 +1141,7 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
     );
 
     return (
-      <ThemedBackground className="min-h-screen text-slate-100">
+      <div style={{ background: 'var(--ap-paper)', minHeight: '100vh', fontFamily: 'var(--ap-font-body)' }} className="relative">
         {/* Confetti — config pre-computed at module level to avoid Math.random() per render */}
         <div className="fixed inset-0 pointer-events-none z-0">
           {CONFETTI_ITEMS.map((c, i) => (
@@ -1170,8 +1168,8 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
                 fontFamily: 'var(--ap-font-display)',
                 fontSize: 'clamp(2.2rem, 5vw, 3.5rem)',
                 fontWeight: 700,
-                color: '#fff',
-                textShadow: '0 4px 20px rgba(0,0,0,0.4)',
+                color: 'var(--ap-ink)',
+                letterSpacing: '-1px',
               }}
             >
               🎉 Quiz Terminé !
@@ -1205,7 +1203,7 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
             <div
               style={{
                 height: 7,
-                background: 'rgba(255,255,255,0.18)',
+                background: 'var(--ap-line)',
                 borderRadius: '0 0 10px 10px',
                 marginBottom: 28,
               }}
@@ -1217,28 +1215,30 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
                 {sortedPlayers.slice(3).map((player, idx) => (
                   <div
                     key={player.id}
-                    className="flex items-center gap-3 rounded-xl px-4 py-2.5"
+                    className="flex items-center gap-3 px-4 py-2.5"
                     style={{
-                      background: 'rgba(255,255,255,0.1)',
-                      border: '1px solid rgba(255,255,255,0.15)',
+                      background: 'var(--ap-card)',
+                      border: '2px solid var(--ap-line)',
+                      borderRadius: 'var(--ap-r-md)',
+                      boxShadow: 'var(--ap-shadow-soft)',
                     }}
                   >
                     <span
-                      className="font-bold text-white/70 text-sm w-5 text-center"
-                      style={{ fontFamily: 'var(--ap-font-display)' }}
+                      className="text-sm w-5 text-center flex-shrink-0"
+                      style={{ fontFamily: 'var(--ap-font-display)', fontWeight: 700, color: 'var(--ap-muted)' }}
                     >
                       {idx + 4}
                     </span>
                     <AvatarDisplay emoji={player.avatar} size="sm" />
                     <span
-                      className="flex-1 text-left font-bold text-white truncate text-sm"
-                      style={{ fontFamily: 'var(--ap-font-body)' }}
+                      className="flex-1 text-left truncate text-sm"
+                      style={{ fontFamily: 'var(--ap-font-body)', fontWeight: 700, color: 'var(--ap-ink)' }}
                     >
                       {player.name}
                     </span>
                     <span
-                      className="font-bold text-white/80 text-sm"
-                      style={{ fontFamily: 'var(--ap-font-display)' }}
+                      className="text-sm flex-shrink-0"
+                      style={{ fontFamily: 'var(--ap-font-display)', fontWeight: 700, color: 'var(--ap-ink)' }}
                     >
                       {player.score.toLocaleString()} pts
                     </span>
@@ -1248,28 +1248,37 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
             )}
 
             {isHost && (
-              <div className="flex justify-center gap-4">
-                <Button
-                  variant="outline"
+              <div className="flex justify-center gap-4 flex-wrap">
+                <button
                   onClick={exportResults}
-                  className="border-white/30 bg-black/40 font-bold text-slate-100 shadow-xl backdrop-blur hover:bg-black/60"
+                  className="ap-btn ap-btn--ghost"
                 >
-                  <Download className="w-5 h-5 mr-2" />
+                  <Download className="w-5 h-5" />
                   Exporter
-                </Button>
-                <Button variant="hero" onClick={() => window.location.href = '/'} className="font-bold shadow-xl">
+                </button>
+                <button
+                  onClick={() => window.location.href = '/'}
+                  className="ap-btn ap-btn--lg ap-btn--pill"
+                  style={{ background: 'var(--ap-brand)', boxShadow: '0 5px 0 var(--ap-brand-deep)' }}
+                >
                   🎮 Nouveau Quiz
-                </Button>
+                </button>
               </div>
             )}
           </div>
 
           {/* ── Classement complet (host sidebar) ── */}
           {isHost && (
-            <div className="w-60 border-l border-white/10 bg-black/45 backdrop-blur-md flex flex-col p-4 flex-shrink-0">
+            <div
+              className="w-60 flex flex-col p-4 flex-shrink-0"
+              style={{
+                borderLeft: '2px solid var(--ap-line)',
+                background: 'var(--ap-card)',
+              }}
+            >
               <div
                 className="mb-3 flex-shrink-0 uppercase tracking-wider text-xs font-bold"
-                style={{ color: 'rgba(255,255,255,0.5)', fontFamily: 'var(--ap-font-display)' }}
+                style={{ color: 'var(--ap-muted)', fontFamily: 'var(--ap-font-display)' }}
               >
                 Classement · {sortedPlayers.length} joueurs
               </div>
@@ -1279,29 +1288,30 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
                   return (
                     <div
                       key={player.id}
-                      className="flex items-center gap-2 rounded-xl px-2.5 py-2 transition-all"
+                      className="flex items-center gap-2 px-2.5 py-2 transition-all"
                       style={{
-                        background: isOffline ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.08)',
-                        border: isOffline ? '1px solid rgba(239,68,68,0.25)' : '1px solid rgba(255,255,255,0.08)',
+                        background: isOffline ? 'rgba(239,68,68,0.08)' : 'var(--ap-paper)',
+                        border: isOffline ? '1px solid rgba(239,68,68,0.3)' : '1px solid var(--ap-line)',
+                        borderRadius: 'var(--ap-r-sm)',
                         opacity: isOffline ? 0.65 : 1,
                       }}
                     >
                       <span
                         className="font-bold w-5 text-center flex-shrink-0 text-xs"
-                        style={{ color: 'rgba(255,255,255,0.5)', fontFamily: 'var(--ap-font-display)' }}
+                        style={{ color: 'var(--ap-muted)', fontFamily: 'var(--ap-font-display)' }}
                       >
                         {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : idx + 1}
                       </span>
                       <AvatarDisplay emoji={player.avatar} size="sm" />
                       <span
-                        className="flex-1 truncate text-white font-bold text-xs"
-                        style={{ fontFamily: 'var(--ap-font-body)' }}
+                        className="flex-1 truncate font-bold text-xs"
+                        style={{ fontFamily: 'var(--ap-font-body)', color: 'var(--ap-ink)' }}
                       >
                         {player.name}
                       </span>
                       <span
                         className="font-bold text-xs flex-shrink-0"
-                        style={{ color: 'rgba(255,255,255,0.75)', fontFamily: 'var(--ap-font-display)' }}
+                        style={{ color: 'var(--ap-brand)', fontFamily: 'var(--ap-font-display)' }}
                       >
                         {player.score.toLocaleString()}
                       </span>
@@ -1315,7 +1325,7 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
             </div>
           )}
         </div>
-      </ThemedBackground>
+      </div>
     );
   }
 

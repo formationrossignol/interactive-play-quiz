@@ -1,7 +1,4 @@
 import { useEffect, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Trophy } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { AvatarDisplay } from "./BetterAvatars";
 
 interface Player {
@@ -19,268 +16,161 @@ interface RaceLeaderboardProps {
   isLastQuestion?: boolean;
 }
 
+const MEDAL: Record<number, { bg: string; shadow: string; text: string; emoji: string }> = {
+  1: { bg: 'var(--ap-flash)',      shadow: 'var(--ap-flash-deep)',   text: '#7a4000', emoji: '🥇' },
+  2: { bg: '#e5e7eb',              shadow: '#9ca3af',                 text: '#4b5563', emoji: '🥈' },
+  3: { bg: 'var(--ap-quiz)',       shadow: 'var(--ap-quiz-deep)',     text: '#fff',    emoji: '🥉' },
+};
+
 export const RaceLeaderboard = ({ players, onComplete, isHost = false, isLastQuestion = false }: RaceLeaderboardProps) => {
   const [animatingPlayers, setAnimatingPlayers] = useState<Player[]>([]);
   const [showScores, setShowScores] = useState(false);
 
   useEffect(() => {
-    setAnimatingPlayers(players.map(p => ({ ...p, score: p.previousScore || 0 })));
-    const timer1 = setTimeout(() => {
+    setAnimatingPlayers(players.map(p => ({ ...p, score: p.previousScore ?? 0 })));
+    const t = setTimeout(() => {
       setAnimatingPlayers(players);
       setShowScores(true);
     }, 500);
-    return () => clearTimeout(timer1);
+    return () => clearTimeout(t);
   }, [players]);
 
-  const sortedPlayers = [...animatingPlayers].sort((a, b) => b.score - a.score);
-  const maxScore = Math.max(...sortedPlayers.map(p => p.score), 1);
+  const sorted = [...animatingPlayers].sort((a, b) => b.score - a.score);
+  const maxScore = Math.max(...sorted.map(p => p.score), 1);
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-slate-950 p-4 text-slate-100">
-      {/* Animated Background Particles with Movement */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(30)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute rounded-full animate-float"
+    <div
+      style={{ background: 'var(--ap-paper)', minHeight: '100vh', fontFamily: 'var(--ap-font-body)' }}
+      className="overflow-auto p-4"
+    >
+      <div className="max-w-xl mx-auto">
+
+        {/* Header */}
+        <div className="text-center pt-6 mb-8">
+          <h1
             style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              width: `${4 + Math.random() * 12}px`,
-              height: `${4 + Math.random() * 12}px`,
-              backgroundColor: ['rgba(148, 163, 184, 0.35)', 'rgba(251, 191, 36, 0.45)', 'rgba(56, 189, 248, 0.35)'][Math.floor(Math.random() * 3)],
-              animationDelay: `${Math.random() * 3}s`,
-              animationDuration: `${3 + Math.random() * 4}s`
-            }}
-          />
-        ))}
-      </div>
-      
-      {/* Flying stars */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(15)].map((_, i) => (
-          <div
-            key={`star-${i}`}
-            className="absolute text-2xl text-yellow-300 animate-fly-across"
-            style={{
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 5}s`,
-              animationDuration: `${4 + Math.random() * 3}s`
+              fontFamily: 'var(--ap-font-display)',
+              fontSize: 'clamp(2rem, 5vw, 2.8rem)',
+              fontWeight: 700,
+              color: 'var(--ap-ink)',
+              letterSpacing: '-1px',
+              margin: 0,
             }}
           >
-            ⭐
-          </div>
-        ))}
-      </div>
-
-      <div className="max-w-4xl mx-auto relative z-10">
-        <div className="text-center mb-8">
-          <h1 className="mb-4 text-4xl font-bold text-white drop-shadow-2xl animate-fade-in md:text-6xl">
-            🏁 Classement !
+            🏆 Classement
           </h1>
-          <p className="text-lg text-slate-200 animate-fade-in" style={{ animationDelay: '200ms' }}>
+          <p style={{ color: 'var(--ap-muted)', fontWeight: 700, marginTop: 6 }}>
             Les champions du moment
           </p>
         </div>
 
-        <Card className="border border-slate-700/70 bg-slate-900/85 backdrop-blur-xl shadow-2xl">
-          <CardContent className="p-6">
-            <div className="space-y-4">
-              {sortedPlayers.map((player, index) => {
-                const position = index + 1;
-                const progress = (player.score / maxScore) * 100;
+        {/* Player rows */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 32 }}>
+          {sorted.map((player, index) => {
+            const pos = index + 1;
+            const medal = MEDAL[pos];
+            const progress = (player.score / maxScore) * 100;
+            const delta = player.previousScore !== undefined ? player.score - player.previousScore : 0;
 
-                return (
+            return (
+              <div
+                key={player.id}
+                className="animate-fade-in"
+                style={{
+                  position: 'relative',
+                  overflow: 'hidden',
+                  background: 'var(--ap-card)',
+                  border: `2px solid ${pos === 1 ? 'var(--ap-flash)' : 'var(--ap-line)'}`,
+                  borderRadius: 'var(--ap-r-lg)',
+                  boxShadow: pos === 1
+                    ? '0 4px 0 var(--ap-flash-deep)'
+                    : 'var(--ap-shadow-soft)',
+                  padding: '14px 16px',
+                  animationDelay: `${index * 80}ms`,
+                }}
+              >
+                {/* Progress fill */}
+                <div
+                  style={{
+                    position: 'absolute', inset: 0,
+                    width: `${progress}%`,
+                    background: pos === 1
+                      ? 'linear-gradient(90deg,rgba(255,176,32,.14),transparent)'
+                      : 'linear-gradient(90deg,rgba(112,72,255,.07),transparent)',
+                    borderRadius: 'var(--ap-r-lg)',
+                    transition: 'width 1s ease-out',
+                  }}
+                />
+
+                <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 14 }}>
+                  {/* Position badge */}
                   <div
-                    key={player.id}
-                    className={cn(
-                      "relative overflow-hidden rounded-2xl border border-slate-700/70 bg-gradient-to-r p-5 text-slate-100 shadow-xl transition-all duration-300 hover:scale-[1.02] animate-fade-in",
-                      position === 1 && "from-yellow-500/40 via-yellow-400/30 to-yellow-300/20 animate-pulse",
-                      position === 2 && "from-slate-500/40 via-slate-400/30 to-slate-300/20",
-                      position === 3 && "from-orange-600/40 via-orange-500/30 to-orange-400/20",
-                      position > 3 && "from-slate-900/90 via-slate-900/75 to-slate-900/60"
-                    )}
-                    style={{ animationDelay: `${index * 150}ms` }}
+                    style={{
+                      width: 44, height: 44, borderRadius: '50%', flexShrink: 0,
+                      background: medal ? medal.bg : 'var(--ap-paper-2)',
+                      boxShadow: medal ? `0 4px 0 ${medal.shadow}` : '0 3px 0 var(--ap-line)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontFamily: 'var(--ap-font-display)', fontWeight: 700, fontSize: 20,
+                      color: medal ? medal.text : 'var(--ap-muted)',
+                    }}
                   >
-                    {/* Animated Progress Bar */}
-                    <div className="absolute inset-0 overflow-hidden">
-                      <div
-                        className={cn(
-                          "absolute inset-y-0 left-0 transition-all duration-1500 ease-out",
-                          position === 1 && "bg-gradient-to-r from-yellow-400/60 via-yellow-300/40 to-transparent",
-                          position === 2 && "bg-gradient-to-r from-slate-300/60 via-slate-200/40 to-transparent",
-                          position === 3 && "bg-gradient-to-r from-orange-500/60 via-orange-400/40 to-transparent",
-                          position > 3 && "bg-gradient-to-r from-primary/50 via-primary/30 to-transparent"
-                        )}
-                        style={{ width: `${progress}%` }}
-                      >
-                        {/* Multiple shimmer effects */}
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse" />
-                        <div
-                          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent"
-                          style={{
-                            animation: 'shimmer 2s infinite',
-                            animationDelay: '1s'
-                          }}
-                        />
-                      </div>
+                    {medal ? medal.emoji : pos}
+                  </div>
+
+                  <AvatarDisplay emoji={player.avatar} size="md" />
+
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{
+                      fontFamily: 'var(--ap-font-display)', fontWeight: 700, fontSize: 18,
+                      color: 'var(--ap-ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    }}>
+                      {player.name}
                     </div>
+                    <div style={{ color: 'var(--ap-muted)', fontSize: 13, fontWeight: 700 }}>
+                      #{pos}
+                    </div>
+                  </div>
 
-                    {/* Confetti for top 3 */}
-                    {position <= 3 && (
-                      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                        {[...Array(5)].map((_, i) => (
-                          <div
-                            key={i}
-                            className="absolute w-2 h-2 bg-white/40 rounded-full animate-bounce"
-                            style={{
-                              left: `${20 + i * 15}%`,
-                              top: '-10px',
-                              animationDelay: `${i * 0.2}s`,
-                              animationDuration: '3s'
-                            }}
-                          />
-                        ))}
+                  {showScores && (
+                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                      <div style={{
+                        fontFamily: 'var(--ap-font-display)', fontWeight: 700, fontSize: 24,
+                        color: 'var(--ap-ink)',
+                      }}>
+                        {player.score.toLocaleString()}
                       </div>
-                    )}
-
-                    <div className="relative flex items-center gap-4">
-                      {/* Position Badge with Animation */}
-                      <div
-                        className={cn(
-                          "w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl shrink-0 shadow-lg transform transition-transform",
-                          position === 1 && "bg-yellow-500 text-yellow-900 animate-bounce shadow-yellow-500/50",
-                          position === 2 && "bg-slate-300 text-slate-900 shadow-slate-400/50",
-                          position === 3 && "bg-orange-600 text-white shadow-orange-600/50",
-                          position > 3 && "bg-slate-800/80 text-slate-100 backdrop-blur-sm"
-                        )}
-                        style={{
-                          animationDelay: position === 1 ? '0s' : 'none'
-                        }}
-                      >
-                        {position <= 3 ? <Trophy className="w-6 h-6" /> : position}
-                      </div>
-
-                      {/* Avatar with Glow Animation */}
-                      <div className="relative shrink-0">
-                        <div className={cn(
-                          "relative",
-                          position <= 3 && "animate-pulse"
-                        )}>
-                          <AvatarDisplay 
-                            emoji={player.avatar} 
-                            size="md"
-                            showGlow={position <= 3}
-                          />
-                          {position === 1 && (
-                            <div className="absolute inset-0 rounded-full bg-yellow-400/30 animate-ping" />
-                          )}
-                        </div>
-                        {position <= 3 && (
-                          <div className={cn(
-                            "absolute -top-1 -right-1 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shadow-lg animate-bounce",
-                            position === 1 && "bg-yellow-500 text-yellow-900",
-                            position === 2 && "bg-gray-300 text-gray-900",
-                            position === 3 && "bg-orange-600 text-white"
-                          )}
-                          style={{ animationDuration: '1.5s' }}
-                          >
-                            {position}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Player Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className={cn(
-                          "font-bold truncate text-lg",
-                          position === 1 ? "text-yellow-100 drop-shadow-lg" : "text-white"
-                        )}>
-                          {player.name}
-                        </div>
-                        <div className="text-slate-200 text-sm font-medium">
-                          Position #{position}
-                        </div>
-                      </div>
-
-                      {/* Score with Fun Animation */}
-                      {showScores && (
-                        <div className="text-right shrink-0">
-                          <div className={cn(
-                            "text-3xl font-bold animate-scale-in",
-                            position === 1 ? "text-yellow-100 drop-shadow-lg" : "text-white"
-                          )}>
-                            {player.score}
-                          </div>
-                          {player.previousScore !== undefined && player.score > player.previousScore && (
-                            <div className="text-emerald-300 text-sm font-bold animate-bounce">
-                              +{player.score - player.previousScore} 🎯
-                            </div>
-                          )}
+                      {delta > 0 && (
+                        <div style={{
+                          color: 'var(--ap-pres)', fontWeight: 800, fontSize: 13,
+                          fontFamily: 'var(--ap-font-body)',
+                        }}>
+                          +{delta} 🎯
                         </div>
                       )}
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      {isHost && showScores && (
-        <div className="flex justify-center mt-8">
-          <button
-            onClick={onComplete}
-            className="px-8 py-4 rounded-2xl font-bold text-lg text-white shadow-xl transition-all hover:scale-105 active:scale-95"
-            style={{ background: isLastQuestion ? '#e11d48' : '#6366f1', boxShadow: '0 6px 0 rgba(0,0,0,0.3)' }}
-          >
-            {isLastQuestion ? '🏁 Voir les résultats finaux' : '➡️ Question suivante'}
-          </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
-      )}
-      </div>
 
-      <style dangerouslySetInnerHTML={{
-        __html: `
-          @keyframes shimmer {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
-          }
-          @keyframes float {
-            0%, 100% { 
-              transform: translate(0, 0) rotate(0deg);
-              opacity: 0.3;
-            }
-            25% { 
-              transform: translate(20px, -30px) rotate(90deg);
-              opacity: 0.6;
-            }
-            50% { 
-              transform: translate(-20px, -60px) rotate(180deg);
-              opacity: 0.8;
-            }
-            75% { 
-              transform: translate(30px, -30px) rotate(270deg);
-              opacity: 0.6;
-            }
-          }
-          @keyframes fly-across {
-            0% { 
-              transform: translateX(-100vw) translateY(0) rotate(0deg);
-              opacity: 0;
-            }
-            10% {
-              opacity: 1;
-            }
-            90% {
-              opacity: 1;
-            }
-            100% { 
-              transform: translateX(100vw) translateY(-50px) rotate(360deg);
-              opacity: 0;
-            }
-          }
-        `
-      }} />
+        {isHost && showScores && (
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <button
+              onClick={onComplete}
+              className="ap-btn ap-btn--lg ap-btn--pill"
+              style={
+                isLastQuestion
+                  ? { background: 'var(--ap-quiz)', boxShadow: '0 5px 0 var(--ap-quiz-deep)' }
+                  : { background: 'var(--ap-brand)', boxShadow: '0 5px 0 var(--ap-brand-deep)' }
+              }
+            >
+              {isLastQuestion ? '🏁 Voir les résultats finaux' : '➡️ Question suivante'}
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
