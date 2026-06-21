@@ -1,9 +1,4 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { cn } from "@/lib/utils";
 import { ENHANCED_AVATARS, AvatarDisplay } from "./BetterAvatars";
 import { ensureSessionState, upsertPlayerInSession } from "@/lib/sessionState";
 
@@ -19,10 +14,7 @@ export const AvatarSelector = ({ onComplete, gameCode, quizTitle }: AvatarSelect
 
   const handleSubmit = () => {
     const trimmedName = playerName.trim();
-
-    if (!trimmedName) {
-      return;
-    }
+    if (!trimmedName) return;
 
     ensureSessionState(gameCode);
 
@@ -41,91 +33,130 @@ export const AvatarSelector = ({ onComplete, gameCode, quizTitle }: AvatarSelect
 
     try {
       sessionStorage.setItem(`quiz-player-${gameCode}`, JSON.stringify(playerRecord));
-    } catch (error) {
-      console.warn("Unable to persist player info in sessionStorage", error);
+    } catch {
+      // sessionStorage unavailable
     }
 
     upsertPlayerInSession(gameCode, playerRecord);
-
     onComplete(trimmedName, selectedAvatar);
   };
 
+  const selected = ENHANCED_AVATARS.find(a => a.emoji === selectedAvatar) || ENHANCED_AVATARS[0];
+
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-4">
-      <Card className="bg-white border-slate-100 shadow-card max-w-md w-full">
-        <CardContent className="p-8">
-          <div className="text-center mb-6">
-            <h1 className="text-3xl font-bold text-slate-900 mb-1">Rejoindre le quiz</h1>
+    <div style={{ minHeight: '100vh', background: 'var(--ap-paper)', fontFamily: 'var(--ap-font-body)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+      <div style={{ maxWidth: 440, width: '100%' }}>
+        <div className="ap-card" style={{ boxShadow: 'var(--ap-shadow-card)' }}>
+
+          {/* Header */}
+          <div style={{ textAlign: 'center', marginBottom: 24 }}>
+            <h1 style={{ fontFamily: 'var(--ap-font-display)', fontSize: '1.8rem', fontWeight: 700, color: 'var(--ap-ink)', margin: 0 }}>
+              Rejoindre le quiz
+            </h1>
             {quizTitle ? (
-              <div className="text-xl font-semibold text-indigo-600 mb-1">{quizTitle}</div>
+              <div style={{ fontFamily: 'var(--ap-font-display)', fontSize: '1.1rem', fontWeight: 700, color: 'var(--ap-brand)', marginTop: 6 }}>
+                {quizTitle}
+              </div>
             ) : (
-              <div className="text-4xl font-mono text-indigo-600 tracking-wider font-bold">{gameCode}</div>
+              <div style={{ fontFamily: 'var(--ap-font-display)', fontSize: '2rem', fontWeight: 700, color: 'var(--ap-brand)', letterSpacing: '0.12em', marginTop: 6 }}>
+                {gameCode}
+              </div>
             )}
           </div>
 
-          <div className="space-y-6">
-            {/* Avatar Selection */}
-            <div>
-              <Label className="text-slate-700 mb-3 block">Choisis ton avatar</Label>
-              <div className="grid grid-cols-5 gap-3">
-                {ENHANCED_AVATARS.map((avatar) => (
-                  <button
-                    key={avatar.emoji}
-                    onClick={() => setSelectedAvatar(avatar.emoji)}
-                    className={cn(
-                      "relative group transition-all hover:scale-110 rounded-xl p-2",
-                      selectedAvatar === avatar.emoji ? "scale-110" : ""
-                    )}
-                  >
-                    <AvatarDisplay
-                      emoji={avatar.emoji}
-                      size="md"
-                      showGlow={selectedAvatar === avatar.emoji}
-                    />
-                  </button>
-                ))}
-              </div>
+          {/* Avatar grid */}
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ fontWeight: 700, color: 'var(--ap-muted)', fontSize: 13, marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              Choisis ton avatar
             </div>
-
-            {/* Name Input */}
-            <div>
-              <Label htmlFor="player-name" className="text-slate-700">
-                Ton pseudo
-              </Label>
-              <Input
-                id="player-name"
-                placeholder="Entre ton pseudo..."
-                value={playerName}
-                onChange={(e) => setPlayerName(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSubmit()}
-                className="bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 mt-2"
-                maxLength={20}
-              />
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8 }}>
+              {ENHANCED_AVATARS.map((avatar) => (
+                <button
+                  key={avatar.emoji}
+                  onClick={() => setSelectedAvatar(avatar.emoji)}
+                  style={{
+                    background: selectedAvatar === avatar.emoji ? 'var(--ap-brand)' : 'var(--ap-paper)',
+                    border: selectedAvatar === avatar.emoji ? '2px solid var(--ap-brand)' : '2px solid var(--ap-line)',
+                    borderRadius: 'var(--ap-r-md)',
+                    padding: 4,
+                    cursor: 'pointer',
+                    transform: selectedAvatar === avatar.emoji ? 'scale(1.1)' : 'scale(1)',
+                    transition: 'all 0.15s ease',
+                    boxShadow: selectedAvatar === avatar.emoji ? '0 4px 0 var(--ap-brand-deep)' : 'none',
+                  }}
+                  title={avatar.name}
+                >
+                  <AvatarDisplay emoji={avatar.emoji} size="sm" showGlow={false} />
+                </button>
+              ))}
             </div>
-
-            {/* Preview */}
-            <div className="bg-indigo-50 rounded-lg p-4 flex items-center gap-3">
-              <AvatarDisplay emoji={selectedAvatar} size="lg" />
-              <div className="flex-1">
-                <div className="text-slate-500 text-sm">Ton profil</div>
-                <div className="text-slate-900 font-bold text-xl">
-                  {playerName || "Ton pseudo"}
-                </div>
-              </div>
-            </div>
-
-            <Button
-              onClick={handleSubmit}
-              disabled={!playerName.trim()}
-              variant="hero"
-              size="lg"
-              className="w-full"
-            >
-              C'est parti !
-            </Button>
           </div>
-        </CardContent>
-      </Card>
+
+          {/* Name input */}
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ fontWeight: 700, color: 'var(--ap-muted)', fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 8 }}>
+              Ton pseudo
+            </label>
+            <input
+              placeholder="Entre ton pseudo…"
+              value={playerName}
+              onChange={(e) => setPlayerName(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleSubmit()}
+              maxLength={20}
+              style={{
+                width: '100%',
+                boxSizing: 'border-box',
+                padding: '12px 14px',
+                fontFamily: 'var(--ap-font-body)',
+                fontWeight: 700,
+                fontSize: '1rem',
+                color: 'var(--ap-ink)',
+                background: 'var(--ap-paper)',
+                border: '2px solid var(--ap-line)',
+                borderRadius: 'var(--ap-r-md)',
+                outline: 'none',
+              }}
+            />
+          </div>
+
+          {/* Preview */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 14,
+            padding: '12px 16px',
+            background: 'var(--ap-paper)',
+            border: '2px solid var(--ap-line)',
+            borderRadius: 'var(--ap-r-md)',
+            marginBottom: 20,
+          }}>
+            <AvatarDisplay emoji={selectedAvatar} size="lg" />
+            <div>
+              <div style={{ color: 'var(--ap-muted)', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                {selected.name}
+              </div>
+              <div style={{ fontFamily: 'var(--ap-font-display)', fontSize: '1.3rem', fontWeight: 700, color: 'var(--ap-ink)' }}>
+                {playerName || '…'}
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={handleSubmit}
+            disabled={!playerName.trim()}
+            className="ap-btn ap-btn--lg ap-btn--pill"
+            style={{
+              width: '100%',
+              background: playerName.trim() ? 'var(--ap-brand)' : 'var(--ap-muted)',
+              boxShadow: playerName.trim() ? '0 5px 0 var(--ap-brand-deep)' : 'none',
+              cursor: playerName.trim() ? 'pointer' : 'not-allowed',
+              opacity: playerName.trim() ? 1 : 0.6,
+            }}
+          >
+            🚀 C'est parti !
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
