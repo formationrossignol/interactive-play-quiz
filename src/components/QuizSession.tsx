@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -164,18 +164,24 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
     lastAnswerQuestionIndex: shared.lastAnswerQuestionIndex,
   }), []);
 
+  // Refs so syncFromStorage doesn't need to close over mutable state
+  const gameStateRef = useRef(gameState);
+  const currentQuestionIndexRef = useRef(currentQuestionIndex);
+  useEffect(() => { gameStateRef.current = gameState; }, [gameState]);
+  useEffect(() => { currentQuestionIndexRef.current = currentQuestionIndex; }, [currentQuestionIndex]);
+
   const syncFromStorage = useCallback(() => {
     const session = readSessionState(quiz.gameCode);
     const mappedPlayers = session.players.map(normalizeSharedPlayer);
     setPlayers(mappedPlayers);
 
-    if (session.gameState && session.gameState !== gameState) {
+    if (session.gameState && session.gameState !== gameStateRef.current) {
       setGameState(session.gameState);
     }
 
     if (
       typeof session.currentQuestionIndex === 'number' &&
-      session.currentQuestionIndex !== currentQuestionIndex &&
+      session.currentQuestionIndex !== currentQuestionIndexRef.current &&
       session.currentQuestionIndex >= 0 &&
       session.currentQuestionIndex < quiz.questions.length
     ) {
@@ -186,13 +192,14 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
       }
     }
 
-    if (gameState === 'question') {
+    if (gameStateRef.current === 'question') {
       setTimeLeft(session.timeLeft);
     }
 
     setHasSyncedPlayers(true);
-  }, [gameState, currentQuestionIndex, normalizeSharedPlayer, quiz.gameCode, quiz.questions]);
+  }, [normalizeSharedPlayer, quiz.gameCode, quiz.questions]);
 
+  // Run once on mount: init session and register storage listener
   useEffect(() => {
     ensureSessionState(quiz.gameCode);
     ensureSessionInSupabase(quiz.gameCode, { questions: quiz.questions, title: quiz.title });
@@ -205,11 +212,9 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
     };
 
     window.addEventListener('storage', handleStorage);
-
-    return () => {
-      window.removeEventListener('storage', handleStorage);
-    };
-  }, [quiz.gameCode, syncFromStorage]);
+    return () => window.removeEventListener('storage', handleStorage);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quiz.gameCode]);
 
   // Poll Supabase for player updates (joins in waiting, answers+scores during question).
   // Polling avoids the write→event→sync→write feedback loop that realtime would cause.
@@ -285,14 +290,13 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
     }
   }, [gameState, timeLeft]);
 
+  // Write timeLeft to Supabase only every 5s (not every second) to reduce write load.
+  // Players sync their local countdown independently; this is just a fallback resync.
   useEffect(() => {
-    if (!isHost || gameState !== 'question') {
-      return;
-    }
+    if (!isHost || gameState !== 'question') return;
+    if (timeLeft % 5 !== 0 && timeLeft !== 0) return;
 
-    patchSessionState(quiz.gameCode, {
-      timeLeft,
-    });
+    patchSessionState(quiz.gameCode, { timeLeft });
   }, [gameState, isHost, quiz.gameCode, timeLeft]);
 
 

@@ -233,7 +233,11 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
     setHasAnswered(true);
     answeredForIndexRef.current = currentQuestion;
 
-    const correct = answer === liveQuestion.correctAnswer;
+    const expected = liveQuestion.correctAnswer;
+    const correct = liveQuestion.type === 'short-answer'
+      ? typeof expected === 'string' && String(answer).toLowerCase().trim() === expected.toLowerCase().trim()
+      : answer === expected;
+
     const earnedPoints = correct
       ? Math.round(
           (liveQuestion.points ?? 100) +
@@ -385,8 +389,8 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
               {liveQuestion.question}
             </h2>
 
-            {/* Multiple Choice Answers — Arcade Pop style */}
-            {liveQuestion.type === 'multiple-choice' && liveQuestion.answers && (
+            {/* Multiple / Single Choice Answers */}
+            {['multiple-choice', 'single-choice'].includes(liveQuestion.type) && liveQuestion.answers && (
               <div className="ap-answers">
                 {liveQuestion.answers.map((answer: string, index: number) => (
                   <button
@@ -404,6 +408,55 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
                   </button>
                 ))}
               </div>
+            )}
+
+            {/* True / False */}
+            {liveQuestion.type === 'true-false' && (
+              <div className="ap-answers">
+                {[{ label: liveQuestion.answers?.[0] ?? 'Vrai', value: 'true' }, { label: liveQuestion.answers?.[1] ?? 'Faux', value: 'false' }].map(({ label, value }, index) => (
+                  <button
+                    key={value}
+                    className={cn(
+                      `ap-answer ap-answer--${index + 1}`,
+                      selectedAnswer === value && "outline outline-4 outline-white outline-offset-2",
+                      hasAnswered && selectedAnswer !== value && "opacity-50"
+                    )}
+                    onClick={() => submitAnswer(value)}
+                    disabled={hasAnswered}
+                  >
+                    <span className="ap-answer__shape">{index === 0 ? '✓' : '✗'}</span>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Short Answer */}
+            {liveQuestion.type === 'short-answer' && !hasAnswered && (
+              <form
+                className="flex flex-col gap-3 px-2"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const input = (e.currentTarget.elements.namedItem('answer') as HTMLInputElement);
+                  if (input.value.trim()) submitAnswer(input.value.trim());
+                }}
+              >
+                <input
+                  name="answer"
+                  type="text"
+                  placeholder="Votre réponse…"
+                  className="w-full rounded-xl border-2 border-white/30 bg-white/15 p-4 text-white placeholder-white/50 text-lg outline-none focus:border-white/60"
+                  disabled={hasAnswered}
+                  autoComplete="off"
+                />
+                <button
+                  type="submit"
+                  className="ap-btn ap-btn--lg ap-btn--pill"
+                  style={{ background: "var(--ap-ink)" }}
+                >
+                  Valider
+                </button>
+              </form>
             )}
           </div>
 
@@ -468,19 +521,17 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
             </div>
           </div>
 
-          <button
-            className="ap-btn ap-btn--lg ap-btn--pill"
-            style={{ background: "var(--ap-ink)", boxShadow: "0 5px 0 rgba(0,0,0,0.3)", width: "100%" }}
-            onClick={() => {
-              setGameState('question');
-              setHasAnswered(false);
-              setSelectedAnswer(null);
-              setTimeLeft(30);
-              setCurrentQuestion(prev => prev + 1);
+          <div
+            className="p-4 text-center text-sm font-bold"
+            style={{
+              background: "rgba(255,255,255,0.12)",
+              border: "2px solid rgba(255,255,255,0.2)",
+              borderRadius: "var(--ap-r-lg)",
+              color: "rgba(255,255,255,0.85)",
             }}
           >
-            🚀 Prêt pour la suite
-          </button>
+            ⏳ En attente de la prochaine question…
+          </div>
         </div>
       </div>
     );
