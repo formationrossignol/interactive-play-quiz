@@ -664,52 +664,180 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
   }
 
   // final state
+  const [fp1, fp2, fp3] = allPlayers;
+
   return (
     <div
-      className="min-h-screen p-4"
+      className="min-h-screen overflow-auto"
       style={{ background: "var(--ap-pres)" }}
     >
-      <div className="max-w-md mx-auto text-center">
-        <div className="mb-4 text-6xl drop-shadow-lg">🎉</div>
-        <h2 className="ap-h2 text-white mb-2">Quiz terminé !</h2>
-
-        {/* Player's own result */}
-        <div
-          className="p-4 mb-6"
+      <div className="max-w-sm mx-auto px-4 pt-6 pb-8 text-center">
+        {/* Title */}
+        <h2
+          className="mb-5"
           style={{
-            background: "rgba(255,255,255,0.18)",
-            border: "2px solid rgba(255,255,255,0.3)",
-            borderRadius: "var(--ap-r-xl)",
+            fontFamily: 'var(--ap-font-display)',
+            fontSize: '2.4rem',
+            fontWeight: 700,
+            color: '#fff',
+            textShadow: '0 2px 12px rgba(0,0,0,0.3)',
           }}
         >
-          <div className="ap-h1 text-white mb-1">{playerScore}</div>
-          <div className="font-bold text-sm mb-1" style={{ color: "rgba(255,255,255,0.75)" }}>points</div>
-          <div className="font-bold" style={{ color: "rgba(255,255,255,0.85)" }}>
-            Rang final : <span className="text-white">#{playerRank}</span> sur {allPlayers.length || totalPlayers}
+          🎉 Quiz terminé !
+        </h2>
+
+        {/* Player's own score + rank */}
+        <div
+          className="mb-6 p-4"
+          style={{
+            background: 'rgba(255,255,255,0.2)',
+            border: '2px solid rgba(255,255,255,0.35)',
+            borderRadius: 'var(--ap-r-xl)',
+          }}
+        >
+          <div
+            style={{
+              fontFamily: 'var(--ap-font-display)',
+              fontSize: '3rem',
+              fontWeight: 700,
+              color: '#fff',
+              lineHeight: 1,
+            }}
+          >
+            {playerScore}
+          </div>
+          <div style={{ color: 'rgba(255,255,255,0.7)', fontWeight: 700, fontSize: '13px', marginBottom: '8px' }}>
+            points
+          </div>
+          <div
+            style={{
+              fontFamily: 'var(--ap-font-display)',
+              fontSize: '1.3rem',
+              fontWeight: 700,
+              color: '#fff',
+              background: playerRank <= 3 ? 'rgba(255,184,0,0.35)' : 'rgba(255,255,255,0.15)',
+              padding: '5px 18px',
+              borderRadius: '999px',
+              display: 'inline-block',
+              border: playerRank <= 3 ? '1px solid rgba(255,184,0,0.5)' : '1px solid rgba(255,255,255,0.2)',
+            }}
+          >
+            #{playerRank} / {allPlayers.length || totalPlayers}
           </div>
         </div>
 
-        {/* Full ranking */}
-        {allPlayers.length > 0 && (
-          <div className="mb-6 space-y-2">
-            {allPlayers.map((p, idx) => {
+        {/* Podium (when ≥ 2 players in ranking) */}
+        {allPlayers.length >= 2 && (
+          <>
+            <div className="flex items-end justify-center gap-0 mb-0">
+              {/* 2nd */}
+              {fp2 && (
+                <div className="flex flex-col items-center" style={{ flex: '0 0 33%' }}>
+                  <AvatarDisplay emoji={fp2.avatar} size="md" />
+                  <div
+                    style={{
+                      width: '100%', height: 90,
+                      background: 'linear-gradient(170deg,#E8E8E8,#B8B8B8)',
+                      borderRadius: '10px 10px 0 0',
+                      display: 'flex', flexDirection: 'column',
+                      alignItems: 'center', justifyContent: 'space-between',
+                      padding: '8px 4px',
+                      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.5)',
+                    }}
+                  >
+                    <span style={{ fontSize: '0.7rem', fontWeight: 800, color: '#444', fontFamily: 'var(--ap-font-display)', lineHeight: 1.1, textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>
+                      {fp2.name}
+                    </span>
+                    <span style={{ fontSize: '1.2rem' }}>🥈</span>
+                    <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#555' }}>{fp2.score} pts</span>
+                  </div>
+                </div>
+              )}
+
+              {/* 1st */}
+              {fp1 && (
+                <div className="flex flex-col items-center" style={{ flex: '0 0 34%' }}>
+                  <AvatarDisplay emoji={fp1.avatar} size="lg" />
+                  <div
+                    style={{
+                      width: '100%', height: 130,
+                      background: 'linear-gradient(170deg,#FFE566,#FFB800)',
+                      borderRadius: '10px 10px 0 0',
+                      display: 'flex', flexDirection: 'column',
+                      alignItems: 'center', justifyContent: 'space-between',
+                      padding: '10px 4px',
+                      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.5), 0 -8px 28px rgba(255,184,0,0.45)',
+                    }}
+                  >
+                    <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#7a4000', fontFamily: 'var(--ap-font-display)', lineHeight: 1.1, textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>
+                      {fp1.name}
+                    </span>
+                    <span style={{ fontSize: '1.6rem' }}>🥇</span>
+                    <span style={{ fontSize: '0.7rem', fontWeight: 800, color: '#7a4000' }}>{fp1.score} pts</span>
+                  </div>
+                </div>
+              )}
+
+              {/* 3rd */}
+              {fp3 ? (
+                <div className="flex flex-col items-center" style={{ flex: '0 0 33%' }}>
+                  <AvatarDisplay emoji={fp3.avatar} size="md" />
+                  <div
+                    style={{
+                      width: '100%', height: 65,
+                      background: 'linear-gradient(170deg,#E8A87C,#CD7F32)',
+                      borderRadius: '10px 10px 0 0',
+                      display: 'flex', flexDirection: 'column',
+                      alignItems: 'center', justifyContent: 'space-between',
+                      padding: '6px 4px',
+                      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.4)',
+                    }}
+                  >
+                    <span style={{ fontSize: '0.7rem', fontWeight: 800, color: '#4a2000', fontFamily: 'var(--ap-font-display)', lineHeight: 1.1, textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>
+                      {fp3.name}
+                    </span>
+                    <span style={{ fontSize: '0.95rem' }}>🥉</span>
+                    <span style={{ fontSize: '0.6rem', fontWeight: 800, color: '#5a2800' }}>{fp3.score} pts</span>
+                  </div>
+                </div>
+              ) : <div style={{ flex: '0 0 33%' }} />}
+            </div>
+
+            {/* Floor */}
+            <div
+              style={{
+                height: 5,
+                background: 'rgba(255,255,255,0.18)',
+                borderRadius: '0 0 8px 8px',
+                marginBottom: 20,
+              }}
+            />
+          </>
+        )}
+
+        {/* Rest of ranking (4+) */}
+        {allPlayers.length > 3 && (
+          <div className="space-y-2 mb-6">
+            {allPlayers.slice(3).map((p, idx) => {
               const isMe = p.id === playerId;
-              const medals = ['🥇', '🥈', '🥉'];
               return (
                 <div
                   key={p.id}
-                  className="flex items-center gap-3 rounded-xl px-4 py-3"
+                  className="flex items-center gap-3 rounded-xl px-3 py-2"
                   style={{
-                    background: isMe ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.1)",
-                    border: isMe ? "2px solid rgba(255,255,255,0.5)" : "2px solid rgba(255,255,255,0.15)",
+                    background: isMe ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.1)',
+                    border: isMe ? '2px solid rgba(255,255,255,0.5)' : '1px solid rgba(255,255,255,0.15)',
                   }}
                 >
-                  <span className="w-8 text-center text-lg font-bold text-white">
-                    {idx < 3 ? medals[idx] : `${idx + 1}`}
+                  <span
+                    className="font-bold text-white/70 text-sm w-5 text-center"
+                    style={{ fontFamily: 'var(--ap-font-display)' }}
+                  >
+                    {idx + 4}
                   </span>
                   <AvatarDisplay emoji={p.avatar} size="sm" />
-                  <span className="flex-1 text-left font-bold text-white truncate">{p.name}</span>
-                  <span className="font-bold" style={{ color: "rgba(255,255,255,0.9)" }}>{p.score} pts</span>
+                  <span className="flex-1 font-bold text-white truncate text-sm text-left">{p.name}</span>
+                  <span className="font-bold text-white/80 text-sm">{p.score} pts</span>
                 </div>
               );
             })}
@@ -718,8 +846,8 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
 
         <button
           className="ap-btn ap-btn--lg ap-btn--pill"
-          style={{ background: "var(--ap-ink)", boxShadow: "0 5px 0 rgba(0,0,0,0.3)" }}
-          onClick={() => navigate("/")}
+          style={{ background: 'var(--ap-ink)', boxShadow: '0 5px 0 rgba(0,0,0,0.3)' }}
+          onClick={() => navigate('/')}
         >
           Retour à l&apos;accueil
         </button>

@@ -11,7 +11,7 @@ export const CircularTimer = ({ timeLeft, totalTime, className }: CircularTimerP
   const radius = 45;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (percentage / 100) * circumference;
-  const isWarning = timeLeft <= 5;
+  const arcColor = percentage > 60 ? '#15c08a' : percentage > 30 ? '#ffb020' : '#ff5a4d';
 
   return (
     <div className={cn("relative inline-flex items-center justify-center", className)}>
@@ -21,30 +21,30 @@ export const CircularTimer = ({ timeLeft, totalTime, className }: CircularTimerP
           cx="60"
           cy="60"
           r={radius}
-          stroke="rgba(255,255,255,0.2)"
+          stroke="rgba(255,255,255,0.15)"
           strokeWidth="9"
           fill="rgba(0,0,0,0.15)"
         />
-        {/* Progress — always white so it's visible on any themed background */}
+        {/* Progress arc — color shifts green→yellow→red */}
         <circle
           cx="60"
           cy="60"
           r={radius}
-          stroke={isWarning ? '#ffb020' : 'rgba(255,255,255,0.95)'}
+          stroke={arcColor}
           strokeWidth="9"
           fill="none"
           strokeDasharray={circumference}
           strokeDashoffset={strokeDashoffset}
           strokeLinecap="round"
-          style={{ transition: 'stroke-dashoffset 1s linear' }}
+          style={{ transition: 'stroke-dashoffset 1s linear, stroke 0.5s ease' }}
         />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
         <span
-          className={cn("text-3xl font-bold", isWarning && "animate-pulse")}
+          className={cn("text-3xl font-bold", percentage <= 30 && "animate-pulse")}
           style={{
             fontFamily: 'var(--ap-font-display)',
-            color: isWarning ? '#ffb020' : 'white',
+            color: arcColor,
             textShadow: '0 2px 8px rgba(0,0,0,0.6)',
           }}
         >

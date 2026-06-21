@@ -848,163 +848,167 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
           </div>
         </div>
 
-        {/* ── Question zone (center) ── */}
-        <div className="flex-1 flex flex-col items-center justify-center px-8 py-6 gap-5">
-          {/* Timer + points row */}
-          <div className="flex items-center gap-5">
-            <CircularTimer timeLeft={timeLeft} totalTime={currentQuestion.timeLimit} />
-            <div
-              className="flex items-center gap-2 rounded-2xl border border-white/20 bg-black/30 px-5 py-2.5 backdrop-blur"
-            >
-              <Trophy className="w-5 h-5 text-yellow-300" />
-              <span
-                className="text-2xl font-bold text-yellow-200"
-                style={{ fontFamily: 'var(--ap-font-display)' }}
-              >
-                {currentQuestion.points} pts
-              </span>
-            </div>
-          </div>
+        {/* ── Body row: main content + dedicated sidebar ── */}
+        <div className="flex flex-1 overflow-hidden">
+          <div className="flex-1 flex flex-col overflow-hidden">
 
-          {/* Question image */}
-          {questionImage && (
-            <div className="overflow-hidden rounded-2xl border border-white/10 bg-black/30 shadow-xl max-h-48 w-full max-w-3xl">
-              <img
-                src={questionImage}
-                alt={currentQuestion.question}
-                className="h-full w-full object-cover"
-              />
-            </div>
-          )}
-
-          {/* Question text */}
-          <h1
-            className="text-center text-white drop-shadow-2xl max-w-4xl leading-snug"
-            style={{
-              fontFamily: 'var(--ap-font-display)',
-              fontSize: 'clamp(1.4rem, 3.5vw, 2.6rem)',
-              fontWeight: 700,
-              textShadow: '0 2px 16px rgba(0,0,0,0.4)',
-            }}
-          >
-            {currentQuestion.question}
-          </h1>
-
-          {/* Word-cloud / ranking types (non-standard) */}
-          {currentQuestion.type === 'word-cloud' && (
-            <WordCloudQuestion
-              question={currentQuestion.question}
-              timeLimit={currentQuestion.timeLimit}
-              onSubmit={(answer) => console.log('Word cloud answer:', answer)}
-              responses={[
-                { word: 'innovation', count: 5, player: 'Alice' },
-                { word: 'technology', count: 3, player: 'Bob' },
-                { word: 'future', count: 4, player: 'Charlie' }
-              ]}
-              showResults={false}
-            />
-          )}
-          {currentQuestion.type === 'ranking' && currentQuestion.items && (
-            <RankingQuestion
-              question={currentQuestion.question}
-              items={currentQuestion.items}
-              timeLimit={currentQuestion.timeLimit}
-              onSubmit={(ranking) => console.log('Ranking answer:', ranking)}
-              showResults={false}
-            />
-          )}
-        </div>
-
-        {/* ── Answer grid (Kahoot-style bottom) ── */}
-        {['multiple-choice', 'single-choice'].includes(currentQuestion.type) && currentQuestion.answers && (
-          <div className="grid grid-cols-2 gap-3 p-4 pt-0 flex-shrink-0">
-            {(currentQuestion.answers as string[]).map((answer, index) => (
-              <div
-                key={index}
-                className="flex items-center gap-4 rounded-2xl px-6 py-4 text-white font-bold text-lg select-none"
-                style={{
-                  background: ANSWER_STYLES[index % 4].bg,
-                  boxShadow: `0 6px 24px ${ANSWER_STYLES[index % 4].shadow}`,
-                  minHeight: '72px',
-                  fontFamily: 'var(--ap-font-body)',
-                }}
-              >
-                <span className="text-2xl opacity-90 flex-shrink-0">
-                  {ANSWER_STYLES[index % 4].shape}
-                </span>
-                <span className="leading-tight">{answer}</span>
+            {/* ── Question zone (center) ── */}
+            <div className="flex-1 flex flex-col items-center justify-center px-8 py-6 gap-5 overflow-auto">
+              {/* Timer + points row */}
+              <div className="flex items-center gap-5">
+                <CircularTimer timeLeft={timeLeft} totalTime={currentQuestion.timeLimit} />
+                <div
+                  className="flex items-center gap-2 rounded-2xl border border-white/20 bg-black/30 px-5 py-2.5 backdrop-blur"
+                >
+                  <Trophy className="w-5 h-5 text-yellow-300" />
+                  <span
+                    className="text-2xl font-bold text-yellow-200"
+                    style={{ fontFamily: 'var(--ap-font-display)' }}
+                  >
+                    {currentQuestion.points} pts
+                  </span>
+                </div>
               </div>
-            ))}
-          </div>
-        )}
 
-        {currentQuestion.type === 'true-false' && (
-          <div className="grid grid-cols-2 gap-3 p-4 pt-0 flex-shrink-0">
-            <div
-              className="flex items-center justify-center gap-3 rounded-2xl px-6 py-5 text-white font-bold text-xl select-none"
-              style={{ background: '#27AE60', boxShadow: '0 6px 24px rgba(39,174,96,0.5)', fontFamily: 'var(--ap-font-display)' }}
-            >
-              <span className="text-3xl">✓</span> Vrai
-            </div>
-            <div
-              className="flex items-center justify-center gap-3 rounded-2xl px-6 py-5 text-white font-bold text-xl select-none"
-              style={{ background: '#E74C3C', boxShadow: '0 6px 24px rgba(231,76,60,0.5)', fontFamily: 'var(--ap-font-display)' }}
-            >
-              <span className="text-3xl">✗</span> Faux
-            </div>
-          </div>
-        )}
+              {/* Question image */}
+              {questionImage && (
+                <div className="overflow-hidden rounded-2xl border border-white/10 bg-black/30 shadow-xl max-h-48 w-full max-w-3xl">
+                  <img
+                    src={questionImage}
+                    alt={currentQuestion.question}
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+              )}
 
-        {currentQuestion.type === 'short-answer' && (
-          <div
-            className="mx-4 mb-4 rounded-2xl border-2 border-dashed border-white/30 bg-white/10 p-5 text-center text-white text-lg font-bold backdrop-blur flex-shrink-0"
-            style={{ fontFamily: 'var(--ap-font-display)' }}
-          >
-            ✏️ Les joueurs tapent leur réponse
-          </div>
-        )}
-
-        {/* ── Floating player sidebar ── */}
-        {isHost && (
-          <div
-            className="fixed right-3 top-20 bottom-3 w-44 rounded-2xl border border-white/10 bg-black/60 backdrop-blur-md p-3 flex flex-col"
-            style={{ zIndex: 40 }}
-          >
-            <div className="flex items-center justify-between mb-2 flex-shrink-0">
-              <span className="text-xs font-bold text-white/60" style={{ fontFamily: 'var(--ap-font-display)' }}>
-                Joueurs
-              </span>
-              <span
-                className="text-xs font-bold px-1.5 py-0.5 rounded-full"
+              {/* Question text */}
+              <h1
+                className="text-center text-white drop-shadow-2xl max-w-4xl leading-snug"
                 style={{
-                  background: allAnswered ? 'rgba(39,174,96,0.3)' : 'rgba(255,255,255,0.1)',
-                  color: allAnswered ? '#6ee7b7' : 'white',
+                  fontFamily: 'var(--ap-font-display)',
+                  fontSize: 'clamp(1.4rem, 3.5vw, 2.6rem)',
+                  fontWeight: 700,
+                  textShadow: '0 2px 16px rgba(0,0,0,0.4)',
                 }}
               >
-                {answeredCount}/{players.length}
-              </span>
+                {currentQuestion.question}
+              </h1>
+
+              {/* Word-cloud / ranking types (non-standard) */}
+              {currentQuestion.type === 'word-cloud' && (
+                <WordCloudQuestion
+                  question={currentQuestion.question}
+                  timeLimit={currentQuestion.timeLimit}
+                  onSubmit={(answer) => console.log('Word cloud answer:', answer)}
+                  responses={[
+                    { word: 'innovation', count: 5, player: 'Alice' },
+                    { word: 'technology', count: 3, player: 'Bob' },
+                    { word: 'future', count: 4, player: 'Charlie' }
+                  ]}
+                  showResults={false}
+                />
+              )}
+              {currentQuestion.type === 'ranking' && currentQuestion.items && (
+                <RankingQuestion
+                  question={currentQuestion.question}
+                  items={currentQuestion.items}
+                  timeLimit={currentQuestion.timeLimit}
+                  onSubmit={(ranking) => console.log('Ranking answer:', ranking)}
+                  showResults={false}
+                />
+              )}
             </div>
-            <div className="overflow-y-auto space-y-1 flex-1">
-              {players.map((p) => {
-                const answered = p.lastAnswerQuestionIndex === currentQuestionIndex;
-                return (
+
+            {/* ── Answer grid (Kahoot-style bottom) ── */}
+            {['multiple-choice', 'single-choice'].includes(currentQuestion.type) && currentQuestion.answers && (
+              <div className="grid grid-cols-2 gap-3 p-4 pt-0 flex-shrink-0">
+                {(currentQuestion.answers as string[]).map((answer, index) => (
                   <div
-                    key={p.id}
-                    className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition-all duration-300"
+                    key={index}
+                    className="flex items-center gap-4 rounded-2xl px-6 py-4 text-white font-bold text-lg select-none"
                     style={{
-                      background: answered ? 'rgba(39,174,96,0.18)' : 'rgba(255,255,255,0.04)',
-                      opacity: answered ? 1 : 0.45,
+                      background: ANSWER_STYLES[index % 4].bg,
+                      boxShadow: `0 6px 24px ${ANSWER_STYLES[index % 4].shadow}`,
+                      minHeight: '72px',
+                      fontFamily: 'var(--ap-font-body)',
                     }}
                   >
-                    <AvatarDisplay emoji={p.avatar} size="sm" />
-                    <span className="flex-1 truncate text-xs font-bold text-white">{p.name}</span>
-                    {answered && <span className="text-green-400 text-xs">✓</span>}
+                    <span className="text-2xl opacity-90 flex-shrink-0">
+                      {ANSWER_STYLES[index % 4].shape}
+                    </span>
+                    <span className="leading-tight">{answer}</span>
                   </div>
-                );
-              })}
-            </div>
+                ))}
+              </div>
+            )}
+
+            {currentQuestion.type === 'true-false' && (
+              <div className="grid grid-cols-2 gap-3 p-4 pt-0 flex-shrink-0">
+                <div
+                  className="flex items-center justify-center gap-3 rounded-2xl px-6 py-5 text-white font-bold text-xl select-none"
+                  style={{ background: '#27AE60', boxShadow: '0 6px 24px rgba(39,174,96,0.5)', fontFamily: 'var(--ap-font-display)' }}
+                >
+                  <span className="text-3xl">✓</span> Vrai
+                </div>
+                <div
+                  className="flex items-center justify-center gap-3 rounded-2xl px-6 py-5 text-white font-bold text-xl select-none"
+                  style={{ background: '#E74C3C', boxShadow: '0 6px 24px rgba(231,76,60,0.5)', fontFamily: 'var(--ap-font-display)' }}
+                >
+                  <span className="text-3xl">✗</span> Faux
+                </div>
+              </div>
+            )}
+
+            {currentQuestion.type === 'short-answer' && (
+              <div
+                className="mx-4 mb-4 rounded-2xl border-2 border-dashed border-white/30 bg-white/10 p-5 text-center text-white text-lg font-bold backdrop-blur flex-shrink-0"
+                style={{ fontFamily: 'var(--ap-font-display)' }}
+              >
+                ✏️ Les joueurs tapent leur réponse
+              </div>
+            )}
           </div>
-        )}
+
+          {/* ── Player sidebar (dedicated column, host only) ── */}
+          {isHost && (
+            <div className="w-52 border-l border-white/10 bg-black/40 backdrop-blur-md p-3 flex flex-col flex-shrink-0">
+              <div className="flex items-center justify-between mb-3 flex-shrink-0">
+                <span className="text-xs font-bold text-white/60" style={{ fontFamily: 'var(--ap-font-display)' }}>
+                  Joueurs
+                </span>
+                <span
+                  className="text-xs font-bold px-2 py-0.5 rounded-full"
+                  style={{
+                    background: allAnswered ? 'rgba(21,192,138,0.3)' : 'rgba(255,255,255,0.1)',
+                    color: allAnswered ? '#6ee7b7' : 'white',
+                    border: allAnswered ? '1px solid rgba(21,192,138,0.4)' : '1px solid rgba(255,255,255,0.1)',
+                  }}
+                >
+                  {answeredCount}/{players.length}
+                </span>
+              </div>
+              <div className="overflow-y-auto space-y-1 flex-1">
+                {players.map((p) => {
+                  const answered = p.lastAnswerQuestionIndex === currentQuestionIndex;
+                  return (
+                    <div
+                      key={p.id}
+                      className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition-all duration-300"
+                      style={{
+                        background: answered ? 'rgba(21,192,138,0.18)' : 'rgba(255,255,255,0.04)',
+                        opacity: answered ? 1 : 0.45,
+                      }}
+                    >
+                      <AvatarDisplay emoji={p.avatar} size="sm" />
+                      <span className="flex-1 truncate text-xs font-bold text-white">{p.name}</span>
+                      {answered && <span className="text-xs" style={{ color: '#6ee7b7' }}>✓</span>}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
       </ThemedBackground>
     );
   }
@@ -1038,74 +1042,174 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
 
   if (gameState === 'final') {
     const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
-    const winner = sortedPlayers[0];
+    const [p1, p2, p3] = sortedPlayers;
+
+    const podiumStep = (
+      label: string,
+      score: number,
+      avatar: string,
+      medal: string,
+      height: number,
+      width: number,
+      bg: string,
+      textColor: string,
+      avatarSize: 'sm' | 'md' | 'lg' | 'xl',
+      glow?: string,
+    ) => (
+      <div className="flex flex-col items-center" style={{ width }}>
+        <AvatarDisplay emoji={avatar} size={avatarSize} />
+        <div
+          style={{
+            width: '100%',
+            height,
+            background: bg,
+            borderRadius: '14px 14px 0 0',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '12px 8px 10px',
+            boxShadow: glow ?? 'none',
+          }}
+        >
+          <span
+            style={{
+              fontSize: '0.78rem',
+              fontWeight: 800,
+              color: textColor,
+              fontFamily: 'var(--ap-font-display)',
+              textAlign: 'center',
+              lineHeight: 1.2,
+              maxWidth: '100%',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {label}
+          </span>
+          <span style={{ fontSize: height >= 140 ? '2rem' : '1.5rem' }}>{medal}</span>
+          <span style={{ fontSize: '0.75rem', fontWeight: 800, color: textColor, opacity: 0.85 }}>
+            {score.toLocaleString()} pts
+          </span>
+        </div>
+      </div>
+    );
 
     return (
-      <ThemedBackground className="overflow-hidden p-4 text-slate-100">
-        {/* Confetti Animation */}
-        <div className="absolute inset-0 pointer-events-none">
+      <ThemedBackground className="min-h-screen overflow-auto text-slate-100">
+        {/* Confetti */}
+        <div className="fixed inset-0 pointer-events-none z-0">
           {Array.from({ length: 80 }).map((_, i) => (
             <div
               key={i}
               className="absolute w-3 h-3 rounded-full animate-confetti"
               style={{
                 left: `${Math.random() * 100}%`,
-                backgroundColor: ['#fbbf24', '#f59e0b', '#ef4444', '#3b82f6', '#8b5cf6'][Math.floor(Math.random() * 5)],
+                backgroundColor: ['#ffb020', '#ff5a4d', '#15c08a', '#7048ff', '#2f7bff'][Math.floor(Math.random() * 5)],
                 animationDelay: `${Math.random() * 3}s`,
-                animationDuration: `${2 + Math.random() * 2}s`
+                animationDuration: `${2 + Math.random() * 2}s`,
               }}
             />
           ))}
         </div>
 
-        <div className="relative z-10 mx-auto max-w-4xl text-center">
-          <div className="mb-8 animate-scale-in">
-            <div className="mb-4 text-8xl drop-shadow-2xl animate-bounce">🎉</div>
-            <h1 className="mb-6 text-6xl font-bold text-white drop-shadow-2xl md:text-7xl">
-              Quiz Terminé !
-            </h1>
-            {winner && (
-              <div className="mb-8 rounded-2xl border-2 border-yellow-400/50 bg-gradient-to-r from-yellow-500/45 to-orange-500/35 p-10 shadow-2xl backdrop-blur-xl animate-pulse">
-                <div className="mb-4 text-6xl drop-shadow-xl animate-bounce">👑</div>
-                <h2 className="mb-3 text-4xl font-bold text-white drop-shadow-lg">Félicitations</h2>
-                <div className="text-3xl font-bold text-white drop-shadow-lg">{winner.name}</div>
-                <div className="mt-2 text-xl font-semibold text-white">
-                  {winner.score} points 🎯 • {winner.correctAnswers} bonnes réponses ✅
-                </div>
-              </div>
-            )}
+        <div className="relative z-10 mx-auto max-w-3xl px-4 pt-8 pb-10 text-center">
+          {/* Title */}
+          <h1
+            className="mb-8"
+            style={{
+              fontFamily: 'var(--ap-font-display)',
+              fontSize: 'clamp(2.2rem, 5vw, 3.5rem)',
+              fontWeight: 700,
+              color: '#fff',
+              textShadow: '0 4px 20px rgba(0,0,0,0.4)',
+            }}
+          >
+            🎉 Quiz Terminé !
+          </h1>
+
+          {/* Podium — order: 2nd | 1st | 3rd */}
+          <div className="flex items-end justify-center gap-0 mb-0">
+            {p2
+              ? podiumStep(p2.name, p2.score, p2.avatar, '🥈', 110, 140,
+                  'linear-gradient(170deg,#E8E8E8 0%,#B8B8B8 100%)',
+                  '#444', 'lg',
+                  'inset 0 1px 0 rgba(255,255,255,0.5)')
+              : <div style={{ width: 140 }} />}
+
+            {p1
+              ? podiumStep(p1.name, p1.score, p1.avatar, '🥇', 160, 160,
+                  'linear-gradient(170deg,#FFE566 0%,#FFB800 100%)',
+                  '#7a4000', 'xl',
+                  'inset 0 1px 0 rgba(255,255,255,0.5), 0 -10px 36px rgba(255,184,0,0.55)')
+              : <div style={{ width: 160 }} />}
+
+            {p3
+              ? podiumStep(p3.name, p3.score, p3.avatar, '🥉', 80, 130,
+                  'linear-gradient(170deg,#E8A87C 0%,#CD7F32 100%)',
+                  '#4a2000', 'lg',
+                  'inset 0 1px 0 rgba(255,255,255,0.4)')
+              : <div style={{ width: 130 }} />}
           </div>
 
-          <div className="mb-8 grid gap-6 md:grid-cols-3">
-            {sortedPlayers.slice(0, 3).map((player, index) => (
-              <Card key={player.id} className={cn(
-                "transform border border-white/10 bg-black/35 backdrop-blur-xl shadow-xl transition-all hover:scale-105",
-                index === 0 && "border-yellow-400/60 bg-yellow-500/25",
-                index === 1 && "border-slate-300/60 bg-slate-400/20",
-                index === 2 && "border-orange-400/60 bg-orange-500/25"
-              )}>
-                <CardContent className="p-8 text-center">
-                  <div className="mb-3 text-5xl drop-shadow">
-                    {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
-                  </div>
-                  <div className="mb-2 text-2xl font-bold text-white drop-shadow-lg">{player.name}</div>
-                  <div className="text-lg font-semibold text-white">{player.score} points</div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          {/* Podium floor */}
+          <div
+            style={{
+              height: 7,
+              background: 'rgba(255,255,255,0.18)',
+              borderRadius: '0 0 10px 10px',
+              marginBottom: 28,
+            }}
+          />
+
+          {/* Players 4+ */}
+          {sortedPlayers.length > 3 && (
+            <div className="space-y-2 mb-8 max-w-lg mx-auto">
+              {sortedPlayers.slice(3).map((player, idx) => (
+                <div
+                  key={player.id}
+                  className="flex items-center gap-3 rounded-xl px-4 py-2.5"
+                  style={{
+                    background: 'rgba(255,255,255,0.1)',
+                    border: '1px solid rgba(255,255,255,0.15)',
+                  }}
+                >
+                  <span
+                    className="font-bold text-white/70 text-sm w-5 text-center"
+                    style={{ fontFamily: 'var(--ap-font-display)' }}
+                  >
+                    {idx + 4}
+                  </span>
+                  <AvatarDisplay emoji={player.avatar} size="sm" />
+                  <span
+                    className="flex-1 text-left font-bold text-white truncate text-sm"
+                    style={{ fontFamily: 'var(--ap-font-body)' }}
+                  >
+                    {player.name}
+                  </span>
+                  <span
+                    className="font-bold text-white/80 text-sm"
+                    style={{ fontFamily: 'var(--ap-font-display)' }}
+                  >
+                    {player.score.toLocaleString()} pts
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
 
           {isHost && (
             <div className="flex justify-center gap-4">
               <Button
                 variant="outline"
                 onClick={exportResults}
-                className="border-white/30 bg-black/40 text-lg font-bold text-slate-100 shadow-xl backdrop-blur hover:bg-black/60"
+                className="border-white/30 bg-black/40 font-bold text-slate-100 shadow-xl backdrop-blur hover:bg-black/60"
               >
                 <Download className="w-5 h-5 mr-2" />
-                Exporter les résultats
+                Exporter
               </Button>
-              <Button variant="hero" onClick={() => window.location.href = '/'} className="text-lg font-bold shadow-xl">
+              <Button variant="hero" onClick={() => window.location.href = '/'} className="font-bold shadow-xl">
                 🎮 Nouveau Quiz
               </Button>
             </div>
