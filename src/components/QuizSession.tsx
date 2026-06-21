@@ -1113,7 +1113,7 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
                 letterSpacing: '-1px',
               }}
             >
-              🎉 Quiz Terminé !
+              Quiz Terminé !
             </h1>
 
             {/* Players 4+ — scrollable middle zone */}
