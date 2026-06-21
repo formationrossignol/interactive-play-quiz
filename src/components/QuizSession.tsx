@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Users, Clock, Trophy, Settings, Download, LogOut } from "lucide-react";
 import { QRCodeGenerator } from "./QRCodeGenerator";
 import { WordCloudQuestion } from "./WordCloudQuestion";
@@ -523,11 +524,47 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
             </div>
           )}
           
-          <ExitQuizDialog 
+          <ExitQuizDialog
             open={showExitDialog}
             onOpenChange={setShowExitDialog}
             onConfirm={handleExitQuiz}
           />
+
+          <Dialog open={showSettings} onOpenChange={setShowSettings}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Paramètres du quiz</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Titre</span>
+                  <span className="font-medium">{quiz.title}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Questions</span>
+                  <span className="font-medium">{quiz.questions.length}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Code</span>
+                  <span className="font-mono font-medium">{quiz.gameCode}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Temps de transition</span>
+                  <span className="font-medium">{quiz.transitionTime ?? 5} s</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Thème</span>
+                  <span className="font-medium">{selectedTheme?.name ?? "Défaut"}</span>
+                </div>
+                {quiz.font && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Police</span>
+                    <span className="font-medium">{quiz.font}</span>
+                  </div>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
 
           <div className="grid gap-6 lg:grid-cols-3">
             {/* QR Code & Join Info */}
