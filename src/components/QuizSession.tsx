@@ -16,6 +16,7 @@ import { ExitQuizDialog } from "./ExitQuizDialog";
 import { CircularTimer } from "./CircularTimer";
 import { QuizSessionAnswerDistribution } from "./QuizSession_AnswerDistribution";
 import { RaceLeaderboard } from "./RaceLeaderboard";
+import { Fireworks } from "./Fireworks";
 import { TransitionTimer } from "./TransitionTimer";
 import { AvatarDisplay } from "./BetterAvatars";
 import { cn } from "@/lib/utils";
@@ -578,69 +579,63 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
 
   if (gameState === 'waiting') {
     return (
-      <ThemedBackground className="p-4 text-slate-100">
+      <div style={{ background: 'var(--ap-paper)', minHeight: '100vh', fontFamily: 'var(--ap-font-body)' }} className="p-4">
         <div className="mx-auto max-w-6xl space-y-6">
-          {headerImage && (
-            <Card className="overflow-hidden border border-white/10 bg-black/30 shadow-2xl backdrop-blur">
-              <div className="relative h-56 w-full md:h-64">
-                <img
-                  src={headerImage}
-                  alt={`Illustration pour ${quiz.title}`}
-                  className="h-full w-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" aria-hidden />
-                <div className="absolute inset-x-0 bottom-0 p-6">
-                  <h1 className="text-3xl font-bold text-white drop-shadow-lg md:text-4xl">{quiz.title}</h1>
-                  {quiz.description && (
-                    <p className="mt-2 max-w-3xl text-sm text-slate-200 md:text-base">
-                      {quiz.description}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </Card>
-          )}
 
-          {/* Host Controls */}
-          {isHost && (
-            <div className="flex flex-col gap-4 rounded-2xl border border-white/10 bg-slate-900/30 p-6 shadow-xl backdrop-blur">
-              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <h2 className="text-2xl font-semibold text-white drop-shadow">{quiz.title}</h2>
-                  {quiz.description && (
-                    <p className="text-sm text-slate-200 md:text-base">{quiz.description}</p>
-                  )}
-                </div>
-                <div className="flex flex-wrap gap-3">
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowExitDialog(true)}
-                    className="border-white/30 bg-black/40 text-slate-100 backdrop-blur hover:bg-black/60"
-                  >
-                    <LogOut className="w-4 h-4 mr-2" />
-                    Quitter
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowSettings(!showSettings)}
-                    className="border-white/30 bg-black/40 text-slate-100 backdrop-blur hover:bg-black/60"
-                  >
-                    <Settings className="w-4 h-4 mr-2" />
-                    Paramètres
-                  </Button>
-                  <Button variant="hero" size="lg" onClick={startQuiz} disabled={players.length === 0}>
-                    Lancer le quiz ({players.length} joueurs)
-                  </Button>
+          {/* Header image */}
+          {headerImage && (
+            <div style={{ borderRadius: 'var(--ap-r-xl)', overflow: 'hidden', border: '2px solid var(--ap-line)', boxShadow: 'var(--ap-shadow-card)' }}>
+              <div className="relative h-48 w-full md:h-56">
+                <img src={headerImage} alt={`Illustration pour ${quiz.title}`} className="h-full w-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" aria-hidden />
+                <div className="absolute inset-x-0 bottom-0 p-5">
+                  <h1 style={{ fontFamily: 'var(--ap-font-display)', color: '#fff', fontSize: 'clamp(1.5rem,3vw,2.2rem)', fontWeight: 700, margin: 0 }}>{quiz.title}</h1>
+                  {quiz.description && <p className="mt-1 text-sm text-white/80 font-semibold">{quiz.description}</p>}
                 </div>
               </div>
             </div>
           )}
-          
-          <ExitQuizDialog
-            open={showExitDialog}
-            onOpenChange={setShowExitDialog}
-            onConfirm={handleExitQuiz}
-          />
+
+          {/* Host Controls */}
+          {isHost && (
+            <div className="ap-card" style={{ boxShadow: 'var(--ap-shadow-card)' }}>
+              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div>
+                  {!headerImage && (
+                    <h2 style={{ fontFamily: 'var(--ap-font-display)', color: 'var(--ap-ink)', fontSize: '1.6rem', fontWeight: 700, margin: 0 }}>{quiz.title}</h2>
+                  )}
+                  {quiz.description && !headerImage && (
+                    <p style={{ color: 'var(--ap-muted)', fontWeight: 700, marginTop: 4 }}>{quiz.description}</p>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  <button onClick={() => setShowExitDialog(true)} className="ap-btn ap-btn--ghost ap-btn--sm">
+                    <LogOut className="w-4 h-4" />
+                    Quitter
+                  </button>
+                  <button onClick={() => setShowSettings(!showSettings)} className="ap-btn ap-btn--ghost ap-btn--sm">
+                    <Settings className="w-4 h-4" />
+                    Paramètres
+                  </button>
+                  <button
+                    onClick={startQuiz}
+                    disabled={players.length === 0}
+                    className="ap-btn ap-btn--lg ap-btn--pill"
+                    style={{
+                      background: players.length === 0 ? 'var(--ap-muted)' : 'var(--ap-brand)',
+                      boxShadow: players.length === 0 ? 'none' : '0 5px 0 var(--ap-brand-deep)',
+                      cursor: players.length === 0 ? 'not-allowed' : 'pointer',
+                      opacity: players.length === 0 ? 0.6 : 1,
+                    }}
+                  >
+                    🚀 Lancer le quiz ({players.length} joueurs)
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <ExitQuizDialog open={showExitDialog} onOpenChange={setShowExitDialog} onConfirm={handleExitQuiz} />
 
           <Dialog open={showSettings} onOpenChange={setShowSettings}>
             <DialogContent className="sm:max-w-md">
@@ -648,176 +643,143 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
                 <DialogTitle>Paramètres du quiz</DialogTitle>
               </DialogHeader>
               <div className="space-y-3 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Titre</span>
-                  <span className="font-medium">{quiz.title}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Questions</span>
-                  <span className="font-medium">{quiz.questions.length}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Code</span>
-                  <span className="font-mono font-medium">{quiz.gameCode}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Temps de transition</span>
-                  <span className="font-medium">{quiz.transitionTime ?? 5} s</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Thème</span>
-                  <span className="font-medium">{selectedTheme?.name ?? "Défaut"}</span>
-                </div>
-                {quiz.font && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Police</span>
-                    <span className="font-medium">{quiz.font}</span>
+                {[
+                  { label: 'Titre', value: quiz.title },
+                  { label: 'Questions', value: quiz.questions.length },
+                  { label: 'Code', value: quiz.gameCode, mono: true },
+                  { label: 'Transition', value: `${quiz.transitionTime ?? 5} s` },
+                  { label: 'Thème', value: selectedTheme?.name ?? 'Défaut' },
+                  ...(quiz.font ? [{ label: 'Police', value: quiz.font }] : []),
+                ].map(({ label, value, mono }) => (
+                  <div key={label} className="flex justify-between">
+                    <span className="text-muted-foreground">{label}</span>
+                    <span className={mono ? 'font-mono font-medium' : 'font-medium'}>{value}</span>
                   </div>
-                )}
+                ))}
               </div>
             </DialogContent>
           </Dialog>
 
           <div className="grid gap-6 lg:grid-cols-3">
-            {/* QR Code & Join Info */}
+            {/* QR + infos */}
             <div className="space-y-4 lg:col-span-1">
               {sessionReady ? (
                 <QRCodeGenerator gameCode={quiz.gameCode} joinUrl={joinUrl} />
               ) : (
-                <Card className="border border-white/10 bg-black/30 text-slate-100 backdrop-blur">
-                  <CardContent className="flex flex-col items-center justify-center p-10 gap-3 text-slate-200">
-                    <Settings className="w-8 h-8 animate-spin opacity-60" />
-                    <span className="text-sm font-semibold">Synchronisation…</span>
-                  </CardContent>
-                </Card>
+                <div className="ap-card flex flex-col items-center justify-center gap-3 py-10">
+                  <Settings className="w-8 h-8 animate-spin" style={{ color: 'var(--ap-muted)' }} />
+                  <span className="text-sm font-semibold" style={{ color: 'var(--ap-muted)' }}>Synchronisation…</span>
+                </div>
               )}
-              <Card className="border border-white/10 bg-black/30 text-slate-100 backdrop-blur">
-                <CardContent className="space-y-2 p-4 text-sm">
-                  <div className="flex items-center gap-2 text-slate-200">
-                    <Users className="h-4 w-4" />
-                    <span>{players.length} joueur(s) en attente</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-slate-200">
-                    <Clock className="h-4 w-4" />
-                    <span>Transition : {quiz.transitionTime ?? 5} s</span>
-                  </div>
-                </CardContent>
-              </Card>
+              <div className="ap-card" style={{ padding: '14px 18px' }}>
+                <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--ap-ink)', fontWeight: 700 }}>
+                  <Users className="h-4 w-4" style={{ color: 'var(--ap-brand)' }} />
+                  <span>{players.length} joueur(s) en attente</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm mt-2" style={{ color: 'var(--ap-muted)', fontWeight: 700 }}>
+                  <Clock className="h-4 w-4" />
+                  <span>Transition : {quiz.transitionTime ?? 5} s</span>
+                </div>
+              </div>
             </div>
 
-            {/* Players List */}
+            {/* Players list */}
             <div className="lg:col-span-2">
-              <Card className="border border-white/10 bg-black/35 shadow-xl backdrop-blur">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between mb-6">
-                    <h3 className="flex items-center gap-2 text-xl font-bold text-white">
-                      <Users className="w-5 h-5" />
-                      Participants ({players.length})
-                    </h3>
-                    {isHost && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={exportResults}
-                        className="border-white/30 bg-black/40 text-slate-100 backdrop-blur hover:bg-black/60"
-                      >
-                        <Download className="w-4 h-4 mr-2" />
-                        Exporter
-                      </Button>
-                    )}
-                  </div>
-
-                  <div className="grid max-h-96 gap-3 overflow-y-auto md:grid-cols-2 lg:grid-cols-3">
-                    {players.map((player) => (
-                      <div
-                        key={player.id}
-                        className="flex items-center gap-3 rounded-lg border border-white/10 bg-slate-900/40 p-3 text-sm text-slate-100 shadow-sm backdrop-blur-md animate-fade-in"
-                      >
-                        <AvatarDisplay emoji={player.avatar} size="sm" />
-                        <span className="flex-1 truncate">{player.name}</span>
-                      </div>
-                    ))}
-                    {players.length === 0 && (
-                      <div className="col-span-full py-8 text-center text-slate-200">
-                        <p>En attente des participants…</p>
-                        <p className="mt-2 text-sm text-slate-300">Partagez le QR code ou le code de jeu</p>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+              <div className="ap-card" style={{ boxShadow: 'var(--ap-shadow-card)' }}>
+                <div className="flex items-center justify-between mb-5">
+                  <h3 style={{ fontFamily: 'var(--ap-font-display)', color: 'var(--ap-ink)', fontSize: '1.2rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
+                    <Users className="w-5 h-5" style={{ color: 'var(--ap-brand)' }} />
+                    Participants ({players.length})
+                  </h3>
+                  {isHost && (
+                    <button onClick={exportResults} className="ap-btn ap-btn--ghost ap-btn--sm">
+                      <Download className="w-4 h-4" />
+                      Exporter
+                    </button>
+                  )}
+                </div>
+                <div className="grid max-h-96 gap-2 overflow-y-auto md:grid-cols-2 lg:grid-cols-3">
+                  {players.map((player) => (
+                    <div
+                      key={player.id}
+                      className="animate-fade-in flex items-center gap-3 p-3 text-sm"
+                      style={{
+                        background: 'var(--ap-paper)',
+                        border: '2px solid var(--ap-line)',
+                        borderRadius: 'var(--ap-r-md)',
+                        color: 'var(--ap-ink)',
+                        fontWeight: 700,
+                      }}
+                    >
+                      <AvatarDisplay emoji={player.avatar} size="sm" />
+                      <span className="flex-1 truncate">{player.name}</span>
+                    </div>
+                  ))}
+                  {players.length === 0 && (
+                    <div className="col-span-full py-8 text-center" style={{ color: 'var(--ap-muted)', fontWeight: 700 }}>
+                      <p>En attente des participants…</p>
+                      <p className="mt-2 text-sm">Partagez le QR code ou le code de jeu</p>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 
           {/* Session History */}
           {isHost && sessionHistory.length > 0 && (
-            <Card className="border border-white/10 bg-black/35 shadow-xl backdrop-blur">
-              <CardContent className="p-6">
-                <h3 className="mb-4 flex items-center gap-2 text-xl font-bold text-white">
-                  <Trophy className="w-5 h-5 text-yellow-400" />
-                  Sessions précédentes
-                </h3>
-                <div className="space-y-4">
-                  {sessionHistory.map((run) => {
-                    const sorted = [...run.players].sort((a, b) => b.score - a.score);
-                    return (
-                      <details key={run.id} className="group rounded-lg border border-white/10 bg-black/20 p-4">
-                        <summary className="flex cursor-pointer items-center justify-between text-slate-200 list-none">
-                          <span className="font-semibold">
-                            {new Date(run.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                          </span>
-                          <span className="text-sm text-slate-400">{run.players.length} joueur(s) · {run.questionCount} questions</span>
-                        </summary>
-                        <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                          {sorted.map((p, idx) => (
-                            <div key={p.id} className="flex items-center gap-2 rounded border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-100">
-                              <span className="w-5 text-center">{idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}.`}</span>
-                              <AvatarDisplay emoji={p.avatar} size="sm" />
-                              <span className="flex-1 truncate">{p.name}</span>
-                              <span className="font-semibold text-yellow-300">{p.score} pts</span>
-                            </div>
-                          ))}
-                        </div>
-                      </details>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
+            <div className="ap-card">
+              <h3 style={{ fontFamily: 'var(--ap-font-display)', color: 'var(--ap-ink)', fontSize: '1.1rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                <Trophy className="w-5 h-5" style={{ color: 'var(--ap-flash)' }} />
+                Sessions précédentes
+              </h3>
+              <div className="space-y-3">
+                {sessionHistory.map((run) => {
+                  const sorted = [...run.players].sort((a, b) => b.score - a.score);
+                  return (
+                    <details key={run.id} style={{ border: '2px solid var(--ap-line)', borderRadius: 'var(--ap-r-md)', padding: '12px 16px' }}>
+                      <summary className="flex cursor-pointer items-center justify-between list-none" style={{ color: 'var(--ap-ink)', fontWeight: 700 }}>
+                        <span>{new Date(run.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                        <span className="text-sm" style={{ color: 'var(--ap-muted)' }}>{run.players.length} joueur(s) · {run.questionCount} questions</span>
+                      </summary>
+                      <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                        {sorted.map((p, idx) => (
+                          <div key={p.id} className="flex items-center gap-2 px-3 py-2 text-sm" style={{ background: 'var(--ap-paper)', border: '2px solid var(--ap-line)', borderRadius: 'var(--ap-r-sm)', color: 'var(--ap-ink)', fontWeight: 700 }}>
+                            <span className="w-5 text-center">{idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}.`}</span>
+                            <AvatarDisplay emoji={p.avatar} size="sm" />
+                            <span className="flex-1 truncate">{p.name}</span>
+                            <span style={{ color: 'var(--ap-flash-deep)', fontWeight: 800 }}>{p.score} pts</span>
+                          </div>
+                        ))}
+                      </div>
+                    </details>
+                  );
+                })}
+              </div>
+            </div>
           )}
 
-          {/* Quiz Preview */}
+          {/* Quiz preview stats */}
           {isHost && (
-            <Card className="border border-white/10 bg-black/35 shadow-xl backdrop-blur">
-              <CardContent className="p-6">
-                <h3 className="mb-4 text-xl font-bold text-white">Aperçu du quiz</h3>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-white drop-shadow">{quiz.questions.length}</div>
-                    <div className="text-sm text-slate-300">Questions</div>
+            <div className="ap-card">
+              <h3 style={{ fontFamily: 'var(--ap-font-display)', color: 'var(--ap-ink)', fontSize: '1.1rem', fontWeight: 700, marginBottom: 16 }}>Aperçu du quiz</h3>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                {[
+                  { value: quiz.questions.length, label: 'Questions', color: 'var(--ap-brand)' },
+                  { value: `${Math.round(quiz.questions.reduce((s, q) => s + q.timeLimit, 0) / 60)}m`, label: 'Durée estimée', color: 'var(--ap-poll)' },
+                  { value: quiz.questions.reduce((s, q) => s + q.points, 0), label: 'Points totaux', color: 'var(--ap-flash-deep)' },
+                  { value: players.length, label: 'Participants', color: 'var(--ap-pres)' },
+                ].map(({ value, label, color }) => (
+                  <div key={label} className="text-center p-3" style={{ background: 'var(--ap-paper)', border: '2px solid var(--ap-line)', borderRadius: 'var(--ap-r-md)' }}>
+                    <div style={{ fontFamily: 'var(--ap-font-display)', fontSize: '1.8rem', fontWeight: 700, color }}>{value}</div>
+                    <div className="text-sm" style={{ color: 'var(--ap-muted)', fontWeight: 700 }}>{label}</div>
                   </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-white drop-shadow">
-                      {Math.round(quiz.questions.reduce((sum, q) => sum + q.timeLimit, 0) / 60)}m
-                    </div>
-                    <div className="text-sm text-slate-300">Durée estimée</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-white drop-shadow">
-                      {quiz.questions.reduce((sum, q) => sum + q.points, 0)}
-                    </div>
-                    <div className="text-sm text-slate-300">Points totaux</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-white drop-shadow">{players.length}</div>
-                    <div className="text-sm text-slate-300">Participants</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                ))}
+              </div>
+            </div>
           )}
         </div>
-      </ThemedBackground>
+      </div>
     );
   }
 
@@ -1142,6 +1104,7 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
 
     return (
       <div style={{ background: 'var(--ap-paper)', minHeight: '100vh', fontFamily: 'var(--ap-font-body)' }} className="relative">
+        <Fireworks />
         {/* Confetti — config pre-computed at module level to avoid Math.random() per render */}
         <div className="fixed inset-0 pointer-events-none z-0">
           {CONFETTI_ITEMS.map((c, i) => (

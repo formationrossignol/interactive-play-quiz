@@ -1,7 +1,5 @@
 import { useEffect, useRef } from "react";
 import QRCode from "qrcode";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Download, Share2, Copy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -17,12 +15,9 @@ export const QRCodeGenerator = ({ gameCode, joinUrl }: QRCodeGeneratorProps) => 
   useEffect(() => {
     if (canvasRef.current) {
       QRCode.toCanvas(canvasRef.current, joinUrl, {
-        width: 256,
+        width: 220,
         margin: 2,
-        color: {
-          dark: '#000000',
-          light: '#FFFFFF',
-        },
+        color: { dark: '#241b3a', light: '#ffffff' },
       });
     }
   }, [joinUrl]);
@@ -39,18 +34,9 @@ export const QRCodeGenerator = ({ gameCode, joinUrl }: QRCodeGeneratorProps) => 
   const copyJoinUrl = async () => {
     try {
       await navigator.clipboard.writeText(joinUrl);
-      toast({
-        title: "Copied!",
-        description: "Join URL copied to clipboard",
-        duration: 2000,
-      });
-    } catch (error) {
-      toast({
-        title: "Copy failed",
-        description: "Unable to copy to clipboard",
-        variant: "destructive",
-        duration: 2000,
-      });
+      toast({ title: "Lien copié !", duration: 2000 });
+    } catch {
+      toast({ title: "Échec de la copie", variant: "destructive", duration: 2000 });
     }
   };
 
@@ -58,68 +44,75 @@ export const QRCodeGenerator = ({ gameCode, joinUrl }: QRCodeGeneratorProps) => 
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'Rejoignez mon quiz!',
-          text: `Utilisez le code ${gameCode} pour rejoindre le quiz`,
+          title: 'Rejoignez mon quiz !',
+          text: `Code : ${gameCode}`,
           url: joinUrl,
         });
-        toast({
-          title: "Partagé!",
-          description: "Quiz partagé avec succès",
-          duration: 2000,
-        });
       } catch (error) {
-        // User cancelled share
-        if ((error as Error).name !== 'AbortError') {
-          toast({
-            title: "Erreur",
-            description: "Impossible de partager",
-            variant: "destructive",
-            duration: 2000,
-          });
-        }
+        if ((error as Error).name !== 'AbortError') copyJoinUrl();
       }
     } else {
-      // Fallback: copy to clipboard
       copyJoinUrl();
     }
   };
 
   return (
-    <Card className="bg-white/10 backdrop-blur-lg border-white/20">
-      <CardContent className="p-6 text-center">
-        <h3 className="text-xl font-bold text-white mb-4">Join the Quiz</h3>
-        
-        <div className="mb-6">
-          <canvas 
-            ref={canvasRef} 
-            className="mx-auto border-4 border-white rounded-lg bg-white"
-          />
-        </div>
+    <div className="ap-card" style={{ textAlign: 'center', boxShadow: 'var(--ap-shadow-card)' }}>
+      <h3 style={{
+        fontFamily: 'var(--ap-font-display)',
+        fontSize: '1.15rem',
+        fontWeight: 700,
+        color: 'var(--ap-ink)',
+        marginBottom: 16,
+      }}>
+        Rejoindre le quiz
+      </h3>
 
-        <div className="mb-6">
-          <div className="text-4xl font-mono text-white mb-2 tracking-wider font-bold">
-            {gameCode}
-          </div>
-          <p className="text-white/60 text-sm">Scan QR code or use this code</p>
-        </div>
+      <div style={{ marginBottom: 16 }}>
+        <canvas
+          ref={canvasRef}
+          style={{
+            display: 'block',
+            margin: '0 auto',
+            borderRadius: 'var(--ap-r-md)',
+            border: '3px solid var(--ap-line)',
+            background: '#fff',
+          }}
+        />
+      </div>
 
-        <div className="space-y-2">
-          <div className="flex gap-2">
-            <Button variant="quiz" size="sm" onClick={copyJoinUrl} className="flex-1">
-              <Copy className="w-4 h-4 mr-2" />
-              Copy Link
-            </Button>
-            <Button variant="quiz" size="sm" onClick={shareQuiz} className="flex-1">
-              <Share2 className="w-4 h-4 mr-2" />
-              Share
-            </Button>
-          </div>
-          <Button variant="outline" size="sm" onClick={downloadQRCode} className="w-full">
-            <Download className="w-4 h-4 mr-2" />
-            Download QR Code
-          </Button>
+      <div style={{ marginBottom: 16 }}>
+        <div style={{
+          fontFamily: 'var(--ap-font-display)',
+          fontSize: '2.4rem',
+          fontWeight: 700,
+          color: 'var(--ap-brand)',
+          letterSpacing: '0.12em',
+          lineHeight: 1.1,
+        }}>
+          {gameCode}
         </div>
-      </CardContent>
-    </Card>
+        <p style={{ color: 'var(--ap-muted)', fontSize: 13, fontWeight: 700, marginTop: 4 }}>
+          Scannez le QR code ou utilisez ce code
+        </p>
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={copyJoinUrl} className="ap-btn ap-btn--sm ap-btn--ghost" style={{ flex: 1 }}>
+            <Copy className="w-4 h-4" />
+            Copier
+          </button>
+          <button onClick={shareQuiz} className="ap-btn ap-btn--sm ap-btn--ghost" style={{ flex: 1 }}>
+            <Share2 className="w-4 h-4" />
+            Partager
+          </button>
+        </div>
+        <button onClick={downloadQRCode} className="ap-btn ap-btn--sm ap-btn--ghost" style={{ width: '100%' }}>
+          <Download className="w-4 h-4" />
+          Télécharger le QR
+        </button>
+      </div>
+    </div>
   );
 };
