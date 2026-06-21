@@ -63,7 +63,7 @@ export const saveQuiz = (quiz: Omit<SavedQuiz, 'id' | 'createdAt' | 'userId'>): 
     transitionTime: quiz.transitionTime ?? 5,
     category: quiz.category || 'Autre',
     type: quiz.type || 'quiz',
-    id: Date.now().toString(),
+    id: (Math.floor(Math.random() * 900000) + 100000).toString(),
     createdAt: new Date().toISOString(),
     userId: user.id
   };
