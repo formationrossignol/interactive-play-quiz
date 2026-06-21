@@ -89,13 +89,6 @@ interface QuizSessionProps {
   isHost?: boolean;
 }
 
-// Pre-computed once so Math.random() doesn't re-run on every re-render of the final screen
-const CONFETTI_ITEMS = Array.from({ length: 80 }, () => ({
-  left: Math.random() * 100,
-  color: ['#ffb020', '#ff5a4d', '#15c08a', '#7048ff', '#2f7bff'][Math.floor(Math.random() * 5)],
-  delay: Math.random() * 3,
-  duration: 2 + Math.random() * 2,
-}));
 
 interface PlayerSidebarItemProps {
   player: Player;
@@ -1105,28 +1098,13 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
     return (
       <div style={{ background: 'var(--ap-paper)', minHeight: '100vh', fontFamily: 'var(--ap-font-body)' }} className="relative">
         <Fireworks />
-        {/* Confetti — config pre-computed at module level to avoid Math.random() per render */}
-        <div className="fixed inset-0 pointer-events-none z-0">
-          {CONFETTI_ITEMS.map((c, i) => (
-            <div
-              key={i}
-              className="absolute w-3 h-3 rounded-full animate-confetti"
-              style={{
-                left: `${c.left}%`,
-                backgroundColor: c.color,
-                animationDelay: `${c.delay}s`,
-                animationDuration: `${c.duration}s`,
-              }}
-            />
-          ))}
-        </div>
 
         <div className="relative z-10 flex min-h-screen">
           {/* ── Main content ── */}
-          <div className="flex-1 overflow-auto px-4 pt-8 pb-10 text-center">
+          <div className="flex-1 flex flex-col overflow-auto px-4 pt-8 text-center">
             {/* Title */}
             <h1
-              className="mb-8"
+              className="mb-4 flex-shrink-0"
               style={{
                 fontFamily: 'var(--ap-font-display)',
                 fontSize: 'clamp(2.2rem, 5vw, 3.5rem)',
@@ -1138,43 +1116,9 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
               🎉 Quiz Terminé !
             </h1>
 
-            {/* Podium — order: 2nd | 1st | 3rd */}
-            <div className="flex items-end justify-center gap-0 mb-0">
-              {p2
-                ? podiumStep(p2.name, p2.score, p2.avatar, '🥈', 110, 140,
-                    'linear-gradient(170deg,#E8E8E8 0%,#B8B8B8 100%)',
-                    '#444', 'lg',
-                    'inset 0 1px 0 rgba(255,255,255,0.5)')
-                : <div style={{ width: 140 }} />}
-
-              {p1
-                ? podiumStep(p1.name, p1.score, p1.avatar, '🥇', 160, 160,
-                    'linear-gradient(170deg,#FFE566 0%,#FFB800 100%)',
-                    '#7a4000', 'xl',
-                    'inset 0 1px 0 rgba(255,255,255,0.5), 0 -10px 36px rgba(255,184,0,0.55)')
-                : <div style={{ width: 160 }} />}
-
-              {p3
-                ? podiumStep(p3.name, p3.score, p3.avatar, '🥉', 80, 130,
-                    'linear-gradient(170deg,#E8A87C 0%,#CD7F32 100%)',
-                    '#4a2000', 'lg',
-                    'inset 0 1px 0 rgba(255,255,255,0.4)')
-                : <div style={{ width: 130 }} />}
-            </div>
-
-            {/* Podium floor */}
-            <div
-              style={{
-                height: 7,
-                background: 'var(--ap-line)',
-                borderRadius: '0 0 10px 10px',
-                marginBottom: 28,
-              }}
-            />
-
-            {/* Players 4+ */}
-            {sortedPlayers.length > 3 && (
-              <div className="space-y-2 mb-8 max-w-lg mx-auto">
+            {/* Players 4+ — scrollable middle zone */}
+            {sortedPlayers.length > 3 ? (
+              <div className="flex-1 overflow-y-auto space-y-2 mb-6 max-w-lg mx-auto w-full">
                 {sortedPlayers.slice(3).map((player, idx) => (
                   <div
                     key={player.id}
@@ -1208,14 +1152,44 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
                   </div>
                 ))}
               </div>
+            ) : (
+              <div className="flex-1" />
             )}
 
+            {/* Podium — order: 2nd | 1st | 3rd — pinned to bottom */}
+            <div className="flex items-end justify-center gap-0 flex-shrink-0">
+              {p2
+                ? podiumStep(p2.name, p2.score, p2.avatar, '🥈', 110, 140,
+                    'linear-gradient(170deg,#E8E8E8 0%,#B8B8B8 100%)',
+                    '#444', 'lg',
+                    'inset 0 1px 0 rgba(255,255,255,0.5)')
+                : <div style={{ width: 140 }} />}
+
+              {p1
+                ? podiumStep(p1.name, p1.score, p1.avatar, '🥇', 160, 160,
+                    'linear-gradient(170deg,#FFE566 0%,#FFB800 100%)',
+                    '#7a4000', 'xl',
+                    'inset 0 1px 0 rgba(255,255,255,0.5), 0 -10px 36px rgba(255,184,0,0.55)')
+                : <div style={{ width: 160 }} />}
+
+              {p3
+                ? podiumStep(p3.name, p3.score, p3.avatar, '🥉', 80, 130,
+                    'linear-gradient(170deg,#E8A87C 0%,#CD7F32 100%)',
+                    '#4a2000', 'lg',
+                    'inset 0 1px 0 rgba(255,255,255,0.4)')
+                : <div style={{ width: 130 }} />}
+            </div>
+
+            {/* Podium floor */}
+            <div
+              className="flex-shrink-0"
+              style={{ height: 7, background: 'var(--ap-line)', borderRadius: '0 0 10px 10px' }}
+            />
+
+            {/* Buttons */}
             {isHost && (
-              <div className="flex justify-center gap-4 flex-wrap">
-                <button
-                  onClick={exportResults}
-                  className="ap-btn ap-btn--ghost"
-                >
+              <div className="flex justify-center gap-4 flex-wrap py-6 flex-shrink-0">
+                <button onClick={exportResults} className="ap-btn ap-btn--ghost">
                   <Download className="w-5 h-5" />
                   Exporter
                 </button>
