@@ -105,13 +105,19 @@ const pendingPlayerWrites = new Map<string, ReturnType<typeof setTimeout>>();
 const PLAYER_WRITE_DEBOUNCE_MS = 800;
 
 const flushPlayerToSupabase = (gameCode: string, player: SharedPlayer) => {
+  const isAnswer = player.lastAnswerQuestionIndex !== undefined;
   supabase
     .rpc("upsert_session_player", {
       p_game_code: gameCode,
       p_player: player as unknown as Record<string, unknown>,
     })
     .then(({ error }) => {
-      if (error) console.error("[Supabase player upsert error]", gameCode, error);
+      if (error) {
+        console.error("[Supabase player upsert error]", gameCode, error);
+        if (isAnswer) {
+          console.warn("[Answer write FAILED] player:", player.id, "q:", player.lastAnswerQuestionIndex);
+        }
+      }
     });
 };
 

@@ -125,6 +125,9 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
   // Tracks which question index the player has already answered — prevents poll from re-enabling buttons
   const answeredForIndexRef = useRef<number | null>(null);
 
+  // Holds the last submitted answer payload so retries can resend it
+  const pendingAnswerRef = useRef<{ player: SharedPlayer; questionIndex: number } | null>(null);
+
   // Wall-clock end time of the current timed phase (question or transition)
   const timerEndRef = useRef<number | null>(null);
   // Last question index for which we set timerEndRef — prevents mid-question Supabase resyncs
@@ -285,6 +288,30 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
     return () => clearInterval(interval);
   }, [playerId, gameCode, gameState]);
 
+  // Retry answer submission at 1.5s and 4s after initial send.
+  // Guards against concurrent RPC overwrites and transient network failures.
+  useEffect(() => {
+    if (!hasAnswered || !pendingAnswerRef.current) return;
+    const { player, questionIndex } = pendingAnswerRef.current;
+
+    const retry = () => {
+      if (pendingAnswerRef.current?.questionIndex !== questionIndex) return;
+      upsertPlayerInSession(gameCode, player, true);
+    };
+
+    const t1 = setTimeout(retry, 1500);
+    const t2 = setTimeout(retry, 4000);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, [hasAnswered, gameCode]);
+
+  // Clear pending answer when question changes
+  useEffect(() => {
+    pendingAnswerRef.current = null;
+  }, [currentQuestion]);
+
   const handleExitQuiz = () => {
     navigate("/");
   };
@@ -322,6 +349,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
           lastAnswerQuestionIndex: currentQuestion,
         };
         sessionStorage.setItem(`quiz-player-${gameCode}`, JSON.stringify(updated));
+        pendingAnswerRef.current = { player: updated, questionIndex: currentQuestion };
         upsertPlayerInSession(gameCode, updated, true); // urgent — bypasses debounce
         setPlayerScore(newScore);
       } catch {}
