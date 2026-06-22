@@ -220,10 +220,22 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
 
   const syncFromStorage = useCallback(() => {
     const session = readSessionState(quiz.gameCode);
-    const mappedPlayers = session.players.map(normalizeSharedPlayer);
-    setPlayers(mappedPlayers);
 
-    if (session.gameState && session.gameState !== gameStateRef.current) {
+    // During 'question', the host owns player data via Supabase polling.
+    // Player tabs on the same device write to the same localStorage key and can race,
+    // producing a stale or incomplete players array. Skip setPlayers here to avoid
+    // overwriting Supabase-fetched state with corrupted local data.
+    if (gameStateRef.current !== 'question') {
+      const mappedPlayers = session.players.map(normalizeSharedPlayer);
+      setPlayers(mappedPlayers);
+    }
+
+    // Never allow a stale player-tab write to downgrade game state (e.g. question → waiting).
+    // Only advance forward: waiting < transition < question < answer-distribution < leaderboard < final
+    const STATE_ORDER = ['waiting', 'transition', 'question', 'answer-distribution', 'leaderboard', 'final'];
+    const currentOrder = STATE_ORDER.indexOf(gameStateRef.current);
+    const newOrder = STATE_ORDER.indexOf(session.gameState);
+    if (session.gameState && newOrder > currentOrder) {
       setGameState(session.gameState);
     }
 
@@ -238,10 +250,6 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
       if (nextQuestion?.timeLimit) {
         setTimeLeft(nextQuestion.timeLimit);
       }
-    }
-
-    if (gameStateRef.current === 'question') {
-      setTimeLeft(session.timeLeft);
     }
 
   }, [normalizeSharedPlayer, quiz.gameCode, quiz.questions]);
@@ -329,7 +337,7 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
 
         // Disconnect detection: player is considered offline if heartbeat >15s stale
         if (gameState === 'question') {
-          const THRESHOLD_MS = 15000;
+          const THRESHOLD_MS = 25000;
           const now = Date.now();
           (data.players as SharedPlayer[]).forEach((p) => {
             if (!p.lastHeartbeat) return;
