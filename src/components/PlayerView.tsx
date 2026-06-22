@@ -471,7 +471,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
                     disabled={hasAnswered}
                   >
                     <span className="ap-answer__shape">{answerShapes[index % 4]}</span>
-                    {answer}
+                    <span className="ap-answer__text">{answer}</span>
                   </button>
                 ))}
               </div>
@@ -492,7 +492,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
                     disabled={hasAnswered}
                   >
                     <span className="ap-answer__shape">{index === 0 ? '✓' : '✗'}</span>
-                    {label}
+                    <span className="ap-answer__text">{label}</span>
                   </button>
                 ))}
               </div>

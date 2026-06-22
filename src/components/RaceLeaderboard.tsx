@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AvatarDisplay } from "./BetterAvatars";
 
 interface Player {
@@ -29,6 +29,17 @@ export const RaceLeaderboard = ({ players, onComplete, isHost = false, isLastQue
   const [showScores, setShowScores] = useState(false);
   const [countdown, setCountdown] = useState(AUTO_ADVANCE_MS);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const onCompleteRef = useRef(onComplete);
+  const firedRef = useRef(false);
+
+  useEffect(() => { onCompleteRef.current = onComplete; });
+
+  const stableOnComplete = useCallback(() => {
+    if (!firedRef.current) {
+      firedRef.current = true;
+      onCompleteRef.current?.();
+    }
+  }, []);
 
   useEffect(() => {
     setAnimatingPlayers(players.map(p => ({ ...p, score: p.previousScore ?? 0 })));
@@ -48,13 +59,13 @@ export const RaceLeaderboard = ({ players, onComplete, isHost = false, isLastQue
       const remaining = AUTO_ADVANCE_MS - (Date.now() - start);
       if (remaining <= 0) {
         clearInterval(intervalRef.current!);
-        onComplete?.();
+        stableOnComplete();
       } else {
         setCountdown(remaining);
       }
     }, 50);
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [showScores, isLastQuestion, isHost, onComplete]);
+  }, [showScores, isLastQuestion, isHost, stableOnComplete]);
 
   const sorted = [...animatingPlayers].sort((a, b) => b.score - a.score);
   const maxScore = Math.max(...sorted.map(p => p.score), 1);
@@ -194,7 +205,7 @@ export const RaceLeaderboard = ({ players, onComplete, isHost = false, isLastQue
         {isHost && showScores && isLastQuestion && (
           <div style={{ display: 'flex', justifyContent: 'center' }}>
             <button
-              onClick={onComplete}
+              onClick={stableOnComplete}
               className="ap-btn ap-btn--lg ap-btn--pill"
               style={{ background: 'var(--ap-quiz)', boxShadow: '0 5px 0 var(--ap-quiz-deep)' }}
             >

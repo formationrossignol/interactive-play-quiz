@@ -103,29 +103,30 @@ const pushStateToSupabase = (gameCode: string, state: SharedSessionState) => {
 const pendingPlayerWrites = new Map<string, ReturnType<typeof setTimeout>>();
 const PLAYER_WRITE_DEBOUNCE_MS = 800;
 
-const flushPlayersToSupabase = (gameCode: string, players: SharedPlayer[]) => {
+const flushPlayerToSupabase = (gameCode: string, player: SharedPlayer) => {
   supabase
-    .from("session_state")
-    .update({ players, updated_at: new Date().toISOString() })
-    .eq("game_code", gameCode)
+    .rpc("upsert_session_player", {
+      p_game_code: gameCode,
+      p_player: player as unknown as Record<string, unknown>,
+    })
     .then(({ error }) => {
-      if (error) console.error("[Supabase players-only write error]", gameCode, error);
+      if (error) console.error("[Supabase player upsert error]", gameCode, error);
     });
 };
 
-const pushPlayersOnlyToSupabase = (gameCode: string, players: SharedPlayer[], urgent = false) => {
+const pushSinglePlayerToSupabase = (gameCode: string, player: SharedPlayer, urgent = false) => {
   const pending = pendingPlayerWrites.get(gameCode);
   if (pending) clearTimeout(pending);
   pendingPlayerWrites.delete(gameCode);
 
   if (urgent) {
-    flushPlayersToSupabase(gameCode, players);
+    flushPlayerToSupabase(gameCode, player);
     return;
   }
 
   const timer = setTimeout(() => {
     pendingPlayerWrites.delete(gameCode);
-    flushPlayersToSupabase(gameCode, players);
+    flushPlayerToSupabase(gameCode, player);
   }, PLAYER_WRITE_DEBOUNCE_MS);
   pendingPlayerWrites.set(gameCode, timer);
 };
@@ -170,8 +171,8 @@ export const upsertPlayerInSession = (gameCode: string, player: SharedPlayer, ur
   // Only update players in localStorage (preserve local game state as-is)
   const next: SharedSessionState = { ...current, players, updatedAt: new Date().toISOString() };
   writeSessionState(gameCode, next);
-  // Only push players to Supabase — never overwrite host-controlled game_state
-  pushPlayersOnlyToSupabase(gameCode, players, urgent);
+  // Atomic RPC: upserts only this player, never overwrites others
+  pushSinglePlayerToSupabase(gameCode, normalizedPlayer, urgent);
   return players;
 };
 
@@ -180,7 +181,11 @@ export const removePlayerFromSession = (gameCode: string, playerId: string) => {
   const players = current.players.filter((player) => player.id !== playerId);
   const next: SharedSessionState = { ...current, players, updatedAt: new Date().toISOString() };
   writeSessionState(gameCode, next);
-  pushPlayersOnlyToSupabase(gameCode, players);
+  supabase
+    .rpc("remove_session_player", { p_game_code: gameCode, p_player_id: playerId })
+    .then(({ error }) => {
+      if (error) console.error("[Supabase player remove error]", gameCode, error);
+    });
   return players;
 };
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface TransitionTimerProps {
   duration: number;
@@ -7,6 +7,10 @@ interface TransitionTimerProps {
 
 export const TransitionTimer = ({ duration, onComplete }: TransitionTimerProps) => {
   const [timeLeft, setTimeLeft] = useState(duration);
+  const onCompleteRef = useRef(onComplete);
+  const firedRef = useRef(false);
+
+  useEffect(() => { onCompleteRef.current = onComplete; });
 
   useEffect(() => {
     if (timeLeft > 0) {
@@ -14,10 +18,11 @@ export const TransitionTimer = ({ duration, onComplete }: TransitionTimerProps) 
         setTimeLeft(prev => prev - 1);
       }, 1000);
       return () => clearTimeout(timer);
-    } else {
-      onComplete();
+    } else if (!firedRef.current) {
+      firedRef.current = true;
+      onCompleteRef.current();
     }
-  }, [timeLeft, onComplete]);
+  }, [timeLeft]);
 
   const percentage = duration > 0 ? (timeLeft / duration) * 100 : 0;
   const radius = 80;

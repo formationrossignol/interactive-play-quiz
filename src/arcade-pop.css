@@ -184,6 +184,11 @@
   border: none; cursor: pointer; text-align: left;
   box-shadow: 0 5px 0 rgba(0,0,0,.16);
   transition: transform .08s var(--ap-ease), box-shadow .08s var(--ap-ease);
+  min-width: 0;
+}
+.ap-answer__text {
+  flex: 1; min-width: 0;
+  overflow-wrap: break-word; word-break: break-word;
 }
 .ap-answer:hover  { transform: translateY(-1px); }
 .ap-answer:active { transform: translateY(4px); box-shadow: 0 1px 0 rgba(0,0,0,.16); }
