@@ -288,8 +288,8 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
     return () => clearInterval(interval);
   }, [playerId, gameCode, gameState]);
 
-  // Retry answer submission at 1.5s and 4s after initial send.
-  // Guards against concurrent RPC overwrites and transient network failures.
+  // Retry answer submission at 1.5s, 4s, 9s, 18s after initial send.
+  // Guards against "Failed to fetch" network blips — heartbeats also act as natural retries.
   useEffect(() => {
     if (!hasAnswered || !pendingAnswerRef.current) return;
     const { player, questionIndex } = pendingAnswerRef.current;
@@ -301,9 +301,13 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
 
     const t1 = setTimeout(retry, 1500);
     const t2 = setTimeout(retry, 4000);
+    const t3 = setTimeout(retry, 9000);
+    const t4 = setTimeout(retry, 18000);
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
+      clearTimeout(t3);
+      clearTimeout(t4);
     };
   }, [hasAnswered, gameCode]);
 

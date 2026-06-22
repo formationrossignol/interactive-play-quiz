@@ -57,7 +57,7 @@ export const ENHANCED_AVATARS: EnhancedAvatar[] = [
         <circle cx="65" cy="57" r="5.5" fill="#1A1A2E" />
         <circle cx="66.5" cy="55.5" r="1.5" fill="white" />
         <path d="M56 50 Q65 47 74 50" fill="none" stroke="#4A2A18" strokeWidth="2.5" strokeLinecap="round" />
-        <path d="M60 46 Q66 58" stroke="#CC7060" strokeWidth="1.5" strokeLinecap="round" />
+        <path d="M60 46 Q66 58 62 68" fill="none" stroke="#CC7060" strokeWidth="1.5" strokeLinecap="round" />
         <path d="M37 74 Q52 82 66 72" fill="none" stroke="#7A3A2A" strokeWidth="3" strokeLinecap="round" />
       </svg>
     ),

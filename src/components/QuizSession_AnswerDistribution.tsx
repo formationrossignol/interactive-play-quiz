@@ -16,8 +16,6 @@ export const QuizSessionAnswerDistribution = ({
   onSkipToNext,
   isHost
 }: QuizSessionAnswerDistributionProps) => {
-  if (!currentQuestion.answers) return null;
-
   return (
     <div className="min-h-screen bg-slate-950 p-4 text-slate-100">
       <div className="max-w-4xl mx-auto">
@@ -27,11 +25,13 @@ export const QuizSessionAnswerDistribution = ({
           </h1>
         </div>
 
-        <AnswerDistribution
-          answers={currentQuestion.answers}
-          distribution={answerDistribution}
-          correctAnswer={currentQuestion.correctAnswer}
-        />
+        {currentQuestion.answers && (
+          <AnswerDistribution
+            answers={currentQuestion.answers}
+            distribution={answerDistribution}
+            correctAnswer={currentQuestion.correctAnswer}
+          />
+        )}
 
         {isHost && (
           <div className="flex justify-center gap-4 mt-8">

@@ -461,16 +461,19 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
   };
 
   const showAnswerDistribution = async () => {
-    // Fetch latest player answers directly from Supabase (cross-device safe)
+    // Fetch latest player answers directly from Supabase (cross-device safe).
+    // Race against a 3s timeout so a hanging fetch can't block the advance.
     let freshPlayers: SharedPlayer[] = readSessionState(quiz.gameCode).players;
     try {
-      const { data } = await supabase
+      const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000));
+      const fetch = supabase
         .from('session_state')
         .select('players')
         .eq('game_code', quiz.gameCode)
         .single();
-      if (data?.players && Array.isArray(data.players)) {
-        freshPlayers = data.players as SharedPlayer[];
+      const result = await Promise.race([fetch, timeout]);
+      if (result && 'data' in result && result.data?.players && Array.isArray(result.data.players)) {
+        freshPlayers = result.data.players as SharedPlayer[];
       }
     } catch {}
 
