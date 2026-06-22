@@ -189,8 +189,6 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
     </div>
   );
 
-  const [hasSyncedPlayers, setHasSyncedPlayers] = useState(false);
-
   const normalizeSharedPlayer = useCallback((shared: SharedPlayer): Player => ({
     id: shared.id,
     name: shared.name,
@@ -246,7 +244,6 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
       setTimeLeft(session.timeLeft);
     }
 
-    setHasSyncedPlayers(true);
   }, [normalizeSharedPlayer, quiz.gameCode, quiz.questions]);
 
   // Run once on mount: init session and register storage listener
@@ -356,26 +353,6 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
     return () => clearInterval(interval);
   }, [isHost, gameState, quiz.gameCode, normalizeSharedPlayer]);
 
-  useEffect(() => {
-    if (!isHost || !hasSyncedPlayers) return;
-    // During waiting: players add themselves to Supabase directly via upsertPlayerInSession.
-    // Writing here would overwrite their entries with the host's (initially empty) local list.
-    if (gameState === 'waiting') return;
-
-    const playersForStorage: SharedPlayer[] = players.map((player) => ({
-      id: player.id,
-      name: player.name,
-      avatar: player.avatar,
-      score: player.score,
-      correctAnswers: player.correctAnswers,
-      previousScore: player.previousScore,
-      joinedAt: player.joinedAt.toISOString(),
-      lastAnswer: player.lastAnswer,
-      lastAnswerQuestionIndex: player.lastAnswerQuestionIndex,
-    }));
-
-    patchSessionState(quiz.gameCode, { players: playersForStorage });
-  }, [hasSyncedPlayers, isHost, gameState, players, quiz.gameCode]);
 
   // Timer: interval-based with Date.now() — no drift, updates 4× per second.
   // Integrates auto-advance via showAnswerDistRef to avoid stale-closure issues.

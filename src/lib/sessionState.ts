@@ -78,16 +78,17 @@ export const writeSessionState = (gameCode: string, state: SharedSessionState) =
 };
 
 const pushStateToSupabase = (gameCode: string, state: SharedSessionState) => {
+  // Never write players here — players manage their own entries via upsert_session_player RPC.
+  // Writing players from the host's local state would overwrite concurrent player answers.
   supabase
     .from("session_state")
-    .upsert({
-      game_code: gameCode,
-      players: state.players,
+    .update({
       game_state: state.gameState,
       current_question_index: state.currentQuestionIndex,
       time_left: state.timeLeft,
       updated_at: state.updatedAt,
-    }, { onConflict: "game_code" })
+    })
+    .eq("game_code", gameCode)
     .then(({ error }) => {
       if (error) console.error("[Supabase write error]", gameCode, state.gameState, error);
     });
