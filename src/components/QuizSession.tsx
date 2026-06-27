@@ -1181,6 +1181,17 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
     const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
     const [p1, p2, p3] = sortedPlayers;
 
+    const bPt = (t: number, p0: number[], p1: number[], p2: number[], p3: number[]) => {
+      const m = 1 - t;
+      return [m**3*p0[0]+3*m**2*t*p1[0]+3*m*t**2*p2[0]+t**3*p3[0], m**3*p0[1]+3*m**2*t*p1[1]+3*m*t**2*p2[1]+t**3*p3[1]];
+    };
+    const bTan = (t: number, p0: number[], p1: number[], p2: number[], p3: number[]) => {
+      const m = 1 - t;
+      return [3*m**2*(p1[0]-p0[0])+6*m*t*(p2[0]-p1[0])+3*t**2*(p3[0]-p2[0]), 3*m**2*(p1[1]-p0[1])+6*m*t*(p2[1]-p1[1])+3*t**2*(p3[1]-p2[1])];
+    };
+    const LB = [[110,190],[85,130],[40,65],[10,22]];
+    const RB = [[110,190],[135,130],[180,65],[210,22]];
+
     const podiumStep = (
       label: string,
       score: number,
@@ -1199,22 +1210,28 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
           <div style={{ position: 'relative', display: 'inline-flex' }}>
             <AvatarDisplay emoji={avatar} size={avatarSize} />
             <svg
-              viewBox="0 0 140 140"
-              style={{ position: 'absolute', top: -14, left: -14, width: 140, height: 140, pointerEvents: 'none', zIndex: 2 }}
+              viewBox="0 0 220 200"
+              style={{ position: 'absolute', top: -50, left: -54, width: 220, height: 200, pointerEvents: 'none', zIndex: 2 }}
             >
-              {[120, 150, 180, 210, 240].map(deg => {
-                const rad = deg * Math.PI / 180;
-                const lx = 70 + 62 * Math.cos(rad);
-                const ly = 70 + 62 * Math.sin(rad);
-                return <ellipse key={deg} cx={lx} cy={ly} rx={11} ry={4.5} fill="#FFD700" stroke="#B8860B" strokeWidth={0.5} transform={`rotate(${deg + 90}, ${lx}, ${ly})`} />;
+              {Array.from({length:14},(_,i)=>{
+                const t=(i+0.5)/14;
+                const [px,py]=bPt(t,LB[0],LB[1],LB[2],LB[3]);
+                const [tdx,tdy]=bTan(t,LB[0],LB[1],LB[2],LB[3]);
+                const ang=Math.atan2(tdy,tdx)*180/Math.PI;
+                const sz=Math.max(7,14-6*t); const rz=Math.max(2.8,5.5-2.5*t);
+                return <ellipse key={i} cx={px} cy={py} rx={sz} ry={rz} fill="#C8A000" stroke="#7a5500" strokeWidth={0.4} transform={`rotate(${ang},${px},${py})`}/>;
               })}
-              {[-60, -30, 0, 30, 60].map(deg => {
-                const rad = deg * Math.PI / 180;
-                const lx = 70 + 62 * Math.cos(rad);
-                const ly = 70 + 62 * Math.sin(rad);
-                return <ellipse key={deg} cx={lx} cy={ly} rx={11} ry={4.5} fill="#FFD700" stroke="#B8860B" strokeWidth={0.5} transform={`rotate(${deg + 90}, ${lx}, ${ly})`} />;
+              {Array.from({length:14},(_,i)=>{
+                const t=(i+0.5)/14;
+                const [px,py]=bPt(t,RB[0],RB[1],RB[2],RB[3]);
+                const [tdx,tdy]=bTan(t,RB[0],RB[1],RB[2],RB[3]);
+                const ang=Math.atan2(tdy,tdx)*180/Math.PI;
+                const sz=Math.max(7,14-6*t); const rz=Math.max(2.8,5.5-2.5*t);
+                return <ellipse key={i} cx={px} cy={py} rx={sz} ry={rz} fill="#C8A000" stroke="#7a5500" strokeWidth={0.4} transform={`rotate(${ang},${px},${py})`}/>;
               })}
-              <path d="M 55,126 Q 70,134 85,126" stroke="#B8860B" strokeWidth={2.5} fill="none" strokeLinecap="round" />
+              <circle cx={110} cy={187} r={4} fill="#8B0000" stroke="#5a0000" strokeWidth={0.5}/>
+              <circle cx={103} cy={192} r={3} fill="#8B0000" stroke="#5a0000" strokeWidth={0.5}/>
+              <circle cx={117} cy={192} r={3} fill="#8B0000" stroke="#5a0000" strokeWidth={0.5}/>
             </svg>
           </div>
         ) : (
@@ -1250,7 +1267,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
           >
             {label}
           </span>
-          <span style={{ fontSize: height >= 140 ? '2rem' : '1.5rem' }}>{medal}</span>
+          <span style={{ fontSize: height >= 140 ? '3rem' : '2.2rem' }}>{medal}</span>
           <span style={{ fontSize: '0.75rem', fontWeight: 800, color: textColor, opacity: 0.85 }}>
             {score.toLocaleString()} pts
           </span>
@@ -1269,6 +1286,19 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
           .reaction-float { animation: floatUp 2.8s ease-out forwards; pointer-events: none; position: fixed; z-index: 9999; }
         `}</style>
         <Fireworks />
+
+        {/* Stage spotlights — fixed at top of screen */}
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 320, pointerEvents: 'none', zIndex: 1, overflow: 'hidden' }}>
+          {/* Left beam */}
+          <div style={{ position: 'absolute', top: 0, left: '12%', width: 220, height: 320, background: 'linear-gradient(175deg,rgba(200,210,255,0.17) 0%,transparent 80%)', clipPath: 'polygon(38% 0%,62% 0%,100% 100%,0% 100%)', transform: 'rotate(-12deg)', transformOrigin: 'top center' }} />
+          <div style={{ position: 'absolute', top: 0, left: 'calc(12% + 84px)', transform: 'translateX(-50%)', width: 36, height: 15, background: 'linear-gradient(180deg,#b0b8d8,#8890b0)', borderRadius: '5px 5px 3px 3px', border: '1.5px solid #7880a8', boxShadow: '0 0 10px rgba(180,190,255,0.5)' }} />
+          {/* Center beam — gold */}
+          <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: 240, height: 320, background: 'linear-gradient(180deg,rgba(255,215,0,0.22) 0%,transparent 80%)', clipPath: 'polygon(34% 0%,66% 0%,100% 100%,0% 100%)' }} />
+          <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: 40, height: 17, background: 'linear-gradient(180deg,#FFD700,#CC9900)', borderRadius: '5px 5px 3px 3px', border: '1.5px solid #A07800', boxShadow: '0 0 18px rgba(255,215,0,0.7)' }} />
+          {/* Right beam */}
+          <div style={{ position: 'absolute', top: 0, right: '12%', width: 220, height: 320, background: 'linear-gradient(185deg,rgba(200,210,255,0.17) 0%,transparent 80%)', clipPath: 'polygon(38% 0%,62% 0%,100% 100%,0% 100%)', transform: 'rotate(12deg)', transformOrigin: 'top center' }} />
+          <div style={{ position: 'absolute', top: 0, right: 'calc(12% + 48px)', width: 36, height: 15, background: 'linear-gradient(180deg,#b0b8d8,#8890b0)', borderRadius: '5px 5px 3px 3px', border: '1.5px solid #7880a8', boxShadow: '0 0 10px rgba(180,190,255,0.5)' }} />
+        </div>
 
         {/* Floating reaction bubbles (with podium colors for top 3) */}
         {(() => {
@@ -1300,19 +1330,16 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
         <div className="relative z-10 flex min-h-screen">
           {/* ── Main content ── */}
           <div className="flex-1 flex flex-col overflow-auto px-4 pt-8 text-center">
-            {/* Title */}
-            <h1
-              className="mb-4 flex-shrink-0"
-              style={{
-                fontFamily: 'var(--ap-font-display)',
-                fontSize: 'clamp(2.2rem, 5vw, 3.5rem)',
-                fontWeight: 700,
-                color: 'var(--ap-ink)',
-                letterSpacing: '-1px',
-              }}
-            >
-              Quiz terminé !
-            </h1>
+            {/* Banner title */}
+            <div className="mb-4 flex-shrink-0 flex items-center justify-center">
+              <div style={{ width: 0, height: 0, borderTop: '30px solid transparent', borderBottom: '30px solid transparent', borderRight: '22px solid #8B0E0E' }} />
+              <div style={{ background: 'linear-gradient(180deg,#c41515 0%,#9b1010 100%)', padding: '10px 36px', boxShadow: '0 4px 18px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.15)' }}>
+                <h1 style={{ fontFamily: 'var(--ap-font-display)', fontSize: 'clamp(2rem,5vw,3.2rem)', fontWeight: 700, letterSpacing: '-1px', margin: 0, color: '#FFD700', textShadow: '0 1px 0 #7a4d00, 0 2px 10px rgba(0,0,0,0.5)' }}>
+                  Quiz terminé !
+                </h1>
+              </div>
+              <div style={{ width: 0, height: 0, borderTop: '30px solid transparent', borderBottom: '30px solid transparent', borderLeft: '22px solid #8B0E0E' }} />
+            </div>
 
             {/* Players 4+ — scrollable middle zone */}
             {sortedPlayers.length > 3 ? (
@@ -1353,22 +1380,6 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
             ) : (
               <div className="flex-1" />
             )}
-
-            {/* Spotlights above podium */}
-            <div className="flex justify-center gap-0 flex-shrink-0 pointer-events-none">
-              <div style={{ width: 140, height: 90, position: 'relative' }}>
-                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(200,200,230,0.22) 0%,transparent 100%)', clipPath: 'polygon(33% 0%,67% 0%,90% 100%,10% 100%)' }} />
-                <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: 18, height: 9, background: 'rgba(200,200,230,0.75)', borderRadius: 4 }} />
-              </div>
-              <div style={{ width: 160, height: 90, position: 'relative' }}>
-                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(255,220,50,0.32) 0%,transparent 100%)', clipPath: 'polygon(28% 0%,72% 0%,95% 100%,5% 100%)' }} />
-                <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: 22, height: 10, background: 'rgba(255,220,50,0.95)', borderRadius: 5, boxShadow: '0 0 12px rgba(255,220,50,0.7)' }} />
-              </div>
-              <div style={{ width: 130, height: 90, position: 'relative' }}>
-                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(210,160,100,0.2) 0%,transparent 100%)', clipPath: 'polygon(33% 0%,67% 0%,90% 100%,10% 100%)' }} />
-                <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: 18, height: 9, background: 'rgba(210,160,100,0.65)', borderRadius: 4 }} />
-              </div>
-            </div>
 
             {/* Podium — order: 2nd | 1st | 3rd — pinned to bottom */}
             <div className="flex items-end justify-center gap-0 flex-shrink-0">
