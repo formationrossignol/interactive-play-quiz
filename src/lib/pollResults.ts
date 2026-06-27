@@ -26,9 +26,12 @@ const getKey = (pollId: string) => `poll-results-${pollId}`;
 export const savePollSession = (pollId: string, pollTitle: string, session: PollResultSession) => {
   const key = getKey(pollId);
   const raw = localStorage.getItem(key);
-  let store: PollResultsStore = raw
-    ? (JSON.parse(raw) as PollResultsStore)
-    : { pollId, pollTitle, sessions: [] };
+  let store: PollResultsStore;
+  try {
+    store = raw ? (JSON.parse(raw) as PollResultsStore) : { pollId, pollTitle, sessions: [] };
+  } catch {
+    store = { pollId, pollTitle, sessions: [] };
+  }
 
   const existingIdx = store.sessions.findIndex((s) => s.sessionId === session.sessionId);
   if (existingIdx >= 0) {

@@ -31,17 +31,16 @@ export const logout = () => {
 };
 
 export const login = (email: string, password: string): User | null => {
-  // Get all users from localStorage
   const usersStr = localStorage.getItem('quiz_users');
-  const users: User[] = usersStr ? JSON.parse(usersStr) : [];
-  
-  // Find user by email
+  let users: User[] = [];
+  try { users = usersStr ? JSON.parse(usersStr) : []; } catch { users = []; }
+
   const user = users.find(u => u.email === email);
   if (!user) return null;
-  
-  // Check password (stored in separate key for "security")
+
   const passwordsStr = localStorage.getItem('quiz_passwords');
-  const passwords: Record<string, string> = passwordsStr ? JSON.parse(passwordsStr) : {};
+  let passwords: Record<string, string> = {};
+  try { passwords = passwordsStr ? JSON.parse(passwordsStr) : {}; } catch { passwords = {}; }
   
   if (passwords[user.id] !== password) return null;
   
@@ -50,14 +49,12 @@ export const login = (email: string, password: string): User | null => {
 };
 
 export const register = (email: string, username: string, password: string): User | null => {
-  // Get existing users
   const usersStr = localStorage.getItem('quiz_users');
-  const users: User[] = usersStr ? JSON.parse(usersStr) : [];
-  
-  // Check if email already exists
+  let users: User[] = [];
+  try { users = usersStr ? JSON.parse(usersStr) : []; } catch { users = []; }
+
   if (users.some(u => u.email === email)) return null;
-  
-  // Create new user
+
   const newUser: User = {
     id: typeof crypto !== 'undefined' && 'randomUUID' in crypto
       ? crypto.randomUUID()
@@ -66,14 +63,13 @@ export const register = (email: string, username: string, password: string): Use
     username,
     createdAt: new Date().toISOString()
   };
-  
-  // Save user
+
   users.push(newUser);
   localStorage.setItem('quiz_users', JSON.stringify(users));
-  
-  // Save password
+
   const passwordsStr = localStorage.getItem('quiz_passwords');
-  const passwords: Record<string, string> = passwordsStr ? JSON.parse(passwordsStr) : {};
+  let passwords: Record<string, string> = {};
+  try { passwords = passwordsStr ? JSON.parse(passwordsStr) : {}; } catch { passwords = {}; }
   passwords[newUser.id] = password;
   localStorage.setItem('quiz_passwords', JSON.stringify(passwords));
   

@@ -23,8 +23,12 @@ const generateId = () =>
     : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 
 const getStoredQuestionBank = (): QuestionBankItem[] => {
-  const stored = localStorage.getItem(QUESTION_BANK_STORAGE_KEY);
-  return stored ? JSON.parse(stored) : [];
+  try {
+    const stored = localStorage.getItem(QUESTION_BANK_STORAGE_KEY);
+    return stored ? (JSON.parse(stored) as QuestionBankItem[]) : [];
+  } catch {
+    return [];
+  }
 };
 
 const persistQuestionBank = (items: QuestionBankItem[]) => {
