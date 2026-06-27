@@ -45,6 +45,7 @@ export const PollSession = ({ poll }: PollSessionProps) => {
   // track which player+question combos we've already counted
   const seenRef = useRef<Set<string>>(new Set());
 
+  const isAdvancingRef = useRef(false);
   const totalQuestions = poll.questions.length;
   const currentQuestion = useMemo(() => poll.questions[currentIndex] as PollQuestion, [poll.questions, currentIndex]);
 
@@ -147,6 +148,9 @@ export const PollSession = ({ poll }: PollSessionProps) => {
   const filteredAnswers = (currentQuestion?.answers || []).filter((answer) => answer?.trim());
 
   const goNext = () => {
+    if (isAdvancingRef.current) return;
+    isAdvancingRef.current = true;
+    setTimeout(() => { isAdvancingRef.current = false; }, 500);
     if (!sessionStarted) setSessionStarted(true);
     patchSessionState(poll.id, { gameState: "question", currentQuestionIndex: currentIndex + 1 });
     setCurrentIndex((i) => Math.min(i + 1, totalQuestions - 1));

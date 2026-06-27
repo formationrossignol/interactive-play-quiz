@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ENHANCED_AVATARS, AvatarDisplay } from "./BetterAvatars";
 import { ensureSessionState, upsertPlayerInSession } from "@/lib/sessionState";
 
@@ -11,10 +11,13 @@ interface AvatarSelectorProps {
 export const AvatarSelector = ({ onComplete, gameCode, quizTitle }: AvatarSelectorProps) => {
   const [selectedAvatar, setSelectedAvatar] = useState(ENHANCED_AVATARS[0].emoji);
   const [playerName, setPlayerName] = useState("");
+  const hasSubmittedRef = useRef(false);
 
   const handleSubmit = () => {
     const trimmedName = playerName.trim();
     if (!trimmedName) return;
+    if (hasSubmittedRef.current) return;
+    hasSubmittedRef.current = true;
 
     ensureSessionState(gameCode);
 
