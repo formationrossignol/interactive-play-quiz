@@ -419,6 +419,13 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
   }, [gameState, isHost, quiz.gameCode, timeLeft]);
 
 
+  // Clear floating reactions when screen changes
+  useEffect(() => {
+    setFloatingReactions([]);
+    setReactionComments([]);
+    seenReactionKeysRef.current = new Set();
+  }, [gameState]);
+
   // Poll for player reactions (waiting + final screens, host-only)
   useEffect(() => {
     if (!isHost || (gameState !== 'final' && gameState !== 'waiting')) return;
@@ -629,27 +636,27 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
 
   if (gameState === 'waiting') {
     return (
-      <div style={{ background: 'var(--ap-paper)', minHeight: '100vh', fontFamily: 'var(--ap-font-body)', overflow: 'hidden' }} className="p-4 relative">
+      <div style={{ background: 'var(--ap-paper)', minHeight: '100vh', fontFamily: 'var(--ap-font-body)' }} className="p-4">
         <style>{`
           @keyframes floatUpLobby {
             0%   { opacity: 1; transform: translateY(0) scale(1); }
             80%  { opacity: 0.8; }
             100% { opacity: 0; transform: translateY(-200px) scale(1.02); }
           }
-          .reaction-float-lobby { animation: floatUpLobby 2.8s ease-out forwards; pointer-events: none; position: absolute; z-index: 50; }
+          .reaction-float-lobby { animation: floatUpLobby 2.8s ease-out forwards; pointer-events: none; position: fixed; z-index: 9999; }
         `}</style>
         {floatingReactions.map((r) => (
           <div key={r.id} className="reaction-float-lobby" style={{ left: `${r.x}%`, bottom: '15%' }}>
             <div style={{
               display: 'flex', alignItems: 'center', gap: 6,
-              background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)',
-              border: '1.5px solid rgba(255,255,255,0.18)',
-              borderRadius: 999, padding: '5px 12px',
-              boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+              background: 'rgba(0,0,0,0.78)', backdropFilter: 'blur(10px)',
+              border: '1.5px solid rgba(255,255,255,0.2)',
+              borderRadius: 999, padding: '6px 14px',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
             }}>
               <span style={{ fontSize: '1.1rem', flexShrink: 0 }}>{r.avatar}</span>
               <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: 700, flexShrink: 0, fontFamily: 'var(--ap-font-body)' }}>{r.playerName}</span>
-              <span style={{ fontSize: r.isEmoji ? '1.4rem' : '12px', color: '#fff', fontFamily: 'var(--ap-font-body)', overflow: 'hidden', maxWidth: 100 }}>{r.text}</span>
+              <span style={{ fontSize: r.isEmoji ? '1.4rem' : '12px', color: '#fff', fontFamily: 'var(--ap-font-body)', maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: r.isEmoji ? 'nowrap' : 'normal' }}>{r.text}</span>
             </div>
           </div>
         ))}
@@ -1183,23 +1190,23 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
             80%  { opacity: 0.8; }
             100% { opacity: 0; transform: translateY(-200px) scale(1.02); }
           }
-          .reaction-float { animation: floatUp 2.8s ease-out forwards; pointer-events: none; position: absolute; }
+          .reaction-float { animation: floatUp 2.8s ease-out forwards; pointer-events: none; position: fixed; z-index: 9999; }
         `}</style>
         <Fireworks />
 
         {/* Floating reaction bubbles */}
         {floatingReactions.map((r) => (
-          <div key={r.id} className="reaction-float z-20" style={{ left: `${r.x}%`, bottom: '20%' }}>
+          <div key={r.id} className="reaction-float" style={{ left: `${r.x}%`, bottom: '20%' }}>
             <div style={{
               display: 'flex', alignItems: 'center', gap: 6,
-              background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)',
-              border: '1.5px solid rgba(255,255,255,0.18)',
-              borderRadius: 999, padding: '5px 12px',
-              boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+              background: 'rgba(0,0,0,0.78)', backdropFilter: 'blur(10px)',
+              border: '1.5px solid rgba(255,255,255,0.2)',
+              borderRadius: 999, padding: '6px 14px',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
             }}>
               <span style={{ fontSize: '1.1rem', flexShrink: 0 }}>{r.avatar}</span>
               <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: 700, flexShrink: 0, fontFamily: 'var(--ap-font-body)' }}>{r.playerName}</span>
-              <span style={{ fontSize: r.isEmoji ? '1.4rem' : '12px', color: '#fff', fontFamily: 'var(--ap-font-body)', overflow: 'hidden', maxWidth: 110 }}>{r.text}</span>
+              <span style={{ fontSize: r.isEmoji ? '1.4rem' : '12px', color: '#fff', fontFamily: 'var(--ap-font-body)', maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: r.isEmoji ? 'nowrap' : 'normal' }}>{r.text}</span>
             </div>
           </div>
         ))}
