@@ -139,6 +139,8 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
   const timerEndRef = useRef<number | null>(null);
   // Last question index for which we set timerEndRef — prevents mid-question Supabase resyncs
   const lastTimerQuestionRef = useRef<number>(-1);
+  // Same guard for transition phase — prevents mid-transition poll from resetting timer to full duration
+  const lastTimerTransitionRef = useRef<number>(-1);
 
   // Tracks when Supabase Realtime last fired — poll skips if realtime is healthy
   const lastRealtimeFireRef = useRef<number>(0);
@@ -158,8 +160,17 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
     };
 
     window.addEventListener('storage', handleStorage);
-    const channel = subscribeToSessionState(gameCode, () => {
+    const channel = subscribeToSessionState(gameCode, (state) => {
       lastRealtimeFireRef.current = Date.now();
+      // Set transition timer directly from realtime payload — poll is throttled for 4s after realtime
+      // fires, so without this the player's transition countdown never starts in the normal case.
+      if (
+        state.gameState === 'transition' &&
+        state.currentQuestionIndex !== lastTimerTransitionRef.current
+      ) {
+        timerEndRef.current = Date.now() + state.timeLeft * 1000;
+        lastTimerTransitionRef.current = state.currentQuestionIndex;
+      }
       syncRef.current();
     });
 
@@ -243,9 +254,14 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
           lastTimerQuestionRef.current = newIndex;
         }
       } else if (remoteState === 'transition') {
-        setCurrentQuestion(data.current_question_index ?? 0);
-        // Always resync transition timer (short phase, host-driven)
-        timerEndRef.current = Date.now() + (data.time_left ?? 0) * 1000;
+        const tIdx = data.current_question_index ?? 0;
+        setCurrentQuestion(tIdx);
+        // Guard: only set timer on first encounter of this transition index.
+        // Re-setting with stale time_left mid-transition (poll-only mode) would jump timer to full duration.
+        if (tIdx !== lastTimerTransitionRef.current) {
+          timerEndRef.current = Date.now() + (data.time_left ?? 0) * 1000;
+          lastTimerTransitionRef.current = tIdx;
+        }
       }
 
       if (playerId) {
