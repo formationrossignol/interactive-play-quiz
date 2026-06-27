@@ -464,7 +464,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
             <div className="flex items-center justify-center gap-4" style={{ color: "rgba(255,255,255,0.75)" }}>
               <div className="flex items-center gap-1">
                 <Users className="w-4 h-4" />
-                <span>{totalPlayers} joueurs</span>
+                <span>{totalPlayers} joueur{totalPlayers !== 1 ? 's' : ''}</span>
               </div>
             </div>
           </div>

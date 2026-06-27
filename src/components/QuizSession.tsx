@@ -462,10 +462,12 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
         }]);
         setTimeout(() => setFloatingReactions((prev) => prev.filter((r) => r.id !== floatId)), 2800);
 
-        // Add ALL reactions (emoji + text) to feed
-        setReactionComments((prev) =>
-          [{ playerName: p.name, avatar: p.avatar, text: reactionText, ts: Date.now() }, ...prev].slice(0, 30)
-        );
+        // Only text comments go to the sidebar feed
+        if (!isEmoji) {
+          setReactionComments((prev) =>
+            [{ playerName: p.name, avatar: p.avatar, text: reactionText, ts: Date.now() }, ...prev].slice(0, 30)
+          );
+        }
       });
     };
 
@@ -708,7 +710,7 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
                       opacity: players.length === 0 ? 0.6 : 1,
                     }}
                   >
-                    🚀 Lancer le quiz ({players.length} joueurs)
+                    🚀 Lancer le quiz ({players.length} joueur{players.length !== 1 ? 's' : ''})
                   </button>
                 </div>
               </div>
@@ -754,7 +756,7 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
               <div className="ap-card" style={{ padding: '14px 18px' }}>
                 <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--ap-ink)', fontWeight: 700 }}>
                   <Users className="h-4 w-4" style={{ color: 'var(--ap-brand)' }} />
-                  <span>{players.length} joueur(s) en attente</span>
+                  <span>{players.length} joueur{players.length !== 1 ? 's' : ''} en attente</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm mt-2" style={{ color: 'var(--ap-muted)', fontWeight: 700 }}>
                   <Clock className="h-4 w-4" />
@@ -820,7 +822,7 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
                     <details key={run.id} style={{ border: '2px solid var(--ap-line)', borderRadius: 'var(--ap-r-md)', padding: '12px 16px' }}>
                       <summary className="flex cursor-pointer items-center justify-between list-none" style={{ color: 'var(--ap-ink)', fontWeight: 700 }}>
                         <span>{new Date(run.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
-                        <span className="text-sm" style={{ color: 'var(--ap-muted)' }}>{run.players.length} joueur(s) · {run.questionCount} questions</span>
+                        <span className="text-sm" style={{ color: 'var(--ap-muted)' }}>{run.players.length} joueur{run.players.length !== 1 ? 's' : ''} · {run.questionCount} questions</span>
                       </summary>
                       <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                         {sorted.map((p, idx) => (
@@ -1329,7 +1331,7 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
                 className="mb-3 flex-shrink-0 uppercase tracking-wider text-xs font-bold"
                 style={{ color: 'var(--ap-muted)', fontFamily: 'var(--ap-font-display)' }}
               >
-                Classement · {sortedPlayers.length} joueurs
+                Classement · {sortedPlayers.length} joueur{sortedPlayers.length !== 1 ? 's' : ''}
               </div>
               <div className="overflow-y-auto space-y-1.5" style={{ maxHeight: '45%' }}>
                 {sortedPlayers.map((player, idx) => {
@@ -1372,46 +1374,55 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
                 })}
               </div>
 
-              {/* Live reactions feed */}
-              {reactionComments.length > 0 && (
-                <div className="mt-3 flex flex-col min-h-0 flex-1">
-                  <div
-                    className="uppercase tracking-wider text-xs font-bold mb-2 flex-shrink-0"
-                    style={{ color: '#241b3a', fontFamily: 'var(--ap-font-display)' }}
-                  >
-                    Réactions live
-                  </div>
-                  <div className="space-y-1.5 overflow-y-auto flex-1">
-                    {reactionComments.map((c, i) => (
-                      <div
-                        key={`${c.playerName}-${c.ts}-${i}`}
-                        className="flex items-center gap-2 px-2 py-1.5"
-                        style={{
-                          background: '#ffffff',
-                          border: '1.5px solid #efe6d3',
-                          borderRadius: 'var(--ap-r-sm)',
-                          boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-                        }}
-                      >
-                        <div style={{ flexShrink: 0 }}>
-                          <AvatarDisplay emoji={c.avatar} size="xs" />
-                        </div>
-                        <div style={{ minWidth: 0, flex: 1 }}>
-                          <span
-                            className="font-bold text-xs block truncate"
-                            style={{ color: '#7048ff', fontFamily: 'var(--ap-font-display)' }}
+              {/* Live reactions feed (text comments only) */}
+              {reactionComments.length > 0 && (() => {
+                const podiumMap: Record<string, { bg: string; border: string; nameColor: string; textColor: string }> = {};
+                if (p1) podiumMap[p1.name] = { bg: 'linear-gradient(135deg,#FFE566,#FFCC00)', border: '#e5aa00', nameColor: '#7a4000', textColor: '#5a2e00' };
+                if (p2) podiumMap[p2.name] = { bg: 'linear-gradient(135deg,#E8E8E8,#C0C0C0)', border: '#aaa', nameColor: '#333', textColor: '#222' };
+                if (p3) podiumMap[p3.name] = { bg: 'linear-gradient(135deg,#E8A87C,#CD7F32)', border: '#a06030', nameColor: '#4a2000', textColor: '#3a1800' };
+                return (
+                  <div className="mt-3 flex flex-col min-h-0 flex-1">
+                    <div
+                      className="uppercase tracking-wider text-xs font-bold mb-2 flex-shrink-0"
+                      style={{ color: '#241b3a', fontFamily: 'var(--ap-font-display)' }}
+                    >
+                      Réactions live
+                    </div>
+                    <div className="space-y-1.5 overflow-y-auto flex-1">
+                      {reactionComments.map((c, i) => {
+                        const ps = podiumMap[c.playerName];
+                        return (
+                          <div
+                            key={`${c.playerName}-${c.ts}-${i}`}
+                            className="flex items-center gap-2 px-2 py-1.5"
+                            style={{
+                              background: ps ? ps.bg : '#ffffff',
+                              border: `1.5px solid ${ps ? ps.border : '#efe6d3'}`,
+                              borderRadius: 'var(--ap-r-sm)',
+                              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+                            }}
                           >
-                            {c.playerName}
-                          </span>
-                          <span style={{ fontSize: '12px', fontWeight: 600, color: '#241b3a', fontFamily: 'var(--ap-font-body)', wordBreak: 'break-word', lineHeight: 1.3 }}>
-                            {c.text}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
+                            <div style={{ flexShrink: 0 }}>
+                              <AvatarDisplay emoji={c.avatar} size="xs" />
+                            </div>
+                            <div style={{ minWidth: 0, flex: 1 }}>
+                              <span
+                                className="font-bold text-xs block truncate"
+                                style={{ color: ps ? ps.nameColor : '#7048ff', fontFamily: 'var(--ap-font-display)' }}
+                              >
+                                {c.playerName}
+                              </span>
+                              <span style={{ fontSize: '12px', fontWeight: 600, color: ps ? ps.textColor : '#241b3a', fontFamily: 'var(--ap-font-body)', wordBreak: 'break-word', lineHeight: 1.3 }}>
+                                {c.text}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
             </div>
           )}
         </div>
