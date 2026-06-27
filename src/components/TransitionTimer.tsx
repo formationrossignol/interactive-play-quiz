@@ -13,16 +13,18 @@ export const TransitionTimer = ({ duration, onComplete }: TransitionTimerProps) 
   useEffect(() => { onCompleteRef.current = onComplete; });
 
   useEffect(() => {
-    if (timeLeft > 0) {
-      const timer = setTimeout(() => {
-        setTimeLeft(prev => prev - 1);
-      }, 1000);
-      return () => clearTimeout(timer);
-    } else if (!firedRef.current) {
-      firedRef.current = true;
-      onCompleteRef.current();
-    }
-  }, [timeLeft]);
+    const endTime = Date.now() + duration * 1000;
+    const interval = setInterval(() => {
+      const remaining = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
+      setTimeLeft(remaining);
+      if (remaining <= 0 && !firedRef.current) {
+        firedRef.current = true;
+        clearInterval(interval);
+        onCompleteRef.current();
+      }
+    }, 250);
+    return () => clearInterval(interval);
+  }, [duration]);
 
   const percentage = duration > 0 ? (timeLeft / duration) * 100 : 0;
   const radius = 80;

@@ -209,7 +209,14 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
 
   // Auto-advance guard — reset each time a new question starts
   const hasAutoAdvancedRef = useRef(false);
-  useEffect(() => { hasAutoAdvancedRef.current = false; }, [currentQuestionIndex]);
+  // Prevents showAnswerDistribution from running twice (timer + manual button race)
+  const isShowingDistRef = useRef(false);
+  // Prevents startQuiz from firing twice on double-click
+  const hasStartedRef = useRef(false);
+  useEffect(() => {
+    hasAutoAdvancedRef.current = false;
+    isShowingDistRef.current = false;
+  }, [currentQuestionIndex]);
 
   // Tracks the wall-clock end time of the current question (set when question starts)
   const questionEndTimeRef = useRef<number | null>(null);
@@ -418,6 +425,8 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
   }, [players, currentQuestionIndex, quiz.createdAt]);
 
   const startQuiz = () => {
+    if (hasStartedRef.current) return;
+    hasStartedRef.current = true;
     questionEndTimeRef.current = Date.now() + currentQuestion.timeLimit * 1000;
     setGameState('question');
     setTimeLeft(currentQuestion.timeLimit);
@@ -469,6 +478,8 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
   };
 
   const showAnswerDistribution = async () => {
+    if (isShowingDistRef.current) return;
+    isShowingDistRef.current = true;
     // Fetch latest player answers directly from Supabase (cross-device safe).
     // Race against a 3s timeout so a hanging fetch can't block the advance.
     let freshPlayers: SharedPlayer[] = readSessionState(quiz.gameCode).players;

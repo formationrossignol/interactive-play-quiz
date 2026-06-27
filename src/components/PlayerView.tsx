@@ -51,12 +51,22 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
   const totalQuestions = quizQuestions.length || 1;
   const liveQuestion = quizQuestions[currentQuestion] ?? null;
 
+  // Declared before syncFromSession so the callback can reference it without TDZ issues
+  const answeredForIndexRef = useRef<number | null>(null);
+
   const syncFromSession = useCallback(() => {
     const session = readSessionState(gameCode);
     setTotalPlayers(session.players.length);
     setGameState((prev) => (prev !== session.gameState ? session.gameState : prev));
     if (session.gameState === 'question') {
-      setCurrentQuestion(session.currentQuestionIndex ?? 0);
+      const newIndex = session.currentQuestionIndex ?? 0;
+      // Reset answer UI immediately when a new question arrives via storage/realtime event.
+      // Without this, the player sees "Réponse envoyée!" for up to 6s (poll throttle + realtime skip).
+      if (newIndex !== answeredForIndexRef.current) {
+        setHasAnswered(false);
+        setSelectedAnswer(null);
+      }
+      setCurrentQuestion(newIndex);
       if (session.timeLeft > 0) {
         setTimeLeft(session.timeLeft);
       }
@@ -121,9 +131,6 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
     // (e.g. gameState = 'final'). Let the Supabase fetch in the mount effect + 2s polling
     // drive the initial game state instead.
   }, [gameCode, playerAvatar, playerName]);
-
-  // Tracks which question index the player has already answered — prevents poll from re-enabling buttons
-  const answeredForIndexRef = useRef<number | null>(null);
 
   // Holds the last submitted answer payload so retries can resend it
   const pendingAnswerRef = useRef<{ player: SharedPlayer; questionIndex: number } | null>(null);
