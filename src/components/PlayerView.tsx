@@ -57,7 +57,9 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
   const syncFromSession = useCallback(() => {
     const session = readSessionState(gameCode);
     setTotalPlayers(session.players.length);
-    setGameState((prev) => (prev !== session.gameState ? session.gameState : prev));
+    // Map host states to player states (host uses 'answer-distribution', player uses 'answer-feedback')
+    const mapped = session.gameState === 'answer-distribution' ? 'answer-feedback' : session.gameState;
+    setGameState((prev) => (prev !== mapped ? mapped : prev));
     if (session.gameState === 'question') {
       const newIndex = session.currentQuestionIndex ?? 0;
       // Reset answer UI immediately when a new question arrives via storage/realtime event.
