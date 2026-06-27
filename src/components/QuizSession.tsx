@@ -87,6 +87,8 @@ interface QuizSession {
 interface QuizSessionProps {
   quiz: QuizSession;
   isHost?: boolean;
+  onExitRequest?: () => void;
+  onExitHandlerReady?: (handler: () => void) => void;
 }
 
 
@@ -116,7 +118,7 @@ const PlayerSidebarItem = memo(({ player, answered, offline }: PlayerSidebarItem
   </div>
 ));
 
-export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
+export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandlerReady }: QuizSessionProps) => {
   const navigate = useNavigate();
   const [players, setPlayers] = useState<Player[]>([]);
   const [sessionReady, setSessionReady] = useState(false);
@@ -126,7 +128,6 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
   const [showSettings, setShowSettings] = useState(false);
   const [sessionHistory, setSessionHistory] = useState<SessionRun[]>([]);
   const [timeLeft, setTimeLeft] = useState(0);
-  const [showExitDialog, setShowExitDialog] = useState(false);
   const [answerDistribution, setAnswerDistribution] = useState<number[]>([]);
   const [sessionStats, setSessionStats] = useState({
     totalPlayers: 0,
@@ -622,12 +623,19 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
     navigate("/");
   }, [isHost, quiz.gameCode, navigate]);
 
+  // Register exit handler with parent (dialog lives in parent to avoid flicker)
+  useEffect(() => {
+    onExitHandlerReady?.(handleExitQuiz);
+  }, [handleExitQuiz, onExitHandlerReady]);
+
   // Abandon session when host closes/refreshes the tab mid-quiz
   useEffect(() => {
     if (!isHost) return;
     const handler = () => {
       if (gameStateRef.current === 'final') return;
-      // fetch with keepalive survives page unload; sendBeacon can't set custom headers
+      // patchSessionState: updates localStorage immediately (same-device tabs) + fires Supabase update
+      patchSessionState(quiz.gameCode, { gameState: 'abandoned' });
+      // keepalive fetch: survives page unload, ensures cross-device participants are notified
       fetch(`${supabaseUrl}/rest/v1/session_state?game_code=eq.${quiz.gameCode}`, {
         method: 'PATCH',
         headers: {
@@ -722,7 +730,7 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
                   )}
                 </div>
                 <div className="flex flex-wrap gap-3">
-                  <button onClick={() => setShowExitDialog(true)} className="ap-btn ap-btn--ghost ap-btn--sm">
+                  <button onClick={() => onExitRequest?.()} className="ap-btn ap-btn--ghost ap-btn--sm">
                     <LogOut className="w-4 h-4" />
                     Quitter
                   </button>
@@ -747,8 +755,6 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
               </div>
             </div>
           )}
-
-          <ExitQuizDialog open={showExitDialog} onOpenChange={setShowExitDialog} onConfirm={handleExitQuiz} />
 
           <Dialog open={showSettings} onOpenChange={setShowSettings}>
             <DialogContent className="sm:max-w-md">
@@ -923,12 +929,6 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
 
     return (
       <ThemedBackground className="min-h-screen flex flex-col text-white">
-        <ExitQuizDialog
-          open={showExitDialog}
-          onOpenChange={setShowExitDialog}
-          onConfirm={handleExitQuiz}
-        />
-
         {/* ── Top bar ── */}
         <div className="flex items-center justify-between px-5 py-3 bg-black/50 backdrop-blur-sm border-b border-white/10 flex-shrink-0">
           <div className="flex items-center gap-4">
@@ -980,7 +980,7 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setShowExitDialog(true)}
+                  onClick={() => onExitRequest?.()}
                   className="border-white/20 bg-white/10 text-white hover:bg-white/20"
                 >
                   <LogOut className="w-4 h-4" />

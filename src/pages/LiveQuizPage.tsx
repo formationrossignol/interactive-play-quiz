@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
 import { QuizSession } from "@/components/QuizSession";
+import { ExitQuizDialog } from "@/components/ExitQuizDialog";
 import { PlayerView } from "@/components/PlayerView";
 import { PollSession } from "@/components/PollSession";
 import { FlashcardSession } from "@/components/FlashcardSession";
@@ -44,6 +45,8 @@ const LiveQuizPage = () => {
 
   const [loadedQuiz, setLoadedQuiz] = useState<SavedQuiz | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showExitDialog, setShowExitDialog] = useState(false);
+  const exitHandlerRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     if (!gameCode) return;
@@ -163,7 +166,21 @@ const LiveQuizPage = () => {
           </div>
         );
       }
-      return <QuizSession quiz={quizSession} isHost />;
+      return (
+        <>
+          <ExitQuizDialog
+            open={showExitDialog}
+            onOpenChange={setShowExitDialog}
+            onConfirm={() => { exitHandlerRef.current?.(); setShowExitDialog(false); }}
+          />
+          <QuizSession
+            quiz={quizSession}
+            isHost
+            onExitRequest={() => setShowExitDialog(true)}
+            onExitHandlerReady={(fn) => { exitHandlerRef.current = fn; }}
+          />
+        </>
+      );
   }
 };
 
