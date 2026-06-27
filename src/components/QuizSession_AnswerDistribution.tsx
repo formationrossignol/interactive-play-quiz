@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { AnswerDistribution } from "./AnswerDistribution";
 
@@ -7,6 +8,8 @@ interface QuizSessionAnswerDistributionProps {
   onNext: () => void;
   onSkipToNext?: () => void;
   isHost: boolean;
+  isLastQuestion?: boolean;
+  autoAdvance?: boolean;
 }
 
 export const QuizSessionAnswerDistribution = ({
@@ -14,8 +17,17 @@ export const QuizSessionAnswerDistribution = ({
   answerDistribution,
   onNext,
   onSkipToNext,
-  isHost
+  isHost,
+  isLastQuestion = false,
+  autoAdvance = false,
 }: QuizSessionAnswerDistributionProps) => {
+  // Auto-advance: skip answer distribution after 3.5 s when toggle is on
+  useEffect(() => {
+    if (!isHost || !autoAdvance) return;
+    const t = setTimeout(() => onNext(), 3500);
+    return () => clearTimeout(t);
+  }, [isHost, autoAdvance, onNext]);
+
   return (
     <div className="min-h-screen bg-slate-950 p-4 text-slate-100">
       <div className="max-w-4xl mx-auto">
@@ -42,7 +54,7 @@ export const QuizSessionAnswerDistribution = ({
               </Button>
             )}
             <Button variant="hero" size="lg" onClick={onNext}>
-              🏆 Voir le classement
+              {isLastQuestion ? '🏁 Voir les résultats finaux' : '🏆 Voir le classement'}
             </Button>
           </div>
         )}

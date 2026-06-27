@@ -136,6 +136,7 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
   });
   const [disconnectedIds, setDisconnectedIds] = useState<Set<string>>(new Set());
   const disconnectedIdsRef = useRef<Set<string>>(new Set());
+  const [autoAdvance, setAutoAdvance] = useState(false);
 
   // Live reactions (waiting + final screens)
   const [floatingReactions, setFloatingReactions] = useState<Array<{ id: string; emoji: string; x: number; playerName: string; avatar: string; text: string; isEmoji: boolean }>>([]);
@@ -934,6 +935,20 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
             {isHost && (
               <>
                 <BackgroundMusic isPlaying />
+                <button
+                  onClick={() => setAutoAdvance(v => !v)}
+                  title={autoAdvance ? 'Auto-avance activé' : 'Auto-avance désactivé'}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 5,
+                    padding: '5px 10px', borderRadius: 999,
+                    border: `1.5px solid ${autoAdvance ? 'rgba(39,174,96,0.6)' : 'rgba(255,255,255,0.2)'}`,
+                    background: autoAdvance ? 'rgba(39,174,96,0.2)' : 'rgba(255,255,255,0.08)',
+                    color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                    fontFamily: 'var(--ap-font-body)',
+                  }}
+                >
+                  {autoAdvance ? '▶▶' : '▶'} Auto
+                </button>
                 <Button
                   variant="outline"
                   size="sm"
@@ -1112,9 +1127,11 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
         <QuizSessionAnswerDistribution
           currentQuestion={currentQuestion}
           answerDistribution={answerDistribution}
-          onNext={showLeaderboard}
+          onNext={currentQuestionIndex >= quiz.questions.length - 1 ? nextQuestion : showLeaderboard}
           onSkipToNext={isHost && currentQuestionIndex + 1 < quiz.questions.length ? nextQuestion : undefined}
           isHost={isHost || false}
+          isLastQuestion={currentQuestionIndex >= quiz.questions.length - 1}
+          autoAdvance={autoAdvance}
         />
       </ThemedBackground>
     );
@@ -1127,6 +1144,7 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
         onComplete={nextQuestion}
         isHost={isHost}
         isLastQuestion={currentQuestionIndex >= quiz.questions.length - 1}
+        autoAdvance={autoAdvance}
       />
     );
   }
@@ -1240,7 +1258,7 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
                 letterSpacing: '-1px',
               }}
             >
-              Quiz Terminé !
+              Quiz terminé !
             </h1>
 
             {/* Players 4+ — scrollable middle zone */}
