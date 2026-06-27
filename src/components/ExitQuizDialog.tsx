@@ -1,3 +1,4 @@
+import { memo } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,7 +16,7 @@ interface ExitQuizDialogProps {
   onConfirm: () => void;
 }
 
-export const ExitQuizDialog = ({ open, onOpenChange, onConfirm }: ExitQuizDialogProps) => {
+export const ExitQuizDialog = memo(({ open, onOpenChange, onConfirm }: ExitQuizDialogProps) => {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
@@ -34,4 +35,4 @@ export const ExitQuizDialog = ({ open, onOpenChange, onConfirm }: ExitQuizDialog
       </AlertDialogContent>
     </AlertDialog>
   );
-};
+});

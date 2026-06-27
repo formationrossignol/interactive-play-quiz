@@ -34,7 +34,7 @@ import {
   type SharedPlayer,
   type SessionRun,
 } from "@/lib/sessionState";
-import { supabase } from "@/lib/supabase";
+import { supabase, supabaseUrl, supabaseKey } from "@/lib/supabase";
 
 interface Player {
   id: string;
@@ -615,12 +615,34 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
     }
   };
 
-  const handleExitQuiz = () => {
-    if (isHost && gameState !== 'final') {
+  const handleExitQuiz = useCallback(() => {
+    if (isHost && gameStateRef.current !== 'final') {
       patchSessionState(quiz.gameCode, { gameState: 'abandoned' });
     }
     navigate("/");
-  };
+  }, [isHost, quiz.gameCode, navigate]);
+
+  // Abandon session when host closes/refreshes the tab mid-quiz
+  useEffect(() => {
+    if (!isHost) return;
+    const handler = () => {
+      if (gameStateRef.current === 'final') return;
+      // fetch with keepalive survives page unload; sendBeacon can't set custom headers
+      fetch(`${supabaseUrl}/rest/v1/session_state?game_code=eq.${quiz.gameCode}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`,
+          'Prefer': 'return=minimal',
+        },
+        body: JSON.stringify({ game_state: 'abandoned', updated_at: new Date().toISOString() }),
+        keepalive: true,
+      });
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [isHost, quiz.gameCode]);
 
   const exportResults = () => {
     const results = {
