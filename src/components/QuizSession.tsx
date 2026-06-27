@@ -1217,9 +1217,6 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
       const m = 1 - t;
       return [3*m**2*(p1[0]-p0[0])+6*m*t*(p2[0]-p1[0])+3*t**2*(p3[0]-p2[0]), 3*m**2*(p1[1]-p0[1])+6*m*t*(p2[1]-p1[1])+3*t**2*(p3[1]-p2[1])];
     };
-    const LB = [[110,190],[85,130],[40,65],[10,22]];
-    const RB = [[110,190],[135,130],[180,65],[210,22]];
-
     const podiumStep = (
       label: string,
       score: number,
@@ -1238,28 +1235,46 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
           <div style={{ position: 'relative', display: 'inline-flex' }}>
             <AvatarDisplay emoji={avatar} size={avatarSize} />
             <svg
-              viewBox="0 0 220 200"
-              style={{ position: 'absolute', top: -50, left: -54, width: 220, height: 200, pointerEvents: 'none', zIndex: 2 }}
+              viewBox="0 0 240 210"
+              style={{ position: 'absolute', top: -55, left: -64, width: 240, height: 210, pointerEvents: 'none', zIndex: 2 }}
             >
-              {Array.from({length:14},(_,i)=>{
-                const t=(i+0.5)/14;
-                const [px,py]=bPt(t,LB[0],LB[1],LB[2],LB[3]);
-                const [tdx,tdy]=bTan(t,LB[0],LB[1],LB[2],LB[3]);
-                const ang=Math.atan2(tdy,tdx)*180/Math.PI;
-                const sz=Math.max(7,14-6*t); const rz=Math.max(2.8,5.5-2.5*t);
-                return <ellipse key={i} cx={px} cy={py} rx={sz} ry={rz} fill="#C8A000" stroke="#7a5500" strokeWidth={0.4} transform={`rotate(${ang},${px},${py})`}/>;
+              {/* Stems */}
+              <path d="M 22,165 C 18,88 72,18 118,8" stroke="#7a5800" strokeWidth={2} fill="none" strokeLinecap="round"/>
+              <path d="M 218,165 C 222,88 168,18 122,8" stroke="#7a5800" strokeWidth={2} fill="none" strokeLinecap="round"/>
+              {/* Left branch leaves */}
+              {Array.from({length:22},(_,i)=>{
+                const t=i/21;
+                const AL=[[22,165],[18,88],[72,18],[118,8]];
+                const [px,py]=bPt(t,AL[0],AL[1],AL[2],AL[3]);
+                const [tdx,tdy]=bTan(t,AL[0],AL[1],AL[2],AL[3]);
+                const tlen=Math.sqrt(tdx*tdx+tdy*tdy)||1;
+                const ntx=tdx/tlen; const nty=tdy/tlen;
+                const nx=-nty; const ny=ntx;
+                const side=i%2===0?1:-1;
+                const lx=px+nx*side*3.5; const ly=py+ny*side*3.5;
+                const ang=Math.atan2(tdy,tdx)*180/Math.PI+90;
+                const sz=Math.max(5,10-4*t);
+                return <ellipse key={i} cx={lx} cy={ly} rx={sz} ry={3} fill="#C8A800" stroke="#8B6800" strokeWidth={0.5} transform={`rotate(${ang},${lx},${ly})`}/>;
               })}
-              {Array.from({length:14},(_,i)=>{
-                const t=(i+0.5)/14;
-                const [px,py]=bPt(t,RB[0],RB[1],RB[2],RB[3]);
-                const [tdx,tdy]=bTan(t,RB[0],RB[1],RB[2],RB[3]);
-                const ang=Math.atan2(tdy,tdx)*180/Math.PI;
-                const sz=Math.max(7,14-6*t); const rz=Math.max(2.8,5.5-2.5*t);
-                return <ellipse key={i} cx={px} cy={py} rx={sz} ry={rz} fill="#C8A000" stroke="#7a5500" strokeWidth={0.4} transform={`rotate(${ang},${px},${py})`}/>;
+              {/* Right branch leaves */}
+              {Array.from({length:22},(_,i)=>{
+                const t=i/21;
+                const AR=[[218,165],[222,88],[168,18],[122,8]];
+                const [px,py]=bPt(t,AR[0],AR[1],AR[2],AR[3]);
+                const [tdx,tdy]=bTan(t,AR[0],AR[1],AR[2],AR[3]);
+                const tlen=Math.sqrt(tdx*tdx+tdy*tdy)||1;
+                const ntx=tdx/tlen; const nty=tdy/tlen;
+                const nx=-nty; const ny=ntx;
+                const side=i%2===0?1:-1;
+                const lx=px+nx*side*3.5; const ly=py+ny*side*3.5;
+                const ang=Math.atan2(tdy,tdx)*180/Math.PI+90;
+                const sz=Math.max(5,10-4*t);
+                return <ellipse key={i} cx={lx} cy={ly} rx={sz} ry={3} fill="#C8A800" stroke="#8B6800" strokeWidth={0.5} transform={`rotate(${ang},${lx},${ly})`}/>;
               })}
-              <circle cx={110} cy={187} r={4} fill="#8B0000" stroke="#5a0000" strokeWidth={0.5}/>
-              <circle cx={103} cy={192} r={3} fill="#8B0000" stroke="#5a0000" strokeWidth={0.5}/>
-              <circle cx={117} cy={192} r={3} fill="#8B0000" stroke="#5a0000" strokeWidth={0.5}/>
+              {/* Berry cluster at crown base */}
+              <circle cx={120} cy={8} r={5} fill="#8B0000" stroke="#5a0000" strokeWidth={0.5}/>
+              <circle cx={112} cy={13} r={3.5} fill="#8B0000" stroke="#5a0000" strokeWidth={0.5}/>
+              <circle cx={128} cy={13} r={3.5} fill="#8B0000" stroke="#5a0000" strokeWidth={0.5}/>
             </svg>
           </div>
         ) : (
@@ -1315,17 +1330,55 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
         `}</style>
         <Fireworks />
 
-        {/* Stage spotlights — fixed at top of screen */}
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 320, pointerEvents: 'none', zIndex: 1, overflow: 'hidden' }}>
-          {/* Left beam */}
-          <div style={{ position: 'absolute', top: 0, left: '12%', width: 220, height: 320, background: 'linear-gradient(175deg,rgba(200,210,255,0.17) 0%,transparent 80%)', clipPath: 'polygon(38% 0%,62% 0%,100% 100%,0% 100%)', transform: 'rotate(-12deg)', transformOrigin: 'top center' }} />
-          <div style={{ position: 'absolute', top: 0, left: 'calc(12% + 84px)', transform: 'translateX(-50%)', width: 36, height: 15, background: 'linear-gradient(180deg,#b0b8d8,#8890b0)', borderRadius: '5px 5px 3px 3px', border: '1.5px solid #7880a8', boxShadow: '0 0 10px rgba(180,190,255,0.5)' }} />
-          {/* Center beam — gold */}
-          <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: 240, height: 320, background: 'linear-gradient(180deg,rgba(255,215,0,0.22) 0%,transparent 80%)', clipPath: 'polygon(34% 0%,66% 0%,100% 100%,0% 100%)' }} />
-          <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: 40, height: 17, background: 'linear-gradient(180deg,#FFD700,#CC9900)', borderRadius: '5px 5px 3px 3px', border: '1.5px solid #A07800', boxShadow: '0 0 18px rgba(255,215,0,0.7)' }} />
-          {/* Right beam */}
-          <div style={{ position: 'absolute', top: 0, right: '12%', width: 220, height: 320, background: 'linear-gradient(185deg,rgba(200,210,255,0.17) 0%,transparent 80%)', clipPath: 'polygon(38% 0%,62% 0%,100% 100%,0% 100%)', transform: 'rotate(12deg)', transformOrigin: 'top center' }} />
-          <div style={{ position: 'absolute', top: 0, right: 'calc(12% + 48px)', width: 36, height: 15, background: 'linear-gradient(180deg,#b0b8d8,#8890b0)', borderRadius: '5px 5px 3px 3px', border: '1.5px solid #7880a8', boxShadow: '0 0 10px rgba(180,190,255,0.5)' }} />
+        {/* Stage spotlights — SVG cones aimed at podium columns */}
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none', zIndex: 1, overflow: 'hidden' }}>
+          <svg width="100%" height="100%" viewBox="0 0 1000 820" preserveAspectRatio="xMidYMin slice" style={{ display: 'block' }}>
+            <defs>
+              <linearGradient id="beam-l" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="rgba(190,210,255,0.55)"/>
+                <stop offset="60%" stopColor="rgba(190,210,255,0.12)"/>
+                <stop offset="100%" stopColor="rgba(190,210,255,0)"/>
+              </linearGradient>
+              <linearGradient id="beam-c" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="rgba(255,215,0,0.65)"/>
+                <stop offset="55%" stopColor="rgba(255,215,0,0.18)"/>
+                <stop offset="100%" stopColor="rgba(255,215,0,0)"/>
+              </linearGradient>
+              <linearGradient id="beam-r" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="rgba(190,210,255,0.55)"/>
+                <stop offset="60%" stopColor="rgba(190,210,255,0.12)"/>
+                <stop offset="100%" stopColor="rgba(190,210,255,0)"/>
+              </linearGradient>
+              <filter id="bblur" x="-20%" y="0%" width="140%" height="110%">
+                <feGaussianBlur stdDeviation="12"/>
+              </filter>
+            </defs>
+
+            {/* Left beam — aimed at p2 (silver, ~x=340) from fixture at x=200 */}
+            <polygon points="188,0 212,0 490,820 90,820" fill="url(#beam-l)" filter="url(#bblur)"/>
+            <polygon points="192,0 208,0 445,820 135,820" fill="url(#beam-l)" opacity="0.5"/>
+            {/* Left fixture head */}
+            <rect x="164" y="0" width="72" height="16" rx="5" fill="url(#fix-l)"/>
+            <ellipse cx="200" cy="4" rx="30" ry="8" fill="#c8d4f0" stroke="#8898c8" strokeWidth="1.5"/>
+            <ellipse cx="200" cy="2" rx="16" ry="5" fill="rgba(200,220,255,0.9)"/>
+            <circle cx="200" cy="0" r="7" fill="rgba(220,235,255,1)" opacity="0.8"/>
+
+            {/* Center beam — aimed at p1 (gold, x=500) from fixture at x=500 */}
+            <polygon points="478,0 522,0 720,820 280,820" fill="url(#beam-c)" filter="url(#bblur)"/>
+            <polygon points="485,0 515,0 680,820 320,820" fill="url(#beam-c)" opacity="0.5"/>
+            {/* Center fixture head (gold) */}
+            <ellipse cx="500" cy="4" rx="34" ry="10" fill="#e8c000" stroke="#a08800" strokeWidth="2"/>
+            <ellipse cx="500" cy="2" rx="18" ry="6" fill="rgba(255,240,80,0.95)"/>
+            <circle cx="500" cy="0" r="9" fill="rgba(255,248,160,1)" opacity="0.9"/>
+
+            {/* Right beam — aimed at p3 (bronze, ~x=660) from fixture at x=800 */}
+            <polygon points="788,0 812,0 910,820 510,820" fill="url(#beam-r)" filter="url(#bblur)"/>
+            <polygon points="792,0 808,0 865,820 555,820" fill="url(#beam-r)" opacity="0.5"/>
+            {/* Right fixture head */}
+            <ellipse cx="800" cy="4" rx="30" ry="8" fill="#c8d4f0" stroke="#8898c8" strokeWidth="1.5"/>
+            <ellipse cx="800" cy="2" rx="16" ry="5" fill="rgba(200,220,255,0.9)"/>
+            <circle cx="800" cy="0" r="7" fill="rgba(220,235,255,1)" opacity="0.8"/>
+          </svg>
         </div>
 
         {/* Floating reaction bubbles (with podium colors for top 3) */}
@@ -1358,15 +1411,69 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
         <div className="relative z-10 flex min-h-screen">
           {/* ── Main content ── */}
           <div className="flex-1 flex flex-col overflow-auto px-4 pt-8 text-center">
-            {/* Banner title */}
-            <div className="mb-4 flex-shrink-0 flex items-center justify-center">
-              <div style={{ width: 0, height: 0, borderTop: '30px solid transparent', borderBottom: '30px solid transparent', borderRight: '22px solid #8B0E0E' }} />
-              <div style={{ background: 'linear-gradient(180deg,#c41515 0%,#9b1010 100%)', padding: '10px 36px', boxShadow: '0 4px 18px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.15)' }}>
-                <h1 style={{ fontFamily: 'var(--ap-font-display)', fontSize: 'clamp(2rem,5vw,3.2rem)', fontWeight: 700, letterSpacing: '-1px', margin: 0, color: '#FFD700', textShadow: '0 1px 0 #7a4d00, 0 2px 10px rgba(0,0,0,0.5)' }}>
-                  Quiz terminé !
-                </h1>
-              </div>
-              <div style={{ width: 0, height: 0, borderTop: '30px solid transparent', borderBottom: '30px solid transparent', borderLeft: '22px solid #8B0E0E' }} />
+            {/* Banner title — SVG ribbon */}
+            <div className="mb-4 flex-shrink-0 flex justify-center px-2">
+              <svg viewBox="0 0 720 100" style={{ width: '100%', maxWidth: 720, display: 'block', overflow: 'visible', filter: 'drop-shadow(0 8px 24px rgba(0,0,0,0.55))' }}>
+                <defs>
+                  <linearGradient id="rbd" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#f02020"/>
+                    <stop offset="22%" stopColor="#cc1010"/>
+                    <stop offset="50%" stopColor="#900c0c"/>
+                    <stop offset="78%" stopColor="#cc1010"/>
+                    <stop offset="100%" stopColor="#f02020"/>
+                  </linearGradient>
+                  <linearGradient id="foldLg" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="#420606"/>
+                    <stop offset="100%" stopColor="#8a1010"/>
+                  </linearGradient>
+                  <linearGradient id="foldRg" x1="1" y1="0" x2="0" y2="0">
+                    <stop offset="0%" stopColor="#420606"/>
+                    <stop offset="100%" stopColor="#8a1010"/>
+                  </linearGradient>
+                  <linearGradient id="gL" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="#FFD700" stopOpacity="0"/>
+                    <stop offset="12%" stopColor="#FFD700"/>
+                    <stop offset="88%" stopColor="#FFD700"/>
+                    <stop offset="100%" stopColor="#FFD700" stopOpacity="0"/>
+                  </linearGradient>
+                  <linearGradient id="shine2" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="rgba(255,255,255,0.22)"/>
+                    <stop offset="55%" stopColor="rgba(255,255,255,0)"/>
+                  </linearGradient>
+                  <filter id="tshdw">
+                    <feDropShadow dx="1" dy="1.5" stdDeviation="1.5" floodColor="#6a3000" floodOpacity="0.9"/>
+                  </filter>
+                </defs>
+                {/* Left fold (darker triangles) */}
+                <polygon points="0,2 82,2 82,50 0,27" fill="url(#foldLg)"/>
+                <polygon points="0,98 82,98 82,50 0,73" fill="url(#foldLg)"/>
+                {/* Right fold */}
+                <polygon points="638,2 720,2 720,27 638,50" fill="url(#foldRg)"/>
+                <polygon points="638,50 720,73 720,98 638,98" fill="url(#foldRg)"/>
+                {/* Main body */}
+                <rect x="72" y="2" width="576" height="96" fill="url(#rbd)"/>
+                {/* Shine top half */}
+                <rect x="72" y="2" width="576" height="42" fill="url(#shine2)"/>
+                {/* Gold lines */}
+                <rect x="72" y="20" width="576" height="2.5" fill="url(#gL)"/>
+                <rect x="72" y="77" width="576" height="2.5" fill="url(#gL)"/>
+                {/* Left ornaments */}
+                <text x="100" y="60" fontSize="32" fill="#FFD700" fontFamily="serif" textAnchor="middle">❧</text>
+                <text x="133" y="57" fontSize="18" fill="#FFD700" fontFamily="serif" textAnchor="middle" opacity="0.75">✦</text>
+                {/* Right ornaments (mirrored) */}
+                <g transform="translate(720,0) scale(-1,1)">
+                  <text x="100" y="60" fontSize="32" fill="#FFD700" fontFamily="serif" textAnchor="middle">❧</text>
+                  <text x="133" y="57" fontSize="18" fill="#FFD700" fontFamily="serif" textAnchor="middle" opacity="0.75">✦</text>
+                </g>
+                {/* Corner gold dots */}
+                <circle cx="72" cy="2" r="4.5" fill="#FFD700" opacity="0.8"/>
+                <circle cx="648" cy="2" r="4.5" fill="#FFD700" opacity="0.8"/>
+                <circle cx="72" cy="98" r="4.5" fill="#FFD700" opacity="0.8"/>
+                <circle cx="648" cy="98" r="4.5" fill="#FFD700" opacity="0.8"/>
+                {/* Title */}
+                <text x="361" y="62" textAnchor="middle" fontSize="38" fontWeight="700" fill="#7a3500" fontFamily="Fredoka, system-ui, sans-serif">Quiz terminé !</text>
+                <text x="360" y="61" textAnchor="middle" fontSize="38" fontWeight="700" fill="#FFD700" fontFamily="Fredoka, system-ui, sans-serif" filter="url(#tshdw)">Quiz terminé !</text>
+              </svg>
             </div>
 
             {/* Players 4+ — scrollable middle zone */}
