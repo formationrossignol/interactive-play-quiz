@@ -162,8 +162,15 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
     window.addEventListener('storage', handleStorage);
     const channel = subscribeToSessionState(gameCode, (state) => {
       lastRealtimeFireRef.current = Date.now();
-      // Set transition timer directly from realtime payload — poll is throttled for 4s after realtime
-      // fires, so without this the player's transition countdown never starts in the normal case.
+      // Set timer directly from realtime payload — poll is throttled 4s after realtime fires,
+      // so without this the countdown never starts (or stays at 0) in the normal case.
+      if (
+        state.gameState === 'question' &&
+        state.currentQuestionIndex !== lastTimerQuestionRef.current
+      ) {
+        timerEndRef.current = Date.now() + state.timeLeft * 1000;
+        lastTimerQuestionRef.current = state.currentQuestionIndex;
+      }
       if (
         state.gameState === 'transition' &&
         state.currentQuestionIndex !== lastTimerTransitionRef.current
@@ -363,11 +370,13 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
 
     setLastAnswerCorrect(correct);
     setLastEarnedPoints(earnedPoints);
-    const newScore = playerScore + earnedPoints;
     const storedPlayerRaw = sessionStorage.getItem(`quiz-player-${gameCode}`);
     if (storedPlayerRaw) {
       try {
         const storedPlayer = JSON.parse(storedPlayerRaw) as SharedPlayer;
+        // Use sessionStorage score as base — it's the last committed local score and
+        // never gets overwritten by stale Supabase reads (unlike playerScore state).
+        const newScore = (storedPlayer.score ?? 0) + earnedPoints;
         const updated: SharedPlayer = {
           ...storedPlayer,
           score: newScore,
