@@ -1347,65 +1347,35 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
               </svg>
             </div>
 
-            {/* Banner title — SVG ribbon with V-notch ends and fold flaps */}
+            {/* Banner title — simple arrow ribbon */}
             <div className="mb-4 flex-shrink-0 flex justify-center px-2">
-              <svg viewBox="0 0 800 148" style={{ width: '100%', maxWidth: 800, display: 'block', overflow: 'visible', filter: 'drop-shadow(0 10px 28px rgba(0,0,0,0.6))' }}>
+              <svg viewBox="0 0 800 76" style={{ width: '100%', maxWidth: 800, display: 'block', overflow: 'visible', filter: 'drop-shadow(0 6px 18px rgba(0,0,0,0.55))' }}>
                 <defs>
-                  <linearGradient id="rib-red" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#ec1e1e"/>
-                    <stop offset="28%" stopColor="#c01010"/>
-                    <stop offset="50%" stopColor="#940c0c"/>
-                    <stop offset="72%" stopColor="#c01010"/>
-                    <stop offset="100%" stopColor="#ec1e1e"/>
+                  <linearGradient id="rib2-red" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#d41010"/>
+                    <stop offset="42%" stopColor="#9e0808"/>
+                    <stop offset="58%" stopColor="#9e0808"/>
+                    <stop offset="100%" stopColor="#d41010"/>
                   </linearGradient>
-                  <linearGradient id="rib-gold-t" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#FFE566"/>
-                    <stop offset="55%" stopColor="#C8A000"/>
-                    <stop offset="100%" stopColor="#8B6200"/>
+                  <linearGradient id="rib2-shine" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="rgba(255,255,255,0.18)"/>
+                    <stop offset="55%" stopColor="rgba(255,255,255,0)"/>
                   </linearGradient>
-                  <linearGradient id="rib-gold-b" x1="0" y1="1" x2="0" y2="0">
-                    <stop offset="0%" stopColor="#FFE566"/>
-                    <stop offset="55%" stopColor="#C8A000"/>
-                    <stop offset="100%" stopColor="#8B6200"/>
-                  </linearGradient>
-                  <linearGradient id="rib-dark-l" x1="1" y1="0" x2="0" y2="0">
-                    <stop offset="0%" stopColor="#7a0808"/>
-                    <stop offset="100%" stopColor="#320202"/>
-                  </linearGradient>
-                  <linearGradient id="rib-dark-r" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0%" stopColor="#7a0808"/>
-                    <stop offset="100%" stopColor="#320202"/>
-                  </linearGradient>
-                  <linearGradient id="rib-shine" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="rgba(255,255,255,0.22)"/>
-                    <stop offset="100%" stopColor="rgba(255,255,255,0)"/>
-                  </linearGradient>
-                  <filter id="rib-tshadow">
-                    <feDropShadow dx="1" dy="2" stdDeviation="2.5" floodColor="#5a1800" floodOpacity="0.9"/>
+                  <filter id="rib2-ts">
+                    <feDropShadow dx="1" dy="2" stdDeviation="2" floodColor="#5a1800" floodOpacity="0.85"/>
                   </filter>
                 </defs>
-                {/* Fold flaps — drawn behind main body */}
-                <polygon points="52,114 80,114 60,142 22,142" fill="url(#rib-dark-l)"/>
-                <polygon points="720,114 748,114 778,142 740,142" fill="url(#rib-dark-r)"/>
-                {/* Gold edge lines on folds */}
-                <line x1="52" y1="114" x2="22" y2="142" stroke="#C8A000" strokeWidth="2.5" strokeLinecap="round"/>
-                <line x1="748" y1="114" x2="778" y2="142" stroke="#C8A000" strokeWidth="2.5" strokeLinecap="round"/>
-                {/* Gold top border — trapezoid following ribbon shape */}
-                <polygon points="52,6 748,6 720,20 80,20" fill="url(#rib-gold-t)"/>
-                {/* Main red body — hexagon with V-notch ends */}
-                <polygon points="80,20 720,20 748,60 720,100 80,100 52,60" fill="url(#rib-red)"/>
-                {/* Shine on upper half */}
-                <polygon points="82,20 718,20 746,58 82,58" fill="url(#rib-shine)" opacity="0.55"/>
-                {/* Gold bottom border */}
-                <polygon points="80,100 720,100 748,114 52,114" fill="url(#rib-gold-b)"/>
-                {/* V-notch accent circles */}
-                <circle cx="52" cy="60" r="7" fill="#FFD700" opacity="0.9"/>
-                <circle cx="748" cy="60" r="7" fill="#FFD700" opacity="0.9"/>
-                <circle cx="52" cy="60" r="3.5" fill="#FFF5A0" opacity="0.9"/>
-                <circle cx="748" cy="60" r="3.5" fill="#FFF5A0" opacity="0.9"/>
-                {/* Title text — shadow + gold layer */}
-                <text x="401" y="75" textAnchor="middle" fontSize="42" fontWeight="700" fill="#6a2000" fontFamily="Fredoka, system-ui, sans-serif">Quiz terminé !</text>
-                <text x="400" y="74" textAnchor="middle" fontSize="42" fontWeight="700" fill="#FFD700" fontFamily="Fredoka, system-ui, sans-serif" filter="url(#rib-tshadow)">Quiz terminé !</text>
+                {/* Main body — arrow-point both ends */}
+                <polygon points="0,38 56,0 744,0 800,38 744,76 56,76" fill="url(#rib2-red)"/>
+                {/* Top-half shine */}
+                <polygon points="0,38 56,0 744,0 800,38 744,36 56,36" fill="url(#rib2-shine)" opacity="0.55"/>
+                {/* Outer gold border */}
+                <polygon points="0,38 56,0 744,0 800,38 744,76 56,76" fill="none" stroke="#C8A000" strokeWidth="2.5"/>
+                {/* Inner gold border */}
+                <polygon points="22,38 66,10 734,10 778,38 734,66 66,66" fill="none" stroke="#E0B800" strokeWidth="1.5" opacity="0.85"/>
+                {/* Title */}
+                <text x="401" y="49" textAnchor="middle" fontSize="36" fontWeight="700" fill="#6a1800" fontFamily="Fredoka, system-ui, sans-serif">Quiz terminé !</text>
+                <text x="400" y="48" textAnchor="middle" fontSize="36" fontWeight="700" fill="#FFD700" fontFamily="Fredoka, system-ui, sans-serif" filter="url(#rib2-ts)">Quiz terminé !</text>
               </svg>
             </div>
 
