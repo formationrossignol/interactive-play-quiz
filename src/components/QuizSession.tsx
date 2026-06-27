@@ -1192,9 +1192,34 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
       textColor: string,
       avatarSize: 'sm' | 'md' | 'lg' | 'xl',
       glow?: string,
+      isFirst?: boolean,
     ) => (
       <div className="flex flex-col items-center" style={{ width }}>
-        <AvatarDisplay emoji={avatar} size={avatarSize} />
+        {isFirst ? (
+          <div style={{ position: 'relative', display: 'inline-flex' }}>
+            <AvatarDisplay emoji={avatar} size={avatarSize} />
+            <svg
+              viewBox="0 0 140 140"
+              style={{ position: 'absolute', top: -14, left: -14, width: 140, height: 140, pointerEvents: 'none', zIndex: 2 }}
+            >
+              {[120, 150, 180, 210, 240].map(deg => {
+                const rad = deg * Math.PI / 180;
+                const lx = 70 + 62 * Math.cos(rad);
+                const ly = 70 + 62 * Math.sin(rad);
+                return <ellipse key={deg} cx={lx} cy={ly} rx={11} ry={4.5} fill="#FFD700" stroke="#B8860B" strokeWidth={0.5} transform={`rotate(${deg + 90}, ${lx}, ${ly})`} />;
+              })}
+              {[-60, -30, 0, 30, 60].map(deg => {
+                const rad = deg * Math.PI / 180;
+                const lx = 70 + 62 * Math.cos(rad);
+                const ly = 70 + 62 * Math.sin(rad);
+                return <ellipse key={deg} cx={lx} cy={ly} rx={11} ry={4.5} fill="#FFD700" stroke="#B8860B" strokeWidth={0.5} transform={`rotate(${deg + 90}, ${lx}, ${ly})`} />;
+              })}
+              <path d="M 55,126 Q 70,134 85,126" stroke="#B8860B" strokeWidth={2.5} fill="none" strokeLinecap="round" />
+            </svg>
+          </div>
+        ) : (
+          <AvatarDisplay emoji={avatar} size={avatarSize} />
+        )}
         <div
           style={{
             width: '100%',
@@ -1329,6 +1354,22 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
               <div className="flex-1" />
             )}
 
+            {/* Spotlights above podium */}
+            <div className="flex justify-center gap-0 flex-shrink-0 pointer-events-none">
+              <div style={{ width: 140, height: 90, position: 'relative' }}>
+                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(200,200,230,0.22) 0%,transparent 100%)', clipPath: 'polygon(33% 0%,67% 0%,90% 100%,10% 100%)' }} />
+                <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: 18, height: 9, background: 'rgba(200,200,230,0.75)', borderRadius: 4 }} />
+              </div>
+              <div style={{ width: 160, height: 90, position: 'relative' }}>
+                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(255,220,50,0.32) 0%,transparent 100%)', clipPath: 'polygon(28% 0%,72% 0%,95% 100%,5% 100%)' }} />
+                <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: 22, height: 10, background: 'rgba(255,220,50,0.95)', borderRadius: 5, boxShadow: '0 0 12px rgba(255,220,50,0.7)' }} />
+              </div>
+              <div style={{ width: 130, height: 90, position: 'relative' }}>
+                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(210,160,100,0.2) 0%,transparent 100%)', clipPath: 'polygon(33% 0%,67% 0%,90% 100%,10% 100%)' }} />
+                <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: 18, height: 9, background: 'rgba(210,160,100,0.65)', borderRadius: 4 }} />
+              </div>
+            </div>
+
             {/* Podium — order: 2nd | 1st | 3rd — pinned to bottom */}
             <div className="flex items-end justify-center gap-0 flex-shrink-0">
               {p2
@@ -1339,10 +1380,11 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
                 : <div style={{ width: 140 }} />}
 
               {p1
-                ? podiumStep(p1.name, p1.score, p1.avatar, '🥇', 160, 160,
+                ? podiumStep(p1.name, p1.score, p1.avatar, '🏆', 160, 160,
                     'linear-gradient(170deg,#FFE566 0%,#FFB800 100%)',
                     '#7a4000', 'xl',
-                    'inset 0 1px 0 rgba(255,255,255,0.5), 0 -10px 36px rgba(255,184,0,0.55)')
+                    'inset 0 1px 0 rgba(255,255,255,0.5), 0 -10px 36px rgba(255,184,0,0.55)',
+                    true)
                 : <div style={{ width: 160 }} />}
 
               {p3
