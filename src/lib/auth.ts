@@ -59,7 +59,9 @@ export const register = (email: string, username: string, password: string): Use
   
   // Create new user
   const newUser: User = {
-    id: Date.now().toString(),
+    id: typeof crypto !== 'undefined' && 'randomUUID' in crypto
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
     email,
     username,
     createdAt: new Date().toISOString()

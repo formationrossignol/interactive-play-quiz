@@ -24,8 +24,12 @@ export interface SavedQuiz {
 const QUIZ_STORAGE_KEY = 'saved_quizzes';
 
 export const getSavedQuizzes = (): SavedQuiz[] => {
-  const quizzesStr = localStorage.getItem(QUIZ_STORAGE_KEY);
-  return quizzesStr ? JSON.parse(quizzesStr) : [];
+  try {
+    const quizzesStr = localStorage.getItem(QUIZ_STORAGE_KEY);
+    return quizzesStr ? (JSON.parse(quizzesStr) as SavedQuiz[]) : [];
+  } catch {
+    return [];
+  }
 };
 
 export const getUserQuizzes = (userId: string): SavedQuiz[] => {
@@ -63,7 +67,13 @@ export const saveQuiz = (quiz: Omit<SavedQuiz, 'id' | 'createdAt' | 'userId'>): 
     transitionTime: quiz.transitionTime ?? 5,
     category: quiz.category || 'Autre',
     type: quiz.type || 'quiz',
-    id: (Math.floor(Math.random() * 900000) + 100000).toString(),
+    id: (() => {
+      const existing = new Set(getSavedQuizzes().map((q) => q.id));
+      let candidate: string;
+      do { candidate = (Math.floor(Math.random() * 900000) + 100000).toString(); }
+      while (existing.has(candidate));
+      return candidate;
+    })(),
     createdAt: new Date().toISOString(),
     userId: user.id
   };
