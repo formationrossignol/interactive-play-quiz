@@ -48,6 +48,12 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
   const [lastAnsweredQuestion, setLastAnsweredQuestion] = useState<any>(null);
 
   const [quizQuestions, setQuizQuestions] = useState<any[]>([]);
+
+  // Reactions (final screen)
+  const [reactionComment, setReactionComment] = useState('');
+  const [lastSentEmoji, setLastSentEmoji] = useState<string | null>(null);
+  const lastEmojiTimeRef = useRef<number>(0);
+  const lastCommentTimeRef = useRef<number>(0);
   const totalQuestions = quizQuestions.length || 1;
   const liveQuestion = quizQuestions[currentQuestion] ?? null;
 
@@ -350,6 +356,37 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
 
   const handleExitQuiz = () => {
     navigate("/");
+  };
+
+  const REACTION_EMOJIS = ['🎉', '🔥', '💯', '👏', '😍', '🤩'];
+  const EMOJI_COOLDOWN_MS = 2000;
+  const COMMENT_COOLDOWN_MS = 5000;
+
+  const sendReaction = (emoji: string, comment?: string) => {
+    const now = Date.now();
+    if (now - lastEmojiTimeRef.current < EMOJI_COOLDOWN_MS) return;
+    if (comment && now - lastCommentTimeRef.current < COMMENT_COOLDOWN_MS) return;
+    lastEmojiTimeRef.current = now;
+    if (comment) lastCommentTimeRef.current = now;
+
+    const raw = sessionStorage.getItem(`quiz-player-${gameCode}`);
+    if (!raw) return;
+    try {
+      const stored = JSON.parse(raw) as SharedPlayer;
+      const updated: SharedPlayer = {
+        ...stored,
+        lastReaction: {
+          emoji,
+          comment: comment?.trim().slice(0, 100) || undefined,
+          sentAt: new Date().toISOString(),
+        },
+      };
+      sessionStorage.setItem(`quiz-player-${gameCode}`, JSON.stringify(updated));
+      upsertPlayerInSession(gameCode, updated, true);
+      setLastSentEmoji(emoji);
+      setReactionComment('');
+      setTimeout(() => setLastSentEmoji(null), 1500);
+    } catch {}
   };
 
   const submitAnswer = (answer: number | string) => {
@@ -945,6 +982,81 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
             })}
           </div>
         )}
+
+        {/* Reaction panel */}
+        <div
+          className="mb-6"
+          style={{
+            background: 'rgba(255,255,255,0.12)',
+            border: '2px solid rgba(255,255,255,0.2)',
+            borderRadius: 'var(--ap-r-xl)',
+            padding: '16px',
+          }}
+        >
+          <p style={{ color: 'rgba(255,255,255,0.75)', fontWeight: 700, fontSize: '13px', marginBottom: '10px', fontFamily: 'var(--ap-font-body)' }}>
+            Réagis au quiz !
+          </p>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
+            {REACTION_EMOJIS.map((e) => (
+              <button
+                key={e}
+                onClick={() => sendReaction(e, reactionComment || undefined)}
+                style={{
+                  fontSize: '1.8rem',
+                  background: lastSentEmoji === e ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.1)',
+                  border: '2px solid rgba(255,255,255,0.2)',
+                  borderRadius: '12px',
+                  padding: '6px 10px',
+                  cursor: 'pointer',
+                  transition: 'transform 0.1s, background 0.1s',
+                  transform: lastSentEmoji === e ? 'scale(1.25)' : 'scale(1)',
+                }}
+              >
+                {e}
+              </button>
+            ))}
+          </div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <input
+              value={reactionComment}
+              onChange={(e) => setReactionComment(e.target.value.slice(0, 100))}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && reactionComment.trim()) {
+                  sendReaction('💬', reactionComment);
+                }
+              }}
+              placeholder="Laisse un commentaire… (100 car. max)"
+              style={{
+                flex: 1,
+                background: 'rgba(255,255,255,0.1)',
+                border: '2px solid rgba(255,255,255,0.2)',
+                borderRadius: '999px',
+                padding: '8px 14px',
+                color: '#fff',
+                fontSize: '13px',
+                fontFamily: 'var(--ap-font-body)',
+                outline: 'none',
+              }}
+            />
+            <button
+              onClick={() => { if (reactionComment.trim()) sendReaction('💬', reactionComment); }}
+              disabled={!reactionComment.trim()}
+              style={{
+                background: reactionComment.trim() ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.08)',
+                border: '2px solid rgba(255,255,255,0.2)',
+                borderRadius: '999px',
+                padding: '8px 16px',
+                color: '#fff',
+                fontWeight: 700,
+                fontSize: '13px',
+                cursor: reactionComment.trim() ? 'pointer' : 'not-allowed',
+                fontFamily: 'var(--ap-font-body)',
+              }}
+            >
+              Envoyer
+            </button>
+          </div>
+        </div>
 
         <button
           className="ap-btn ap-btn--lg ap-btn--pill"

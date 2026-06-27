@@ -137,6 +137,11 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
   const [disconnectedIds, setDisconnectedIds] = useState<Set<string>>(new Set());
   const disconnectedIdsRef = useRef<Set<string>>(new Set());
 
+  // Live reactions on the final screen
+  const [floatingReactions, setFloatingReactions] = useState<Array<{ id: string; emoji: string; x: number }>>([]);
+  const [reactionComments, setReactionComments] = useState<Array<{ playerName: string; avatar: string; text: string; ts: number }>>([]);
+  const seenReactionKeysRef = useRef<Set<string>>(new Set());
+
   const joinUrl = `${window.location.origin}/join/${quiz.gameCode}`;
   const currentQuestion = quiz.questions[currentQuestionIndex];
 
@@ -413,6 +418,45 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
     patchSessionState(quiz.gameCode, { timeLeft });
   }, [gameState, isHost, quiz.gameCode, timeLeft]);
 
+
+  // Poll for player reactions on the final screen (2s interval, host-only)
+  useEffect(() => {
+    if (!isHost || gameState !== 'final') return;
+    seenReactionKeysRef.current = new Set();
+
+    const poll = async () => {
+      const { data } = await supabase
+        .from('session_state')
+        .select('players')
+        .eq('game_code', quiz.gameCode)
+        .single();
+      if (!data?.players || !Array.isArray(data.players)) return;
+
+      (data.players as SharedPlayer[]).forEach((p) => {
+        if (!p.lastReaction) return;
+        const key = `${p.id}:${p.lastReaction.sentAt}`;
+        if (seenReactionKeysRef.current.has(key)) return;
+        seenReactionKeysRef.current.add(key);
+
+        // Spawn floating emoji
+        const floatId = `${Date.now()}-${Math.random()}`;
+        const x = Math.random() * 75 + 10; // 10–85% from left
+        setFloatingReactions((prev) => [...prev, { id: floatId, emoji: p.lastReaction!.emoji, x }]);
+        setTimeout(() => setFloatingReactions((prev) => prev.filter((r) => r.id !== floatId)), 2500);
+
+        // Record comment if present
+        if (p.lastReaction.comment) {
+          setReactionComments((prev) =>
+            [{ playerName: p.name, avatar: p.avatar, text: p.lastReaction!.comment!, ts: Date.now() }, ...prev].slice(0, 20)
+          );
+        }
+      });
+    };
+
+    poll();
+    const interval = setInterval(poll, 2000);
+    return () => clearInterval(interval);
+  }, [isHost, gameState, quiz.gameCode]);
 
   // Update session stats
   useEffect(() => {
@@ -1101,7 +1145,22 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
 
     return (
       <div style={{ background: 'var(--ap-paper)', minHeight: '100vh', fontFamily: 'var(--ap-font-body)' }} className="relative">
+        <style>{`
+          @keyframes floatUp {
+            0%   { opacity: 1; transform: translateY(0) scale(1); }
+            70%  { opacity: 0.9; }
+            100% { opacity: 0; transform: translateY(-220px) scale(2); }
+          }
+          .reaction-float { animation: floatUp 2.2s ease-out forwards; pointer-events: none; position: absolute; font-size: 2rem; }
+        `}</style>
         <Fireworks />
+
+        {/* Floating emoji overlay */}
+        {floatingReactions.map((r) => (
+          <span key={r.id} className="reaction-float z-20" style={{ left: `${r.x}%`, bottom: '20%' }}>
+            {r.emoji}
+          </span>
+        ))}
 
         <div className="relative z-10 flex min-h-screen">
           {/* ── Main content ── */}
@@ -1223,7 +1282,7 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
               >
                 Classement · {sortedPlayers.length} joueurs
               </div>
-              <div className="overflow-y-auto space-y-1.5 flex-1">
+              <div className="overflow-y-auto space-y-1.5" style={{ maxHeight: '45%' }}>
                 {sortedPlayers.map((player, idx) => {
                   const isOffline = disconnectedIds.has(player.id);
                   return (
@@ -1263,6 +1322,44 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
                   );
                 })}
               </div>
+
+              {/* Live reactions feed */}
+              {reactionComments.length > 0 && (
+                <div className="flex-shrink-0 mt-3">
+                  <div
+                    className="uppercase tracking-wider text-xs font-bold mb-2 flex-shrink-0"
+                    style={{ color: 'var(--ap-muted)', fontFamily: 'var(--ap-font-display)' }}
+                  >
+                    Réactions live
+                  </div>
+                  <div className="space-y-1.5 overflow-y-auto" style={{ maxHeight: '180px' }}>
+                    {reactionComments.map((c, i) => (
+                      <div
+                        key={`${c.playerName}-${c.ts}-${i}`}
+                        className="flex items-start gap-1.5 px-2 py-1.5"
+                        style={{
+                          background: 'var(--ap-paper)',
+                          border: '1px solid var(--ap-line)',
+                          borderRadius: 'var(--ap-r-sm)',
+                        }}
+                      >
+                        <AvatarDisplay emoji={c.avatar} size="sm" />
+                        <div style={{ minWidth: 0 }}>
+                          <span
+                            className="font-bold text-xs block truncate"
+                            style={{ color: 'var(--ap-brand)', fontFamily: 'var(--ap-font-display)' }}
+                          >
+                            {c.playerName}
+                          </span>
+                          <span className="text-xs" style={{ color: 'var(--ap-ink)', fontFamily: 'var(--ap-font-body)', wordBreak: 'break-word' }}>
+                            {c.text}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

@@ -20,6 +20,7 @@ export interface SharedPlayer {
   lastAnswer?: number;
   lastAnswerQuestionIndex?: number;
   lastHeartbeat?: string;
+  lastReaction?: { emoji: string; comment?: string; sentAt: string };
 }
 
 export interface SharedSessionState {
