@@ -1209,14 +1209,6 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
     const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
     const [p1, p2, p3] = sortedPlayers;
 
-    const bPt = (t: number, p0: number[], p1: number[], p2: number[], p3: number[]) => {
-      const m = 1 - t;
-      return [m**3*p0[0]+3*m**2*t*p1[0]+3*m*t**2*p2[0]+t**3*p3[0], m**3*p0[1]+3*m**2*t*p1[1]+3*m*t**2*p2[1]+t**3*p3[1]];
-    };
-    const bTan = (t: number, p0: number[], p1: number[], p2: number[], p3: number[]) => {
-      const m = 1 - t;
-      return [3*m**2*(p1[0]-p0[0])+6*m*t*(p2[0]-p1[0])+3*t**2*(p3[0]-p2[0]), 3*m**2*(p1[1]-p0[1])+6*m*t*(p2[1]-p1[1])+3*t**2*(p3[1]-p2[1])];
-    };
     const podiumStep = (
       label: string,
       score: number,
@@ -1228,59 +1220,9 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
       textColor: string,
       avatarSize: 'sm' | 'md' | 'lg' | 'xl',
       glow?: string,
-      isFirst?: boolean,
     ) => (
       <div className="flex flex-col items-center" style={{ width }}>
-        {isFirst ? (
-          <div style={{ position: 'relative', display: 'inline-flex' }}>
-            <AvatarDisplay emoji={avatar} size={avatarSize} />
-            {/* Laurel wreath — circular arc, cx=120 cy=111 (xl avatar 112px, top=-55 left=-64) */}
-            <svg
-              viewBox="0 0 240 210"
-              style={{ position: 'absolute', top: -55, left: -64, width: 240, height: 210, pointerEvents: 'none', zIndex: 2 }}
-            >
-              {/* Stems */}
-              <path d="M 97,182 A 75,75 0 0 1 110,37" stroke="#7a5800" strokeWidth={1.8} fill="none" strokeLinecap="round"/>
-              <path d="M 143,182 A 75,75 0 0 0 130,37" stroke="#7a5800" strokeWidth={1.8} fill="none" strokeLinecap="round"/>
-              {/* Left branch — θ from 108° to 262° clockwise (through left side) */}
-              {Array.from({length:15},(_,i)=>{
-                const t=i/14;
-                const thetaDeg=108+t*154;
-                const theta=thetaDeg*Math.PI/180;
-                const cx=120,cy=111,R=75;
-                const leafLen=12+12*Math.sin(t*Math.PI);
-                const leafWid=5+4*Math.sin(t*Math.PI);
-                const lx=cx+(R+leafLen*0.3)*Math.cos(theta);
-                const ly=cy+(R+leafLen*0.3)*Math.sin(theta);
-                const rot=thetaDeg+(i%2===0?-7:7);
-                const bright=42+14*Math.sin(t*Math.PI);
-                const sat=82+8*Math.sin(t*Math.PI);
-                return <ellipse key={`l${i}`} cx={lx} cy={ly} rx={leafLen} ry={leafWid} fill={`hsl(43,${sat}%,${bright}%)`} stroke="#7a4800" strokeWidth={0.7} transform={`rotate(${rot},${lx},${ly})`}/>;
-              })}
-              {/* Right branch — θ from 72° to -82° counterclockwise (through right side) */}
-              {Array.from({length:15},(_,i)=>{
-                const t=i/14;
-                const thetaDeg=72-t*154;
-                const theta=thetaDeg*Math.PI/180;
-                const cx=120,cy=111,R=75;
-                const leafLen=12+12*Math.sin(t*Math.PI);
-                const leafWid=5+4*Math.sin(t*Math.PI);
-                const lx=cx+(R+leafLen*0.3)*Math.cos(theta);
-                const ly=cy+(R+leafLen*0.3)*Math.sin(theta);
-                const rot=thetaDeg+(i%2===0?7:-7);
-                const bright=42+14*Math.sin(t*Math.PI);
-                const sat=82+8*Math.sin(t*Math.PI);
-                return <ellipse key={`r${i}`} cx={lx} cy={ly} rx={leafLen} ry={leafWid} fill={`hsl(43,${sat}%,${bright}%)`} stroke="#7a4800" strokeWidth={0.7} transform={`rotate(${rot},${lx},${ly})`}/>;
-              })}
-              {/* Berry cluster at top */}
-              <circle cx={120} cy={37} r={6.5} fill="#9B2226" stroke="#6A0812" strokeWidth={1}/>
-              <circle cx={112} cy={44} r={4.5} fill="#9B2226" stroke="#6A0812" strokeWidth={0.8}/>
-              <circle cx={128} cy={44} r={4.5} fill="#9B2226" stroke="#6A0812" strokeWidth={0.8}/>
-            </svg>
-          </div>
-        ) : (
-          <AvatarDisplay emoji={avatar} size={avatarSize} />
-        )}
+        <AvatarDisplay emoji={avatar} size={avatarSize} />
         <div
           style={{
             width: '100%',
@@ -1520,8 +1462,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
                 ? podiumStep(p1.name, p1.score, p1.avatar, '🏆', 160, 160,
                     'linear-gradient(170deg,#FFE566 0%,#FFB800 100%)',
                     '#7a4000', 'xl',
-                    'inset 0 1px 0 rgba(255,255,255,0.5), 0 -10px 36px rgba(255,184,0,0.55)',
-                    true)
+                    'inset 0 1px 0 rgba(255,255,255,0.5), 0 -10px 36px rgba(255,184,0,0.55)')
                 : <div style={{ width: 160 }} />}
 
               {p3
