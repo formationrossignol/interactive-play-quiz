@@ -141,6 +141,7 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
   const [floatingReactions, setFloatingReactions] = useState<Array<{ id: string; emoji: string; x: number; playerName: string; avatar: string; text: string; isEmoji: boolean }>>([]);
   const [reactionComments, setReactionComments] = useState<Array<{ playerName: string; avatar: string; text: string; ts: number }>>([]);
   const seenReactionKeysRef = useRef<Set<string>>(new Set());
+  const sessionStartedAtRef = useRef<number>(Date.now());
 
   const joinUrl = `${window.location.origin}/join/${quiz.gameCode}`;
   const currentQuestion = quiz.questions[currentQuestionIndex];
@@ -441,6 +442,8 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
 
       (data.players as SharedPlayer[]).forEach((p) => {
         if (!p.lastReaction) return;
+        // Ignore reactions from previous sessions
+        if (new Date(p.lastReaction.sentAt).getTime() < sessionStartedAtRef.current) return;
         const key = `${p.id}:${p.lastReaction.sentAt}`;
         if (seenReactionKeysRef.current.has(key)) return;
         seenReactionKeysRef.current.add(key);
@@ -1110,7 +1113,7 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
           currentQuestion={currentQuestion}
           answerDistribution={answerDistribution}
           onNext={showLeaderboard}
-          onSkipToNext={isHost ? nextQuestion : undefined}
+          onSkipToNext={isHost && currentQuestionIndex + 1 < quiz.questions.length ? nextQuestion : undefined}
           isHost={isHost || false}
         />
       </ThemedBackground>
@@ -1196,22 +1199,32 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
         `}</style>
         <Fireworks />
 
-        {/* Floating reaction bubbles */}
-        {floatingReactions.map((r) => (
-          <div key={r.id} className="reaction-float" style={{ left: `${r.x}%`, bottom: '20%' }}>
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              background: 'rgba(0,0,0,0.78)', backdropFilter: 'blur(10px)',
-              border: '1.5px solid rgba(255,255,255,0.2)',
-              borderRadius: 999, padding: '6px 14px',
-              boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-            }}>
-              <div style={{ flexShrink: 0 }}><AvatarDisplay emoji={r.avatar} size="xs" /></div>
-              <span style={{ color: '#fff', fontSize: '11px', fontWeight: 700, flexShrink: 0, fontFamily: 'var(--ap-font-body)' }}>{r.playerName}</span>
-              <span style={{ fontSize: r.isEmoji ? '1.4rem' : '12px', color: 'rgba(255,255,255,0.9)', fontFamily: 'var(--ap-font-body)', maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: r.isEmoji ? 'nowrap' : 'normal' }}>{r.text}</span>
-            </div>
-          </div>
-        ))}
+        {/* Floating reaction bubbles (with podium colors for top 3) */}
+        {(() => {
+          const fpMap: Record<string, { bg: string; border: string; nameColor: string; textColor: string }> = {};
+          if (p1) fpMap[p1.name] = { bg: 'linear-gradient(135deg,#FFE566,#FFCC00)', border: '#e5aa00', nameColor: '#7a4000', textColor: '#5a2e00' };
+          if (p2) fpMap[p2.name] = { bg: 'linear-gradient(135deg,#E8E8E8,#C0C0C0)', border: '#aaa', nameColor: '#333', textColor: '#222' };
+          if (p3) fpMap[p3.name] = { bg: 'linear-gradient(135deg,#E8A87C,#CD7F32)', border: '#a06030', nameColor: '#4a2000', textColor: '#3a1800' };
+          return floatingReactions.map((r) => {
+            const ps = fpMap[r.playerName];
+            return (
+              <div key={r.id} className="reaction-float" style={{ left: `${r.x}%`, bottom: '20%' }}>
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  background: ps ? ps.bg : 'rgba(0,0,0,0.78)',
+                  backdropFilter: ps ? undefined : 'blur(10px)',
+                  border: `1.5px solid ${ps ? ps.border : 'rgba(255,255,255,0.2)'}`,
+                  borderRadius: 999, padding: '6px 14px',
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.25)',
+                }}>
+                  <div style={{ flexShrink: 0 }}><AvatarDisplay emoji={r.avatar} size="xs" /></div>
+                  <span style={{ color: ps ? ps.nameColor : '#fff', fontSize: '11px', fontWeight: 700, flexShrink: 0, fontFamily: 'var(--ap-font-body)' }}>{r.playerName}</span>
+                  <span style={{ fontSize: r.isEmoji ? '1.4rem' : '12px', color: ps ? ps.textColor : 'rgba(255,255,255,0.9)', fontFamily: 'var(--ap-font-body)', maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: r.isEmoji ? 'nowrap' : 'normal' }}>{r.text}</span>
+                </div>
+              </div>
+            );
+          });
+        })()}
 
         <div className="relative z-10 flex min-h-screen">
           {/* ── Main content ── */}
