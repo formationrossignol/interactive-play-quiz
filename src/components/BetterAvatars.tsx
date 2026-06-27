@@ -619,7 +619,7 @@ export const ENHANCED_AVATARS: EnhancedAvatar[] = [
 
 interface AvatarDisplayProps {
   emoji: string;
-  size?: "sm" | "md" | "lg" | "xl";
+  size?: "xs" | "sm" | "md" | "lg" | "xl";
   showGlow?: boolean;
   className?: string;
 }
@@ -628,6 +628,7 @@ export const AvatarDisplay = ({ emoji, size = "md", showGlow = false, className 
   const avatar = ENHANCED_AVATARS.find(a => a.emoji === emoji) || ENHANCED_AVATARS[0];
 
   const outerSize = {
+    xs: "w-6 h-6",
     sm: "w-10 h-10",
     md: "w-14 h-14",
     lg: "w-20 h-20",

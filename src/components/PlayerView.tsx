@@ -1018,6 +1018,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
           </div>
         )}
 
+        <style>{`.reaction-comment-input::placeholder { color: rgba(255,255,255,0.85); }`}</style>
         {/* Reaction panel */}
         <div
           className="mb-6"
@@ -1060,11 +1061,12 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
                   sendReaction('💬', reactionComment);
                 }
               }}
+              className="reaction-comment-input"
               placeholder="Laisse un commentaire… (100 car. max)"
               style={{
                 flex: 1,
-                background: 'rgba(255,255,255,0.1)',
-                border: '2px solid rgba(255,255,255,0.2)',
+                background: 'rgba(255,255,255,0.15)',
+                border: '2px solid rgba(255,255,255,0.3)',
                 borderRadius: '999px',
                 padding: '8px 14px',
                 color: '#fff',

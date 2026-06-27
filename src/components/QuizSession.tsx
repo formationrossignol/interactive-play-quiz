@@ -654,9 +654,9 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
               borderRadius: 999, padding: '6px 14px',
               boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
             }}>
-              <span style={{ fontSize: '1.1rem', flexShrink: 0 }}>{r.avatar}</span>
-              <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: 700, flexShrink: 0, fontFamily: 'var(--ap-font-body)' }}>{r.playerName}</span>
-              <span style={{ fontSize: r.isEmoji ? '1.4rem' : '12px', color: '#fff', fontFamily: 'var(--ap-font-body)', maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: r.isEmoji ? 'nowrap' : 'normal' }}>{r.text}</span>
+              <div style={{ flexShrink: 0 }}><AvatarDisplay emoji={r.avatar} size="xs" /></div>
+              <span style={{ color: '#fff', fontSize: '11px', fontWeight: 700, flexShrink: 0, fontFamily: 'var(--ap-font-body)' }}>{r.playerName}</span>
+              <span style={{ fontSize: r.isEmoji ? '1.4rem' : '12px', color: 'rgba(255,255,255,0.9)', fontFamily: 'var(--ap-font-body)', maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: r.isEmoji ? 'nowrap' : 'normal' }}>{r.text}</span>
             </div>
           </div>
         ))}
@@ -1204,9 +1204,9 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
               borderRadius: 999, padding: '6px 14px',
               boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
             }}>
-              <span style={{ fontSize: '1.1rem', flexShrink: 0 }}>{r.avatar}</span>
-              <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: 700, flexShrink: 0, fontFamily: 'var(--ap-font-body)' }}>{r.playerName}</span>
-              <span style={{ fontSize: r.isEmoji ? '1.4rem' : '12px', color: '#fff', fontFamily: 'var(--ap-font-body)', maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: r.isEmoji ? 'nowrap' : 'normal' }}>{r.text}</span>
+              <div style={{ flexShrink: 0 }}><AvatarDisplay emoji={r.avatar} size="xs" /></div>
+              <span style={{ color: '#fff', fontSize: '11px', fontWeight: 700, flexShrink: 0, fontFamily: 'var(--ap-font-body)' }}>{r.playerName}</span>
+              <span style={{ fontSize: r.isEmoji ? '1.4rem' : '12px', color: 'rgba(255,255,255,0.9)', fontFamily: 'var(--ap-font-body)', maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: r.isEmoji ? 'nowrap' : 'normal' }}>{r.text}</span>
             </div>
           </div>
         ))}
@@ -1374,33 +1374,36 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
 
               {/* Live reactions feed */}
               {reactionComments.length > 0 && (
-                <div className="flex-shrink-0 mt-3">
+                <div className="mt-3 flex flex-col min-h-0 flex-1">
                   <div
                     className="uppercase tracking-wider text-xs font-bold mb-2 flex-shrink-0"
-                    style={{ color: 'var(--ap-muted)', fontFamily: 'var(--ap-font-display)' }}
+                    style={{ color: '#241b3a', fontFamily: 'var(--ap-font-display)' }}
                   >
                     Réactions live
                   </div>
-                  <div className="space-y-1.5 overflow-y-auto" style={{ maxHeight: '180px' }}>
+                  <div className="space-y-1.5 overflow-y-auto flex-1">
                     {reactionComments.map((c, i) => (
                       <div
                         key={`${c.playerName}-${c.ts}-${i}`}
-                        className="flex items-start gap-1.5 px-2 py-1.5"
+                        className="flex items-center gap-2 px-2 py-1.5"
                         style={{
-                          background: 'var(--ap-paper)',
-                          border: '1px solid var(--ap-line)',
+                          background: '#ffffff',
+                          border: '1.5px solid #efe6d3',
                           borderRadius: 'var(--ap-r-sm)',
+                          boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
                         }}
                       >
-                        <AvatarDisplay emoji={c.avatar} size="sm" />
-                        <div style={{ minWidth: 0 }}>
+                        <div style={{ flexShrink: 0 }}>
+                          <AvatarDisplay emoji={c.avatar} size="xs" />
+                        </div>
+                        <div style={{ minWidth: 0, flex: 1 }}>
                           <span
                             className="font-bold text-xs block truncate"
-                            style={{ color: 'var(--ap-brand)', fontFamily: 'var(--ap-font-display)' }}
+                            style={{ color: '#7048ff', fontFamily: 'var(--ap-font-display)' }}
                           >
                             {c.playerName}
                           </span>
-                          <span className="text-xs" style={{ color: 'var(--ap-ink)', fontFamily: 'var(--ap-font-body)', wordBreak: 'break-word' }}>
+                          <span style={{ fontSize: '12px', fontWeight: 600, color: '#241b3a', fontFamily: 'var(--ap-font-body)', wordBreak: 'break-word', lineHeight: 1.3 }}>
                             {c.text}
                           </span>
                         </div>
