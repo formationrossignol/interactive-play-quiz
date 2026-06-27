@@ -358,8 +358,8 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
     navigate("/");
   };
 
-  const REACTION_EMOJIS = ['🎉', '🔥', '💯', '👏', '😍', '🤩'];
-  const EMOJI_COOLDOWN_MS = 2000;
+  const REACTION_EMOJIS = ['🎉', '🔥', '💯', '👏', '😍', '🤩', '😂', '🎊', '💪', '🤯', '😎', '❤️'];
+  const EMOJI_COOLDOWN_MS = 500;
   const COMMENT_COOLDOWN_MS = 5000;
 
   const sendReaction = (emoji: string, comment?: string) => {
@@ -466,6 +466,41 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
                 <Users className="w-4 h-4" />
                 <span>{totalPlayers} joueurs</span>
               </div>
+            </div>
+          </div>
+
+          {/* Reaction panel (lobby) */}
+          <div
+            className="mt-5"
+            style={{
+              background: 'rgba(255,255,255,0.12)',
+              border: '2px solid rgba(255,255,255,0.2)',
+              borderRadius: 'var(--ap-r-xl)',
+              padding: '14px',
+            }}
+          >
+            <p style={{ color: 'rgba(255,255,255,0.75)', fontWeight: 700, fontSize: '12px', marginBottom: '10px', fontFamily: 'var(--ap-font-body)' }}>
+              Envoie une réaction !
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', flexWrap: 'wrap' }}>
+              {REACTION_EMOJIS.map((e) => (
+                <button
+                  key={e}
+                  onClick={() => sendReaction(e)}
+                  style={{
+                    fontSize: '1.5rem',
+                    background: lastSentEmoji === e ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.1)',
+                    border: '2px solid rgba(255,255,255,0.2)',
+                    borderRadius: '10px',
+                    padding: '5px 8px',
+                    cursor: 'pointer',
+                    transition: 'transform 0.1s, background 0.1s',
+                    transform: lastSentEmoji === e ? 'scale(1.2)' : 'scale(1)',
+                  }}
+                >
+                  {e}
+                </button>
+              ))}
             </div>
           </div>
 

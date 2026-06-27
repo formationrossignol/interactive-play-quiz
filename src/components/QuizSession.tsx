@@ -137,8 +137,8 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
   const [disconnectedIds, setDisconnectedIds] = useState<Set<string>>(new Set());
   const disconnectedIdsRef = useRef<Set<string>>(new Set());
 
-  // Live reactions on the final screen
-  const [floatingReactions, setFloatingReactions] = useState<Array<{ id: string; emoji: string; x: number }>>([]);
+  // Live reactions (waiting + final screens)
+  const [floatingReactions, setFloatingReactions] = useState<Array<{ id: string; emoji: string; x: number; playerName: string; avatar: string; text: string; isEmoji: boolean }>>([]);
   const [reactionComments, setReactionComments] = useState<Array<{ playerName: string; avatar: string; text: string; ts: number }>>([]);
   const seenReactionKeysRef = useRef<Set<string>>(new Set());
 
@@ -419,9 +419,9 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
   }, [gameState, isHost, quiz.gameCode, timeLeft]);
 
 
-  // Poll for player reactions on the final screen (2s interval, host-only)
+  // Poll for player reactions (waiting + final screens, host-only)
   useEffect(() => {
-    if (!isHost || gameState !== 'final') return;
+    if (!isHost || (gameState !== 'final' && gameState !== 'waiting')) return;
     seenReactionKeysRef.current = new Set();
 
     const poll = async () => {
@@ -438,18 +438,27 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
         if (seenReactionKeysRef.current.has(key)) return;
         seenReactionKeysRef.current.add(key);
 
-        // Spawn floating emoji
-        const floatId = `${Date.now()}-${Math.random()}`;
-        const x = Math.random() * 75 + 10; // 10–85% from left
-        setFloatingReactions((prev) => [...prev, { id: floatId, emoji: p.lastReaction!.emoji, x }]);
-        setTimeout(() => setFloatingReactions((prev) => prev.filter((r) => r.id !== floatId)), 2500);
+        const reactionText = p.lastReaction!.comment || p.lastReaction!.emoji;
+        const isEmoji = !p.lastReaction!.comment;
 
-        // Record comment if present
-        if (p.lastReaction.comment) {
-          setReactionComments((prev) =>
-            [{ playerName: p.name, avatar: p.avatar, text: p.lastReaction!.comment!, ts: Date.now() }, ...prev].slice(0, 20)
-          );
-        }
+        // Spawn floating bubble with avatar + name + content
+        const floatId = `${Date.now()}-${Math.random()}`;
+        const x = Math.random() * 70 + 5;
+        setFloatingReactions((prev) => [...prev, {
+          id: floatId,
+          emoji: p.lastReaction!.emoji,
+          x,
+          playerName: p.name,
+          avatar: p.avatar,
+          text: reactionText,
+          isEmoji,
+        }]);
+        setTimeout(() => setFloatingReactions((prev) => prev.filter((r) => r.id !== floatId)), 2800);
+
+        // Add ALL reactions (emoji + text) to feed
+        setReactionComments((prev) =>
+          [{ playerName: p.name, avatar: p.avatar, text: reactionText, ts: Date.now() }, ...prev].slice(0, 30)
+        );
       });
     };
 
@@ -620,7 +629,30 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
 
   if (gameState === 'waiting') {
     return (
-      <div style={{ background: 'var(--ap-paper)', minHeight: '100vh', fontFamily: 'var(--ap-font-body)' }} className="p-4">
+      <div style={{ background: 'var(--ap-paper)', minHeight: '100vh', fontFamily: 'var(--ap-font-body)', overflow: 'hidden' }} className="p-4 relative">
+        <style>{`
+          @keyframes floatUpLobby {
+            0%   { opacity: 1; transform: translateY(0) scale(1); }
+            80%  { opacity: 0.8; }
+            100% { opacity: 0; transform: translateY(-200px) scale(1.02); }
+          }
+          .reaction-float-lobby { animation: floatUpLobby 2.8s ease-out forwards; pointer-events: none; position: absolute; z-index: 50; }
+        `}</style>
+        {floatingReactions.map((r) => (
+          <div key={r.id} className="reaction-float-lobby" style={{ left: `${r.x}%`, bottom: '15%' }}>
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)',
+              border: '1.5px solid rgba(255,255,255,0.18)',
+              borderRadius: 999, padding: '5px 12px',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+            }}>
+              <span style={{ fontSize: '1.1rem', flexShrink: 0 }}>{r.avatar}</span>
+              <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: 700, flexShrink: 0, fontFamily: 'var(--ap-font-body)' }}>{r.playerName}</span>
+              <span style={{ fontSize: r.isEmoji ? '1.4rem' : '12px', color: '#fff', fontFamily: 'var(--ap-font-body)', overflow: 'hidden', maxWidth: 100 }}>{r.text}</span>
+            </div>
+          </div>
+        ))}
         <div className="mx-auto max-w-6xl space-y-6">
 
           {/* Header image */}
@@ -1148,18 +1180,28 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
         <style>{`
           @keyframes floatUp {
             0%   { opacity: 1; transform: translateY(0) scale(1); }
-            70%  { opacity: 0.9; }
-            100% { opacity: 0; transform: translateY(-220px) scale(2); }
+            80%  { opacity: 0.8; }
+            100% { opacity: 0; transform: translateY(-200px) scale(1.02); }
           }
-          .reaction-float { animation: floatUp 2.2s ease-out forwards; pointer-events: none; position: absolute; font-size: 2rem; }
+          .reaction-float { animation: floatUp 2.8s ease-out forwards; pointer-events: none; position: absolute; }
         `}</style>
         <Fireworks />
 
-        {/* Floating emoji overlay */}
+        {/* Floating reaction bubbles */}
         {floatingReactions.map((r) => (
-          <span key={r.id} className="reaction-float z-20" style={{ left: `${r.x}%`, bottom: '20%' }}>
-            {r.emoji}
-          </span>
+          <div key={r.id} className="reaction-float z-20" style={{ left: `${r.x}%`, bottom: '20%' }}>
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)',
+              border: '1.5px solid rgba(255,255,255,0.18)',
+              borderRadius: 999, padding: '5px 12px',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+            }}>
+              <span style={{ fontSize: '1.1rem', flexShrink: 0 }}>{r.avatar}</span>
+              <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: 700, flexShrink: 0, fontFamily: 'var(--ap-font-body)' }}>{r.playerName}</span>
+              <span style={{ fontSize: r.isEmoji ? '1.4rem' : '12px', color: '#fff', fontFamily: 'var(--ap-font-body)', overflow: 'hidden', maxWidth: 110 }}>{r.text}</span>
+            </div>
+          </div>
         ))}
 
         <div className="relative z-10 flex min-h-screen">
