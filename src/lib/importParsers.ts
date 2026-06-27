@@ -63,7 +63,7 @@ function baseDraft(overrides: Partial<ImportDraft> = {}): ImportDraft {
 // ── Quiz / Poll YAML ────────────────────────────────────────────────────────
 
 export function parseQuizYaml(content: string, forceType?: 'quiz' | 'poll'): ImportDraft {
-  const data = jsYaml.load(content) as any;
+  const data = jsYaml.load(content, { schema: jsYaml.JSON_SCHEMA }) as any;
   if (!data || typeof data !== 'object') throw new Error('Invalid YAML');
 
   const type: 'quiz' | 'poll' = forceType ?? (data.type === 'poll' ? 'poll' : 'quiz');

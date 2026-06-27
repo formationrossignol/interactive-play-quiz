@@ -33,7 +33,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
   const [searchParams] = useSearchParams();
   const playerAvatar = searchParams.get('avatar') || '🎮';
   const [playerId, setPlayerId] = useState<string | null>(null);
-  const [gameState, setGameState] = useState<'waiting' | 'question' | 'answer-feedback' | 'leaderboard' | 'transition' | 'final'>('waiting');
+  const [gameState, setGameState] = useState<'waiting' | 'question' | 'answer-feedback' | 'leaderboard' | 'transition' | 'final' | 'abandoned'>('waiting');
   const [allPlayers, setAllPlayers] = useState<{ id: string; name: string; avatar: string; score: number }[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | string | null>(null);
@@ -233,12 +233,13 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
       const players = Array.isArray(data.players) ? (data.players as SharedPlayer[]) : [];
 
       // Map host game states → player game states
-      let mapped: 'waiting' | 'question' | 'answer-feedback' | 'leaderboard' | 'transition' | 'final' = 'waiting';
+      let mapped: 'waiting' | 'question' | 'answer-feedback' | 'leaderboard' | 'transition' | 'final' | 'abandoned' = 'waiting';
       if (remoteState === 'question') mapped = 'question';
       else if (remoteState === 'leaderboard') mapped = 'leaderboard';
       else if (remoteState === 'final') mapped = 'final';
       else if (remoteState === 'answer-distribution') mapped = 'answer-feedback';
       else if (remoteState === 'transition') mapped = 'transition';
+      else if (remoteState === 'abandoned') mapped = 'abandoned';
 
       // Reset answer state only when a NEW question starts (index changed)
       const newIndex = data.current_question_index ?? 0;
@@ -430,6 +431,28 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
       } catch {}
     }
   };
+
+  if (gameState === 'abandoned') {
+    return (
+      <div
+        className="min-h-screen flex items-center justify-center p-4"
+        style={{ background: 'var(--ap-brand)' }}
+      >
+        <div className="max-w-md w-full text-center text-white">
+          <div style={{ fontSize: 72, marginBottom: 20 }}>😢</div>
+          <h2 style={{ fontFamily: 'var(--ap-font-display)', fontSize: '1.8rem', fontWeight: 700, marginBottom: 12 }}>
+            Quiz arrêté
+          </h2>
+          <p style={{ opacity: 0.75, marginBottom: 28, fontFamily: 'var(--ap-font-body)', fontSize: 16 }}>
+            L'hôte a mis fin au quiz.
+          </p>
+          <button className="ap-btn ap-btn--pill" style={{ background: 'rgba(255,255,255,0.2)', color: '#fff', border: '2px solid rgba(255,255,255,0.4)' }} onClick={() => navigate('/')}>
+            Retour à l'accueil
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (gameState === 'waiting') {
     return (
@@ -838,7 +861,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
   }
 
   // final state
-  const [fp1, fp2, fp3] = allPlayers;
+  const fp1 = allPlayers[0], fp2 = allPlayers[1], fp3 = allPlayers[2];
 
   return (
     <div

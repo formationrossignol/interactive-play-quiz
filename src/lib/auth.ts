@@ -12,6 +12,14 @@ export interface User {
 
 export const AUTH_STORAGE_KEY = 'quiz_auth_user';
 
+async function hashPassword(password: string): Promise<string> {
+  const encoded = new TextEncoder().encode(password);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', encoded);
+  return Array.from(new Uint8Array(hashBuffer))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
 export const getCurrentUser = (): User | null => {
   const userStr = localStorage.getItem(AUTH_STORAGE_KEY);
   if (!userStr) return null;
@@ -30,7 +38,7 @@ export const logout = () => {
   localStorage.removeItem(AUTH_STORAGE_KEY);
 };
 
-export const login = (email: string, password: string): User | null => {
+export const login = async (email: string, password: string): Promise<User | null> => {
   const usersStr = localStorage.getItem('quiz_users');
   let users: User[] = [];
   try { users = usersStr ? JSON.parse(usersStr) : []; } catch { users = []; }
@@ -41,14 +49,15 @@ export const login = (email: string, password: string): User | null => {
   const passwordsStr = localStorage.getItem('quiz_passwords');
   let passwords: Record<string, string> = {};
   try { passwords = passwordsStr ? JSON.parse(passwordsStr) : {}; } catch { passwords = {}; }
-  
-  if (passwords[user.id] !== password) return null;
-  
+
+  const hash = await hashPassword(password);
+  if (passwords[user.id] !== hash) return null;
+
   setCurrentUser(user);
   return user;
 };
 
-export const register = (email: string, username: string, password: string): User | null => {
+export const register = async (email: string, username: string, password: string): Promise<User | null> => {
   const usersStr = localStorage.getItem('quiz_users');
   let users: User[] = [];
   try { users = usersStr ? JSON.parse(usersStr) : []; } catch { users = []; }
@@ -70,9 +79,9 @@ export const register = (email: string, username: string, password: string): Use
   const passwordsStr = localStorage.getItem('quiz_passwords');
   let passwords: Record<string, string> = {};
   try { passwords = passwordsStr ? JSON.parse(passwordsStr) : {}; } catch { passwords = {}; }
-  passwords[newUser.id] = password;
+  passwords[newUser.id] = await hashPassword(password);
   localStorage.setItem('quiz_passwords', JSON.stringify(passwords));
-  
+
   setCurrentUser(newUser);
   return newUser;
 };

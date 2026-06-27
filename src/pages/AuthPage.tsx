@@ -9,9 +9,9 @@ const AuthPage = () => {
   const [loginData, setLoginData] = useState({ email: "", password: "" });
   const [registerData, setRegisterData] = useState({ email: "", username: "", password: "" });
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const user = login(loginData.email, loginData.password);
+    const user = await login(loginData.email, loginData.password);
     if (user) {
       toast.success("Connexion réussie !");
       navigate("/");
@@ -20,9 +20,9 @@ const AuthPage = () => {
     }
   };
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    const user = register(registerData.email, registerData.username, registerData.password);
+    const user = await register(registerData.email, registerData.username, registerData.password);
     if (user) {
       toast.success("Inscription réussie !");
       navigate("/");

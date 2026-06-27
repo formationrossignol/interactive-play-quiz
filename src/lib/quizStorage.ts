@@ -85,24 +85,36 @@ export const saveQuiz = (quiz: Omit<SavedQuiz, 'id' | 'createdAt' | 'userId'>): 
   return newQuiz;
 };
 
-export const updateQuiz = (id: string, updates: Partial<SavedQuiz>): SavedQuiz | null => {
+// Internal write — no ownership check. Used by rateQuiz which operates on others' public quizzes.
+const writeQuiz = (id: string, updates: Partial<SavedQuiz>): SavedQuiz | null => {
   const quizzes = getSavedQuizzes();
   const index = quizzes.findIndex(q => q.id === id);
-  
   if (index === -1) return null;
-  
   quizzes[index] = { ...quizzes[index], ...updates };
   localStorage.setItem(QUIZ_STORAGE_KEY, JSON.stringify(quizzes));
-  
   return quizzes[index];
 };
 
-export const deleteQuiz = (id: string): boolean => {
+export const updateQuiz = (id: string, updates: Partial<SavedQuiz>): SavedQuiz | null => {
+  const user = getCurrentUser();
   const quizzes = getSavedQuizzes();
+  const index = quizzes.findIndex(q => q.id === id);
+
+  if (index === -1) return null;
+  if (!user || quizzes[index].userId !== user.id) return null;
+
+  return writeQuiz(id, updates);
+};
+
+export const deleteQuiz = (id: string): boolean => {
+  const user = getCurrentUser();
+  if (!user) return false;
+
+  const quizzes = getSavedQuizzes();
+  const quiz = quizzes.find(q => q.id === id);
+  if (!quiz || quiz.userId !== user.id) return false;
+
   const filtered = quizzes.filter(q => q.id !== id);
-  
-  if (filtered.length === quizzes.length) return false;
-  
   localStorage.setItem(QUIZ_STORAGE_KEY, JSON.stringify(filtered));
   return true;
 };
@@ -110,27 +122,39 @@ export const deleteQuiz = (id: string): boolean => {
 export const toggleFavorite = (id: string): SavedQuiz | null => {
   const quizzes = getSavedQuizzes();
   const quiz = quizzes.find(q => q.id === id);
-  
+
   if (!quiz) return null;
-  
+
   return updateQuiz(id, { isFavorite: !quiz.isFavorite });
 };
 
+const RATINGS_STORAGE_KEY = 'quiz_user_ratings';
+
 export const rateQuiz = (id: string, rating: number): SavedQuiz | null => {
+  const user = getCurrentUser();
+  if (!user) return null;
+
   const quizzes = getSavedQuizzes();
   const quiz = quizzes.find(q => q.id === id);
-  
+
   if (!quiz || !quiz.isPublic) return null;
-  
+
+  // Prevent the same user from rating the same quiz twice
+  const ratingsStr = localStorage.getItem(RATINGS_STORAGE_KEY);
+  let ratings: Record<string, string[]> = {};
+  try { ratings = ratingsStr ? JSON.parse(ratingsStr) : {}; } catch { ratings = {}; }
+  const userRated = ratings[user.id] ?? [];
+  if (userRated.includes(id)) return quiz;
+  ratings[user.id] = [...userRated, id];
+  localStorage.setItem(RATINGS_STORAGE_KEY, JSON.stringify(ratings));
+
   const currentRating = quiz.rating || 0;
   const currentCount = quiz.ratingCount || 0;
   const newCount = currentCount + 1;
   const newRating = (currentRating * currentCount + rating) / newCount;
-  
-  return updateQuiz(id, { 
-    rating: newRating,
-    ratingCount: newCount 
-  });
+
+  // Use internal write — rater doesn't own the quiz
+  return writeQuiz(id, { rating: newRating, ratingCount: newCount });
 };
 
 export const getQuizById = (id: string): SavedQuiz | null => {

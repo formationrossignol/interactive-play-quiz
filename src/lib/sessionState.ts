@@ -7,7 +7,8 @@ export type SharedGameState =
   | "question"
   | "answer-distribution"
   | "leaderboard"
-  | "final";
+  | "final"
+  | "abandoned";
 
 export interface SharedPlayer {
   id: string;

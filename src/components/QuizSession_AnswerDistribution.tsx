@@ -28,6 +28,9 @@ export const QuizSessionAnswerDistribution = ({
   }, [isHost, autoAdvance, onNext]);
 
   const totalVotes = answerDistribution.reduce((a, b) => a + b, 0);
+  const percentages = answerDistribution.map(count =>
+    totalVotes > 0 ? Math.round(count / totalVotes * 100) : 0
+  );
 
   return (
     <div style={{
@@ -92,7 +95,7 @@ export const QuizSessionAnswerDistribution = ({
         {currentQuestion.answers && (
           <AnswerDistribution
             answers={currentQuestion.answers}
-            distribution={answerDistribution}
+            distribution={percentages}
             correctAnswer={currentQuestion.correctAnswer}
           />
         )}

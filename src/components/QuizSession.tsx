@@ -529,7 +529,9 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
   };
 
   const handleTransitionComplete = () => {
-    const nextTimeLimit = quiz.questions[currentQuestionIndex + 1].timeLimit;
+    const nextIndex = currentQuestionIndex + 1;
+    if (nextIndex >= quiz.questions.length) return;
+    const nextTimeLimit = quiz.questions[nextIndex].timeLimit;
     questionEndTimeRef.current = Date.now() + nextTimeLimit * 1000;
     setCurrentQuestionIndex(prev => prev + 1);
     setGameState('question');
@@ -614,6 +616,9 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
   };
 
   const handleExitQuiz = () => {
+    if (isHost && gameState !== 'final') {
+      patchSessionState(quiz.gameCode, { gameState: 'abandoned' });
+    }
     navigate("/");
   };
 
@@ -881,10 +886,11 @@ export const QuizSession = ({ quiz, isHost = false }: QuizSessionProps) => {
   }
 
   if (gameState === 'question') {
-    const answeredCount = players.filter(
+    const activePlayers = players.filter(p => !disconnectedIds.has(p.id));
+    const answeredCount = activePlayers.filter(
       (p) => p.lastAnswerQuestionIndex === currentQuestionIndex
     ).length;
-    const allAnswered = players.length > 0 && answeredCount === players.length;
+    const allAnswered = activePlayers.length > 0 && answeredCount === activePlayers.length;
 
     const ANSWER_STYLES = [
       { bg: '#E74C3C', shadow: 'rgba(231,76,60,0.45)', shape: '▲' },
