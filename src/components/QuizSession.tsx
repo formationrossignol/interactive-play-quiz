@@ -153,6 +153,8 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
     return THEMES.find((themeOption) => themeOption.id === themeId) ?? THEMES[0];
   }, [quiz.theme]);
 
+  const isMillionnaire = selectedTheme?.id === 'qui-veut-gagner';
+
   const backgroundStyle = useMemo(() => {
     if (!selectedTheme) {
       return {
@@ -189,8 +191,13 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
 
   const ThemedBackground = ({ children, className }: { children: ReactNode; className?: string }) => (
     <div className="relative min-h-screen" style={backgroundStyle}>
-      <div className="absolute inset-0" style={{ background: accentOverlay }} aria-hidden />
-      <div className="absolute inset-0" style={{ background: overlayColor, mixBlendMode: "multiply" }} aria-hidden />
+      {!isMillionnaire && <div className="absolute inset-0" style={{ background: accentOverlay }} aria-hidden />}
+      {!isMillionnaire && <div className="absolute inset-0" style={{ background: overlayColor, mixBlendMode: "multiply" }} aria-hidden />}
+      {isMillionnaire && (
+        <div className="absolute inset-0 pointer-events-none" aria-hidden style={{
+          background: 'radial-gradient(ellipse 60% 40% at 50% 35%,rgba(200,160,0,0.18) 0%,transparent 70%)',
+        }} />
+      )}
       <div className={cn("relative z-10", className)} style={fontFamily ? { fontFamily } : undefined}>
         {children}
       </div>
@@ -920,7 +927,12 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
     ).length;
     const allAnswered = activePlayers.length > 0 && answeredCount === activePlayers.length;
 
-    const ANSWER_STYLES = [
+    const ANSWER_STYLES = isMillionnaire ? [
+      { bg: 'rgba(8,12,40,0.88)', shadow: 'rgba(200,160,0,0.2)', shape: 'A' },
+      { bg: 'rgba(8,12,40,0.88)', shadow: 'rgba(200,160,0,0.2)', shape: 'B' },
+      { bg: 'rgba(8,12,40,0.88)', shadow: 'rgba(200,160,0,0.2)', shape: 'C' },
+      { bg: 'rgba(8,12,40,0.88)', shadow: 'rgba(200,160,0,0.2)', shape: 'D' },
+    ] : [
       { bg: '#E74C3C', shadow: 'rgba(231,76,60,0.45)', shape: '▲' },
       { bg: '#2980B9', shadow: 'rgba(41,128,185,0.45)', shape: '◆' },
       { bg: '#F39C12', shadow: 'rgba(243,156,18,0.45)', shape: '●' },
@@ -1027,17 +1039,20 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
               )}
 
               {/* Question text */}
-              <h1
-                className="text-center text-white drop-shadow-2xl max-w-4xl leading-snug"
-                style={{
-                  fontFamily: 'var(--ap-font-display)',
-                  fontSize: 'clamp(1.4rem, 3.5vw, 2.6rem)',
-                  fontWeight: 700,
-                  textShadow: '0 2px 16px rgba(0,0,0,0.4)',
-                }}
-              >
-                {currentQuestion.question}
-              </h1>
+              {isMillionnaire ? (
+                <div style={{ background: 'rgba(6,10,35,0.9)', border: '1.5px solid rgba(200,160,0,0.6)', borderRadius: 40, padding: '18px 36px', maxWidth: 720, width: '100%', boxShadow: '0 0 28px rgba(200,160,0,0.18), inset 0 1px 0 rgba(200,160,0,0.12)' }}>
+                  <h1 className="text-center text-white leading-snug m-0" style={{ fontFamily: 'var(--ap-font-display)', fontSize: 'clamp(1.3rem,3.2vw,2.4rem)', fontWeight: 700 }}>
+                    {currentQuestion.question}
+                  </h1>
+                </div>
+              ) : (
+                <h1
+                  className="text-center text-white drop-shadow-2xl max-w-4xl leading-snug"
+                  style={{ fontFamily: 'var(--ap-font-display)', fontSize: 'clamp(1.4rem, 3.5vw, 2.6rem)', fontWeight: 700, textShadow: '0 2px 16px rgba(0,0,0,0.4)' }}
+                >
+                  {currentQuestion.question}
+                </h1>
+              )}
 
               {/* Word-cloud / ranking types (non-standard) */}
               {currentQuestion.type === 'word-cloud' && (
@@ -1064,43 +1079,56 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
               )}
             </div>
 
-            {/* ── Answer grid (Kahoot-style bottom) ── */}
+            {/* ── Answer grid ── */}
             {['multiple-choice', 'single-choice'].includes(currentQuestion.type) && currentQuestion.answers && (
               <div className="grid grid-cols-2 gap-3 p-4 pt-0 flex-shrink-0">
                 {(currentQuestion.answers as string[]).map((answer, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center gap-4 rounded-2xl px-6 py-4 text-white font-bold text-lg select-none"
-                    style={{
-                      background: ANSWER_STYLES[index % 4].bg,
-                      boxShadow: `0 6px 24px ${ANSWER_STYLES[index % 4].shadow}`,
-                      minHeight: '72px',
-                      fontFamily: 'var(--ap-font-body)',
-                    }}
-                  >
-                    <span className="text-2xl opacity-90 flex-shrink-0">
-                      {ANSWER_STYLES[index % 4].shape}
-                    </span>
-                    <span className="leading-tight">{answer}</span>
-                  </div>
+                  isMillionnaire ? (
+                    <div
+                      key={index}
+                      className="flex items-center gap-3 px-3 py-3 text-white font-bold text-base select-none"
+                      style={{ background: ANSWER_STYLES[index % 4].bg, border: '1.5px solid rgba(200,160,0,0.6)', borderRadius: 40, boxShadow: `0 0 20px ${ANSWER_STYLES[index % 4].shadow}, inset 0 1px 0 rgba(200,160,0,0.1)`, minHeight: '64px', fontFamily: 'var(--ap-font-body)' }}
+                    >
+                      <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'rgba(200,160,0,0.15)', border: '1.5px solid rgba(200,160,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#FFD700', fontWeight: 900, fontSize: '1rem', fontFamily: 'var(--ap-font-display)' }}>
+                        {ANSWER_STYLES[index % 4].shape}
+                      </div>
+                      <span className="leading-tight flex-1 text-center">{answer}</span>
+                    </div>
+                  ) : (
+                    <div
+                      key={index}
+                      className="flex items-center gap-4 rounded-2xl px-6 py-4 text-white font-bold text-lg select-none"
+                      style={{ background: ANSWER_STYLES[index % 4].bg, boxShadow: `0 6px 24px ${ANSWER_STYLES[index % 4].shadow}`, minHeight: '72px', fontFamily: 'var(--ap-font-body)' }}
+                    >
+                      <span className="text-2xl opacity-90 flex-shrink-0">{ANSWER_STYLES[index % 4].shape}</span>
+                      <span className="leading-tight">{answer}</span>
+                    </div>
+                  )
                 ))}
               </div>
             )}
 
             {currentQuestion.type === 'true-false' && (
               <div className="grid grid-cols-2 gap-3 p-4 pt-0 flex-shrink-0">
-                <div
-                  className="flex items-center justify-center gap-3 rounded-2xl px-6 py-5 text-white font-bold text-xl select-none"
-                  style={{ background: '#27AE60', boxShadow: '0 6px 24px rgba(39,174,96,0.5)', fontFamily: 'var(--ap-font-display)' }}
-                >
-                  <span className="text-3xl">✓</span> Vrai
-                </div>
-                <div
-                  className="flex items-center justify-center gap-3 rounded-2xl px-6 py-5 text-white font-bold text-xl select-none"
-                  style={{ background: '#E74C3C', boxShadow: '0 6px 24px rgba(231,76,60,0.5)', fontFamily: 'var(--ap-font-display)' }}
-                >
-                  <span className="text-3xl">✗</span> Faux
-                </div>
+                {isMillionnaire ? (
+                  <>
+                    <div className="flex items-center gap-3 px-3 py-3 text-white font-bold text-xl select-none" style={{ background: 'rgba(8,12,40,0.88)', border: '1.5px solid rgba(200,160,0,0.6)', borderRadius: 40, boxShadow: '0 0 20px rgba(200,160,0,0.2)', minHeight: '64px', fontFamily: 'var(--ap-font-display)', justifyContent: 'center' }}>
+                      <span style={{ color: '#FFD700', fontSize: '1.5rem' }}>○</span> Vrai
+                    </div>
+                    <div className="flex items-center gap-3 px-3 py-3 text-white font-bold text-xl select-none" style={{ background: 'rgba(8,12,40,0.88)', border: '1.5px solid rgba(200,160,0,0.6)', borderRadius: 40, boxShadow: '0 0 20px rgba(200,160,0,0.2)', minHeight: '64px', fontFamily: 'var(--ap-font-display)', justifyContent: 'center' }}>
+                      <span style={{ color: '#FFD700', fontSize: '1.5rem' }}>✕</span> Faux
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-center gap-3 rounded-2xl px-6 py-5 text-white font-bold text-xl select-none" style={{ background: '#27AE60', boxShadow: '0 6px 24px rgba(39,174,96,0.5)', fontFamily: 'var(--ap-font-display)' }}>
+                      <span className="text-3xl">✓</span> Vrai
+                    </div>
+                    <div className="flex items-center justify-center gap-3 rounded-2xl px-6 py-5 text-white font-bold text-xl select-none" style={{ background: '#E74C3C', boxShadow: '0 6px 24px rgba(231,76,60,0.5)', fontFamily: 'var(--ap-font-display)' }}>
+                      <span className="text-3xl">✗</span> Faux
+                    </div>
+                  </>
+                )}
               </div>
             )}
 

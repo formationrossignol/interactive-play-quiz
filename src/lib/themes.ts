@@ -150,6 +150,21 @@ export const THEMES: Theme[] = [
   },
 ];
 
+const QUI_VEUT_GAGNER_PALETTE = ["#05080f", "#0a0e24", "#0f1440", "#C8A000"] as const;
+
+THEMES.push({
+  id: "qui-veut-gagner",
+  name: "Qui veut gagner",
+  imageUrl: MONOLITHE_NOIR_IMAGE,
+  preview: "linear-gradient(135deg,#1a2366 0%,#050814 100%)",
+  background: [
+    "repeating-conic-gradient(from 0deg at 50% 40%,rgba(200,160,0,0.08) 0deg 1deg,transparent 1deg 9deg)",
+    "radial-gradient(ellipse 130% 90% at 50% 40%,#1e2870 0%,#090d30 50%,#050814 100%)",
+  ].join(","),
+  palette: [...QUI_VEUT_GAGNER_PALETTE],
+  imageDescription: "Fond sombre avec rayons dorés style Qui veut gagner des millions",
+});
+
 export const DEFAULT_THEME_ID = THEMES[0]?.id ?? "horizon-synthwave";
 
 export const getTheme = (id: string): Theme | undefined => {
