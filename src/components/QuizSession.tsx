@@ -1426,21 +1426,60 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
                     'linear-gradient(170deg,#E8E8E8 0%,#B8B8B8 100%)',
                     '#444', 'lg',
                     'inset 0 1px 0 rgba(255,255,255,0.5)')
-                : <div style={{ width: 140 }} />}
+                : (
+                  <div className="flex flex-col items-center" style={{ width: 140 }}>
+                    <div style={{ width: 50, height: 50 }} />
+                    <div style={{
+                      width: '100%', height: 110,
+                      background: 'linear-gradient(170deg,#E8E8E8 0%,#B8B8B8 100%)',
+                      borderRadius: '14px 14px 0 0',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      opacity: 0.4,
+                    }}>
+                      <span style={{ fontSize: '2.2rem' }}>🥈</span>
+                    </div>
+                  </div>
+                )}
 
               {p1
                 ? podiumStep(p1.name, p1.score, p1.avatar, '🏆', 160, 160,
                     'linear-gradient(170deg,#FFE566 0%,#FFB800 100%)',
                     '#7a4000', 'xl',
                     'inset 0 1px 0 rgba(255,255,255,0.5), 0 -10px 36px rgba(255,184,0,0.55)')
-                : <div style={{ width: 160 }} />}
+                : (
+                  <div className="flex flex-col items-center" style={{ width: 160 }}>
+                    <div style={{ width: 60, height: 60 }} />
+                    <div style={{
+                      width: '100%', height: 160,
+                      background: 'linear-gradient(170deg,#FFE566 0%,#FFB800 100%)',
+                      borderRadius: '14px 14px 0 0',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      opacity: 0.4,
+                    }}>
+                      <span style={{ fontSize: '3rem' }}>🏆</span>
+                    </div>
+                  </div>
+                )}
 
               {p3
                 ? podiumStep(p3.name, p3.score, p3.avatar, '🥉', 80, 130,
                     'linear-gradient(170deg,#E8A87C 0%,#CD7F32 100%)',
                     '#4a2000', 'lg',
                     'inset 0 1px 0 rgba(255,255,255,0.4)')
-                : <div style={{ width: 130 }} />}
+                : (
+                  <div className="flex flex-col items-center" style={{ width: 130 }}>
+                    <div style={{ width: 45, height: 45 }} />
+                    <div style={{
+                      width: '100%', height: 80,
+                      background: 'linear-gradient(170deg,#E8A87C 0%,#CD7F32 100%)',
+                      borderRadius: '14px 14px 0 0',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      opacity: 0.4,
+                    }}>
+                      <span style={{ fontSize: '2.2rem' }}>🥉</span>
+                    </div>
+                  </div>
+                )}
             </div>
 
             {/* Podium floor */}
