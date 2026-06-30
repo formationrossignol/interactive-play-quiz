@@ -59,6 +59,8 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
 
   // Declared before syncFromSession so the callback can reference it without TDZ issues
   const answeredForIndexRef = useRef<number | null>(null);
+  // Synchronous guard — useState is stale under rapid clicks within the same render cycle
+  const hasAnsweredRef = useRef(false);
 
   const syncFromSession = useCallback(() => {
     const session = readSessionState(gameCode);
@@ -71,6 +73,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
       // Reset answer UI immediately when a new question arrives via storage/realtime event.
       // Without this, the player sees "Réponse envoyée!" for up to 6s (poll throttle + realtime skip).
       if (newIndex !== answeredForIndexRef.current) {
+        hasAnsweredRef.current = false;
         setHasAnswered(false);
         setSelectedAnswer(null);
       }
@@ -244,6 +247,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
       // Reset answer state only when a NEW question starts (index changed)
       const newIndex = data.current_question_index ?? 0;
       if (mapped === 'question' && newIndex !== answeredForIndexRef.current) {
+        hasAnsweredRef.current = false;
         setHasAnswered(false);
         setSelectedAnswer(null);
       }
@@ -391,7 +395,8 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
   };
 
   const submitAnswer = (answer: number | string) => {
-    if (hasAnswered || !liveQuestion) return;
+    if (hasAnsweredRef.current || hasAnswered || !liveQuestion) return;
+    hasAnsweredRef.current = true;
 
     setLastAnsweredQuestion(liveQuestion);
     setSelectedAnswer(answer);
