@@ -1379,48 +1379,53 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
               </svg>
             </div>
 
-            {/* Players 4+ — scrollable middle zone */}
-            {sortedPlayers.length > 3 ? (
-              <div className="flex-1 overflow-y-auto space-y-2 mb-6 max-w-lg mx-auto w-full">
-                {sortedPlayers.slice(3).map((player, idx) => (
-                  <div
-                    key={player.id}
-                    className="flex items-center gap-3 px-4 py-2.5"
-                    style={{
-                      background: 'var(--ap-card)',
-                      border: '2px solid var(--ap-line)',
-                      borderRadius: 'var(--ap-r-md)',
-                      boxShadow: 'var(--ap-shadow-soft)',
-                    }}
-                  >
-                    <span
-                      className="text-sm w-5 text-center flex-shrink-0"
-                      style={{ fontFamily: 'var(--ap-font-display)', fontWeight: 700, color: 'var(--ap-muted)' }}
-                    >
-                      {idx + 4}
-                    </span>
-                    <AvatarDisplay emoji={player.avatar} size="sm" />
-                    <span
-                      className="flex-1 text-left truncate text-sm"
-                      style={{ fontFamily: 'var(--ap-font-body)', fontWeight: 700, color: 'var(--ap-ink)' }}
-                    >
-                      {player.name}
-                    </span>
-                    <span
-                      className="text-sm flex-shrink-0"
-                      style={{ fontFamily: 'var(--ap-font-display)', fontWeight: 700, color: 'var(--ap-ink)' }}
-                    >
-                      {player.score.toLocaleString()} pts
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex-1" />
-            )}
+            {/* Bottom zone: 4+ list beside podium */}
+            <div className="flex-1 flex items-end gap-3 mb-0 min-h-0">
 
-            {/* Podium — order: 2nd | 1st | 3rd — pinned to bottom */}
-            <div className="flex items-end justify-center gap-0 flex-shrink-0">
+              {/* Players 4+ — scrollable column beside podium */}
+              {sortedPlayers.length > 3 && (
+                <div
+                  className="flex flex-col gap-1.5 overflow-y-auto flex-shrink-0"
+                  style={{ width: 180, maxHeight: 280, paddingBottom: 7 }}
+                >
+                  {sortedPlayers.slice(3).map((player, idx) => (
+                    <div
+                      key={player.id}
+                      className="flex items-center gap-2 px-3 py-1.5 flex-shrink-0"
+                      style={{
+                        background: 'var(--ap-card)',
+                        border: '1.5px solid var(--ap-line)',
+                        borderRadius: 'var(--ap-r-sm)',
+                        boxShadow: 'var(--ap-shadow-soft)',
+                      }}
+                    >
+                      <span
+                        className="text-xs w-4 text-center flex-shrink-0"
+                        style={{ fontFamily: 'var(--ap-font-display)', fontWeight: 700, color: 'var(--ap-muted)' }}
+                      >
+                        {idx + 4}
+                      </span>
+                      <AvatarDisplay emoji={player.avatar} size="xs" />
+                      <span
+                        className="flex-1 text-left truncate text-xs"
+                        style={{ fontFamily: 'var(--ap-font-body)', fontWeight: 700, color: 'var(--ap-ink)' }}
+                      >
+                        {player.name}
+                      </span>
+                      <span
+                        className="text-xs flex-shrink-0"
+                        style={{ fontFamily: 'var(--ap-font-display)', fontWeight: 700, color: 'var(--ap-muted)' }}
+                      >
+                        {player.score.toLocaleString()}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Podium — order: 2nd | 1st | 3rd */}
+              <div className="flex-1 flex flex-col items-center min-w-0">
+                <div className="flex items-end justify-center gap-0 w-full">
               {p2
                 ? podiumStep(p2.name, p2.score, p2.avatar, '🥈', 110, 140,
                     'linear-gradient(170deg,#E8E8E8 0%,#B8B8B8 100%)',
@@ -1480,13 +1485,15 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
                     </div>
                   </div>
                 )}
-            </div>
+                </div>{/* end podium row */}
 
-            {/* Podium floor */}
-            <div
-              className="flex-shrink-0"
-              style={{ height: 7, background: 'var(--ap-line)', borderRadius: '0 0 10px 10px' }}
-            />
+                {/* Podium floor */}
+                <div
+                  style={{ height: 7, background: 'var(--ap-line)', borderRadius: '0 0 10px 10px', width: '100%' }}
+                />
+              </div>{/* end podium column */}
+
+            </div>{/* end bottom zone */}
 
             {/* Buttons */}
             {isHost && (
