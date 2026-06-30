@@ -25,6 +25,7 @@ import { hexToRgba } from "@/lib/color";
 import {
   ensureSessionState,
   ensureSessionInSupabase,
+  fetchSessionStateFromSupabase,
   getSessionStorageKey,
   patchSessionState,
   readSessionState,
@@ -231,6 +232,10 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
   useEffect(() => {
     hasAutoAdvancedRef.current = false;
     isShowingDistRef.current = false;
+    // Clear offline flags — a previously-disconnected player may have reconnected
+    // by the time the next question starts; don't carry stale state forward.
+    disconnectedIdsRef.current = new Set();
+    setDisconnectedIds(new Set());
   }, [currentQuestionIndex]);
 
   // Tracks the wall-clock end time of the current question (set when question starts)
@@ -283,9 +288,14 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
       const existing = readSessionState(quiz.gameCode);
 
       if (isHost) {
-        // Save results of any previous run before resetting
-        if (existing.players.length > 0) {
-          appendSessionHistory(quiz.gameCode, existing.players, quiz.questions.length);
+        // Save results of any previous run before resetting.
+        // Prefer Supabase over localStorage — cross-device scores live in Supabase.
+        const remoteState = await fetchSessionStateFromSupabase(quiz.gameCode);
+        const playersToSave = remoteState?.players.length
+          ? remoteState.players
+          : existing.players;
+        if (playersToSave.length > 0) {
+          appendSessionHistory(quiz.gameCode, playersToSave, quiz.questions.length);
         }
         // Always reset — clears stale players from previous sessions
         const ok = await resetSessionForNewRun(quiz.gameCode, { questions: quiz.questions, title: quiz.title });
@@ -968,7 +978,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
               <Users className="w-4 h-4" />
               <span>
                 {answeredCount}
-                <span className="text-white/50">/{players.length}</span>
+                <span className="text-white/50">/{activePlayers.length}</span>
               </span>
               {allAnswered && <span className="text-green-400 ml-0.5">✓</span>}
             </div>
