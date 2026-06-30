@@ -124,7 +124,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
   const [players, setPlayers] = useState<Player[]>([]);
   const [sessionReady, setSessionReady] = useState(false);
 
-  const [gameState, setGameState] = useState<'waiting' | 'transition' | 'question' | 'answer-distribution' | 'leaderboard' | 'final'>('waiting');
+  const [gameState, setGameState] = useState<'waiting' | 'transition' | 'question-intro' | 'question' | 'answer-distribution' | 'leaderboard' | 'final'>('waiting');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
   const [sessionHistory, setSessionHistory] = useState<SessionRun[]>([]);
@@ -229,9 +229,12 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
   const isShowingDistRef = useRef(false);
   // Prevents startQuiz from firing twice on double-click
   const hasStartedRef = useRef(false);
+  // Prevents question-intro → question transition from firing more than once per question
+  const hasIntroAdvancedRef = useRef(false);
   useEffect(() => {
     hasAutoAdvancedRef.current = false;
     isShowingDistRef.current = false;
+    hasIntroAdvancedRef.current = false;
     // Clear offline flags — a previously-disconnected player may have reconnected
     // by the time the next question starts; don't carry stale state forward.
     disconnectedIdsRef.current = new Set();
@@ -259,7 +262,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
 
     // Never allow a stale player-tab write to downgrade game state (e.g. question → waiting).
     // Only advance forward: waiting < transition < question < answer-distribution < leaderboard < final
-    const STATE_ORDER = ['waiting', 'transition', 'question', 'answer-distribution', 'leaderboard', 'final'];
+    const STATE_ORDER = ['waiting', 'transition', 'question-intro', 'question', 'answer-distribution', 'leaderboard', 'final'];
     const currentOrder = STATE_ORDER.indexOf(gameStateRef.current);
     const newOrder = STATE_ORDER.indexOf(session.gameState);
     if (session.gameState && newOrder > currentOrder) {
@@ -411,6 +414,27 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
     return () => clearInterval(interval);
   }, [gameState, currentQuestionIndex]);
 
+  // question-intro → question: host auto-advances after QUESTION_READING_SECS then starts timer.
+  // Non-host QuizSession views rely on the Supabase state change triggered by the host.
+  useEffect(() => {
+    if (!isHost || gameState !== 'question-intro') return;
+    if (hasIntroAdvancedRef.current) return;
+    const timer = setTimeout(() => {
+      if (hasIntroAdvancedRef.current) return;
+      hasIntroAdvancedRef.current = true;
+      const timeLimit = quiz.questions[currentQuestionIndex].timeLimit;
+      questionEndTimeRef.current = Date.now() + timeLimit * 1000;
+      setGameState('question');
+      setTimeLeft(timeLimit);
+      patchSessionState(quiz.gameCode, {
+        gameState: 'question',
+        currentQuestionIndex,
+        timeLeft: timeLimit,
+      });
+    }, QUESTION_READING_SECS * 1000);
+    return () => clearTimeout(timer);
+  }, [gameState, currentQuestionIndex, isHost, quiz.gameCode, quiz.questions]);
+
   // Auto-advance when every active (non-disconnected) player has answered
   useEffect(() => {
     if (!isHost || gameState !== 'question' || players.length === 0) return;
@@ -508,15 +532,16 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
     });
   }, [players, currentQuestionIndex, quiz.createdAt]);
 
+  const QUESTION_READING_SECS = 3;
+
   const startQuiz = () => {
     if (hasStartedRef.current) return;
     hasStartedRef.current = true;
-    questionEndTimeRef.current = Date.now() + currentQuestion.timeLimit * 1000;
-    setGameState('question');
+    setGameState('question-intro');
     setTimeLeft(currentQuestion.timeLimit);
     if (isHost) {
       patchSessionState(quiz.gameCode, {
-        gameState: 'question',
+        gameState: 'question-intro',
         currentQuestionIndex,
         timeLeft: currentQuestion.timeLimit,
       });
@@ -550,14 +575,13 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
     const nextIndex = currentQuestionIndex + 1;
     if (nextIndex >= quiz.questions.length) return;
     const nextTimeLimit = quiz.questions[nextIndex].timeLimit;
-    questionEndTimeRef.current = Date.now() + nextTimeLimit * 1000;
     setCurrentQuestionIndex(prev => prev + 1);
-    setGameState('question');
+    setGameState('question-intro');
     setTimeLeft(nextTimeLimit);
     if (isHost) {
       patchSessionState(quiz.gameCode, {
-        gameState: 'question',
-        currentQuestionIndex: currentQuestionIndex + 1,
+        gameState: 'question-intro',
+        currentQuestionIndex: nextIndex,
         timeLeft: nextTimeLimit,
       });
     }
@@ -926,6 +950,67 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
           duration={quiz.transitionTime ?? 5}
           onComplete={handleTransitionComplete}
         />
+      </ThemedBackground>
+    );
+  }
+
+  if (gameState === 'question-intro') {
+    const qNum = currentQuestionIndex + 1;
+    const totalQ = quiz.questions.length;
+    return (
+      <ThemedBackground className="min-h-screen flex flex-col items-center justify-center text-white px-6 py-10 gap-8">
+        {/* Question number badge */}
+        <div style={{
+          fontFamily: 'var(--ap-font-display)',
+          fontSize: '0.85rem',
+          fontWeight: 700,
+          letterSpacing: '0.12em',
+          textTransform: 'uppercase',
+          color: 'rgba(255,255,255,0.55)',
+        }}>
+          Question {qNum} / {totalQ}
+        </div>
+
+        {/* Question image */}
+        {questionImage && (
+          <div className="overflow-hidden rounded-2xl border border-white/10 bg-black/30 shadow-xl max-h-52 w-full max-w-3xl">
+            <img src={questionImage} alt={currentQuestion.question} className="h-full w-full object-cover" />
+          </div>
+        )}
+
+        {/* Question text */}
+        {isMillionnaire ? (
+          <div style={{ background: 'rgba(6,10,35,0.9)', border: '1.5px solid rgba(200,160,0,0.6)', borderRadius: 40, padding: '18px 36px', maxWidth: 720, width: '100%', boxShadow: '0 0 28px rgba(200,160,0,0.18)' }}>
+            <h1 className="text-center text-white leading-snug m-0" style={{ fontFamily: 'var(--ap-font-display)', fontSize: 'clamp(1.3rem,3.2vw,2.4rem)', fontWeight: 700 }}>
+              {currentQuestion.question}
+            </h1>
+          </div>
+        ) : (
+          <h1
+            className="text-center text-white drop-shadow-2xl max-w-4xl leading-snug"
+            style={{ fontFamily: 'var(--ap-font-display)', fontSize: 'clamp(1.4rem, 3.5vw, 2.6rem)', fontWeight: 700, textShadow: '0 2px 16px rgba(0,0,0,0.4)' }}
+          >
+            {currentQuestion.question}
+          </h1>
+        )}
+
+        {/* Pulsing "answers coming" indicator */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 8,
+          background: 'rgba(255,255,255,0.1)',
+          border: '1px solid rgba(255,255,255,0.2)',
+          borderRadius: 999,
+          padding: '8px 20px',
+          fontFamily: 'var(--ap-font-body)',
+          fontSize: '0.85rem',
+          fontWeight: 700,
+          color: 'rgba(255,255,255,0.7)',
+          animation: 'pulse 1.5s ease-in-out infinite',
+        }}>
+          <span>⏳</span>
+          <span>Lisez la question…</span>
+        </div>
+        <style>{`@keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:0.5 } }`}</style>
       </ThemedBackground>
     );
   }

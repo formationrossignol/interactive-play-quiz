@@ -4,6 +4,7 @@ import { supabase } from "./supabase";
 export type SharedGameState =
   | "waiting"
   | "transition"
+  | "question-intro"
   | "question"
   | "answer-distribution"
   | "leaderboard"

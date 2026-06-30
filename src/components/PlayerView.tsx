@@ -33,7 +33,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
   const [searchParams] = useSearchParams();
   const playerAvatar = searchParams.get('avatar') || '🎮';
   const [playerId, setPlayerId] = useState<string | null>(null);
-  const [gameState, setGameState] = useState<'waiting' | 'question' | 'answer-feedback' | 'leaderboard' | 'transition' | 'final' | 'abandoned'>('waiting');
+  const [gameState, setGameState] = useState<'waiting' | 'question-intro' | 'question' | 'answer-feedback' | 'leaderboard' | 'transition' | 'final' | 'abandoned'>('waiting');
   const [allPlayers, setAllPlayers] = useState<{ id: string; name: string; avatar: string; score: number }[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | string | null>(null);
@@ -68,7 +68,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
     // Map host states to player states (host uses 'answer-distribution', player uses 'answer-feedback')
     const mapped = session.gameState === 'answer-distribution' ? 'answer-feedback' : session.gameState;
     setGameState((prev) => (prev !== mapped ? mapped : prev));
-    if (session.gameState === 'question') {
+    if (session.gameState === 'question' || session.gameState === 'question-intro') {
       const newIndex = session.currentQuestionIndex ?? 0;
       // Reset answer UI immediately when a new question arrives via storage/realtime event.
       // Without this, the player sees "Réponse envoyée!" for up to 6s (poll throttle + realtime skip).
@@ -236,17 +236,18 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
       const players = Array.isArray(data.players) ? (data.players as SharedPlayer[]) : [];
 
       // Map host game states → player game states
-      let mapped: 'waiting' | 'question' | 'answer-feedback' | 'leaderboard' | 'transition' | 'final' | 'abandoned' = 'waiting';
-      if (remoteState === 'question') mapped = 'question';
+      let mapped: 'waiting' | 'question-intro' | 'question' | 'answer-feedback' | 'leaderboard' | 'transition' | 'final' | 'abandoned' = 'waiting';
+      if (remoteState === 'question-intro') mapped = 'question-intro';
+      else if (remoteState === 'question') mapped = 'question';
       else if (remoteState === 'leaderboard') mapped = 'leaderboard';
       else if (remoteState === 'final') mapped = 'final';
       else if (remoteState === 'answer-distribution') mapped = 'answer-feedback';
       else if (remoteState === 'transition') mapped = 'transition';
       else if (remoteState === 'abandoned') mapped = 'abandoned';
 
-      // Reset answer state only when a NEW question starts (index changed)
+      // Reset answer state when a NEW question starts (index changed), on either intro or active phase
       const newIndex = data.current_question_index ?? 0;
-      if (mapped === 'question' && newIndex !== answeredForIndexRef.current) {
+      if ((mapped === 'question' || mapped === 'question-intro') && newIndex !== answeredForIndexRef.current) {
         hasAnsweredRef.current = false;
         setHasAnswered(false);
         setSelectedAnswer(null);
@@ -264,7 +265,10 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
       // Only update totalPlayers when we have data — avoids overwriting with 0 on edge polls
       if (players.length > 0) setTotalPlayers(players.length);
 
-      if (remoteState === 'question') {
+      if (remoteState === 'question-intro') {
+        // Show question text; timer not yet running — just update the index.
+        setCurrentQuestion(data.current_question_index ?? 0);
+      } else if (remoteState === 'question') {
         const newIndex = data.current_question_index ?? 0;
         setCurrentQuestion(newIndex);
         // Set the wall-clock end time only when a NEW question starts.
@@ -536,6 +540,63 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
             <div className="w-8 h-8 rounded-full mx-auto" style={{ background: "rgba(255,255,255,0.3)" }}></div>
           </div>
         </div>
+      </div>
+    );
+  }
+
+  if (gameState === 'question-intro') {
+    return (
+      <div
+        className="min-h-screen flex flex-col items-center justify-center p-6 gap-8"
+        style={{ background: 'var(--ap-brand)' }}
+      >
+        {liveQuestion ? (
+          <>
+            <p
+              style={{
+                fontFamily: 'var(--ap-font-display)',
+                fontSize: '0.8rem',
+                fontWeight: 700,
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                color: 'rgba(255,255,255,0.55)',
+                margin: 0,
+              }}
+            >
+              Question {currentQuestion + 1}
+            </p>
+            <p
+              className="text-center text-white leading-snug"
+              style={{
+                fontFamily: 'var(--ap-font-display)',
+                fontSize: 'clamp(1.3rem, 4vw, 1.9rem)',
+                fontWeight: 700,
+                maxWidth: 600,
+                textShadow: '0 2px 12px rgba(0,0,0,0.3)',
+                margin: 0,
+              }}
+            >
+              {liveQuestion.question}
+            </p>
+            <p
+              style={{
+                fontFamily: 'var(--ap-font-body)',
+                fontSize: '0.9rem',
+                fontWeight: 700,
+                color: 'rgba(255,255,255,0.6)',
+                margin: 0,
+                animation: 'pulse 1.5s ease-in-out infinite',
+              }}
+            >
+              ⏳ Les réponses arrivent…
+            </p>
+            <style>{`@keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }`}</style>
+          </>
+        ) : (
+          <p className="text-white text-lg animate-pulse" style={{ fontFamily: 'var(--ap-font-display)' }}>
+            Chargement…
+          </p>
+        )}
       </div>
     );
   }
