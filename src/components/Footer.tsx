@@ -3,7 +3,6 @@ import { t } from "@/lib/i18n";
 
 export const Footer = () => {
   const navigate = useNavigate();
-  const currentYear = new Date().getFullYear();
 
   const footerSections = [
     {
@@ -96,9 +95,9 @@ export const Footer = () => {
       <div style={{ borderTop: "2px solid var(--ap-line)" }}>
         <div
           className="mx-auto max-w-6xl px-6 py-4 text-xs font-bold"
-          style={{ color: "var(--ap-muted)" }}
+          style={{ color: "var(--ap-muted)", textAlign: "center" }}
         >
-          © {currentYear} {t('footerRights')}
+          © 2026 QuizMaster. Tous droits réservés.
         </div>
       </div>
     </footer>

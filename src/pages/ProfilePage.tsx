@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { getCurrentUser, setCurrentUser, User as AuthUser, type Theme, type Language } from "@/lib/auth";
+import { getCurrentUser, setCurrentUser, User as AuthUser, type Theme, type Language, type Plan } from "@/lib/auth";
 import { getUserQuizzes } from "@/lib/quizStorage";
 import { setLanguage as setI18nLanguage, t } from "@/lib/i18n";
 import { Header } from "@/components/Header";
-import { Save, Trophy, BookOpen, Clock, Sun, Moon } from "lucide-react";
+import { Save, Trophy, BookOpen, Clock, Sun, Moon, Zap, Building2, User } from "lucide-react";
 import { toast } from "sonner";
 
 const inputStyle: React.CSSProperties = {
@@ -41,6 +41,36 @@ const triggerStyle = {
   width: "100%",
 };
 
+const PLAN_META: Record<Plan, {
+  label: string;
+  color: string;
+  colorDeep: string;
+  icon: React.ElementType;
+  features: string[];
+}> = {
+  perso: {
+    label: 'Perso',
+    color: '--ap-brand',
+    colorDeep: '--ap-brand-deep',
+    icon: User,
+    features: ['Jusqu\'à 10 quiz', 'Types de questions classiques', '30 joueurs simultanés'],
+  },
+  pro: {
+    label: 'Pro',
+    color: '--ap-poll',
+    colorDeep: '--ap-poll-deep',
+    icon: Zap,
+    features: ['Quiz illimités', 'Tous les types de questions', '200 joueurs simultanés', 'Statistiques avancées'],
+  },
+  entreprise: {
+    label: 'Entreprise',
+    color: '--ap-pres',
+    colorDeep: '--ap-pres-deep',
+    icon: Building2,
+    features: ['Tout Pro inclus', 'Joueurs illimités', 'Marque blanche', 'Support dédié'],
+  },
+};
+
 const statCards = [
   { key: "totalQuizzes",   labelKey: "quizzesCreated", icon: Trophy,   accent: "--ap-brand",  accentDeep: "--ap-brand-deep" },
   { key: "publicQuizzes",  labelKey: "publicQuizzes",  icon: BookOpen, accent: "--ap-poll",   accentDeep: "--ap-poll-deep" },
@@ -54,6 +84,7 @@ const ProfilePage = () => {
   const [email, setEmail] = useState("");
   const [theme, setTheme] = useState<Theme>("light");
   const [language, setLanguage] = useState<Language>("en");
+  const [plan, setPlan] = useState<Plan>("perso");
   const [stats, setStats] = useState({ totalQuizzes: 0, publicQuizzes: 0, totalQuestions: 0 });
 
   useEffect(() => {
@@ -64,6 +95,7 @@ const ProfilePage = () => {
     setEmail(currentUser.email);
     setTheme(currentUser.theme || "light");
     setLanguage(currentUser.language || "en");
+    setPlan(currentUser.plan || "perso");
     const userQuizzes = getUserQuizzes(currentUser.id).filter((q) => q.type === "quiz");
     setStats({
       totalQuizzes: userQuizzes.length,
@@ -162,6 +194,52 @@ const ProfilePage = () => {
               </div>
             ))}
           </div>
+
+          {/* Account plan */}
+          {(() => {
+            const meta = PLAN_META[plan];
+            const PlanIcon = meta.icon;
+            const isEntreprise = plan === 'entreprise';
+            return (
+              <div className="ap-card ap-card--floaty" style={{ padding: "28px 32px" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "16px", marginBottom: "20px" }}>
+                  <h2 className="ap-h3" style={{ margin: 0 }}>Mon compte</h2>
+                  <span
+                    style={{
+                      display: "inline-flex", alignItems: "center", gap: "6px",
+                      background: `var(${meta.color})`, color: "#fff",
+                      fontFamily: "var(--ap-font-display)", fontWeight: 700,
+                      fontSize: "13px", padding: "5px 14px", borderRadius: "999px",
+                      boxShadow: `0 3px 0 var(${meta.colorDeep})`,
+                    }}
+                  >
+                    <PlanIcon style={{ width: 14, height: 14 }} />
+                    {meta.label}
+                  </span>
+                </div>
+                <ul style={{ margin: "0 0 20px", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: "8px" }}>
+                  {meta.features.map((f) => (
+                    <li key={f} style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", color: "var(--ap-ink)", fontFamily: "var(--ap-font-body)", fontWeight: 600 }}>
+                      <span style={{ width: 18, height: 18, borderRadius: "50%", background: `var(${meta.color})`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <svg viewBox="0 0 12 10" width="10" height="8" fill="none"><path d="M1 5l3 3 7-7" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      </span>
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                {!isEntreprise && (
+                  <button
+                    className="ap-btn ap-btn--pill"
+                    style={{ gap: "8px" }}
+                    onClick={() => navigate("/pricing")}
+                  >
+                    <Zap style={{ width: 15, height: 15 }} />
+                    Passer à {plan === 'perso' ? 'Pro' : 'Entreprise'}
+                  </button>
+                )}
+              </div>
+            );
+          })()}
 
           {/* Profile info */}
           <div className="ap-card ap-card--floaty" style={{ padding: "28px 32px" }}>

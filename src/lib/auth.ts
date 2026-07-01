@@ -1,5 +1,6 @@
 export type Theme = 'light' | 'dark';
 export type Language = 'en' | 'fr';
+export type Plan = 'perso' | 'pro' | 'entreprise';
 
 export interface User {
   id: string;
@@ -8,6 +9,7 @@ export interface User {
   createdAt: string;
   theme?: Theme;
   language?: Language;
+  plan?: Plan;
 }
 
 export const AUTH_STORAGE_KEY = 'quiz_auth_user';
