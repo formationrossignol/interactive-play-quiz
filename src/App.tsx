@@ -22,6 +22,7 @@ import Contact from "./pages/Contact";
 import About from "./pages/About";
 import PollResults from "./pages/PollResults";
 import Help from "./pages/Help";
+import PreviewPage from "./pages/PreviewPage";
 
 const queryClient = new QueryClient();
 
@@ -49,6 +50,7 @@ const App = () => (
           <Route path="/about" element={<About />} />
           <Route path="/poll-results/:pollId" element={<PollResults />} />
           <Route path="/help" element={<Help />} />
+          <Route path="/preview/:quizId" element={<PreviewPage />} />
           <Route path="/quiz/:gameCode" element={<LiveQuizPage />} />
           <Route path="/join/:gameCode" element={<JoinQuiz />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

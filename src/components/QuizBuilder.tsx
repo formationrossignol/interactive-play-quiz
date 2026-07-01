@@ -875,7 +875,7 @@ export const QuizBuilder = () => {
     };
     localStorage.setItem(`quiz-${tempQuiz.id}`, JSON.stringify(tempQuiz));
     setShouldBlockNavigation(false);
-    navigate(`/quiz/${tempQuiz.id}`);
+    navigate(`/preview/${tempQuiz.id}`);
   };
 
   const handleDuplicateQuestion = (index: number) => {
