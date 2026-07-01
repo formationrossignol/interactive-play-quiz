@@ -19,7 +19,7 @@ export const Footer = () => {
       links: [
         { label: t('footerAbout') },
         { label: t('footerCareers') },
-        { label: t('footerContact') },
+        { label: t('footerContact'), onClick: () => navigate('/contact') },
       ],
     },
     {

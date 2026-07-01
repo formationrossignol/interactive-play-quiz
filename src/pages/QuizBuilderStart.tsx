@@ -1,16 +1,30 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { FileText, Sparkles, ArrowRight } from "lucide-react";
+import { ArrowRight, Plus } from "lucide-react";
 import { Header } from "@/components/Header";
 import { PollTemplateSelectorEnhanced } from "@/components/PollTemplateSelectorEnhanced";
 import { QuizTemplateSelectorEnhanced } from "@/components/QuizTemplateSelectorEnhanced";
 import { FlashcardTemplateSelectorEnhanced } from "@/components/FlashcardTemplateSelectorEnhanced";
 import { SlideTemplateSelectorEnhanced } from "@/components/SlideTemplateSelectorEnhanced";
+import { QUIZ_TEMPLATES } from "@/lib/quizTemplates";
+import { POLL_TEMPLATES } from "@/lib/pollTemplates";
 import { t } from "@/lib/i18n";
 import type { PollTemplate } from "@/lib/pollTemplates";
 import type { QuizTemplate } from "@/lib/quizTemplates";
 import type { FlashcardTemplate } from "@/lib/flashcardTemplates";
 import type { SlideTemplate } from "@/lib/slideTemplates";
+
+// Pastel gradient backgrounds for template cards — cycles by index
+const CARD_GRADIENTS = [
+  "linear-gradient(135deg, #6C63FF 0%, #4ECDC4 100%)",
+  "linear-gradient(135deg, #FF6B6B 0%, #FFE66D 100%)",
+  "linear-gradient(135deg, #2ECC71 0%, #1ABC9C 100%)",
+  "linear-gradient(135deg, #F093FB 0%, #F5576C 100%)",
+  "linear-gradient(135deg, #4FACFE 0%, #00F2FE 100%)",
+  "linear-gradient(135deg, #43E97B 0%, #38F9D7 100%)",
+];
+
+const PREVIEW_COUNT = 5;
 
 export const QuizBuilderStart = () => {
   const navigate = useNavigate();
@@ -18,7 +32,7 @@ export const QuizBuilderStart = () => {
   const searchParams = new URLSearchParams(location.search);
   const quizType = (searchParams.get("type") || "quiz") as "quiz" | "poll" | "flashcard" | "slide";
 
-  const [showTemplates, setShowTemplates] = useState(false);
+  const [showAll, setShowAll] = useState(false);
   const isPoll = quizType === "poll";
   const isFlashcard = quizType === "flashcard";
   const isSlide = quizType === "slide";
@@ -36,13 +50,9 @@ export const QuizBuilderStart = () => {
     ? t("createNewPoll")
     : t("createNewQuiz");
 
-  const pageSubtitle = isSlide
-    ? "Choisissez comment commencer votre présentation"
-    : isFlashcard
-    ? t("chooseFlashcardStart")
-    : isPoll
-    ? t("choosePollStart")
-    : t("chooseQuizStart");
+  const previewTemplates = isPoll
+    ? POLL_TEMPLATES.slice(0, PREVIEW_COUNT)
+    : QUIZ_TEMPLATES.slice(0, PREVIEW_COUNT);
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--ap-paper)" }}>
@@ -58,83 +68,18 @@ export const QuizBuilderStart = () => {
         }
       />
 
-      <div className="mx-auto max-w-3xl px-6 py-12">
+      <div className="mx-auto max-w-5xl px-6 py-12">
         <div className="mb-10 text-center">
           <h1 className="ap-h2" style={{ fontSize: "28px", marginBottom: "8px" }}>{pageTitle}</h1>
-          <p className="ap-muted">{pageSubtitle}</p>
+          <p className="ap-muted">
+            {isPoll ? t("choosePollStart") : isFlashcard ? t("chooseFlashcardStart") : isSlide ? "Choisissez comment commencer" : t("chooseQuizStart")}
+          </p>
         </div>
 
-        {!showTemplates ? (
-          <div className="space-y-5">
-          <div className="grid md:grid-cols-2 gap-5">
-            {/* From scratch */}
-            <div
-              className="ap-card ap-card--hover"
-              style={{ cursor: "pointer", padding: "28px" }}
-              onClick={handleFromScratch}
-            >
-              <div
-                className="ap-tile__icon"
-                style={{ background: "var(--ap-brand)", boxShadow: "0 5px 0 var(--ap-brand-deep)", marginBottom: "20px" }}
-              >
-                <FileText className="h-6 w-6" color="#fff" />
-              </div>
-              <h2 className="ap-h3" style={{ marginBottom: "8px" }}>{t("fromScratch")}</h2>
-              <p className="ap-muted" style={{ fontSize: "13.5px", lineHeight: 1.5, marginBottom: "24px" }}>
-                {isSlide
-                  ? "Créez votre présentation de zéro, diapositive par diapositive"
-                  : isFlashcard
-                  ? t("createFlashcardFromScratchDesc")
-                  : isPoll
-                  ? t("createPollFromScratchDesc")
-                  : t("createQuizFromScratchDesc")}
-              </p>
-              <button
-                className="ap-btn ap-btn--pill ap-btn--sm"
-                onClick={(e) => { e.stopPropagation(); handleFromScratch(); }}
-              >
-                {t("startFromScratch")}
-                <ArrowRight className="h-4 w-4" />
-              </button>
-            </div>
-
-            {/* From template */}
-            <div
-              className="ap-card ap-card--hover"
-              style={{ cursor: "pointer", padding: "28px" }}
-              onClick={() => setShowTemplates(true)}
-            >
-              <div
-                className="ap-tile__icon"
-                style={{ background: "var(--ap-flash)", boxShadow: "0 5px 0 var(--ap-flash-deep)", marginBottom: "20px" }}
-              >
-                <Sparkles className="h-6 w-6" color="#fff" />
-              </div>
-              <h2 className="ap-h3" style={{ marginBottom: "8px" }}>{t("fromTemplate")}</h2>
-              <p className="ap-muted" style={{ fontSize: "13.5px", lineHeight: 1.5, marginBottom: "24px" }}>
-                {isSlide
-                  ? "Démarrez avec un modèle de présentation prêt à l'emploi"
-                  : isFlashcard
-                  ? t("createFlashcardFromTemplateDesc")
-                  : isPoll
-                  ? t("createPollFromTemplateDesc")
-                  : t("createQuizFromTemplateDesc")}
-              </p>
-              <button
-                className="ap-btn ap-btn--ghost ap-btn--pill ap-btn--sm"
-                onClick={(e) => { e.stopPropagation(); setShowTemplates(true); }}
-              >
-                {t("browseTemplates")}
-                <ArrowRight className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-
-          </div>
-        ) : (
+        {showAll ? (
           <div className="space-y-5">
             <button
-              onClick={() => setShowTemplates(false)}
+              onClick={() => setShowAll(false)}
               className="ap-btn ap-btn--ghost ap-btn--sm"
               style={{ alignSelf: "flex-start" }}
             >
@@ -149,6 +94,175 @@ export const QuizBuilderStart = () => {
             ) : (
               <QuizTemplateSelectorEnhanced selectedTemplateId={null} onSelectTemplate={handleSelectTemplate} />
             )}
+          </div>
+        ) : (
+          <div>
+            {/* Section heading */}
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "20px" }}>
+              <h2 className="ap-h3" style={{ margin: 0, fontSize: "17px" }}>Commencer depuis un modèle</h2>
+            </div>
+
+            {/* Horizontal scrollable strip */}
+            <div
+              style={{
+                display: "flex",
+                gap: "14px",
+                overflowX: "auto",
+                paddingBottom: "12px",
+                scrollbarWidth: "thin",
+              }}
+            >
+              {/* Blank card */}
+              <button
+                onClick={handleFromScratch}
+                style={{
+                  flexShrink: 0,
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: "12px",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  padding: 0,
+                  width: 140,
+                }}
+              >
+                <div
+                  style={{
+                    width: 140,
+                    height: 100,
+                    borderRadius: "var(--ap-r-md)",
+                    border: "2px dashed var(--ap-line)",
+                    background: "var(--ap-card)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    transition: "border-color .15s, background .15s",
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLDivElement).style.borderColor = "var(--ap-brand)";
+                    (e.currentTarget as HTMLDivElement).style.background = "var(--ap-brand-soft)";
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLDivElement).style.borderColor = "var(--ap-line)";
+                    (e.currentTarget as HTMLDivElement).style.background = "var(--ap-card)";
+                  }}
+                >
+                  <Plus style={{ width: 28, height: 28, color: "var(--ap-muted)" }} />
+                </div>
+                <span style={{ fontSize: "13px", fontWeight: 700, color: "var(--ap-ink)", fontFamily: "var(--ap-font-body)" }}>
+                  Vierge
+                </span>
+              </button>
+
+              {/* Template cards */}
+              {(isFlashcard || isSlide ? [] : previewTemplates).map((tpl, idx) => (
+                <button
+                  key={tpl.id}
+                  onClick={() => handleSelectTemplate(tpl as any)}
+                  style={{
+                    flexShrink: 0,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: "12px",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    padding: 0,
+                    width: 140,
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 140,
+                      height: 100,
+                      borderRadius: "var(--ap-r-md)",
+                      background: CARD_GRADIENTS[idx % CARD_GRADIENTS.length],
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "36px",
+                      boxShadow: "0 4px 16px rgba(0,0,0,.10)",
+                      transition: "transform .15s, box-shadow .15s",
+                      position: "relative",
+                      overflow: "hidden",
+                    }}
+                    onMouseEnter={(e) => {
+                      (e.currentTarget as HTMLDivElement).style.transform = "translateY(-3px)";
+                      (e.currentTarget as HTMLDivElement).style.boxShadow = "0 8px 24px rgba(0,0,0,.16)";
+                    }}
+                    onMouseLeave={(e) => {
+                      (e.currentTarget as HTMLDivElement).style.transform = "";
+                      (e.currentTarget as HTMLDivElement).style.boxShadow = "0 4px 16px rgba(0,0,0,.10)";
+                    }}
+                  >
+                    <span style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,.2))" }}>{(tpl as any).icon}</span>
+                  </div>
+                  <span
+                    style={{
+                      fontSize: "13px",
+                      fontWeight: 700,
+                      color: "var(--ap-ink)",
+                      fontFamily: "var(--ap-font-body)",
+                      textAlign: "center",
+                      maxWidth: 130,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                    title={(tpl as any).name}
+                  >
+                    {(tpl as any).name}
+                  </span>
+                </button>
+              ))}
+
+              {/* Browse all card */}
+              <button
+                onClick={() => setShowAll(true)}
+                style={{
+                  flexShrink: 0,
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: "12px",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  padding: 0,
+                  width: 140,
+                }}
+              >
+                <div
+                  style={{
+                    width: 140,
+                    height: 100,
+                    borderRadius: "var(--ap-r-md)",
+                    background: "linear-gradient(135deg, var(--ap-brand) 0%, var(--ap-flash) 100%)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    boxShadow: "0 4px 16px rgba(0,0,0,.10)",
+                    transition: "transform .15s, box-shadow .15s",
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLDivElement).style.transform = "translateY(-3px)";
+                    (e.currentTarget as HTMLDivElement).style.boxShadow = "0 8px 24px rgba(0,0,0,.16)";
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLDivElement).style.transform = "";
+                    (e.currentTarget as HTMLDivElement).style.boxShadow = "0 4px 16px rgba(0,0,0,.10)";
+                  }}
+                >
+                  <ArrowRight style={{ width: 28, height: 28, color: "#fff" }} />
+                </div>
+                <span style={{ fontSize: "13px", fontWeight: 700, color: "var(--ap-ink)", fontFamily: "var(--ap-font-body)" }}>
+                  Voir tout
+                </span>
+              </button>
+            </div>
           </div>
         )}
       </div>
