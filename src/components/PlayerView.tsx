@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Users, Trophy, LogOut } from "lucide-react";
 import { AvatarDisplay } from "./BetterAvatars";
@@ -30,9 +30,8 @@ const answerShapes = ["▲", "◆", "●", "■"];
 
 export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const playerAvatar = searchParams.get('avatar') || '🎮';
   const [playerId, setPlayerId] = useState<string | null>(null);
+  const [playerAvatar, setPlayerAvatar] = useState<string>('🎮');
   const [gameState, setGameState] = useState<'waiting' | 'question-intro' | 'question' | 'answer-feedback' | 'leaderboard' | 'transition' | 'final' | 'abandoned'>('waiting');
   const [allPlayers, setAllPlayers] = useState<{ id: string; name: string; avatar: string; score: number }[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -113,35 +112,19 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
       try {
         const storedPlayer = JSON.parse(storedPlayerRaw) as SharedPlayer;
         setPlayerId(storedPlayer.id);
+        setPlayerAvatar(storedPlayer.avatar || '🎮');
         upsertPlayerInSession(gameCode, storedPlayer);
       } catch (error) {
         console.warn('Failed to parse stored player information', error);
       }
     } else {
-      const fallbackId = typeof crypto !== 'undefined' && 'randomUUID' in crypto
-        ? crypto.randomUUID()
-        : `player-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-      const trimmedName = playerName?.trim() || 'Participant';
-      const fallbackPlayer: SharedPlayer = {
-        id: fallbackId,
-        name: trimmedName,
-        avatar: playerAvatar,
-        score: 0,
-        correctAnswers: 0,
-        joinedAt: new Date().toISOString(),
-      };
-      try {
-        sessionStorage.setItem(`quiz-player-${gameCode}`, JSON.stringify(fallbackPlayer));
-      } catch (error) {
-        console.warn('Unable to persist fallback player info in sessionStorage', error);
-      }
-      upsertPlayerInSession(gameCode, fallbackPlayer);
-      setPlayerId(fallbackId);
+      // No stored session — reject URL-param spoofing and send through the proper join flow
+      navigate(`/join/${gameCode}`, { replace: true });
     }
     // Do NOT call syncFromSession() here — localStorage may be stale from a previous run
     // (e.g. gameState = 'final'). Let the Supabase fetch in the mount effect + 2s polling
     // drive the initial game state instead.
-  }, [gameCode, playerAvatar, playerName]);
+  }, [gameCode, navigate]);
 
   // Holds the last submitted answer payload so retries can resend it
   const pendingAnswerRef = useRef<{ player: SharedPlayer; questionIndex: number } | null>(null);
