@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type MouseEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type MouseEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { RatingStars } from "@/components/RatingStars";
 import { getCurrentUser } from "@/lib/auth";
 import {
   deleteQuiz,
+  duplicateQuiz,
   getFavoriteQuizzes,
   getPublicQuizzes,
   getUserQuizzes,
@@ -17,9 +18,21 @@ import {
   toggleFavorite,
   type SavedQuiz,
 } from "@/lib/quizStorage";
+import {
+  createFolder,
+  deleteFolder,
+  getFolderItemCount,
+  getFolders,
+  moveToFolder,
+  renameFolder,
+  type Folder,
+} from "@/lib/folderStorage";
+import { FolderCard } from "@/components/FolderCard";
+import { MoveToFolderMenu } from "@/components/MoveToFolderMenu";
 import { DeleteQuizDialog } from "@/components/DeleteQuizDialog";
+import { DndContext, type DragEndEvent } from "@dnd-kit/core";
 import { toast } from "sonner";
-import { Edit, LayoutGrid, List, Play, Search, Star, Trash2 } from "lucide-react";
+import { ChevronRight, Copy, Edit, FolderPlus, LayoutGrid, List, Play, Search, Star, Trash2, FolderInput } from "lucide-react";
 import { t } from "@/lib/i18n";
 import { useCollectionFilters } from "@/hooks/useCollectionFilters";
 
@@ -35,6 +48,12 @@ const MyQuizzes = () => {
   const [quizToDelete, setQuizToDelete] = useState<SavedQuiz | null>(null);
   const [activeTab, setActiveTab] = useState("my");
   const [viewMode, setViewMode] = useState<"grid" | "list">(() => (localStorage.getItem(VIEW_KEY) as "grid" | "list") ?? "grid");
+  const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
+  const [folders, setFolders] = useState<Folder[]>([]);
+  const [newFolderName, setNewFolderName] = useState("");
+  const [showNewFolderInput, setShowNewFolderInput] = useState(false);
+  const [moveMenuOpenId, setMoveMenuOpenId] = useState<string | null>(null);
+  const moveMenuRef = useRef<HTMLDivElement>(null);
 
   const setView = (mode: "grid" | "list") => {
     setViewMode(mode);
@@ -49,12 +68,23 @@ const MyQuizzes = () => {
     setMyQuizzes(userQuizzes.filter((q) => q.type === "quiz"));
     setPublicQuizzes(publicQuizzesData.filter((q) => q.type === "quiz"));
     setFavoriteQuizzes(favorite.filter((q) => q.type === "quiz"));
+    setFolders(getFolders(user.id, "quiz"));
   }, [user]);
 
   useEffect(() => {
     if (!user) { navigate("/auth"); return; }
     loadQuizzes();
   }, [user, navigate, loadQuizzes]);
+
+  useEffect(() => {
+    const handler = (e: globalThis.MouseEvent) => {
+      if (moveMenuRef.current && !moveMenuRef.current.contains(e.target as Node)) {
+        setMoveMenuOpenId(null);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   const myFilters = useCollectionFilters(myQuizzes);
   const favFilters = useCollectionFilters(favoriteQuizzes);
@@ -83,6 +113,50 @@ const MyQuizzes = () => {
   };
   const handleRateQuiz = (quizId: string, rating: number) => {
     if (rateQuiz(quizId, rating)) { toast.success("Merci pour votre note !"); loadQuizzes(); }
+  };
+
+  const handleCreateFolder = () => {
+    const name = newFolderName.trim();
+    if (!name || !user) return;
+    createFolder(name, user.id, "quiz");
+    setNewFolderName("");
+    setShowNewFolderInput(false);
+    loadQuizzes();
+    toast.success(`Dossier "${name}" créé`);
+  };
+
+  const handleRenameFolder = (id: string, name: string) => {
+    renameFolder(id, name);
+    loadQuizzes();
+  };
+
+  const handleDeleteFolder = (id: string) => {
+    const folder = folders.find((f) => f.id === id);
+    deleteFolder(id);
+    if (currentFolderId === id) setCurrentFolderId(null);
+    loadQuizzes();
+    if (folder) toast.success(`Dossier "${folder.name}" supprimé`);
+  };
+
+  const handleMoveToFolder = (quizId: string, folderId: string | null) => {
+    moveToFolder(quizId, folderId);
+    loadQuizzes();
+    setMoveMenuOpenId(null);
+  };
+
+  const handleDuplicateQuiz = (e: MouseEvent, id: string) => {
+    e.stopPropagation();
+    const copy = duplicateQuiz(id);
+    if (copy) { toast.success(`"${copy.title}" créé`); loadQuizzes(); }
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && folders.some((f) => f.id === over.id)) {
+      moveToFolder(String(active.id), String(over.id));
+      loadQuizzes();
+      toast.success("Déplacé dans le dossier");
+    }
   };
 
   const triggerStyle = {
@@ -193,6 +267,26 @@ const MyQuizzes = () => {
             {showActions && (
               <>
                 <button onClick={(e) => handleEditQuiz(e, quiz.id)} title={t("edit")} className="ap-btn ap-btn--ghost ap-btn--sm" style={{ padding: "6px 8px" }}><Edit className="h-3.5 w-3.5" /></button>
+                <button onClick={(e) => handleDuplicateQuiz(e, quiz.id)} title="Dupliquer" className="ap-btn ap-btn--ghost ap-btn--sm" style={{ padding: "6px 8px" }}><Copy className="h-3.5 w-3.5" /></button>
+                {folders.length > 0 && (
+                  <div className="relative" ref={moveMenuOpenId === quiz.id ? moveMenuRef : undefined}>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setMoveMenuOpenId(moveMenuOpenId === quiz.id ? null : quiz.id); }}
+                      title="Déplacer vers"
+                      className="ap-btn ap-btn--ghost ap-btn--sm"
+                      style={{ padding: "6px 8px" }}
+                    >
+                      <FolderInput className="h-3.5 w-3.5" />
+                    </button>
+                    {moveMenuOpenId === quiz.id && (
+                      <MoveToFolderMenu
+                        folders={folders}
+                        currentFolderId={quiz.folderId}
+                        onMove={(fid) => handleMoveToFolder(quiz.id, fid)}
+                      />
+                    )}
+                  </div>
+                )}
                 <button onClick={(e) => { e.stopPropagation(); handleDeleteClick(quiz); }} title={t("delete")} className="ap-btn ap-btn--ghost ap-btn--sm" style={{ padding: "6px 8px", color: "var(--ap-quiz)" }}><Trash2 className="h-3.5 w-3.5" /></button>
               </>
             )}
@@ -236,6 +330,26 @@ const MyQuizzes = () => {
         {showActions && (
           <>
             <button onClick={(e) => handleEditQuiz(e, quiz.id)} title={t("edit")} className="ap-btn ap-btn--ghost ap-btn--sm" style={{ padding: "5px" }}><Edit className="h-3.5 w-3.5" /></button>
+            <button onClick={(e) => handleDuplicateQuiz(e, quiz.id)} title="Dupliquer" className="ap-btn ap-btn--ghost ap-btn--sm" style={{ padding: "5px" }}><Copy className="h-3.5 w-3.5" /></button>
+            {folders.length > 0 && (
+              <div className="relative" ref={moveMenuOpenId === quiz.id ? moveMenuRef : undefined}>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setMoveMenuOpenId(moveMenuOpenId === quiz.id ? null : quiz.id); }}
+                  title="Déplacer vers"
+                  className="ap-btn ap-btn--ghost ap-btn--sm"
+                  style={{ padding: "5px" }}
+                >
+                  <FolderInput className="h-3.5 w-3.5" />
+                </button>
+                {moveMenuOpenId === quiz.id && (
+                  <MoveToFolderMenu
+                    folders={folders}
+                    currentFolderId={quiz.folderId}
+                    onMove={(fid) => handleMoveToFolder(quiz.id, fid)}
+                  />
+                )}
+              </div>
+            )}
             <button onClick={(e) => { e.stopPropagation(); handleDeleteClick(quiz); }} title={t("delete")} className="ap-btn ap-btn--ghost ap-btn--sm" style={{ padding: "5px", color: "var(--ap-quiz)" }}><Trash2 className="h-3.5 w-3.5" /></button>
           </>
         )}
@@ -247,28 +361,63 @@ const MyQuizzes = () => {
   );
 
   const renderTabContent = (tab: string, allItems: SavedQuiz[], emptyKey: string, ctaKey?: string, showActions = true) => {
+    const isMyTab = tab === "my";
+    const folderItems = isMyTab && currentFolderId
+      ? allItems.filter((q) => q.folderId === currentFolderId)
+      : isMyTab
+      ? allItems.filter((q) => !q.folderId)
+      : allItems;
+
     const f = filtersFor(tab);
-    if (allItems.length === 0) return (
+    const rootFolders = isMyTab && !currentFolderId ? folders : [];
+
+    if (allItems.length === 0 && rootFolders.length === 0) return (
       <div style={{ borderRadius: "var(--ap-r-lg)", border: "2px dashed var(--ap-line-2)", background: "var(--ap-paper-2)", padding: "48px 24px", textAlign: "center" }}>
         <p className="ap-muted" style={{ fontSize: "14px", marginBottom: ctaKey ? "16px" : 0 }}>{t(emptyKey as any)}</p>
         {ctaKey && <button className="ap-btn ap-btn--sm ap-btn--pill" onClick={() => navigate('/builder-start?type=quiz')}>{t(ctaKey as any)}</button>}
       </div>
     );
+
     return (
       <>
         {renderFilters(tab)}
-        {f.paginated.length === 0 ? (
-          <p className="py-10 text-center text-sm text-slate-400">Aucun résultat pour cette recherche.</p>
+        {rootFolders.length > 0 && (
+          <div
+            className={viewMode === "grid" ? "grid gap-4 md:grid-cols-3 lg:grid-cols-4 mb-6" : "ap-card mb-6"}
+            style={viewMode === "list" ? { padding: 0, overflow: "hidden" } : {}}
+          >
+            {rootFolders.map((folder) => (
+              <FolderCard
+                key={folder.id}
+                folder={folder}
+                itemCount={getFolderItemCount(folder.id, user!.id, "quiz")}
+                viewMode={viewMode}
+                onClick={() => setCurrentFolderId(folder.id)}
+                onRename={handleRenameFolder}
+                onDelete={handleDeleteFolder}
+              />
+            ))}
+          </div>
+        )}
+        {folderItems.length === 0 ? (
+          <p className="py-10 text-center text-sm text-slate-400">
+            {currentFolderId ? "Aucun quiz dans ce dossier." : "Aucun résultat pour cette recherche."}
+          </p>
         ) : viewMode === "grid" ? (
           <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-            {f.paginated.map((q) => renderQuizCard(q, showActions))}
+            {folderItems.map((q) => renderQuizCard(q, showActions))}
           </div>
         ) : (
           <div className="ap-card" style={{ padding: 0, overflow: "hidden" }}>
-            {f.paginated.map((q) => renderQuizRow(q, showActions))}
+            {folderItems.map((q) => renderQuizRow(q, showActions))}
           </div>
         )}
-        <Pagination page={f.page} totalPages={f.totalPages} onPageChange={f.setPage} className="mt-8" />
+        <Pagination
+          page={f.page}
+          totalPages={Math.max(1, Math.ceil(folderItems.length / 12))}
+          onPageChange={f.setPage}
+          className="mt-8"
+        />
       </>
     );
   };
@@ -281,22 +430,54 @@ const MyQuizzes = () => {
       <div className="mx-auto max-w-6xl px-6 py-10">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
           <div>
-            <h1 className="ap-h2" style={{ fontSize: "26px" }}>{t("myQuizzes")}</h1>
+            <h1 className="ap-h2" style={{ fontSize: "26px" }}>
+              {currentFolderId
+                ? <span className="flex items-center gap-2 flex-wrap">
+                    <button className="ap-btn ap-btn--ghost ap-btn--sm" style={{ padding: "2px 0", fontWeight: 600, fontSize: "inherit" }} onClick={() => setCurrentFolderId(null)}>{t("myQuizzes")}</button>
+                    <ChevronRight className="h-5 w-5" style={{ color: "var(--ap-muted)" }} />
+                    {folders.find((f) => f.id === currentFolderId)?.name ?? "Dossier"}
+                  </span>
+                : t("myQuizzes")
+              }
+            </h1>
             <p className="ap-muted" style={{ fontSize: "14px" }}>{t("myQuizzesSubtitle")}</p>
           </div>
-          <button className="ap-btn ap-btn--sm ap-btn--pill ap-btn--quiz" onClick={() => navigate('/builder-start?type=quiz')}>{t("createQuizCta")}</button>
+          <div className="flex items-center gap-2 flex-wrap">
+            {showNewFolderInput ? (
+              <div className="flex items-center gap-2">
+                <input
+                  autoFocus
+                  value={newFolderName}
+                  onChange={(e) => setNewFolderName(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleCreateFolder(); if (e.key === 'Escape') { setShowNewFolderInput(false); setNewFolderName(""); } }}
+                  placeholder="Nom du dossier"
+                  className="ap-input"
+                  style={{ width: '180px', height: '38px', padding: '6px 12px' }}
+                />
+                <button className="ap-btn ap-btn--sm ap-btn--pill" onClick={handleCreateFolder}>Créer</button>
+                <button className="ap-btn ap-btn--sm ap-btn--pill ap-btn--ghost" onClick={() => { setShowNewFolderInput(false); setNewFolderName(""); }}>Annuler</button>
+              </div>
+            ) : (
+              <button className="ap-btn ap-btn--sm ap-btn--pill ap-btn--ghost" onClick={() => setShowNewFolderInput(true)} style={{ gap: '6px', display: 'flex', alignItems: 'center' }}>
+                <FolderPlus className="h-4 w-4" /> Nouveau dossier
+              </button>
+            )}
+            <button className="ap-btn ap-btn--sm ap-btn--pill ap-btn--quiz" onClick={() => navigate('/builder-start?type=quiz')}>{t("createQuizCta")}</button>
+          </div>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="my">{`${t("myQuizzesTab")} (${myQuizzes.length})`}</TabsTrigger>
-            <TabsTrigger value="favorites">{`${t("favoritesTab")} (${favoriteQuizzes.length})`}</TabsTrigger>
-            <TabsTrigger value="public">{`${t("publicQuizzesTab")} (${publicQuizzes.length})`}</TabsTrigger>
-          </TabsList>
-          <TabsContent value="my">{renderTabContent("my", myQuizzes, "noQuizzesSaved", "createQuizCta")}</TabsContent>
-          <TabsContent value="favorites">{renderTabContent("favorites", favoriteQuizzes, "noFavoriteQuizzes", undefined, favoriteQuizzes.some((q) => q.userId === user.id))}</TabsContent>
-          <TabsContent value="public">{renderTabContent("public", publicQuizzes, "noPublicQuizzes", undefined, false)}</TabsContent>
-        </Tabs>
+        <DndContext onDragEnd={handleDragEnd}>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+            <TabsList>
+              <TabsTrigger value="my">{`${t("myQuizzesTab")} (${myQuizzes.length})`}</TabsTrigger>
+              <TabsTrigger value="favorites">{`${t("favoritesTab")} (${favoriteQuizzes.length})`}</TabsTrigger>
+              <TabsTrigger value="public">{`${t("publicQuizzesTab")} (${publicQuizzes.length})`}</TabsTrigger>
+            </TabsList>
+            <TabsContent value="my">{renderTabContent("my", myQuizzes, "noQuizzesSaved", "createQuizCta")}</TabsContent>
+            <TabsContent value="favorites">{renderTabContent("favorites", favoriteQuizzes, "noFavoriteQuizzes", undefined, favoriteQuizzes.some((q) => q.userId === user.id))}</TabsContent>
+            <TabsContent value="public">{renderTabContent("public", publicQuizzes, "noPublicQuizzes", undefined, false)}</TabsContent>
+          </Tabs>
+        </DndContext>
       </div>
 
       <DeleteQuizDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen} onConfirm={handleDeleteConfirm} title={quizToDelete?.title || ""} type="quiz" />
