@@ -48,6 +48,13 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
 
   const [quizQuestions, setQuizQuestions] = useState<any[]>([]);
 
+  // Type-specific answer state
+  const [rankingOrder, setRankingOrder] = useState<string[]>([]);
+  const [blankValues, setBlankValues] = useState<string[]>([]);
+  const [sliderValue, setSliderValue] = useState<number>(0);
+  const [matchingSelectedLeft, setMatchingSelectedLeft] = useState<string | null>(null);
+  const [matchingPairs, setMatchingPairs] = useState<Record<string, string>>({});
+
   // Reactions (final screen)
   const [reactionComment, setReactionComment] = useState('');
   const [lastSentEmoji, setLastSentEmoji] = useState<string | null>(null);
@@ -346,6 +353,16 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
     pendingAnswerRef.current = null;
   }, [currentQuestion]);
 
+  // Reset type-specific state when question or question data changes
+  useEffect(() => {
+    if (!liveQuestion) return;
+    if (liveQuestion.type === 'ranking') setRankingOrder([...(liveQuestion.items ?? [])]);
+    if (liveQuestion.type === 'fill-blank') setBlankValues((liveQuestion.blanks ?? []).map(() => ''));
+    if (liveQuestion.type === 'slider') setSliderValue(liveQuestion.min ?? 0);
+    if (liveQuestion.type === 'matching') { setMatchingSelectedLeft(null); setMatchingPairs({}); }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentQuestion, liveQuestion?.type]);
+
   // Restore answer feedback state after a page refresh
   useEffect(() => {
     if (gameState !== 'answer-feedback') return;
@@ -411,6 +428,32 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
       ? typeof expected === 'string' && String(answer).toLowerCase().trim() === expected.toLowerCase().trim()
       : liveQuestion.type === 'true-false'
       ? (answer === 'true') === (expected === true || expected === 'true')
+      : liveQuestion.type === 'slider'
+      ? Number(answer) === Number(liveQuestion.correctValue ?? liveQuestion.correctAnswer)
+      : liveQuestion.type === 'fill-blank'
+      ? (() => {
+          try {
+            const submitted: string[] = JSON.parse(String(answer));
+            return (liveQuestion.blanks ?? []).every((b: any, i: number) =>
+              submitted[i]?.toLowerCase().trim() === String(b.correctAnswer).toLowerCase().trim()
+            );
+          } catch { return false; }
+        })()
+      : liveQuestion.type === 'ranking'
+      ? (() => {
+          try {
+            const submitted: number[] = JSON.parse(String(answer));
+            const target: number[] = liveQuestion.correctOrder ?? [];
+            return target.length > 0 && submitted.length === target.length && submitted.every((v, i) => v === target[i]);
+          } catch { return false; }
+        })()
+      : liveQuestion.type === 'matching'
+      ? (() => {
+          try {
+            const submitted: Record<string, string> = JSON.parse(String(answer));
+            return (liveQuestion.correctMatches ?? []).every((m: any) => submitted[m.leftId] === m.rightId);
+          } catch { return false; }
+        })()
       : answer === expected;
 
     const base = liveQuestion.points ?? 100;
@@ -755,6 +798,154 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
                 </button>
               </form>
             )}
+            {/* Slider */}
+            {liveQuestion.type === 'slider' && !hasAnswered && (
+              <div className="flex flex-col gap-4 px-2">
+                <div className="text-center text-white text-3xl font-bold">{sliderValue}</div>
+                <input
+                  type="range"
+                  min={liveQuestion.min ?? 0}
+                  max={liveQuestion.max ?? 100}
+                  step={liveQuestion.step ?? 1}
+                  value={sliderValue}
+                  onChange={(e) => setSliderValue(Number(e.target.value))}
+                  className="w-full accent-white"
+                />
+                <div className="flex justify-between text-white/60 text-sm">
+                  <span>{liveQuestion.minLabel ?? liveQuestion.min ?? 0}</span>
+                  <span>{liveQuestion.maxLabel ?? liveQuestion.max ?? 100}</span>
+                </div>
+                <button className="ap-btn ap-btn--lg ap-btn--pill" style={{ background: "var(--ap-ink)" }} onClick={() => submitAnswer(sliderValue)}>
+                  Valider
+                </button>
+              </div>
+            )}
+
+            {/* Fill in the blank */}
+            {liveQuestion.type === 'fill-blank' && !hasAnswered && (
+              <form className="flex flex-col gap-3 px-2" onSubmit={(e) => {
+                e.preventDefault();
+                if (blankValues.some(v => !v.trim())) return;
+                submitAnswer(JSON.stringify(blankValues.map(v => v.trim())));
+              }}>
+                <p className="text-white/80 text-sm text-center" style={{ fontFamily: 'var(--ap-font-body)' }}>
+                  {(liveQuestion.text ?? '').split('{{blank}}').map((segment: string, i: number, arr: string[]) => (
+                    <span key={i}>
+                      {segment}
+                      {i < arr.length - 1 && (
+                        <input
+                          className="inline-block mx-1 rounded-lg border-b-2 border-white bg-white/15 text-white px-2 py-1 text-sm w-24 outline-none focus:border-white/80"
+                          value={blankValues[i] ?? ''}
+                          onChange={(e) => setBlankValues(prev => { const next = [...prev]; next[i] = e.target.value; return next; })}
+                          autoComplete="off"
+                        />
+                      )}
+                    </span>
+                  ))}
+                </p>
+                <button type="submit" className="ap-btn ap-btn--lg ap-btn--pill" style={{ background: "var(--ap-ink)" }}>
+                  Valider
+                </button>
+              </form>
+            )}
+
+            {/* Ranking */}
+            {liveQuestion.type === 'ranking' && !hasAnswered && (
+              <div className="flex flex-col gap-2 px-2">
+                {rankingOrder.map((item, idx) => (
+                  <div key={item} className="flex items-center gap-3 rounded-xl px-4 py-3 text-white font-bold" style={{ background: 'rgba(255,255,255,0.15)', border: '2px solid rgba(255,255,255,0.2)' }}>
+                    <span className="text-white/50 w-5 text-center text-sm">{idx + 1}</span>
+                    <span className="flex-1 text-sm">{item}</span>
+                    <div className="flex flex-col gap-1">
+                      <button
+                        className="text-white/70 hover:text-white disabled:opacity-30 text-xs leading-none"
+                        disabled={idx === 0}
+                        onClick={() => setRankingOrder(prev => { const next = [...prev]; [next[idx - 1], next[idx]] = [next[idx], next[idx - 1]]; return next; })}
+                      >▲</button>
+                      <button
+                        className="text-white/70 hover:text-white disabled:opacity-30 text-xs leading-none"
+                        disabled={idx === rankingOrder.length - 1}
+                        onClick={() => setRankingOrder(prev => { const next = [...prev]; [next[idx], next[idx + 1]] = [next[idx + 1], next[idx]]; return next; })}
+                      >▼</button>
+                    </div>
+                  </div>
+                ))}
+                <button
+                  className="ap-btn ap-btn--lg ap-btn--pill mt-2"
+                  style={{ background: "var(--ap-ink)" }}
+                  onClick={() => {
+                    const originalItems: string[] = liveQuestion.items ?? [];
+                    const order = rankingOrder.map(item => originalItems.indexOf(item));
+                    submitAnswer(JSON.stringify(order));
+                  }}
+                >
+                  Valider l'ordre
+                </button>
+              </div>
+            )}
+
+            {/* Matching */}
+            {liveQuestion.type === 'matching' && !hasAnswered && (() => {
+              const left: { id: string; text: string }[] = liveQuestion.leftColumn ?? [];
+              const right: { id: string; text: string }[] = liveQuestion.rightColumn ?? [];
+              const paired = Object.keys(matchingPairs);
+              const allPaired = left.length > 0 && paired.length === left.length;
+              return (
+                <div className="flex flex-col gap-3 px-2">
+                  <p className="text-white/60 text-xs text-center" style={{ fontFamily: 'var(--ap-font-body)' }}>
+                    {matchingSelectedLeft ? 'Choisissez la correspondance →' : 'Sélectionnez un élément de gauche'}
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="flex flex-col gap-2">
+                      {left.map(l => (
+                        <button
+                          key={l.id}
+                          className={cn(
+                            'rounded-xl px-3 py-2 text-sm font-bold text-white text-left border-2 transition-all',
+                            matchingSelectedLeft === l.id ? 'border-white bg-white/30' : matchingPairs[l.id] ? 'border-green-400/60 bg-green-500/20' : 'border-white/20 bg-white/10'
+                          )}
+                          onClick={() => setMatchingSelectedLeft(prev => prev === l.id ? null : l.id)}
+                          disabled={!!matchingPairs[l.id]}
+                        >
+                          {l.text}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      {right.map(r => {
+                        const isPaired = Object.values(matchingPairs).includes(r.id);
+                        return (
+                          <button
+                            key={r.id}
+                            className={cn(
+                              'rounded-xl px-3 py-2 text-sm font-bold text-white text-left border-2 transition-all',
+                              isPaired ? 'border-green-400/60 bg-green-500/20' : matchingSelectedLeft ? 'border-white/50 bg-white/15 hover:bg-white/25' : 'border-white/20 bg-white/10 opacity-50'
+                            )}
+                            disabled={isPaired || !matchingSelectedLeft}
+                            onClick={() => {
+                              if (!matchingSelectedLeft) return;
+                              setMatchingPairs(prev => ({ ...prev, [matchingSelectedLeft]: r.id }));
+                              setMatchingSelectedLeft(null);
+                            }}
+                          >
+                            {r.text}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  {allPaired && (
+                    <button
+                      className="ap-btn ap-btn--lg ap-btn--pill mt-2"
+                      style={{ background: "var(--ap-ink)" }}
+                      onClick={() => submitAnswer(JSON.stringify(matchingPairs))}
+                    >
+                      Valider les associations
+                    </button>
+                  )}
+                </div>
+              );
+            })()}
           </div>
 
           {/* Waiting confirmation */}
@@ -790,7 +981,16 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
       if (q.type === 'true-false') {
         return q.correctAnswer === 'true' ? (q.answers?.[0] ?? 'Vrai') : (q.answers?.[1] ?? 'Faux');
       }
-      return String(q.correctAnswer ?? '');
+      if (q.type === 'short-answer') return String(q.correctAnswer ?? '');
+      if (q.type === 'slider') return String(q.correctValue ?? q.correctAnswer ?? '');
+      if (q.type === 'fill-blank') return (q.blanks ?? []).map((b: any) => b.correctAnswer).join(' / ');
+      if (q.type === 'ranking') return (q.items ?? []).filter((_: any, i: number) => true).join(' → ');
+      if (q.type === 'matching') return (q.correctMatches ?? []).map((m: any) => {
+        const l = (q.leftColumn ?? []).find((c: any) => c.id === m.leftId)?.text ?? m.leftId;
+        const r = (q.rightColumn ?? []).find((c: any) => c.id === m.rightId)?.text ?? m.rightId;
+        return `${l} ↔ ${r}`;
+      }).join(', ');
+      return '';
     })();
 
     return (
