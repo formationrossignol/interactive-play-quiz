@@ -22,7 +22,7 @@ export interface SavedQuiz {
   folderId?: string | null;
 }
 
-const QUIZ_STORAGE_KEY = 'saved_quizzes';
+export const QUIZ_STORAGE_KEY = 'saved_quizzes';
 
 export const getSavedQuizzes = (): SavedQuiz[] => {
   try {

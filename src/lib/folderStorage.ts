@@ -1,4 +1,4 @@
-import { getSavedQuizzes } from './quizStorage';
+import { getSavedQuizzes, QUIZ_STORAGE_KEY } from './quizStorage';
 import type { SavedQuiz } from './quizStorage';
 
 const FOLDERS_KEY = 'content_folders';
@@ -60,7 +60,7 @@ export const deleteFolder = (id: string): boolean => {
   // Move items in this folder back to root
   const quizzes = getSavedQuizzes();
   const updated = quizzes.map((q) => (q.folderId === id ? { ...q, folderId: null } : q));
-  localStorage.setItem('saved_quizzes', JSON.stringify(updated));
+  localStorage.setItem(QUIZ_STORAGE_KEY, JSON.stringify(updated));
 
   writeFolders(folders.filter((f) => f.id !== id));
   return true;
@@ -71,7 +71,7 @@ export const moveToFolder = (quizId: string, folderId: string | null): boolean =
   const idx = quizzes.findIndex((q) => q.id === quizId);
   if (idx === -1) return false;
   quizzes[idx] = { ...quizzes[idx], folderId };
-  localStorage.setItem('saved_quizzes', JSON.stringify(quizzes));
+  localStorage.setItem(QUIZ_STORAGE_KEY, JSON.stringify(quizzes));
   return true;
 };
 
