@@ -20,6 +20,8 @@ export interface SavedQuiz {
   rating?: number;
   ratingCount?: number;
   folderId?: string | null;
+  deletedAt?: string;
+  trashedFromFolderId?: string | null;
 }
 
 export const QUIZ_STORAGE_KEY = 'saved_quizzes';
@@ -34,27 +36,45 @@ export const getSavedQuizzes = (): SavedQuiz[] => {
 };
 
 export const getUserQuizzes = (userId: string): SavedQuiz[] => {
-  return getSavedQuizzes().filter(q => q.userId === userId);
+  return getSavedQuizzes().filter(q => q.userId === userId && !q.deletedAt);
 };
 
 export const getPublicQuizzes = (): SavedQuiz[] => {
-  return getSavedQuizzes().filter(q => q.isPublic);
+  return getSavedQuizzes().filter(q => q.isPublic && !q.deletedAt);
 };
 
 export const getFavoriteQuizzes = (userId: string): SavedQuiz[] => {
-  return getSavedQuizzes().filter(q => q.userId === userId && q.isFavorite);
+  return getSavedQuizzes().filter(q => q.userId === userId && q.isFavorite && !q.deletedAt);
 };
 
 export const getUserFlashcardSets = (userId: string): SavedQuiz[] => {
-  return getSavedQuizzes().filter((q) => q.userId === userId && q.type === 'flashcard');
+  return getSavedQuizzes().filter((q) => q.userId === userId && q.type === 'flashcard' && !q.deletedAt);
 };
 
 export const getFavoriteFlashcardSets = (userId: string): SavedQuiz[] => {
-  return getSavedQuizzes().filter((q) => q.userId === userId && q.type === 'flashcard' && q.isFavorite);
+  return getSavedQuizzes().filter((q) => q.userId === userId && q.type === 'flashcard' && q.isFavorite && !q.deletedAt);
 };
 
 export const getPublicFlashcardSets = (): SavedQuiz[] => {
-  return getSavedQuizzes().filter((q) => q.type === 'flashcard' && q.isPublic);
+  return getSavedQuizzes().filter((q) => q.type === 'flashcard' && q.isPublic && !q.deletedAt);
+};
+
+export const getTrashedItems = (userId: string, type?: SavedQuiz['type']): SavedQuiz[] => {
+  return getSavedQuizzes().filter(q =>
+    q.userId === userId && !!q.deletedAt && (!type || q.type === type)
+  );
+};
+
+export const purgeExpiredTrash = (userId: string): void => {
+  const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const all = getSavedQuizzes();
+  const kept = all.filter(q => {
+    if (q.userId !== userId || !q.deletedAt) return true;
+    return new Date(q.deletedAt) > cutoff;
+  });
+  if (kept.length !== all.length) {
+    localStorage.setItem(QUIZ_STORAGE_KEY, JSON.stringify(kept));
+  }
 };
 
 export const saveQuiz = (quiz: Omit<SavedQuiz, 'id' | 'createdAt' | 'userId'>): SavedQuiz => {
@@ -110,14 +130,45 @@ export const updateQuiz = (id: string, updates: Partial<SavedQuiz>): SavedQuiz |
 export const deleteQuiz = (id: string): boolean => {
   const user = getCurrentUser();
   if (!user) return false;
+  const quizzes = getSavedQuizzes();
+  const index = quizzes.findIndex(q => q.id === id);
+  if (index === -1) return false;
+  if (quizzes[index].userId !== user.id) return false;
+  quizzes[index] = {
+    ...quizzes[index],
+    deletedAt: new Date().toISOString(),
+    trashedFromFolderId: quizzes[index].folderId ?? null,
+    folderId: null,
+  };
+  localStorage.setItem(QUIZ_STORAGE_KEY, JSON.stringify(quizzes));
+  return true;
+};
 
+export const permanentlyDeleteQuiz = (id: string): boolean => {
+  const user = getCurrentUser();
+  if (!user) return false;
   const quizzes = getSavedQuizzes();
   const quiz = quizzes.find(q => q.id === id);
   if (!quiz || quiz.userId !== user.id) return false;
-
-  const filtered = quizzes.filter(q => q.id !== id);
-  localStorage.setItem(QUIZ_STORAGE_KEY, JSON.stringify(filtered));
+  localStorage.setItem(QUIZ_STORAGE_KEY, JSON.stringify(quizzes.filter(q => q.id !== id)));
   return true;
+};
+
+export const restoreFromTrash = (id: string): SavedQuiz | null => {
+  const user = getCurrentUser();
+  if (!user) return null;
+  const quizzes = getSavedQuizzes();
+  const index = quizzes.findIndex(q => q.id === id);
+  if (index === -1) return null;
+  if (quizzes[index].userId !== user.id) return null;
+  quizzes[index] = {
+    ...quizzes[index],
+    deletedAt: undefined,
+    folderId: quizzes[index].trashedFromFolderId ?? null,
+    trashedFromFolderId: undefined,
+  };
+  localStorage.setItem(QUIZ_STORAGE_KEY, JSON.stringify(quizzes));
+  return quizzes[index];
 };
 
 export const toggleFavorite = (id: string): SavedQuiz | null => {

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type MouseEvent } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
@@ -13,8 +13,12 @@ import {
   duplicateQuiz,
   getFavoriteQuizzes,
   getPublicQuizzes,
+  getTrashedItems,
   getUserQuizzes,
+  permanentlyDeleteQuiz,
+  purgeExpiredTrash,
   rateQuiz,
+  restoreFromTrash,
   toggleFavorite,
   type SavedQuiz,
 } from "@/lib/quizStorage";
@@ -28,11 +32,12 @@ import {
   type Folder,
 } from "@/lib/folderStorage";
 import { FolderCard } from "@/components/FolderCard";
-import { MoveToFolderMenu } from "@/components/MoveToFolderMenu";
+import { ItemContextMenu } from "@/components/ItemContextMenu";
+import { TrashView } from "@/components/TrashView";
 import { DeleteQuizDialog } from "@/components/DeleteQuizDialog";
 import { DndContext, type DragEndEvent } from "@dnd-kit/core";
 import { toast } from "sonner";
-import { ChevronRight, Copy, Edit, FolderPlus, LayoutGrid, List, Play, Search, Star, Trash2, FolderInput } from "lucide-react";
+import { ChevronRight, FolderPlus, LayoutGrid, List, Play, Search, Star, Trash2 } from "lucide-react";
 import { t } from "@/lib/i18n";
 import { useCollectionFilters } from "@/hooks/useCollectionFilters";
 
@@ -44,16 +49,15 @@ const MyQuizzes = () => {
   const [myQuizzes, setMyQuizzes] = useState<SavedQuiz[]>([]);
   const [favoriteQuizzes, setFavoriteQuizzes] = useState<SavedQuiz[]>([]);
   const [publicQuizzes, setPublicQuizzes] = useState<SavedQuiz[]>([]);
+  const [trashedQuizzes, setTrashedQuizzes] = useState<SavedQuiz[]>([]);
+  const [permDeleteTarget, setPermDeleteTarget] = useState<SavedQuiz | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [quizToDelete, setQuizToDelete] = useState<SavedQuiz | null>(null);
   const [activeTab, setActiveTab] = useState("my");
   const [viewMode, setViewMode] = useState<"grid" | "list">(() => (localStorage.getItem(VIEW_KEY) as "grid" | "list") ?? "grid");
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [folders, setFolders] = useState<Folder[]>([]);
   const [newFolderName, setNewFolderName] = useState("");
   const [showNewFolderInput, setShowNewFolderInput] = useState(false);
-  const [moveMenuOpenId, setMoveMenuOpenId] = useState<string | null>(null);
-  const moveMenuRef = useRef<HTMLDivElement>(null);
 
   const setView = (mode: "grid" | "list") => {
     setViewMode(mode);
@@ -62,12 +66,12 @@ const MyQuizzes = () => {
 
   const loadQuizzes = useCallback(() => {
     if (!user) return;
+    purgeExpiredTrash(user.id);
     const userQuizzes = getUserQuizzes(user.id);
-    const publicQuizzesData = getPublicQuizzes();
-    const favorite = getFavoriteQuizzes(user.id);
     setMyQuizzes(userQuizzes.filter((q) => q.type === "quiz"));
-    setPublicQuizzes(publicQuizzesData.filter((q) => q.type === "quiz"));
-    setFavoriteQuizzes(favorite.filter((q) => q.type === "quiz"));
+    setPublicQuizzes(getPublicQuizzes().filter((q) => q.type === "quiz"));
+    setFavoriteQuizzes(getFavoriteQuizzes(user.id).filter((q) => q.type === "quiz"));
+    setTrashedQuizzes(getTrashedItems(user.id, "quiz"));
     setFolders(getFolders(user.id, "quiz"));
   }, [user]);
 
@@ -76,16 +80,6 @@ const MyQuizzes = () => {
     loadQuizzes();
   }, [user, navigate, loadQuizzes]);
 
-  useEffect(() => {
-    const handler = (e: globalThis.MouseEvent) => {
-      if (moveMenuRef.current && !moveMenuRef.current.contains(e.target as Node)) {
-        setMoveMenuOpenId(null);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-
   const myFilters = useCollectionFilters(myQuizzes);
   const favFilters = useCollectionFilters(favoriteQuizzes);
   const pubFilters = useCollectionFilters(publicQuizzes);
@@ -93,24 +87,36 @@ const MyQuizzes = () => {
   const filtersFor = (tab: string) =>
     tab === "favorites" ? favFilters : tab === "public" ? pubFilters : myFilters;
 
-  const handleDeleteClick = (quiz: SavedQuiz) => { setQuizToDelete(quiz); setDeleteDialogOpen(true); };
-  const handleDeleteConfirm = () => {
-    if (quizToDelete && deleteQuiz(quizToDelete.id)) { toast.success(t("quizDeleted")); loadQuizzes(); }
-    setDeleteDialogOpen(false); setQuizToDelete(null);
+  const handleTrash = (id: string) => {
+    if (deleteQuiz(id)) { toast.success("Mis à la corbeille"); loadQuizzes(); }
   };
-  const handleToggleFavorite = (event: MouseEvent, quiz: SavedQuiz) => {
-    event.stopPropagation();
+
+  const handlePermDeleteClick = (quiz: SavedQuiz) => { setPermDeleteTarget(quiz); setDeleteDialogOpen(true); };
+  const handlePermDeleteConfirm = () => {
+    if (permDeleteTarget && permanentlyDeleteQuiz(permDeleteTarget.id)) {
+      toast.success("Supprimé définitivement");
+      loadQuizzes();
+    }
+    setDeleteDialogOpen(false);
+    setPermDeleteTarget(null);
+  };
+
+  const handleRestore = (id: string) => {
+    if (restoreFromTrash(id)) { toast.success("Restauré"); loadQuizzes(); }
+  };
+
+  const handleToggleFavorite = (quiz: SavedQuiz) => {
     const updated = toggleFavorite(quiz.id);
     if (updated) { toast.success(updated.isFavorite ? t("addedToFavorites") : t("removedFromFavorites")); loadQuizzes(); }
   };
+
   const handlePlayQuiz = (quiz: SavedQuiz) => {
     localStorage.setItem(`quiz-${quiz.id}`, JSON.stringify(quiz));
     navigate(`/quiz/${quiz.id}`);
   };
-  const handleEditQuiz = (event: MouseEvent, quizId: string) => {
-    event.stopPropagation();
-    navigate(`/builder?type=quiz&quizId=${quizId}`);
-  };
+
+  const handleEditQuiz = (quizId: string) => navigate(`/builder?type=quiz&quizId=${quizId}`);
+
   const handleRateQuiz = (quizId: string, rating: number) => {
     if (rateQuiz(quizId, rating)) { toast.success("Merci pour votre note !"); loadQuizzes(); }
   };
@@ -125,10 +131,7 @@ const MyQuizzes = () => {
     toast.success(`Dossier "${name}" créé`);
   };
 
-  const handleRenameFolder = (id: string, name: string) => {
-    renameFolder(id, name);
-    loadQuizzes();
-  };
+  const handleRenameFolder = (id: string, name: string) => { renameFolder(id, name); loadQuizzes(); };
 
   const handleDeleteFolder = (id: string) => {
     const folder = folders.find((f) => f.id === id);
@@ -141,13 +144,19 @@ const MyQuizzes = () => {
   const handleMoveToFolder = (quizId: string, folderId: string | null) => {
     moveToFolder(quizId, folderId);
     loadQuizzes();
-    setMoveMenuOpenId(null);
   };
 
-  const handleDuplicateQuiz = (e: MouseEvent, id: string) => {
-    e.stopPropagation();
+  const handleDuplicateQuiz = (id: string) => {
     const copy = duplicateQuiz(id);
     if (copy) { toast.success(`"${copy.title}" créé`); loadQuizzes(); }
+  };
+
+  const handleShare = (quiz: SavedQuiz) => {
+    const url = `${window.location.origin}/quiz/${quiz.id}`;
+    navigator.clipboard.writeText(url).then(
+      () => toast.success("Lien copié !"),
+      () => toast.error("Impossible de copier le lien"),
+    );
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -242,9 +251,14 @@ const MyQuizzes = () => {
             <h3 className="ap-h3" style={{ fontSize: "15px" }}>{quiz.title}</h3>
             <p className="ap-muted mt-0.5 text-sm line-clamp-2">{quiz.description}</p>
           </div>
-          <button onClick={(e) => handleToggleFavorite(e, quiz)} className="text-amber-400 hover:text-amber-500 transition-colors cursor-pointer p-1">
-            <Star className={`h-4 w-4 ${quiz.isFavorite ? "fill-amber-400" : ""}`} />
-          </button>
+          {showActions && (
+            <button
+              onClick={(e) => { e.stopPropagation(); handleToggleFavorite(quiz); }}
+              className="text-amber-400 hover:text-amber-500 transition-colors cursor-pointer p-1"
+            >
+              <Star className={`h-4 w-4 ${quiz.isFavorite ? "fill-amber-400" : ""}`} />
+            </button>
+          )}
         </div>
         <div className="flex flex-wrap items-center gap-1.5 mb-3">
           <Badge variant="outline" className={`rounded-full text-xs ${quiz.isPublic ? "border-indigo-200 bg-indigo-50 text-indigo-700" : "border-slate-200 text-slate-500"}`}>
@@ -263,34 +277,18 @@ const MyQuizzes = () => {
           </div>
         )}
         <div className="mt-auto flex items-center justify-between gap-2 pt-3" style={{ borderTop: "2px solid var(--ap-line)" }}>
-          <div className="flex gap-1">
-            {showActions && (
-              <>
-                <button onClick={(e) => handleEditQuiz(e, quiz.id)} title={t("edit")} className="ap-btn ap-btn--ghost ap-btn--sm" style={{ padding: "6px 8px" }}><Edit className="h-3.5 w-3.5" /></button>
-                <button onClick={(e) => handleDuplicateQuiz(e, quiz.id)} title="Dupliquer" className="ap-btn ap-btn--ghost ap-btn--sm" style={{ padding: "6px 8px" }}><Copy className="h-3.5 w-3.5" /></button>
-                {folders.length > 0 && (
-                  <div className="relative" ref={moveMenuOpenId === quiz.id ? moveMenuRef : undefined}>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setMoveMenuOpenId(moveMenuOpenId === quiz.id ? null : quiz.id); }}
-                      title="Déplacer vers"
-                      className="ap-btn ap-btn--ghost ap-btn--sm"
-                      style={{ padding: "6px 8px" }}
-                    >
-                      <FolderInput className="h-3.5 w-3.5" />
-                    </button>
-                    {moveMenuOpenId === quiz.id && (
-                      <MoveToFolderMenu
-                        folders={folders}
-                        currentFolderId={quiz.folderId}
-                        onMove={(fid) => handleMoveToFolder(quiz.id, fid)}
-                      />
-                    )}
-                  </div>
-                )}
-                <button onClick={(e) => { e.stopPropagation(); handleDeleteClick(quiz); }} title={t("delete")} className="ap-btn ap-btn--ghost ap-btn--sm" style={{ padding: "6px 8px", color: "var(--ap-quiz)" }}><Trash2 className="h-3.5 w-3.5" /></button>
-              </>
-            )}
-          </div>
+          {showActions ? (
+            <ItemContextMenu
+              item={quiz}
+              folders={folders}
+              onEdit={() => handleEditQuiz(quiz.id)}
+              onDuplicate={() => handleDuplicateQuiz(quiz.id)}
+              onToggleFavorite={() => handleToggleFavorite(quiz)}
+              onMoveToFolder={(fid) => handleMoveToFolder(quiz.id, fid)}
+              onShare={() => handleShare(quiz)}
+              onTrash={() => handleTrash(quiz.id)}
+            />
+          ) : <span />}
           <Button size="sm" onClick={(e) => { e.stopPropagation(); handlePlayQuiz(quiz); }} className="ap-btn ap-btn--sm ap-btn--pill ap-btn--quiz gap-1.5 px-4">
             <Play className="h-3.5 w-3.5" />{t("playQuiz")}
           </Button>
@@ -324,34 +322,17 @@ const MyQuizzes = () => {
         </span>
       </div>
       <div className="flex items-center gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-        <button onClick={(e) => handleToggleFavorite(e, quiz)} className="ap-btn ap-btn--ghost ap-btn--sm" style={{ padding: "5px", color: quiz.isFavorite ? "var(--ap-flash)" : "var(--ap-muted)" }}>
-          <Star className={`h-3.5 w-3.5 ${quiz.isFavorite ? "fill-current" : ""}`} />
-        </button>
         {showActions && (
-          <>
-            <button onClick={(e) => handleEditQuiz(e, quiz.id)} title={t("edit")} className="ap-btn ap-btn--ghost ap-btn--sm" style={{ padding: "5px" }}><Edit className="h-3.5 w-3.5" /></button>
-            <button onClick={(e) => handleDuplicateQuiz(e, quiz.id)} title="Dupliquer" className="ap-btn ap-btn--ghost ap-btn--sm" style={{ padding: "5px" }}><Copy className="h-3.5 w-3.5" /></button>
-            {folders.length > 0 && (
-              <div className="relative" ref={moveMenuOpenId === quiz.id ? moveMenuRef : undefined}>
-                <button
-                  onClick={(e) => { e.stopPropagation(); setMoveMenuOpenId(moveMenuOpenId === quiz.id ? null : quiz.id); }}
-                  title="Déplacer vers"
-                  className="ap-btn ap-btn--ghost ap-btn--sm"
-                  style={{ padding: "5px" }}
-                >
-                  <FolderInput className="h-3.5 w-3.5" />
-                </button>
-                {moveMenuOpenId === quiz.id && (
-                  <MoveToFolderMenu
-                    folders={folders}
-                    currentFolderId={quiz.folderId}
-                    onMove={(fid) => handleMoveToFolder(quiz.id, fid)}
-                  />
-                )}
-              </div>
-            )}
-            <button onClick={(e) => { e.stopPropagation(); handleDeleteClick(quiz); }} title={t("delete")} className="ap-btn ap-btn--ghost ap-btn--sm" style={{ padding: "5px", color: "var(--ap-quiz)" }}><Trash2 className="h-3.5 w-3.5" /></button>
-          </>
+          <ItemContextMenu
+            item={quiz}
+            folders={folders}
+            onEdit={() => handleEditQuiz(quiz.id)}
+            onDuplicate={() => handleDuplicateQuiz(quiz.id)}
+            onToggleFavorite={() => handleToggleFavorite(quiz)}
+            onMoveToFolder={(fid) => handleMoveToFolder(quiz.id, fid)}
+            onShare={() => handleShare(quiz)}
+            onTrash={() => handleTrash(quiz.id)}
+          />
         )}
         <Button size="sm" onClick={(e) => { e.stopPropagation(); handlePlayQuiz(quiz); }} className="ap-btn ap-btn--sm ap-btn--pill ap-btn--quiz gap-1 px-3" style={{ fontSize: "12px" }}>
           <Play className="h-3 w-3" />{t("playQuiz")}
@@ -425,7 +406,7 @@ const MyQuizzes = () => {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen ">
+    <div className="min-h-screen">
       <Header subtitle={t("myQuizzes")} />
       <div className="mx-auto max-w-6xl px-6 py-10">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
@@ -472,15 +453,33 @@ const MyQuizzes = () => {
               <TabsTrigger value="my">{`${t("myQuizzesTab")} (${myQuizzes.length})`}</TabsTrigger>
               <TabsTrigger value="favorites">{`${t("favoritesTab")} (${favoriteQuizzes.length})`}</TabsTrigger>
               <TabsTrigger value="public">{`${t("publicQuizzesTab")} (${publicQuizzes.length})`}</TabsTrigger>
+              <TabsTrigger value="trash" className="flex items-center gap-1.5">
+                <Trash2 className="h-3.5 w-3.5" />
+                {`Corbeille${trashedQuizzes.length > 0 ? ` (${trashedQuizzes.length})` : ""}`}
+              </TabsTrigger>
             </TabsList>
             <TabsContent value="my">{renderTabContent("my", myQuizzes, "noQuizzesSaved", "createQuizCta")}</TabsContent>
             <TabsContent value="favorites">{renderTabContent("favorites", favoriteQuizzes, "noFavoriteQuizzes", undefined, favoriteQuizzes.some((q) => q.userId === user.id))}</TabsContent>
             <TabsContent value="public">{renderTabContent("public", publicQuizzes, "noPublicQuizzes", undefined, false)}</TabsContent>
+            <TabsContent value="trash">
+              <TrashView
+                items={trashedQuizzes}
+                viewMode={viewMode}
+                onRestore={handleRestore}
+                onPermanentDelete={handlePermDeleteClick}
+              />
+            </TabsContent>
           </Tabs>
         </DndContext>
       </div>
 
-      <DeleteQuizDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen} onConfirm={handleDeleteConfirm} title={quizToDelete?.title || ""} type="quiz" />
+      <DeleteQuizDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={handlePermDeleteConfirm}
+        title={permDeleteTarget?.title || ""}
+        type="quiz"
+      />
     </div>
   );
 };

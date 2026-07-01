@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type MouseEvent } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -10,7 +10,11 @@ import {
   duplicateQuiz,
   getFavoriteQuizzes,
   getPublicQuizzes,
+  getTrashedItems,
   getUserQuizzes,
+  permanentlyDeleteQuiz,
+  purgeExpiredTrash,
+  restoreFromTrash,
   toggleFavorite,
   type SavedQuiz,
 } from "@/lib/quizStorage";
@@ -24,11 +28,12 @@ import {
   type Folder,
 } from "@/lib/folderStorage";
 import { FolderCard } from "@/components/FolderCard";
-import { MoveToFolderMenu } from "@/components/MoveToFolderMenu";
+import { ItemContextMenu } from "@/components/ItemContextMenu";
+import { TrashView } from "@/components/TrashView";
 import { DeleteQuizDialog } from "@/components/DeleteQuizDialog";
 import { DndContext, type DragEndEvent } from "@dnd-kit/core";
 import { toast } from "sonner";
-import { BarChart2, ChevronRight, Copy, Edit, FolderInput, FolderPlus, LayoutGrid, List, Play, Search, Star, Trash2 } from "lucide-react";
+import { BarChart2, ChevronRight, FolderPlus, LayoutGrid, List, Play, Search, Star, Trash2 } from "lucide-react";
 import { t } from "@/lib/i18n";
 import { useCollectionFilters } from "@/hooks/useCollectionFilters";
 import { hasPollResults } from "@/lib/pollResults";
@@ -47,17 +52,15 @@ const MyPolls = () => {
   const [myPolls, setMyPolls] = useState<SavedQuiz[]>([]);
   const [favoritePolls, setFavoritePolls] = useState<SavedQuiz[]>([]);
   const [publicPolls, setPublicPolls] = useState<SavedQuiz[]>([]);
+  const [trashedPolls, setTrashedPolls] = useState<SavedQuiz[]>([]);
+  const [permDeleteTarget, setPermDeleteTarget] = useState<SavedQuiz | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [pollToDelete, setPollToDelete] = useState<SavedQuiz | null>(null);
   const [activeTab, setActiveTab] = useState("my");
   const [viewMode, setViewMode] = useState<"grid" | "list">(() => (localStorage.getItem(VIEW_KEY) as "grid" | "list") ?? "grid");
-
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [folders, setFolders] = useState<Folder[]>([]);
   const [newFolderName, setNewFolderName] = useState("");
   const [showNewFolderInput, setShowNewFolderInput] = useState(false);
-  const [moveMenuOpenId, setMoveMenuOpenId] = useState<string | null>(null);
-  const moveMenuRef = useRef<HTMLDivElement>(null);
 
   const setView = (mode: "grid" | "list") => {
     setViewMode(mode);
@@ -66,12 +69,14 @@ const MyPolls = () => {
 
   const loadPolls = useCallback(() => {
     if (!user) return;
+    purgeExpiredTrash(user.id);
     const all = getUserQuizzes(user.id);
     const pub = getPublicQuizzes();
     const fav = getFavoriteQuizzes(user.id);
     setMyPolls(all.filter((q) => q.type === "poll"));
     setPublicPolls(pub.filter((q) => q.type === "poll"));
     setFavoritePolls(fav.filter((q) => q.type === "poll"));
+    setTrashedPolls(getTrashedItems(user.id, "poll"));
     setFolders(getFolders(user.id, "poll"));
   }, [user]);
 
@@ -80,39 +85,40 @@ const MyPolls = () => {
     loadPolls();
   }, [user, navigate, loadPolls]);
 
-  useEffect(() => {
-    const handler = (e: globalThis.MouseEvent) => {
-      if (moveMenuRef.current && !moveMenuRef.current.contains(e.target as Node)) {
-        setMoveMenuOpenId(null);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-
   const myFilters = useCollectionFilters(myPolls);
   const favFilters = useCollectionFilters(favoritePolls);
   const pubFilters = useCollectionFilters(publicPolls);
   const filtersFor = (tab: string) => tab === "favorites" ? favFilters : tab === "public" ? pubFilters : myFilters;
 
-  const handleDeleteClick = (poll: SavedQuiz) => { setPollToDelete(poll); setDeleteDialogOpen(true); };
-  const handleDeleteConfirm = () => {
-    if (pollToDelete && deleteQuiz(pollToDelete.id)) { toast.success(t("pollDeleted")); loadPolls(); }
-    setDeleteDialogOpen(false); setPollToDelete(null);
+  const handleTrash = (id: string) => {
+    if (deleteQuiz(id)) { toast.success("Mis à la corbeille"); loadPolls(); }
   };
-  const handleToggleFavorite = (event: MouseEvent, poll: SavedQuiz) => {
-    event.stopPropagation();
+
+  const handlePermDeleteClick = (poll: SavedQuiz) => { setPermDeleteTarget(poll); setDeleteDialogOpen(true); };
+  const handlePermDeleteConfirm = () => {
+    if (permDeleteTarget && permanentlyDeleteQuiz(permDeleteTarget.id)) {
+      toast.success("Supprimé définitivement");
+      loadPolls();
+    }
+    setDeleteDialogOpen(false);
+    setPermDeleteTarget(null);
+  };
+
+  const handleRestore = (id: string) => {
+    if (restoreFromTrash(id)) { toast.success("Restauré"); loadPolls(); }
+  };
+
+  const handleToggleFavorite = (poll: SavedQuiz) => {
     const updated = toggleFavorite(poll.id);
     if (updated) { toast.success(updated.isFavorite ? t("addedToFavorites") : t("removedFromFavorites")); loadPolls(); }
   };
+
   const handleLaunchPoll = (poll: SavedQuiz) => {
     localStorage.setItem(`poll-${poll.id}`, JSON.stringify(poll));
     navigate(`/quiz/${poll.id}`);
   };
-  const handleEditPoll = (event: MouseEvent, pollId: string) => {
-    event.stopPropagation();
-    navigate(`/builder?type=poll&quizId=${pollId}`);
-  };
+
+  const handleEditPoll = (pollId: string) => navigate(`/builder?type=poll&quizId=${pollId}`);
 
   const handleCreateFolder = () => {
     const name = newFolderName.trim();
@@ -124,10 +130,7 @@ const MyPolls = () => {
     toast.success(`Dossier "${name}" créé`);
   };
 
-  const handleRenameFolder = (id: string, name: string) => {
-    renameFolder(id, name);
-    loadPolls();
-  };
+  const handleRenameFolder = (id: string, name: string) => { renameFolder(id, name); loadPolls(); };
 
   const handleDeleteFolder = (id: string) => {
     const folder = folders.find((f) => f.id === id);
@@ -140,13 +143,19 @@ const MyPolls = () => {
   const handleMoveToFolder = (pollId: string, folderId: string | null) => {
     moveToFolder(pollId, folderId);
     loadPolls();
-    setMoveMenuOpenId(null);
   };
 
-  const handleDuplicatePoll = (e: MouseEvent, id: string) => {
-    e.stopPropagation();
+  const handleDuplicatePoll = (id: string) => {
     const copy = duplicateQuiz(id);
     if (copy) { toast.success(`"${copy.title}" créé`); loadPolls(); }
+  };
+
+  const handleShare = (poll: SavedQuiz) => {
+    const url = `${window.location.origin}/quiz/${poll.id}`;
+    navigator.clipboard.writeText(url).then(
+      () => toast.success("Lien copié !"),
+      () => toast.error("Impossible de copier le lien"),
+    );
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -225,9 +234,14 @@ const MyPolls = () => {
             <h3 className="ap-h3" style={{ fontSize: "15px" }}>{poll.title}</h3>
             <p className="ap-muted" style={{ fontSize: "13px", marginTop: "2px" }}>{poll.description}</p>
           </div>
-          <button onClick={(e) => handleToggleFavorite(e, poll)} style={{ color: poll.isFavorite ? "var(--ap-flash)" : "var(--ap-muted)", cursor: "pointer", padding: "4px", background: "none", border: "none" }}>
-            <Star style={{ width: 16, height: 16, fill: poll.isFavorite ? "var(--ap-flash)" : "none" }} />
-          </button>
+          {showActions && (
+            <button
+              onClick={(e) => { e.stopPropagation(); handleToggleFavorite(poll); }}
+              style={{ color: poll.isFavorite ? "var(--ap-flash)" : "var(--ap-muted)", cursor: "pointer", padding: "4px", background: "none", border: "none" }}
+            >
+              <Star style={{ width: 16, height: 16, fill: poll.isFavorite ? "var(--ap-flash)" : "none" }} />
+            </button>
+          )}
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "12px" }}>
           <span className="ap-pill" style={{ fontSize: "11px", padding: "3px 9px" }}>
@@ -238,39 +252,22 @@ const MyPolls = () => {
           ))}
         </div>
         <div style={{ marginTop: "auto", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px", paddingTop: "12px", borderTop: "2px solid var(--ap-line)" }}>
-          <div style={{ display: "flex", gap: "4px" }}>
-            {showActions && (
-              <>
-                <button onClick={(e) => handleEditPoll(e, poll.id)} title={t("edit")} className="ap-btn ap-btn--ghost ap-btn--sm" style={{ padding: "6px 8px" }}><Edit style={{ width: 14, height: 14 }} /></button>
-                <button onClick={(e) => handleDuplicatePoll(e, poll.id)} title="Dupliquer" className="ap-btn ap-btn--ghost ap-btn--sm" style={{ padding: "6px 8px" }}><Copy style={{ width: 14, height: 14 }} /></button>
-                {folders.length > 0 && (
-                  <div className="relative" ref={moveMenuOpenId === poll.id ? moveMenuRef : undefined}>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setMoveMenuOpenId(moveMenuOpenId === poll.id ? null : poll.id); }}
-                      title="Déplacer vers"
-                      className="ap-btn ap-btn--ghost ap-btn--sm"
-                      style={{ padding: "6px 8px" }}
-                    >
-                      <FolderInput style={{ width: 14, height: 14 }} />
-                    </button>
-                    {moveMenuOpenId === poll.id && (
-                      <MoveToFolderMenu
-                        folders={folders}
-                        currentFolderId={poll.folderId}
-                        onMove={(fid) => handleMoveToFolder(poll.id, fid)}
-                      />
-                    )}
-                  </div>
-                )}
-                <button onClick={(e) => { e.stopPropagation(); handleDeleteClick(poll); }} title={t("delete")} className="ap-btn ap-btn--ghost ap-btn--sm" style={{ padding: "6px 8px", color: "var(--ap-quiz)" }}><Trash2 style={{ width: 14, height: 14 }} /></button>
-              </>
-            )}
-          </div>
+          {showActions ? (
+            <ItemContextMenu
+              item={poll}
+              folders={folders}
+              onEdit={() => handleEditPoll(poll.id)}
+              onDuplicate={() => handleDuplicatePoll(poll.id)}
+              onToggleFavorite={() => handleToggleFavorite(poll)}
+              onMoveToFolder={(fid) => handleMoveToFolder(poll.id, fid)}
+              onShare={() => handleShare(poll)}
+              onTrash={() => handleTrash(poll.id)}
+            />
+          ) : <span />}
           <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
             {hasPollResults(poll.id) && (
               <button
                 onClick={(e) => { e.stopPropagation(); navigate(`/poll-results/${poll.id}`); }}
-                title="Voir les résultats"
                 className="ap-btn ap-btn--ghost ap-btn--sm"
                 style={{ padding: "6px 10px", display: "flex", alignItems: "center", gap: "4px" }}
               >
@@ -306,34 +303,17 @@ const MyPolls = () => {
         </span>
       </div>
       <div className="flex items-center gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-        <button onClick={(e) => handleToggleFavorite(e, poll)} className="ap-btn ap-btn--ghost ap-btn--sm" style={{ padding: "5px", color: poll.isFavorite ? "var(--ap-flash)" : "var(--ap-muted)" }}>
-          <Star style={{ width: 14, height: 14, fill: poll.isFavorite ? "currentColor" : "none" }} />
-        </button>
         {showActions && (
-          <>
-            <button onClick={(e) => handleEditPoll(e, poll.id)} title={t("edit")} className="ap-btn ap-btn--ghost ap-btn--sm" style={{ padding: "5px" }}><Edit style={{ width: 14, height: 14 }} /></button>
-            <button onClick={(e) => handleDuplicatePoll(e, poll.id)} title="Dupliquer" className="ap-btn ap-btn--ghost ap-btn--sm" style={{ padding: "5px" }}><Copy style={{ width: 14, height: 14 }} /></button>
-            {folders.length > 0 && (
-              <div className="relative" ref={moveMenuOpenId === poll.id ? moveMenuRef : undefined}>
-                <button
-                  onClick={(e) => { e.stopPropagation(); setMoveMenuOpenId(moveMenuOpenId === poll.id ? null : poll.id); }}
-                  title="Déplacer vers"
-                  className="ap-btn ap-btn--ghost ap-btn--sm"
-                  style={{ padding: "5px" }}
-                >
-                  <FolderInput style={{ width: 14, height: 14 }} />
-                </button>
-                {moveMenuOpenId === poll.id && (
-                  <MoveToFolderMenu
-                    folders={folders}
-                    currentFolderId={poll.folderId}
-                    onMove={(fid) => handleMoveToFolder(poll.id, fid)}
-                  />
-                )}
-              </div>
-            )}
-            <button onClick={(e) => { e.stopPropagation(); handleDeleteClick(poll); }} title={t("delete")} className="ap-btn ap-btn--ghost ap-btn--sm" style={{ padding: "5px", color: "var(--ap-quiz)" }}><Trash2 style={{ width: 14, height: 14 }} /></button>
-          </>
+          <ItemContextMenu
+            item={poll}
+            folders={folders}
+            onEdit={() => handleEditPoll(poll.id)}
+            onDuplicate={() => handleDuplicatePoll(poll.id)}
+            onToggleFavorite={() => handleToggleFavorite(poll)}
+            onMoveToFolder={(fid) => handleMoveToFolder(poll.id, fid)}
+            onShare={() => handleShare(poll)}
+            onTrash={() => handleTrash(poll.id)}
+          />
         )}
         {hasPollResults(poll.id) && (
           <button
@@ -464,15 +444,33 @@ const MyPolls = () => {
               <TabsTrigger value="my" style={{ borderRadius: "var(--ap-r-sm)", fontFamily: "var(--ap-font-display)", fontWeight: 600 }}>{`${t("myPollsTab")} (${myPolls.length})`}</TabsTrigger>
               <TabsTrigger value="favorites" style={{ borderRadius: "var(--ap-r-sm)", fontFamily: "var(--ap-font-display)", fontWeight: 600 }}>{`${t("favoritesTab")} (${favoritePolls.length})`}</TabsTrigger>
               <TabsTrigger value="public" style={{ borderRadius: "var(--ap-r-sm)", fontFamily: "var(--ap-font-display)", fontWeight: 600 }}>{`${t("publicPollsTab")} (${publicPolls.length})`}</TabsTrigger>
+              <TabsTrigger value="trash" style={{ borderRadius: "var(--ap-r-sm)", fontFamily: "var(--ap-font-display)", fontWeight: 600 }} className="flex items-center gap-1.5">
+                <Trash2 className="h-3.5 w-3.5" />
+                {`Corbeille${trashedPolls.length > 0 ? ` (${trashedPolls.length})` : ""}`}
+              </TabsTrigger>
             </TabsList>
             <TabsContent value="my">{renderTabContent("my", myPolls, "noPollsSaved", "createPollCta")}</TabsContent>
             <TabsContent value="favorites">{renderTabContent("favorites", favoritePolls, "noFavoritePolls")}</TabsContent>
             <TabsContent value="public">{renderTabContent("public", publicPolls, "noPublicPolls", undefined, false)}</TabsContent>
+            <TabsContent value="trash">
+              <TrashView
+                items={trashedPolls}
+                viewMode={viewMode}
+                onRestore={handleRestore}
+                onPermanentDelete={handlePermDeleteClick}
+              />
+            </TabsContent>
           </Tabs>
         </DndContext>
       </div>
 
-      <DeleteQuizDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen} onConfirm={handleDeleteConfirm} title={pollToDelete?.title || ""} type="poll" />
+      <DeleteQuizDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={handlePermDeleteConfirm}
+        title={permDeleteTarget?.title || ""}
+        type="poll"
+      />
     </div>
   );
 };

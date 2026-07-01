@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type MouseEvent } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -10,7 +10,11 @@ import {
   duplicateQuiz,
   getFavoriteFlashcardSets,
   getPublicFlashcardSets,
+  getTrashedItems,
   getUserFlashcardSets,
+  permanentlyDeleteQuiz,
+  purgeExpiredTrash,
+  restoreFromTrash,
   toggleFavorite,
   type SavedQuiz,
 } from "@/lib/quizStorage";
@@ -24,11 +28,12 @@ import {
   type Folder,
 } from "@/lib/folderStorage";
 import { FolderCard } from "@/components/FolderCard";
-import { MoveToFolderMenu } from "@/components/MoveToFolderMenu";
+import { ItemContextMenu } from "@/components/ItemContextMenu";
+import { TrashView } from "@/components/TrashView";
 import { DndContext, type DragEndEvent } from "@dnd-kit/core";
-import { toast } from "sonner";
-import { ChevronRight, Copy, Edit, FolderInput, FolderPlus, LayoutGrid, List, Search, Star, Trash2 } from "lucide-react";
 import { DeleteQuizDialog } from "@/components/DeleteQuizDialog";
+import { toast } from "sonner";
+import { ChevronRight, FolderPlus, LayoutGrid, List, Search, Star, Trash2 } from "lucide-react";
 import { t } from "@/lib/i18n";
 import { useCollectionFilters } from "@/hooks/useCollectionFilters";
 
@@ -46,17 +51,15 @@ const MyFlashcards = () => {
   const [myFlashcards, setMyFlashcards] = useState<SavedQuiz[]>([]);
   const [favoriteFlashcards, setFavoriteFlashcards] = useState<SavedQuiz[]>([]);
   const [publicFlashcards, setPublicFlashcards] = useState<SavedQuiz[]>([]);
+  const [trashedFlashcards, setTrashedFlashcards] = useState<SavedQuiz[]>([]);
+  const [permDeleteTarget, setPermDeleteTarget] = useState<SavedQuiz | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [setToDelete, setSetToDelete] = useState<SavedQuiz | null>(null);
   const [activeTab, setActiveTab] = useState("my");
   const [viewMode, setViewMode] = useState<"grid" | "list">(() => (localStorage.getItem(VIEW_KEY) as "grid" | "list") ?? "grid");
-
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [folders, setFolders] = useState<Folder[]>([]);
   const [newFolderName, setNewFolderName] = useState("");
   const [showNewFolderInput, setShowNewFolderInput] = useState(false);
-  const [moveMenuOpenId, setMoveMenuOpenId] = useState<string | null>(null);
-  const moveMenuRef = useRef<HTMLDivElement>(null);
 
   const setView = (mode: "grid" | "list") => {
     setViewMode(mode);
@@ -65,9 +68,11 @@ const MyFlashcards = () => {
 
   const loadFlashcards = useCallback(() => {
     if (!user) return;
+    purgeExpiredTrash(user.id);
     setMyFlashcards(getUserFlashcardSets(user.id));
     setFavoriteFlashcards(getFavoriteFlashcardSets(user.id));
     setPublicFlashcards(getPublicFlashcardSets());
+    setTrashedFlashcards(getTrashedItems(user.id, "flashcard"));
     setFolders(getFolders(user.id, "flashcard"));
   }, [user]);
 
@@ -76,28 +81,30 @@ const MyFlashcards = () => {
     loadFlashcards();
   }, [user, navigate, loadFlashcards]);
 
-  useEffect(() => {
-    const handler = (e: globalThis.MouseEvent) => {
-      if (moveMenuRef.current && !moveMenuRef.current.contains(e.target as Node)) {
-        setMoveMenuOpenId(null);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-
   const myFilters = useCollectionFilters(myFlashcards);
   const favFilters = useCollectionFilters(favoriteFlashcards);
   const pubFilters = useCollectionFilters(publicFlashcards);
   const filtersFor = (tab: string) => tab === "favorites" ? favFilters : tab === "public" ? pubFilters : myFilters;
 
-  const handleDeleteClick = (set: SavedQuiz) => { setSetToDelete(set); setDeleteDialogOpen(true); };
-  const handleDeleteConfirm = () => {
-    if (setToDelete && deleteQuiz(setToDelete.id)) { toast.success(t("flashcardDeleted")); loadFlashcards(); }
-    setDeleteDialogOpen(false); setSetToDelete(null);
+  const handleTrash = (id: string) => {
+    if (deleteQuiz(id)) { toast.success("Mis à la corbeille"); loadFlashcards(); }
   };
-  const handleToggleFavorite = (event: MouseEvent, cardSet: SavedQuiz) => {
-    event.stopPropagation();
+
+  const handlePermDeleteClick = (set: SavedQuiz) => { setPermDeleteTarget(set); setDeleteDialogOpen(true); };
+  const handlePermDeleteConfirm = () => {
+    if (permDeleteTarget && permanentlyDeleteQuiz(permDeleteTarget.id)) {
+      toast.success("Supprimé définitivement");
+      loadFlashcards();
+    }
+    setDeleteDialogOpen(false);
+    setPermDeleteTarget(null);
+  };
+
+  const handleRestore = (id: string) => {
+    if (restoreFromTrash(id)) { toast.success("Restauré"); loadFlashcards(); }
+  };
+
+  const handleToggleFavorite = (cardSet: SavedQuiz) => {
     const updated = toggleFavorite(cardSet.id);
     if (updated) { toast.success(updated.isFavorite ? t("addedToFavorites") : t("removedFromFavorites")); loadFlashcards(); }
   };
@@ -111,7 +118,9 @@ const MyFlashcards = () => {
     loadFlashcards();
     toast.success(`Dossier "${name}" créé`);
   };
+
   const handleRenameFolder = (id: string, name: string) => { renameFolder(id, name); loadFlashcards(); };
+
   const handleDeleteFolder = (id: string) => {
     const folder = folders.find((f) => f.id === id);
     deleteFolder(id);
@@ -119,19 +128,31 @@ const MyFlashcards = () => {
     loadFlashcards();
     if (folder) toast.success(`Dossier "${folder.name}" supprimé`);
   };
+
   const handleMoveToFolder = (setId: string, folderId: string | null) => {
-    moveToFolder(setId, folderId); loadFlashcards(); setMoveMenuOpenId(null);
+    moveToFolder(setId, folderId);
+    loadFlashcards();
   };
-  const handleDuplicateSet = (e: MouseEvent, id: string) => {
-    e.stopPropagation();
+
+  const handleDuplicateSet = (id: string) => {
     const copy = duplicateQuiz(id);
     if (copy) { toast.success(`"${copy.title}" créé`); loadFlashcards(); }
   };
+
+  const handleShare = (cardSet: SavedQuiz) => {
+    const url = `${window.location.origin}/builder?type=flashcard&quizId=${cardSet.id}`;
+    navigator.clipboard.writeText(url).then(
+      () => toast.success("Lien copié !"),
+      () => toast.error("Impossible de copier le lien"),
+    );
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (over && folders.some((f) => f.id === over.id)) {
       moveToFolder(String(active.id), String(over.id));
-      loadFlashcards(); toast.success("Déplacé dans le dossier");
+      loadFlashcards();
+      toast.success("Déplacé dans le dossier");
     }
   };
 
@@ -197,9 +218,14 @@ const MyFlashcards = () => {
             <h3 className="ap-h3" style={{ fontSize: "15px" }}>{cardSet.title}</h3>
             <p className="ap-muted" style={{ fontSize: "13px", marginTop: "2px" }}>{cardSet.description}</p>
           </div>
-          <button onClick={(e) => handleToggleFavorite(e, cardSet)} style={{ color: cardSet.isFavorite ? "var(--ap-flash)" : "var(--ap-muted)", cursor: "pointer", padding: "4px", background: "none", border: "none" }}>
-            <Star style={{ width: 16, height: 16, fill: cardSet.isFavorite ? "var(--ap-flash)" : "none" }} />
-          </button>
+          {showActions && (
+            <button
+              onClick={(e) => { e.stopPropagation(); handleToggleFavorite(cardSet); }}
+              style={{ color: cardSet.isFavorite ? "var(--ap-flash)" : "var(--ap-muted)", cursor: "pointer", padding: "4px", background: "none", border: "none" }}
+            >
+              <Star style={{ width: 16, height: 16, fill: cardSet.isFavorite ? "var(--ap-flash)" : "none" }} />
+            </button>
+          )}
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "12px" }}>
           <span className="ap-pill" style={{ fontSize: "11px", padding: "3px 9px" }}>
@@ -214,31 +240,20 @@ const MyFlashcards = () => {
         </div>
         {showActions && (
           <div style={{ marginTop: "auto", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px", paddingTop: "12px", borderTop: "2px solid var(--ap-line)" }}>
-            <div style={{ display: "flex", gap: "4px" }}>
-              <button onClick={(e) => { e.stopPropagation(); navigate(`/builder?type=flashcard&quizId=${cardSet.id}`); }} title={t("edit")} className="ap-btn ap-btn--ghost ap-btn--sm" style={{ padding: "6px 8px" }}><Edit style={{ width: 14, height: 14 }} /></button>
-              <button onClick={(e) => handleDuplicateSet(e, cardSet.id)} title="Dupliquer" className="ap-btn ap-btn--ghost ap-btn--sm" style={{ padding: "6px 8px" }}><Copy style={{ width: 14, height: 14 }} /></button>
-              {folders.length > 0 && (
-                <div className="relative" ref={moveMenuOpenId === cardSet.id ? moveMenuRef : undefined}>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setMoveMenuOpenId(moveMenuOpenId === cardSet.id ? null : cardSet.id); }}
-                    title="Déplacer vers"
-                    className="ap-btn ap-btn--ghost ap-btn--sm"
-                    style={{ padding: "6px 8px" }}
-                  >
-                    <FolderInput style={{ width: 14, height: 14 }} />
-                  </button>
-                  {moveMenuOpenId === cardSet.id && (
-                    <MoveToFolderMenu
-                      folders={folders}
-                      currentFolderId={cardSet.folderId}
-                      onMove={(fid) => handleMoveToFolder(cardSet.id, fid)}
-                    />
-                  )}
-                </div>
-              )}
-              <button onClick={(e) => { e.stopPropagation(); handleDeleteClick(cardSet); }} title={t("delete")} className="ap-btn ap-btn--ghost ap-btn--sm" style={{ padding: "6px 8px", color: "var(--ap-quiz)" }}><Trash2 style={{ width: 14, height: 14 }} /></button>
-            </div>
-            <button className="ap-btn ap-btn--sm ap-btn--pill ap-btn--flash" onClick={(e) => { e.stopPropagation(); navigate(`/builder?type=flashcard&quizId=${cardSet.id}`); }}>
+            <ItemContextMenu
+              item={cardSet}
+              folders={folders}
+              onEdit={() => navigate(`/builder?type=flashcard&quizId=${cardSet.id}`)}
+              onDuplicate={() => handleDuplicateSet(cardSet.id)}
+              onToggleFavorite={() => handleToggleFavorite(cardSet)}
+              onMoveToFolder={(fid) => handleMoveToFolder(cardSet.id, fid)}
+              onShare={() => handleShare(cardSet)}
+              onTrash={() => handleTrash(cardSet.id)}
+            />
+            <button
+              className="ap-btn ap-btn--sm ap-btn--pill ap-btn--flash"
+              onClick={(e) => { e.stopPropagation(); navigate(`/builder?type=flashcard&quizId=${cardSet.id}`); }}
+            >
               {t("editSet")}
             </button>
           </div>
@@ -267,36 +282,23 @@ const MyFlashcards = () => {
         {cardSet.isPublic && <span className="ap-badge ap-badge--flash" style={{ fontSize: "11px" }}>{t("publicBadge")}</span>}
       </div>
       <div className="flex items-center gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-        <button onClick={(e) => handleToggleFavorite(e, cardSet)} className="ap-btn ap-btn--ghost ap-btn--sm" style={{ padding: "5px", color: cardSet.isFavorite ? "var(--ap-flash)" : "var(--ap-muted)" }}>
-          <Star style={{ width: 14, height: 14, fill: cardSet.isFavorite ? "currentColor" : "none" }} />
-        </button>
         {showActions && (
-          <>
-            <button onClick={(e) => { e.stopPropagation(); navigate(`/builder?type=flashcard&quizId=${cardSet.id}`); }} title={t("edit")} className="ap-btn ap-btn--ghost ap-btn--sm" style={{ padding: "5px" }}><Edit style={{ width: 14, height: 14 }} /></button>
-            <button onClick={(e) => handleDuplicateSet(e, cardSet.id)} title="Dupliquer" className="ap-btn ap-btn--ghost ap-btn--sm" style={{ padding: "5px" }}><Copy style={{ width: 14, height: 14 }} /></button>
-            {folders.length > 0 && (
-              <div className="relative" ref={moveMenuOpenId === cardSet.id ? moveMenuRef : undefined}>
-                <button
-                  onClick={(e) => { e.stopPropagation(); setMoveMenuOpenId(moveMenuOpenId === cardSet.id ? null : cardSet.id); }}
-                  title="Déplacer vers"
-                  className="ap-btn ap-btn--ghost ap-btn--sm"
-                  style={{ padding: "5px" }}
-                >
-                  <FolderInput style={{ width: 14, height: 14 }} />
-                </button>
-                {moveMenuOpenId === cardSet.id && (
-                  <MoveToFolderMenu
-                    folders={folders}
-                    currentFolderId={cardSet.folderId}
-                    onMove={(fid) => handleMoveToFolder(cardSet.id, fid)}
-                  />
-                )}
-              </div>
-            )}
-            <button onClick={(e) => { e.stopPropagation(); handleDeleteClick(cardSet); }} title={t("delete")} className="ap-btn ap-btn--ghost ap-btn--sm" style={{ padding: "5px", color: "var(--ap-quiz)" }}><Trash2 style={{ width: 14, height: 14 }} /></button>
-          </>
+          <ItemContextMenu
+            item={cardSet}
+            folders={folders}
+            onEdit={() => navigate(`/builder?type=flashcard&quizId=${cardSet.id}`)}
+            onDuplicate={() => handleDuplicateSet(cardSet.id)}
+            onToggleFavorite={() => handleToggleFavorite(cardSet)}
+            onMoveToFolder={(fid) => handleMoveToFolder(cardSet.id, fid)}
+            onShare={() => handleShare(cardSet)}
+            onTrash={() => handleTrash(cardSet.id)}
+          />
         )}
-        <button className="ap-btn ap-btn--sm ap-btn--pill ap-btn--flash" onClick={(e) => { e.stopPropagation(); navigate(`/builder?type=flashcard&quizId=${cardSet.id}`); }} style={{ fontSize: "12px", padding: "4px 12px" }}>
+        <button
+          className="ap-btn ap-btn--sm ap-btn--pill ap-btn--flash"
+          onClick={(e) => { e.stopPropagation(); navigate(`/builder?type=flashcard&quizId=${cardSet.id}`); }}
+          style={{ fontSize: "12px", padding: "4px 12px" }}
+        >
           {t("editSet")}
         </button>
       </div>
@@ -414,15 +416,33 @@ const MyFlashcards = () => {
               <TabsTrigger value="my" style={{ borderRadius: "var(--ap-r-sm)", fontFamily: "var(--ap-font-display)", fontWeight: 600 }}>{`${t("myFlashcardsTab")} (${myFlashcards.length})`}</TabsTrigger>
               <TabsTrigger value="favorites" style={{ borderRadius: "var(--ap-r-sm)", fontFamily: "var(--ap-font-display)", fontWeight: 600 }}>{`${t("favoritesTab")} (${favoriteFlashcards.length})`}</TabsTrigger>
               <TabsTrigger value="public" style={{ borderRadius: "var(--ap-r-sm)", fontFamily: "var(--ap-font-display)", fontWeight: 600 }}>{`${t("publicFlashcardsTab")} (${publicFlashcards.length})`}</TabsTrigger>
+              <TabsTrigger value="trash" style={{ borderRadius: "var(--ap-r-sm)", fontFamily: "var(--ap-font-display)", fontWeight: 600 }} className="flex items-center gap-1.5">
+                <Trash2 className="h-3.5 w-3.5" />
+                {`Corbeille${trashedFlashcards.length > 0 ? ` (${trashedFlashcards.length})` : ""}`}
+              </TabsTrigger>
             </TabsList>
             <TabsContent value="my">{renderTabContent("my", myFlashcards, "noFlashcardsSaved", "createFlashcardSet")}</TabsContent>
             <TabsContent value="favorites">{renderTabContent("favorites", favoriteFlashcards, "noFavoriteFlashcards", undefined, false)}</TabsContent>
             <TabsContent value="public">{renderTabContent("public", publicFlashcards, "noPublicFlashcards", undefined, false)}</TabsContent>
+            <TabsContent value="trash">
+              <TrashView
+                items={trashedFlashcards}
+                viewMode={viewMode}
+                onRestore={handleRestore}
+                onPermanentDelete={handlePermDeleteClick}
+              />
+            </TabsContent>
           </Tabs>
         </DndContext>
       </div>
 
-      <DeleteQuizDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen} onConfirm={handleDeleteConfirm} title={setToDelete?.title || ""} type="flashcard" />
+      <DeleteQuizDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={handlePermDeleteConfirm}
+        title={permDeleteTarget?.title || ""}
+        type="flashcard"
+      />
     </div>
   );
 };
