@@ -430,7 +430,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
           ...storedPlayer,
           score: newScore,
           correctAnswers: (storedPlayer.correctAnswers ?? 0) + (correct ? 1 : 0),
-          lastAnswer: typeof answer === 'number' ? answer : undefined,
+          lastAnswer: typeof answer === 'number' ? answer : answer === 'true' ? 0 : answer === 'false' ? 1 : undefined,
           lastAnswerQuestionIndex: currentQuestion,
         };
         sessionStorage.setItem(`quiz-player-${gameCode}`, JSON.stringify(updated));

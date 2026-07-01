@@ -12,10 +12,11 @@ const LETTERS = ['A', 'B', 'C', 'D'];
 interface AnswerDistributionProps {
   answers: string[];
   distribution: number[];
-  correctAnswer: number;
+  correctAnswer: number | string;
 }
 
 export const AnswerDistribution = ({ answers, distribution, correctAnswer }: AnswerDistributionProps) => {
+  const correctIndex = correctAnswer === 'true' ? 0 : correctAnswer === 'false' ? 1 : correctAnswer as number;
   const [animated, setAnimated] = useState(false);
 
   useEffect(() => {
@@ -43,7 +44,7 @@ export const AnswerDistribution = ({ answers, distribution, correctAnswer }: Ans
         {answers.map((answer, i) => {
           const color = ANSWER_COLORS[i % ANSWER_COLORS.length];
           const pct = distribution[i] ?? 0;
-          const isCorrect = i === correctAnswer;
+          const isCorrect = i === correctIndex;
 
           return (
             <div key={i} style={{ position: 'relative', height: 64, borderRadius: 14, overflow: 'hidden' }}>
