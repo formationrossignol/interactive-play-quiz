@@ -96,7 +96,17 @@ const JoinQuiz = () => {
   }, [gameCode, quizExists, navigate]);
 
   const handleAvatarComplete = (name: string, avatar: string) => {
-    navigate(`/quiz/${gameCode}?player=${encodeURIComponent(name)}&avatar=${encodeURIComponent(avatar)}`);
+    const id =
+      typeof crypto !== 'undefined' && 'randomUUID' in crypto
+        ? crypto.randomUUID()
+        : `player-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const player = { id, name, avatar, score: 0, correctAnswers: 0, joinedAt: new Date().toISOString() };
+    try {
+      sessionStorage.setItem(`quiz-player-${gameCode}`, JSON.stringify(player));
+    } catch {
+      // ignore storage errors — PlayerView will handle missing session
+    }
+    navigate(`/quiz/${gameCode}?player=${encodeURIComponent(name)}`);
   };
 
   if (!gameCode || quizExists === false) {

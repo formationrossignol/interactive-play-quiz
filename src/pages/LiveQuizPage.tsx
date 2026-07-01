@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useParams, useSearchParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
 import { QuizSession } from "@/components/QuizSession";
 import { ExitQuizDialog } from "@/components/ExitQuizDialog";
@@ -40,8 +40,11 @@ const normalizeStoredQuiz = (quiz: Partial<SavedQuiz>, fallbackId: string): Save
 
 const LiveQuizPage = () => {
   const { gameCode } = useParams<{ gameCode: string }>();
-  const [searchParams] = useSearchParams();
-  const playerName = searchParams.get("player");
+  const storedPlayerRaw = gameCode ? sessionStorage.getItem(`quiz-player-${gameCode}`) : null;
+  const storedPlayer = (() => {
+    try { return storedPlayerRaw ? (JSON.parse(storedPlayerRaw) as { name: string; avatar: string; id: string }) : null; }
+    catch { return null; }
+  })();
 
   const [loadedQuiz, setLoadedQuiz] = useState<SavedQuiz | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -122,8 +125,8 @@ const LiveQuizPage = () => {
     );
   }
 
-  if (playerName && gameCode) {
-    return <PlayerView gameCode={gameCode} playerName={playerName} />;
+  if (storedPlayer && gameCode) {
+    return <PlayerView gameCode={gameCode} playerName={storedPlayer.name} />;
   }
 
   if (isLoading) {
