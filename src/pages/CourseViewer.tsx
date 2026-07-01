@@ -245,11 +245,16 @@ const CourseViewer = () => {
 
               {/* Content area */}
               {lesson.type === "text" && (
-                <div
-                  className="ap-card"
-                  style={{ whiteSpace: "pre-wrap", lineHeight: 1.75, fontSize: "15px", padding: "24px", minHeight: "200px" }}
-                >
-                  {lesson.content || <span className="ap-muted" style={{ fontStyle: "italic" }}>Aucun contenu.</span>}
+                <div className="ap-card" style={{ padding: "24px 32px", minHeight: "200px" }}>
+                  {lesson.content ? (
+                    <div
+                      className="prose"
+                      style={{ maxWidth: "none", lineHeight: 1.75, fontSize: "15px", color: "var(--ap-ink)" }}
+                      dangerouslySetInnerHTML={{ __html: lesson.content }}
+                    />
+                  ) : (
+                    <span className="ap-muted" style={{ fontStyle: "italic", fontSize: "14px" }}>Aucun contenu.</span>
+                  )}
                 </div>
               )}
 

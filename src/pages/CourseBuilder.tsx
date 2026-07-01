@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Header } from "@/components/Header";
+import RichTextEditor from "@/components/RichTextEditor";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getCurrentUser } from "@/lib/auth";
 import {
@@ -561,14 +562,9 @@ const CourseBuilder = () => {
                   {lesson.type === "text" && (
                     <div>
                       {fieldLabel("Contenu")}
-                      <textarea
+                      <RichTextEditor
                         value={lesson.content}
-                        onChange={(e) => updateLesson(moduleId, lessonId, { content: e.target.value })}
-                        placeholder="Rédigez le contenu de cette leçon..."
-                        rows={10}
-                        style={{ ...inputStyle, resize: "vertical" }}
-                        onFocus={(e) => { e.currentTarget.style.borderColor = "var(--ap-brand)"; }}
-                        onBlur={(e) => { e.currentTarget.style.borderColor = "var(--ap-line)"; }}
+                        onChange={(html) => updateLesson(moduleId, lessonId, { content: html })}
                       />
                     </div>
                   )}
