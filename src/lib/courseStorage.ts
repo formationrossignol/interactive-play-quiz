@@ -4,9 +4,11 @@ export interface Lesson {
   id: string;
   title: string;
   content: string;
-  type: 'text' | 'quiz' | 'flashcard';
+  type: 'text' | 'quiz' | 'flashcard' | 'document';
   linkedItemId?: string;
   estimatedMinutes?: number;
+  documentName?: string;
+  documentMimeType?: string;
 }
 
 export interface Module {

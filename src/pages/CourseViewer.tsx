@@ -22,10 +22,28 @@ import {
   ChevronDown,
   ChevronRight,
   Circle,
+  Download,
+  FileText,
   GraduationCap,
   Layers,
   RotateCcw,
 } from "lucide-react";
+
+function renderMarkdown(md: string): string {
+  return md
+    .replace(/^#### (.+)$/gm, "<h4>$1</h4>")
+    .replace(/^### (.+)$/gm, "<h3>$1</h3>")
+    .replace(/^## (.+)$/gm, "<h2>$1</h2>")
+    .replace(/^# (.+)$/gm, "<h1>$1</h1>")
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*(.+?)\*/g, "<em>$1</em>")
+    .replace(/`(.+?)`/g, "<code>$1</code>")
+    .replace(/^- (.+)$/gm, "<li>$1</li>")
+    .replace(/(<li>.*<\/li>\n?)+/g, (m) => `<ul>${m}</ul>`)
+    .replace(/\n\n/g, "</p><p>")
+    .replace(/\n/g, "<br/>")
+    .replace(/^(?!<[h1-6|ul|li|p])(.+)$/gm, "<p>$1</p>");
+}
 
 const CourseViewer = () => {
   const navigate = useNavigate();
@@ -198,6 +216,7 @@ const CourseViewer = () => {
                       <span className="truncate">{l.title}</span>
                       {l.type === "quiz" && <BookOpen className="h-3 w-3 flex-shrink-0 opacity-40 ml-auto" />}
                       {l.type === "flashcard" && <Layers className="h-3 w-3 flex-shrink-0 opacity-40 ml-auto" />}
+                      {l.type === "document" && <FileText className="h-3 w-3 flex-shrink-0 opacity-40 ml-auto" />}
                     </button>
                   );
                 })}
@@ -276,6 +295,47 @@ const CourseViewer = () => {
                     </>
                   ) : (
                     <p className="ap-muted">Set de flashcards non disponible.</p>
+                  )}
+                </div>
+              )}
+
+              {lesson.type === "document" && (
+                <div>
+                  {!lesson.content ? (
+                    <div className="ap-card" style={{ padding: "24px", textAlign: "center" }}>
+                      <FileText className="mx-auto mb-3 h-8 w-8 opacity-30" />
+                      <p className="ap-muted">Aucun document importé.</p>
+                    </div>
+                  ) : lesson.documentMimeType === "text/markdown" ? (
+                    <div
+                      className="ap-card"
+                      style={{ padding: "28px 32px", lineHeight: 1.75, fontSize: "15px" }}
+                      dangerouslySetInnerHTML={{ __html: renderMarkdown(lesson.content) }}
+                    />
+                  ) : lesson.documentMimeType === "application/pdf" ? (
+                    <div className="ap-card" style={{ padding: 0, overflow: "hidden" }}>
+                      <iframe
+                        src={lesson.content}
+                        title={lesson.documentName ?? "Document"}
+                        style={{ width: "100%", height: "75vh", border: "none", display: "block" }}
+                      />
+                    </div>
+                  ) : (
+                    <div className="ap-card" style={{ padding: "28px", display: "flex", flexDirection: "column", alignItems: "center", gap: "12px" }}>
+                      <FileText className="h-10 w-10" style={{ color: "var(--ap-brand)" }} />
+                      <p style={{ fontWeight: 700, fontSize: "15px" }}>{lesson.documentName}</p>
+                      <p className="ap-muted" style={{ fontSize: "13px" }}>
+                        Aperçu non disponible pour ce format. Téléchargez le fichier.
+                      </p>
+                      <a
+                        href={lesson.content}
+                        download={lesson.documentName}
+                        className="ap-btn ap-btn--sm ap-btn--pill"
+                        style={{ background: "var(--ap-brand)", color: "#fff", textDecoration: "none", display: "flex", alignItems: "center", gap: "6px" }}
+                      >
+                        <Download className="h-3.5 w-3.5" /> Télécharger
+                      </a>
+                    </div>
                   )}
                 </div>
               )}

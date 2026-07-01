@@ -19,12 +19,15 @@ import {
   BookOpen,
   ChevronDown,
   ChevronRight,
+  FileText,
   GraduationCap,
   Layers,
   Plus,
   Save,
   Trash2,
   Info,
+  Upload,
+  X,
 } from "lucide-react";
 
 const CATEGORIES = ["Autre", "Informatique", "Langues", "Sciences", "Histoire", "Arts", "Business", "Santé"];
@@ -179,13 +182,52 @@ const CourseBuilder = () => {
   const lessonTypeIcon = (type: Lesson["type"]) => {
     if (type === "quiz") return <BookOpen className="h-3.5 w-3.5" />;
     if (type === "flashcard") return <Layers className="h-3.5 w-3.5" />;
+    if (type === "document") return <FileText className="h-3.5 w-3.5" />;
     return <GraduationCap className="h-3.5 w-3.5" />;
   };
 
   const lessonTypeLabel = (type: Lesson["type"]) => {
     if (type === "quiz") return "Quiz";
     if (type === "flashcard") return "Flashcards";
+    if (type === "document") return "Document";
     return "Texte";
+  };
+
+  const handleFileUpload = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    moduleId: string,
+    lessonId: string,
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const MAX = 4 * 1024 * 1024; // 4MB
+    if (file.size > MAX) {
+      toast.error("Fichier trop volumineux (max 4 Mo)");
+      return;
+    }
+    const isMd = file.name.match(/\.(md|markdown)$/i);
+    if (isMd) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        updateLesson(moduleId, lessonId, {
+          content: reader.result as string,
+          documentName: file.name,
+          documentMimeType: "text/markdown",
+        });
+      };
+      reader.readAsText(file);
+    } else {
+      const reader = new FileReader();
+      reader.onload = () => {
+        updateLesson(moduleId, lessonId, {
+          content: reader.result as string,
+          documentName: file.name,
+          documentMimeType: file.type,
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+    e.target.value = "";
   };
 
   const selectedLesson = selected.type === "lesson"
@@ -498,6 +540,7 @@ const CourseBuilder = () => {
                           <SelectItem value="text">Texte</SelectItem>
                           <SelectItem value="quiz">Quiz</SelectItem>
                           <SelectItem value="flashcard">Flashcards</SelectItem>
+                          <SelectItem value="document">Document</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -571,6 +614,73 @@ const CourseBuilder = () => {
                           }
                         </SelectContent>
                       </Select>
+                    </div>
+                  )}
+
+                  {lesson.type === "document" && (
+                    <div>
+                      {fieldLabel("Document importé")}
+                      {lesson.documentName ? (
+                        <div style={{
+                          display: "flex", alignItems: "center", gap: "10px",
+                          padding: "10px 14px",
+                          background: "var(--ap-paper-2)",
+                          border: "2px solid var(--ap-line)",
+                          borderRadius: "var(--ap-r-sm)",
+                          marginBottom: "10px",
+                        }}>
+                          <FileText className="h-4 w-4 flex-shrink-0" style={{ color: "var(--ap-brand)" }} />
+                          <span style={{ flex: 1, fontSize: "13px", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {lesson.documentName}
+                          </span>
+                          <button
+                            onClick={() => updateLesson(moduleId, lessonId, { content: "", documentName: undefined, documentMimeType: undefined })}
+                            style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ap-quiz)", display: "flex", padding: "2px" }}
+                            title="Supprimer"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ) : null}
+                      <label style={{
+                        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                        gap: "8px", padding: "24px",
+                        border: "2px dashed var(--ap-line-2)",
+                        borderRadius: "var(--ap-r-sm)",
+                        cursor: "pointer",
+                        background: "var(--ap-paper-2)",
+                      }}>
+                        <Upload className="h-5 w-5" style={{ color: "var(--ap-muted)" }} />
+                        <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--ap-muted)" }}>
+                          {lesson.documentName ? "Remplacer le fichier" : "Importer un fichier"}
+                        </span>
+                        <span style={{ fontSize: "11px", color: "var(--ap-muted)" }}>PDF, Word (.docx), Markdown — max 4 Mo</span>
+                        <input
+                          type="file"
+                          accept=".pdf,.docx,.doc,.md,.markdown"
+                          style={{ display: "none" }}
+                          onChange={(e) => handleFileUpload(e, moduleId, lessonId)}
+                        />
+                      </label>
+                      {lesson.documentName && lesson.documentMimeType === "text/markdown" && lesson.content && (
+                        <div style={{ marginTop: "12px" }}>
+                          {fieldLabel("Aperçu Markdown")}
+                          <div style={{
+                            padding: "16px",
+                            background: "var(--ap-paper-2)",
+                            border: "2px solid var(--ap-line)",
+                            borderRadius: "var(--ap-r-sm)",
+                            fontFamily: "monospace",
+                            fontSize: "12px",
+                            whiteSpace: "pre-wrap",
+                            maxHeight: "200px",
+                            overflowY: "auto",
+                            color: "var(--ap-muted)",
+                          }}>
+                            {lesson.content.slice(0, 800)}{lesson.content.length > 800 ? "\n…" : ""}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
