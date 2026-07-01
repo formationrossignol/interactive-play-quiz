@@ -346,6 +346,22 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
     pendingAnswerRef.current = null;
   }, [currentQuestion]);
 
+  // Restore answer feedback state after a page refresh
+  useEffect(() => {
+    if (gameState !== 'answer-feedback') return;
+    if (hasAnsweredRef.current) return; // already set this session, no need to restore
+    const raw = sessionStorage.getItem(`quiz-player-${gameCode}`);
+    if (!raw) return;
+    try {
+      const stored = JSON.parse(raw) as SharedPlayer;
+      if (stored.lastAnswerQuestionIndex !== currentQuestion) return;
+      setLastAnswerCorrect(stored.lastAnswerCorrect ?? false);
+      setLastEarnedPoints(stored.lastEarnedPoints ?? 0);
+      setHasAnswered(true);
+      hasAnsweredRef.current = true;
+    } catch {}
+  }, [gameState, currentQuestion, gameCode]);
+
   const handleExitQuiz = () => {
     navigate("/");
   };
@@ -417,6 +433,8 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
           correctAnswers: (storedPlayer.correctAnswers ?? 0) + (correct ? 1 : 0),
           lastAnswer: typeof answer === 'number' ? answer : answer === 'true' ? 0 : answer === 'false' ? 1 : undefined,
           lastAnswerQuestionIndex: currentQuestion,
+          lastAnswerCorrect: correct,
+          lastEarnedPoints: earnedPoints,
         };
         sessionStorage.setItem(`quiz-player-${gameCode}`, JSON.stringify(updated));
         pendingAnswerRef.current = { player: updated, questionIndex: currentQuestion };

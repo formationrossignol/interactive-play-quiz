@@ -21,6 +21,8 @@ export interface SharedPlayer {
   joinedAt: string;
   lastAnswer?: number;
   lastAnswerQuestionIndex?: number;
+  lastAnswerCorrect?: boolean;
+  lastEarnedPoints?: number;
   lastHeartbeat?: string;
   lastReaction?: { emoji: string; comment?: string; sentAt: string };
 }
