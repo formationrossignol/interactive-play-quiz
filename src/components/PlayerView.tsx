@@ -26,7 +26,7 @@ interface PlayerViewProps {
   playerName: string;
 }
 
-const answerShapes = ["▲", "◆", "●", "■"];
+const answerShapes = ["A", "B", "C", "D"];
 
 export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
   const navigate = useNavigate();
@@ -737,8 +737,8 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
                     key={index}
                     className={cn(
                       `ap-answer ap-answer--${(index % 4) + 1}`,
-                      selectedAnswer === index && "outline outline-4 outline-white outline-offset-2",
-                      hasAnswered && selectedAnswer !== index && "opacity-50"
+                      selectedAnswer === index && "ap-answer--selected",
+                      hasAnswered && selectedAnswer !== index && "opacity-30"
                     )}
                     onClick={() => submitAnswer(index)}
                     disabled={hasAnswered}
@@ -758,13 +758,13 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
                     key={value}
                     className={cn(
                       `ap-answer ap-answer--${index + 1}`,
-                      selectedAnswer === value && "outline outline-4 outline-white outline-offset-2",
-                      hasAnswered && selectedAnswer !== value && "opacity-50"
+                      selectedAnswer === value && "ap-answer--selected",
+                      hasAnswered && selectedAnswer !== value && "opacity-30"
                     )}
                     onClick={() => submitAnswer(value)}
                     disabled={hasAnswered}
                   >
-                    <span className="ap-answer__shape">{index === 0 ? '✓' : '✗'}</span>
+                    <span className="ap-answer__shape">{index === 0 ? 'V' : 'F'}</span>
                     <span className="ap-answer__text">{label}</span>
                   </button>
                 ))}

@@ -13,6 +13,9 @@ import AuthPage from "./pages/AuthPage";
 import MyQuizzes from "./pages/MyQuizzes";
 import MyPolls from "./pages/MyPolls";
 import MyFlashcards from "./pages/MyFlashcards";
+import MyCourses from "./pages/MyCourses";
+import CourseBuilder from "./pages/CourseBuilder";
+import CourseViewer from "./pages/CourseViewer";
 import DiscoverQuizzes from "./pages/DiscoverQuizzes";
 import ProfilePage from "./pages/ProfilePage";
 import QuestionBank from "./pages/QuestionBank";
@@ -41,6 +44,9 @@ const App = () => (
           <Route path="/my-quizzes" element={<MyQuizzes />} />
           <Route path="/my-polls" element={<MyPolls />} />
           <Route path="/my-flashcards" element={<MyFlashcards />} />
+          <Route path="/my-courses" element={<MyCourses />} />
+          <Route path="/course-builder" element={<CourseBuilder />} />
+          <Route path="/course/:courseId" element={<CourseViewer />} />
           <Route path="/discover" element={<DiscoverQuizzes />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/question-bank" element={<QuestionBank />} />
