@@ -12,11 +12,11 @@ const LETTERS = ['A', 'B', 'C', 'D'];
 interface AnswerDistributionProps {
   answers: string[];
   distribution: number[];
-  correctAnswer: number | string;
+  correctAnswer: number | string | boolean;
 }
 
 export const AnswerDistribution = ({ answers, distribution, correctAnswer }: AnswerDistributionProps) => {
-  const correctIndex = correctAnswer === 'true' ? 0 : correctAnswer === 'false' ? 1 : correctAnswer as number;
+  const correctIndex = (correctAnswer === 'true' || correctAnswer === true) ? 0 : (correctAnswer === 'false' || correctAnswer === false) ? 1 : correctAnswer as number;
   const [animated, setAnimated] = useState(false);
 
   useEffect(() => {

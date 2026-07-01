@@ -26,13 +26,23 @@ function parseScalar(v: unknown): string | number | boolean | unknown {
   return v;
 }
 
+function normalizeTrueFalseAnswer(val: unknown): unknown {
+  if (val === true || val === 'true') return 'true';
+  if (val === false || val === 'false') return 'false';
+  return val;
+}
+
 function mapYamlQuestion(q: any, idx: number): any {
+  const type = q.type || 'multiple-choice';
+  const rawAnswer = q.correctAnswer !== undefined ? q.correctAnswer : (q.correct_answer !== undefined ? q.correct_answer : 0);
+  const correctAnswer = type === 'true-false' ? normalizeTrueFalseAnswer(rawAnswer) : rawAnswer;
+  const answers = Array.isArray(q.answers) ? q.answers : (type === 'true-false' ? ['Vrai', 'Faux'] : []);
   return {
     id: `imported-${Date.now()}-${idx}`,
-    type: q.type || 'multiple-choice',
+    type,
     question: q.question || '',
-    answers: Array.isArray(q.answers) ? q.answers : [],
-    correctAnswer: q.correctAnswer !== undefined ? q.correctAnswer : (q.correct_answer !== undefined ? q.correct_answer : 0),
+    answers,
+    correctAnswer,
     timeLimit: q.timeLimit ?? q.time_limit ?? 30,
     points: q.points ?? 100,
     scale: Array.isArray(q.scale) ? q.scale : [],
@@ -98,12 +108,16 @@ export function parseQuizCsv(content: string, forceType: 'quiz' | 'poll' = 'quiz
 
     // Collect answer / option columns
     const answerKeys = ['answer1','answer2','answer3','answer4','option1','option2','option3','option4','option5'];
-    const answers = answerKeys.map(k => row[k]).filter(Boolean);
+    const answers = qType === 'true-false'
+      ? ['Vrai', 'Faux']
+      : answerKeys.map(k => row[k]).filter(Boolean);
 
     let correctAnswer: string | number | boolean = row.correctanswer || row.correct || '0';
-    if (correctAnswer === 'true') correctAnswer = true;
-    else if (correctAnswer === 'false') correctAnswer = false;
-    else if (!isNaN(Number(correctAnswer as string))) correctAnswer = parseInt(correctAnswer as string);
+    if (qType === 'true-false') {
+      correctAnswer = correctAnswer === 'false' ? 'false' : 'true';
+    } else if (!isNaN(Number(correctAnswer as string))) {
+      correctAnswer = parseInt(correctAnswer as string);
+    }
 
     const timeLimit = parseInt(row.timelimit || row.time || '30') || 30;
     const points = parseInt(row.points || '100') || 100;

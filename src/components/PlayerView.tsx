@@ -410,6 +410,8 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
     const expected = liveQuestion.correctAnswer;
     const correct = liveQuestion.type === 'short-answer'
       ? typeof expected === 'string' && String(answer).toLowerCase().trim() === expected.toLowerCase().trim()
+      : liveQuestion.type === 'true-false'
+      ? (answer === 'true') === (expected === true || expected === 'true')
       : answer === expected;
 
     const base = liveQuestion.points ?? 100;
