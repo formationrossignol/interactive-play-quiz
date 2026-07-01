@@ -145,6 +145,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
   const [reactionComments, setReactionComments] = useState<Array<{ playerName: string; avatar: string; text: string; ts: number }>>([]);
   const seenReactionKeysRef = useRef<Set<string>>(new Set());
   const sessionStartedAtRef = useRef<number>(Date.now());
+  const reactionsEndRef = useRef<HTMLDivElement>(null);
 
   const joinUrl = `${window.location.origin}/join/${quiz.gameCode}`;
   const currentQuestion = quiz.questions[currentQuestionIndex];
@@ -692,6 +693,11 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
     window.addEventListener('beforeunload', handler);
     return () => window.removeEventListener('beforeunload', handler);
   }, [isHost, quiz.gameCode]);
+
+  // Auto-scroll reactions feed to bottom on new messages
+  useEffect(() => {
+    reactionsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [reactionComments]);
 
   const exportResults = () => {
     const results = {
@@ -1608,111 +1614,73 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
             )}
           </div>
 
-          {/* ── Classement complet (host sidebar) ── */}
+          {/* ── Réactions live (host sidebar) ── */}
           {isHost && (
             <div
               className="w-60 flex flex-col p-4 flex-shrink-0"
               style={{
                 borderLeft: '2px solid var(--ap-line)',
                 background: 'var(--ap-card)',
+                position: 'sticky',
+                top: 0,
+                height: '100vh',
+                overflow: 'hidden',
               }}
             >
               <div
                 className="mb-3 flex-shrink-0 uppercase tracking-wider text-xs font-bold"
-                style={{ color: 'var(--ap-muted)', fontFamily: 'var(--ap-font-display)' }}
+                style={{ color: '#241b3a', fontFamily: 'var(--ap-font-display)' }}
               >
-                Classement · {sortedPlayers.length} joueur{sortedPlayers.length !== 1 ? 's' : ''}
+                Réactions live
               </div>
-              <div className="overflow-y-auto space-y-1.5" style={{ maxHeight: '45%' }}>
-                {sortedPlayers.map((player, idx) => {
-                  const isOffline = disconnectedIds.has(player.id);
-                  return (
-                    <div
-                      key={player.id}
-                      className="flex items-center gap-2 px-2.5 py-2 transition-all"
-                      style={{
-                        background: isOffline ? 'rgba(239,68,68,0.08)' : 'var(--ap-paper)',
-                        border: isOffline ? '1px solid rgba(239,68,68,0.3)' : '1px solid var(--ap-line)',
-                        borderRadius: 'var(--ap-r-sm)',
-                        opacity: isOffline ? 0.65 : 1,
-                      }}
-                    >
-                      <span
-                        className="font-bold w-5 text-center flex-shrink-0 text-xs"
-                        style={{ color: 'var(--ap-muted)', fontFamily: 'var(--ap-font-display)' }}
-                      >
-                        {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : idx + 1}
-                      </span>
-                      <AvatarDisplay emoji={player.avatar} size="sm" />
-                      <span
-                        className="flex-1 truncate font-bold text-xs"
-                        style={{ fontFamily: 'var(--ap-font-body)', color: 'var(--ap-ink)' }}
-                      >
-                        {player.name}
-                      </span>
-                      <span
-                        className="font-bold text-xs flex-shrink-0"
-                        style={{ color: 'var(--ap-brand)', fontFamily: 'var(--ap-font-display)' }}
-                      >
-                        {player.score.toLocaleString()}
-                      </span>
-                      {isOffline && (
-                        <span className="text-red-400 text-xs flex-shrink-0" title="Déconnecté">✗</span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Live reactions feed (text comments only) */}
-              {reactionComments.length > 0 && (() => {
-                const podiumMap: Record<string, { bg: string; border: string; nameColor: string; textColor: string }> = {};
-                if (p1) podiumMap[p1.name] = { bg: 'linear-gradient(135deg,#FFE566,#FFCC00)', border: '#e5aa00', nameColor: '#7a4000', textColor: '#5a2e00' };
-                if (p2) podiumMap[p2.name] = { bg: 'linear-gradient(135deg,#E8E8E8,#C0C0C0)', border: '#aaa', nameColor: '#333', textColor: '#222' };
-                if (p3) podiumMap[p3.name] = { bg: 'linear-gradient(135deg,#E8A87C,#CD7F32)', border: '#a06030', nameColor: '#4a2000', textColor: '#3a1800' };
-                return (
-                  <div className="mt-3 flex flex-col min-h-0 flex-1">
-                    <div
-                      className="uppercase tracking-wider text-xs font-bold mb-2 flex-shrink-0"
-                      style={{ color: '#241b3a', fontFamily: 'var(--ap-font-display)' }}
-                    >
-                      Réactions live
-                    </div>
-                    <div className="space-y-1.5 overflow-y-auto flex-1">
-                      {reactionComments.map((c, i) => {
-                        const ps = podiumMap[c.playerName];
-                        return (
-                          <div
-                            key={`${c.playerName}-${c.ts}-${i}`}
-                            className="flex items-center gap-2 px-2 py-1.5"
-                            style={{
-                              background: ps ? ps.bg : '#ffffff',
-                              border: `1.5px solid ${ps ? ps.border : '#efe6d3'}`,
-                              borderRadius: 'var(--ap-r-sm)',
-                              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-                            }}
-                          >
-                            <div style={{ flexShrink: 0 }}>
-                              <AvatarDisplay emoji={c.avatar} size="xs" />
-                            </div>
-                            <div style={{ minWidth: 0, flex: 1 }}>
-                              <span
-                                className="font-bold text-xs block truncate"
-                                style={{ color: ps ? ps.nameColor : '#7048ff', fontFamily: 'var(--ap-font-display)' }}
-                              >
-                                {c.playerName}
-                              </span>
-                              <span style={{ fontSize: '12px', fontWeight: 600, color: ps ? ps.textColor : '#241b3a', fontFamily: 'var(--ap-font-body)', wordBreak: 'break-word', lineHeight: 1.3 }}>
-                                {c.text}
-                              </span>
-                            </div>
+              {reactionComments.length === 0 ? (
+                <div
+                  className="flex-1 flex items-center justify-center text-xs text-center"
+                  style={{ color: 'var(--ap-muted)', fontFamily: 'var(--ap-font-body)' }}
+                >
+                  En attente de réactions…
+                </div>
+              ) : (
+                <div className="flex-1 overflow-y-auto space-y-1.5 min-h-0">
+                  {(() => {
+                    const podiumMap: Record<string, { bg: string; border: string; nameColor: string; textColor: string }> = {};
+                    if (p1) podiumMap[p1.name] = { bg: 'linear-gradient(135deg,#FFE566,#FFCC00)', border: '#e5aa00', nameColor: '#7a4000', textColor: '#5a2e00' };
+                    if (p2) podiumMap[p2.name] = { bg: 'linear-gradient(135deg,#E8E8E8,#C0C0C0)', border: '#aaa', nameColor: '#333', textColor: '#222' };
+                    if (p3) podiumMap[p3.name] = { bg: 'linear-gradient(135deg,#E8A87C,#CD7F32)', border: '#a06030', nameColor: '#4a2000', textColor: '#3a1800' };
+                    return reactionComments.map((c, i) => {
+                      const ps = podiumMap[c.playerName];
+                      return (
+                        <div
+                          key={`${c.playerName}-${c.ts}-${i}`}
+                          className="flex items-center gap-2 px-2 py-1.5"
+                          style={{
+                            background: ps ? ps.bg : '#ffffff',
+                            border: `1.5px solid ${ps ? ps.border : '#efe6d3'}`,
+                            borderRadius: 'var(--ap-r-sm)',
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+                          }}
+                        >
+                          <div style={{ flexShrink: 0 }}>
+                            <AvatarDisplay emoji={c.avatar} size="xs" />
                           </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })()}
+                          <div style={{ minWidth: 0, flex: 1 }}>
+                            <span
+                              className="font-bold text-xs block truncate"
+                              style={{ color: ps ? ps.nameColor : '#7048ff', fontFamily: 'var(--ap-font-display)' }}
+                            >
+                              {c.playerName}
+                            </span>
+                            <span style={{ fontSize: '12px', fontWeight: 600, color: ps ? ps.textColor : '#241b3a', fontFamily: 'var(--ap-font-body)', wordBreak: 'break-word', lineHeight: 1.3 }}>
+                              {c.text}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
+                  <div ref={reactionsEndRef} />
+                </div>
+              )}
             </div>
           )}
         </div>
