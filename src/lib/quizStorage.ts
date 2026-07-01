@@ -19,6 +19,7 @@ export interface SavedQuiz {
   font?: string;
   rating?: number;
   ratingCount?: number;
+  folderId?: string | null;
 }
 
 const QUIZ_STORAGE_KEY = 'saved_quizzes';
@@ -160,4 +161,32 @@ export const rateQuiz = (id: string, rating: number): SavedQuiz | null => {
 export const getQuizById = (id: string): SavedQuiz | null => {
   const quizzes = getSavedQuizzes();
   return quizzes.find(q => q.id === id) || null;
+};
+
+export const duplicateQuiz = (id: string): SavedQuiz | null => {
+  const user = getCurrentUser();
+  if (!user) return null;
+  const original = getQuizById(id);
+  if (!original || original.userId !== user.id) return null;
+
+  const existing = new Set(getSavedQuizzes().map((q) => q.id));
+  let newId: string;
+  do { newId = (Math.floor(Math.random() * 900000) + 100000).toString(); }
+  while (existing.has(newId));
+
+  const copy: SavedQuiz = {
+    ...original,
+    id: newId,
+    title: `Copie de ${original.title}`,
+    createdAt: new Date().toISOString(),
+    isFavorite: false,
+    rating: undefined,
+    ratingCount: undefined,
+    folderId: original.folderId ?? null,
+  };
+
+  const quizzes = getSavedQuizzes();
+  quizzes.push(copy);
+  localStorage.setItem(QUIZ_STORAGE_KEY, JSON.stringify(quizzes));
+  return copy;
 };
