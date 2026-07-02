@@ -37,9 +37,10 @@ import { TrashView } from "@/components/TrashView";
 import { DeleteQuizDialog } from "@/components/DeleteQuizDialog";
 import { DndContext, type DragEndEvent } from "@dnd-kit/core";
 import { toast } from "sonner";
-import { ChevronRight, FolderPlus, LayoutGrid, List, Play, Search, Star, Trash2 } from "lucide-react";
+import { BarChart2, ChevronRight, FolderPlus, LayoutGrid, List, Play, Search, Star, Trash2 } from "lucide-react";
 import { t } from "@/lib/i18n";
 import { useCollectionFilters } from "@/hooks/useCollectionFilters";
+import { readSessionHistory } from "@/lib/sessionState";
 
 const VIEW_KEY = "view-mode-quizzes";
 
@@ -289,9 +290,21 @@ const MyQuizzes = () => {
               onTrash={() => handleTrash(quiz.id)}
             />
           ) : <span />}
-          <Button size="sm" onClick={(e) => { e.stopPropagation(); handlePlayQuiz(quiz); }} className="ap-btn ap-btn--sm ap-btn--pill ap-btn--quiz gap-1.5 px-4">
-            <Play className="h-3.5 w-3.5" />{t("playQuiz")}
-          </Button>
+          <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+            {readSessionHistory(quiz.id).length > 0 && (
+              <button
+                onClick={(e) => { e.stopPropagation(); navigate(`/quiz-results/${quiz.id}`); }}
+                className="ap-btn ap-btn--ghost ap-btn--sm"
+                style={{ padding: "6px 10px", display: "flex", alignItems: "center", gap: "4px" }}
+              >
+                <BarChart2 style={{ width: 13, height: 13 }} />
+                Résultats
+              </button>
+            )}
+            <Button size="sm" onClick={(e) => { e.stopPropagation(); handlePlayQuiz(quiz); }} className="ap-btn ap-btn--sm ap-btn--pill ap-btn--quiz gap-1.5 px-4">
+              <Play className="h-3.5 w-3.5" />{t("playQuiz")}
+            </Button>
+          </div>
         </div>
       </div>
     </div>
@@ -333,6 +346,16 @@ const MyQuizzes = () => {
             onShare={() => handleShare(quiz)}
             onTrash={() => handleTrash(quiz.id)}
           />
+        )}
+        {readSessionHistory(quiz.id).length > 0 && (
+          <button
+            onClick={(e) => { e.stopPropagation(); navigate(`/quiz-results/${quiz.id}`); }}
+            className="ap-btn ap-btn--ghost ap-btn--sm"
+            style={{ padding: "5px 8px", display: "flex", alignItems: "center", gap: "3px", fontSize: "12px" }}
+          >
+            <BarChart2 style={{ width: 13, height: 13 }} />
+            <span className="hidden sm:inline">Résultats</span>
+          </button>
         )}
         <Button size="sm" onClick={(e) => { e.stopPropagation(); handlePlayQuiz(quiz); }} className="ap-btn ap-btn--sm ap-btn--pill ap-btn--quiz gap-1 px-3" style={{ fontSize: "12px" }}>
           <Play className="h-3 w-3" />{t("playQuiz")}
