@@ -24,6 +24,7 @@ import Pricing from "./pages/Pricing";
 import Contact from "./pages/Contact";
 import About from "./pages/About";
 import PollResults from "./pages/PollResults";
+import QuizResults from "./pages/QuizResults";
 import Help from "./pages/Help";
 import PreviewPage from "./pages/PreviewPage";
 
@@ -55,6 +56,7 @@ const App = () => (
           <Route path="/contact" element={<Contact />} />
           <Route path="/about" element={<About />} />
           <Route path="/poll-results/:pollId" element={<PollResults />} />
+          <Route path="/quiz-results/:quizId" element={<QuizResults />} />
           <Route path="/help" element={<Help />} />
           <Route path="/preview/:quizId" element={<PreviewPage />} />
           <Route path="/quiz/:gameCode" element={<LiveQuizPage />} />
