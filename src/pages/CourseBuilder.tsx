@@ -28,8 +28,14 @@ import {
   Trash2,
   Info,
   Upload,
+  Video,
   X,
 } from "lucide-react";
+
+const extractYouTubeId = (url: string): string | null => {
+  const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
+  return match ? match[1] : null;
+};
 
 const CATEGORIES = ["Autre", "Informatique", "Langues", "Sciences", "Histoire", "Arts", "Business", "Santé"];
 
@@ -124,6 +130,8 @@ const CourseBuilder = () => {
         toast.success("Cours créé !");
         navigate("/my-courses");
       }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erreur lors de l'enregistrement");
     } finally {
       setSaving(false);
     }
@@ -184,6 +192,7 @@ const CourseBuilder = () => {
     if (type === "quiz") return <BookOpen className="h-3.5 w-3.5" />;
     if (type === "flashcard") return <Layers className="h-3.5 w-3.5" />;
     if (type === "document") return <FileText className="h-3.5 w-3.5" />;
+    if (type === "video") return <Video className="h-3.5 w-3.5" />;
     return <GraduationCap className="h-3.5 w-3.5" />;
   };
 
@@ -191,6 +200,7 @@ const CourseBuilder = () => {
     if (type === "quiz") return "Quiz";
     if (type === "flashcard") return "Flashcards";
     if (type === "document") return "Document";
+    if (type === "video") return "Vidéo";
     return "Texte";
   };
 
@@ -516,7 +526,7 @@ const CourseBuilder = () => {
             const { moduleId, lessonId } = selected;
             const lesson = selectedLesson;
             return (
-              <div style={{ maxWidth: 640 }}>
+              <div style={{ maxWidth: 860 }}>
                 <h2 className="ap-h3 mb-6" style={{ fontSize: "18px" }}>Éditer la leçon</h2>
                 <div className="ap-card flex flex-col gap-4">
                   <div>
@@ -542,6 +552,7 @@ const CourseBuilder = () => {
                           <SelectItem value="quiz">Quiz</SelectItem>
                           <SelectItem value="flashcard">Flashcards</SelectItem>
                           <SelectItem value="document">Document</SelectItem>
+                          <SelectItem value="video">Vidéo</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -610,6 +621,66 @@ const CourseBuilder = () => {
                           }
                         </SelectContent>
                       </Select>
+                    </div>
+                  )}
+
+                  {lesson.type === "video" && (
+                    <div className="flex flex-col gap-3">
+                      {fieldLabel("Source vidéo")}
+                      <div style={{ display: "flex", gap: "8px" }}>
+                        {(["youtube", "url"] as const).map((vt) => (
+                          <button
+                            key={vt}
+                            onClick={() => updateLesson(moduleId, lessonId, { videoType: vt, videoUrl: "" })}
+                            style={{
+                              flex: 1,
+                              padding: "8px",
+                              border: `2px solid ${lesson.videoType === vt ? "var(--ap-brand)" : "var(--ap-line)"}`,
+                              borderRadius: "var(--ap-r-sm)",
+                              background: lesson.videoType === vt ? "rgba(59,130,246,0.08)" : "var(--ap-card)",
+                              color: lesson.videoType === vt ? "var(--ap-brand)" : "var(--ap-ink)",
+                              fontFamily: "var(--ap-font-body)",
+                              fontWeight: 700,
+                              fontSize: "13px",
+                              cursor: "pointer",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              gap: "6px",
+                            }}
+                          >
+                            {vt === "youtube" ? <><Video className="h-3.5 w-3.5" /> YouTube</> : <><Video className="h-3.5 w-3.5" /> URL externe</>}
+                          </button>
+                        ))}
+                      </div>
+                      {lesson.videoType && (
+                        <input
+                          value={lesson.videoUrl ?? ""}
+                          onChange={(e) => updateLesson(moduleId, lessonId, { videoUrl: e.target.value })}
+                          placeholder={lesson.videoType === "youtube" ? "https://youtube.com/watch?v=..." : "https://exemple.com/video.mp4"}
+                          style={inputStyle}
+                          onFocus={(e) => { e.currentTarget.style.borderColor = "var(--ap-brand)"; }}
+                          onBlur={(e) => { e.currentTarget.style.borderColor = "var(--ap-line)"; }}
+                        />
+                      )}
+                      {lesson.videoType === "youtube" && lesson.videoUrl && extractYouTubeId(lesson.videoUrl) && (
+                        <div style={{ borderRadius: "var(--ap-r-sm)", overflow: "hidden", aspectRatio: "16/9", marginTop: "4px" }}>
+                          <iframe
+                            src={`https://www.youtube.com/embed/${extractYouTubeId(lesson.videoUrl)}`}
+                            style={{ width: "100%", height: "100%", border: "none", display: "block" }}
+                            allowFullScreen
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            title={lesson.title}
+                          />
+                        </div>
+                      )}
+                      {lesson.videoType === "url" && lesson.videoUrl && (
+                        <video
+                          src={lesson.videoUrl}
+                          controls
+                          style={{ width: "100%", borderRadius: "var(--ap-r-sm)", marginTop: "4px", background: "#000" }}
+                        />
+                      )}
                     </div>
                   )}
 

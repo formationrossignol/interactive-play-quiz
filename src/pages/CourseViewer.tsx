@@ -27,7 +27,13 @@ import {
   GraduationCap,
   Layers,
   RotateCcw,
+  Video,
 } from "lucide-react";
+
+const extractYouTubeId = (url: string): string | null => {
+  const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
+  return match ? match[1] : null;
+};
 
 function renderMarkdown(md: string): string {
   return md
@@ -54,6 +60,7 @@ const CourseViewer = () => {
   const [progress, setProgress] = useState<CourseProgress | null>(null);
   const [currentLessonId, setCurrentLessonId] = useState<string | null>(null);
   const [collapsedModules, setCollapsedModules] = useState<Set<string>>(new Set());
+  const [pdfObjectUrl, setPdfObjectUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) { navigate("/auth"); return; }
@@ -73,6 +80,23 @@ const CourseViewer = () => {
     if (!course) return [];
     return course.modules.flatMap((m) => m.lessons.map((l) => ({ lesson: l, module: m })));
   }, [course]);
+
+  useEffect(() => {
+    const l = allLessons.find((x) => x.lesson.id === currentLessonId)?.lesson;
+    if (!l || l.type !== "document" || l.documentMimeType !== "application/pdf" || !l.content) {
+      setPdfObjectUrl(null);
+      return;
+    }
+    const base64 = l.content.split(",")[1];
+    if (!base64) { setPdfObjectUrl(null); return; }
+    const bytes = atob(base64);
+    const buffer = new Uint8Array(bytes.length);
+    for (let i = 0; i < bytes.length; i++) buffer[i] = bytes.charCodeAt(i);
+    const blob = new Blob([buffer], { type: "application/pdf" });
+    const url = URL.createObjectURL(blob);
+    setPdfObjectUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [currentLessonId, allLessons]);
 
   const completedIds = progress?.completedLessonIds ?? [];
   const totalLessons = allLessons.length;
@@ -217,6 +241,7 @@ const CourseViewer = () => {
                       {l.type === "quiz" && <BookOpen className="h-3 w-3 flex-shrink-0 opacity-40 ml-auto" />}
                       {l.type === "flashcard" && <Layers className="h-3 w-3 flex-shrink-0 opacity-40 ml-auto" />}
                       {l.type === "document" && <FileText className="h-3 w-3 flex-shrink-0 opacity-40 ml-auto" />}
+                      {l.type === "video" && <Video className="h-3 w-3 flex-shrink-0 opacity-40 ml-auto" />}
                     </button>
                   );
                 })}
@@ -304,6 +329,33 @@ const CourseViewer = () => {
                 </div>
               )}
 
+              {lesson.type === "video" && (
+                <div className="ap-card" style={{ padding: 0, overflow: "hidden", borderRadius: "var(--ap-r-lg)" }}>
+                  {!lesson.videoUrl ? (
+                    <div style={{ padding: "32px", textAlign: "center" }}>
+                      <Video className="mx-auto mb-3 h-8 w-8 opacity-30" />
+                      <p className="ap-muted">Aucune vidéo configurée.</p>
+                    </div>
+                  ) : lesson.videoType === "youtube" && extractYouTubeId(lesson.videoUrl) ? (
+                    <div style={{ aspectRatio: "16/9" }}>
+                      <iframe
+                        src={`https://www.youtube.com/embed/${extractYouTubeId(lesson.videoUrl)}`}
+                        style={{ width: "100%", height: "100%", border: "none", display: "block" }}
+                        allowFullScreen
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        title={lesson.title}
+                      />
+                    </div>
+                  ) : (
+                    <video
+                      src={lesson.videoUrl}
+                      controls
+                      style={{ width: "100%", maxHeight: "70vh", display: "block", background: "#000" }}
+                    />
+                  )}
+                </div>
+              )}
+
               {lesson.type === "document" && (
                 <div>
                   {!lesson.content ? (
@@ -319,11 +371,18 @@ const CourseViewer = () => {
                     />
                   ) : lesson.documentMimeType === "application/pdf" ? (
                     <div className="ap-card" style={{ padding: 0, overflow: "hidden" }}>
-                      <iframe
-                        src={lesson.content}
-                        title={lesson.documentName ?? "Document"}
-                        style={{ width: "100%", height: "75vh", border: "none", display: "block" }}
-                      />
+                      {pdfObjectUrl ? (
+                        <iframe
+                          src={pdfObjectUrl}
+                          title={lesson.documentName ?? "Document"}
+                          style={{ width: "100%", height: "75vh", border: "none", display: "block" }}
+                        />
+                      ) : (
+                        <div style={{ padding: "24px", textAlign: "center" }}>
+                          <FileText className="mx-auto mb-3 h-8 w-8 opacity-30" />
+                          <p className="ap-muted" style={{ fontSize: "13px" }}>Chargement du document...</p>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div className="ap-card" style={{ padding: "28px", display: "flex", flexDirection: "column", alignItems: "center", gap: "12px" }}>

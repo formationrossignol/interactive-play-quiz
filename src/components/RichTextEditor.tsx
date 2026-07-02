@@ -65,7 +65,7 @@ const RichTextEditor = ({ value, onChange, placeholder = "Rédigez le contenu de
     editorProps: {
       attributes: {
         style: [
-          "min-height:240px",
+          "min-height:400px",
           "padding:16px",
           "outline:none",
           "font-size:15px",

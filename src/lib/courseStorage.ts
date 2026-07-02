@@ -4,11 +4,13 @@ export interface Lesson {
   id: string;
   title: string;
   content: string;
-  type: 'text' | 'quiz' | 'flashcard' | 'document';
+  type: 'text' | 'quiz' | 'flashcard' | 'document' | 'video';
   linkedItemId?: string;
   estimatedMinutes?: number;
   documentName?: string;
   documentMimeType?: string;
+  videoUrl?: string;
+  videoType?: 'youtube' | 'url';
 }
 
 export interface Module {
@@ -57,7 +59,14 @@ const getAllCourses = (): Course[] => {
 };
 
 const writeAllCourses = (courses: Course[]): void => {
-  localStorage.setItem(COURSES_KEY, JSON.stringify(courses));
+  try {
+    localStorage.setItem(COURSES_KEY, JSON.stringify(courses));
+  } catch (e) {
+    if (e instanceof DOMException && e.name === 'QuotaExceededError') {
+      throw new Error('Stockage plein. Réduisez la taille des fichiers importés ou supprimez des cours.');
+    }
+    throw e;
+  }
 };
 
 export const getUserCourses = (userId: string): Course[] =>
