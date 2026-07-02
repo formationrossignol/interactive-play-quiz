@@ -87,6 +87,21 @@ const CourseViewer = () => {
   }, [currentLessonId]);
 
   useEffect(() => {
+    if (!currentLessonId || !course) return;
+    const ownerModule = course.modules.find((m) =>
+      m.lessons.some((l) => l.id === currentLessonId)
+    );
+    if (ownerModule) {
+      setCollapsedModules((prev) => {
+        if (!prev.has(ownerModule.id)) return prev;
+        const next = new Set(prev);
+        next.delete(ownerModule.id);
+        return next;
+      });
+    }
+  }, [currentLessonId, course]);
+
+  useEffect(() => {
     const l = allLessons.find((x) => x.lesson.id === currentLessonId)?.lesson;
     if (!l || l.type !== "document" || l.documentMimeType !== "application/pdf" || !l.content) {
       setPdfObjectUrl(null);
