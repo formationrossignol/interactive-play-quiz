@@ -137,7 +137,9 @@ const QuizResults = () => {
         <div style={{ marginBottom: "32px" }}>
           <h1 className="ap-h2" style={{ fontSize: "26px", marginBottom: "4px" }}>{quizTitle}</h1>
           <p className="ap-muted" style={{ fontSize: "14px" }}>
-            Résultats des {totalSessions} dernière{totalSessions > 1 ? "s" : ""} session{totalSessions > 1 ? "s" : ""}
+            {totalSessions > 0
+              ? `Résultats des ${totalSessions} dernière${totalSessions > 1 ? "s" : ""} session${totalSessions > 1 ? "s" : ""}`
+              : "Aucune session enregistrée"}
           </p>
         </div>
 
