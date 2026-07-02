@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { getCurrentUser } from "@/lib/auth";
@@ -61,6 +61,7 @@ const CourseViewer = () => {
   const [currentLessonId, setCurrentLessonId] = useState<string | null>(null);
   const [collapsedModules, setCollapsedModules] = useState<Set<string>>(new Set());
   const [pdfObjectUrl, setPdfObjectUrl] = useState<string | null>(null);
+  const mainRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!user) { navigate("/auth"); return; }
@@ -80,6 +81,10 @@ const CourseViewer = () => {
     if (!course) return [];
     return course.modules.flatMap((m) => m.lessons.map((l) => ({ lesson: l, module: m })));
   }, [course]);
+
+  useEffect(() => {
+    mainRef.current?.scrollTo({ top: 0, behavior: "instant" });
+  }, [currentLessonId]);
 
   useEffect(() => {
     const l = allLessons.find((x) => x.lesson.id === currentLessonId)?.lesson;
@@ -251,7 +256,7 @@ const CourseViewer = () => {
         </aside>
 
         {/* Main content */}
-        <main style={{ flex: 1, overflowY: "auto", padding: "36px 48px" }}>
+        <main ref={mainRef} style={{ flex: 1, overflowY: "auto", padding: "36px 48px" }}>
           {!lesson ? (
             <div style={{ textAlign: "center", marginTop: "80px" }}>
               <GraduationCap className="mx-auto mb-4 h-10 w-10 opacity-30" />

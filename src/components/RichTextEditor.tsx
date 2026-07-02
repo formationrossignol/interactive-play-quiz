@@ -52,7 +52,7 @@ const Sep = () => (
 const RichTextEditor = ({ value, onChange, placeholder = "Rédigez le contenu de cette leçon..." }: Props) => {
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({ underline: false, link: false }),
       Underline,
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       Placeholder.configure({ placeholder }),
