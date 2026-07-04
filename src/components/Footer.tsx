@@ -68,19 +68,12 @@ export const Footer = () => {
                       <button
                         type="button"
                         onClick={link.onClick}
-                        className="text-sm font-semibold transition-colors"
-                        style={{ color: "var(--ap-ink)", fontFamily: "var(--ap-font-body)" }}
-                        onMouseEnter={(e) => {
-                          (e.currentTarget as HTMLButtonElement).style.color = "var(--ap-brand)";
-                        }}
-                        onMouseLeave={(e) => {
-                          (e.currentTarget as HTMLButtonElement).style.color = "var(--ap-ink)";
-                        }}
+                        className="text-sm font-semibold text-ap-ink hover:text-ap-brand focus-visible:text-ap-brand font-body transition-colors"
                       >
                         {link.label}
                       </button>
                     ) : (
-                      <span className="text-sm font-semibold" style={{ color: "var(--ap-muted)" }}>
+                      <span className="text-sm font-semibold text-ap-muted">
                         {link.label}
                       </span>
                     )}
@@ -108,10 +101,7 @@ export const Footer = () => {
                 key={href}
                 type="button"
                 onClick={() => navigate(href)}
-                className="text-xs font-bold transition-colors"
-                style={{ color: "var(--ap-muted)", fontFamily: "var(--ap-font-body)" }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "var(--ap-brand)"; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "var(--ap-muted)"; }}
+                className="text-xs font-bold text-ap-muted hover:text-ap-brand focus-visible:text-ap-brand font-body transition-colors"
               >
                 {label}
               </button>

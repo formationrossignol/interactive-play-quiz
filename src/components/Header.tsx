@@ -147,14 +147,7 @@ export const Header = ({
                 <button
                   key={item.label}
                   onClick={item.onClick}
-                  className="px-3 py-2 text-sm font-semibold rounded-xl transition-colors cursor-pointer"
-                  style={{ color: "var(--ap-ink)", fontFamily: "var(--ap-font-display)" }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.background = "var(--ap-paper-2)";
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.background = "transparent";
-                  }}
+                  className="px-3 py-2 text-sm font-semibold rounded-xl transition-colors cursor-pointer text-ap-ink font-display hover:bg-ap-paper-2 focus-visible:bg-ap-paper-2"
                 >
                   {item.label}
                 </button>
@@ -164,14 +157,7 @@ export const Header = ({
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
-                    className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-xl transition-colors cursor-pointer"
-                    style={{ color: "var(--ap-ink)", fontFamily: "var(--ap-font-display)" }}
-                    onMouseEnter={(e) => {
-                      (e.currentTarget as HTMLButtonElement).style.background = "var(--ap-paper-2)";
-                    }}
-                    onMouseLeave={(e) => {
-                      (e.currentTarget as HTMLButtonElement).style.background = "transparent";
-                    }}
+                    className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-xl transition-colors cursor-pointer text-ap-ink font-display hover:bg-ap-paper-2 focus-visible:bg-ap-paper-2"
                   >
                     <Layers className="h-4 w-4" />
                     {t("myCreations")}

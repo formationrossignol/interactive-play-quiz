@@ -47,8 +47,18 @@
   --ap-shadow-float: 0 14px 30px rgba(60,40,120,.16);
 
   /* Typo */
-  --ap-font-display: 'Fredoka', system-ui, sans-serif;  /* titres, boutons, chiffres */
-  --ap-font-body:    'Nunito', system-ui, sans-serif;   /* texte courant */
+  --ap-font-display: 'Fredoka Variable', 'Fredoka', system-ui, sans-serif;
+  --ap-font-body:    'Nunito Variable', 'Nunito', system-ui, sans-serif;
+
+  /* Échelle typographique — 5 niveaux
+     display  : Fredoka 600 / 56px — scores, titres héros
+     h1       : Fredoka 600 / 38px — titres de page
+     h2       : Fredoka 600 / 24px — sections
+     h3       : Fredoka 600 / 18px — sous-sections, labels forts
+     body     : Nunito  400 / 15px — texte courant (repos visuel)
+     ui-dense : Nunito  500 / 13px — labels, metadata, boutons secondaires
+     label    : Nunito  700 / 12px — caps, badges
+     btn      : Fredoka 600 / 15.5px — CTA */
 
   /* Transitions */
   --ap-ease: cubic-bezier(.2,.7,.3,1);
@@ -61,7 +71,7 @@
   background: var(--ap-paper);
   color: var(--ap-ink);
   font-family: var(--ap-font-body);
-  font-weight: 600;
+  font-weight: 400;
   -webkit-font-smoothing: antialiased;
 }
 .ap-app *, .ap-app *::before, .ap-app *::after { box-sizing: border-box; }
@@ -70,7 +80,7 @@
 .ap-h1 { font-family: var(--ap-font-display); font-weight: 600; font-size: 56px; line-height: 1; letter-spacing: -1.5px; margin: 0; }
 .ap-h2 { font-family: var(--ap-font-display); font-weight: 600; font-size: 38px; line-height: 1.05; letter-spacing: -1px; margin: 0; }
 .ap-h3 { font-family: var(--ap-font-display); font-weight: 600; font-size: 20px; margin: 0; }
-.ap-lead { font-size: 19px; line-height: 1.5; color: #5f5675; font-weight: 600; }
+.ap-lead { font-size: 19px; line-height: 1.5; color: #5f5675; font-weight: 400; }
 .ap-muted { color: var(--ap-muted); }
 
 /* ============================================================

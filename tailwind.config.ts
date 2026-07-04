@@ -18,8 +18,24 @@ export default {
     extend: {
       fontFamily: {
         sans: ['"Plus Jakarta Sans"', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'sans-serif'],
+        display: ['"Fredoka Variable"', 'Fredoka', 'system-ui', 'sans-serif'],
+        body: ['"Nunito Variable"', 'Nunito', 'system-ui', 'sans-serif'],
       },
       colors: {
+        // Arcade Pop design tokens — mapped to CSS vars so changes in arcade-pop.css propagate
+        'ap-brand':      'var(--ap-brand)',
+        'ap-brand-deep': 'var(--ap-brand-deep)',
+        'ap-brand-soft': 'var(--ap-brand-soft)',
+        'ap-ink':        'var(--ap-ink)',
+        'ap-muted':      'var(--ap-muted)',
+        'ap-paper':      'var(--ap-paper)',
+        'ap-paper-2':    'var(--ap-paper-2)',
+        'ap-card':       'var(--ap-card)',
+        'ap-line':       'var(--ap-line)',
+        'ap-quiz':       'var(--ap-quiz)',
+        'ap-pres':       'var(--ap-pres)',
+        'ap-poll':       'var(--ap-poll)',
+        'ap-flash':      'var(--ap-flash)',
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
