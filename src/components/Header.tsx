@@ -141,14 +141,15 @@ export const Header = ({
 
         {/* Desktop navigation */}
         {showNavigation && (
-          <nav className="hidden md:flex flex-1 items-center justify-center gap-1">
+          <nav className="hidden md:flex flex-1 items-center justify-center">
+            <div className="ap-nav-pill">
             {primaryNavigationItems
               .filter((item) => (item.requiresAuth ? Boolean(user) : true))
               .map((item) => (
                 <button
                   key={item.label}
                   onClick={item.onClick}
-                  className="px-3 py-2 text-sm font-semibold rounded-xl transition-colors cursor-pointer text-ap-ink font-display hover:bg-ap-paper-2 focus-visible:bg-ap-paper-2"
+                  className="ap-nav-pill__item"
                 >
                   {item.label}
                 </button>
@@ -157,9 +158,7 @@ export const Header = ({
             {availableCreationItems.length > 0 && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button
-                    className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-xl transition-colors cursor-pointer text-ap-ink font-display hover:bg-ap-paper-2 focus-visible:bg-ap-paper-2"
-                  >
+                  <button className="ap-nav-pill__item flex items-center gap-1.5">
                     <Layers className="h-4 w-4" />
                     {t("myCreations")}
                     <ChevronDown className="h-3.5 w-3.5" style={{ color: "var(--ap-muted)" }} />
@@ -191,6 +190,7 @@ export const Header = ({
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
+            </div>
           </nav>
         )}
 

@@ -5,7 +5,6 @@ import { useLanguage } from "@/hooks/useLanguage";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { HeroMiniQuiz } from "@/components/HeroMiniQuiz";
-import { Compass } from "lucide-react";
 import { t } from "@/lib/i18n";
 
 const contentTypes = [
@@ -187,119 +186,194 @@ const Index = () => {
     <div style={{ minHeight: "100vh", background: "var(--ap-paper)" }}>
       <Header />
 
-      <main className="mx-auto max-w-6xl px-6 pb-24 pt-12">
+      <main style={{ maxWidth: 1160, margin: "0 auto", padding: "0 24px" }}>
 
-        {/* ═══ HERO — split layout ═══ */}
-        <section
-          className="mb-16 flex flex-col gap-12 lg:flex-row lg:items-center lg:justify-between"
-          style={{ paddingBottom: "8px" }}
-        >
+        {/* ═══ HERO ═══ */}
+        <section style={{
+          display: "grid",
+          gridTemplateColumns: "1.05fr .95fr",
+          gap: 56,
+          alignItems: "center",
+          padding: "56px 0 72px",
+        }} className="hero-grid">
+
           {/* Left */}
-          <div style={{ flex: "1 1 0", maxWidth: 560 }}>
-            {/* pill badge */}
-            <div
-              className="ap-pill"
-              style={{ marginBottom: "28px", display: "inline-flex", gap: "8px" }}
-            >
-              <span className="ap-dot" style={{ background: "var(--ap-quiz)" }} />
-              <span className="ap-dot" style={{ background: "var(--ap-poll)" }} />
-              <span className="ap-dot" style={{ background: "var(--ap-flash)" }} />
-              <span className="ap-dot" style={{ background: "var(--ap-pres)" }} />
-              <span style={{
-                fontFamily: "var(--ap-font-display)", fontWeight: 600,
-                fontSize: "12.5px", letterSpacing: "1px", textTransform: "uppercase",
-                color: "var(--ap-ink)",
-              }}>
-                Quiz · Sondage · Présentation
-              </span>
+          <div>
+            {/* Eyebrow */}
+            <div className="ap-eyebrow ap-reveal d2" style={{ marginBottom: 22 }}>
+              <span className="ap-eyebrow__dot" aria-hidden="true" />
+              2 314 sessions en direct cette semaine
             </div>
 
-            {/* headline */}
+            {/* H1 */}
             <h1
+              className="ap-reveal d3"
               style={{
                 fontFamily: "var(--ap-font-display)", fontWeight: 600,
-                fontSize: "clamp(42px, 6vw, 68px)", lineHeight: 1.02,
-                letterSpacing: "-1.5px", color: "var(--ap-ink)",
-                marginBottom: "10px",
+                fontSize: "clamp(36px, 4.6vw, 56px)", lineHeight: 1.08,
+                letterSpacing: "-.015em", color: "var(--ap-ink)",
+                marginBottom: 20,
               }}
             >
-              Mettez toute<br />
-              la salle{" "}
-              <span style={{ color: "var(--ap-brand)", position: "relative", display: "inline-block" }}>
-                dans le jeu
-                {/* yellow underline decoration */}
+              Vos formations méritent mieux que des slides{" "}
+              <span style={{ position: "relative", whiteSpace: "nowrap", color: "var(--ap-brand)" }}>
+                qui dorment
                 <svg
-                  viewBox="0 0 220 14"
-                  style={{
-                    position: "absolute", bottom: -6, left: 0, width: "100%",
-                    height: "auto", pointerEvents: "none",
-                  }}
+                  viewBox="0 0 100 12"
                   preserveAspectRatio="none"
+                  aria-hidden="true"
+                  style={{ position: "absolute", left: 0, bottom: -6, width: "100%", height: 12, overflow: "visible" }}
                 >
                   <path
-                    d="M4 9 Q55 2 110 8 Q165 14 216 5"
-                    stroke="var(--ap-flash)" strokeWidth="4.5"
-                    fill="none" strokeLinecap="round"
+                    d="M2 9 Q 25 3, 50 8 T 98 6"
+                    fill="none" stroke="var(--ap-flash)" strokeWidth="5" strokeLinecap="round"
+                    strokeDasharray="240" strokeDashoffset="240"
+                    style={{ animation: "ap-draw-line .7s var(--ap-ease) .9s forwards" }}
                   />
                 </svg>
               </span>
             </h1>
 
-            {/* subtitle */}
+            {/* Lede */}
             <p
-              className="ap-lead"
-              style={{ marginBottom: "36px", maxWidth: 480, fontSize: "17px" }}
+              className="ap-reveal d4"
+              style={{
+                fontFamily: "var(--ap-font-body)", fontSize: 18, color: "var(--ap-muted)",
+                maxWidth: "46ch", marginBottom: 30, lineHeight: 1.55,
+              }}
             >
-              Quiz multijoueurs en temps réel, sondages live et présentations interactives. QR code, classement instantané et une ambiance d'arcade — sans rien perdre en puissance.
+              Quiz, sondages, flashcards et présentations interactives — dans un seul outil. Vos participants rejoignent en{" "}
+              <strong style={{ color: "var(--ap-ink)", fontWeight: 700 }}>un scan de QR code</strong>, sans compte, sans installation.
             </p>
 
             {/* CTAs */}
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "14px", marginBottom: "36px" }}>
+            <div className="ap-reveal d5" style={{ display: "flex", gap: 14, flexWrap: "wrap", alignItems: "center", marginBottom: 34 }}>
               <button
-                className="ap-btn ap-btn--lg ap-btn--pill ap-btn--quiz"
+                className="ap-btn ap-btn--pill ap-btn--lg"
                 onClick={() => navigate("/builder-start?type=quiz")}
               >
                 Créer gratuitement
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round">
-                  <path d="M3 9h11M9 4l5 5-5 5"/>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" aria-hidden="true">
+                  <path d="M5 12h14M13 6l6 6-6 6"/>
                 </svg>
               </button>
               <button
-                className="ap-btn ap-btn--lg ap-btn--ghost ap-btn--pill"
-                onClick={() => navigate("/discover")}
+                className="ap-btn ap-btn--pill ap-btn--lg ap-btn--ghost"
+                onClick={() => document.getElementById("join-banner")?.scrollIntoView({ behavior: "smooth" })}
               >
-                <Compass className="h-5 w-5" style={{ color: "var(--ap-brand)" }} />
                 Rejoindre une partie
               </button>
             </div>
 
-            {/* social proof */}
-            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-              <div style={{ display: "flex" }}>
-                {["var(--ap-quiz)", "var(--ap-poll)", "var(--ap-flash)", "var(--ap-pres)"].map((c, i) => (
-                  <span
-                    key={i}
-                    style={{
-                      width: 28, height: 28, borderRadius: "50%",
-                      background: `var(${c.slice(4, -1)})`,
-                      border: "2px solid var(--ap-paper)",
-                      marginLeft: i > 0 ? -8 : 0,
-                      display: "inline-block",
-                    }}
-                  />
+            {/* Social proof */}
+            <div className="ap-reveal d6" style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <div style={{ display: "flex" }} aria-hidden="true">
+                {["🦊", "🐸", "🦉", "🐙"].map((emoji, i) => (
+                  <span key={i} style={{
+                    width: 34, height: 34, borderRadius: "50%",
+                    border: "3px solid var(--ap-paper)",
+                    display: "grid", placeItems: "center", fontSize: 15,
+                    marginLeft: i > 0 ? -10 : 0,
+                    background: "var(--ap-card)",
+                    boxShadow: "0 2px 0 var(--ap-line)",
+                  }}>{emoji}</span>
                 ))}
               </div>
-              <span style={{ fontFamily: "var(--ap-font-body)", fontWeight: 700, fontSize: "13.5px", color: "var(--ap-muted)" }}>
-                +12 000 animateurs créent des moments inoubliables
-              </span>
+              <small style={{ fontSize: 13.5, fontWeight: 700, color: "var(--ap-muted)", fontFamily: "var(--ap-font-body)" }}>
+                <b style={{ color: "var(--ap-ink)", fontWeight: 800 }}>4,9/5</b> par 1 200+ formateurs et enseignants
+              </small>
             </div>
           </div>
 
-          {/* Right — floating quiz card */}
-          <div
-            style={{ flex: "0 0 auto", display: "flex", justifyContent: "center", paddingTop: "24px", paddingBottom: "24px" }}
-          >
-            <HeroMiniQuiz />
+          {/* Right — stage */}
+          <div className="ap-reveal d4" style={{ position: "relative", paddingTop: 24, paddingBottom: 24 }}>
+            {/* Score pill top-left */}
+            <div
+              className="ap-float-pill"
+              style={{
+                top: 8, left: -14,
+                color: "var(--ap-pres-deep)", borderColor: "var(--ap-pres)",
+                background: "var(--ap-pres-soft)", animationDelay: ".6s",
+              }}
+              aria-hidden="true"
+            >
+              +850 pts !
+            </div>
+            {/* Live pill bottom-right */}
+            <div
+              className="ap-float-pill"
+              style={{
+                bottom: 8, right: -10,
+                color: "var(--ap-quiz-deep)", borderColor: "var(--ap-quiz)",
+                background: "var(--ap-quiz-soft)", animationDelay: "1.2s",
+              }}
+              aria-hidden="true"
+            >
+              🔴 12 joueurs connectés
+            </div>
+            <div style={{ display: "flex", justifyContent: "center" }}>
+              <HeroMiniQuiz />
+            </div>
+          </div>
+        </section>
+
+        {/* ═══ STRIP — preuve produit ═══ */}
+        <section style={{ paddingBottom: 80 }}>
+          <p className="ap-strip-label ap-reveal d5">Les objets du jeu — même système, partout</p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 18 }} className="strip-grid">
+
+            {/* Tile 1 — Code PIN */}
+            <div className="ap-card ap-card--hover ap-reveal d5" style={{ boxShadow: "0 5px 0 var(--ap-line)" }}>
+              <h3 className="ap-h3" style={{ marginBottom: 4 }}>Rejoindre en 5 secondes</h3>
+              <p style={{ fontSize: 14, color: "var(--ap-muted)", marginBottom: 18 }}>Un code, un QR — jamais de compte pour les participants.</p>
+              <div className="ap-pin" aria-label="Code de partie 48 29 17">
+                48<span className="ap-pin__accent">29</span>17
+              </div>
+            </div>
+
+            {/* Tile 2 — Leaderboard */}
+            <div className="ap-card ap-card--hover ap-reveal d6" style={{ boxShadow: "0 5px 0 var(--ap-line)" }}>
+              <h3 className="ap-h3" style={{ marginBottom: 4 }}>Classement en direct</h3>
+              <p style={{ fontSize: 14, color: "var(--ap-muted)", marginBottom: 18 }}>Les scores tombent en temps réel, la tension monte.</p>
+              <div>
+                <div className="ap-lb-row ap-lb-row--first">
+                  <span className="ap-lb-row__rank">🥇</span>
+                  <span className="ap-lb-row__who"><span className="ap-lb-row__av">🦊</span>Camille</span>
+                  <span className="ap-lb-row__up">▲ 2</span>
+                  <span className="ap-lb-row__pts ap-mono">2 450</span>
+                </div>
+                <div className="ap-lb-row">
+                  <span className="ap-lb-row__rank">2</span>
+                  <span className="ap-lb-row__who"><span className="ap-lb-row__av">🐙</span>Mehdi</span>
+                  <span className="ap-lb-row__pts ap-mono">2 310</span>
+                </div>
+                <div className="ap-lb-row" style={{ marginBottom: 0 }}>
+                  <span className="ap-lb-row__rank">3</span>
+                  <span className="ap-lb-row__who"><span className="ap-lb-row__av">🦉</span>Inès</span>
+                  <span className="ap-lb-row__pts ap-mono">2 180</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Tile 3 — Type badges */}
+            <div className="ap-card ap-card--hover ap-reveal d6" style={{ boxShadow: "0 5px 0 var(--ap-line)" }}>
+              <h3 className="ap-h3" style={{ marginBottom: 4 }}>Quatre formats, un langage</h3>
+              <p style={{ fontSize: 14, color: "var(--ap-muted)", marginBottom: 18 }}>Chaque type de contenu a sa couleur — repérable en un clin d'œil.</p>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 9 }}>
+                <button className="ap-type-badge ap-type-badge--quiz" onClick={() => navigate("/builder-start?type=quiz")}>
+                  <span className="ap-type-badge__dot" aria-hidden="true" />Quiz
+                </button>
+                <button className="ap-type-badge ap-type-badge--poll" onClick={() => navigate("/builder-start?type=poll")}>
+                  <span className="ap-type-badge__dot" aria-hidden="true" />Sondage
+                </button>
+                <button className="ap-type-badge ap-type-badge--flash" onClick={() => navigate("/builder-start?type=flashcard")}>
+                  <span className="ap-type-badge__dot" aria-hidden="true" />Flashcards
+                </button>
+                <button className="ap-type-badge ap-type-badge--pres" onClick={() => navigate("/builder-start?type=slide")}>
+                  <span className="ap-type-badge__dot" aria-hidden="true" />Présentation
+                </button>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -345,6 +419,7 @@ const Index = () => {
 
         {/* ═══ JOIN BANNER ═══ */}
         <section
+          id="join-banner"
           style={{
             background: "var(--ap-brand)",
             borderRadius: "var(--ap-r-xl)",
@@ -426,6 +501,8 @@ const Index = () => {
             </button>
           </div>
         </section>
+
+        <div style={{ height: 80 }} />
       </main>
 
       <Footer />

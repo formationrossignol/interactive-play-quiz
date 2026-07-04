@@ -84,8 +84,8 @@
 .ap-app {
   background: var(--ap-paper);
   /* Trame de points en filigrane — texture « papier de jeu » */
-  background-image: radial-gradient(circle, color-mix(in srgb, var(--ap-line-2) 60%, transparent) 1.5px, transparent 1.5px);
-  background-size: 24px 24px;
+  background-image: radial-gradient(var(--ap-line-2) 1px, transparent 1px);
+  background-size: 28px 28px;
   color: var(--ap-ink);
   font-family: var(--ap-font-body);
   font-weight: 400;
@@ -145,10 +145,10 @@
 /* Ghost / secondaire (sur fond crème) */
 .ap-btn--ghost {
   background: var(--ap-card); color: var(--ap-ink);
-  border: 2px solid var(--ap-line); box-shadow: 0 3px 0 var(--ap-line);
+  box-shadow: 0 5px 0 var(--ap-line-2), inset 0 0 0 2px var(--ap-line);
 }
-.ap-btn--ghost:hover  { box-shadow: 0 4px 0 var(--ap-line); }
-.ap-btn--ghost:active { box-shadow: 0 1px 0 var(--ap-line); }
+.ap-btn--ghost:hover  { box-shadow: 0 7px 0 var(--ap-line-2), inset 0 0 0 2px var(--ap-line-2); }
+.ap-btn--ghost:active { box-shadow: 0 1px 0 var(--ap-line-2), inset 0 0 0 2px var(--ap-line-2); }
 
 /* ============================================================
    4. CARTES & SURFACES
@@ -442,6 +442,125 @@
 /* Curseur personnalisé sur zones de jeu */
 .ap-game-zone { cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='5' fill='%237048ff' opacity='.7'/%3E%3C/svg%3E") 12 12, pointer; }
 
+/* ============================================================
+   11. NAV PILL
+   ============================================================ */
+.ap-nav-pill {
+  display: flex; gap: 2px;
+  background: var(--ap-card); border: 2px solid var(--ap-line);
+  border-radius: var(--ap-r-pill); padding: 4px;
+  box-shadow: 0 3px 0 var(--ap-line);
+}
+.ap-nav-pill__item {
+  font-family: var(--ap-font-display); font-weight: 600; font-size: 14px;
+  color: var(--ap-muted); padding: 8px 16px; border-radius: var(--ap-r-pill);
+  border: none; background: transparent; cursor: pointer;
+  transition: color .15s, background .15s;
+}
+.ap-nav-pill__item:hover,
+.ap-nav-pill__item[aria-current="page"] {
+  color: var(--ap-ink); background: var(--ap-paper-2);
+}
+
+/* ============================================================
+   12. EYEBROW — badge live avec dot pulsant
+   ============================================================ */
+.ap-eyebrow {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--ap-font-body); font-size: 13px; font-weight: 800;
+  letter-spacing: .08em; text-transform: uppercase;
+  color: var(--ap-brand-deep); background: var(--ap-brand-soft);
+  border: 2px solid color-mix(in srgb, var(--ap-brand) 30%, transparent);
+  padding: 6px 14px; border-radius: var(--ap-r-pill);
+}
+.ap-eyebrow__dot {
+  width: 8px; height: 8px; border-radius: 50%; background: var(--ap-pres); flex: 0 0 auto;
+  animation: ap-dot-pulse 2s ease-in-out infinite;
+}
+@keyframes ap-dot-pulse { 50% { opacity: .3; transform: scale(.75); } }
+
+/* ============================================================
+   13. ENTRÉES ORCHESTRÉES — reveal avec délais d1-d6
+   ============================================================ */
+@keyframes ap-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes ap-draw-line { to { stroke-dashoffset: 0; } }
+.ap-reveal { opacity: 0; transform: translateY(14px); animation: ap-rise .55s var(--ap-ease) forwards; }
+.ap-reveal.d1 { animation-delay: .05s; } .ap-reveal.d2 { animation-delay: .13s; }
+.ap-reveal.d3 { animation-delay: .21s; } .ap-reveal.d4 { animation-delay: .29s; }
+.ap-reveal.d5 { animation-delay: .37s; } .ap-reveal.d6 { animation-delay: .45s; }
+
+/* ============================================================
+   14. STRIP — bande de preuve produit sous le hero
+   ============================================================ */
+.ap-strip-label {
+  font-family: var(--ap-font-body); font-size: 12.5px; font-weight: 800;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--ap-muted);
+  margin-bottom: 18px; display: flex; align-items: center; gap: 12px;
+}
+.ap-strip-label::after { content: ""; flex: 1; height: 2px; background: var(--ap-line); border-radius: 2px; }
+
+/* Code PIN — JetBrains Mono, dashed border */
+.ap-pin {
+  font-family: var(--ap-font-mono); font-weight: 700; font-size: 32px;
+  letter-spacing: .14em; font-variant-numeric: tabular-nums;
+  color: var(--ap-ink); background: var(--ap-paper-2);
+  border: 2px dashed var(--ap-line-2); border-radius: var(--ap-r-md);
+  padding: 14px 18px; text-align: center;
+}
+.ap-pin__accent { color: var(--ap-brand); }
+
+/* Ligne leaderboard */
+.ap-lb-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 12px; border-radius: var(--ap-r-md);
+  border: 2px solid var(--ap-line); margin-bottom: 8px; background: var(--ap-card);
+}
+.ap-lb-row--first { background: var(--ap-flash-soft); border-color: color-mix(in srgb, var(--ap-flash) 50%, transparent); }
+.ap-lb-row__rank { font-family: var(--ap-font-display); font-weight: 600; width: 26px; text-align: center; font-size: 17px; }
+.ap-lb-row__who { display: flex; align-items: center; gap: 9px; flex: 1; font-weight: 800; font-size: 14.5px; }
+.ap-lb-row__av { width: 30px; height: 30px; border-radius: 50%; background: var(--ap-paper-2); display: grid; place-items: center; font-size: 15px; border: 2px solid var(--ap-line); }
+.ap-lb-row__pts { font-family: var(--ap-font-mono); font-weight: 700; font-size: 14px; font-variant-numeric: tabular-nums; }
+.ap-lb-row__up { font-size: 11px; font-weight: 800; color: var(--ap-pres-deep); background: var(--ap-pres-soft); border-radius: var(--ap-r-pill); padding: 2px 8px; }
+
+/* Badges type — contour coloré, fond blanc */
+.ap-type-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--ap-font-body); font-weight: 800; font-size: 13.5px;
+  padding: 9px 15px; border-radius: var(--ap-r-pill);
+  border: 2px solid; cursor: pointer; background: var(--ap-card);
+  transition: transform .15s var(--ap-spring);
+}
+.ap-type-badge:hover { transform: translateY(-2px) rotate(-1deg); }
+.ap-type-badge__dot { width: 9px; height: 9px; border-radius: 3px; display: inline-block; flex: 0 0 auto; }
+.ap-type-badge--quiz  { color: var(--ap-quiz-deep);  border-color: color-mix(in srgb, var(--ap-quiz) 45%, transparent); }  .ap-type-badge--quiz  .ap-type-badge__dot { background: var(--ap-quiz); }
+.ap-type-badge--poll  { color: var(--ap-poll-deep);  border-color: color-mix(in srgb, var(--ap-poll) 45%, transparent); }  .ap-type-badge--poll  .ap-type-badge__dot { background: var(--ap-poll); }
+.ap-type-badge--flash { color: var(--ap-flash-deep); border-color: color-mix(in srgb, var(--ap-flash) 55%, transparent); } .ap-type-badge--flash .ap-type-badge__dot { background: var(--ap-flash); }
+.ap-type-badge--pres  { color: var(--ap-pres-deep);  border-color: color-mix(in srgb, var(--ap-pres) 45%, transparent); }  .ap-type-badge--pres  .ap-type-badge__dot { background: var(--ap-pres); }
+
+/* Float pills (stage) */
+.ap-float-pill {
+  position: absolute; z-index: 3;
+  font-family: var(--ap-font-display); font-weight: 600; font-size: 14px;
+  padding: 8px 16px; border-radius: var(--ap-r-pill);
+  background: var(--ap-card); border: 2px solid var(--ap-line);
+  box-shadow: 0 4px 0 var(--ap-line);
+  animation: ap-floaty 5s ease-in-out infinite;
+  white-space: nowrap; pointer-events: none;
+}
+@keyframes ap-floaty { 50% { transform: translateY(-7px); } }
+
+/* ── Responsive hero / strip ────────────────────────────────── */
+@media (max-width: 900px) {
+  .hero-grid { grid-template-columns: 1fr !important; gap: 44px !important; padding-top: 36px !important; }
+  .strip-grid { grid-template-columns: 1fr !important; }
+}
+@media (max-width: 480px) {
+  .ap-answers { grid-template-columns: 1fr; }
+}
+
 /* Réduction des animations si l'utilisateur le demande */
 @media (prefers-reduced-motion: reduce) {
   .ap-btn, .ap-answer, .ap-card--hover, .ap-switch, .ap-switch::after, .ap-logo { transition: none; }
@@ -449,5 +568,9 @@
   .ap-confetti-piece { animation: none; display: none; }
   .ap-answer--correct { animation: none; }
   .ap-answer--wrong { animation: none; }
-  .ap-score-pill { animation: none; transform: translateY(-18px); }
+  .ap-score-pill { animation: none; transform: translateX(-50%) translateY(-18px); }
+  .ap-reveal { animation: none; opacity: 1; transform: none; }
+  .ap-eyebrow__dot { animation: none; }
+  .ap-float-pill { animation: none; }
+  .ap-type-badge:hover { transform: none; }
 }
