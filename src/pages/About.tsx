@@ -51,10 +51,10 @@ const About = () => {
               À propos
             </span>
             <h1 className="ap-h1" style={{ fontSize: "clamp(36px,5vw,52px)", marginBottom: "20px" }}>
-              À propos de <span style={{ color: "var(--ap-brand)" }}>QuizMaster</span>
+              À propos de <span style={{ color: "var(--ap-brand)" }}>Ludiq</span>
             </h1>
             <p className="ap-lead" style={{ maxWidth: 600, margin: "0 auto" }}>
-              QuizMaster est né de la volonté de transformer l'apprentissage et l'engagement
+              Ludiq est né de la volonté de transformer l'apprentissage et l'engagement
               en expériences interactives et mémorables.
             </p>
           </div>
@@ -63,13 +63,13 @@ const About = () => {
           <div className="ap-card ap-card--floaty" style={{ marginBottom: "56px", padding: "36px 40px" }}>
             <p className="ap-lead" style={{ margin: "0 0 20px" }}>
               Nous croyons que l'apprentissage et l'engagement doivent être dynamiques,
-              collaboratifs et amusants. C'est pourquoi nous avons créé QuizMaster,
+              collaboratifs et amusants. C'est pourquoi nous avons créé Ludiq,
               une plateforme tout-en-un qui permet aux éducateurs, formateurs et animateurs
               de concevoir des expériences interactives captivantes.
             </p>
             <p className="ap-lead" style={{ margin: 0 }}>
               Que vous organisiez un quiz en classe, un sondage en entreprise ou des
-              flashcards pour réviser, QuizMaster vous offre tous les outils nécessaires
+              flashcards pour réviser, Ludiq vous offre tous les outils nécessaires
               pour captiver votre audience et mesurer l'impact en temps réel.
             </p>
           </div>
@@ -108,7 +108,7 @@ const About = () => {
           >
             <span style={{ position: "absolute", width: 200, height: 200, borderRadius: "50%", background: "rgba(255,255,255,0.07)", right: -60, top: -60, pointerEvents: "none" }} />
             <h2 className="ap-h2" style={{ fontSize: "28px", color: "#fff", marginBottom: "12px" }}>
-              Rejoignez la communauté QuizMaster
+              Rejoignez la communauté Ludiq
             </h2>
             <p style={{ color: "rgba(255,255,255,0.8)", fontFamily: "var(--ap-font-body)", fontWeight: 700, fontSize: "15px", marginBottom: "28px" }}>
               Des milliers d'éducateurs, formateurs et animateurs créent déjà des expériences inoubliables.

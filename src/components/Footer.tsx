@@ -90,7 +90,7 @@ export const Footer = () => {
           className="mx-auto max-w-6xl px-6 py-4 text-xs font-bold"
           style={{ color: "var(--ap-muted)", display: "flex", flexWrap: "wrap", gap: "16px", alignItems: "center", justifyContent: "space-between" }}
         >
-          <span>© 2026 QuizMaster. Tous droits réservés.</span>
+          <span>© 2026 Ludiq. Tous droits réservés.</span>
           <nav style={{ display: "flex", gap: "16px" }}>
             {[
               { label: t('footerMentionsLegales'), href: "/mentions-legales" },

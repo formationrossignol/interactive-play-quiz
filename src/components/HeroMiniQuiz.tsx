@@ -305,7 +305,7 @@ export function HeroMiniQuiz() {
           display: "flex", alignItems: "center", justifyContent: "space-between",
         }}>
           <span style={{ fontFamily: "var(--ap-font-body)", fontSize: "12px", color: "var(--ap-muted)", fontWeight: 600 }}>
-            Essaie ! C'est vrai QuizMaster.
+            Essaie ! C'est vrai Ludiq.
           </span>
           <span
             className="ap-mono"

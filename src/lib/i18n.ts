@@ -3,7 +3,7 @@ export type Language = 'en' | 'fr';
 export const translations = {
   en: {
     // Navigation & Common
-    quizMaster: "QuizMaster",
+    quizMaster: "Ludiq",
     quizBuilder: "Quiz Builder",
     pollBuilder: "Poll Builder",
     myCreations: "My creations",
@@ -53,7 +53,7 @@ export const translations = {
     pricingTitle: "Flexible plans for every team",
     pricingSubtitle: "Choose the right plan to host engaging sessions, from quick standups to large-scale events.",
     pricingPlanStarter: "Starter",
-    pricingPlanStarterDesc: "Perfect for trying QuizMaster with small teams.",
+    pricingPlanStarterDesc: "Perfect for trying Ludiq with small teams.",
     pricingPlanStarterPrice: "Free",
     pricingPlanStarterCta: "Create your first quiz",
     pricingStarterFeature1: "Unlimited drafts and templates",
@@ -77,7 +77,7 @@ export const translations = {
     pricingContactUs: "Let's talk about your needs",
 
     footerTagline: "Engage & inspire",
-    footerDescription: "QuizMaster helps teams design interactive moments that energize audiences anywhere.",
+    footerDescription: "Ludiq helps teams design interactive moments that energize audiences anywhere.",
     footerProduct: "Product",
     footerCompany: "Company",
     footerSupport: "Support",
@@ -88,7 +88,7 @@ export const translations = {
     footerHelpCenter: "Help center",
     footerGuides: "Guides",
     footerCommunity: "Community",
-    footerRights: "QuizMaster. All rights reserved.",
+    footerRights: "Ludiq. All rights reserved.",
     footerMentionsLegales: "Legal Notice",
     footerPrivacy: "Privacy Policy",
     footerCGU: "Terms of Use",
@@ -359,7 +359,7 @@ export const translations = {
   },
   fr: {
     // Navigation & Common
-    quizMaster: "QuizMaster",
+    quizMaster: "Ludiq",
     quizBuilder: "Quiz Builder",
     pollBuilder: "Sondage Builder",
     myCreations: "Mes créations",
@@ -409,7 +409,7 @@ export const translations = {
     pricingTitle: "Des offres adaptées à chaque équipe",
     pricingSubtitle: "Choisissez la formule idéale pour animer des sessions engageantes, du stand-up rapide au grand événement.",
     pricingPlanStarter: "Starter",
-    pricingPlanStarterDesc: "Idéal pour découvrir QuizMaster avec une petite équipe.",
+    pricingPlanStarterDesc: "Idéal pour découvrir Ludiq avec une petite équipe.",
     pricingPlanStarterPrice: "Gratuit",
     pricingPlanStarterCta: "Créer mon premier quiz",
     pricingStarterFeature1: "Brouillons et modèles illimités",
@@ -433,7 +433,7 @@ export const translations = {
     pricingContactUs: "Discutons de vos besoins",
 
     footerTagline: "Engager & inspirer",
-    footerDescription: "QuizMaster aide les équipes à créer des moments interactifs qui dynamisent leurs audiences.",
+    footerDescription: "Ludiq aide les équipes à créer des moments interactifs qui dynamisent leurs audiences.",
     footerProduct: "Produit",
     footerCompany: "Entreprise",
     footerSupport: "Support",
@@ -444,7 +444,7 @@ export const translations = {
     footerHelpCenter: "Centre d'aide",
     footerGuides: "Guides",
     footerCommunity: "Communauté",
-    footerRights: "QuizMaster. Tous droits réservés.",
+    footerRights: "Ludiq. Tous droits réservés.",
     footerMentionsLegales: "Mentions légales",
     footerPrivacy: "Politique de confidentialité",
     footerCGU: "CGU",

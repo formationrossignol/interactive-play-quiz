@@ -27,14 +27,14 @@ const CGU = () => {
         <Section title="1. Objet">
           <p>
             Les présentes Conditions Générales d'Utilisation (CGU) régissent l'accès et l'utilisation
-            du service QuizMaster, plateforme de création de quiz interactifs, sondages et présentations
+            du service Ludiq, plateforme de création de quiz interactifs, sondages et présentations
             en temps réel. Tout accès au service vaut acceptation des présentes CGU.
           </p>
         </Section>
 
         <Section title="2. Accès au service">
           <p>
-            QuizMaster est accessible via navigateur web. La création de contenu nécessite la création
+            Ludiq est accessible via navigateur web. La création de contenu nécessite la création
             d'un compte. La participation à un quiz public ne nécessite pas de compte. L'accès au service
             est gratuit dans les limites du plan Starter ; des plans payants sont disponibles pour les
             fonctionnalités avancées.
@@ -51,22 +51,22 @@ const CGU = () => {
 
         <Section title="4. Contenu utilisateur">
           <p style={{ marginBottom: "8px" }}>
-            L'utilisateur reste propriétaire du contenu qu'il crée. En publiant du contenu sur QuizMaster,
-            il accorde à QuizMaster une licence non exclusive, mondiale et gratuite pour héberger, afficher
+            L'utilisateur reste propriétaire du contenu qu'il crée. En publiant du contenu sur Ludiq,
+            il accorde à Ludiq une licence non exclusive, mondiale et gratuite pour héberger, afficher
             et distribuer ce contenu dans le cadre du service.
           </p>
           <p>
             L'utilisateur s'engage à ne pas publier de contenu illicite, diffamatoire, discriminatoire
-            ou portant atteinte aux droits de tiers. QuizMaster se réserve le droit de supprimer tout
+            ou portant atteinte aux droits de tiers. Ludiq se réserve le droit de supprimer tout
             contenu non conforme.
           </p>
         </Section>
 
         <Section title="5. Responsabilité">
           <p>
-            QuizMaster est fourni « en l'état ». QuizMaster ne saurait être tenu responsable des
+            Ludiq est fourni « en l'état ». Ludiq ne saurait être tenu responsable des
             interruptions de service, des pertes de données ou des dommages indirects. La responsabilité
-            de QuizMaster est limitée au montant des sommes versées par l'utilisateur au cours des
+            de Ludiq est limitée au montant des sommes versées par l'utilisateur au cours des
             12 derniers mois.
           </p>
         </Section>
@@ -74,14 +74,14 @@ const CGU = () => {
         <Section title="6. Résiliation">
           <p>
             L'utilisateur peut supprimer son compte à tout moment depuis les paramètres de profil.
-            QuizMaster peut suspendre ou résilier un compte en cas de violation des présentes CGU,
+            Ludiq peut suspendre ou résilier un compte en cas de violation des présentes CGU,
             après mise en demeure restée sans effet pendant 7 jours.
           </p>
         </Section>
 
         <Section title="7. Modifications">
           <p>
-            QuizMaster se réserve le droit de modifier les présentes CGU. Les utilisateurs sont informés
+            Ludiq se réserve le droit de modifier les présentes CGU. Les utilisateurs sont informés
             par email de toute modification substantielle avec un préavis de 30 jours. L'utilisation
             continue du service après ce délai vaut acceptation des nouvelles CGU.
           </p>

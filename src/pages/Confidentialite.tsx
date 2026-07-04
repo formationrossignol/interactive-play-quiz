@@ -34,7 +34,7 @@ const Confidentialite = () => {
         </Section>
 
         <Section title="Données collectées et finalités">
-          <p style={{ marginBottom: "12px" }}>QuizMaster collecte les données suivantes :</p>
+          <p style={{ marginBottom: "12px" }}>Ludiq collecte les données suivantes :</p>
           <ul style={{ paddingLeft: "20px", listStyleType: "disc" }}>
             <li style={{ marginBottom: "8px" }}>
               <strong>Compte utilisateur</strong> : adresse e-mail, nom d'utilisateur, mot de passe haché.
@@ -52,7 +52,7 @@ const Confidentialite = () => {
         </Section>
 
         <Section title="Sous-traitants et transferts">
-          <p style={{ marginBottom: "12px" }}>QuizMaster fait appel aux sous-traitants suivants :</p>
+          <p style={{ marginBottom: "12px" }}>Ludiq fait appel aux sous-traitants suivants :</p>
           <ul style={{ paddingLeft: "20px", listStyleType: "disc" }}>
             <li style={{ marginBottom: "8px" }}>
               <strong>Supabase</strong> (stockage et authentification) — serveurs en Europe (eu-west-1).

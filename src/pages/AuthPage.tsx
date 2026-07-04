@@ -83,7 +83,7 @@ const AuthPage = () => {
               <svg viewBox="0 0 24 24"><path d="M13 2L4.5 13.5H11l-1 8.5L19.5 10H13l0-8z"/></svg>
             </span>
           </div>
-          <h1 className="ap-h2" style={{ fontSize: "28px", marginBottom: "6px" }}>QuizMaster</h1>
+          <h1 className="ap-h2" style={{ fontSize: "28px", marginBottom: "6px" }}>Ludiq</h1>
           <p className="ap-muted" style={{ fontSize: "14px" }}>Bienvenue sur la plateforme de quiz interactifs</p>
         </div>
 

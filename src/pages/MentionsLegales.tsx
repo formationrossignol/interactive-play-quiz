@@ -25,7 +25,7 @@ const MentionsLegales = () => {
         </p>
 
         <Section title="Éditeur du site">
-          <p>QuizMaster est édité par :</p>
+          <p>Ludiq est édité par :</p>
           <p style={{ marginTop: "8px" }}>
             <strong>[Nom de la société / Nom du porteur de projet]</strong><br />
             [Forme juridique — ex. : Auto-entrepreneur / SAS]<br />
@@ -50,7 +50,7 @@ const MentionsLegales = () => {
 
         <Section title="Propriété intellectuelle">
           <p>
-            L'ensemble des contenus présents sur QuizMaster (textes, images, logotypes, icônes, sons)
+            L'ensemble des contenus présents sur Ludiq (textes, images, logotypes, icônes, sons)
             sont protégés par le droit de la propriété intellectuelle. Toute reproduction, représentation
             ou diffusion, en tout ou partie, sans autorisation expresse est interdite.
           </p>
@@ -65,7 +65,7 @@ const MentionsLegales = () => {
 
         <Section title="Cookies">
           <p>
-            QuizMaster utilise des cookies strictement nécessaires au fonctionnement du service
+            Ludiq utilise des cookies strictement nécessaires au fonctionnement du service
             (authentification, préférences de langue). Aucun cookie publicitaire ou de traçage tiers
             n'est déposé sans votre consentement.
           </p>

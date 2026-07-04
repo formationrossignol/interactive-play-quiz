@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-const APP_NAME = "QuizMaster";
+const APP_NAME = "Ludiq";
 
 export function usePageTitle(pageTitle?: string) {
   useEffect(() => {
