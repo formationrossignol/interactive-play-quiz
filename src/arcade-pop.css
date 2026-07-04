@@ -19,15 +19,15 @@
    ============================================================ */
 :root {
   /* Couleurs par TYPE de contenu — le fil conducteur du produit */
-  --ap-quiz:        #ff5a4d;  --ap-quiz-deep:   #d63b2f;  --ap-quiz-soft:  #fff3f0;
-  --ap-pres:        #15c08a;  --ap-pres-deep:   #0f9d72;  --ap-pres-soft:  #e8faf3;
-  --ap-poll:        #2f7bff;  --ap-poll-deep:   #1f5fd0;  --ap-poll-soft:  #eef4ff;
-  --ap-flash:       #ffb020;  --ap-flash-deep:  #d68f00;  --ap-flash-soft: #fff7e6;
+  --ap-quiz:        #ff5a4d;  --ap-quiz-deep:   #c93325;  --ap-quiz-soft:  #fff3f0;
+  --ap-pres:        #15c08a;  --ap-pres-deep:   #0b8a63;  --ap-pres-soft:  #e8faf3;
+  --ap-poll:        #2f7bff;  --ap-poll-deep:   #1d55c0;  --ap-poll-soft:  #eef4ff;
+  --ap-flash:       #ffb020;  --ap-flash-deep:  #a86e00;  --ap-flash-soft: #fff7e6;
 
   /* Marque + neutres chauds */
   --ap-brand:       #7048ff;  --ap-brand-deep:  #4f2fd0;  --ap-brand-soft: #efe9ff;
   --ap-ink:         #241b3a;  /* texte principal */
-  --ap-muted:       #8a7fa6;  /* texte secondaire */
+  --ap-muted:       #6d6288;  /* texte secondaire — 4.6:1 sur fond crème */
   --ap-paper:       #fff8ee;  /* fond crème de l'app */
   --ap-paper-2:     #f3ecdd;  /* fond crème plus soutenu (zones) */
   --ap-card:        #ffffff;  /* surfaces */
@@ -72,7 +72,7 @@
    2. BASE
    ============================================================ */
 /* Sélection de texte aux couleurs de la marque */
-.ap-app ::selection { background: var(--ap-brand-soft); color: var(--ap-brand-deep); }
+.ap-app ::selection { background: var(--ap-brand); color: #fff; }
 
 /* Focus ring assumé — l'accessibilité comme élément de style */
 .ap-app :focus-visible {
@@ -258,6 +258,62 @@
   box-shadow: 0 4px 0 var(--ap-flash-deep); transform: translateY(-1px);
 }
 
+/* États de révélation — bonne / mauvaise / estompée */
+@keyframes ap-correct-bounce {
+  0%   { transform: scale(1) translateY(0); }
+  30%  { transform: scale(1.06) translateY(-4px); }
+  60%  { transform: scale(.97) translateY(0); }
+  80%  { transform: scale(1.02) translateY(-2px); }
+  100% { transform: scale(1) translateY(0); }
+}
+@keyframes ap-shake {
+  0%, 100% { transform: translateX(0); }
+  15%  { transform: translateX(-7px) rotate(-1deg); }
+  35%  { transform: translateX(6px) rotate(1deg); }
+  50%  { transform: translateX(-4px); }
+  70%  { transform: translateX(3px); }
+  85%  { transform: translateX(-2px); }
+}
+.ap-answer--correct,
+.ap-answer--correct:hover,
+.ap-answer--correct:active {
+  background: var(--ap-pres);
+  border-color: var(--ap-pres-deep);
+  box-shadow: 0 4px 0 var(--ap-pres-deep);
+  color: #fff;
+  transform: none;
+  animation: ap-correct-bounce 500ms var(--ap-spring) both;
+}
+.ap-answer--correct .ap-answer__shape { background: rgba(255,255,255,.25); }
+.ap-answer--wrong { animation: ap-shake 420ms ease both; }
+.ap-answer--dim,
+.ap-answer--dim:hover,
+.ap-answer--dim:active {
+  opacity: .45; pointer-events: none; transform: none;
+  box-shadow: 0 4px 0 var(--ap-line);
+}
+
+/* Score pill flottante — apparaît après bonne réponse */
+@keyframes ap-pill-pop {
+  0%   { transform: translateX(-50%) translateY(0) scale(.7);  opacity: 0; }
+  55%  { transform: translateX(-50%) translateY(-22px) scale(1.08); opacity: 1; }
+  100% { transform: translateX(-50%) translateY(-18px) scale(1); opacity: 1; }
+}
+@keyframes ap-pill-float {
+  0%, 100% { transform: translateX(-50%) translateY(-18px); }
+  50%       { transform: translateX(-50%) translateY(-24px); }
+}
+.ap-score-pill {
+  position: absolute;
+  font-family: var(--ap-font-display); font-weight: 700; font-size: 15px;
+  color: var(--ap-pres-deep); background: var(--ap-pres-soft);
+  border: 2px solid var(--ap-pres); border-radius: var(--ap-r-pill);
+  padding: 4px 12px; pointer-events: none; z-index: 20;
+  white-space: nowrap;
+  animation: ap-pill-pop 380ms var(--ap-spring) forwards,
+             ap-pill-float 1.6s ease-in-out 380ms infinite;
+}
+
 /* ============================================================
    7. CHAMPS DE FORMULAIRE
    ============================================================ */
@@ -331,7 +387,10 @@
   display: flex; align-items: center; justify-content: center;
   box-shadow: 0 6px 0 var(--ap-brand-deep), 0 10px 18px rgba(112,72,255,.35);
   flex: 0 0 auto;
+  transform: rotate(-6deg);
+  transition: transform .3s var(--ap-spring);
 }
+.ap-logo:hover { transform: rotate(6deg); }
 .ap-logo svg { width: 24px; height: 24px; fill: #fff; }
 .ap-brandname { font-family: var(--ap-font-display); font-weight: 600; font-size: 24px; letter-spacing: -.5px; }
 
@@ -385,7 +444,10 @@
 
 /* Réduction des animations si l'utilisateur le demande */
 @media (prefers-reduced-motion: reduce) {
-  .ap-btn, .ap-answer, .ap-card--hover, .ap-switch, .ap-switch::after { transition: none; }
+  .ap-btn, .ap-answer, .ap-card--hover, .ap-switch, .ap-switch::after, .ap-logo { transition: none; }
   .ap-cascade > * { animation: none; }
   .ap-confetti-piece { animation: none; display: none; }
+  .ap-answer--correct { animation: none; }
+  .ap-answer--wrong { animation: none; }
+  .ap-score-pill { animation: none; transform: translateY(-18px); }
 }

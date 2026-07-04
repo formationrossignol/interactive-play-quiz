@@ -747,7 +747,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
                     className={cn(
                       `ap-answer ap-answer--${(index % 4) + 1}`,
                       selectedAnswer === index && "ap-answer--selected",
-                      hasAnswered && selectedAnswer !== index && "opacity-30"
+                      hasAnswered && selectedAnswer !== index && "ap-answer--dim"
                     )}
                     onClick={() => submitAnswer(index)}
                     disabled={hasAnswered}
@@ -768,7 +768,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
                     className={cn(
                       `ap-answer ap-answer--${index + 1}`,
                       selectedAnswer === value && "ap-answer--selected",
-                      hasAnswered && selectedAnswer !== value && "opacity-30"
+                      hasAnswered && selectedAnswer !== value && "ap-answer--dim"
                     )}
                     onClick={() => submitAnswer(value)}
                     disabled={hasAnswered}

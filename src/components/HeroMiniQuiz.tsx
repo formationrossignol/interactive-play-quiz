@@ -87,6 +87,9 @@ export function HeroMiniQuiz() {
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(TIMER_SECONDS);
   const [phase, setPhase] = useState<"question" | "feedback" | "done">("question");
+  const [shakingIndex, setShakingIndex] = useState<number | null>(null);
+  const [pillBonus, setPillBonus] = useState<number | null>(null);
+  const [pillKey, setPillKey] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const animatedScore = useAnimatedNumber(score);
@@ -117,7 +120,13 @@ export function HeroMiniQuiz() {
     if (i === q.correct) {
       const bonus = Math.round((timeLeft / TIMER_SECONDS) * 1000);
       setScore((s) => s + bonus);
+      setPillBonus(bonus);
+      setPillKey((k) => k + 1);
+      setTimeout(() => setPillBonus(null), 2000);
       if (containerRef.current) spawnConfetti(containerRef.current);
+    } else {
+      setShakingIndex(i);
+      setTimeout(() => setShakingIndex(null), 500);
     }
     advance();
   }, [revealed, q.correct, timeLeft, advance]);
@@ -160,6 +169,17 @@ export function HeroMiniQuiz() {
         userSelect: "none",
       }}
     >
+      {/* Score pill — pops on correct answer */}
+      {pillBonus !== null && (
+        <div
+          key={pillKey}
+          className="ap-score-pill"
+          style={{ top: "56px", left: "50%" }}
+        >
+          +{pillBonus} pts
+        </div>
+      )}
+
       {/* Header */}
       <div style={{ background: "var(--ap-brand)", padding: "14px 20px 0", position: "relative" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
@@ -244,6 +264,7 @@ export function HeroMiniQuiz() {
                     key={i}
                     onClick={() => pick(i)}
                     disabled={revealed}
+                    className={shakingIndex === i ? "ap-answer--wrong" : ""}
                     style={{
                       display: "flex", alignItems: "center", gap: "8px",
                       padding: "10px 12px", borderRadius: "var(--ap-r-sm)",
