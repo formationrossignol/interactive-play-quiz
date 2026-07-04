@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
+import { CourseGeneratorModal } from "@/components/CourseGeneratorModal";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -72,6 +73,7 @@ const MyCourses = () => {
   const [page, setPage] = useState(1);
   const [permDeleteTarget, setPermDeleteTarget] = useState<Course | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [generatorOpen, setGeneratorOpen] = useState(false);
 
   const setView = (mode: "grid" | "list") => {
     setViewMode(mode);
@@ -463,13 +465,22 @@ const MyCourses = () => {
             <h1 className="ap-h2" style={{ fontSize: "26px" }}>Mes cours</h1>
             <p className="ap-muted" style={{ fontSize: "14px" }}>Créez et gérez vos cours interactifs</p>
           </div>
-          <button
-            className="ap-btn ap-btn--sm ap-btn--pill"
-            style={{ background: "var(--ap-brand)", color: "#fff", border: "none", gap: "6px", display: "flex", alignItems: "center" }}
-            onClick={() => navigate("/course-builder")}
-          >
-            <Plus className="h-4 w-4" /> Nouveau cours
-          </button>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              className="ap-btn ap-btn--sm ap-btn--pill"
+              style={{ background: "var(--ap-flash)", color: "var(--ap-ink)", border: "none", boxShadow: "0 4px 0 var(--ap-flash-deep)", gap: "6px", display: "flex", alignItems: "center", fontWeight: 800 }}
+              onClick={() => setGeneratorOpen(true)}
+            >
+              ✨ Générer depuis un fichier
+            </button>
+            <button
+              className="ap-btn ap-btn--sm ap-btn--pill"
+              style={{ background: "var(--ap-brand)", color: "#fff", border: "none", gap: "6px", display: "flex", alignItems: "center" }}
+              onClick={() => navigate("/course-builder")}
+            >
+              <Plus className="h-4 w-4" /> Nouveau cours
+            </button>
+          </div>
         </div>
 
         <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); setPage(1); }} className="space-y-4">
@@ -495,6 +506,11 @@ const MyCourses = () => {
         onConfirm={handlePermDeleteConfirm}
         title={permDeleteTarget?.title || ""}
         type="quiz"
+      />
+
+      <CourseGeneratorModal
+        open={generatorOpen}
+        onClose={() => { setGeneratorOpen(false); load(); }}
       />
     </div>
   );
