@@ -61,14 +61,31 @@
      btn      : Fredoka 600 / 15.5px — CTA */
 
   /* Transitions */
-  --ap-ease: cubic-bezier(.2,.7,.3,1);
+  --ap-ease:   cubic-bezier(.2,.7,.3,1);
+  --ap-spring: cubic-bezier(.2,.7,.3,1.3);  /* léger dépassement = vivant */
+
+  /* Typographie mono — chiffres tabulaires pour codes et compteurs */
+  --ap-font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', ui-monospace, monospace;
 }
 
 /* ============================================================
    2. BASE
    ============================================================ */
+/* Sélection de texte aux couleurs de la marque */
+.ap-app ::selection { background: var(--ap-brand-soft); color: var(--ap-brand-deep); }
+
+/* Focus ring assumé — l'accessibilité comme élément de style */
+.ap-app :focus-visible {
+  outline: 3px solid var(--ap-brand);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
 .ap-app {
   background: var(--ap-paper);
+  /* Trame de points en filigrane — texture « papier de jeu » */
+  background-image: radial-gradient(circle, color-mix(in srgb, var(--ap-line-2) 60%, transparent) 1.5px, transparent 1.5px);
+  background-size: 24px 24px;
   color: var(--ap-ink);
   font-family: var(--ap-font-body);
   font-weight: 400;
@@ -103,8 +120,8 @@
   box-shadow: 0 5px 0 var(--ap-brand-deep);
   transition: transform .08s var(--ap-ease), box-shadow .08s var(--ap-ease);
 }
-.ap-btn:hover  { transform: translateY(-1px); box-shadow: 0 6px 0 var(--ap-brand-deep); }
-.ap-btn:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--ap-brand-deep); }
+.ap-btn:hover  { transform: translateY(-2px); box-shadow: 0 7px 0 var(--ap-brand-deep); }
+.ap-btn:active { transform: translateY(5px);  box-shadow: 0 0px 0 var(--ap-brand-deep); }
 
 /* Tailles */
 .ap-btn--lg { font-size: 18px; padding: 17px 30px; border-radius: var(--ap-r-lg); }
@@ -113,17 +130,17 @@
 
 /* Variantes par type — réutilisent les tokens */
 .ap-btn--quiz  { background: var(--ap-quiz);  box-shadow: 0 5px 0 var(--ap-quiz-deep); }
-.ap-btn--quiz:hover  { box-shadow: 0 6px 0 var(--ap-quiz-deep); }
-.ap-btn--quiz:active { box-shadow: 0 1px 0 var(--ap-quiz-deep); }
+.ap-btn--quiz:hover  { box-shadow: 0 7px 0 var(--ap-quiz-deep); }
+.ap-btn--quiz:active { box-shadow: 0 0px 0 var(--ap-quiz-deep); }
 .ap-btn--pres  { background: var(--ap-pres);  box-shadow: 0 5px 0 var(--ap-pres-deep); }
-.ap-btn--pres:hover  { box-shadow: 0 6px 0 var(--ap-pres-deep); }
-.ap-btn--pres:active { box-shadow: 0 1px 0 var(--ap-pres-deep); }
+.ap-btn--pres:hover  { box-shadow: 0 7px 0 var(--ap-pres-deep); }
+.ap-btn--pres:active { box-shadow: 0 0px 0 var(--ap-pres-deep); }
 .ap-btn--poll  { background: var(--ap-poll);  box-shadow: 0 5px 0 var(--ap-poll-deep); }
-.ap-btn--poll:hover  { box-shadow: 0 6px 0 var(--ap-poll-deep); }
-.ap-btn--poll:active { box-shadow: 0 1px 0 var(--ap-poll-deep); }
+.ap-btn--poll:hover  { box-shadow: 0 7px 0 var(--ap-poll-deep); }
+.ap-btn--poll:active { box-shadow: 0 0px 0 var(--ap-poll-deep); }
 .ap-btn--flash { background: var(--ap-flash); box-shadow: 0 5px 0 var(--ap-flash-deep); color: #fff; }
-.ap-btn--flash:hover  { box-shadow: 0 6px 0 var(--ap-flash-deep); }
-.ap-btn--flash:active { box-shadow: 0 1px 0 var(--ap-flash-deep); }
+.ap-btn--flash:hover  { box-shadow: 0 7px 0 var(--ap-flash-deep); }
+.ap-btn--flash:active { box-shadow: 0 0px 0 var(--ap-flash-deep); }
 
 /* Ghost / secondaire (sur fond crème) */
 .ap-btn--ghost {
@@ -185,17 +202,18 @@
 .ap-dot { width: 11px; height: 11px; border-radius: 50%; display: inline-block; flex: 0 0 auto; }
 
 /* ============================================================
-   6. RÉPONSES DE QUIZ — tuiles lettrées premium
+   6. RÉPONSES DE QUIZ — cartes blanches + formes géométriques colorées
    ============================================================ */
 .ap-answers { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .ap-answer {
   display: flex; align-items: center; gap: 12px;
   padding: 16px 18px; border-radius: var(--ap-r-md);
-  color: #fff; font-weight: 700; font-size: 15px;
-  background: rgba(255,255,255,.10);
-  border: 1.5px solid rgba(255,255,255,.18);
-  cursor: pointer; text-align: left; box-shadow: none;
-  transition: background .15s, border-color .15s, transform .08s var(--ap-ease), box-shadow .15s;
+  color: var(--ap-ink); font-weight: 700; font-size: 15px;
+  background: var(--ap-card);
+  border: 2px solid var(--ap-line);
+  cursor: pointer; text-align: left;
+  box-shadow: 0 4px 0 var(--ap-line);
+  transition: background .12s, border-color .12s, transform .1s var(--ap-spring), box-shadow .1s var(--ap-spring);
   min-width: 0;
 }
 .ap-answer__text {
@@ -203,28 +221,42 @@
   overflow-wrap: break-word; word-break: break-word;
 }
 .ap-answer:hover {
-  background: rgba(255,255,255,.18);
-  border-color: rgba(255,255,255,.38);
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(0,0,0,.18);
+  background: var(--ap-paper);
+  border-color: var(--ap-line-2);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 var(--ap-line-2);
 }
-.ap-answer:active { transform: translateY(0); box-shadow: none; }
+.ap-answer:active { transform: translateY(4px); box-shadow: 0 0px 0 var(--ap-line-2); }
+
+/* Forme géométrique colorée — identité visuelle par position */
 .ap-answer__shape {
-  width: 32px; height: 32px; border-radius: 50%; flex: 0 0 auto;
-  background: rgba(255,255,255,.18); display: flex; align-items: center; justify-content: center;
-  font-size: 13px; font-weight: 800; font-family: var(--ap-font-display);
-  color: rgba(255,255,255,.9);
+  width: 36px; height: 36px; flex: 0 0 auto;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: var(--ap-r-sm);
+  color: #fff;
 }
-.ap-answer--selected,
-.ap-answer--selected:hover {
-  background: var(--ap-brand);
-  border-color: var(--ap-brand);
-  box-shadow: 0 6px 24px rgba(112,72,255,.45);
-  transform: translateY(-1px);
+.ap-answer--1 .ap-answer__shape { background: var(--ap-quiz); }
+.ap-answer--2 .ap-answer__shape { background: var(--ap-poll); }
+.ap-answer--3 .ap-answer__shape { background: var(--ap-pres); }
+.ap-answer--4 .ap-answer__shape { background: var(--ap-flash); }
+
+/* Sélection — couleur de la forme envahit la carte */
+.ap-answer--1.ap-answer--selected, .ap-answer--1.ap-answer--selected:hover {
+  background: var(--ap-quiz-soft); border-color: var(--ap-quiz);
+  box-shadow: 0 4px 0 var(--ap-quiz-deep); transform: translateY(-1px);
 }
-.ap-answer--selected .ap-answer__shape { background: rgba(255,255,255,.25); }
-/* color variants kept for backward compat — all inherit base style */
-.ap-answer--1, .ap-answer--2, .ap-answer--3, .ap-answer--4 {}
+.ap-answer--2.ap-answer--selected, .ap-answer--2.ap-answer--selected:hover {
+  background: var(--ap-poll-soft); border-color: var(--ap-poll);
+  box-shadow: 0 4px 0 var(--ap-poll-deep); transform: translateY(-1px);
+}
+.ap-answer--3.ap-answer--selected, .ap-answer--3.ap-answer--selected:hover {
+  background: var(--ap-pres-soft); border-color: var(--ap-pres);
+  box-shadow: 0 4px 0 var(--ap-pres-deep); transform: translateY(-1px);
+}
+.ap-answer--4.ap-answer--selected, .ap-answer--4.ap-answer--selected:hover {
+  background: var(--ap-flash-soft); border-color: var(--ap-flash);
+  box-shadow: 0 4px 0 var(--ap-flash-deep); transform: translateY(-1px);
+}
 
 /* ============================================================
    7. CHAMPS DE FORMULAIRE
@@ -319,7 +351,41 @@
 .ap-text-flash { color: var(--ap-flash-deep); }
 .ap-text-brand { color: var(--ap-brand); }
 
+/* Mono — codes de partie, timers, scores (chiffres tabulaires) */
+.ap-mono {
+  font-family: var(--ap-font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .05em;
+}
+/* Fredoka + tabular-nums pour scores/timers en display */
+.ap-display, .ap-h1, .ap-h2 { font-variant-numeric: tabular-nums; }
+
+/* Entrée en cascade — ajouter style="--i:0" à "--i:N" sur les enfants */
+@keyframes ap-fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.ap-cascade > * {
+  animation: ap-fade-up 420ms var(--ap-ease) both;
+  animation-delay: calc(var(--i, 0) * 80ms);
+}
+
+/* Confetti burst — généré en JS, animé en CSS */
+@keyframes ap-confetti-burst {
+  0%   { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 1; }
+  100% { transform: translate(var(--cx, 0px), var(--cy, -80px)) rotate(var(--cr, 180deg)) scale(.3); opacity: 0; }
+}
+.ap-confetti-piece {
+  position: absolute; border-radius: 3px; pointer-events: none; z-index: 50;
+  animation: ap-confetti-burst 700ms var(--ap-ease) forwards;
+}
+
+/* Curseur personnalisé sur zones de jeu */
+.ap-game-zone { cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='5' fill='%237048ff' opacity='.7'/%3E%3C/svg%3E") 12 12, pointer; }
+
 /* Réduction des animations si l'utilisateur le demande */
 @media (prefers-reduced-motion: reduce) {
   .ap-btn, .ap-answer, .ap-card--hover, .ap-switch, .ap-switch::after { transition: none; }
+  .ap-cascade > * { animation: none; }
+  .ap-confetti-piece { animation: none; display: none; }
 }

@@ -26,7 +26,16 @@ interface PlayerViewProps {
   playerName: string;
 }
 
-const answerShapes = ["A", "B", "C", "D"];
+const answerShapes = [
+  // Triangle
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 2 L15 14 H1 Z"/></svg>,
+  // Cercle
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><circle cx="8" cy="8" r="7"/></svg>,
+  // Carré
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><rect x="1" y="1" width="14" height="14" rx="2"/></svg>,
+  // Losange
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1 L15 8 L8 15 L1 8 Z"/></svg>,
+];
 
 export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
   const navigate = useNavigate();

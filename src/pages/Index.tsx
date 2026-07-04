@@ -4,6 +4,7 @@ import { usePageTitle } from "@/hooks/usePageTitle";
 import { useLanguage } from "@/hooks/useLanguage";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { HeroMiniQuiz } from "@/components/HeroMiniQuiz";
 import { Compass } from "lucide-react";
 import { t } from "@/lib/i18n";
 
@@ -298,7 +299,7 @@ const Index = () => {
           <div
             style={{ flex: "0 0 auto", display: "flex", justifyContent: "center", paddingTop: "24px", paddingBottom: "24px" }}
           >
-            <HeroQuizCard />
+            <HeroMiniQuiz />
           </div>
         </section>
 
