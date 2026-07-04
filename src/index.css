@@ -81,6 +81,8 @@
   .shadow-card-hover { box-shadow: var(--ap-shadow-card); }
 }
 
+@keyframes spin { to { transform: rotate(360deg); } }
+
 /* ── TipTap ProseMirror editor ── */
 .ProseMirror {
   outline: none;

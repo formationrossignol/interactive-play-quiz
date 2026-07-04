@@ -1,46 +1,24 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Plus,
-  Trash2,
-  Save,
-  Upload,
-  HelpCircle,
-  GripVertical,
-  Settings,
-  ChevronLeft,
-  ChevronRight,
-  Play,
-  Copy,
-  Home,
-  BookOpen,
-  BarChart3,
-  CheckSquare,
-  ToggleLeft,
-  FileText,
-  ArrowUpDown,
-  Shuffle,
-  Square,
-  List,
-  Star,
-  MessageSquare,
-  Library,
-  Database,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Plus, Trash2, Upload, GripVertical, Settings,
+  ChevronLeft, ChevronDown, Eye, ImageIcon, MoreHorizontal,
+  Copy, Library, HelpCircle,
 } from "lucide-react";
-import { QuizPreview } from "./QuizPreview";
-import { QuestionTypeSelector } from "./QuestionTypeSelector";
-import { Header } from "./Header";
 import { ImportFileModal } from "./ImportFileModal";
 import { getCurrentUser } from "@/lib/auth";
 import { saveQuiz, updateQuiz, getQuizById } from "@/lib/quizStorage";
@@ -61,216 +39,369 @@ import { FlashcardEditor } from "./FlashcardEditor";
 import { FlashcardPreview } from "./FlashcardPreview";
 import { SlideEditor } from "./SlideEditor";
 import { SlidePreview } from "./SlidePreview";
-import { circularIconButtonClass } from "./iconButtonStyles";
 import { cn } from "@/lib/utils";
 import { createDefaultQuizQuestion } from "@/lib/questionDefaults";
 import { getQuestionBankForUser, type QuestionBankItem, type QuestionDifficulty } from "@/lib/questionBank";
 import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-} from '@dnd-kit/core';
+  DndContext, closestCenter, KeyboardSensor, PointerSensor,
+  useSensor, useSensors, type DragEndEvent,
+} from "@dnd-kit/core";
 import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+  arrayMove, SortableContext, sortableKeyboardCoordinates,
+  useSortable, verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
-const questionTypeIconMap: Partial<Record<QuizQuestionType | PollQuestionType, any>> = {
-  'multiple-choice': CheckSquare,
-  'true-false': ToggleLeft,
-  'short-answer': FileText,
-  'ranking': ArrowUpDown,
-  'matching': Shuffle,
-  'fill-blank': Square,
-  'drag-drop': Shuffle,
-  'hotspot': CheckSquare,
-  'slider': ArrowUpDown,
-  'single-choice': List,
-  'likert-scale': BarChart3,
-  'frequency-scale': BarChart3,
-  'star-rating': Star,
-  'open-text': MessageSquare,
-  'nps-scale': BarChart3,
+// ─── Design constants ──────────────────────────────────────────────────────
+const ANSWER_CONFIGS = [
+  { color: "var(--ap-quiz)",  shape: <path d="M12 3 22 21H2z" fill="white" /> },
+  { color: "var(--ap-poll)",  shape: <rect x="4" y="4" width="16" height="16" rx="2" fill="white" /> },
+  { color: "var(--ap-flash)", shape: <circle cx="12" cy="12" r="9" fill="white" /> },
+  { color: "var(--ap-pres)",  shape: <path d="M12 2 22 12 12 22 2 12z" fill="white" /> },
+] as const;
+
+const QTYPE_META: Record<string, { label: string; dot: string }> = {
+  "multiple-choice":  { label: "QCM",         dot: "var(--ap-quiz)"  },
+  "single-choice":    { label: "Choix unique", dot: "var(--ap-quiz)"  },
+  "true-false":       { label: "Vrai / Faux",  dot: "var(--ap-poll)" },
+  "short-answer":     { label: "Réponse courte", dot: "var(--ap-flash)" },
+  "ranking":          { label: "Classement",   dot: "var(--ap-pres)"  },
+  "matching":         { label: "Association",  dot: "var(--ap-quiz)"  },
+  "fill-blank":       { label: "Lacune",       dot: "var(--ap-poll)" },
+  "slider":           { label: "Curseur",      dot: "var(--ap-flash)" },
+  "likert-scale":     { label: "Likert",       dot: "var(--ap-poll)" },
+  "frequency-scale":  { label: "Fréquence",    dot: "var(--ap-poll)" },
+  "star-rating":      { label: "Étoiles",      dot: "var(--ap-flash)" },
+  "open-text":        { label: "Texte ouvert", dot: "var(--ap-pres)"  },
+  "nps-scale":        { label: "NPS",          dot: "var(--ap-brand)" },
+  "flashcard":        { label: "Carte",        dot: "var(--ap-flash)" },
+  "slide":            { label: "Slide",        dot: "var(--ap-pres)"  },
 };
 
-const questionTypeColorMap: Partial<Record<QuizQuestionType | PollQuestionType, string>> = {
-  'multiple-choice': 'bg-blue-100 text-blue-700',
-  'true-false': 'bg-emerald-100 text-emerald-700',
-  'short-answer': 'bg-purple-100 text-purple-700',
-  'ranking': 'bg-orange-100 text-orange-700',
-  'matching': 'bg-pink-100 text-pink-700',
-  'fill-blank': 'bg-indigo-100 text-indigo-700',
-  'drag-drop': 'bg-teal-100 text-teal-700',
-  'hotspot': 'bg-sky-100 text-sky-700',
-  'slider': 'bg-cyan-100 text-cyan-700',
-  'single-choice': 'bg-cyan-100 text-cyan-700',
-  'likert-scale': 'bg-amber-100 text-amber-700',
-  'frequency-scale': 'bg-lime-100 text-lime-700',
-  'star-rating': 'bg-yellow-100 text-yellow-700',
-  'open-text': 'bg-rose-100 text-rose-700',
-  'nps-scale': 'bg-emerald-100 text-emerald-700',
+const POINTS_OPTIONS = [
+  { label: "Standard", value: 1000 },
+  { label: "Double",   value: 2000 },
+  { label: "Sans pts", value: 0    },
+];
+
+const TIME_OPTIONS = [
+  { label: "10 s", value: 10 },
+  { label: "20 s", value: 20 },
+  { label: "30 s", value: 30 },
+  { label: "60 s", value: 60 },
+];
+
+const FONT_OPTIONS = [
+  { value: "inter",        label: "Inter",           stack: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif', tagline: "Moderne et très lisible" },
+  { value: "poppins",      label: "Poppins",         stack: '"Poppins", "Inter", sans-serif',                                      tagline: "Arrondie et chaleureuse" },
+  { value: "space-grotesk",label: "Space Grotesk",   stack: '"Space Grotesk", "Inter", sans-serif',                               tagline: "Typographie géométrique" },
+  { value: "playfair",     label: "Playfair Display", stack: '"Playfair Display", "Times New Roman", serif',                      tagline: "Élégance éditoriale"     },
+  { value: "merriweather", label: "Merriweather",    stack: '"Merriweather", "Georgia", serif',                                    tagline: "Classique et sérieuse"   },
+];
+
+// ─── Sub-components ────────────────────────────────────────────────────────
+
+const SaveStateIndicator = ({ state }: { state: "saved" | "saving" }) => (
+  <div
+    style={{
+      display: "flex", alignItems: "center", gap: 7,
+      fontSize: 12.5, fontWeight: 700,
+      padding: "5px 12px", borderRadius: 999,
+      border: `2px solid ${state === "saved" ? "color-mix(in srgb, var(--ap-pres) 35%, transparent)" : "var(--ap-line)"}`,
+      background: state === "saved" ? "var(--ap-pres-soft)" : "var(--ap-paper)",
+      color: state === "saved" ? "var(--ap-pres-deep)" : "var(--ap-muted)",
+      transition: "color .3s, border-color .3s",
+      flexShrink: 0,
+    }}
+  >
+    {state === "saving" ? (
+      <span style={{ width: 11, height: 11, borderRadius: "50%", border: "2px solid var(--ap-line-2)", borderTopColor: "var(--ap-brand)", display: "inline-block", animation: "spin .7s linear infinite", flexShrink: 0 }} />
+    ) : (
+      <svg style={{ width: 14, height: 14 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4 12.5 10 18 20 6" />
+      </svg>
+    )}
+    <span>{state === "saving" ? "Enregistrement…" : "Enregistré"}</span>
+  </div>
+);
+
+const AnswerRow = ({
+  index, value, isCorrect, onChange, onToggleCorrect, placeholder,
+}: {
+  index: number; value: string; isCorrect: boolean;
+  onChange: (v: string) => void; onToggleCorrect: () => void; placeholder: string;
+}) => {
+  const cfg = ANSWER_CONFIGS[index];
+  return (
+    <div
+      style={{
+        display: "flex", alignItems: "center", gap: 10,
+        background: "white",
+        border: "2px solid var(--ap-line)",
+        borderRadius: "var(--ap-r-md)",
+        padding: "8px 10px",
+        boxShadow: "0 3px 0 var(--ap-line)",
+        marginBottom: 10,
+      }}
+    >
+      <span
+        style={{
+          flexShrink: 0, width: 34, height: 34, borderRadius: 9,
+          display: "grid", placeItems: "center", background: cfg.color,
+        }}
+      >
+        <svg viewBox="0 0 24 24" style={{ width: 14, height: 14 }}>{cfg.shape}</svg>
+      </span>
+      <input
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder}
+        style={{
+          flex: 1, minWidth: 0, border: "none", background: "transparent", outline: "none",
+          fontFamily: "var(--ap-font-body)", fontWeight: 700, fontSize: 15,
+          color: "var(--ap-ink)",
+        }}
+      />
+      <button
+        onClick={onToggleCorrect}
+        aria-pressed={isCorrect}
+        style={{
+          flexShrink: 0, width: 32, height: 32, borderRadius: "50%", cursor: "pointer",
+          border: `2px solid ${isCorrect ? "var(--ap-pres-deep)" : "var(--ap-line-2)"}`,
+          background: isCorrect ? "var(--ap-pres-deep)" : "white",
+          display: "grid", placeItems: "center",
+          transition: "transform .18s var(--ap-spring), background .18s, border-color .18s",
+        }}
+      >
+        <svg viewBox="0 0 24 24" style={{ width: 15, height: 15 }} fill="none"
+          stroke={isCorrect ? "white" : "var(--ap-line-2)"}
+          strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round"
+        >
+          <path d="M4 12.5 10 18 20 6" />
+        </svg>
+      </button>
+    </div>
+  );
 };
 
-const questionTypeTranslationKeyMap: Partial<Record<QuizQuestionType, string>> = {
-  'multiple-choice': 'multipleChoice',
-  'true-false': 'trueFalse',
-  'short-answer': 'shortAnswer',
-  'ranking': 'ranking',
-  'matching': 'matching',
-  'fill-blank': 'fillBlank',
-  'slider': 'slider',
-};
+const PhonePreview = ({
+  question, questionIndex, totalQuestions,
+}: {
+  question: any; questionIndex: number; totalQuestions: number;
+}) => {
+  if (!question) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1, color: "var(--ap-muted)", fontSize: 13, fontWeight: 700, textAlign: "center" }}>
+        Sélectionnez une question<br />pour voir l'aperçu joueur
+      </div>
+    );
+  }
 
-const difficultyTranslationKeyMap: Record<QuestionDifficulty, string> = {
-  easy: 'difficultyEasy',
-  medium: 'difficultyMedium',
-  hard: 'difficultyHard',
-};
+  const timeLimit = question.timeLimit || 20;
+  const pts = question.points ?? 1000;
+  const answers: string[] = question.answers || [];
+  const qText = question.question || "";
 
-// Sortable Question Item Component
-const SortableQuestionItem = ({ question, index, onEdit, onDelete, onDuplicate, isActive }: any) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-  } = useSortable({ id: question.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
-
-  const Icon = questionTypeIconMap[question.type as QuizQuestionType | PollQuestionType] || CheckSquare;
-  const iconColors = questionTypeColorMap[question.type as QuizQuestionType | PollQuestionType] || 'bg-primary/10 text-primary';
-  
-  const displayText = question.type === 'slide'
-    ? (question.title?.trim() || 'Diapositive vide')
-    : question.type === 'flashcard' 
-    ? (question.recto?.trim() || 'Flashcard vide')
-    : (question.question?.trim() || t('noQuestionText'));
+  const isTF = question.type === "true-false";
+  const displayAnswers = isTF ? ["Vrai", "Faux"] : answers;
 
   return (
-    <div ref={setNodeRef} style={style} className="group relative w-full">
-      <div
-        className={cn(
-          "relative w-full overflow-hidden rounded-2xl border-2 bg-gradient-to-br from-background via-muted/40 to-background/80 p-4 transition-all duration-200 cursor-pointer",
-          isActive
-            ? "border-primary shadow-[0_18px_30px_-20px_rgba(30,64,175,0.6)]"
-            : "border-transparent hover:border-primary/40 hover:shadow-[0_12px_30px_-22px_rgba(30,64,175,0.4)]"
-        )}
-        onClick={() => onEdit(index)}
-      >
-        <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.24),rgba(255,255,255,0.05))]" aria-hidden />
-        <div className="relative flex min-h-[4.75rem] flex-col justify-between gap-4">
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <button
-                {...attributes}
-                {...listeners}
-                onClick={(e) => e.stopPropagation()}
-                className="rounded-full border border-border/40 bg-background/80 p-2 text-muted-foreground shadow-sm transition-colors hover:text-foreground cursor-grab active:cursor-grabbing"
-                title={t('dragToReorder')}
-              >
-                <GripVertical className="w-3.5 h-3.5" />
-              </button>
-              <span className="rounded-full bg-background/80 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground shadow-sm">
-                #{index + 1}
-              </span>
-              <div className={cn("flex h-10 w-10 items-center justify-center rounded-xl shadow-sm", iconColors)}>
-                <Icon className="h-5 w-5" />
-              </div>
-            </div>
-            <div className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 rounded-full bg-background/70 opacity-0 shadow-sm backdrop-blur group-hover:opacity-100 transition-opacity"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDuplicate(index);
-                }}
-                title={t('duplicate')}
-              >
-                <Copy className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 rounded-full bg-background/70 opacity-0 shadow-sm backdrop-blur group-hover:opacity-100 transition-opacity"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete(index);
-                }}
-                title={t('delete')}
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-          <div className="pr-2">
-            <p className="text-sm font-semibold text-foreground/90 line-clamp-2">
-              {displayText}
-            </p>
-          </div>
+    <div style={{
+      width: 258, flexShrink: 0,
+      background: "var(--ap-ink)", borderRadius: 34, padding: 9,
+      boxShadow: "0 10px 0 #16102a, 0 30px 50px rgba(36,27,58,.28)",
+    }}>
+      <div style={{
+        background: "var(--ap-paper)", borderRadius: 26, overflow: "hidden",
+        display: "flex", flexDirection: "column", minHeight: 470,
+      }}>
+        {/* Notch */}
+        <div style={{ width: 84, height: 20, background: "var(--ap-ink)", borderRadius: "0 0 13px 13px", margin: "0 auto", flexShrink: 0 }} />
+
+        {/* HUD */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px 6px" }}>
+          <span style={{
+            fontFamily: "var(--ap-font-display)", fontWeight: 600, fontSize: 13,
+            display: "inline-flex", alignItems: "center", gap: 5,
+            background: "white", border: "2px solid var(--ap-line)", borderRadius: 999,
+            padding: "4px 10px",
+          }}>
+            <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--ap-brand)", display: "inline-block" }} />
+            {timeLimit} s
+          </span>
+          <span style={{
+            fontSize: 11, fontWeight: 800, color: "var(--ap-flash-deep)",
+            background: "var(--ap-flash-soft)",
+            border: "2px solid color-mix(in srgb, var(--ap-flash) 45%, transparent)",
+            padding: "4px 9px", borderRadius: 999,
+          }}>
+            Q{questionIndex + 1}/{totalQuestions || 1} · {pts} pts
+          </span>
         </div>
-        <div className="absolute inset-x-0 bottom-0 h-3 bg-gradient-to-r from-primary/20 via-primary/10 to-primary/20" aria-hidden />
+
+        {/* Question */}
+        <p style={{
+          fontWeight: 800, fontSize: 14.5, lineHeight: 1.4,
+          padding: "8px 16px 12px", minHeight: 62, color: "var(--ap-ink)",
+        }}>
+          {qText || <span style={{ color: "var(--ap-muted)" }}>Posez votre question…</span>}
+        </p>
+
+        {/* Answers */}
+        <div style={{ display: "grid", gap: 8, padding: "0 12px 14px", marginTop: "auto" }}>
+          {displayAnswers.slice(0, 4).map((ans: string, i: number) => {
+            if (i >= 3 && !ans && !isTF) return null;
+            const cfg = ANSWER_CONFIGS[i];
+            return (
+              <div key={i} style={{
+                display: "flex", alignItems: "center", gap: 9,
+                background: "white", border: "2px solid var(--ap-line)",
+                borderRadius: 13, padding: "10px 11px",
+                fontWeight: 700, fontSize: 12.5,
+                boxShadow: "0 3px 0 var(--ap-line)", color: "var(--ap-ink)",
+              }}>
+                <span style={{
+                  flexShrink: 0, width: 24, height: 24, borderRadius: 7,
+                  background: cfg.color, display: "grid", placeItems: "center",
+                }}>
+                  <svg viewBox="0 0 24 24" style={{ width: 10, height: 10 }}>{cfg.shape}</svg>
+                </span>
+                <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: ans ? "var(--ap-ink)" : "var(--ap-muted)" }}>
+                  {ans || `Réponse ${i + 1}`}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+
+        <div style={{
+          textAlign: "center", fontFamily: "var(--ap-font-display)", fontWeight: 600,
+          fontSize: 10.5, color: "var(--ap-muted)", paddingBottom: 10, letterSpacing: ".04em",
+        }}>
+          ⚡ Ludiq
+        </div>
       </div>
     </div>
   );
 };
 
-const getThemeOverlay = (theme?: Theme) => {
-  if (!theme) {
-    return "linear-gradient(135deg, rgba(0,0,0,0.45), rgba(0,0,0,0.6))";
-  }
+const RailItem = ({
+  question, index, isActive, onSelect, onDelete, onDuplicate,
+}: {
+  question: any; index: number; isActive: boolean;
+  onSelect: (i: number) => void; onDelete: (i: number) => void; onDuplicate: (i: number) => void;
+}) => {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: question.id });
+  const meta = QTYPE_META[question.type] || { label: question.type, dot: "var(--ap-muted)" };
+  const displayText =
+    question.type === "slide"      ? (question.title?.trim() || "Diapositive vide")
+    : question.type === "flashcard" ? (question.recto?.trim() || "Flashcard vide")
+    : (question.question?.trim() || "Sans titre");
 
-  const startColor = hexToRgba(theme.palette[0], 0.55);
-  const endColor = hexToRgba(theme.palette[theme.palette.length - 1], 0.65);
+  return (
+    <div ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition }} className="group">
+      <div
+        onClick={() => onSelect(index)}
+        style={{
+          position: "relative", textAlign: "left", width: "100%",
+          background: isActive ? "var(--ap-brand-soft)" : "white",
+          border: `2px solid ${isActive ? "var(--ap-brand)" : "var(--ap-line)"}`,
+          borderRadius: "var(--ap-r-md)",
+          padding: "11px 12px 11px 14px",
+          cursor: "pointer",
+          boxShadow: isActive
+            ? "0 3px 0 color-mix(in srgb, var(--ap-brand) 45%, transparent)"
+            : "0 3px 0 var(--ap-line)",
+          display: "flex", gap: 11, alignItems: "flex-start",
+          transition: "transform .15s var(--ap-spring), box-shadow .15s var(--ap-spring)",
+        }}
+      >
+        {/* Number badge */}
+        <span style={{
+          flexShrink: 0, width: 26, height: 26, borderRadius: 8,
+          background: isActive ? "var(--ap-brand)" : "var(--ap-paper-2)",
+          color: isActive ? "white" : "var(--ap-muted)",
+          fontFamily: "var(--ap-font-display)", fontWeight: 600, fontSize: 15,
+          display: "grid", placeItems: "center",
+        }}>
+          {index + 1}
+        </span>
 
-  return `linear-gradient(135deg, ${startColor}, ${endColor})`;
+        {/* Body */}
+        <span style={{ minWidth: 0, flex: 1 }}>
+          <span style={{
+            display: "flex", alignItems: "center", gap: 5,
+            fontSize: 10.5, fontWeight: 800, letterSpacing: ".07em",
+            textTransform: "uppercase", color: "var(--ap-muted)",
+          }}>
+            <i style={{ width: 7, height: 7, borderRadius: 2, background: meta.dot, display: "inline-block", flexShrink: 0 }} />
+            {meta.label}
+          </span>
+          <span style={{
+            display: "-webkit-box" as any,
+            WebkitLineClamp: 2, WebkitBoxOrient: "vertical" as any,
+            overflow: "hidden", fontSize: 13, fontWeight: 700,
+            lineHeight: 1.35, marginTop: 3, color: "var(--ap-ink)",
+          }}>
+            {displayText}
+          </span>
+        </span>
+
+        {/* Actions (hover) */}
+        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
+          <button
+            onClick={() => onDuplicate(index)}
+            title="Dupliquer"
+            style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", color: "var(--ap-muted)", borderRadius: 6 }}
+          >
+            <Copy style={{ width: 12, height: 12 }} />
+          </button>
+          <button
+            onClick={() => onDelete(index)}
+            title="Supprimer"
+            style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", color: "var(--ap-muted)", borderRadius: 6 }}
+          >
+            <Trash2 style={{ width: 12, height: 12 }} />
+          </button>
+        </div>
+
+        {/* Drag grip */}
+        <button
+          {...attributes} {...listeners}
+          onClick={e => e.stopPropagation()}
+          style={{
+            flexShrink: 0, background: "none", border: "none",
+            color: "var(--ap-line-2)", cursor: "grab", paddingTop: 2,
+            fontSize: 14, lineHeight: 1,
+          }}
+        >
+          ⋮⋮
+        </button>
+      </div>
+    </div>
+  );
 };
 
+// ─── Theme sub-components (preserved) ─────────────────────────────────────
 const ThemePaletteChips = ({ theme }: { theme: Theme }) => (
   <span className="flex items-center gap-1.5">
-    {theme.palette.map((color, index) => (
-      <span
-        key={`${theme.id}-palette-${index}`}
-        className="h-3 w-3 rounded-full border border-black/10 shadow-sm dark:border-white/15"
-        style={{ backgroundColor: color }}
-      />
+    {theme.palette.map((color, i) => (
+      <span key={i} className="h-3 w-3 rounded-full border border-black/10 shadow-sm" style={{ backgroundColor: color }} />
     ))}
   </span>
 );
 
 const ThemePreviewPanel = ({ theme }: { theme?: Theme }) => {
-  if (!theme) {
-    return (
-      <div className="flex h-36 items-center justify-center rounded-2xl bg-muted/20 text-sm text-muted-foreground">
-        Sélectionnez un thème pour prévisualiser le rendu visuel
-      </div>
-    );
-  }
-
+  if (!theme) return (
+    <div className="flex h-36 items-center justify-center rounded-2xl bg-muted/20 text-sm text-muted-foreground">
+      Sélectionnez un thème
+    </div>
+  );
   return (
     <div className="space-y-3">
       <div className="relative h-36 w-full overflow-hidden rounded-2xl border border-border/70">
-        <img
-          src={theme.imageUrl}
-          alt={theme.imageDescription}
-          className="h-full w-full object-cover"
-          loading="lazy"
-        />
-        <div className="absolute inset-0" aria-hidden style={{ background: getThemeOverlay(theme) }} />
+        <img src={theme.imageUrl} alt={theme.imageDescription} className="h-full w-full object-cover" loading="lazy" />
+        <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${hexToRgba(theme.palette[0], 0.55)}, ${hexToRgba(theme.palette[theme.palette.length - 1], 0.65)})` }} />
         <div className="absolute inset-0 flex flex-col justify-end gap-1 p-4 text-white drop-shadow-md">
           <span className="text-base font-semibold tracking-wide">{theme.name}</span>
           <span className="text-xs font-medium text-white/85">{theme.imageDescription}</span>
@@ -278,94 +409,37 @@ const ThemePreviewPanel = ({ theme }: { theme?: Theme }) => {
       </div>
       <div className="flex items-center justify-between gap-3">
         <ThemePaletteChips theme={theme} />
-        <span className="text-[0.65rem] font-semibold uppercase tracking-widest text-muted-foreground">
-          Palette
-        </span>
+        <span className="text-[0.65rem] font-semibold uppercase tracking-widest text-muted-foreground">Palette</span>
       </div>
     </div>
   );
 };
 
-const FONT_OPTIONS: { value: string; label: string; stack: string; tagline: string }[] = [
-  {
-    value: "inter",
-    label: "Inter",
-    stack: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-    tagline: "Moderne et très lisible",
-  },
-  {
-    value: "poppins",
-    label: "Poppins",
-    stack: '"Poppins", "Inter", sans-serif',
-    tagline: "Arrondie et chaleureuse",
-  },
-  {
-    value: "space-grotesk",
-    label: "Space Grotesk",
-    stack: '"Space Grotesk", "Inter", sans-serif',
-    tagline: "Typographie géométrique",
-  },
-  {
-    value: "playfair",
-    label: "Playfair Display",
-    stack: '"Playfair Display", "Times New Roman", serif',
-    tagline: "Élégance éditoriale",
-  },
-  {
-    value: "merriweather",
-    label: "Merriweather",
-    stack: '"Merriweather", "Georgia", serif',
-    tagline: "Classique et sérieuse",
-  },
-];
-
-const ThemeSelectionDropdown = ({
-  value,
-  onChange,
-}: {
-  value: string;
-  onChange: (id: string) => void;
-}) => {
-  const selectedTheme = THEMES.find((themeOption) => themeOption.id === value);
-
+const ThemeSelectionDropdown = ({ value, onChange }: { value: string; onChange: (id: string) => void }) => {
+  const selected = THEMES.find(t => t.id === value);
   return (
     <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className="h-auto min-h-12 items-center justify-between rounded-xl border border-border/60 bg-background px-3 py-3 text-left">
+      <SelectTrigger className="h-auto min-h-12 items-center rounded-xl border border-border/60 bg-background px-3 py-3 text-left">
         <SelectValue aria-hidden className="sr-only" />
         <div className="flex flex-1 items-center justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-foreground">
-              {selectedTheme?.name ?? t('selectTheme')}
-            </p>
-            <p className="text-xs text-muted-foreground line-clamp-1">
-              {selectedTheme?.imageDescription ?? t('selectThemeDescription')}
-            </p>
+            <p className="text-sm font-semibold">{selected?.name ?? "Sélectionner"}</p>
+            <p className="text-xs text-muted-foreground line-clamp-1">{selected?.imageDescription ?? ""}</p>
           </div>
-          {selectedTheme && (
-            <div className="flex shrink-0 items-center gap-1 rounded-full border border-border/40 bg-muted/30 px-3 py-1">
-              <ThemePaletteChips theme={selectedTheme} />
-            </div>
-          )}
+          {selected && <div className="flex shrink-0 items-center gap-1 rounded-full border border-border/40 bg-muted/30 px-3 py-1"><ThemePaletteChips theme={selected} /></div>}
         </div>
       </SelectTrigger>
       <SelectContent className="bg-popover z-50 max-h-[320px]">
-        {THEMES.map((themeOption) => (
-          <SelectItem key={themeOption.id} value={themeOption.id} className="py-2">
+        {THEMES.map(th => (
+          <SelectItem key={th.id} value={th.id} className="py-2">
             <div className="flex items-center gap-3">
               <div className="h-12 w-20 shrink-0 overflow-hidden rounded-xl border border-border/60">
-                <img
-                  src={themeOption.imageUrl}
-                  alt={themeOption.imageDescription}
-                  className="h-full w-full object-cover"
-                  loading="lazy"
-                />
+                <img src={th.imageUrl} alt={th.imageDescription} className="h-full w-full object-cover" loading="lazy" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-foreground">{themeOption.name}</p>
-                <p className="text-xs text-muted-foreground line-clamp-1">{themeOption.imageDescription}</p>
-                <div className="mt-2">
-                  <ThemePaletteChips theme={themeOption} />
-                </div>
+                <p className="text-sm font-semibold">{th.name}</p>
+                <p className="text-xs text-muted-foreground line-clamp-1">{th.imageDescription}</p>
+                <div className="mt-2"><ThemePaletteChips theme={th} /></div>
               </div>
             </div>
           </SelectItem>
@@ -375,24 +449,25 @@ const ThemeSelectionDropdown = ({
   );
 };
 
+// ─── Main component ────────────────────────────────────────────────────────
 export const QuizBuilder = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const searchParams = new URLSearchParams(location.search);
-  const quizType = (searchParams.get('type') || 'quiz') as 'quiz' | 'poll' | 'flashcard' | 'slide';
-  const templateId = searchParams.get('templateId');
-  const quizId = searchParams.get('quizId');
+  const sp = new URLSearchParams(location.search);
+  const quizType = (sp.get("type") || "quiz") as "quiz" | "poll" | "flashcard" | "slide";
+  const templateId = sp.get("templateId");
+  const quizId = sp.get("quizId");
   const user = getCurrentUser();
-  
-  const isPoll = quizType === 'poll';
-  const isFlashcard = quizType === 'flashcard';
-  const isSlide = quizType === 'slide';
 
+  const isPoll = quizType === "poll";
+  const isFlashcard = quizType === "flashcard";
+  const isSlide = quizType === "slide";
+
+  // ── State ────────────────────────────────────────────────────────────────
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [questions, setQuestions] = useState<any[]>([]);
-  const [currentQuestion, setCurrentQuestion] = useState<any>(getDefaultQuestion());
-  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [isPublic, setIsPublic] = useState(false);
   const [speedBonus, setSpeedBonus] = useState(true);
   const [transitionTime, setTransitionTime] = useState(5);
@@ -401,1340 +476,925 @@ export const QuizBuilder = () => {
   const [newTag, setNewTag] = useState("");
   const [headerImage, setHeaderImage] = useState("");
   const [theme, setTheme] = useState<string>(DEFAULT_THEME_ID);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [questionEditorOpen, setQuestionEditorOpen] = useState(true);
-  const [selectedQuestionIndex, setSelectedQuestionIndex] = useState<number | null>(null);
+  const [previewFont, setPreviewFont] = useState(FONT_OPTIONS[0].value);
+  const [saveState, setSaveState] = useState<"saved" | "saving">("saved");
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
   const [activeTemplateId, setActiveTemplateId] = useState<string | null>(templateId);
-  const activeTheme = THEMES.find((t) => t.id === theme) ?? THEMES[0];
-  const [previewFont, setPreviewFont] = useState<string>(FONT_OPTIONS[0].value);
-  const activeFont = FONT_OPTIONS.find((option) => option.value === previewFont) ?? FONT_OPTIONS[0];
   const [questionBankItems, setQuestionBankItems] = useState<QuestionBankItem[]>([]);
   const [questionBankDialogOpen, setQuestionBankDialogOpen] = useState(false);
   const [importFileOpen, setImportFileOpen] = useState(false);
   const [shouldBlockNavigation, setShouldBlockNavigation] = useState(true);
 
-  const sidebarTogglePositionStyle = useMemo(
-    () => ({ top: 'calc(var(--app-header-height, 0px) + 3rem)' }),
-    []
-  );
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const firstRender = useRef(true);
 
-  const confirmLeaveBuilder = useCallback(() => {
-    if (!shouldBlockNavigation) {
-      return true;
-    }
+  const activeTheme = THEMES.find(t => t.id === theme) ?? THEMES[0];
+  const activeFont = FONT_OPTIONS.find(f => f.value === previewFont) ?? FONT_OPTIONS[0];
+  const selectedQ = selectedIdx !== null ? questions[selectedIdx] : null;
 
-    return window.confirm(t('confirmLeaveBuilder'));
-  }, [shouldBlockNavigation]);
-
-  const handleNavigateAway = useCallback((path: string, onBeforeNavigate?: () => void) => {
-    if (!confirmLeaveBuilder()) {
-      return;
-    }
-
-    setShouldBlockNavigation(false);
-    onBeforeNavigate?.();
-    navigate(path);
-  }, [confirmLeaveBuilder, navigate]);
-
+  // ── Auto-save indicator ──────────────────────────────────────────────────
   useEffect(() => {
-    if (!shouldBlockNavigation) {
-      return;
-    }
+    if (firstRender.current) { firstRender.current = false; return; }
+    setSaveState("saving");
+    clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => setSaveState("saved"), 900);
+  }, [questions, title]);
 
-    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      event.preventDefault();
-      event.returnValue = t('confirmLeaveBuilder');
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
-  }, [shouldBlockNavigation]);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
-
-  const sidebarNavigationItems = useMemo(() => ([
-    {
-      label: t('home'),
-      icon: Home,
-      action: () => handleNavigateAway('/'),
-      requiresAuth: false,
-    },
-    {
-      label: t('myQuizzes'),
-      icon: BookOpen,
-      action: () => handleNavigateAway('/my-quizzes'),
-      requiresAuth: true,
-    },
-    {
-      label: t('myPolls'),
-      icon: BarChart3,
-      action: () => handleNavigateAway('/my-polls'),
-      requiresAuth: true,
-    },
-    {
-      label: t('myFlashcards'),
-      icon: Library,
-      action: () => handleNavigateAway('/my-flashcards'),
-      requiresAuth: true,
-    },
-    {
-      label: t('questionBank'),
-      icon: Database,
-      action: () => handleNavigateAway('/question-bank'),
-      requiresAuth: true,
-    },
-  ]), [handleNavigateAway]);
-
-  function applyTemplate(template: PollTemplate | QuizTemplate) {
-    setTitle(template.name);
-    setDescription(template.description);
-    setCategory(template.category);
-    const templateQuestions = template.questions.map((question, index) => ({
-      id: `${template.id}-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 8)}`,
-      ...question,
-      image: question.image || '',
-    }));
-    setQuestions(templateQuestions as any[]);
-    setSelectedQuestionIndex(templateQuestions.length > 0 ? 0 : null);
-    setEditingIndex(null);
-    setCurrentQuestion(getDefaultQuestion());
-    setTags([]);
-    setTemplateDialogOpen(false);
-    setActiveTemplateId(template.id);
-    toast.success(t('templateLoaded'));
-  }
-
+  // ── Auth guard ──────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!user) {
-      setShouldBlockNavigation(false);
-      navigate("/auth");
-    }
+    if (!user) { setShouldBlockNavigation(false); navigate("/auth"); }
   }, [user, navigate]);
 
-  // Load existing quiz for editing
+  // ── beforeunload ─────────────────────────────────────────────────────────
   useEffect(() => {
-    if (quizId) {
-      const existingQuiz = getQuizById(quizId);
-      if (existingQuiz) {
-        setTitle(existingQuiz.title);
-        setDescription(existingQuiz.description);
-        setCategory(existingQuiz.category);
-        setIsPublic(existingQuiz.isPublic);
-        setSpeedBonus(existingQuiz.speedBonus);
-        setTransitionTime(existingQuiz.transitionTime);
-        setTags(existingQuiz.tags || []);
-        setHeaderImage(existingQuiz.headerImage || "");
-        const existingTheme = existingQuiz.theme && THEMES.some(t => t.id === existingQuiz.theme)
-          ? existingQuiz.theme
-          : DEFAULT_THEME_ID;
-        setTheme(existingTheme);
-        const existingFont = existingQuiz.font && FONT_OPTIONS.some(option => option.value === existingQuiz.font)
-          ? existingQuiz.font
-          : FONT_OPTIONS[0].value;
-        setPreviewFont(existingFont);
-        setQuestions(existingQuiz.questions.map((q, index) => ({
-          id: q.id || Date.now().toString() + index,
-          ...q,
-          image: q.image || '',
-        })));
-        setSelectedQuestionIndex(existingQuiz.questions.length > 0 ? 0 : null);
-        setActiveTemplateId(null);
-        setTemplateDialogOpen(false);
-        toast.success("Quiz chargé pour édition");
-      }
-    }
+    if (!shouldBlockNavigation) return;
+    const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = t("confirmLeaveBuilder"); };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [shouldBlockNavigation]);
+
+  // ── Load existing quiz ───────────────────────────────────────────────────
+  useEffect(() => {
+    if (!quizId) return;
+    const eq = getQuizById(quizId);
+    if (!eq) return;
+    setTitle(eq.title);
+    setDescription(eq.description);
+    setCategory(eq.category);
+    setIsPublic(eq.isPublic);
+    setSpeedBonus(eq.speedBonus);
+    setTransitionTime(eq.transitionTime);
+    setTags(eq.tags || []);
+    setHeaderImage(eq.headerImage || "");
+    setTheme(THEMES.some(t => t.id === eq.theme) ? eq.theme : DEFAULT_THEME_ID);
+    setPreviewFont(FONT_OPTIONS.some(f => f.value === eq.font) ? eq.font : FONT_OPTIONS[0].value);
+    const qs = eq.questions.map((q, i) => ({ id: q.id || String(Date.now()) + i, ...q, image: q.image || "" }));
+    setQuestions(qs);
+    setSelectedIdx(qs.length > 0 ? 0 : null);
+    setActiveTemplateId(null);
+    toast.success("Quiz chargé pour édition");
   }, [quizId]);
 
-  // Load template
+  // ── Load template ────────────────────────────────────────────────────────
   useEffect(() => {
-    if (templateId && !quizId) {
-      if (isSlide) {
-        const template = getSlideTemplate(templateId);
-        if (template) {
-          setTitle(template.name);
-          setDescription(template.description);
-          setCategory("Présentation");
-          const templateSlides = template.slides.map((slide: any, index: number) => ({
-            id: `${template.id}-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 8)}`,
-            ...slide,
-          }));
-          setQuestions(templateSlides);
-          setSelectedQuestionIndex(templateSlides.length > 0 ? 0 : null);
-          setEditingIndex(null);
-          setCurrentQuestion(getDefaultQuestion());
-          setTags([]);
-          setTemplateDialogOpen(false);
-          setActiveTemplateId(template.id);
-          toast.success("Modèle de présentation chargé");
-        }
-      } else if (isPoll) {
-        const template = getPollTemplate(templateId);
-        if (template) {
-          applyTemplate(template);
-        }
-      } else if (isFlashcard) {
-        const template = getFlashcardTemplate(templateId);
-        if (template) {
-          setTitle(template.name);
-          setDescription(template.description);
-          setCategory(template.category);
-          const templateFlashcards = template.cards.map((card: any, index: number) => ({
-            id: `${template.id}-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 8)}`,
-            ...card,
-            type: 'flashcard',
-          }));
-          setQuestions(templateFlashcards as any[]);
-          setSelectedQuestionIndex(templateFlashcards.length > 0 ? 0 : null);
-          setEditingIndex(null);
-          setCurrentQuestion(getDefaultQuestion());
-          setTags([]);
-          setTemplateDialogOpen(false);
-          setActiveTemplateId(template.id);
-          toast.success("Modèle de flashcards chargé");
-        }
-      } else {
-        const template = getQuizTemplate(templateId);
-        if (template) {
-          applyTemplate(template);
-        }
-      }
+    if (!templateId || quizId) return;
+    if (isSlide) {
+      const tpl = getSlideTemplate(templateId);
+      if (!tpl) return;
+      setTitle(tpl.name); setDescription(tpl.description); setCategory("Présentation");
+      const slides = tpl.slides.map((s: any, i: number) => ({ id: `${tpl.id}-${Date.now()}-${i}`, ...s }));
+      setQuestions(slides); setSelectedIdx(slides.length > 0 ? 0 : null);
+      setActiveTemplateId(tpl.id); toast.success("Modèle de présentation chargé");
+    } else if (isPoll) {
+      const tpl = getPollTemplate(templateId);
+      if (tpl) applyTemplate(tpl);
+    } else if (isFlashcard) {
+      const tpl = getFlashcardTemplate(templateId);
+      if (!tpl) return;
+      setTitle(tpl.name); setDescription(tpl.description); setCategory(tpl.category);
+      const cards = tpl.cards.map((c: any, i: number) => ({ id: `${tpl.id}-${Date.now()}-${i}`, ...c, type: "flashcard" }));
+      setQuestions(cards); setSelectedIdx(cards.length > 0 ? 0 : null);
+      setActiveTemplateId(tpl.id); toast.success("Modèle de flashcards chargé");
+    } else {
+      const tpl = getQuizTemplate(templateId);
+      if (tpl) applyTemplate(tpl);
     }
   }, [templateId, isPoll, isFlashcard, isSlide, quizId]);
 
+  // ── Question bank ────────────────────────────────────────────────────────
   useEffect(() => {
-    if (user) {
-      setQuestionBankItems(getQuestionBankForUser(user.id));
-    } else {
-      setQuestionBankItems([]);
-    }
+    if (user) setQuestionBankItems(getQuestionBankForUser(user.id));
   }, [user]);
+  useEffect(() => {
+    if (questionBankDialogOpen && user) setQuestionBankItems(getQuestionBankForUser(user.id));
+  }, [questionBankDialogOpen]);
 
+  // ── DnD sensors ──────────────────────────────────────────────────────────
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
 
+  // ── Helpers ──────────────────────────────────────────────────────────────
   function getDefaultQuestion(type?: QuizQuestionType | PollQuestionType): any {
-    if (isSlide) {
-      return {
-        type: 'slide',
-        title: '',
-        content: '',
-        image: '',
-      };
-    }
-    
-    if (isFlashcard) {
-      return {
-        type: 'flashcard',
-        recto: '',
-        verso: '',
-        rectoImage: '',
-        versoImage: '',
-      };
-    }
-    
+    if (isSlide) return { type: "slide", title: "", content: "", image: "" };
+    if (isFlashcard) return { type: "flashcard", recto: "", verso: "", rectoImage: "", versoImage: "" };
     if (isPoll) {
-      const pollType = type || 'single-choice';
-
-      const base = {
-        type: pollType,
-        question: '',
-        image: '',
-      };
-
-      switch (pollType) {
-        case 'single-choice':
-        case 'multiple-choice':
-          return { ...base, answers: ['', '', '', ''], allowMultiple: pollType === 'multiple-choice' };
-        case 'likert-scale':
-          return { ...base, scale: ["Tout à fait d'accord", "D'accord", "Neutre", "Pas d'accord", "Pas du tout d'accord"] };
-        case 'frequency-scale':
-          return { ...base, scale: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"] };
-        case 'star-rating':
-          return { ...base, maxStars: 5 };
-        case 'ranking':
-          return { ...base, items: ['', '', '', ''] };
-        case 'open-text':
-          return { ...base, maxLength: 500 };
-        case 'nps-scale':
-          return { ...base, minLabel: "Pas du tout probable", maxLabel: "Extrêmement probable" };
-        default:
-          return { ...base, answers: ['', '', '', ''] };
+      const pt = type || "single-choice";
+      const base = { type: pt, question: "", image: "" };
+      switch (pt) {
+        case "single-choice": case "multiple-choice": return { ...base, answers: ["", "", "", ""], allowMultiple: pt === "multiple-choice" };
+        case "likert-scale":    return { ...base, scale: ["Tout à fait d'accord", "D'accord", "Neutre", "Pas d'accord", "Pas du tout d'accord"] };
+        case "frequency-scale": return { ...base, scale: ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"] };
+        case "star-rating":     return { ...base, maxStars: 5 };
+        case "ranking":         return { ...base, items: ["", "", "", ""] };
+        case "open-text":       return { ...base, maxLength: 500 };
+        case "nps-scale":       return { ...base, minLabel: "Pas du tout probable", maxLabel: "Extrêmement probable" };
+        default:                return { ...base, answers: ["", "", "", ""] };
       }
-    } else {
-      const quizType = (type as QuizQuestionType) || 'multiple-choice';
-      return createDefaultQuizQuestion(quizType);
     }
+    return createDefaultQuizQuestion((type as QuizQuestionType) || "multiple-choice");
   }
 
-  const getAvailableQuestionTypes = (): (QuizQuestionType | PollQuestionType)[] => {
-    if (isPoll) {
-      return ['single-choice', 'multiple-choice', 'likert-scale', 'frequency-scale', 'star-rating', 'ranking', 'open-text', 'nps-scale'];
-    }
-    return ['multiple-choice', 'true-false', 'short-answer', 'ranking', 'matching', 'fill-blank', 'slider'];
+  const getAvailableTypes = (): (QuizQuestionType | PollQuestionType)[] =>
+    isPoll
+      ? ["single-choice", "multiple-choice", "likert-scale", "frequency-scale", "star-rating", "ranking", "open-text", "nps-scale"]
+      : ["multiple-choice", "true-false", "short-answer", "ranking", "matching", "fill-blank", "slider"];
+
+  const confirmLeave = () => !shouldBlockNavigation || window.confirm(t("confirmLeaveBuilder"));
+
+  const handleNavigateAway = (path: string) => {
+    if (!confirmLeave()) return;
+    setShouldBlockNavigation(false);
+    navigate(path);
   };
 
-  const handleAddQuestion = () => {
-    if (isSlide) {
-      if (!currentQuestion.title?.trim()) {
-        toast.error("Le titre de la diapositive est requis");
-        return;
-      }
-    } else if (isFlashcard) {
-      if (!currentQuestion.recto?.trim() || !currentQuestion.verso?.trim()) {
-        toast.error("Le recto et le verso sont requis");
-        return;
-      }
-    } else if (!currentQuestion.question?.trim()) {
-      toast.error(t('questionRequired'));
-      return;
-    }
-
-    const isEditing = editingIndex !== null;
-
-    const newQuestion = {
-      id: isEditing ? questions[editingIndex as number].id : Date.now().toString(),
-      ...currentQuestion,
-      image: currentQuestion.image || '',
-    };
-
-    if (isEditing) {
-      const updated = [...questions];
-      updated[editingIndex as number] = newQuestion;
-      setQuestions(updated);
-      setSelectedQuestionIndex(editingIndex as number);
-      setEditingIndex(null);
-      toast.success(t('questionEdited'));
-    } else {
-      const updated = [...questions, newQuestion];
-      setQuestions(updated);
-      setSelectedQuestionIndex(updated.length - 1);
-      toast.success(t('questionAdded'));
-    }
-
-    setCurrentQuestion(getDefaultQuestion(currentQuestion.type));
+  // ── Handlers ─────────────────────────────────────────────────────────────
+  const applyTemplate = (tpl: PollTemplate | QuizTemplate) => {
+    setTitle(tpl.name); setDescription(tpl.description); setCategory(tpl.category);
+    const qs = tpl.questions.map((q, i) => ({ id: `${tpl.id}-${Date.now()}-${i}-${Math.random().toString(36).slice(2,8)}`, ...q, image: q.image || "" }));
+    setQuestions(qs as any[]); setSelectedIdx(qs.length > 0 ? 0 : null);
+    setTags([]); setTemplateDialogOpen(false); setActiveTemplateId(tpl.id);
+    toast.success(t("templateLoaded"));
   };
 
-  const handleEditQuestion = (index: number) => {
-    setCurrentQuestion({ image: '', ...questions[index] });
-    setEditingIndex(index);
-    setSelectedQuestionIndex(index);
-    setQuestionEditorOpen(true);
+  const updateQuestion = (idx: number, updates: Partial<any>) => {
+    setQuestions(prev => prev.map((q, i) => i === idx ? { ...q, ...updates } : q));
   };
 
-  const handleDeleteQuestion = (index: number) => {
-    const updatedQuestions = questions.filter((_, i) => i !== index);
-    setQuestions(updatedQuestions);
-    setSelectedQuestionIndex((prev) => {
-      if (prev === null) {
-        return prev;
-      }
-      if (prev === index) {
-        if (updatedQuestions.length === 0) {
-          return null;
-        }
-        return Math.min(index, updatedQuestions.length - 1);
-      }
-      if (prev > index) {
-        return prev - 1;
-      }
-      return prev;
+  const handleAddQuestion = (type?: QuizQuestionType | PollQuestionType) => {
+    const newQ = { id: Date.now().toString(), ...getDefaultQuestion(type), image: "" };
+    setQuestions(prev => { const updated = [...prev, newQ]; setSelectedIdx(updated.length - 1); return updated; });
+  };
+
+  const handleDeleteQuestion = (idx: number) => {
+    setQuestions(prev => {
+      const updated = prev.filter((_, i) => i !== idx);
+      setSelectedIdx(prev2 => {
+        if (prev2 === null) return null;
+        if (prev2 === idx) return updated.length > 0 ? Math.min(idx, updated.length - 1) : null;
+        if (prev2 > idx) return prev2 - 1;
+        return prev2;
+      });
+      return updated;
     });
-    toast.success(t('questionDeleted'));
+  };
+
+  const handleDuplicateQuestion = (idx: number) => {
+    setQuestions(prev => {
+      const dup = { ...prev[idx], id: Date.now().toString() };
+      const updated = [...prev];
+      updated.splice(idx + 1, 0, dup);
+      setSelectedIdx(idx + 1);
+      return updated;
+    });
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-
-    if (over && active.id !== over.id) {
-      setQuestions((items) => {
-        const oldIndex = items.findIndex((item) => item.id === active.id);
-        const newIndex = items.findIndex((item) => item.id === over.id);
-
-        return arrayMove(items, oldIndex, newIndex);
-      });
+    if (!over || active.id === over.id) return;
+    const oldIdx = questions.findIndex(q => q.id === active.id);
+    const newIdx = questions.findIndex(q => q.id === over.id);
+    const reordered = arrayMove(questions, oldIdx, newIdx);
+    setQuestions(reordered);
+    if (selectedIdx !== null) {
+      const selId = questions[selectedIdx]?.id;
+      if (selId) setSelectedIdx(reordered.findIndex(q => q.id === selId));
     }
-  };
-
-  const refreshQuestionBank = () => {
-    if (user) {
-      setQuestionBankItems(getQuestionBankForUser(user.id));
-    }
-  };
-
-  const handleImportFromFile = (draft: import("@/lib/importParsers").ImportDraft) => {
-    const mapped = draft.questions.map((q: any, i: number) => ({
-      ...q,
-      id: q.id || `imported-${Date.now()}-${i}`,
-    }));
-    setTitle(draft.title || title);
-    setDescription(draft.description || description);
-    setQuestions(mapped);
-    setSelectedQuestionIndex(mapped.length > 0 ? 0 : null);
-    setEditingIndex(null);
-    setCurrentQuestion(getDefaultQuestion());
-  };
-
-  const handleImportFromQuestionBank = (item: QuestionBankItem) => {
-    const newQuestion = {
-      ...item.question,
-      id: `${item.id}-${Date.now()}`,
-    };
-
-    const updated = [...questions, newQuestion];
-    setQuestions(updated);
-    setSelectedQuestionIndex(updated.length - 1);
-    setEditingIndex(null);
-    setCurrentQuestion(getDefaultQuestion(newQuestion.type));
-    setQuestionBankDialogOpen(false);
-    toast.success(t('questionImported'));
-  };
-
-  useEffect(() => {
-    if (questionBankDialogOpen) {
-      refreshQuestionBank();
-    }
-  }, [questionBankDialogOpen]);
-
-  const getQuestionTypeName = (type: QuizQuestionType) => {
-    const translationKey = questionTypeTranslationKeyMap[type];
-    return translationKey ? t(translationKey as any) : type;
   };
 
   const handleSaveQuiz = () => {
-    if (!title.trim()) {
-      toast.error(t('titleRequired'));
-      return;
-    }
-
-    if (questions.length === 0) {
-      toast.error(t('oneQuestionRequired'));
-      return;
-    }
-
+    if (!title.trim()) { toast.error(t("titleRequired")); return; }
+    if (questions.length === 0) { toast.error(t("oneQuestionRequired")); return; }
     try {
-      const quizData = {
-        title,
-        description,
-        questions,
+      const data = {
+        title, description, questions,
         isPublic: isPoll ? false : isPublic,
-        isFavorite: false,
-        tags,
+        isFavorite: false, tags,
         speedBonus: isPoll ? false : speedBonus,
-        transitionTime,
-        category,
-        type: quizType,
-        headerImage,
-        theme,
-        font: previewFont,
+        transitionTime, category, type: quizType,
+        headerImage, theme, font: previewFont,
       };
-
-      if (quizId) {
-        // Update existing quiz
-        updateQuiz(quizId, quizData);
-        toast.success(isPoll ? "Sondage mis à jour" : "Quiz mis à jour");
-      } else {
-        // Create new quiz
-        saveQuiz(quizData);
-        toast.success(isPoll ? t('pollSaved') : t('quizSaved'));
-      }
-
-      if (isFlashcard) {
-        setShouldBlockNavigation(false);
-        navigate('/my-flashcards');
-      } else {
-        setShouldBlockNavigation(false);
-        navigate(isPoll ? '/my-polls' : '/my-quizzes');
-      }
-    } catch (error) {
-      toast.error("Erreur lors de l'enregistrement");
-    }
+      quizId ? updateQuiz(quizId, data) : saveQuiz(data);
+      toast.success(quizId ? (isPoll ? "Sondage mis à jour" : "Quiz mis à jour") : (isPoll ? t("pollSaved") : t("quizSaved")));
+      setShouldBlockNavigation(false);
+      navigate(isFlashcard ? "/my-flashcards" : isPoll ? "/my-polls" : isSlide ? "/my-courses" : "/my-quizzes");
+    } catch { toast.error("Erreur lors de l'enregistrement"); }
   };
 
   const handlePreviewQuiz = () => {
-    if (questions.length === 0) {
-      toast.error("Ajoutez au moins une question pour prévisualiser");
-      return;
-    }
-    // Save temporary quiz data for preview
-    const tempQuiz = {
-      id: 'preview-' + Date.now(),
-      title: title || (isPoll ? "Mon Sondage" : "Mon Quiz"),
-      description,
-      questions,
-      type: quizType,
-      headerImage,
-      theme,
-      font: previewFont,
-    };
-    localStorage.setItem(`quiz-${tempQuiz.id}`, JSON.stringify(tempQuiz));
+    if (questions.length === 0) { toast.error("Ajoutez au moins une question pour prévisualiser"); return; }
+    const tmp = { id: "preview-" + Date.now(), title: title || "Mon Quiz", description, questions, type: quizType, headerImage, theme, font: previewFont };
+    localStorage.setItem(`quiz-${tmp.id}`, JSON.stringify(tmp));
     setShouldBlockNavigation(false);
-    navigate(`/preview/${tempQuiz.id}`);
+    navigate(`/preview/${tmp.id}`);
   };
 
-  const handleDuplicateQuestion = (index: number) => {
-    const questionToDuplicate = questions[index];
-    const duplicatedQuestion = {
-      ...questionToDuplicate,
-      id: Date.now().toString(),
-      image: questionToDuplicate.image || '',
-    };
-    const newQuestions = [...questions];
-    newQuestions.splice(index + 1, 0, duplicatedQuestion);
-    setQuestions(newQuestions);
-    setSelectedQuestionIndex(index + 1);
-    toast.success("Question dupliquée");
+  const handleImportFromFile = (draft: import("@/lib/importParsers").ImportDraft) => {
+    const mapped = draft.questions.map((q: any, i: number) => ({ ...q, id: q.id || `imported-${Date.now()}-${i}` }));
+    if (draft.title) setTitle(draft.title);
+    if (draft.description) setDescription(draft.description);
+    setQuestions(mapped);
+    setSelectedIdx(mapped.length > 0 ? 0 : null);
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setHeaderImage(reader.result as string);
-        toast.success(t('imageAdded'));
-      };
-      reader.readAsDataURL(file);
-    }
+  const handleImportFromQuestionBank = (item: QuestionBankItem) => {
+    const newQ = { ...item.question, id: `${item.id}-${Date.now()}` };
+    setQuestions(prev => { const updated = [...prev, newQ]; setSelectedIdx(updated.length - 1); return updated; });
+    setQuestionBankDialogOpen(false);
+    toast.success(t("questionImported"));
   };
 
-  const handleCurrentQuestionImageChange = (file: File | null) => {
-    if (!file) {
-      setCurrentQuestion((prev: any) => ({ ...prev, image: '' }));
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setCurrentQuestion((prev: any) => ({ ...prev, image: reader.result as string }));
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleAddTag = () => {
-    if (newTag.trim() && !tags.includes(newTag.trim())) {
-      setTags([...tags, newTag.trim()]);
-      setNewTag("");
-    }
-  };
-
-  const renderQuestionImageField = () => (
-    <div>
-      <Label>{t('questionImage')}</Label>
-      {currentQuestion.image && (
-        <div className="relative mt-2 overflow-hidden rounded-lg border bg-muted/40">
-          <img
-            src={currentQuestion.image}
-            alt={currentQuestion.question || t('question')}
-            className="h-40 w-full object-cover"
-          />
-          <Button
-            variant="ghost"
-            size="sm"
-            className="absolute right-2 top-2 bg-black/60 text-white hover:bg-black/80"
-            onClick={() => handleCurrentQuestionImageChange(null)}
-          >
-            <Trash2 className="h-4 w-4" />
-            <span className="sr-only">{t('removeImage')}</span>
-          </Button>
+  // ── Center editor ─────────────────────────────────────────────────────────
+  const renderCenterEditor = () => {
+    if (selectedIdx === null || !questions[selectedIdx]) {
+      return (
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 16 }}>
+          <p style={{ color: "var(--ap-muted)", fontSize: 15, fontWeight: 700, textAlign: "center" }}>
+            {isFlashcard ? "Sélectionnez une carte ou créez-en une" : isSlide ? "Sélectionnez une diapositive" : "Sélectionnez une question ou créez-en une"}
+          </p>
+          <button className="ap-btn ap-btn--pill ap-btn--sm" onClick={() => handleAddQuestion()}>
+            <Plus style={{ width: 14, height: 14 }} />
+            {isFlashcard ? "Nouvelle carte" : isSlide ? "Nouvelle diapositive" : "Nouvelle question"}
+          </button>
         </div>
-      )}
-      <label htmlFor="question-image" className="mt-2 block">
-        <Button variant="outline" size="sm" asChild className="w-full">
-          <span className="flex items-center justify-center gap-2">
-            <Upload className="h-4 w-4" />
-            {currentQuestion.image ? t('changeImage') : t('addImage')}
-          </span>
-        </Button>
-      </label>
-      <input
-        id="question-image"
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={(event) => {
-          const file = event.target.files?.[0] || null;
-          handleCurrentQuestionImageChange(file);
-          event.target.value = '';
-        }}
-      />
-    </div>
-  );
-
-  const renderQuestionForm = () => {
-    if (isSlide) {
-      return (
-        <SlideEditor
-          slide={currentQuestion}
-          onChange={(updated) => setCurrentQuestion(updated)}
-        />
-      );
-    }
-    
-    if (isFlashcard) {
-      return (
-        <FlashcardEditor
-          flashcard={currentQuestion}
-          onChange={(updated) => setCurrentQuestion(updated)}
-        />
       );
     }
 
-    switch (currentQuestion.type) {
-      case 'multiple-choice':
-      case 'single-choice':
-        return (
-          <div className="space-y-4">
-            <div>
-              <Label>{t('question')}</Label>
-              <Input
-                value={currentQuestion.question}
-                onChange={(e) => setCurrentQuestion({ ...currentQuestion, question: e.target.value })}
-                placeholder={t('questionPlaceholder')}
-                className="mt-2"
+    const q = questions[selectedIdx];
+    const upd = (u: Partial<any>) => updateQuestion(selectedIdx, u);
+
+    if (isSlide) return <div style={{ maxWidth: 660, margin: "0 auto" }}><SlideEditor slide={q} onChange={upd} /></div>;
+    if (isFlashcard) return <div style={{ maxWidth: 660, margin: "0 auto" }}><FlashcardEditor flashcard={q} onChange={upd} /></div>;
+
+    const meta = QTYPE_META[q.type] || { label: q.type, dot: "var(--ap-muted)" };
+    const isMC = q.type === "multiple-choice" || q.type === "single-choice";
+    const isTF = q.type === "true-false";
+
+    return (
+      <div style={{ maxWidth: 660, margin: "0 auto" }}>
+
+        {/* Type chip */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 8,
+                fontSize: 12.5, fontWeight: 800, padding: "7px 14px",
+                borderRadius: 999, cursor: "pointer", marginBottom: 18,
+                color: meta.dot === "var(--ap-quiz)" ? "var(--ap-quiz-deep)" : meta.dot === "var(--ap-poll)" ? "var(--ap-poll-deep)" : "var(--ap-pres-deep)",
+                background: meta.dot === "var(--ap-quiz)" ? "var(--ap-quiz-soft)" : meta.dot === "var(--ap-poll)" ? "var(--ap-poll-soft)" : "var(--ap-pres-soft)",
+                border: `2px solid color-mix(in srgb, ${meta.dot} 40%, transparent)`,
+                transition: "transform .15s var(--ap-spring)",
+              }}
+            >
+              <i style={{ width: 8, height: 8, borderRadius: 2, background: meta.dot, display: "inline-block" }} />
+              {meta.label}
+              <ChevronDown style={{ width: 12, height: 12, opacity: 0.6 }} />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            style={{ background: "var(--ap-card)", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-lg)", boxShadow: "var(--ap-shadow-card)" }}
+            className="z-50 p-1.5"
+          >
+            {getAvailableTypes().map(type => {
+              const m = QTYPE_META[type] || { label: type, dot: "var(--ap-muted)" };
+              return (
+                <DropdownMenuItem
+                  key={type}
+                  className="gap-2 rounded-xl text-sm cursor-pointer"
+                  onSelect={() => {
+                    const defaults = getDefaultQuestion(type as any);
+                    upd({ ...defaults, id: q.id, question: q.question, image: q.image });
+                  }}
+                >
+                  <i style={{ width: 7, height: 7, borderRadius: 2, background: m.dot, display: "inline-block", flexShrink: 0 }} />
+                  {m.label}
+                </DropdownMenuItem>
+              );
+            })}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {/* Question textarea */}
+        <div style={{ marginBottom: 18 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 12, fontWeight: 800, letterSpacing: ".09em", textTransform: "uppercase", color: "var(--ap-muted)", marginBottom: 9 }}>
+            <span>Question</span>
+            <span style={{ fontSize: 11.5, letterSpacing: 0, textTransform: "none", fontWeight: 700 }}>
+              S'affiche en grand pour les joueurs
+            </span>
+          </div>
+          <textarea
+            value={q.question || ""}
+            onChange={e => { upd({ question: e.target.value }); e.target.style.height = "auto"; e.target.style.height = e.target.scrollHeight + "px"; }}
+            placeholder="Posez votre question…"
+            rows={2}
+            style={{
+              width: "100%", resize: "none", overflow: "hidden",
+              fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 22,
+              lineHeight: 1.35, color: "var(--ap-ink)",
+              background: "white", border: "2px solid var(--ap-line)",
+              borderRadius: "var(--ap-r-lg)", padding: "18px 20px",
+              boxShadow: "0 4px 0 var(--ap-line)", outline: "none",
+              transition: "border-color .15s, box-shadow .15s",
+            }}
+            onFocus={e => { e.target.style.borderColor = "var(--ap-brand)"; e.target.style.boxShadow = "0 4px 0 color-mix(in srgb, var(--ap-brand) 40%, transparent)"; }}
+            onBlur={e => { e.target.style.borderColor = "var(--ap-line)"; e.target.style.boxShadow = "0 4px 0 var(--ap-line)"; }}
+          />
+        </div>
+
+        {/* Media */}
+        {q.image ? (
+          <div style={{ position: "relative", marginBottom: 18, borderRadius: "var(--ap-r-md)", overflow: "hidden" }}>
+            <img src={q.image} alt="" style={{ width: "100%", maxHeight: 200, objectFit: "cover", display: "block" }} />
+            <button
+              onClick={() => upd({ image: "" })}
+              style={{ position: "absolute", top: 8, right: 8, background: "rgba(0,0,0,.6)", color: "white", border: "none", borderRadius: 8, padding: "4px 8px", cursor: "pointer" }}
+            >
+              <Trash2 style={{ width: 14, height: 14 }} />
+            </button>
+          </div>
+        ) : (
+          <label style={{ display: "block", marginBottom: 18, cursor: "pointer" }}>
+            <div
+              style={{
+                border: "2px dashed var(--ap-line-2)", borderRadius: "var(--ap-r-md)",
+                padding: "13px 16px", display: "flex", alignItems: "center", gap: 10,
+                color: "var(--ap-muted)", fontSize: 13, fontWeight: 700,
+                transition: "border-color .15s, background .15s, color .15s",
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = "var(--ap-brand)"; (e.currentTarget as HTMLElement).style.color = "var(--ap-brand-deep)"; (e.currentTarget as HTMLElement).style.background = "var(--ap-brand-soft)"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = "var(--ap-line-2)"; (e.currentTarget as HTMLElement).style.color = "var(--ap-muted)"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+            >
+              <ImageIcon style={{ width: 17, height: 17, flexShrink: 0 }} />
+              Ajouter une image ou un schéma — glissez-déposez ou cliquez
+            </div>
+            <input type="file" accept="image/*" className="hidden" onChange={e => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              const r = new FileReader();
+              r.onloadend = () => upd({ image: r.result as string });
+              r.readAsDataURL(file);
+              e.target.value = "";
+            }} />
+          </label>
+        )}
+
+        {/* Answers — MC */}
+        {isMC && (
+          <div style={{ marginTop: 30 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 12, fontWeight: 800, letterSpacing: ".09em", textTransform: "uppercase", color: "var(--ap-muted)", marginBottom: 9 }}>
+              <span>Réponses</span>
+              <span style={{ fontSize: 11.5, letterSpacing: 0, textTransform: "none", fontWeight: 700 }}>Cochez la bonne réponse</span>
+            </div>
+            {(q.answers || ["", "", "", ""]).map((ans: string, i: number) => (
+              <AnswerRow
+                key={i}
+                index={i}
+                value={ans}
+                isCorrect={q.correctAnswer === i}
+                onChange={v => { const a = [...(q.answers || ["","","",""])]; a[i] = v; upd({ answers: a }); }}
+                onToggleCorrect={() => upd({ correctAnswer: q.correctAnswer === i ? -1 : i })}
+                placeholder={i === 3 ? "Réponse 4 (facultative)" : `Réponse ${i + 1}`}
               />
+            ))}
+          </div>
+        )}
+
+        {/* Answers — True/False */}
+        {isTF && (
+          <div style={{ marginTop: 30 }}>
+            <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".09em", textTransform: "uppercase", color: "var(--ap-muted)", marginBottom: 9 }}>
+              Bonne réponse
             </div>
-            {renderQuestionImageField()}
-            <div>
-              <Label>{t('answers')}</Label>
-              {currentQuestion.answers.map((answer: string, i: number) => (
-                <div key={i} className="flex gap-2 mt-2">
-                  <Input
-                    value={answer}
-                    onChange={(e) => {
-                      const newAnswers = [...currentQuestion.answers];
-                      newAnswers[i] = e.target.value;
-                      setCurrentQuestion({ ...currentQuestion, answers: newAnswers });
+            <div style={{ display: "flex", gap: 12 }}>
+              {(["true", "false"] as const).map((val, i) => {
+                const isSelected = q.correctAnswer === val;
+                const accent = val === "true" ? "var(--ap-pres)" : "var(--ap-quiz)";
+                const accentDeep = val === "true" ? "var(--ap-pres-deep)" : "var(--ap-quiz-deep)";
+                const accentSoft = val === "true" ? "var(--ap-pres-soft)" : "var(--ap-quiz-soft)";
+                return (
+                  <button
+                    key={val}
+                    onClick={() => upd({ correctAnswer: val })}
+                    style={{
+                      flex: 1, padding: "14px", borderRadius: "var(--ap-r-md)",
+                      border: `2px solid ${isSelected ? accent : "var(--ap-line)"}`,
+                      background: isSelected ? accentSoft : "white",
+                      color: isSelected ? accentDeep : "var(--ap-muted)",
+                      fontWeight: 800, fontSize: 16, cursor: "pointer",
+                      transition: "all .15s",
+                      display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                      boxShadow: "0 3px 0 var(--ap-line)", fontFamily: "inherit",
                     }}
-                    placeholder={`${t('answer')} ${i + 1}`}
-                  />
-                  {!isPoll && (
-                    <Button
-                      variant={currentQuestion.correctAnswer === i ? "default" : "outline"}
-                      onClick={() => setCurrentQuestion({ ...currentQuestion, correctAnswer: i })}
-                    >
-                      {currentQuestion.correctAnswer === i ? "✓" : "○"}
-                    </Button>
-                  )}
-                </div>
-              ))}
+                  >
+                    <span style={{ fontSize: 20 }}>{val === "true" ? "✓" : "✗"}</span>
+                    {val === "true" ? "Vrai" : "Faux"}
+                  </button>
+                );
+              })}
             </div>
-            {!isPoll && (
-              <>
-                <div>
-                  <Label>{t('timeLimit')}</Label>
-                  <Input
-                    type="number"
-                    value={currentQuestion.timeLimit}
-                    onChange={(e) => setCurrentQuestion({ ...currentQuestion, timeLimit: parseInt(e.target.value) })}
-                    className="mt-2"
-                  />
-                </div>
-                <div>
-                  <Label>{t('points')}</Label>
-                  <Input
-                    type="number"
-                    value={currentQuestion.points}
-                    onChange={(e) => setCurrentQuestion({ ...currentQuestion, points: parseInt(e.target.value) })}
-                    className="mt-2"
-                  />
-                </div>
-              </>
-            )}
+          </div>
+        )}
+
+        {/* Fallback type-specific fields */}
+        {!isMC && !isTF && renderFallbackFields(q, upd)}
+
+        {/* Points + Time segments */}
+        {!isPoll && (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18, marginTop: 30 }}>
+            {/* Points */}
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".09em", textTransform: "uppercase", color: "var(--ap-muted)", marginBottom: 9 }}>Points</div>
+              <div style={{ display: "flex", background: "white", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-md)", padding: 4, gap: 4, boxShadow: "0 3px 0 var(--ap-line)" }}>
+                {POINTS_OPTIONS.map(opt => {
+                  const isOn = (q.points ?? 1000) === opt.value || (opt.value === 1000 && (q.points ?? 1000) !== 0 && (q.points ?? 1000) !== 2000);
+                  return (
+                    <button key={opt.value} onClick={() => upd({ points: opt.value })}
+                      style={{
+                        flex: 1, border: "none", borderRadius: 9, padding: "9px 6px",
+                        background: isOn ? "var(--ap-ink)" : "transparent",
+                        color: isOn ? "white" : "var(--ap-muted)",
+                        fontWeight: 800, fontSize: 12.5, cursor: "pointer",
+                        transition: "background .15s, color .15s", fontFamily: "inherit",
+                      }}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            {/* Time */}
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".09em", textTransform: "uppercase", color: "var(--ap-muted)", marginBottom: 9 }}>Temps de réponse</div>
+              <div style={{ display: "flex", background: "white", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-md)", padding: 4, gap: 4, boxShadow: "0 3px 0 var(--ap-line)" }}>
+                {TIME_OPTIONS.map(opt => {
+                  const isOn = (q.timeLimit ?? 20) === opt.value;
+                  return (
+                    <button key={opt.value} onClick={() => upd({ timeLimit: opt.value })}
+                      style={{
+                        flex: 1, border: "none", borderRadius: 9, padding: "9px 6px",
+                        background: isOn ? "var(--ap-brand)" : "transparent",
+                        color: isOn ? "white" : "var(--ap-muted)",
+                        fontWeight: 700, fontSize: 12.5, cursor: "pointer",
+                        transition: "background .15s, color .15s",
+                        fontFamily: "var(--ap-font-mono)",
+                      }}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderFallbackFields = (q: any, upd: (u: any) => void) => {
+    switch (q.type) {
+      case "short-answer":
+      case "fill-blank":
+        return null;
+      case "ranking":
+        return (
+          <div style={{ marginTop: 24 }}>
+            <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".09em", textTransform: "uppercase", color: "var(--ap-muted)", marginBottom: 9 }}>Éléments à classer</div>
+            {(q.items || ["", "", "", ""]).map((item: string, i: number) => (
+              <Input key={i} value={item} placeholder={`Élément ${i + 1}`} className="mt-2"
+                onChange={e => { const items = [...(q.items || ["","","",""])]; items[i] = e.target.value; upd({ items }); }}
+              />
+            ))}
           </div>
         );
-
-      case 'true-false':
+      case "slider":
         return (
-          <div className="space-y-4">
-            <div>
-              <Label>{t('question')}</Label>
-              <Input
-                value={currentQuestion.question}
-                onChange={(e) => setCurrentQuestion({ ...currentQuestion, question: e.target.value })}
-                placeholder={t('questionPlaceholder')}
-                className="mt-2"
+          <div style={{ marginTop: 24 }} className="space-y-3">
+            <div><Label>Valeur min</Label><Input type="number" value={q.min ?? 0} className="mt-2" onChange={e => upd({ min: parseInt(e.target.value) })} /></div>
+            <div><Label>Valeur max</Label><Input type="number" value={q.max ?? 100} className="mt-2" onChange={e => upd({ max: parseInt(e.target.value) })} /></div>
+            <div><Label>Bonne réponse</Label><Input type="number" value={q.correctAnswer ?? 50} className="mt-2" onChange={e => upd({ correctAnswer: parseInt(e.target.value) })} /></div>
+          </div>
+        );
+      case "likert-scale":
+      case "frequency-scale":
+        return (
+          <div style={{ marginTop: 24 }}>
+            <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".09em", textTransform: "uppercase", color: "var(--ap-muted)", marginBottom: 9 }}>Échelle</div>
+            {(q.scale || []).map((item: string, i: number) => (
+              <Input key={i} value={item} className="mt-2"
+                onChange={e => { const scale = [...(q.scale || [])]; scale[i] = e.target.value; upd({ scale }); }}
               />
+            ))}
+          </div>
+        );
+      case "star-rating":
+        return <div style={{ marginTop: 24 }}><Label>Nombre d'étoiles max</Label><Input type="number" min={1} max={10} value={q.maxStars ?? 5} className="mt-2" onChange={e => upd({ maxStars: parseInt(e.target.value) })} /></div>;
+      case "nps-scale":
+        return (
+          <div style={{ marginTop: 24 }} className="space-y-3">
+            <div><Label>Label gauche (0)</Label><Input value={q.minLabel ?? ""} className="mt-2" onChange={e => upd({ minLabel: e.target.value })} /></div>
+            <div><Label>Label droite (10)</Label><Input value={q.maxLabel ?? ""} className="mt-2" onChange={e => upd({ maxLabel: e.target.value })} /></div>
+          </div>
+        );
+      case "open-text":
+        return <div style={{ marginTop: 24 }}><Label>Longueur max</Label><Input type="number" value={q.maxLength ?? 500} className="mt-2" onChange={e => upd({ maxLength: parseInt(e.target.value) })} /></div>;
+      default:
+        return null;
+    }
+  };
+
+  // ── Right panel ───────────────────────────────────────────────────────────
+  const renderRightPanel = () => {
+    const liveDotStyle: React.CSSProperties = {
+      width: 8, height: 8, borderRadius: "50%",
+      background: "var(--ap-quiz)", flexShrink: 0,
+      animation: "ap-dot-pulse 1.8s infinite",
+    };
+    const labelStyle: React.CSSProperties = {
+      alignSelf: "stretch", display: "flex", alignItems: "center", gap: 10,
+      fontSize: 11.5, fontWeight: 800, letterSpacing: ".1em", textTransform: "uppercase",
+      color: "var(--ap-muted)", marginBottom: 16,
+    };
+
+    if (isFlashcard && selectedQ) {
+      return (
+        <>
+          <div style={labelStyle}><span style={{ ...liveDotStyle, background: "var(--ap-flash)" }} />Vue carte — miroir<span style={{ flex: 1, height: 2, background: "var(--ap-line-2)", opacity: 0.5, borderRadius: 2 }} /></div>
+          <FlashcardPreview flashcard={selectedQ} theme={activeTheme} />
+        </>
+      );
+    }
+
+    if (isSlide && selectedQ) {
+      return (
+        <>
+          <div style={labelStyle}><span style={{ ...liveDotStyle, background: "var(--ap-pres)" }} />Vue slide — miroir<span style={{ flex: 1, height: 2, background: "var(--ap-line-2)", opacity: 0.5, borderRadius: 2 }} /></div>
+          <SlidePreview slide={selectedQ} />
+        </>
+      );
+    }
+
+    return (
+      <>
+        <div style={labelStyle}>
+          <span style={liveDotStyle} />
+          Vue joueur — miroir en direct
+          <span style={{ flex: 1, height: 2, background: "var(--ap-line-2)", opacity: 0.5, borderRadius: 2 }} />
+        </div>
+        <PhonePreview
+          question={selectedQ}
+          questionIndex={selectedIdx ?? 0}
+          totalQuestions={questions.length}
+        />
+        {selectedQ && (
+          <p style={{ marginTop: 16, fontSize: 12, fontWeight: 700, color: "var(--ap-muted)", textAlign: "center", lineHeight: 1.5 }}>
+            Tout ce que vous tapez apparaît ici<br />
+            <strong style={{ color: "var(--ap-ink)" }}>instantanément</strong>
+          </p>
+        )}
+      </>
+    );
+  };
+
+  const backPath = isFlashcard ? "/my-flashcards" : isSlide ? "/my-courses" : isPoll ? "/my-polls" : "/my-quizzes";
+  const backLabel = isFlashcard ? "Mes Flashcards" : isSlide ? "Mes Cours" : isPoll ? "Mes Sondages" : "Mes Quiz";
+  const difficultyTranslationKeyMap: Record<string, string> = { easy: "difficultyEasy", medium: "difficultyMedium", hard: "difficultyHard" };
+
+  // ── Render ────────────────────────────────────────────────────────────────
+  return (
+    <div style={{ height: "100vh", display: "flex", flexDirection: "column", overflow: "hidden", background: "var(--ap-paper)" }}>
+
+      {/* ── Topbar ── */}
+      <div style={{
+        height: 62, flexShrink: 0, background: "white",
+        borderBottom: "2px solid var(--ap-line)",
+        display: "flex", alignItems: "center", gap: 16, padding: "0 18px",
+        position: "relative", zIndex: 20,
+      }}>
+        {/* Back */}
+        <button
+          onClick={() => handleNavigateAway(backPath)}
+          aria-label={`Retour — ${backLabel}`}
+          style={{
+            display: "grid", placeItems: "center", width: 36, height: 36,
+            borderRadius: "var(--ap-r-sm)", border: "2px solid var(--ap-line)",
+            background: "white", cursor: "pointer", boxShadow: "0 3px 0 var(--ap-line)",
+            transition: "transform .15s var(--ap-spring), box-shadow .15s var(--ap-spring)",
+            flexShrink: 0,
+          }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(-1px)"; (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 0 var(--ap-line-2)"; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = ""; (e.currentTarget as HTMLElement).style.boxShadow = "0 3px 0 var(--ap-line)"; }}
+        >
+          <ChevronLeft style={{ width: 16, height: 16, color: "var(--ap-ink)" }} />
+        </button>
+
+        {/* Breadcrumb */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+          <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--ap-muted)", whiteSpace: "nowrap" }}>{backLabel}</span>
+          <span style={{ color: "var(--ap-line-2)", fontWeight: 800 }}>/</span>
+          <input
+            value={title}
+            onChange={e => setTitle(e.target.value)}
+            placeholder={isPoll ? "Mon Sondage" : isFlashcard ? "Mes Flashcards" : isSlide ? "Ma Présentation" : "Mon Quiz"}
+            style={{
+              fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 15.5, color: "var(--ap-ink)",
+              border: "2px solid transparent", borderRadius: "var(--ap-r-sm)", background: "transparent",
+              padding: "5px 9px", width: 280, outline: "none",
+              transition: "border-color .15s, background .15s",
+            }}
+            onFocus={e => { e.target.style.borderColor = "var(--ap-brand)"; e.target.style.background = "white"; }}
+            onBlur={e => { e.target.style.borderColor = "transparent"; e.target.style.background = "transparent"; }}
+          />
+        </div>
+
+        <SaveStateIndicator state={saveState} />
+
+        <div style={{ flex: 1 }} />
+
+        {/* Settings */}
+        <button
+          onClick={() => setSettingsOpen(true)}
+          title="Paramètres"
+          style={{
+            display: "grid", placeItems: "center", width: 36, height: 36,
+            borderRadius: "var(--ap-r-sm)", border: "2px solid var(--ap-line)",
+            background: "white", cursor: "pointer", boxShadow: "0 3px 0 var(--ap-line)",
+            flexShrink: 0,
+          }}
+        >
+          <Settings style={{ width: 15, height: 15, color: "var(--ap-muted)" }} />
+        </button>
+
+        {/* Preview */}
+        <button
+          onClick={handlePreviewQuiz}
+          disabled={questions.length === 0}
+          className="ap-btn ap-btn--ghost"
+          style={{ padding: "10px 18px", borderRadius: 999, fontSize: 14 }}
+        >
+          <Eye style={{ width: 15, height: 15 }} />
+          Aperçu
+        </button>
+
+        {/* Save / Publish */}
+        <button
+          onClick={handleSaveQuiz}
+          className="ap-btn ap-btn--pill"
+          style={{ padding: "10px 18px", fontSize: 14 }}
+        >
+          {quizId ? "Mettre à jour" : "Publier"}
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+        </button>
+      </div>
+
+      {/* ── Workspace ── */}
+      <div style={{ flex: 1, minHeight: 0, display: "grid", gridTemplateColumns: "270px 1fr 330px" }}>
+
+        {/* Left Rail */}
+        <aside style={{ borderRight: "2px solid var(--ap-line)", background: "white", display: "flex", flexDirection: "column", minHeight: 0 }}>
+          <div style={{ padding: "16px 16px 10px", display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
+            <h2 style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".09em", textTransform: "uppercase", color: "var(--ap-muted)", margin: 0 }}>
+              {isFlashcard ? "Cartes" : isSlide ? "Diapositives" : "Questions"}
+            </h2>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ fontFamily: "var(--ap-font-mono)", fontSize: 12, fontWeight: 700, color: "var(--ap-muted)" }}>
+                {questions.length}
+              </span>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ap-muted)", padding: "2px 4px", borderRadius: 6, display: "grid", placeItems: "center" }} title="Plus d'options">
+                    <MoreHorizontal style={{ width: 15, height: 15 }} />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="z-50 p-1.5" style={{ background: "var(--ap-card)", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-lg)", boxShadow: "var(--ap-shadow-card)" }}>
+                  <DropdownMenuItem className="gap-2 rounded-xl text-sm cursor-pointer" onSelect={() => setImportFileOpen(true)}>
+                    <Upload style={{ width: 13, height: 13 }} /> Importer depuis un fichier
+                  </DropdownMenuItem>
+                  {!isPoll && !isFlashcard && user && (
+                    <DropdownMenuItem className="gap-2 rounded-xl text-sm cursor-pointer" onSelect={() => setQuestionBankDialogOpen(true)}>
+                      <Library style={{ width: 13, height: 13 }} /> Banque de questions
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuSeparator style={{ background: "var(--ap-line)" }} />
+                  <DropdownMenuItem className="gap-2 rounded-xl text-sm cursor-pointer" onSelect={() => setTemplateDialogOpen(true)}>
+                    Changer de modèle
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
-            {renderQuestionImageField()}
+          </div>
+
+          <div style={{ flex: 1, overflowY: "auto", padding: "4px 12px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={questions.map(q => q.id)} strategy={verticalListSortingStrategy}>
+                {questions.map((q, i) => (
+                  <RailItem
+                    key={q.id}
+                    question={q}
+                    index={i}
+                    isActive={selectedIdx === i}
+                    onSelect={setSelectedIdx}
+                    onDelete={handleDeleteQuestion}
+                    onDuplicate={handleDuplicateQuestion}
+                  />
+                ))}
+              </SortableContext>
+            </DndContext>
+            {questions.length === 0 && (
+              <p style={{ textAlign: "center", padding: "32px 0", color: "var(--ap-muted)", fontSize: 13, fontWeight: 700 }}>
+                Cliquez sur «+» pour commencer
+              </p>
+            )}
+          </div>
+
+          {/* Add button */}
+          <button
+            onClick={() => handleAddQuestion()}
+            style={{
+              margin: "0 12px 14px",
+              padding: 11,
+              border: "2px dashed var(--ap-line-2)",
+              borderRadius: "var(--ap-r-md)",
+              background: "transparent",
+              fontFamily: "inherit",
+              fontWeight: 800,
+              fontSize: 13.5,
+              color: "var(--ap-muted)",
+              cursor: "pointer",
+              transition: "color .15s, border-color .15s, background .15s",
+            }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "var(--ap-brand-deep)"; (e.currentTarget as HTMLElement).style.borderColor = "var(--ap-brand)"; (e.currentTarget as HTMLElement).style.background = "var(--ap-brand-soft)"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--ap-muted)"; (e.currentTarget as HTMLElement).style.borderColor = "var(--ap-line-2)"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+          >
+            + {isFlashcard ? "Ajouter une carte" : isSlide ? "Ajouter une diapositive" : "Ajouter une question"}
+          </button>
+        </aside>
+
+        {/* Center Editor */}
+        <main style={{ overflowY: "auto", padding: "26px 30px 60px", minHeight: 0 }}>
+          {renderCenterEditor()}
+        </main>
+
+        {/* Right Preview */}
+        <aside style={{
+          borderLeft: "2px solid var(--ap-line)",
+          background: "var(--ap-paper-2)",
+          backgroundImage: "radial-gradient(var(--ap-line-2) 1px, transparent 1px)",
+          backgroundSize: "22px 22px",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          padding: "20px 20px 24px",
+          minHeight: 0,
+          overflowY: "auto",
+        }}>
+          {renderRightPanel()}
+        </aside>
+      </div>
+
+      {/* ── Settings dialog ── */}
+      <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Paramètres</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
             <div>
-              <Label>{t('correctAnswer')}</Label>
-              <Select
-                value={currentQuestion.correctAnswer}
-                onValueChange={(value) => setCurrentQuestion({ ...currentQuestion, correctAnswer: value })}
-              >
-                <SelectTrigger className="mt-2">
-                  <SelectValue />
-                </SelectTrigger>
+              <Label>Catégorie</Label>
+              <Select value={category} onValueChange={setCategory}>
+                <SelectTrigger className="mt-2"><SelectValue /></SelectTrigger>
                 <SelectContent className="bg-popover z-50">
-                  <SelectItem value="true">{t('true')}</SelectItem>
-                  <SelectItem value="false">{t('false')}</SelectItem>
+                  {[["Culture Générale", t("generalCulture")], ["Science", t("science")], ["Histoire", t("history")], ["Géographie", t("geography")], ["Sport", t("sports")], ["Divertissement", t("entertainment")], ["Technologie", t("technology")], ["Arts", t("arts")], ["Autre", t("other")]].map(([val, label]) => (
+                    <SelectItem key={val} value={val}>{label}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label>{t('timeLimit')}</Label>
-              <Input
-                type="number"
-                value={currentQuestion.timeLimit}
-                onChange={(e) => setCurrentQuestion({ ...currentQuestion, timeLimit: parseInt(e.target.value) })}
-                className="mt-2"
-              />
+              <Label>Description</Label>
+              <Textarea placeholder={t("descriptionPlaceholder")} value={description} onChange={e => setDescription(e.target.value)} className="mt-2" />
             </div>
             <div>
-              <Label>{t('points')}</Label>
-              <Input
-                type="number"
-                value={currentQuestion.points}
-                onChange={(e) => setCurrentQuestion({ ...currentQuestion, points: parseInt(e.target.value) })}
-                className="mt-2"
-              />
+              <Label>{t("headerImage")}</Label>
+              {headerImage && (
+                <div className="relative w-full h-32 rounded-lg overflow-hidden mt-2 mb-2">
+                  <img src={headerImage} alt="Header" className="w-full h-full object-cover" />
+                  <Button variant="ghost" size="sm" className="absolute top-2 right-2 bg-black/50 hover:bg-black/70" onClick={() => setHeaderImage("")}>
+                    <Trash2 className="w-4 h-4 text-white" />
+                  </Button>
+                </div>
+              )}
+              <label htmlFor="header-image">
+                <Button variant="outline" size="sm" asChild className="w-full mt-2">
+                  <span><Upload className="w-4 h-4 mr-2" />{headerImage ? t("changeImage") : t("addImage")}</span>
+                </Button>
+              </label>
+              <input id="header-image" type="file" accept="image/*" className="hidden" onChange={e => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                const r = new FileReader();
+                r.onloadend = () => setHeaderImage(r.result as string);
+                r.readAsDataURL(file);
+              }} />
             </div>
-          </div>
-        );
-
-      default:
-        return (
-          <div className="space-y-4">
             <div>
-              <Label>{t('question')}</Label>
-              <Input
-                value={currentQuestion.question}
-                onChange={(e) => setCurrentQuestion({ ...currentQuestion, question: e.target.value })}
-                placeholder={t('questionPlaceholder')}
-                className="mt-2"
-              />
+              <Label>{t("tags")}</Label>
+              <div className="flex gap-2 mt-2">
+                <Input placeholder={t("addTag")} value={newTag} onChange={e => setNewTag(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); if (newTag.trim() && !tags.includes(newTag.trim())) { setTags([...tags, newTag.trim()]); setNewTag(""); } } }}
+                />
+                <Button variant="outline" onClick={() => { if (newTag.trim() && !tags.includes(newTag.trim())) { setTags([...tags, newTag.trim()]); setNewTag(""); } }}>
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </div>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {tags.map(tag => <Badge key={tag} variant="secondary" className="cursor-pointer" onClick={() => setTags(tags.filter(t => t !== tag))}>{tag} ×</Badge>)}
+              </div>
             </div>
-            {renderQuestionImageField()}
-          </div>
-        );
-    }
-  };
-
-  const toolbarIconButtonClass = circularIconButtonClass;
-
-  const builderToolbar = (
-    <div className="flex w-full flex-col gap-3 md:flex-row md:items-center md:justify-between">
-      <div className="flex w-full flex-1 flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="flex w-full items-center gap-2">
-          <Input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder={isPoll ? t('pollTitle') : t('quizTitle')}
-            className="font-medium sm:max-w-md flex-1"
-          />
-        </div>
-      </div>
-      <div className="flex flex-wrap items-center justify-end gap-2">
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button
-              variant="outline"
-              size="icon"
-              title={t('settings')}
-              className={toolbarIconButtonClass}
-            >
-              <Settings className="w-5 h-5" />
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>{t('settings')}</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 mt-4">
-              <div>
-                <Label>{t('category')}</Label>
-                <Select value={category} onValueChange={setCategory}>
-                  <SelectTrigger className="mt-2">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover z-50">
-                    <SelectItem value="Culture Générale">{t('generalCulture')}</SelectItem>
-                    <SelectItem value="Science">{t('science')}</SelectItem>
-                    <SelectItem value="Histoire">{t('history')}</SelectItem>
-                    <SelectItem value="Géographie">{t('geography')}</SelectItem>
-                    <SelectItem value="Sport">{t('sports')}</SelectItem>
-                    <SelectItem value="Divertissement">{t('entertainment')}</SelectItem>
-                    <SelectItem value="Technologie">{t('technology')}</SelectItem>
-                    <SelectItem value="Arts">{t('arts')}</SelectItem>
-                    <SelectItem value="Autre">{t('other')}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label>{t('description')}</Label>
-                <Textarea
-                  placeholder={t('descriptionPlaceholder')}
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  className="mt-2"
-                />
-              </div>
-
-              <div>
-                <Label>{t('headerImage')}</Label>
-                {headerImage && (
-                  <div className="relative w-full h-32 rounded-lg overflow-hidden mt-2 mb-2">
-                    <img src={headerImage} alt="Header" className="w-full h-full object-cover" />
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="absolute top-2 right-2 bg-black/50 hover:bg-black/70"
-                      onClick={() => setHeaderImage('')}
-                    >
-                      <Trash2 className="w-4 h-4 text-white" />
-                    </Button>
-                  </div>
-                )}
-                <label htmlFor="header-image">
-                  <Button variant="outline" size="sm" asChild className="w-full mt-2">
-                    <span>
-                      <Upload className="w-4 h-4 mr-2" />
-                      {headerImage ? t('changeImage') : t('addImage')}
-                    </span>
-                  </Button>
-                </label>
-                <input
-                  id="header-image"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="hidden"
-                />
-              </div>
-
-              <div>
-                <Label>{t('tags')}</Label>
-                <div className="flex gap-2 mt-2">
-                  <Input
-                    placeholder={t('addTag')}
-                    value={newTag}
-                    onChange={(e) => setNewTag(e.target.value)}
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleAddTag();
-                      }
-                    }}
-                  />
-                  <Button variant="outline" onClick={handleAddTag}>
-                    <Plus className="w-4 h-4" />
-                  </Button>
-                </div>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {tags.map((tag) => (
-                    <Badge
-                      key={tag}
-                      variant="secondary"
-                      className="cursor-pointer"
-                      onClick={() => setTags(tags.filter(t => t !== tag))}
-                    >
-                      {tag} ×
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-
-              {!isPoll && (
+            {!isPoll && (
+              <>
                 <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                   <div className="flex items-center gap-2">
-                    <Label className="cursor-pointer">{t('public')}</Label>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button className="text-muted-foreground hover:text-foreground">
-                            <HelpCircle className="w-4 h-4" />
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="max-w-xs">{t('publicTooltip')}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+                    <Label className="cursor-pointer">{t("public")}</Label>
+                    <TooltipProvider><Tooltip><TooltipTrigger asChild><button className="text-muted-foreground hover:text-foreground"><HelpCircle className="w-4 h-4" /></button></TooltipTrigger><TooltipContent><p className="max-w-xs">{t("publicTooltip")}</p></TooltipContent></Tooltip></TooltipProvider>
                   </div>
                   <Switch checked={isPublic} onCheckedChange={setIsPublic} />
                 </div>
-              )}
-
-              {!isPoll && (
                 <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                   <div className="flex items-center gap-2">
-                    <Label className="cursor-pointer">{t('speedBonus')}</Label>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button className="text-muted-foreground hover:text-foreground">
-                            <HelpCircle className="w-4 h-4" />
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="max-w-xs">{t('speedBonusTooltip')}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+                    <Label className="cursor-pointer">{t("speedBonus")}</Label>
+                    <TooltipProvider><Tooltip><TooltipTrigger asChild><button className="text-muted-foreground hover:text-foreground"><HelpCircle className="w-4 h-4" /></button></TooltipTrigger><TooltipContent><p className="max-w-xs">{t("speedBonusTooltip")}</p></TooltipContent></Tooltip></TooltipProvider>
                   </div>
                   <Switch checked={speedBonus} onCheckedChange={setSpeedBonus} />
                 </div>
-              )}
-
-              {!isPoll && (
                 <div>
-                  <Label>{t('transitionTime')}</Label>
-                  <Input
-                    type="number"
-                    min="3"
-                    max="10"
-                    value={transitionTime}
-                    onChange={(e) => setTransitionTime(parseInt(e.target.value) || 5)}
-                    className="mt-2"
-                  />
+                  <Label>{t("transitionTime")}</Label>
+                  <Input type="number" min="3" max="10" value={transitionTime} onChange={e => setTransitionTime(parseInt(e.target.value) || 5)} className="mt-2" />
                 </div>
-              )}
-
-              <div>
-                <Label>Thème visuel</Label>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Personnalisez l'ambiance graphique de votre activité.
-                </p>
-                <div className="mt-3 space-y-3">
-                  <ThemeSelectionDropdown value={theme} onChange={setTheme} />
-                  <div className="rounded-2xl border border-border/60 bg-muted/30 p-4">
-                    <ThemePreviewPanel theme={activeTheme} />
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <Label>Police d'écriture</Label>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Choisissez la typographie utilisée dans l'aperçu et par vos participants.
-                </p>
-                <Select value={previewFont} onValueChange={setPreviewFont}>
-                  <SelectTrigger className="mt-2" style={{ fontFamily: activeFont.stack }}>
-                    <SelectValue placeholder="Sélectionner une police" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover z-50">
-                    {FONT_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value} className="py-2">
-                        <div className="flex flex-col">
-                          <span className="text-sm font-semibold" style={{ fontFamily: option.stack }}>
-                            {option.label}
-                          </span>
-                          <span className="text-xs text-muted-foreground" style={{ fontFamily: option.stack }}>
-                            {option.tagline}
-                          </span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <div
-                  className="mt-3 rounded-2xl border border-border/60 bg-muted/30 p-4 text-sm leading-relaxed text-muted-foreground"
-                  style={{ fontFamily: activeFont.stack }}
-                >
-                  <p className="text-base font-semibold text-foreground">
-                    {title?.trim() || (isPoll ? "Mon Sondage" : "Mon Quiz")}
-                  </p>
-                  <p className="mt-1">
-                    {description?.trim() || "Aperçu de la police sélectionnée pour vos questions."}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={handlePreviewQuiz}
-          disabled={questions.length === 0}
-          title={t('launchPreview')}
-          className={toolbarIconButtonClass}
-        >
-          <Play className="w-5 h-5" />
-        </Button>
-        <Button
-          onClick={handleSaveQuiz}
-          size="icon"
-          title={t('save')}
-          variant="outline"
-          className={toolbarIconButtonClass}
-        >
-          <Save className="w-5 h-5" />
-        </Button>
-      </div>
-    </div>
-  );
-
-  return (
-    <div className="h-screen overflow-hidden bg-background flex flex-col">
-      {/* Header with integrated toolbar */}
-      <Header
-        subtitle={isSlide ? "Créateur de Présentations" : isFlashcard ? "Créateur de Flashcards" : (isPoll ? t('pollBuilder') : t('quizBuilder'))}
-        toolbar={builderToolbar}
-        toolbarPlacement="main"
-        showNavigation={false}
-        alignLeft
-      />
-      {/* Main Content */}
-      <div className="relative flex-1 flex overflow-hidden">
-        {/* Left Sidebar - Navigation */}
-        <div
-          className={`${sidebarOpen ? 'w-72 border-r bg-card' : 'w-0'} overflow-hidden transition-all duration-200`}
-        >
-          <div className="flex h-full flex-col overflow-y-auto">
-            <div className="border-b border-border/60 p-4">
-              <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                {t('builderMenu')}
-              </p>
-              <nav className="space-y-2">
-                {sidebarNavigationItems
-                  .filter((item) => (item.requiresAuth ? Boolean(user) : true))
-                  .map((item) => {
-                    const Icon = item.icon;
-                    return (
-                      <Button
-                        key={item.label}
-                        variant="ghost"
-                        size="sm"
-                        onClick={item.action}
-                        className="w-full justify-start gap-2 rounded-lg text-sm text-foreground/80 transition-colors hover:bg-muted/40 hover:text-foreground"
-                      >
-                        <Icon className="h-4 w-4" />
-                        <span>{item.label}</span>
-                      </Button>
-                    );
-                  })}
-              </nav>
-            </div>
-            <div className="flex-1 space-y-6 p-4">
-              <div>
-                <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Thèmes</p>
-                <div className="space-y-3">
-                  <ThemeSelectionDropdown value={theme} onChange={setTheme} />
-                  <div className="rounded-2xl border border-border/60 bg-muted/30 p-4">
-                    <ThemePreviewPanel theme={activeTheme} />
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Templates</p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full justify-start"
-                  onClick={() => setTemplateDialogOpen(true)}
-                >
-                  {t('changeTemplate')}
-                </Button>
-                {activeTemplateId && (
-                  <div className="mt-3 rounded-lg border bg-muted/40 p-3 text-sm">
-                    <p className="font-medium text-foreground">{t('currentTemplate')}</p>
-                    <p className="text-muted-foreground">
-                      {(isPoll ? getPollTemplate(activeTemplateId) : getQuizTemplate(activeTemplateId))?.name || t('customTemplate')}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <Button
-          variant="secondary"
-          size="icon"
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          title={sidebarOpen ? t('hideThemes') : t('showThemes')}
-          aria-label={sidebarOpen ? t('hideThemes') : t('showThemes')}
-          className={cn(
-            "absolute z-20 h-9 w-9 -translate-x-1/2 -translate-y-1/2 rounded-full border border-border/60 bg-background text-muted-foreground shadow-sm transition-all hover:text-foreground",
-            sidebarOpen ? "left-[288px]" : "left-6"
-          )}
-          style={sidebarTogglePositionStyle}
-        >
-          {sidebarOpen ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-        </Button>
-
-        {/* Center - Questions List + Preview */}
-        <div className="flex-1 flex overflow-hidden">
-          {/* Questions List */}
-          <div className="w-80 border-r bg-muted/30 overflow-y-auto p-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-foreground">
-                {isFlashcard ? "Cartes" : "Questions"}
-              </h3>
-            </div>
-            
-            {/* Nouvelle question/carte button */}
-            <Button
-              onClick={() => {
-                setCurrentQuestion(getDefaultQuestion());
-                setEditingIndex(null);
-                setQuestionEditorOpen(true);
-              }}
-              className="w-full mb-4"
-              variant="outline"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              {isFlashcard ? "Nouvelle carte" : "Nouvelle question"}
-            </Button>
-
-            {!isPoll && !isFlashcard && user && (
-              <Button
-                onClick={() => setQuestionBankDialogOpen(true)}
-                className="w-full mb-2"
-                variant="ghost"
-              >
-                <Library className="w-4 h-4 mr-2" />
-                {t('importFromQuestionBank')}
-              </Button>
+              </>
             )}
-
-            <Button
-              onClick={() => setImportFileOpen(true)}
-              className="w-full mb-4"
-              variant="ghost"
-            >
-              <Upload className="w-4 h-4 mr-2" />
-              Importer depuis un fichier
-            </Button>
-
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-            >
-              <SortableContext
-                items={questions.map(q => q.id)}
-                strategy={verticalListSortingStrategy}
-              >
-                <div className="space-y-3 pr-1">
-                  {questions.map((question, index) => (
-                     <SortableQuestionItem
-                      key={question.id}
-                      question={question}
-                      index={index}
-                      onEdit={(idx: number) => {
-                        handleEditQuestion(idx);
-                      }}
-                      onDelete={handleDeleteQuestion}
-                      onDuplicate={handleDuplicateQuestion}
-                      isActive={selectedQuestionIndex === index}
-                    />
+            <div>
+              <Label>Thème visuel</Label>
+              <div className="mt-3 space-y-3">
+                <ThemeSelectionDropdown value={theme} onChange={setTheme} />
+                <div className="rounded-2xl border border-border/60 bg-muted/30 p-4"><ThemePreviewPanel theme={activeTheme} /></div>
+              </div>
+            </div>
+            <div>
+              <Label>Police d'écriture</Label>
+              <Select value={previewFont} onValueChange={setPreviewFont}>
+                <SelectTrigger className="mt-2" style={{ fontFamily: activeFont.stack }}><SelectValue /></SelectTrigger>
+                <SelectContent className="bg-popover z-50">
+                  {FONT_OPTIONS.map(opt => (
+                    <SelectItem key={opt.value} value={opt.value} className="py-2">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-semibold" style={{ fontFamily: opt.stack }}>{opt.label}</span>
+                        <span className="text-xs text-muted-foreground" style={{ fontFamily: opt.stack }}>{opt.tagline}</span>
+                      </div>
+                    </SelectItem>
                   ))}
-                </div>
-              </SortableContext>
-            </DndContext>
-            {questions.length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-8">
-                {t(isFlashcard ? 'noFlashcards' : 'noQuestions')}
-              </p>
-            )}
-          </div>
-
-          {/* Preview */}
-          <div className="flex-1 overflow-hidden">
-            <div className="h-full overflow-y-auto p-0">
-              {isSlide && selectedQuestionIndex !== null && questions[selectedQuestionIndex] ? (
-                <SlidePreview
-                  slide={questions[selectedQuestionIndex]}
-                  editable
-                  onEdit={() => {
-                    setEditingIndex(selectedQuestionIndex);
-                    setCurrentQuestion(questions[selectedQuestionIndex]);
-                    setQuestionEditorOpen(true);
-                  }}
-                />
-              ) : isSlide ? (
-                <div className="flex h-full items-center justify-center text-muted-foreground">
-                  Sélectionnez une diapositive pour la prévisualiser
-                </div>
-              ) : isFlashcard && selectedQuestionIndex !== null && questions[selectedQuestionIndex] ? (
-                <FlashcardPreview
-                  flashcard={questions[selectedQuestionIndex]}
-                  theme={activeTheme}
-                />
-              ) : isFlashcard ? (
-                <div className="flex h-full items-center justify-center text-muted-foreground">
-                  {t('selectFlashcardToPreview')}
-                </div>
-              ) : (
-                <QuizPreview
-                  title={title || (isPoll ? "Mon Sondage" : "Mon Quiz") }
-                  description={description}
-                  category={category}
-                  headerImage={headerImage}
-                  questions={questions}
-                  isPoll={isPoll}
-                  theme={theme}
-                  selectedQuestionIndex={selectedQuestionIndex}
-                  fontFamily={activeFont.stack}
-                  onEditQuestion={(index) => {
-                    setEditingIndex(index);
-                    setCurrentQuestion(questions[index]);
-                    setQuestionEditorOpen(true);
-                  }}
-                />
-              )}
+                </SelectContent>
+              </Select>
             </div>
           </div>
-      </div>
+        </DialogContent>
+      </Dialog>
 
-      {/* Right Sidebar - Add Question */}
-      <div
-        className={`${questionEditorOpen ? 'w-96 border-l bg-card' : 'w-0'} transition-all duration-200 overflow-y-auto`}
-      >
-          <div
-            className={`h-full transition-opacity duration-200 ${questionEditorOpen ? 'p-4 opacity-100' : 'p-0 opacity-0 pointer-events-none'}`}
-            aria-hidden={!questionEditorOpen}
-          >
-            <h3 className="font-semibold text-foreground mb-4">
-              {isSlide
-                ? (editingIndex !== null ? "Modifier la diapositive" : "Ajouter une diapositive")
-                : isFlashcard 
-                ? (editingIndex !== null ? "Modifier la carte" : "Ajouter une carte")
-                : (editingIndex !== null ? t('editQuestion') : t('addQuestion'))
-              }
-            </h3>
-
-            {isSlide || isFlashcard ? (
-              <div className="mt-4">
-                {renderQuestionForm()}
-                <div className="flex gap-2 mt-6">
-                  <Button onClick={handleAddQuestion} className="flex-1">
-                    {editingIndex !== null ? "Modifier" : "Ajouter"}
-                  </Button>
-                  {editingIndex !== null && (
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setCurrentQuestion(getDefaultQuestion());
-                        setEditingIndex(null);
-                      }}
-                    >
-                      {t('cancel')}
-                    </Button>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <Tabs defaultValue="type" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="type">Type</TabsTrigger>
-                  <TabsTrigger value="content">{t('content')}</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="type" className="mt-4">
-                  <QuestionTypeSelector
-                    questionTypes={getAvailableQuestionTypes()}
-                    selectedType={currentQuestion.type}
-                    onSelectType={(type) => setCurrentQuestion(getDefaultQuestion(type))}
-                  />
-                </TabsContent>
-
-                <TabsContent value="content" className="mt-4">
-                  {renderQuestionForm()}
-
-                  <div className="flex gap-2 mt-6">
-                    <Button onClick={handleAddQuestion} className="flex-1">
-                      {editingIndex !== null ? t('updateQuestion') : t('addQuestion')}
-                    </Button>
-                    {editingIndex !== null && (
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          setCurrentQuestion(getDefaultQuestion());
-                          setEditingIndex(null);
-                        }}
-                      >
-                        {t('cancel')}
-                      </Button>
-                    )}
-                  </div>
-                </TabsContent>
-              </Tabs>
-            )}
-        </div>
-      </div>
-
-      <Button
-        variant="secondary"
-        size="icon"
-        onClick={() => setQuestionEditorOpen(!questionEditorOpen)}
-        title={questionEditorOpen ? t('hideQuestionEditor') : t('showQuestionEditor')}
-        aria-label={questionEditorOpen ? t('hideQuestionEditor') : t('showQuestionEditor')}
-        className={cn(
-          "absolute z-20 h-9 w-9 translate-x-1/2 -translate-y-1/2 rounded-full border border-border/60 bg-background text-muted-foreground shadow-sm transition-all hover:text-foreground",
-          questionEditorOpen ? "right-[384px]" : "right-6"
-        )}
-        style={sidebarTogglePositionStyle}
-      >
-        {questionEditorOpen ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-      </Button>
-    </div>
-
+      {/* ── Question bank dialog ── */}
       <Dialog open={questionBankDialogOpen} onOpenChange={setQuestionBankDialogOpen}>
         <DialogContent className="max-w-4xl">
           <DialogHeader>
-            <DialogTitle>{t('importFromQuestionBank')}</DialogTitle>
-            <DialogDescription>{t('questionBankImportDescription')}</DialogDescription>
+            <DialogTitle>{t("importFromQuestionBank")}</DialogTitle>
+            <DialogDescription>{t("questionBankImportDescription")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             {questionBankItems.length === 0 ? (
               <div className="rounded-lg border border-dashed border-border/60 bg-muted/30 p-6 text-center">
-                <p className="text-sm text-muted-foreground">{t('questionBankEmpty')}</p>
-                <Button
-                  className="mt-4"
-                  variant="outline"
-                  onClick={() => {
-                    handleNavigateAway('/question-bank', () => setQuestionBankDialogOpen(false));
-                  }}
-                >
-                  {t('manageQuestionBank')}
+                <p className="text-sm text-muted-foreground">{t("questionBankEmpty")}</p>
+                <Button className="mt-4" variant="outline" onClick={() => { setShouldBlockNavigation(false); navigate("/question-bank"); }}>
+                  {t("manageQuestionBank")}
                 </Button>
               </div>
             ) : (
               <div className="grid gap-4 md:grid-cols-2">
-                {questionBankItems.map((item) => (
+                {questionBankItems.map(item => (
                   <Card key={item.id} className="flex h-full flex-col border-border/60 bg-card">
                     <CardHeader>
-                      <CardTitle className="text-lg text-foreground">{item.title}</CardTitle>
-                      {item.topic && (
-                        <CardDescription className="text-muted-foreground">{item.topic}</CardDescription>
-                      )}
+                      <CardTitle className="text-lg">{item.title}</CardTitle>
+                      {item.topic && <CardDescription>{item.topic}</CardDescription>}
                     </CardHeader>
                     <CardContent className="flex flex-1 flex-col gap-4">
-                      <div>
-                        <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">{t('question')}</p>
-                        <p className="mt-1 text-sm text-foreground line-clamp-3">
-                          {item.question.question?.trim() || t('noQuestionText')}
-                        </p>
-                      </div>
+                      <p className="text-sm line-clamp-3">{item.question.question?.trim() || t("noQuestionText")}</p>
                       <div className="flex flex-wrap gap-2">
-                        <Badge variant="secondary" className="rounded-full">
-                          {getQuestionTypeName(item.question.type as QuizQuestionType)}
-                        </Badge>
-                        {item.topic && (
-                          <Badge variant="outline" className="rounded-full">
-                            {item.topic}
-                          </Badge>
-                        )}
-                        {item.difficulty && (
-                          <Badge variant="outline" className="rounded-full">
-                            {t(difficultyTranslationKeyMap[item.difficulty] as any)}
-                          </Badge>
-                        )}
+                        <Badge variant="secondary" className="rounded-full">{item.question.type}</Badge>
+                        {item.difficulty && <Badge variant="outline" className="rounded-full">{t((difficultyTranslationKeyMap[item.difficulty] || item.difficulty) as any)}</Badge>}
                       </div>
                       <div className="mt-auto flex justify-end">
-                        <Button onClick={() => handleImportFromQuestionBank(item)}>{t('importQuestion')}</Button>
+                        <Button onClick={() => handleImportFromQuestionBank(item)}>{t("importQuestion")}</Button>
                       </div>
                     </CardContent>
                   </Card>
@@ -1745,33 +1405,20 @@ export const QuizBuilder = () => {
         </DialogContent>
       </Dialog>
 
+      {/* ── Template dialog ── */}
       <Dialog open={templateDialogOpen} onOpenChange={setTemplateDialogOpen}>
         <DialogContent className="max-w-4xl">
-          <DialogHeader>
-            <DialogTitle>{t('changeTemplate')}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            {isPoll ? (
-              <PollTemplateSelectorEnhanced
-                selectedTemplateId={activeTemplateId}
-                onSelectTemplate={applyTemplate}
-              />
-            ) : (
-              <QuizTemplateSelectorEnhanced
-                selectedTemplateId={activeTemplateId}
-                onSelectTemplate={applyTemplate}
-              />
-            )}
-          </div>
+          <DialogHeader><DialogTitle>{t("changeTemplate")}</DialogTitle></DialogHeader>
+          {isPoll ? (
+            <PollTemplateSelectorEnhanced selectedTemplateId={activeTemplateId} onSelectTemplate={applyTemplate} />
+          ) : (
+            <QuizTemplateSelectorEnhanced selectedTemplateId={activeTemplateId} onSelectTemplate={applyTemplate} />
+          )}
         </DialogContent>
       </Dialog>
 
-      <ImportFileModal
-        open={importFileOpen}
-        onClose={() => setImportFileOpen(false)}
-        quizType={quizType}
-        onImport={handleImportFromFile}
-      />
+      {/* ── Import file modal ── */}
+      <ImportFileModal open={importFileOpen} onClose={() => setImportFileOpen(false)} quizType={quizType} onImport={handleImportFromFile} />
     </div>
   );
 };
