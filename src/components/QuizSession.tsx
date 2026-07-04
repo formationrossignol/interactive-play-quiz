@@ -161,6 +161,29 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
     return () => t.forEach(clearTimeout);
   }, [gameState]);
 
+  // Lobby join toast
+  const [lastJoined, setLastJoined] = useState<{ name: string; avatar: string } | null>(null);
+  const [toastVisible, setToastVisible] = useState(false);
+  const [showCountdown, setShowCountdown] = useState(false);
+  const [countdownNum, setCountdownNum] = useState('3');
+  const [kickedPlayerIds, setKickedPlayerIds] = useState<Set<string>>(new Set());
+  const prevPlayersLenRef = useRef(0);
+
+  useEffect(() => {
+    if (gameState !== 'waiting') return;
+    if (players.length > prevPlayersLenRef.current) {
+      const newest = players[players.length - 1];
+      if (newest) {
+        setLastJoined({ name: newest.name, avatar: newest.avatar });
+        setToastVisible(true);
+        const t = setTimeout(() => setToastVisible(false), 1600);
+        prevPlayersLenRef.current = players.length;
+        return () => clearTimeout(t);
+      }
+    }
+    prevPlayersLenRef.current = players.length;
+  }, [players, gameState]);
+
   const joinUrl = `${window.location.origin}/join/${quiz.gameCode}`;
   const currentQuestion = quiz.questions[currentQuestionIndex];
 
@@ -737,231 +760,249 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
   };
 
   if (gameState === 'waiting') {
+    const visiblePlayers = players.filter(p => !kickedPlayerIds.has(p.id));
+    const ghostCount = Math.max(0, 4 - visiblePlayers.length);
+
+    const handleStart = () => {
+      setShowCountdown(true);
+      setCountdownNum('3');
+      const seq = ['3', '2', '1', 'GO !'];
+      let k = 0;
+      const tick = () => {
+        setCountdownNum(seq[k]);
+        k++;
+        if (k < seq.length) setTimeout(tick, 900);
+        else setTimeout(() => { setShowCountdown(false); startQuiz(); }, 800);
+      };
+      tick();
+    };
+
+    const kickPlayer = (id: string) => {
+      setKickedPlayerIds(prev => new Set([...prev, id]));
+    };
+
     return (
-      <div style={{ background: 'var(--ap-paper)', minHeight: '100vh', fontFamily: 'var(--ap-font-body)' }} className="p-4">
+      <div style={{
+        background: 'var(--ap-paper)',
+        backgroundImage: 'radial-gradient(var(--ap-line-2) 1px,transparent 1px)',
+        backgroundSize: '28px 28px',
+        minHeight: '100vh',
+        fontFamily: 'var(--ap-font-body)',
+        color: 'var(--ap-ink)',
+        display: 'flex', flexDirection: 'column',
+        WebkitFontSmoothing: 'antialiased',
+      }}>
         <style>{`
-          @keyframes floatUpLobby {
-            0%   { opacity: 1; transform: translateY(0) scale(1); }
-            80%  { opacity: 0.8; }
-            100% { opacity: 0; transform: translateY(-200px) scale(1.02); }
-          }
-          .reaction-float-lobby { animation: floatUpLobby 2.8s ease-out forwards; pointer-events: none; position: fixed; z-index: 9999; }
+          @keyframes floatUpLobby { 0%{opacity:1;transform:translateY(0) scale(1);}80%{opacity:.8;}100%{opacity:0;transform:translateY(-200px) scale(1.02);} }
+          .reaction-float-lobby { animation:floatUpLobby 2.8s ease-out forwards; pointer-events:none; position:fixed; z-index:9999; }
+          @keyframes player-in { 0%{opacity:0;transform:scale(.4) rotate(-8deg);}70%{transform:scale(1.08) rotate(2deg);}100%{opacity:1;transform:none;} }
+          @keyframes idle-wiggle { 50%{transform:translateY(-4px) rotate(3deg);} }
+          @keyframes pin-breathe { 50%{transform:scale(1.035);} }
+          @keyframes lobby-bump { 40%{transform:scale(1.16);} }
+          @keyframes lobby-pulse { 50%{opacity:.3;} }
+          @keyframes cd-pop { 0%{transform:scale(.3);opacity:0;}45%{transform:scale(1.1);opacity:1;}100%{transform:scale(1);opacity:1;} }
+          @keyframes toast-in { to{transform:translate(-50%,0);} }
+          .lobby-player { animation: player-in .5s cubic-bezier(.2,.7,.3,1.3); transition:transform .15s cubic-bezier(.2,.7,.3,1.3),box-shadow .15s cubic-bezier(.2,.7,.3,1.3); }
+          .lobby-player:hover { transform:translateY(-3px); box-shadow:0 7px 0 var(--ap-line-2) !important; }
+          .lobby-player .kick-btn { opacity:0; transform:scale(.6); transition:opacity .15s,transform .15s cubic-bezier(.2,.7,.3,1.3); }
+          .lobby-player:hover .kick-btn { opacity:1; transform:scale(1); }
         `}</style>
+
+        {/* Floating reactions */}
         {floatingReactions.map((r) => (
-          <div key={r.id} className="reaction-float-lobby" style={{ left: `${r.x}%`, bottom: '15%' }}>
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              background: 'rgba(0,0,0,0.78)', backdropFilter: 'blur(10px)',
-              border: '1.5px solid rgba(255,255,255,0.2)',
-              borderRadius: 999, padding: '6px 14px',
-              boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-            }}>
-              <div style={{ flexShrink: 0 }}><AvatarDisplay emoji={r.avatar} size="xs" /></div>
-              <span style={{ color: '#fff', fontSize: '11px', fontWeight: 700, flexShrink: 0, fontFamily: 'var(--ap-font-body)' }}>{r.playerName}</span>
-              <span style={{ fontSize: r.isEmoji ? '1.4rem' : '12px', color: 'rgba(255,255,255,0.9)', fontFamily: 'var(--ap-font-body)', maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: r.isEmoji ? 'nowrap' : 'normal' }}>{r.text}</span>
+          <div key={r.id} className="reaction-float-lobby" style={{ left:`${r.x}%`, bottom:'15%' }}>
+            <div style={{ display:'flex',alignItems:'center',gap:6,background:'rgba(0,0,0,.78)',backdropFilter:'blur(10px)',border:'1.5px solid rgba(255,255,255,.2)',borderRadius:999,padding:'6px 14px',boxShadow:'0 4px 20px rgba(0,0,0,.3)' }}>
+              <div style={{ flexShrink:0 }}><AvatarDisplay emoji={r.avatar} size="xs" /></div>
+              <span style={{ color:'#fff',fontSize:11,fontWeight:700,flexShrink:0,fontFamily:'var(--ap-font-body)' }}>{r.playerName}</span>
+              <span style={{ fontSize:r.isEmoji?'1.4rem':'12px',color:'rgba(255,255,255,.9)',fontFamily:'var(--ap-font-body)' }}>{r.text}</span>
             </div>
           </div>
         ))}
-        <div className="mx-auto max-w-6xl space-y-6">
 
-          {/* Header image */}
-          {headerImage && (
-            <div style={{ borderRadius: 'var(--ap-r-xl)', overflow: 'hidden', border: '2px solid var(--ap-line)', boxShadow: 'var(--ap-shadow-card)' }}>
-              <div className="relative h-48 w-full md:h-56">
-                <img src={headerImage} alt={`Illustration pour ${quiz.title}`} className="h-full w-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" aria-hidden />
-                <div className="absolute inset-x-0 bottom-0 p-5">
-                  <h1 style={{ fontFamily: 'var(--ap-font-display)', color: '#fff', fontSize: 'clamp(1.5rem,3vw,2.2rem)', fontWeight: 700, margin: 0 }}>{quiz.title}</h1>
-                  {quiz.description && <p className="mt-1 text-sm text-white/80 font-semibold">{quiz.description}</p>}
-                </div>
-              </div>
-            </div>
-          )}
+        {/* Join toast */}
+        <div aria-live="polite" style={{
+          position:'fixed', top:18, left:'50%',
+          transform: toastVisible ? 'translate(-50%,0)' : 'translate(-50%,-70px)',
+          background:'var(--ap-ink)', color:'#fff', fontWeight:800, fontSize:14,
+          padding:'11px 20px', borderRadius:999,
+          boxShadow:'0 4px 0 #16102a,0 16px 34px rgba(36,27,58,.3)',
+          display:'flex', alignItems:'center', gap:9, zIndex:40,
+          transition:'transform .4s cubic-bezier(.2,.7,.3,1.3)',
+          pointerEvents:'none',
+        }}>
+          {lastJoined && <AvatarDisplay emoji={lastJoined.avatar} size="xs" />}
+          <span>{lastJoined?.name} a rejoint la partie</span>
+        </div>
 
-          {/* Host Controls */}
+        {/* Topbar */}
+        <div style={{ display:'flex',alignItems:'center',gap:14,padding:'16px 24px',maxWidth:1240,margin:'0 auto',width:'100%' }}>
+          <span style={{ display:'flex',alignItems:'center',gap:9 }}>
+            <span style={{ width:36,height:36,borderRadius:12,background:'var(--ap-brand)',display:'grid',placeItems:'center',boxShadow:'0 4px 0 var(--ap-brand-deep)',transform:'rotate(-6deg)',flexShrink:0 }} aria-hidden="true">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="#fff"><path d="M13 2 4.5 13.5H11l-1 8.5L19.5 10H13l0-8z"/></svg>
+            </span>
+            <span style={{ fontFamily:'var(--ap-font-display)',fontWeight:600,fontSize:19 }}>Ludiq</span>
+          </span>
+          <span style={{ fontWeight:800,fontSize:15,color:'var(--ap-muted)' }}>
+            · En attente — <b style={{ color:'var(--ap-ink)' }}>{quiz.title}</b>
+          </span>
+          <div style={{ flex:1 }} />
           {isHost && (
-            <div className="ap-card" style={{ boxShadow: 'var(--ap-shadow-card)' }}>
-              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div>
-                  {!headerImage && (
-                    <h2 style={{ fontFamily: 'var(--ap-font-display)', color: 'var(--ap-ink)', fontSize: '1.6rem', fontWeight: 700, margin: 0 }}>{quiz.title}</h2>
-                  )}
-                  {quiz.description && !headerImage && (
-                    <p style={{ color: 'var(--ap-muted)', fontWeight: 700, marginTop: 4 }}>{quiz.description}</p>
-                  )}
-                </div>
-                <div className="flex flex-wrap gap-3">
-                  <button onClick={() => onExitRequest?.()} className="ap-btn ap-btn--ghost ap-btn--sm">
-                    <LogOut className="w-4 h-4" />
-                    Quitter
-                  </button>
-                  <button onClick={() => setShowSettings(!showSettings)} className="ap-btn ap-btn--ghost ap-btn--sm">
-                    <Settings className="w-4 h-4" />
-                    Paramètres
-                  </button>
-                  <button
-                    onClick={startQuiz}
-                    disabled={players.length === 0}
-                    className="ap-btn ap-btn--lg ap-btn--pill"
-                    style={{
-                      background: players.length === 0 ? 'var(--ap-muted)' : 'var(--ap-brand)',
-                      boxShadow: players.length === 0 ? 'none' : '0 5px 0 var(--ap-brand-deep)',
-                      cursor: players.length === 0 ? 'not-allowed' : 'pointer',
-                      opacity: players.length === 0 ? 0.6 : 1,
-                    }}
-                  >
-                    🚀 Lancer le quiz ({players.length} joueur{players.length !== 1 ? 's' : ''})
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <Dialog open={showSettings} onOpenChange={setShowSettings}>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>Paramètres du quiz</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-3 text-sm">
-                {[
-                  { label: 'Titre', value: quiz.title },
-                  { label: 'Questions', value: quiz.questions.length },
-                  { label: 'Code', value: quiz.gameCode, mono: true },
-                  { label: 'Transition', value: `${quiz.transitionTime ?? 5} s` },
-                  { label: 'Thème', value: selectedTheme?.name ?? 'Défaut' },
-                  ...(quiz.font ? [{ label: 'Police', value: quiz.font }] : []),
-                ].map(({ label, value, mono }) => (
-                  <div key={label} className="flex justify-between">
-                    <span className="text-muted-foreground">{label}</span>
-                    <span className={mono ? 'font-mono font-medium' : 'font-medium'}>{value}</span>
-                  </div>
-                ))}
-              </div>
-            </DialogContent>
-          </Dialog>
-
-          <div className="grid gap-6 lg:grid-cols-3">
-            {/* QR + infos */}
-            <div className="space-y-4 lg:col-span-1">
-              {sessionReady ? (
-                <QRCodeGenerator gameCode={quiz.gameCode} joinUrl={joinUrl} />
-              ) : (
-                <div className="ap-card flex flex-col items-center justify-center gap-3 py-10">
-                  <Settings className="w-8 h-8 animate-spin" style={{ color: 'var(--ap-muted)' }} />
-                  <span className="text-sm font-semibold" style={{ color: 'var(--ap-muted)' }}>Synchronisation…</span>
-                </div>
-              )}
-              <div className="ap-card" style={{ padding: '14px 18px' }}>
-                <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--ap-ink)', fontWeight: 700 }}>
-                  <Users className="h-4 w-4" style={{ color: 'var(--ap-brand)' }} />
-                  <span>{players.length} joueur{players.length !== 1 ? 's' : ''} en attente</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm mt-2" style={{ color: 'var(--ap-muted)', fontWeight: 700 }}>
-                  <Clock className="h-4 w-4" />
-                  <span>Transition : {quiz.transitionTime ?? 5} s</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Players list */}
-            <div className="lg:col-span-2">
-              <div className="ap-card" style={{ boxShadow: 'var(--ap-shadow-card)' }}>
-                <div className="flex items-center justify-between mb-5">
-                  <h3 style={{ fontFamily: 'var(--ap-font-display)', color: 'var(--ap-ink)', fontSize: '1.2rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
-                    <Users className="w-5 h-5" style={{ color: 'var(--ap-brand)' }} />
-                    Participants ({players.length})
-                  </h3>
-                  {isHost && (
-                    <button onClick={exportResults} className="ap-btn ap-btn--ghost ap-btn--sm">
-                      <Download className="w-4 h-4" />
-                      Exporter
-                    </button>
-                  )}
-                </div>
-                <div className="grid max-h-96 gap-2 overflow-y-auto md:grid-cols-2 lg:grid-cols-3">
-                  {players.map((player) => (
-                    <div
-                      key={player.id}
-                      className="animate-fade-in flex items-center gap-3 p-3 text-sm"
-                      style={{
-                        background: 'var(--ap-paper)',
-                        border: '2px solid var(--ap-line)',
-                        borderRadius: 'var(--ap-r-md)',
-                        color: 'var(--ap-ink)',
-                        fontWeight: 700,
-                      }}
-                    >
-                      <AvatarDisplay emoji={player.avatar} size="sm" />
-                      <span className="flex-1 truncate">{player.name}</span>
-                    </div>
-                  ))}
-                  {players.length === 0 && (
-                    <div className="col-span-full py-8 text-center" style={{ color: 'var(--ap-muted)', fontWeight: 700 }}>
-                      <p>En attente des participants…</p>
-                      <p className="mt-2 text-sm">Partagez le QR code ou le code de jeu</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Session History */}
-          {isHost && sessionHistory.length > 0 && (
-            <div className="ap-card">
-              <h3 style={{ fontFamily: 'var(--ap-font-display)', color: 'var(--ap-ink)', fontSize: '1.1rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-                <Trophy className="w-5 h-5" style={{ color: 'var(--ap-flash)' }} />
-                Sessions précédentes
-              </h3>
-              <div className="space-y-3">
-                {sessionHistory.map((run) => {
-                  const sorted = [...run.players].sort((a, b) => b.score - a.score);
-                  return (
-                    <details key={run.id} style={{ border: '2px solid var(--ap-line)', borderRadius: 'var(--ap-r-md)', padding: '12px 16px' }}>
-                      <summary className="flex cursor-pointer items-center justify-between list-none" style={{ color: 'var(--ap-ink)', fontWeight: 700 }}>
-                        <span>{new Date(run.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
-                        <span className="text-sm" style={{ color: 'var(--ap-muted)' }}>{run.players.length} joueur{run.players.length !== 1 ? 's' : ''} · {run.questionCount} questions</span>
-                      </summary>
-                      <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                        {sorted.map((p, idx) => (
-                          <div key={p.id} className="flex items-center gap-2 px-3 py-2 text-sm" style={{ background: 'var(--ap-paper)', border: '2px solid var(--ap-line)', borderRadius: 'var(--ap-r-sm)', color: 'var(--ap-ink)', fontWeight: 700 }}>
-                            <span className="w-5 text-center">{idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}.`}</span>
-                            <AvatarDisplay emoji={p.avatar} size="sm" />
-                            <span className="flex-1 truncate">{p.name}</span>
-                            <span style={{ color: 'var(--ap-flash-deep)', fontWeight: 800 }}>{p.score} pts</span>
-                          </div>
-                        ))}
-                      </div>
-                    </details>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Quiz preview stats */}
-          {isHost && (
-            <div className="ap-card">
-              <h3 style={{ fontFamily: 'var(--ap-font-display)', color: 'var(--ap-ink)', fontSize: '1.1rem', fontWeight: 700, marginBottom: 16 }}>Aperçu du quiz</h3>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                {[
-                  { value: quiz.questions.length, label: 'Questions', color: 'var(--ap-brand)' },
-                  { value: `${Math.round(quiz.questions.reduce((s, q) => s + q.timeLimit, 0) / 60)}m`, label: 'Durée estimée', color: 'var(--ap-poll)' },
-                  { value: quiz.questions.reduce((s, q) => s + q.points, 0), label: 'Points totaux', color: 'var(--ap-flash-deep)' },
-                  { value: players.length, label: 'Participants', color: 'var(--ap-pres)' },
-                ].map(({ value, label, color }) => (
-                  <div key={label} className="text-center p-3" style={{ background: 'var(--ap-paper)', border: '2px solid var(--ap-line)', borderRadius: 'var(--ap-r-md)' }}>
-                    <div style={{ fontFamily: 'var(--ap-font-display)', fontSize: '1.8rem', fontWeight: 700, color }}>{value}</div>
-                    <div className="text-sm" style={{ color: 'var(--ap-muted)', fontWeight: 700 }}>{label}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <button
+              onClick={() => onExitRequest?.()}
+              style={{ display:'inline-flex',alignItems:'center',gap:8,fontWeight:800,fontSize:13,color:'var(--ap-muted)',cursor:'pointer',background:'var(--ap-card)',border:'2px solid var(--ap-line)',borderRadius:999,padding:'8px 15px',boxShadow:'0 3px 0 var(--ap-line)' }}
+            >
+              🚪 Quitter
+            </button>
           )}
         </div>
+
+        {/* Main 2-col layout */}
+        <div style={{ flex:1,display:'grid',gridTemplateColumns:'380px 1fr',gap:26,maxWidth:1240,margin:'0 auto',width:'100%',padding:'8px 24px 120px',alignItems:'start' }}>
+
+          {/* ── Join card (sticky left) ── */}
+          <aside style={{ background:'var(--ap-card)',border:'2px solid var(--ap-line)',borderRadius:'var(--ap-r-lg)',boxShadow:'0 6px 0 var(--ap-line),0 30px 55px rgba(60,40,120,.1)',padding:26,textAlign:'center',position:'sticky',top:18 }} aria-label="Comment rejoindre la partie">
+            <h2 style={{ fontFamily:'var(--ap-font-display)',fontWeight:600,fontSize:21,marginBottom:4 }}>Rejoignez la partie</h2>
+            <p style={{ fontWeight:800,fontSize:15,color:'var(--ap-muted)',marginBottom:18 }}>
+              Sur <b style={{ color:'var(--ap-brand-deep)' }}>ludiq.app</b>, entrez le code
+            </p>
+
+            {/* PIN + QR side by side */}
+            <div style={{ display:'grid',gridTemplateColumns:'1fr auto 1fr',gap:12,alignItems:'center' }}>
+              <div>
+                <p style={{ fontSize:11,fontWeight:800,letterSpacing:'.09em',textTransform:'uppercase',color:'var(--ap-muted)',marginBottom:8 }}>Code de la partie</p>
+                <div style={{ background:'var(--ap-paper-2)',border:'2px dashed var(--ap-line-2)',borderRadius:'var(--ap-r-md)',padding:'16px 10px' }}>
+                  <div style={{ fontFamily:'var(--ap-font-mono)',fontWeight:700,fontSize:32,letterSpacing:'.12em',fontVariantNumeric:'tabular-nums',lineHeight:1,animation:'pin-breathe 3.2s ease-in-out infinite',color:'var(--ap-ink)' }} aria-label={`Code : ${quiz.gameCode}`}>
+                    {quiz.gameCode.slice(0,3)}<span style={{ color:'var(--ap-brand)' }}>{quiz.gameCode.slice(3)}</span>
+                  </div>
+                </div>
+              </div>
+              <span style={{ fontFamily:'var(--ap-font-display)',fontWeight:600,fontSize:13,color:'var(--ap-line-2)',textTransform:'uppercase' }} aria-hidden="true">ou</span>
+              <div>
+                <p style={{ fontSize:11,fontWeight:800,letterSpacing:'.09em',textTransform:'uppercase',color:'var(--ap-muted)',marginBottom:8 }}>Scannez</p>
+                <div style={{ background:'var(--ap-card)',border:'2px solid var(--ap-line)',borderRadius:'var(--ap-r-md)',padding:8,boxShadow:'0 3px 0 var(--ap-line)',display:'grid',placeItems:'center' }}>
+                  {sessionReady ? (
+                    <QRCodeGenerator gameCode={quiz.gameCode} joinUrl={joinUrl} />
+                  ) : (
+                    <div style={{ width:108,height:108,display:'grid',placeItems:'center',color:'var(--ap-muted)',fontSize:12,fontWeight:700 }}>Chargement…</div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ marginTop:20,fontSize:13,fontWeight:700,background:'var(--ap-flash-soft)',border:'2px solid rgba(255,176,32,.4)',borderRadius:'var(--ap-r-md)',padding:'10px 14px',textAlign:'left',display:'flex',gap:9,alignItems:'flex-start',color:'var(--ap-flash-deep)' }}>
+              <span aria-hidden="true">💡</span>
+              <span>Le quiz comporte {quiz.questions.length} question{quiz.questions.length > 1 ? 's' : ''}. Rejoignez avant le lancement !</span>
+            </div>
+          </aside>
+
+          {/* ── Arena ── */}
+          <section aria-label="Joueurs connectés">
+            <div style={{ display:'flex',alignItems:'baseline',gap:12,margin:'4px 2px 16px' }}>
+              <h2 style={{ fontFamily:'var(--ap-font-display)',fontWeight:600,fontSize:22,margin:0 }}>Joueurs</h2>
+              <span style={{ fontFamily:'var(--ap-font-mono)',fontWeight:700,fontSize:15,fontVariantNumeric:'tabular-nums',color:'var(--ap-pres-deep)',background:'var(--ap-pres-soft)',border:'2px solid rgba(21,192,138,.4)',borderRadius:999,padding:'4px 13px',animation: visiblePlayers.length > prevPlayersLenRef.current ? 'lobby-bump .35s cubic-bezier(.2,.7,.3,1.3)' : undefined }} role="status" aria-live="polite">
+                {visiblePlayers.length}
+              </span>
+              {isHost && <span style={{ fontSize:13,fontWeight:700,color:'var(--ap-muted)' }}>Survolez un joueur pour le retirer</span>}
+            </div>
+
+            <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(128px,1fr))',gap:13 }}>
+              {visiblePlayers.map((player) => (
+                <div
+                  key={player.id}
+                  className="lobby-player"
+                  style={{ position:'relative',background:'var(--ap-card)',border:'2px solid var(--ap-line)',borderRadius:'var(--ap-r-md)',padding:'15px 10px 13px',textAlign:'center',boxShadow:'0 4px 0 var(--ap-line)' }}
+                >
+                  {isHost && (
+                    <button
+                      className="kick-btn"
+                      onClick={() => kickPlayer(player.id)}
+                      aria-label={`Retirer ${player.name}`}
+                      style={{ position:'absolute',top:-8,right:-8,width:24,height:24,borderRadius:'50%',border:'2px solid var(--ap-card)',background:'var(--ap-quiz)',color:'#fff',fontWeight:800,fontSize:12,lineHeight:1,cursor:'pointer',display:'grid',placeItems:'center',boxShadow:'0 2px 0 var(--ap-quiz-deep)' }}
+                    >✕</button>
+                  )}
+                  <div style={{ width:52,height:52,margin:'0 auto 8px',borderRadius:'50%',background:'var(--ap-paper-2)',border:'2px solid var(--ap-line)',display:'grid',placeItems:'center',fontSize:27,animation:'idle-wiggle 4.5s ease-in-out infinite' }} aria-hidden="true">
+                    <AvatarDisplay emoji={player.avatar} size="sm" />
+                  </div>
+                  <span style={{ fontWeight:800,fontSize:13.5,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',display:'block' }}>{player.name}</span>
+                </div>
+              ))}
+              {/* Ghost slots */}
+              {Array.from({ length: ghostCount }).map((_, i) => (
+                <div key={`ghost-${i}`} style={{ border:'2px dashed var(--ap-line-2)',borderRadius:'var(--ap-r-md)',display:'grid',placeItems:'center',minHeight:118,color:'var(--ap-line-2)',fontFamily:'var(--ap-font-display)',fontWeight:600,fontSize:22 }} aria-hidden="true">?</div>
+              ))}
+            </div>
+          </section>
+        </div>
+
+        {/* ── Launch bar (host, fixed bottom) ── */}
+        {isHost && (
+          <div style={{ position:'fixed',bottom:0,left:0,right:0,zIndex:30,background:'var(--ap-card)',borderTop:'2px solid var(--ap-line)',boxShadow:'0 -14px 34px rgba(60,40,120,.08)' }}>
+            <div style={{ maxWidth:1240,margin:'0 auto',padding:'14px 24px',display:'flex',alignItems:'center',gap:16 }}>
+              <span style={{ fontWeight:800,fontSize:14,color:'var(--ap-muted)',display:'flex',alignItems:'center',gap:9 }}>
+                <span style={{ width:9,height:9,borderRadius:'50%',background:'var(--ap-pres)',animation:'lobby-pulse 1.8s infinite',display:'inline-block',flexShrink:0 }} aria-hidden="true" />
+                {visiblePlayers.length === 0 ? 'En attente des premiers joueurs…' : visiblePlayers.length < 5 ? 'La salle se remplit…' : 'Prêt quand vous voulez !'}
+              </span>
+              <div style={{ flex:1 }} />
+              <button
+                onClick={handleStart}
+                disabled={visiblePlayers.length === 0}
+                style={{
+                  display:'inline-flex',alignItems:'center',gap:9,
+                  fontFamily:'var(--ap-font-body)',fontWeight:800,fontSize:16,
+                  padding:'14px 30px',borderRadius:999,border:'none',cursor: visiblePlayers.length === 0 ? 'not-allowed' : 'pointer',
+                  color:'#fff',
+                  background: visiblePlayers.length === 0 ? 'var(--ap-muted)' : 'var(--ap-pres-deep)',
+                  boxShadow: visiblePlayers.length === 0 ? 'none' : '0 5px 0 #076346',
+                  opacity: visiblePlayers.length === 0 ? 0.6 : 1,
+                  transition:'transform .15s,box-shadow .15s',
+                }}
+              >
+                Lancer la partie
+                <span style={{ fontFamily:'var(--ap-font-mono)',fontSize:13,fontVariantNumeric:'tabular-nums',background:'rgba(255,255,255,.2)',borderRadius:999,padding:'2px 9px' }}>
+                  {visiblePlayers.length} joueur{visiblePlayers.length > 1 ? 's' : ''}
+                </span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 4l14 8-14 8z"/></svg>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Fullscreen countdown ── */}
+        {showCountdown && (
+          <div style={{ position:'fixed',inset:0,zIndex:100,display:'grid',placeItems:'center',background:'var(--ap-brand)',backgroundImage:'radial-gradient(rgba(255,255,255,.14) 1.5px,transparent 1.5px)',backgroundSize:'30px 30px' }} aria-live="assertive">
+            <span key={countdownNum} style={{ fontFamily:'var(--ap-font-display)',fontWeight:600,fontSize:'clamp(120px,30vw,280px)',color:'#fff',textShadow:'0 10px 0 var(--ap-brand-deep)',animation:'cd-pop .9s cubic-bezier(.2,.7,.3,1.3)',display:'block',lineHeight:1,textAlign:'center' }}>
+              {countdownNum}
+            </span>
+          </div>
+        )}
+
+        {/* Settings dialog */}
+        <Dialog open={showSettings} onOpenChange={setShowSettings}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Paramètres du quiz</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3 text-sm">
+              {[
+                { label: 'Titre', value: quiz.title },
+                { label: 'Questions', value: quiz.questions.length },
+                { label: 'Code', value: quiz.gameCode, mono: true },
+                { label: 'Transition', value: `${quiz.transitionTime ?? 5} s` },
+                { label: 'Thème', value: selectedTheme?.name ?? 'Défaut' },
+                ...(quiz.font ? [{ label: 'Police', value: quiz.font }] : []),
+              ].map(({ label, value, mono }) => (
+                <div key={label} className="flex justify-between">
+                  <span className="text-muted-foreground">{label}</span>
+                  <span className={mono ? 'font-mono font-medium' : 'font-medium'}>{value}</span>
+                </div>
+              ))}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }
+
 
   if (gameState === 'transition') {
     return (
