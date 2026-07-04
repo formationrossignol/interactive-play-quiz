@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { t } from "@/lib/i18n";
@@ -6,6 +7,7 @@ import { Check, Rocket, Crown, Building2 } from "lucide-react";
 
 const Pricing = () => {
   const navigate = useNavigate();
+  usePageTitle("Tarifs");
 
   const plans = [
     {

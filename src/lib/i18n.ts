@@ -89,6 +89,9 @@ export const translations = {
     footerGuides: "Guides",
     footerCommunity: "Community",
     footerRights: "QuizMaster. All rights reserved.",
+    footerMentionsLegales: "Legal Notice",
+    footerPrivacy: "Privacy Policy",
+    footerCGU: "Terms of Use",
 
     // Create Section
     createQuiz: "Create a Quiz",
@@ -431,6 +434,9 @@ export const translations = {
     footerGuides: "Guides",
     footerCommunity: "Communauté",
     footerRights: "QuizMaster. Tous droits réservés.",
+    footerMentionsLegales: "Mentions légales",
+    footerPrivacy: "Politique de confidentialité",
+    footerCGU: "CGU",
 
     // Create Section
     createQuiz: "Créer un Quiz",

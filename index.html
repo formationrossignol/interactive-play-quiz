@@ -1,18 +1,61 @@
 <!doctype html>
-<html lang="en">
+<html lang="fr">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>interactive-play-quiz</title>
-    <meta name="description" content="Interactive Play Quiz" />
+    <title>QuizMaster — Quiz et sondages interactifs en temps réel</title>
+    <meta name="description" content="Créez des quiz multijoueurs, sondages live et présentations interactives. QR code, classement instantané et ambiance arcade — sans rien sacrifier en puissance." />
 
-    <meta property="og:title" content="interactive-play-quiz" />
-    <meta property="og:description" content="Interactive Play Quiz" />
+    <!-- Open Graph -->
+    <meta property="og:site_name" content="QuizMaster" />
+    <meta property="og:title" content="QuizMaster — Quiz et sondages interactifs en temps réel" />
+    <meta property="og:description" content="Créez des quiz multijoueurs, sondages live et présentations interactives. QR code, classement instantané et ambiance arcade — sans rien sacrifier en puissance." />
     <meta property="og:type" content="website" />
+    <meta property="og:image" content="/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+
+    <!-- Twitter / X -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="QuizMaster — Quiz et sondages interactifs en temps réel" />
+    <meta name="twitter:description" content="Créez des quiz multijoueurs, sondages live et présentations interactives." />
+    <meta name="twitter:image" content="/og-image.png" />
+
+    <style>
+      #root:empty::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background: #fafaf9;
+        z-index: 0;
+      }
+      #root:empty::after {
+        content: "";
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 40px;
+        height: 40px;
+        border: 3px solid #e5e7eb;
+        border-top-color: #6366f1;
+        border-radius: 50%;
+        animation: qm-spin 0.7s linear infinite;
+        z-index: 1;
+      }
+      @keyframes qm-spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
+    </style>
   </head>
 
   <body>
     <div id="root"></div>
+    <noscript>
+      <div style="font-family:sans-serif;text-align:center;padding:80px 24px;color:#374151">
+        <h1 style="font-size:24px;font-weight:700;margin-bottom:12px">QuizMaster</h1>
+        <p>JavaScript est requis pour utiliser QuizMaster.</p>
+        <p style="margin-top:8px;font-size:14px;color:#6b7280">Activez JavaScript dans les paramètres de votre navigateur puis rechargez la page.</p>
+      </div>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

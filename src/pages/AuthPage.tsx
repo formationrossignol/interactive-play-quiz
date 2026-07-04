@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { login, register } from "@/lib/auth";
 import { toast } from "sonner";
 
 const AuthPage = () => {
   const navigate = useNavigate();
+  usePageTitle("Connexion");
   const [tab, setTab] = useState<"login" | "register">("login");
   const [loginData, setLoginData] = useState({ email: "", password: "" });
   const [registerData, setRegisterData] = useState({ email: "", username: "", password: "" });

@@ -95,9 +95,28 @@ export const Footer = () => {
       <div style={{ borderTop: "2px solid var(--ap-line)" }}>
         <div
           className="mx-auto max-w-6xl px-6 py-4 text-xs font-bold"
-          style={{ color: "var(--ap-muted)", textAlign: "center" }}
+          style={{ color: "var(--ap-muted)", display: "flex", flexWrap: "wrap", gap: "16px", alignItems: "center", justifyContent: "space-between" }}
         >
-          © 2026 QuizMaster. Tous droits réservés.
+          <span>© 2026 QuizMaster. Tous droits réservés.</span>
+          <nav style={{ display: "flex", gap: "16px" }}>
+            {[
+              { label: t('footerMentionsLegales'), href: "/mentions-legales" },
+              { label: t('footerPrivacy'), href: "/confidentialite" },
+              { label: t('footerCGU'), href: "/cgu" },
+            ].map(({ label, href }) => (
+              <button
+                key={href}
+                type="button"
+                onClick={() => navigate(href)}
+                className="text-xs font-bold transition-colors"
+                style={{ color: "var(--ap-muted)", fontFamily: "var(--ap-font-body)" }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "var(--ap-brand)"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "var(--ap-muted)"; }}
+              >
+                {label}
+              </button>
+            ))}
+          </nav>
         </div>
       </div>
     </footer>

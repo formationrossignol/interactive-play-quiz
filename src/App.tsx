@@ -27,6 +27,9 @@ import PollResults from "./pages/PollResults";
 import QuizResults from "./pages/QuizResults";
 import Help from "./pages/Help";
 import PreviewPage from "./pages/PreviewPage";
+import MentionsLegales from "./pages/MentionsLegales";
+import Confidentialite from "./pages/Confidentialite";
+import CGU from "./pages/CGU";
 
 const queryClient = new QueryClient();
 
@@ -59,6 +62,9 @@ const App = () => (
           <Route path="/quiz-results/:quizId" element={<QuizResults />} />
           <Route path="/help" element={<Help />} />
           <Route path="/preview/:quizId" element={<PreviewPage />} />
+          <Route path="/mentions-legales" element={<MentionsLegales />} />
+          <Route path="/confidentialite" element={<Confidentialite />} />
+          <Route path="/cgu" element={<CGU />} />
           <Route path="/quiz/:gameCode" element={<LiveQuizPage />} />
           <Route path="/join/:gameCode" element={<JoinQuiz />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

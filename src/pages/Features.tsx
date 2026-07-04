@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { t } from "@/lib/i18n";
@@ -13,6 +14,7 @@ const featureAccentsDeep = [
 
 const Features = () => {
   const navigate = useNavigate();
+  usePageTitle("Fonctionnalités");
 
   const coreFeatures = [
     { icon: Users, title: t('featureCollaborative'), description: t('featureCollaborativeDesc') },

@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Header } from "@/components/Header";
 import { Pagination } from "@/components/Pagination";
@@ -25,6 +26,7 @@ const triggerStyle = {
 
 const DiscoverQuizzes = () => {
   const navigate = useNavigate();
+  usePageTitle("Découvrir");
   const user = getCurrentUser();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Tous");

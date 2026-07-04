@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Compass } from "lucide-react";
@@ -174,6 +175,7 @@ const HeroQuizCard = () => (
 const Index = () => {
   const [gameCode, setGameCode] = useState("");
   const navigate = useNavigate();
+  usePageTitle();
 
   const joinQuiz = () => {
     if (gameCode.trim()) {

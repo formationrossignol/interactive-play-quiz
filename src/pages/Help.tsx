@@ -3,6 +3,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { ChevronDown, ChevronUp, HelpCircle, Mail } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { usePageTitle } from "@/hooks/usePageTitle";
 
 const FAQ_ITEMS = [
   {
@@ -102,6 +103,7 @@ const FAQItem = ({ q, a }: { q: string; a: string }) => {
 
 const Help = () => {
   const navigate = useNavigate();
+  usePageTitle("Centre d'aide");
 
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", background: "var(--ap-paper)" }}>

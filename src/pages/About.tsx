@@ -2,6 +2,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Zap, Users, Target, Heart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { usePageTitle } from "@/hooks/usePageTitle";
 
 const values = [
   {
@@ -36,6 +37,7 @@ const values = [
 
 const About = () => {
   const navigate = useNavigate();
+  usePageTitle("À propos");
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", background: "var(--ap-paper)" }}>
       <Header />

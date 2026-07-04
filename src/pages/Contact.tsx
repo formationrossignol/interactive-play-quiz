@@ -3,6 +3,7 @@ import { Footer } from "@/components/Footer";
 import { Mail, MessageSquare, Send, Clock } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { toast } from "sonner";
 
 const COOLDOWN_SECONDS = 60;
@@ -54,6 +55,7 @@ const labelStyle: React.CSSProperties = {
 
 const Contact = () => {
   const navigate = useNavigate();
+  usePageTitle("Contact");
   const [formData, setFormData] = useState({ name: "", email: "", subject: "", message: "" });
   const [honeypot, setHoneypot] = useState("");
   const [cooldown, setCooldown] = useState(0);
