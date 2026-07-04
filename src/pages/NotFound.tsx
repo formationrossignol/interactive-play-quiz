@@ -4,7 +4,7 @@ import { Header } from "@/components/Header";
 const NotFound = () => {
   const navigate = useNavigate();
   return (
-    <div style={{ minHeight: "100vh", background: "var(--ap-paper)" }}>
+    <div style={{ minHeight: "100vh", backgroundColor: "var(--ap-paper)" }}>
       <Header />
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "128px 24px", textAlign: "center" }}>
         <p

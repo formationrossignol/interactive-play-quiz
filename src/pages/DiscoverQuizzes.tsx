@@ -67,7 +67,7 @@ const DiscoverQuizzes = () => {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--ap-paper)" }}>
+    <div style={{ minHeight: "100vh", backgroundColor: "var(--ap-paper)" }}>
       <Header subtitle={t("discoverPublic")} />
 
       <div className="mx-auto max-w-7xl px-6 py-10">

@@ -151,7 +151,7 @@ const Index = () => {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--ap-paper)" }}>
+    <div style={{ minHeight: "100vh" }}>
       <Header />
 
       <main style={{ maxWidth: 1160, margin: "0 auto", padding: "0 24px" }}>

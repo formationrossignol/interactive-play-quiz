@@ -103,7 +103,7 @@ export const Header = ({
       ref={(node) => { headerRef.current = node; }}
       className="sticky top-0 z-40"
       style={{
-        background: "var(--ap-paper)",
+        backgroundColor: "var(--ap-paper)",
         borderBottom: "2px solid var(--ap-line)",
         boxShadow: "0 2px 0 var(--ap-line)",
       }}
@@ -341,7 +341,7 @@ export const Header = ({
 
       {/* Secondary toolbar row */}
       {toolbar && toolbarPlacement === "secondary" && (
-        <div style={{ borderTop: "2px solid var(--ap-line)", background: "var(--ap-paper)" }}>
+        <div style={{ borderTop: "2px solid var(--ap-line)", backgroundColor: "var(--ap-paper)" }}>
           <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-2.5">
             {toolbar}
           </div>
@@ -351,7 +351,7 @@ export const Header = ({
         <div className="w-full px-6 pb-3 lg:hidden">
           <div
             className="flex flex-wrap items-center gap-2 px-4 py-2.5"
-            style={{ borderTop: "2px solid var(--ap-line)", background: "var(--ap-paper)" }}
+            style={{ borderTop: "2px solid var(--ap-line)", backgroundColor: "var(--ap-paper)" }}
           >
             {toolbar}
           </div>

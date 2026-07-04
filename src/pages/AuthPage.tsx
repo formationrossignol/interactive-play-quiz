@@ -64,7 +64,7 @@ const AuthPage = () => {
     <div
       style={{
         minHeight: "100vh",
-        background: "var(--ap-paper)",
+        backgroundColor: "var(--ap-paper)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",

@@ -161,7 +161,7 @@ const CourseViewer = () => {
     : null;
 
   return (
-    <div className="min-h-screen" style={{ background: "var(--ap-paper)" }}>
+    <div className="min-h-screen" style={{ backgroundColor: "var(--ap-paper)" }}>
       <Header
         subtitle={course.title}
         toolbar={

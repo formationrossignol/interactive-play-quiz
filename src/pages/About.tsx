@@ -39,7 +39,7 @@ const About = () => {
   const navigate = useNavigate();
   usePageTitle("À propos");
   return (
-    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", background: "var(--ap-paper)" }}>
+    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", backgroundColor: "var(--ap-paper)" }}>
       <Header />
 
       <main style={{ flex: 1 }}>

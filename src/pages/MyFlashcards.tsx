@@ -369,7 +369,7 @@ const MyFlashcards = () => {
   if (!user) return null;
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--ap-paper)" }}>
+    <div style={{ minHeight: "100vh", backgroundColor: "var(--ap-paper)" }}>
       <Header subtitle={t("myFlashcards")} />
       <div className="mx-auto max-w-6xl px-6 py-10">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">

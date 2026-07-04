@@ -302,7 +302,7 @@ const QuestionBank = () => {
   );
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--ap-paper)" }}>
+    <div style={{ minHeight: "100vh", backgroundColor: "var(--ap-paper)" }}>
       <Header subtitle={t("questionBank")} />
 
       <div className="mx-auto max-w-6xl px-6 py-10">
