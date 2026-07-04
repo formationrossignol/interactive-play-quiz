@@ -2,37 +2,36 @@ import { useState, useEffect, useRef, useCallback } from "react";
 
 const QUESTIONS = [
   {
-    q: "Quelle planète est la plus grande du système solaire ?",
-    answers: ["Saturne", "Jupiter", "Neptune", "Uranus"],
+    q: "Quel océan est le plus profond ?",
+    answers: ["Atlantique", "Pacifique", "Indien", "Arctique"],
     correct: 1,
-    emoji: "🪐",
+    hint: "C'était le Pacifique — fosse des Mariannes, −10 984 m. ✓",
   },
   {
     q: "Dans quel pays a été inventé le WiFi ?",
     answers: ["USA", "Japon", "Finlande", "Australie"],
     correct: 3,
-    emoji: "📶",
+    hint: "C'était l'Australie (CSIRO, 1992). ✓",
   },
   {
     q: "Quel animal terrestre court le plus vite ?",
     answers: ["Lion", "Guépard", "Faucon", "Éléphant"],
     correct: 1,
-    emoji: "🐆",
+    hint: "C'était le guépard — jusqu'à 112 km/h. ✓",
   },
 ];
 
 const SHAPES = [
-  <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" key="tri"><path d="M8 2 L15 14 H1 Z"/></svg>,
-  <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" key="circle"><circle cx="8" cy="8" r="7"/></svg>,
-  <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" key="sq"><rect x="1" y="1" width="14" height="14" rx="2"/></svg>,
-  <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" key="dia"><path d="M8 1 L15 8 L8 15 L1 8 Z"/></svg>,
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" key="tri"><path d="M12 3 22 21H2z"/></svg>,
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" key="sq"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>,
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" key="circ"><circle cx="12" cy="12" r="9"/></svg>,
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" key="dia"><path d="M12 2 22 12 12 22 2 12z"/></svg>,
 ];
 
-const SHAPE_COLORS = ["var(--ap-quiz)", "var(--ap-poll)", "var(--ap-pres)", "var(--ap-flash)"];
-const SHAPE_SOFT   = ["var(--ap-quiz-soft)", "var(--ap-poll-soft)", "var(--ap-pres-soft)", "var(--ap-flash-soft)"];
-const SHAPE_DEEP   = ["var(--ap-quiz-deep)", "var(--ap-poll-deep)", "var(--ap-pres-deep)", "var(--ap-flash-deep)"];
+const SHAPE_COLORS = ["var(--ap-quiz)", "var(--ap-poll)", "var(--ap-flash)", "var(--ap-pres)"];
 
-const TIMER_SECONDS = 10;
+const TIMER_SECONDS = 15;
+const CIRC = 2 * Math.PI * 24; // r=24 → ≈ 150.8
 
 type Piece = { id: number; x: number; y: number; r: number; color: string; size: number };
 
@@ -46,16 +45,10 @@ function spawnConfetti(container: HTMLElement) {
     color: colors[i % colors.length],
     size: 6 + Math.random() * 7,
   }));
-
   pieces.forEach((p) => {
     const el = document.createElement("div");
     el.className = "ap-confetti-piece";
-    el.style.cssText = `
-      left: 50%; top: 50%;
-      width: ${p.size}px; height: ${p.size}px;
-      background: ${p.color};
-      --cx: ${p.x}px; --cy: ${p.y}px; --cr: ${p.r}deg;
-    `;
+    el.style.cssText = `left:50%;top:50%;width:${p.size}px;height:${p.size}px;background:${p.color};--cx:${p.x}px;--cy:${p.y}px;--cr:${p.r}deg;`;
     container.appendChild(el);
     setTimeout(() => el.remove(), 750);
   });
@@ -68,9 +61,9 @@ function useAnimatedNumber(target: number, duration = 500) {
     const start = prev.current;
     prev.current = target;
     if (start === target) return;
-    const startTime = performance.now();
+    const t0 = performance.now();
     const tick = (now: number) => {
-      const t = Math.min((now - startTime) / duration, 1);
+      const t = Math.min((now - t0) / duration, 1);
       const ease = 1 - Math.pow(1 - t, 3);
       setDisplay(Math.round(start + (target - start) * ease));
       if (t < 1) requestAnimationFrame(tick);
@@ -86,15 +79,18 @@ export function HeroMiniQuiz() {
   const [revealed, setRevealed] = useState(false);
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(TIMER_SECONDS);
-  const [phase, setPhase] = useState<"question" | "feedback" | "done">("question");
+  const [done, setDone] = useState(false);
   const [shakingIndex, setShakingIndex] = useState<number | null>(null);
   const [pillBonus, setPillBonus] = useState<number | null>(null);
   const [pillKey, setPillKey] = useState(0);
+  const [hintText, setHintText] = useState("Cliquez sur une réponse — c'est une vraie démo.");
   const containerRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const animatedScore = useAnimatedNumber(score);
 
   const q = QUESTIONS[qIndex];
+  const timerOffset = CIRC * (1 - timeLeft / TIMER_SECONDS);
+  const isHot = timeLeft <= 5;
 
   const advance = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
@@ -104,10 +100,10 @@ export function HeroMiniQuiz() {
         setSelected(null);
         setRevealed(false);
         setTimeLeft(TIMER_SECONDS);
-        setPhase("question");
-      }, 1400);
+        setHintText("Cliquez sur une réponse — c'est une vraie démo.");
+      }, 1600);
     } else {
-      setTimeout(() => setPhase("done"), 1400);
+      setTimeout(() => setDone(true), 1600);
     }
   }, [qIndex]);
 
@@ -116,29 +112,30 @@ export function HeroMiniQuiz() {
     if (timerRef.current) clearInterval(timerRef.current);
     setSelected(i);
     setRevealed(true);
-    setPhase("feedback");
     if (i === q.correct) {
-      const bonus = Math.round((timeLeft / TIMER_SECONDS) * 1000);
+      const bonus = Math.max(100, Math.round((timeLeft / TIMER_SECONDS) * 1000));
       setScore((s) => s + bonus);
       setPillBonus(bonus);
       setPillKey((k) => k + 1);
-      setTimeout(() => setPillBonus(null), 2000);
+      setTimeout(() => setPillBonus(null), 2200);
+      setHintText(q.hint);
       if (containerRef.current) spawnConfetti(containerRef.current);
     } else {
       setShakingIndex(i);
       setTimeout(() => setShakingIndex(null), 500);
+      setHintText(`Presque ! ${q.hint}`);
     }
     advance();
-  }, [revealed, q.correct, timeLeft, advance]);
+  }, [revealed, q, timeLeft, advance]);
 
   useEffect(() => {
-    if (phase !== "question") return;
+    if (revealed || done) return;
     timerRef.current = setInterval(() => {
       setTimeLeft((t) => {
         if (t <= 1) {
           clearInterval(timerRef.current!);
           setRevealed(true);
-          setPhase("feedback");
+          setHintText(`Temps écoulé. ${q.hint}`);
           advance();
           return 0;
         }
@@ -146,14 +143,13 @@ export function HeroMiniQuiz() {
       });
     }, 1000);
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [phase, qIndex, advance]);
+  }, [revealed, done, qIndex, q.hint, advance]);
 
   const restart = () => {
     setQIndex(0); setSelected(null); setRevealed(false);
-    setScore(0); setTimeLeft(TIMER_SECONDS); setPhase("question");
+    setScore(0); setTimeLeft(TIMER_SECONDS); setDone(false);
+    setHintText("Cliquez sur une réponse — c'est une vraie démo.");
   };
-
-  const timerPct = (timeLeft / TIMER_SECONDS) * 100;
 
   return (
     <div
@@ -161,163 +157,169 @@ export function HeroMiniQuiz() {
       style={{
         position: "relative",
         width: "100%",
-        maxWidth: 380,
+        maxWidth: 400,
         background: "var(--ap-card)",
-        borderRadius: "var(--ap-r-xl)",
-        boxShadow: "var(--ap-shadow-card)",
-        overflow: "hidden",
+        border: "2px solid var(--ap-line)",
+        borderRadius: "var(--ap-r-lg)",
+        padding: 26,
+        boxShadow: "0 6px 0 var(--ap-line), 0 34px 60px rgba(60,40,120,.13)",
         userSelect: "none",
       }}
+      role="group"
+      aria-label="Démo interactive — essayez une question"
     >
-      {/* Score pill — pops on correct answer */}
+      {/* Score pill */}
       {pillBonus !== null && (
-        <div
-          key={pillKey}
-          className="ap-score-pill"
-          style={{ top: "56px", left: "50%" }}
-        >
+        <div key={pillKey} className="ap-score-pill" style={{ top: 60, left: "50%" }}>
           +{pillBonus} pts
         </div>
       )}
 
-      {/* Header */}
-      <div style={{ background: "var(--ap-brand)", padding: "14px 20px 0", position: "relative" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <span style={{ fontFamily: "var(--ap-font-display)", fontSize: "13px", fontWeight: 600, color: "rgba(255,255,255,.8)" }}>
-              Q{qIndex + 1}/{QUESTIONS.length}
+      {done ? (
+        /* ── Done screen ── */
+        <div style={{ textAlign: "center", padding: "20px 0" }}>
+          <div style={{ fontSize: 40, marginBottom: 10 }}>🎉</div>
+          <p style={{ fontFamily: "var(--ap-font-display)", fontSize: 18, fontWeight: 600, color: "var(--ap-muted)", marginBottom: 4 }}>
+            Score final
+          </p>
+          <p className="ap-mono" style={{ fontFamily: "var(--ap-font-display)", fontSize: 44, fontWeight: 700, color: "var(--ap-brand)", marginBottom: 20 }}>
+            {animatedScore}
+          </p>
+          <button
+            className="ap-btn ap-btn--pill"
+            style={{ fontSize: 14, padding: "10px 24px" }}
+            onClick={restart}
+          >
+            Rejouer ↺
+          </button>
+        </div>
+      ) : (
+        <>
+          {/* ── Top row: circular timer + badge ── */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
+            {/* Circular timer */}
+            <div style={{ position: "relative", width: 56, height: 56 }} aria-hidden="true">
+              <svg width="56" height="56" viewBox="0 0 56 56" style={{ transform: "rotate(-90deg)" }}>
+                <circle
+                  cx="28" cy="28" r="24"
+                  fill="none" stroke="var(--ap-line)" strokeWidth="5"
+                />
+                <circle
+                  cx="28" cy="28" r="24"
+                  fill="none"
+                  stroke={isHot ? "var(--ap-quiz)" : "var(--ap-brand)"}
+                  strokeWidth="5"
+                  strokeLinecap="round"
+                  strokeDasharray={CIRC}
+                  strokeDashoffset={timerOffset}
+                  style={{ transition: "stroke-dashoffset 1s linear, stroke .3s" }}
+                />
+              </svg>
+              <span style={{
+                position: "absolute", inset: 0, display: "grid", placeItems: "center",
+                fontFamily: "var(--ap-font-display)", fontWeight: 600, fontSize: 19,
+                fontVariantNumeric: "tabular-nums",
+                color: isHot ? "var(--ap-quiz)" : "var(--ap-ink)",
+                transition: "color .3s",
+              }}>
+                {timeLeft}
+              </span>
+            </div>
+
+            {/* Question badge */}
+            <span className="ap-badge ap-badge--flash" style={{ fontSize: 12.5, fontWeight: 800 }}>
+              Q{qIndex + 1}/{QUESTIONS.length} · {animatedScore} pts
             </span>
           </div>
-          <div style={{
-            fontFamily: "var(--ap-font-display)",
-            fontSize: "15px", fontWeight: 700,
-            color: "#fff",
-            display: "flex", alignItems: "center", gap: "6px",
+
+          {/* ── Question ── */}
+          <h2 style={{
+            fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 19,
+            lineHeight: 1.35, color: "var(--ap-ink)", marginBottom: 18,
           }}>
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="white"><polygon points="8,1 10,6 16,6 11,10 13,15 8,12 3,15 5,10 0,6 6,6"/></svg>
-            <span className="ap-mono">{animatedScore}</span>
+            {q.q}
+          </h2>
+
+          {/* ── Answers ── */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            {q.answers.map((a, i) => {
+              const isSelected = selected === i;
+              const isCorrect = i === q.correct;
+              let bg = "var(--ap-card)";
+              let border = "2px solid var(--ap-line)";
+              let shadow = "0 4px 0 var(--ap-line)";
+              let color = "var(--ap-ink)";
+              let shapeBg = SHAPE_COLORS[i];
+              if (revealed) {
+                if (isCorrect) {
+                  bg = "var(--ap-pres-deep)"; border = "2px solid var(--ap-pres-deep)";
+                  shadow = "0 4px 0 #076346"; color = "#fff"; shapeBg = "rgba(255,255,255,.22)";
+                } else if (isSelected) {
+                  bg = "var(--ap-paper-2)"; border = "2px solid var(--ap-line)";
+                  shadow = "0 4px 0 var(--ap-line)"; color = "var(--ap-muted)"; shapeBg = "var(--ap-line-2)";
+                } else {
+                  bg = "var(--ap-paper-2)"; border = "2px solid var(--ap-line)";
+                  shadow = "0 4px 0 var(--ap-line)"; color = "var(--ap-muted)"; shapeBg = "var(--ap-line-2)";
+                }
+              }
+              return (
+                <button
+                  key={i}
+                  onClick={() => pick(i)}
+                  disabled={revealed}
+                  className={[
+                    revealed && isCorrect ? "ap-answer--correct" : "",
+                    shakingIndex === i ? "ap-answer--wrong" : "",
+                    revealed && !isCorrect && !isSelected ? "ap-answer--dim" : "",
+                  ].filter(Boolean).join(" ")}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 11, textAlign: "left",
+                    fontFamily: "var(--ap-font-body)", fontWeight: 700, fontSize: 15,
+                    color,
+                    background: bg, border, borderRadius: "var(--ap-r-md)",
+                    padding: "12px 14px",
+                    boxShadow: shadow,
+                    cursor: revealed ? "default" : "pointer",
+                    transition: "transform .15s var(--ap-spring), box-shadow .15s var(--ap-spring), border-color .15s, background .25s, color .25s",
+                  }}
+                >
+                  <span style={{
+                    flexShrink: 0, width: 34, height: 34, borderRadius: 10,
+                    display: "grid", placeItems: "center",
+                    background: shapeBg, color: "#fff",
+                    transition: "background .25s",
+                  }}>
+                    {SHAPES[i]}
+                  </span>
+                  <span style={{ flex: 1, lineHeight: 1.3 }}>{a}</span>
+                </button>
+              );
+            })}
           </div>
-        </div>
 
-        {/* Timer bar */}
-        <div style={{ height: "4px", background: "rgba(255,255,255,.2)", borderRadius: "4px", overflow: "hidden", marginBottom: "2px" }}>
-          <div
-            style={{
-              height: "100%",
-              width: `${timerPct}%`,
-              background: timeLeft <= 3 ? "var(--ap-quiz)" : "rgba(255,255,255,.9)",
-              borderRadius: "4px",
-              transition: "width 1s linear, background .3s",
-            }}
-          />
-        </div>
-        <div style={{ height: "8px" }} />
-      </div>
-
-      {/* Question */}
-      <div style={{ padding: "20px 20px 16px" }}>
-        {phase === "done" ? (
-          <div style={{ textAlign: "center", padding: "12px 0" }}>
-            <div style={{ fontSize: "36px", marginBottom: "8px" }}>🎉</div>
-            <p style={{ fontFamily: "var(--ap-font-display)", fontSize: "20px", fontWeight: 600, color: "var(--ap-ink)", marginBottom: "4px" }}>
-              Score final
-            </p>
-            <p style={{ fontFamily: "var(--ap-font-display)", fontSize: "36px", fontWeight: 700, color: "var(--ap-brand)", marginBottom: "16px" }} className="ap-mono">
-              {score}
-            </p>
+          {/* ── Hint row ── */}
+          <div style={{
+            marginTop: 16, fontSize: 13.5, fontWeight: 700, color: "var(--ap-muted)",
+            display: "flex", alignItems: "center", justifyContent: "space-between", minHeight: 24,
+            fontFamily: "var(--ap-font-body)",
+          }}>
+            <span>{hintText}</span>
             <button
-              className="ap-btn ap-btn--pill"
-              style={{ fontSize: "14px", padding: "10px 22px" }}
               onClick={restart}
+              style={{
+                fontWeight: 800, color: "var(--ap-brand-deep)", background: "none", border: "none",
+                cursor: "pointer", fontSize: 13.5, fontFamily: "inherit",
+                borderBottom: "2px solid var(--ap-brand)", paddingBottom: 1,
+                opacity: revealed ? 1 : 0,
+                pointerEvents: revealed ? "auto" : "none",
+                transition: "opacity .3s",
+                whiteSpace: "nowrap", marginLeft: 12, flexShrink: 0,
+              }}
             >
-              Recommencer
+              Rejouer ↺
             </button>
           </div>
-        ) : (
-          <>
-            <p style={{
-              fontFamily: "var(--ap-font-display)",
-              fontSize: "16px", fontWeight: 600,
-              color: "var(--ap-ink)",
-              lineHeight: 1.35,
-              marginBottom: "16px",
-              minHeight: "48px",
-            }}>
-              {q.emoji} {q.q}
-            </p>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
-              {q.answers.map((a, i) => {
-                const isSelected = selected === i;
-                const isCorrect = i === q.correct;
-                const showResult = revealed;
-                let bg = "var(--ap-card)";
-                let border = "2px solid var(--ap-line)";
-                let shadow = "0 3px 0 var(--ap-line)";
-                let textColor = "var(--ap-ink)";
-                if (showResult) {
-                  if (isCorrect) { bg = "var(--ap-pres-soft)"; border = `2px solid var(--ap-pres)`; shadow = `0 3px 0 var(--ap-pres-deep)`; }
-                  else if (isSelected) { bg = "var(--ap-quiz-soft)"; border = `2px solid var(--ap-quiz)`; shadow = `0 3px 0 var(--ap-quiz-deep)`; }
-                  else { bg = "var(--ap-paper)"; textColor = "var(--ap-muted)"; border = "2px solid var(--ap-line)"; shadow = "0 2px 0 var(--ap-line)"; }
-                }
-                return (
-                  <button
-                    key={i}
-                    onClick={() => pick(i)}
-                    disabled={revealed}
-                    className={shakingIndex === i ? "ap-answer--wrong" : ""}
-                    style={{
-                      display: "flex", alignItems: "center", gap: "8px",
-                      padding: "10px 12px", borderRadius: "var(--ap-r-sm)",
-                      background: bg, border, boxShadow: shadow,
-                      color: textColor,
-                      fontFamily: "var(--ap-font-body)", fontWeight: 700, fontSize: "13px",
-                      cursor: revealed ? "default" : "pointer",
-                      textAlign: "left",
-                      transition: "background .15s, border-color .15s, box-shadow .15s, transform .1s var(--ap-spring)",
-                      transform: (showResult && isCorrect) ? "translateY(-1px) scale(1.02)" : "none",
-                    }}
-                  >
-                    <span style={{
-                      width: "28px", height: "28px", borderRadius: "8px", flexShrink: 0,
-                      background: showResult ? (isCorrect ? "var(--ap-pres)" : isSelected ? "var(--ap-quiz)" : SHAPE_COLORS[i]) : SHAPE_COLORS[i],
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      color: "#fff",
-                      transition: "background .2s",
-                    }}>
-                      {SHAPES[i]}
-                    </span>
-                    <span style={{ flex: 1, lineHeight: 1.3 }}>{a}</span>
-                    {showResult && isCorrect && <span style={{ fontSize: "14px" }}>✓</span>}
-                    {showResult && isSelected && !isCorrect && <span style={{ fontSize: "14px" }}>✗</span>}
-                  </button>
-                );
-              })}
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* Footer */}
-      {phase !== "done" && (
-        <div style={{
-          padding: "10px 20px 14px",
-          borderTop: "1px solid var(--ap-line)",
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-        }}>
-          <span style={{ fontFamily: "var(--ap-font-body)", fontSize: "12px", color: "var(--ap-muted)", fontWeight: 600 }}>
-            Essaie ! C'est vrai Ludiq.
-          </span>
-          <span
-            className="ap-mono"
-            style={{
-              fontFamily: "var(--ap-font-display)", fontSize: "13px", fontWeight: 700,
-              color: timeLeft <= 3 ? "var(--ap-quiz)" : "var(--ap-muted)",
-              transition: "color .3s",
-            }}
-          >
-            {timeLeft}s
-          </span>
-        </div>
+        </>
       )}
     </div>
   );

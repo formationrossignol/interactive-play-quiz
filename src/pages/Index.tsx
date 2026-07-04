@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -6,6 +6,35 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { HeroMiniQuiz } from "@/components/HeroMiniQuiz";
 import { t } from "@/lib/i18n";
+
+function useCountUp(target: number, duration = 900) {
+  const [value, setValue] = useState(0);
+  const ref = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+        observer.disconnect();
+        if (reduced) { setValue(target); return; }
+        const t0 = performance.now();
+        const tick = (now: number) => {
+          const k = Math.min(1, (now - t0) / duration);
+          const ease = 1 - Math.pow(1 - k, 3);
+          setValue(Math.round(target * ease));
+          if (k < 1) requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      },
+      { threshold: 0.5 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [target, duration]);
+  return { ref, value };
+}
 
 const contentTypes = [
   {
@@ -78,97 +107,36 @@ const contentTypes = [
   },
 ] as const;
 
-/* ---- Mini quiz card shown in the hero ---- */
-const HeroQuizCard = () => (
-  <div style={{ position: "relative" }}>
-    {/* floating badge top-left */}
-    <div
-      className="ap-pill"
-      style={{
-        position: "absolute",
-        top: -18,
-        left: -10,
-        background: "var(--ap-pres-soft)",
-        border: "2px solid var(--ap-pres)",
-        color: "var(--ap-pres-deep)",
-        zIndex: 2,
-        fontSize: "13px",
-        fontWeight: 800,
-      }}
-    >
-      <span className="ap-dot" style={{ background: "var(--ap-pres)" }} />
-      +850 pts !
-    </div>
 
-    {/* card */}
-    <div
-      className="ap-card ap-card--floaty"
-      style={{ maxWidth: 380, padding: "24px", position: "relative" }}
-    >
-      {/* top row */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
-        {/* circular timer */}
-        <div style={{ position: "relative", width: 52, height: 52 }}>
-          <svg width="52" height="52" viewBox="0 0 52 52">
-            <circle cx="26" cy="26" r="22" fill="none" stroke="var(--ap-line)" strokeWidth="4" />
-            <circle
-              cx="26" cy="26" r="22"
-              fill="none" stroke="var(--ap-quiz)" strokeWidth="4"
-              strokeDasharray={`${2 * Math.PI * 22 * 0.4} ${2 * Math.PI * 22}`}
-              strokeLinecap="round"
-              transform="rotate(-90 26 26)"
-            />
-          </svg>
-          <span style={{
-            position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center",
-            fontFamily: "var(--ap-font-display)", fontWeight: 600, fontSize: "17px", color: "var(--ap-ink)",
-          }}>12</span>
+function LeaderboardTile() {
+  const c1 = useCountUp(2450);
+  const c2 = useCountUp(2310);
+  const c3 = useCountUp(2180);
+  return (
+    <div className="ap-card ap-card--hover ap-reveal d6" style={{ boxShadow: "0 5px 0 var(--ap-line)" }}>
+      <h3 className="ap-h3" style={{ marginBottom: 4 }}>Classement en direct</h3>
+      <p style={{ fontSize: 14, color: "var(--ap-muted)", marginBottom: 18 }}>Les scores tombent en temps réel, la tension monte.</p>
+      <div>
+        <div className="ap-lb-row ap-lb-row--first">
+          <span className="ap-lb-row__rank">🥇</span>
+          <span className="ap-lb-row__who"><span className="ap-lb-row__av">🦊</span>Camille</span>
+          <span className="ap-lb-row__up">▲ 2</span>
+          <span ref={c1.ref} className="ap-lb-row__pts ap-mono">{c1.value.toLocaleString("fr-FR")}</span>
         </div>
-        {/* question badge */}
-        <span
-          className="ap-badge ap-badge--flash"
-          style={{ fontSize: "12px", fontWeight: 800 }}
-        >
-          Question 1/8 · 100 pts
-        </span>
-      </div>
-
-      {/* question */}
-      <p style={{
-        fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: "17px",
-        color: "var(--ap-ink)", marginBottom: "18px", lineHeight: 1.35,
-      }}>
-        Quel est le symbole chimique de l'or ?
-      </p>
-
-      {/* answers grid */}
-      <div className="ap-answers" style={{ gap: "10px" }}>
-        <button className="ap-answer ap-answer--1"><span className="ap-answer__shape">▲</span>Au</button>
-        <button className="ap-answer ap-answer--2"><span className="ap-answer__shape">◆</span>Ag</button>
-        <button className="ap-answer ap-answer--3"><span className="ap-answer__shape">●</span>Fe</button>
-        <button className="ap-answer ap-answer--4"><span className="ap-answer__shape">■</span>Cu</button>
+        <div className="ap-lb-row">
+          <span className="ap-lb-row__rank">2</span>
+          <span className="ap-lb-row__who"><span className="ap-lb-row__av">🐙</span>Mehdi</span>
+          <span ref={c2.ref} className="ap-lb-row__pts ap-mono">{c2.value.toLocaleString("fr-FR")}</span>
+        </div>
+        <div className="ap-lb-row" style={{ marginBottom: 0 }}>
+          <span className="ap-lb-row__rank">3</span>
+          <span className="ap-lb-row__who"><span className="ap-lb-row__av">🦉</span>Inès</span>
+          <span ref={c3.ref} className="ap-lb-row__pts ap-mono">{c3.value.toLocaleString("fr-FR")}</span>
+        </div>
       </div>
     </div>
-
-    {/* floating badge bottom-right */}
-    <div
-      className="ap-pill"
-      style={{
-        position: "absolute",
-        bottom: -14,
-        right: -10,
-        zIndex: 2,
-        fontSize: "13px",
-        fontWeight: 800,
-        background: "#fff",
-        boxShadow: "var(--ap-shadow-card)",
-      }}
-    >
-      <span className="ap-dot" style={{ background: "var(--ap-flash)" }} />
-      Léa mène la partie
-    </div>
-  </div>
-);
+  );
+}
 
 const Index = () => {
   const [gameCode, setGameCode] = useState("");
@@ -332,28 +300,7 @@ const Index = () => {
             </div>
 
             {/* Tile 2 — Leaderboard */}
-            <div className="ap-card ap-card--hover ap-reveal d6" style={{ boxShadow: "0 5px 0 var(--ap-line)" }}>
-              <h3 className="ap-h3" style={{ marginBottom: 4 }}>Classement en direct</h3>
-              <p style={{ fontSize: 14, color: "var(--ap-muted)", marginBottom: 18 }}>Les scores tombent en temps réel, la tension monte.</p>
-              <div>
-                <div className="ap-lb-row ap-lb-row--first">
-                  <span className="ap-lb-row__rank">🥇</span>
-                  <span className="ap-lb-row__who"><span className="ap-lb-row__av">🦊</span>Camille</span>
-                  <span className="ap-lb-row__up">▲ 2</span>
-                  <span className="ap-lb-row__pts ap-mono">2 450</span>
-                </div>
-                <div className="ap-lb-row">
-                  <span className="ap-lb-row__rank">2</span>
-                  <span className="ap-lb-row__who"><span className="ap-lb-row__av">🐙</span>Mehdi</span>
-                  <span className="ap-lb-row__pts ap-mono">2 310</span>
-                </div>
-                <div className="ap-lb-row" style={{ marginBottom: 0 }}>
-                  <span className="ap-lb-row__rank">3</span>
-                  <span className="ap-lb-row__who"><span className="ap-lb-row__av">🦉</span>Inès</span>
-                  <span className="ap-lb-row__pts ap-mono">2 180</span>
-                </div>
-              </div>
-            </div>
+            <LeaderboardTile />
 
             {/* Tile 3 — Type badges */}
             <div className="ap-card ap-card--hover ap-reveal d6" style={{ boxShadow: "0 5px 0 var(--ap-line)" }}>
