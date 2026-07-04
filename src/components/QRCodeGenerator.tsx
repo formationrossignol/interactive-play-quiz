@@ -6,21 +6,25 @@ import { useToast } from "@/hooks/use-toast";
 interface QRCodeGeneratorProps {
   gameCode: string;
   joinUrl: string;
+  /** Render only the QR canvas — no card wrapper, title, code text, or action buttons */
+  compact?: boolean;
+  /** Canvas size in px when compact=true (default 108) */
+  compactSize?: number;
 }
 
-export const QRCodeGenerator = ({ gameCode, joinUrl }: QRCodeGeneratorProps) => {
+export const QRCodeGenerator = ({ gameCode, joinUrl, compact = false, compactSize = 108 }: QRCodeGeneratorProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     if (canvasRef.current) {
       QRCode.toCanvas(canvasRef.current, joinUrl, {
-        width: 220,
+        width: compact ? compactSize : 220,
         margin: 2,
         color: { dark: '#241b3a', light: '#ffffff' },
       });
     }
-  }, [joinUrl]);
+  }, [joinUrl, compact, compactSize]);
 
   const downloadQRCode = () => {
     if (canvasRef.current) {
@@ -55,6 +59,19 @@ export const QRCodeGenerator = ({ gameCode, joinUrl }: QRCodeGeneratorProps) => 
       copyJoinUrl();
     }
   };
+
+  if (compact) {
+    return (
+      <canvas
+        ref={canvasRef}
+        style={{
+          display: 'block',
+          borderRadius: 'var(--ap-r-sm)',
+          background: '#fff',
+        }}
+      />
+    );
+  }
 
   return (
     <div className="ap-card" style={{ textAlign: 'center', boxShadow: 'var(--ap-shadow-card)' }}>

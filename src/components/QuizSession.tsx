@@ -870,8 +870,8 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
             <div style={{ display:'grid',gridTemplateColumns:'1fr auto 1fr',gap:12,alignItems:'center' }}>
               <div>
                 <p style={{ fontSize:11,fontWeight:800,letterSpacing:'.09em',textTransform:'uppercase',color:'var(--ap-muted)',marginBottom:8 }}>Code de la partie</p>
-                <div style={{ background:'var(--ap-paper-2)',border:'2px dashed var(--ap-line-2)',borderRadius:'var(--ap-r-md)',padding:'16px 10px' }}>
-                  <div style={{ fontFamily:'var(--ap-font-mono)',fontWeight:700,fontSize:32,letterSpacing:'.12em',fontVariantNumeric:'tabular-nums',lineHeight:1,animation:'pin-breathe 3.2s ease-in-out infinite',color:'var(--ap-ink)' }} aria-label={`Code : ${quiz.gameCode}`}>
+                <div style={{ background:'var(--ap-paper-2)',border:'2px dashed var(--ap-line-2)',borderRadius:'var(--ap-r-md)',padding:'16px 10px',overflow:'hidden' }}>
+                  <div style={{ fontFamily:'var(--ap-font-mono)',fontWeight:700,fontSize: quiz.gameCode.length > 8 ? Math.max(14, 32 - (quiz.gameCode.length - 6) * 1.8) : 32,letterSpacing:'.08em',fontVariantNumeric:'tabular-nums',lineHeight:1.1,animation:'pin-breathe 3.2s ease-in-out infinite',color:'var(--ap-ink)',wordBreak:'break-all' }} aria-label={`Code : ${quiz.gameCode}`}>
                     {quiz.gameCode.slice(0,3)}<span style={{ color:'var(--ap-brand)' }}>{quiz.gameCode.slice(3)}</span>
                   </div>
                 </div>
@@ -881,7 +881,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
                 <p style={{ fontSize:11,fontWeight:800,letterSpacing:'.09em',textTransform:'uppercase',color:'var(--ap-muted)',marginBottom:8 }}>Scannez</p>
                 <div style={{ background:'var(--ap-card)',border:'2px solid var(--ap-line)',borderRadius:'var(--ap-r-md)',padding:8,boxShadow:'0 3px 0 var(--ap-line)',display:'grid',placeItems:'center' }}>
                   {sessionReady ? (
-                    <QRCodeGenerator gameCode={quiz.gameCode} joinUrl={joinUrl} />
+                    <QRCodeGenerator gameCode={quiz.gameCode} joinUrl={joinUrl} compact compactSize={108} />
                   ) : (
                     <div style={{ width:108,height:108,display:'grid',placeItems:'center',color:'var(--ap-muted)',fontSize:12,fontWeight:700 }}>Chargement…</div>
                   )}
@@ -889,7 +889,39 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
               </div>
             </div>
 
-            <div style={{ marginTop:20,fontSize:13,fontWeight:700,background:'var(--ap-flash-soft)',border:'2px solid rgba(255,176,32,.4)',borderRadius:'var(--ap-r-md)',padding:'10px 14px',textAlign:'left',display:'flex',gap:9,alignItems:'flex-start',color:'var(--ap-flash-deep)' }}>
+            {/* Copy / share actions */}
+            {sessionReady && (
+              <div style={{ display:'flex',gap:8,marginTop:12 }}>
+                <button
+                  className="ap-btn ap-btn--sm ap-btn--ghost"
+                  style={{ flex:1,display:'flex',alignItems:'center',justifyContent:'center',gap:6 }}
+                  onClick={async () => {
+                    try { await navigator.clipboard.writeText(joinUrl); toast.success('Lien copié !'); }
+                    catch { toast.error('Échec de la copie'); }
+                  }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                  Copier le lien
+                </button>
+                <button
+                  className="ap-btn ap-btn--sm ap-btn--ghost"
+                  style={{ flex:1,display:'flex',alignItems:'center',justifyContent:'center',gap:6 }}
+                  onClick={async () => {
+                    if (navigator.share) {
+                      try { await navigator.share({ title:'Rejoignez mon quiz !', text:`Code : ${quiz.gameCode}`, url: joinUrl }); }
+                      catch (e) { if ((e as Error).name !== 'AbortError') { await navigator.clipboard.writeText(joinUrl); toast.success('Lien copié !'); } }
+                    } else {
+                      await navigator.clipboard.writeText(joinUrl); toast.success('Lien copié !');
+                    }
+                  }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                  Partager
+                </button>
+              </div>
+            )}
+
+            <div style={{ marginTop:12,fontSize:13,fontWeight:700,background:'var(--ap-flash-soft)',border:'2px solid rgba(255,176,32,.4)',borderRadius:'var(--ap-r-md)',padding:'10px 14px',textAlign:'left',display:'flex',gap:9,alignItems:'flex-start',color:'var(--ap-flash-deep)' }}>
               <span aria-hidden="true">💡</span>
               <span>Le quiz comporte {quiz.questions.length} question{quiz.questions.length > 1 ? 's' : ''}. Rejoignez avant le lancement !</span>
             </div>
