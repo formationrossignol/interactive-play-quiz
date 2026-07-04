@@ -147,6 +147,20 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
   const sessionStartedAtRef = useRef<number>(Date.now());
   const reactionsEndRef = useRef<HTMLDivElement>(null);
 
+  // Final screen sequential reveal
+  const [revealPhase, setRevealPhase] = useState<'none' | 'bronze' | 'silver' | 'suspense' | 'gold' | 'stats'>('none');
+
+  useEffect(() => {
+    if (gameState !== 'final') { setRevealPhase('none'); return; }
+    const t: ReturnType<typeof setTimeout>[] = [];
+    t.push(setTimeout(() => setRevealPhase('bronze'),   500));
+    t.push(setTimeout(() => setRevealPhase('silver'),  1500));
+    t.push(setTimeout(() => setRevealPhase('suspense'), 2500));
+    t.push(setTimeout(() => setRevealPhase('gold'),    4100));
+    t.push(setTimeout(() => setRevealPhase('stats'),   5100));
+    return () => t.forEach(clearTimeout);
+  }, [gameState]);
+
   const joinUrl = `${window.location.origin}/join/${quiz.gameCode}`;
   const currentQuestion = quiz.questions[currentQuestionIndex];
 
@@ -1310,383 +1324,342 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
     const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
     const [p1, p2, p3] = sortedPlayers;
 
-    const podiumStep = (
-      label: string,
-      score: number,
-      avatar: string,
-      medal: string,
-      height: number,
-      width: number,
-      bg: string,
-      textColor: string,
-      avatarSize: 'sm' | 'md' | 'lg' | 'xl',
-      glow?: string,
-    ) => (
-      <div className="flex flex-col items-center" style={{ width }}>
-        <AvatarDisplay emoji={avatar} size={avatarSize} />
-        <div
-          style={{
-            width: '100%',
-            height,
-            background: bg,
-            borderRadius: '14px 14px 0 0',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '12px 8px 10px',
-            boxShadow: glow ?? 'none',
-          }}
-        >
-          <span
-            style={{
-              fontSize: '0.78rem',
-              fontWeight: 800,
-              color: textColor,
-              fontFamily: 'var(--ap-font-display)',
-              textAlign: 'center',
-              lineHeight: 1.2,
-              maxWidth: '100%',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {label}
-          </span>
-          <span style={{ fontSize: height >= 140 ? '3rem' : '2.2rem' }}>{medal}</span>
-          <span style={{ fontSize: '0.75rem', fontWeight: 800, color: textColor, opacity: 0.85 }}>
-            {score.toLocaleString()} pts
-          </span>
+    const phaseAfter = (phase: string) =>
+      ['bronze','silver','suspense','gold','stats'].slice(
+        ['bronze','silver','suspense','gold','stats'].indexOf(phase)
+      ).includes(revealPhase);
+
+    const avgCorrect = players.length > 0 && quiz.questions.length > 0
+      ? Math.round((players.reduce((s, p) => s + p.correctAnswers, 0) / players.length / quiz.questions.length) * 100)
+      : 0;
+
+    const PILLAR = {
+      1: { h: 210, bg: 'linear-gradient(180deg,#ffb020,#c98700)', shadow: '0 0 60px rgba(255,176,32,.25),inset 0 4px 0 rgba(255,255,255,.35)' },
+      2: { h: 150, bg: 'linear-gradient(180deg,#cfd4e2,#9aa2b8)', shadow: 'inset 0 4px 0 rgba(255,255,255,.4)' },
+      3: { h: 112, bg: 'linear-gradient(180deg,#e08a5a,#b05f30)', shadow: 'inset 0 4px 0 rgba(255,255,255,.3)' },
+    } as const;
+
+    const PodiumStep = ({ player, rank, revealed }: { player: typeof p1; rank: 1|2|3; revealed: boolean }) => {
+      const { h, bg, shadow } = PILLAR[rank];
+      const avatarSize = rank === 1 ? 84 : 72;
+      const borderColor = rank === 1 ? '#ffb020' : rank === 2 ? '#cfd4e2' : '#e08a5a';
+      const borderDeep  = rank === 1 ? '#c98700' : rank === 2 ? '#9aa2b8' : '#b05f30';
+      const glowShadow  = rank === 1 ? `,0 0 44px rgba(255,176,32,.4)` : '';
+      return (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          {/* champ section */}
+          <div style={{
+            display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 14,
+            opacity: revealed ? undefined : 0,
+            transform: revealed ? undefined : 'translateY(26px) scale(.85)',
+            animation: revealed ? 'champ-in .6s cubic-bezier(.2,.7,.3,1.3) forwards' : undefined,
+          }}>
+            {rank === 1 && (
+              <span style={{
+                fontSize: 30, lineHeight: 1, marginBottom: -8, zIndex: 2,
+                filter: 'drop-shadow(0 3px 0 rgba(0,0,0,.25))',
+                opacity: revealed ? undefined : 0,
+                transform: revealed ? undefined : 'translateY(10px) rotate(-14deg)',
+                animation: revealed ? 'crown-in .5s cubic-bezier(.2,.7,.3,1.3) .25s forwards' : undefined,
+              }}>👑</span>
+            )}
+            {player ? (
+              <div style={{
+                width: avatarSize, height: avatarSize, borderRadius: '50%',
+                background: '#fff', display: 'grid', placeItems: 'center',
+                fontSize: rank === 1 ? 42 : 36,
+                border: `4px solid #1c1430`,
+                boxShadow: `0 0 0 4px ${borderColor},0 6px 0 ${borderDeep}${glowShadow}`,
+              }}>
+                <AvatarDisplay emoji={player.avatar} size={rank === 1 ? 'xl' : 'lg'} />
+              </div>
+            ) : (
+              <div style={{ width: avatarSize, height: avatarSize, borderRadius: '50%', background: 'rgba(255,255,255,.08)', border: `4px solid rgba(255,255,255,.15)` }} />
+            )}
+            <span style={{ marginTop: 12, fontWeight: 800, fontSize: 17, color: '#fff' }}>
+              {player?.name ?? '—'}
+            </span>
+            <span style={{ fontFamily: 'var(--ap-font-mono)', fontWeight: 700, fontSize: rank === 1 ? 17 : 15, color: rank === 1 ? '#ffb020' : '#b6aed0', marginTop: 2 }}>
+              {(player?.score ?? 0).toLocaleString('fr-FR')} pts
+            </span>
+          </div>
+          {/* pillar */}
+          <div style={{
+            width: '100%', borderRadius: '18px 18px 0 0',
+            display: 'grid', placeItems: 'center',
+            height: h, background: bg, boxShadow: shadow,
+            transform: revealed ? undefined : 'scaleY(0)',
+            transformOrigin: 'bottom',
+            animation: revealed ? 'grow .55s cubic-bezier(.2,.7,.3,1) forwards' : undefined,
+          }}>
+            <span style={{
+              fontFamily: 'var(--ap-font-display)', fontWeight: 600, fontSize: 44,
+              color: 'rgba(255,255,255,.92)', textShadow: '0 3px 0 rgba(0,0,0,.18)',
+              opacity: revealed ? undefined : 0,
+              animation: revealed ? 'fade .3s .4s forwards' : undefined,
+            }}>{rank}</span>
+          </div>
         </div>
-      </div>
-    );
+      );
+    };
 
     return (
-      <div style={{ background: 'var(--ap-paper)', minHeight: '100vh', fontFamily: 'var(--ap-font-body)' }} className="relative">
+      <div style={{
+        minHeight: '100vh',
+        background: 'radial-gradient(1100px 600px at 50% -10%,#2d2150 0%,transparent 60%),#1c1430',
+        fontFamily: 'var(--ap-font-body)',
+        color: '#fff',
+        display: 'flex',
+        overflow: 'hidden',
+        WebkitFontSmoothing: 'antialiased',
+      }}>
         <style>{`
-          @keyframes floatUp {
-            0%   { opacity: 1; transform: translateY(0) scale(1); }
-            80%  { opacity: 0.8; }
-            100% { opacity: 0; transform: translateY(-200px) scale(1.02); }
-          }
-          .reaction-float { animation: floatUp 2.8s ease-out forwards; pointer-events: none; position: fixed; z-index: 9999; }
+          @keyframes twinkle    { 50% { opacity:.12; transform:scale(.7); } }
+          @keyframes champ-in   { to  { opacity:1; transform:none; } }
+          @keyframes crown-in   { to  { opacity:1; transform:rotate(-8deg); } }
+          @keyframes grow       { to  { transform:scaleY(1); } }
+          @keyframes fade       { to  { opacity:1; } }
+          @keyframes rise       { to  { opacity:1; transform:none; } }
+          @keyframes night-slide{ to  { opacity:1; transform:none; } }
+          @keyframes bounce-dot { 40% { transform:translateY(-6px); } }
+          @keyframes floatUp    { 0%{opacity:1;transform:translateY(0) scale(1);}80%{opacity:.8;}100%{opacity:0;transform:translateY(-200px) scale(1.02);} }
+          .reaction-float { animation:floatUp 2.8s ease-out forwards; pointer-events:none; position:fixed; z-index:9999; }
         `}</style>
+
         <Fireworks />
 
-        {/* Floating reaction bubbles (with podium colors for top 3) */}
+        {/* Floating reaction bubbles */}
         {(() => {
-          const fpMap: Record<string, { bg: string; border: string; nameColor: string; textColor: string }> = {};
-          if (p1) fpMap[p1.name] = { bg: 'linear-gradient(135deg,#FFE566,#FFCC00)', border: '#e5aa00', nameColor: '#7a4000', textColor: '#5a2e00' };
-          if (p2) fpMap[p2.name] = { bg: 'linear-gradient(135deg,#E8E8E8,#C0C0C0)', border: '#aaa', nameColor: '#333', textColor: '#222' };
-          if (p3) fpMap[p3.name] = { bg: 'linear-gradient(135deg,#E8A87C,#CD7F32)', border: '#a06030', nameColor: '#4a2000', textColor: '#3a1800' };
+          const fpMap: Record<string,{bg:string;border:string;nameColor:string;textColor:string}> = {};
+          if (p1) fpMap[p1.name] = { bg:'linear-gradient(135deg,#FFE566,#FFCC00)', border:'#e5aa00', nameColor:'#7a4000', textColor:'#5a2e00' };
+          if (p2) fpMap[p2.name] = { bg:'linear-gradient(135deg,#E8E8E8,#C0C0C0)', border:'#aaa',    nameColor:'#333',    textColor:'#222' };
+          if (p3) fpMap[p3.name] = { bg:'linear-gradient(135deg,#E8A87C,#CD7F32)', border:'#a06030', nameColor:'#4a2000', textColor:'#3a1800' };
           return floatingReactions.map((r) => {
             const ps = fpMap[r.playerName];
             return (
-              <div key={r.id} className="reaction-float" style={{ left: `${r.x}%`, bottom: '20%' }}>
+              <div key={r.id} className="reaction-float" style={{ left:`${r.x}%`, bottom:'20%' }}>
                 <div style={{
-                  display: 'flex', alignItems: 'center', gap: 6,
-                  background: ps ? ps.bg : 'rgba(0,0,0,0.78)',
+                  display:'flex', alignItems:'center', gap:6,
+                  background: ps ? ps.bg : 'rgba(0,0,0,.78)',
                   backdropFilter: ps ? undefined : 'blur(10px)',
-                  border: `1.5px solid ${ps ? ps.border : 'rgba(255,255,255,0.2)'}`,
-                  borderRadius: 999, padding: '6px 14px',
-                  boxShadow: '0 4px 20px rgba(0,0,0,0.25)',
+                  border: `1.5px solid ${ps ? ps.border : 'rgba(255,255,255,.2)'}`,
+                  borderRadius:999, padding:'6px 14px',
+                  boxShadow:'0 4px 20px rgba(0,0,0,.25)',
                 }}>
-                  <div style={{ flexShrink: 0 }}><AvatarDisplay emoji={r.avatar} size="xs" /></div>
-                  <span style={{ color: ps ? ps.nameColor : '#fff', fontSize: '11px', fontWeight: 700, flexShrink: 0, fontFamily: 'var(--ap-font-body)' }}>{r.playerName}</span>
-                  <span style={{ fontSize: r.isEmoji ? '1.4rem' : '12px', color: ps ? ps.textColor : 'rgba(255,255,255,0.9)', fontFamily: 'var(--ap-font-body)', maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: r.isEmoji ? 'nowrap' : 'normal' }}>{r.text}</span>
+                  <div style={{ flexShrink:0 }}><AvatarDisplay emoji={r.avatar} size="xs" /></div>
+                  <span style={{ color: ps ? ps.nameColor : '#fff', fontSize:11, fontWeight:700, flexShrink:0, fontFamily:'var(--ap-font-body)' }}>{r.playerName}</span>
+                  <span style={{ fontSize: r.isEmoji ? '1.4rem' : 12, color: ps ? ps.textColor : 'rgba(255,255,255,.9)', fontFamily:'var(--ap-font-body)' }}>{r.text}</span>
                 </div>
               </div>
             );
           });
         })()}
 
-        <div className="relative z-10 flex min-h-screen">
-          {/* ── Main content ── */}
-          <div className="flex-1 flex flex-col overflow-auto px-4 pt-8 text-center" style={{ position: 'relative' }}>
-            {/* Stage spotlights inside main content — coordinates are % of this area so sidebar is automatically excluded */}
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none', zIndex: -1, overflow: 'hidden' }}>
-              <svg width="100%" height="100%" viewBox="0 0 1000 820" preserveAspectRatio="xMidYMin slice" style={{ display: 'block' }}>
-                <defs>
-                  <linearGradient id="beam-l" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="rgba(190,210,255,0.6)"/>
-                    <stop offset="55%" stopColor="rgba(190,210,255,0.14)"/>
-                    <stop offset="100%" stopColor="rgba(190,210,255,0)"/>
-                  </linearGradient>
-                  <linearGradient id="beam-c" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="rgba(255,215,0,0.72)"/>
-                    <stop offset="50%" stopColor="rgba(255,215,0,0.2)"/>
-                    <stop offset="100%" stopColor="rgba(255,215,0,0)"/>
-                  </linearGradient>
-                  <linearGradient id="beam-r" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="rgba(190,210,255,0.6)"/>
-                    <stop offset="55%" stopColor="rgba(190,210,255,0.14)"/>
-                    <stop offset="100%" stopColor="rgba(190,210,255,0)"/>
-                  </linearGradient>
-                  <filter id="bblur" x="-30%" y="0%" width="160%" height="110%">
-                    <feGaussianBlur stdDeviation="14"/>
-                  </filter>
-                </defs>
-                {/* Left beam — fixture at x=200, aimed at p2 (x≈350 in content space) */}
-                <polygon points="186,0 214,0 490,820 90,820" fill="url(#beam-l)" filter="url(#bblur)"/>
-                <polygon points="191,0 209,0 445,820 135,820" fill="url(#beam-l)" opacity="0.55"/>
-                <ellipse cx="200" cy="5" rx="32" ry="9" fill="#c8d4f0" stroke="#8898c8" strokeWidth="1.5"/>
-                <ellipse cx="200" cy="2" rx="16" ry="5" fill="rgba(210,225,255,0.95)"/>
-                <circle cx="200" cy="0" r="8" fill="rgba(230,240,255,1)" opacity="0.85"/>
-                {/* Center beam — fixture at x=500, aimed at p1 center */}
-                <polygon points="476,0 524,0 720,820 280,820" fill="url(#beam-c)" filter="url(#bblur)"/>
-                <polygon points="483,0 517,0 680,820 320,820" fill="url(#beam-c)" opacity="0.55"/>
-                <ellipse cx="500" cy="5" rx="36" ry="11" fill="#e8c000" stroke="#a08800" strokeWidth="2"/>
-                <ellipse cx="500" cy="2" rx="18" ry="6" fill="rgba(255,240,80,0.98)"/>
-                <circle cx="500" cy="0" r="10" fill="rgba(255,250,170,1)" opacity="0.9"/>
-                {/* Right beam — fixture at x=800, aimed at p3 (x≈645 in content space) */}
-                <polygon points="786,0 814,0 910,820 510,820" fill="url(#beam-r)" filter="url(#bblur)"/>
-                <polygon points="791,0 809,0 865,820 555,820" fill="url(#beam-r)" opacity="0.55"/>
-                <ellipse cx="800" cy="5" rx="32" ry="9" fill="#c8d4f0" stroke="#8898c8" strokeWidth="1.5"/>
-                <ellipse cx="800" cy="2" rx="16" ry="5" fill="rgba(210,225,255,0.95)"/>
-                <circle cx="800" cy="0" r="8" fill="rgba(230,240,255,1)" opacity="0.85"/>
-              </svg>
-            </div>
+        {/* ── Main content ── */}
+        <div style={{
+          flex: 1, position:'relative', zIndex:2,
+          display:'flex', flexDirection:'column', alignItems:'center',
+          padding:'40px 24px 60px', overflowY:'auto',
+        }}>
+          {/* Header */}
+          <header style={{ textAlign:'center', marginBottom:12, width:'100%', maxWidth:1080 }}>
+            <span style={{
+              display:'inline-flex', alignItems:'center', gap:8,
+              fontSize:12.5, fontWeight:800, letterSpacing:'.1em', textTransform:'uppercase',
+              color:'#ffb020', background:'rgba(255,176,32,.1)',
+              border:'2px solid rgba(255,176,32,.35)',
+              padding:'6px 15px', borderRadius:999, marginBottom:18,
+            }}>🏁 Session terminée</span>
+            <h1 style={{
+              fontFamily:'var(--ap-font-display)', fontWeight:600,
+              fontSize:'clamp(30px,4vw,46px)', letterSpacing:'-.01em', lineHeight:1.1, color:'#fff',
+            }}>{quiz.title}</h1>
+            <p style={{ marginTop:8, fontWeight:700, fontSize:15, color:'#b6aed0' }}>
+              {players.length} joueur{players.length > 1 ? 's' : ''} · {quiz.questions.length} question{quiz.questions.length > 1 ? 's' : ''}
+            </p>
+          </header>
 
-            {/* Banner title — simple arrow ribbon */}
-            <div className="mb-4 flex-shrink-0 flex justify-center px-2">
-              <svg viewBox="0 0 800 76" style={{ width: '100%', maxWidth: 800, display: 'block', overflow: 'visible', filter: 'drop-shadow(0 6px 18px rgba(0,0,0,0.55))' }}>
-                <defs>
-                  <linearGradient id="rib2-red" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#d41010"/>
-                    <stop offset="42%" stopColor="#9e0808"/>
-                    <stop offset="58%" stopColor="#9e0808"/>
-                    <stop offset="100%" stopColor="#d41010"/>
-                  </linearGradient>
-                  <linearGradient id="rib2-shine" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="rgba(255,255,255,0.18)"/>
-                    <stop offset="55%" stopColor="rgba(255,255,255,0)"/>
-                  </linearGradient>
-                  <filter id="rib2-ts">
-                    <feDropShadow dx="1" dy="2" stdDeviation="2" floodColor="#5a1800" floodOpacity="0.85"/>
-                  </filter>
-                </defs>
-                {/* Main body — arrow-point both ends */}
-                <polygon points="0,38 56,0 744,0 800,38 744,76 56,76" fill="url(#rib2-red)"/>
-                {/* Top-half shine */}
-                <polygon points="0,38 56,0 744,0 800,38 744,36 56,36" fill="url(#rib2-shine)" opacity="0.55"/>
-                {/* Outer gold border */}
-                <polygon points="0,38 56,0 744,0 800,38 744,76 56,76" fill="none" stroke="#C8A000" strokeWidth="2.5"/>
-                {/* Inner gold border */}
-                <polygon points="22,38 66,10 734,10 778,38 734,66 66,66" fill="none" stroke="#E0B800" strokeWidth="1.5" opacity="0.85"/>
-                {/* Title */}
-                <text x="401" y="49" textAnchor="middle" fontSize="36" fontWeight="700" fill="#6a1800" fontFamily="Fredoka, system-ui, sans-serif">Quiz terminé !</text>
-                <text x="400" y="48" textAnchor="middle" fontSize="36" fontWeight="700" fill="#FFD700" fontFamily="Fredoka, system-ui, sans-serif" filter="url(#rib2-ts)">Quiz terminé !</text>
-              </svg>
-            </div>
+          {/* Suspense text */}
+          <p style={{
+            textAlign:'center', minHeight:34, margin:'18px 0 6px',
+            fontFamily:'var(--ap-font-display)', fontWeight:600, fontSize:21,
+            color:'#ffb020',
+            opacity: revealPhase === 'suspense' ? 1 : 0,
+            transition:'opacity .4s',
+          }} role="status" aria-live="polite">
+            {revealPhase === 'suspense' && <>Et la première place revient à<span>
+              {[0,1,2].map(i => <i key={i} style={{ display:'inline-block', animation:`bounce-dot 1s ${i*150}ms infinite` }}>.</i>)}
+            </span></>}
+          </p>
 
-            {/* Bottom zone: 4+ list beside podium */}
-            <div className="flex-1 flex items-end gap-3 mb-0 min-h-0">
+          {/* Podium — order: 2nd | 1st | 3rd */}
+          <section style={{
+            display:'grid', gridTemplateColumns:'repeat(3,minmax(0,200px))',
+            justifyContent:'center', alignItems:'end', gap:22,
+            margin:'26px 0 10px', minHeight:380, width:'100%', maxWidth:660,
+          }} aria-label="Podium des trois premiers">
+            <PodiumStep player={p2} rank={2} revealed={phaseAfter('silver')} />
+            <PodiumStep player={p1} rank={1} revealed={phaseAfter('gold')} />
+            <PodiumStep player={p3} rank={3} revealed={phaseAfter('bronze')} />
+          </section>
 
-              {/* Players 4+ — scrollable column beside podium */}
-              {sortedPlayers.length > 3 && (
+          {/* Podium floor */}
+          <div style={{ height:10, maxWidth:760, width:'100%', background:'rgba(255,255,255,.08)', borderRadius:999 }} aria-hidden="true" />
+
+          {/* Stats */}
+          {phaseAfter('stats') && (
+            <section style={{
+              display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:14,
+              maxWidth:760, width:'100%', margin:'34px auto 0',
+              opacity:0, transform:'translateY(16px)',
+              animation:'rise .5s cubic-bezier(.2,.7,.3,1) forwards',
+            }} aria-label="Statistiques de la session">
+              <div style={{ background:'rgba(255,255,255,.05)', border:'2px solid rgba(255,255,255,.1)', borderRadius:16, padding:'15px 18px', textAlign:'center' }}>
+                <b style={{ display:'block', fontFamily:'var(--ap-font-display)', fontWeight:600, fontSize:26, color:'#15c08a', fontVariantNumeric:'tabular-nums' }}>{avgCorrect}%</b>
+                <small style={{ fontSize:12, fontWeight:800, letterSpacing:'.06em', textTransform:'uppercase', color:'#b6aed0' }}>Réussite moyenne</small>
+              </div>
+              <div style={{ background:'rgba(255,255,255,.05)', border:'2px solid rgba(255,255,255,.1)', borderRadius:16, padding:'15px 18px', textAlign:'center' }}>
+                <b style={{ display:'block', fontFamily:'var(--ap-font-display)', fontWeight:600, fontSize:26, fontVariantNumeric:'tabular-nums' }}>{players.length}/{players.length}</b>
+                <small style={{ fontSize:12, fontWeight:800, letterSpacing:'.06em', textTransform:'uppercase', color:'#b6aed0' }}>Participation</small>
+              </div>
+              <div style={{ background:'rgba(255,255,255,.05)', border:'2px solid rgba(255,255,255,.1)', borderRadius:16, padding:'15px 18px', textAlign:'center' }}>
+                <b style={{ display:'block', fontFamily:'var(--ap-font-display)', fontWeight:600, fontSize:26, color:'#ffb020', fontVariantNumeric:'tabular-nums' }}>{p1?.score.toLocaleString('fr-FR') ?? '—'}</b>
+                <small style={{ fontSize:12, fontWeight:800, letterSpacing:'.06em', textTransform:'uppercase', color:'#b6aed0' }}>Meilleur score</small>
+              </div>
+            </section>
+          )}
+
+          {/* Full leaderboard (4th place and beyond) */}
+          {phaseAfter('stats') && sortedPlayers.length > 3 && (
+            <section style={{ maxWidth:560, width:'100%', margin:'30px auto 0' }} aria-label="Suite du classement">
+              <h2 style={{
+                fontSize:12, fontWeight:800, letterSpacing:'.1em', textTransform:'uppercase',
+                color:'#b6aed0', marginBottom:12, display:'flex', alignItems:'center', gap:12,
+              }}>
+                Classement complet
+                <span style={{ flex:1, height:2, background:'rgba(255,255,255,.1)', borderRadius:2, display:'block' }} />
+              </h2>
+              {sortedPlayers.slice(3).map((player, i) => (
                 <div
-                  className="flex flex-col gap-1.5 overflow-y-auto flex-shrink-0"
-                  style={{ width: 180, maxHeight: 280, paddingBottom: 7 }}
+                  key={player.id}
+                  style={{
+                    display:'flex', alignItems:'center', gap:13,
+                    background:'rgba(255,255,255,.05)', border:'2px solid rgba(255,255,255,.09)',
+                    borderRadius:16, padding:'10px 15px', marginBottom:8,
+                    opacity:0, transform:'translateX(-14px)',
+                    animation:`night-slide .4s cubic-bezier(.2,.7,.3,1) ${i * 110}ms forwards`,
+                  }}
                 >
-                  {sortedPlayers.slice(3).map((player, idx) => (
-                    <div
-                      key={player.id}
-                      className="flex items-center gap-2 px-3 py-1.5 flex-shrink-0"
-                      style={{
-                        background: 'var(--ap-card)',
-                        border: '1.5px solid var(--ap-line)',
-                        borderRadius: 'var(--ap-r-sm)',
-                        boxShadow: 'var(--ap-shadow-soft)',
-                      }}
-                    >
-                      <span
-                        className="text-xs w-4 text-center flex-shrink-0"
-                        style={{ fontFamily: 'var(--ap-font-display)', fontWeight: 700, color: 'var(--ap-muted)' }}
-                      >
-                        {idx + 4}
-                      </span>
-                      <AvatarDisplay emoji={player.avatar} size="xs" />
-                      <span
-                        className="flex-1 text-left truncate text-xs"
-                        style={{ fontFamily: 'var(--ap-font-body)', fontWeight: 700, color: 'var(--ap-ink)' }}
-                      >
-                        {player.name}
-                      </span>
-                      <span
-                        className="text-xs flex-shrink-0"
-                        style={{ fontFamily: 'var(--ap-font-display)', fontWeight: 700, color: 'var(--ap-muted)' }}
-                      >
-                        {player.score.toLocaleString()}
-                      </span>
-                    </div>
-                  ))}
+                  <span style={{ fontFamily:'var(--ap-font-display)', fontWeight:600, width:24, textAlign:'center', color:'#b6aed0' }}>{i + 4}</span>
+                  <div style={{ width:34, height:34, borderRadius:'50%', background:'rgba(255,255,255,.1)', display:'grid', placeItems:'center', fontSize:17, flexShrink:0 }}>
+                    <AvatarDisplay emoji={player.avatar} size="xs" />
+                  </div>
+                  <span style={{ flex:1, fontWeight:800, fontSize:14.5 }}>{player.name}</span>
+                  <span style={{ fontFamily:'var(--ap-font-mono)', fontWeight:700, fontSize:14, color:'#b6aed0', fontVariantNumeric:'tabular-nums' }}>{player.score.toLocaleString('fr-FR')} pts</span>
                 </div>
-              )}
+              ))}
+            </section>
+          )}
 
-              {/* Podium — order: 2nd | 1st | 3rd */}
-              <div className="flex-1 flex flex-col items-center min-w-0">
-                <div className="flex items-end justify-center gap-0 w-full">
-              {p2
-                ? podiumStep(p2.name, p2.score, p2.avatar, '🥈', 110, 140,
-                    'linear-gradient(170deg,#E8E8E8 0%,#B8B8B8 100%)',
-                    '#444', 'lg',
-                    'inset 0 1px 0 rgba(255,255,255,0.5)')
-                : (
-                  <div className="flex flex-col items-center" style={{ width: 140 }}>
-                    <div style={{ width: 50, height: 50 }} />
-                    <div style={{
-                      width: '100%', height: 110,
-                      background: 'linear-gradient(170deg,#E8E8E8 0%,#B8B8B8 100%)',
-                      borderRadius: '14px 14px 0 0',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      opacity: 0.4,
-                    }}>
-                      <span style={{ fontSize: '2.2rem' }}>🥈</span>
-                    </div>
-                  </div>
-                )}
+          {/* Actions */}
+          {isHost && phaseAfter('stats') && (
+            <section style={{
+              display:'flex', flexWrap:'wrap', gap:13, justifyContent:'center', marginTop:38,
+              opacity:0, transform:'translateY(16px)',
+              animation:'rise .5s cubic-bezier(.2,.7,.3,1) .6s forwards',
+            }}>
+              <button
+                onClick={exportResults}
+                style={{
+                  display:'inline-flex', alignItems:'center', gap:9,
+                  fontFamily:'var(--ap-font-body)', fontWeight:800, fontSize:15,
+                  padding:'13px 24px', borderRadius:999, border:'none', cursor:'pointer',
+                  color:'#241b3a', background:'#ffb020',
+                  boxShadow:'0 5px 0 #c98700',
+                  transition:'transform .15s,box-shadow .15s',
+                }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform='translateY(-2px)'; (e.currentTarget as HTMLElement).style.boxShadow='0 7px 0 #c98700'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform=''; (e.currentTarget as HTMLElement).style.boxShadow='0 5px 0 #c98700'; }}
+              >
+                <Download style={{ width:16, height:16 }} />
+                Exporter les résultats
+              </button>
+              <button
+                onClick={() => window.location.href = '/'}
+                style={{
+                  display:'inline-flex', alignItems:'center', gap:9,
+                  fontFamily:'var(--ap-font-body)', fontWeight:800, fontSize:15,
+                  padding:'13px 24px', borderRadius:999, border:'none', cursor:'pointer',
+                  color:'#fff', background:'rgba(255,255,255,.08)',
+                  boxShadow:'0 5px 0 rgba(0,0,0,.35),inset 0 0 0 2px rgba(255,255,255,.16)',
+                  transition:'transform .15s,box-shadow .15s',
+                }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.boxShadow='0 7px 0 rgba(0,0,0,.35),inset 0 0 0 2px rgba(255,255,255,.3)'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.boxShadow='0 5px 0 rgba(0,0,0,.35),inset 0 0 0 2px rgba(255,255,255,.16)'; }}
+              >
+                🎮 Nouveau Quiz
+              </button>
+            </section>
+          )}
+        </div>
 
-              {p1
-                ? podiumStep(p1.name, p1.score, p1.avatar, '🏆', 160, 160,
-                    'linear-gradient(170deg,#FFE566 0%,#FFB800 100%)',
-                    '#7a4000', 'xl',
-                    'inset 0 1px 0 rgba(255,255,255,0.5), 0 -10px 36px rgba(255,184,0,0.55)')
-                : (
-                  <div className="flex flex-col items-center" style={{ width: 160 }}>
-                    <div style={{ width: 60, height: 60 }} />
-                    <div style={{
-                      width: '100%', height: 160,
-                      background: 'linear-gradient(170deg,#FFE566 0%,#FFB800 100%)',
-                      borderRadius: '14px 14px 0 0',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      opacity: 0.4,
-                    }}>
-                      <span style={{ fontSize: '3rem' }}>🏆</span>
-                    </div>
-                  </div>
-                )}
-
-              {p3
-                ? podiumStep(p3.name, p3.score, p3.avatar, '🥉', 80, 130,
-                    'linear-gradient(170deg,#E8A87C 0%,#CD7F32 100%)',
-                    '#4a2000', 'lg',
-                    'inset 0 1px 0 rgba(255,255,255,0.4)')
-                : (
-                  <div className="flex flex-col items-center" style={{ width: 130 }}>
-                    <div style={{ width: 45, height: 45 }} />
-                    <div style={{
-                      width: '100%', height: 80,
-                      background: 'linear-gradient(170deg,#E8A87C 0%,#CD7F32 100%)',
-                      borderRadius: '14px 14px 0 0',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      opacity: 0.4,
-                    }}>
-                      <span style={{ fontSize: '2.2rem' }}>🥉</span>
-                    </div>
-                  </div>
-                )}
-                </div>{/* end podium row */}
-
-                {/* Podium floor */}
-                <div
-                  style={{ height: 7, background: 'var(--ap-line)', borderRadius: '0 0 10px 10px', width: '100%' }}
-                />
-              </div>{/* end podium column */}
-
-            </div>{/* end bottom zone */}
-
-            {/* Buttons */}
-            {isHost && (
-              <div className="flex justify-center gap-4 flex-wrap py-6 flex-shrink-0">
-                <button onClick={exportResults} className="ap-btn ap-btn--ghost">
-                  <Download className="w-5 h-5" />
-                  Exporter
-                </button>
-                <button
-                  onClick={() => window.location.href = '/'}
-                  className="ap-btn ap-btn--lg ap-btn--pill"
-                  style={{ background: 'var(--ap-brand)', boxShadow: '0 5px 0 var(--ap-brand-deep)' }}
-                >
-                  🎮 Nouveau Quiz
-                </button>
+        {/* ── Live reactions sidebar (host only) ── */}
+        {isHost && (
+          <div style={{
+            width:240, flexShrink:0,
+            display:'flex', flexDirection:'column', padding:16,
+            borderLeft:'2px solid rgba(255,255,255,.1)',
+            background:'rgba(255,255,255,.04)',
+            position:'sticky', top:0, height:'100vh', overflow:'hidden',
+          }}>
+            <div style={{
+              marginBottom:12, flexShrink:0,
+              fontSize:11, fontWeight:800, letterSpacing:'.08em', textTransform:'uppercase',
+              color:'#b6aed0', fontFamily:'var(--ap-font-display)',
+            }}>Réactions live</div>
+            {reactionComments.length === 0 ? (
+              <div style={{
+                flex:1, display:'flex', alignItems:'center', justifyContent:'center',
+                fontSize:12, textAlign:'center', color:'#b6aed0', fontFamily:'var(--ap-font-body)',
+              }}>En attente de réactions…</div>
+            ) : (
+              <div style={{ flex:1, overflowY:'auto', display:'flex', flexDirection:'column', gap:6 }}>
+                {(() => {
+                  const podiumMap: Record<string,{bg:string;border:string;nameColor:string;textColor:string}> = {};
+                  if (p1) podiumMap[p1.name] = { bg:'linear-gradient(135deg,#FFE566,#FFCC00)', border:'#e5aa00', nameColor:'#7a4000', textColor:'#5a2e00' };
+                  if (p2) podiumMap[p2.name] = { bg:'linear-gradient(135deg,#E8E8E8,#C0C0C0)', border:'#aaa',    nameColor:'#333',    textColor:'#222' };
+                  if (p3) podiumMap[p3.name] = { bg:'linear-gradient(135deg,#E8A87C,#CD7F32)', border:'#a06030', nameColor:'#4a2000', textColor:'#3a1800' };
+                  return reactionComments.map((c, i) => {
+                    const ps = podiumMap[c.playerName];
+                    return (
+                      <div
+                        key={`${c.playerName}-${c.ts}-${i}`}
+                        style={{
+                          display:'flex', alignItems:'center', gap:8,
+                          padding:'6px 10px',
+                          background: ps ? ps.bg : 'rgba(255,255,255,.06)',
+                          border: `1.5px solid ${ps ? ps.border : 'rgba(255,255,255,.12)'}`,
+                          borderRadius:12,
+                        }}
+                      >
+                        <div style={{ flexShrink:0 }}><AvatarDisplay emoji={c.avatar} size="xs" /></div>
+                        <div style={{ minWidth:0, flex:1 }}>
+                          <span style={{ fontWeight:700, fontSize:11, display:'block', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', color: ps ? ps.nameColor : '#b6aed0', fontFamily:'var(--ap-font-display)' }}>{c.playerName}</span>
+                          <span style={{ fontSize:12, fontWeight:600, color: ps ? ps.textColor : 'rgba(255,255,255,.85)', fontFamily:'var(--ap-font-body)', wordBreak:'break-word', lineHeight:1.3 }}>{c.text}</span>
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
+                <div ref={reactionsEndRef} />
               </div>
             )}
           </div>
-
-          {/* ── Réactions live (host sidebar) ── */}
-          {isHost && (
-            <div
-              className="w-60 flex flex-col p-4 flex-shrink-0"
-              style={{
-                borderLeft: '2px solid var(--ap-line)',
-                background: 'var(--ap-card)',
-                position: 'sticky',
-                top: 0,
-                height: '100vh',
-                overflow: 'hidden',
-              }}
-            >
-              <div
-                className="mb-3 flex-shrink-0 uppercase tracking-wider text-xs font-bold"
-                style={{ color: '#241b3a', fontFamily: 'var(--ap-font-display)' }}
-              >
-                Réactions live
-              </div>
-              {reactionComments.length === 0 ? (
-                <div
-                  className="flex-1 flex items-center justify-center text-xs text-center"
-                  style={{ color: 'var(--ap-muted)', fontFamily: 'var(--ap-font-body)' }}
-                >
-                  En attente de réactions…
-                </div>
-              ) : (
-                <div className="flex-1 overflow-y-auto space-y-1.5 min-h-0">
-                  {(() => {
-                    const podiumMap: Record<string, { bg: string; border: string; nameColor: string; textColor: string }> = {};
-                    if (p1) podiumMap[p1.name] = { bg: 'linear-gradient(135deg,#FFE566,#FFCC00)', border: '#e5aa00', nameColor: '#7a4000', textColor: '#5a2e00' };
-                    if (p2) podiumMap[p2.name] = { bg: 'linear-gradient(135deg,#E8E8E8,#C0C0C0)', border: '#aaa', nameColor: '#333', textColor: '#222' };
-                    if (p3) podiumMap[p3.name] = { bg: 'linear-gradient(135deg,#E8A87C,#CD7F32)', border: '#a06030', nameColor: '#4a2000', textColor: '#3a1800' };
-                    return reactionComments.map((c, i) => {
-                      const ps = podiumMap[c.playerName];
-                      return (
-                        <div
-                          key={`${c.playerName}-${c.ts}-${i}`}
-                          className="flex items-center gap-2 px-2 py-1.5"
-                          style={{
-                            background: ps ? ps.bg : '#ffffff',
-                            border: `1.5px solid ${ps ? ps.border : '#efe6d3'}`,
-                            borderRadius: 'var(--ap-r-sm)',
-                            boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-                          }}
-                        >
-                          <div style={{ flexShrink: 0 }}>
-                            <AvatarDisplay emoji={c.avatar} size="xs" />
-                          </div>
-                          <div style={{ minWidth: 0, flex: 1 }}>
-                            <span
-                              className="font-bold text-xs block truncate"
-                              style={{ color: ps ? ps.nameColor : '#7048ff', fontFamily: 'var(--ap-font-display)' }}
-                            >
-                              {c.playerName}
-                            </span>
-                            <span style={{ fontSize: '12px', fontWeight: 600, color: ps ? ps.textColor : '#241b3a', fontFamily: 'var(--ap-font-body)', wordBreak: 'break-word', lineHeight: 1.3 }}>
-                              {c.text}
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    });
-                  })()}
-                  <div ref={reactionsEndRef} />
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+        )}
       </div>
     );
   }
+
 
   return null;
 };
