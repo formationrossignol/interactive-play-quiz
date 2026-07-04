@@ -97,6 +97,10 @@ export const translations = {
     createQuiz: "Create a Quiz",
     createQuizDesc: "Design engaging quizzes with multiple question types and speed bonuses",
     newQuiz: "New Quiz",
+    createPres: "Create a Presentation",
+    createPresDesc: "Create interactive and engaging presentations",
+    newPres: "New Presentation",
+    presLabel: "Presentation",
     createPoll: "Create a Poll",
     createPollDesc: "Create surveys to gather feedback and opinions",
     newPoll: "New Poll",
@@ -151,7 +155,14 @@ export const translations = {
     joinDesc: "Enter the game code to participate",
     enterCode: "Enter game code",
     join: "Join",
-    
+    checkingCode: "Checking code…",
+    quizOrPollNotFound: "Quiz or poll not found",
+    quizOrPollNotFoundDesc: "The code you entered doesn't exist or has expired.",
+    loginSuccess: "Logged in successfully!",
+    registerSuccess: "Registered successfully!",
+    emailAlreadyUsed: "This email is already in use",
+    loginError: "Incorrect email or password",
+
     // Discover
     discover: "Discover",
     discoverPublic: "Discover Public Quizzes",
@@ -442,6 +453,10 @@ export const translations = {
     createQuiz: "Créer un Quiz",
     createQuizDesc: "Concevez des quiz engageants avec plusieurs types de questions et bonus de vitesse",
     newQuiz: "Nouveau Quiz",
+    createPres: "Créer une présentation",
+    createPresDesc: "Créez des présentations interactives et engageantes",
+    newPres: "Nouvelle présentation",
+    presLabel: "Présentation",
     createPoll: "Créer un Sondage",
     createPollDesc: "Créez des sondages pour recueillir des avis et opinions",
     newPoll: "Nouveau Sondage",
@@ -496,7 +511,14 @@ export const translations = {
     joinDesc: "Entrez le code pour participer",
     enterCode: "Entrez le code",
     join: "Rejoindre",
-    
+    checkingCode: "Vérification du code…",
+    quizOrPollNotFound: "Quiz ou sondage introuvable",
+    quizOrPollNotFoundDesc: "Le code que vous avez entré n'existe pas ou a expiré.",
+    loginSuccess: "Connexion réussie !",
+    registerSuccess: "Inscription réussie !",
+    emailAlreadyUsed: "Cet email est déjà utilisé",
+    loginError: "Email ou mot de passe incorrect",
+
     // Discover
     discover: "Découvrir",
     discoverPublic: "Découvrir les Quiz Publics",
@@ -696,11 +718,12 @@ const LANGUAGE_STORAGE_KEY = 'quiz_language';
 
 export const getLanguage = (): Language => {
   const stored = localStorage.getItem(LANGUAGE_STORAGE_KEY);
-  return (stored as Language) || 'en';
+  return (stored as Language) || 'fr';
 };
 
 export const setLanguage = (language: Language) => {
   localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
+  window.dispatchEvent(new CustomEvent('ap:langchange'));
 };
 
 export const t = (key: keyof typeof translations.en): string => {

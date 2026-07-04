@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePageTitle } from "@/hooks/usePageTitle";
+import { useLanguage } from "@/hooks/useLanguage";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Compass } from "lucide-react";
@@ -26,13 +27,10 @@ const contentTypes = [
   },
   {
     key: "slide",
-    label: "Présentation",
-    titleKey: null,
-    title: "Créer une présentation",
-    descKey: null,
-    desc: "Créez des présentations interactives et engageantes",
-    ctaKey: null,
-    cta: "Nouvelle présentation",
+    label: t("presLabel"),
+    titleKey: "createPres" as const,
+    descKey: "createPresDesc" as const,
+    ctaKey: "newPres" as const,
     accentVar: "--ap-pres",
     accentDeepVar: "--ap-pres-deep",
     badgeClass: "ap-badge ap-badge--pres",
@@ -175,6 +173,7 @@ const HeroQuizCard = () => (
 const Index = () => {
   const [gameCode, setGameCode] = useState("");
   const navigate = useNavigate();
+  useLanguage();
   usePageTitle();
 
   const joinQuiz = () => {

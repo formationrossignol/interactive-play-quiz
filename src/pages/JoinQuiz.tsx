@@ -4,6 +4,7 @@ import { AvatarSelector } from "@/components/AvatarSelector";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
+import { t } from "@/lib/i18n";
 
 const checkSupabase = async (gameCode: string): Promise<boolean | null> => {
   const { data, error } = await supabase
@@ -56,8 +57,8 @@ const JoinQuiz = () => {
         setQuizExists(true);
       } else if (result === false) {
         setQuizExists(false);
-        toast.error("Quiz ou sondage introuvable", {
-          description: "Le code que vous avez entré n'existe pas ou a expiré.",
+        toast.error(t("quizOrPollNotFound"), {
+          description: t("quizOrPollNotFoundDesc"),
         });
       } else {
         // Still unknown after retry — let them try anyway, PlayerView will handle it
@@ -130,7 +131,7 @@ const JoinQuiz = () => {
         <div className="text-center">
           <Loader2 className="w-12 h-12 mx-auto mb-4 animate-spin text-white" />
           <p className="text-white font-bold text-lg" style={{ fontFamily: "var(--ap-font-display)" }}>
-            Vérification du code…
+            {t("checkingCode")}
           </p>
         </div>
       </div>

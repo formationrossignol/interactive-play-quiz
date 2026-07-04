@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { login, register } from "@/lib/auth";
 import { toast } from "sonner";
+import { t } from "@/lib/i18n";
 
 const AuthPage = () => {
   const navigate = useNavigate();
@@ -15,10 +16,10 @@ const AuthPage = () => {
     e.preventDefault();
     const user = await login(loginData.email, loginData.password);
     if (user) {
-      toast.success("Connexion réussie !");
+      toast.success(t("loginSuccess"));
       navigate("/");
     } else {
-      toast.error("Email ou mot de passe incorrect");
+      toast.error(t("loginError"));
     }
   };
 
@@ -26,10 +27,10 @@ const AuthPage = () => {
     e.preventDefault();
     const user = await register(registerData.email, registerData.username, registerData.password);
     if (user) {
-      toast.success("Inscription réussie !");
+      toast.success(t("registerSuccess"));
       navigate("/");
     } else {
-      toast.error("Cet email est déjà utilisé");
+      toast.error(t("emailAlreadyUsed"));
     }
   };
 

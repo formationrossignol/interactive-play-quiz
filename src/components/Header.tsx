@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useState, useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
 import { getLanguage, setLanguage, t, type Language } from "@/lib/i18n";
+import { useLanguage } from "@/hooks/useLanguage";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,6 +43,7 @@ export const Header = ({
   alignLeft = false,
 }: HeaderProps) => {
   const navigate = useNavigate();
+  useLanguage();
   const [user, setUser] = useState(getCurrentUser());
   const [currentLanguage, setCurrentLanguage] = useState<Language>(getLanguage());
   const headerRef = useRef<HTMLElement | null>(null);
@@ -82,7 +84,6 @@ export const Header = ({
   const handleLanguageChange = (lang: Language) => {
     setLanguage(lang);
     setCurrentLanguage(lang);
-    window.location.reload();
   };
 
   useLayoutEffect(() => {
