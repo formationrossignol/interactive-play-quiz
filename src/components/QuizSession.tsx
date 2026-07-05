@@ -286,7 +286,6 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
   // Always-fresh ref to showAnswerDistribution — avoids stale-closure in interval/effects
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const showAnswerDistRef = useRef<() => any>(() => {});
-  const streakMapRef = useRef<Record<string, number>>({});
 
   const syncFromStorage = useCallback(() => {
     const session = readSessionState(quiz.gameCode);
@@ -630,6 +629,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
   const showAnswerDistribution = async () => {
     if (isShowingDistRef.current) return;
     isShowingDistRef.current = true;
+    const qIdx = currentQuestionIndex;
     // Fetch latest player answers directly from Supabase (cross-device safe).
     // Race against a 3s timeout so a hanging fetch can't block the advance.
     let freshPlayers: SharedPlayer[] = readSessionState(quiz.gameCode).players;
@@ -647,7 +647,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
     } catch {}
 
     const answeredPlayers = freshPlayers.filter(
-      (p) => p.lastAnswerQuestionIndex === currentQuestionIndex
+      (p) => p.lastAnswerQuestionIndex === qIdx
     );
     const counts = currentQuestion.answers
       ? currentQuestion.answers.map((_: unknown, i: number) =>
@@ -664,10 +664,9 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
       prev.map((p) => {
         const fresh = freshPlayers.find((r) => r.id === p.id);
         if (!fresh) return p;
-        const answeredThisQuestion = fresh.lastAnswerQuestionIndex === currentQuestionIndex;
+        const answeredThisQuestion = fresh.lastAnswerQuestionIndex === qIdx;
         const wasCorrect = answeredThisQuestion && (fresh.correctAnswers ?? 0) > (p.correctAnswers ?? 0);
         const newStreak = wasCorrect ? ((p.streak ?? 0) + 1) : 0;
-        streakMapRef.current[p.id] = newStreak;
         return {
           ...p,
           score: fresh.score ?? p.score,
