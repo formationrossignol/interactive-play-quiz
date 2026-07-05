@@ -27,6 +27,14 @@ function fmt(secs: number): string {
   return `${m}:${s}`;
 }
 
+interface QuestionStat {
+  id: string;
+  question: string;
+  totalResponded: number;
+  correctCount: number;
+  pctCorrect: number;
+}
+
 export default function ExamAdmin() {
   const { examId } = useParams<{ examId: string }>();
   const navigate = useNavigate();
@@ -91,14 +99,6 @@ export default function ExamAdmin() {
   const liveStatus = computeExamStatus(exam);
   const badge = STATUS_LABEL[liveStatus];
   const completed = attempts.filter((a) => a.status === 'submitted' || a.status === 'auto-submitted');
-
-  interface QuestionStat {
-    id: string;
-    question: string;
-    totalResponded: number;
-    correctCount: number;
-    pctCorrect: number;
-  }
 
   const questionStats: QuestionStat[] = quiz
     ? quiz.questions.map((q: { id: string; question: string; type: string; correctAnswer: unknown }) => {
@@ -374,7 +374,7 @@ export default function ExamAdmin() {
                         }} />
                       </div>
                       <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--ap-muted)', marginTop: 6 }}>
-                        {qs.correctCount}/{qs.totalResponded} bonne{qs.correctCount > 1 ? 's' : ''} réponse{qs.correctCount > 1 ? 's' : ''}
+                        {qs.correctCount}/{qs.totalResponded} bonne{qs.correctCount !== 1 ? 's' : ''} réponse{qs.correctCount !== 1 ? 's' : ''}
                       </div>
                     </div>
                   ))}
