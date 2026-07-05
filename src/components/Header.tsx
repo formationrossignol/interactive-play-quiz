@@ -13,6 +13,7 @@ import {
   Library,
   GraduationCap,
   ChevronDown,
+  ClipboardList,
 } from "lucide-react";
 import { useState, useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
 import { getLanguage, setLanguage, t, type Language } from "@/lib/i18n";
@@ -61,7 +62,7 @@ export const Header = ({
     { label: t("myPolls"), icon: BarChart3, onClick: () => navigate("/my-polls"), requiresAuth: true },
     { label: t("myFlashcards"), icon: Layers, onClick: () => navigate("/my-flashcards"), requiresAuth: true },
     { label: t("myCourses"), icon: GraduationCap, onClick: () => navigate("/my-courses"), requiresAuth: true },
-    { label: "Mes examens", icon: Library, onClick: () => navigate("/my-exams"), requiresAuth: true },
+    { label: "Mes examens", icon: ClipboardList, onClick: () => navigate("/my-exams"), requiresAuth: true },
     { label: t("questionBank"), icon: Library, onClick: () => navigate("/question-bank"), requiresAuth: true },
   ];
 
@@ -105,8 +106,6 @@ export const Header = ({
       className="sticky top-0 z-40"
       style={{
         backgroundColor: "var(--ap-paper)",
-        borderBottom: "2px solid var(--ap-line)",
-        boxShadow: "0 2px 0 var(--ap-line)",
       }}
     >
       <div

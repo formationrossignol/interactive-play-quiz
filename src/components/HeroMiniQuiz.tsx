@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
-const QUESTIONS = [
+const ALL_QUESTIONS = [
   {
     q: "Quel océan est le plus profond ?",
     answers: ["Atlantique", "Pacifique", "Indien", "Arctique"],
@@ -19,7 +19,56 @@ const QUESTIONS = [
     correct: 1,
     hint: "C'était le guépard — jusqu'à 112 km/h. ✓",
   },
+  {
+    q: "Combien de planètes dans le système solaire ?",
+    answers: ["7", "8", "9", "10"],
+    correct: 1,
+    hint: "C'était 8 — Pluton est naine depuis 2006. ✓",
+  },
+  {
+    q: "Quelle langue est la plus parlée au monde ?",
+    answers: ["Anglais", "Espagnol", "Hindi", "Mandarin"],
+    correct: 3,
+    hint: "C'était le mandarin — 1,1 milliard de locuteurs natifs. ✓",
+  },
+  {
+    q: "Quelle est la capitale de l'Australie ?",
+    answers: ["Sydney", "Melbourne", "Canberra", "Brisbane"],
+    correct: 2,
+    hint: "C'était Canberra, pas Sydney ! ✓",
+  },
+  {
+    q: "En quelle année a eu lieu la Révolution française ?",
+    answers: ["1776", "1789", "1799", "1815"],
+    correct: 1,
+    hint: "C'était 1789 — prise de la Bastille. ✓",
+  },
+  {
+    q: "Quel élément chimique a pour symbole Au ?",
+    answers: ["Argent", "Aluminium", "Or", "Cuivre"],
+    correct: 2,
+    hint: "C'était l'Or — du latin Aurum. ✓",
+  },
+  {
+    q: "Combien d'os y a-t-il dans le corps humain adulte ?",
+    answers: ["186", "206", "226", "256"],
+    correct: 1,
+    hint: "C'était 206 — on en naît avec plus de 300 ! ✓",
+  },
+  {
+    q: "Quel pays a la plus grande superficie du monde ?",
+    answers: ["Canada", "USA", "Chine", "Russie"],
+    correct: 3,
+    hint: "C'était la Russie — 17,1 millions de km². ✓",
+  },
 ];
+
+function pickQuestions(n = 3): typeof ALL_QUESTIONS {
+  const shuffled = [...ALL_QUESTIONS].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, n);
+}
+
+const QUESTIONS = pickQuestions(3);
 
 const SHAPES = [
   <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" key="tri"><path d="M12 3 22 21H2z"/></svg>,

@@ -138,9 +138,21 @@ function LeaderboardTile() {
   );
 }
 
+function useLiveVisitors() {
+  const [count, setCount] = useState(() => 80 + Math.floor(Math.random() * 120));
+  useEffect(() => {
+    const id = setInterval(() => {
+      setCount((c) => Math.max(60, Math.min(300, c + Math.floor((Math.random() - 0.45) * 7))));
+    }, 4000);
+    return () => clearInterval(id);
+  }, []);
+  return count;
+}
+
 const Index = () => {
   const [gameCode, setGameCode] = useState("");
   const navigate = useNavigate();
+  const liveVisitors = useLiveVisitors();
   useLanguage();
   usePageTitle();
 
@@ -255,19 +267,7 @@ const Index = () => {
 
           {/* Right — stage */}
           <div className="ap-reveal d4" style={{ position: "relative", paddingTop: 24, paddingBottom: 24 }}>
-            {/* Score pill top-left */}
-            <div
-              className="ap-float-pill"
-              style={{
-                top: 8, left: -14,
-                color: "var(--ap-pres-deep)", borderColor: "var(--ap-pres)",
-                background: "var(--ap-pres-soft)", animationDelay: ".6s",
-              }}
-              aria-hidden="true"
-            >
-              +850 pts !
-            </div>
-            {/* Live pill bottom-right */}
+            {/* Live visitors pill */}
             <div
               className="ap-float-pill"
               style={{
@@ -277,7 +277,7 @@ const Index = () => {
               }}
               aria-hidden="true"
             >
-              🔴 12 joueurs connectés
+              🔴 {liveVisitors} visiteurs en direct
             </div>
             <div style={{ display: "flex", justifyContent: "center" }}>
               <HeroMiniQuiz />
