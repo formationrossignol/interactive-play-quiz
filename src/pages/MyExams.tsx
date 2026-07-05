@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getHostExams, computeExamStats, computeExamStatus, type Exam } from '@/lib/examStorage';
 import { getCurrentUser } from '@/lib/auth';
-import Header from '@/components/Header';
+import { Header } from '@/components/Header';
 
 const STATUS_LABEL: Record<string, { label: string; color: string; bg: string }> = {
   draft:     { label: 'Brouillon',  color: '#6d6288', bg: '#f3ecdd' },
