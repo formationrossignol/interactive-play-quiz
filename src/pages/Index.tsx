@@ -6,6 +6,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { HeroMiniQuiz } from "@/components/HeroMiniQuiz";
 import { t } from "@/lib/i18n";
+import { supabase } from "@/lib/supabase";
 
 function useCountUp(target: number, duration = 900) {
   const [value, setValue] = useState(0);
@@ -139,12 +140,22 @@ function LeaderboardTile() {
 }
 
 function useLiveVisitors() {
-  const [count, setCount] = useState(() => 80 + Math.floor(Math.random() * 120));
+  const [count, setCount] = useState<number | null>(null);
   useEffect(() => {
-    const id = setInterval(() => {
-      setCount((c) => Math.max(60, Math.min(300, c + Math.floor((Math.random() - 0.45) * 7))));
-    }, 4000);
-    return () => clearInterval(id);
+    const channel = supabase.channel("live-visitors", {
+      config: { presence: { key: crypto.randomUUID() } },
+    });
+    channel
+      .on("presence", { event: "sync" }, () => {
+        const state = channel.presenceState();
+        setCount(Object.keys(state).length);
+      })
+      .subscribe(async (status) => {
+        if (status === "SUBSCRIBED") {
+          await channel.track({ online_at: new Date().toISOString() });
+        }
+      });
+    return () => { void supabase.removeChannel(channel); };
   }, []);
   return count;
 }
@@ -277,7 +288,7 @@ const Index = () => {
               }}
               aria-hidden="true"
             >
-              🔴 {liveVisitors} visiteurs en direct
+              🔴 {liveVisitors != null ? `${liveVisitors} visiteur${liveVisitors !== 1 ? "s" : ""}` : "…"} en direct
             </div>
             <div style={{ display: "flex", justifyContent: "center" }}>
               <HeroMiniQuiz />

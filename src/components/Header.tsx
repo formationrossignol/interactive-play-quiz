@@ -106,6 +106,8 @@ export const Header = ({
       className="sticky top-0 z-40"
       style={{
         backgroundColor: "var(--ap-paper)",
+        backgroundImage: "radial-gradient(var(--ap-line-2) 1px, transparent 1px)",
+        backgroundSize: "28px 28px",
       }}
     >
       <div
@@ -341,7 +343,7 @@ export const Header = ({
 
       {/* Secondary toolbar row */}
       {toolbar && toolbarPlacement === "secondary" && (
-        <div style={{ borderTop: "2px solid var(--ap-line)", backgroundColor: "var(--ap-paper)" }}>
+        <div style={{ borderTop: "2px solid var(--ap-line)", backgroundColor: "var(--ap-paper)", backgroundImage: "radial-gradient(var(--ap-line-2) 1px, transparent 1px)", backgroundSize: "28px 28px" }}>
           <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-2.5">
             {toolbar}
           </div>
@@ -351,7 +353,7 @@ export const Header = ({
         <div className="w-full px-6 pb-3 lg:hidden">
           <div
             className="flex flex-wrap items-center gap-2 px-4 py-2.5"
-            style={{ borderTop: "2px solid var(--ap-line)", backgroundColor: "var(--ap-paper)" }}
+            style={{ borderTop: "2px solid var(--ap-line)", backgroundColor: "var(--ap-paper)", backgroundImage: "radial-gradient(var(--ap-line-2) 1px, transparent 1px)", backgroundSize: "28px 28px" }}
           >
             {toolbar}
           </div>
