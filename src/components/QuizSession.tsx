@@ -47,6 +47,7 @@ interface Player {
   joinedAt: Date;
   lastAnswer?: number;
   lastAnswerQuestionIndex?: number;
+  streak?: number;
 }
 
 const FONT_STACKS: Record<string, string> = {
@@ -285,6 +286,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
   // Always-fresh ref to showAnswerDistribution — avoids stale-closure in interval/effects
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const showAnswerDistRef = useRef<() => any>(() => {});
+  const streakMapRef = useRef<Record<string, number>>({});
 
   const syncFromStorage = useCallback(() => {
     const session = readSessionState(quiz.gameCode);
@@ -662,12 +664,17 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
       prev.map((p) => {
         const fresh = freshPlayers.find((r) => r.id === p.id);
         if (!fresh) return p;
+        const answeredThisQuestion = fresh.lastAnswerQuestionIndex === currentQuestionIndex;
+        const wasCorrect = answeredThisQuestion && (fresh.correctAnswers ?? 0) > (p.correctAnswers ?? 0);
+        const newStreak = wasCorrect ? ((p.streak ?? 0) + 1) : 0;
+        streakMapRef.current[p.id] = newStreak;
         return {
           ...p,
           score: fresh.score ?? p.score,
           correctAnswers: fresh.correctAnswers ?? p.correctAnswers,
           lastAnswer: fresh.lastAnswer,
           lastAnswerQuestionIndex: fresh.lastAnswerQuestionIndex,
+          streak: newStreak,
         };
       })
     );
