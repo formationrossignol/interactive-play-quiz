@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { usePageTitle } from "@/hooks/usePageTitle";
+import { useSEO } from "@/hooks/useSEO";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { t } from "@/lib/i18n";
@@ -14,7 +14,11 @@ const featureAccentsDeep = [
 
 const Features = () => {
   const navigate = useNavigate();
-  usePageTitle("Fonctionnalités");
+  useSEO({
+    title: "Fonctionnalités",
+    description: "Quiz multijoueurs, sondages live, flashcards et présentations interactives dans un seul outil. Classement en temps réel, QR code, export des résultats.",
+    path: "/features",
+  });
 
   const coreFeatures = [
     { icon: Users, title: t('featureCollaborative'), description: t('featureCollaborativeDesc') },

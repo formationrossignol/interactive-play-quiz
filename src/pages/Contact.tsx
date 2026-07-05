@@ -3,7 +3,7 @@ import { Footer } from "@/components/Footer";
 import { Mail, MessageSquare, Send, Clock } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { usePageTitle } from "@/hooks/usePageTitle";
+import { useSEO } from "@/hooks/useSEO";
 import { toast } from "sonner";
 
 const COOLDOWN_SECONDS = 60;
@@ -55,7 +55,11 @@ const labelStyle: React.CSSProperties = {
 
 const Contact = () => {
   const navigate = useNavigate();
-  usePageTitle("Contact");
+  useSEO({
+    title: "Contact",
+    description: "Contactez l'équipe Ludiq pour toute question sur nos quiz interactifs, sondages live et outils de formation. Réponse sous 24h.",
+    path: "/contact",
+  });
   const [formData, setFormData] = useState({ name: "", email: "", subject: "", message: "" });
   const [honeypot, setHoneypot] = useState("");
   const [cooldown, setCooldown] = useState(0);

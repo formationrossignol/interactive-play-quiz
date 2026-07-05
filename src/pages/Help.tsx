@@ -3,7 +3,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { ChevronDown, ChevronUp, HelpCircle, Mail } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { usePageTitle } from "@/hooks/usePageTitle";
+import { useSEO } from "@/hooks/useSEO";
 
 const FAQ_ITEMS = [
   {
@@ -103,7 +103,11 @@ const FAQItem = ({ q, a }: { q: string; a: string }) => {
 
 const Help = () => {
   const navigate = useNavigate();
-  usePageTitle("Centre d'aide");
+  useSEO({
+    title: "Centre d'aide",
+    description: "FAQ et guides pour créer vos premiers quiz, lancer une session en direct, gérer vos participants et exporter vos résultats sur Ludiq.",
+    path: "/help",
+  });
 
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", backgroundColor: "var(--ap-paper)" }}>

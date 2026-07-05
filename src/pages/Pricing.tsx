@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { usePageTitle } from "@/hooks/usePageTitle";
+import { useSEO } from "@/hooks/useSEO";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { t } from "@/lib/i18n";
@@ -7,7 +7,11 @@ import { Check, Rocket, Crown, Building2 } from "lucide-react";
 
 const Pricing = () => {
   const navigate = useNavigate();
-  usePageTitle("Tarifs");
+  useSEO({
+    title: "Tarifs",
+    description: "Offre gratuite jusqu'à 20 participants, plan Pro à 19 €/mois jusqu'à 200 participants, et formule Entreprise sur devis. Choisissez la formule Ludiq adaptée à votre équipe.",
+    path: "/pricing",
+  });
 
   const plans = [
     {

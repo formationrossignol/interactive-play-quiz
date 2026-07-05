@@ -2,7 +2,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Zap, Users, Target, Heart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { usePageTitle } from "@/hooks/usePageTitle";
+import { useSEO } from "@/hooks/useSEO";
 
 const values = [
   {
@@ -37,7 +37,11 @@ const values = [
 
 const About = () => {
   const navigate = useNavigate();
-  usePageTitle("À propos");
+  useSEO({
+    title: "À propos",
+    description: "Ludiq est l'outil de quiz et sondages interactifs conçu pour les formateurs et enseignants. Notre mission : rendre chaque session de formation engageante et mémorable.",
+    path: "/about",
+  });
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", backgroundColor: "var(--ap-paper)" }}>
       <Header />

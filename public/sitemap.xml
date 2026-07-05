@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+
+  <url>
+    <loc>https://interactive-play-quiz.vercel.app/</loc>
+    <lastmod>2026-07-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://interactive-play-quiz.vercel.app/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://interactive-play-quiz.vercel.app/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://interactive-play-quiz.vercel.app/"/>
+  </url>
+
+  <url>
+    <loc>https://interactive-play-quiz.vercel.app/features</loc>
+    <lastmod>2026-07-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://interactive-play-quiz.vercel.app/features"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://interactive-play-quiz.vercel.app/features"/>
+  </url>
+
+  <url>
+    <loc>https://interactive-play-quiz.vercel.app/pricing</loc>
+    <lastmod>2026-07-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://interactive-play-quiz.vercel.app/pricing"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://interactive-play-quiz.vercel.app/pricing"/>
+  </url>
+
+  <url>
+    <loc>https://interactive-play-quiz.vercel.app/discover</loc>
+    <lastmod>2026-07-05</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://interactive-play-quiz.vercel.app/discover"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://interactive-play-quiz.vercel.app/discover"/>
+  </url>
+
+  <url>
+    <loc>https://interactive-play-quiz.vercel.app/about</loc>
+    <lastmod>2026-07-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://interactive-play-quiz.vercel.app/about"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://interactive-play-quiz.vercel.app/about"/>
+  </url>
+
+  <url>
+    <loc>https://interactive-play-quiz.vercel.app/contact</loc>
+    <lastmod>2026-07-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://interactive-play-quiz.vercel.app/contact"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://interactive-play-quiz.vercel.app/contact"/>
+  </url>
+
+  <url>
+    <loc>https://interactive-play-quiz.vercel.app/help</loc>
+    <lastmod>2026-07-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://interactive-play-quiz.vercel.app/help"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://interactive-play-quiz.vercel.app/help"/>
+  </url>
+
+  <url>
+    <loc>https://interactive-play-quiz.vercel.app/mentions-legales</loc>
+    <lastmod>2026-07-05</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+
+  <url>
+    <loc>https://interactive-play-quiz.vercel.app/confidentialite</loc>
+    <lastmod>2026-07-05</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+
+  <url>
+    <loc>https://interactive-play-quiz.vercel.app/cgu</loc>
+    <lastmod>2026-07-05</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+
+</urlset>

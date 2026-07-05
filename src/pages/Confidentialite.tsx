@@ -1,6 +1,6 @@
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { usePageTitle } from "@/hooks/usePageTitle";
+import { useSEO } from "@/hooks/useSEO";
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <section style={{ marginBottom: "32px" }}>
@@ -12,7 +12,7 @@ const Section = ({ title, children }: { title: string; children: React.ReactNode
 );
 
 const Confidentialite = () => {
-  usePageTitle("Politique de confidentialité");
+  useSEO({ title: "Politique de confidentialité", path: "/confidentialite" });
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", backgroundColor: "var(--ap-paper)" }}>
       <Header />

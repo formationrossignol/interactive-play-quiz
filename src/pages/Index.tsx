@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { usePageTitle } from "@/hooks/usePageTitle";
+import { useSEO } from "@/hooks/useSEO";
 import { useLanguage } from "@/hooks/useLanguage";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -165,7 +165,7 @@ const Index = () => {
   const navigate = useNavigate();
   const liveVisitors = useLiveVisitors();
   useLanguage();
-  usePageTitle();
+  useSEO({ path: "/" });
 
   const joinQuiz = () => {
     if (gameCode.trim()) {

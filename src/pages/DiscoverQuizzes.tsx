@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { usePageTitle } from "@/hooks/usePageTitle";
+import { useSEO } from "@/hooks/useSEO";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Header } from "@/components/Header";
 import { Pagination } from "@/components/Pagination";
@@ -26,7 +26,11 @@ const triggerStyle = {
 
 const DiscoverQuizzes = () => {
   const navigate = useNavigate();
-  usePageTitle("Découvrir");
+  useSEO({
+    title: "Découvrir les quiz",
+    description: "Parcourez des centaines de quiz publics créés par la communauté Ludiq. Quiz de culture générale, science, histoire, géographie — rejoignez une partie en 5 secondes.",
+    path: "/discover",
+  });
   const user = getCurrentUser();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Tous");

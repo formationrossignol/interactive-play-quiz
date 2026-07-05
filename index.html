@@ -5,21 +5,102 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Ludiq — Quiz et sondages interactifs en temps réel</title>
     <meta name="description" content="Créez des quiz multijoueurs, sondages live et présentations interactives. QR code, classement instantané et ambiance arcade — sans rien sacrifier en puissance." />
+    <meta name="robots" content="index, follow" />
+    <meta name="theme-color" content="#6366f1" />
+
+    <!-- Canonical -->
+    <link rel="canonical" href="https://interactive-play-quiz.vercel.app/" />
 
     <!-- Open Graph -->
     <meta property="og:site_name" content="Ludiq" />
     <meta property="og:title" content="Ludiq — Quiz et sondages interactifs en temps réel" />
     <meta property="og:description" content="Créez des quiz multijoueurs, sondages live et présentations interactives. QR code, classement instantané et ambiance arcade — sans rien sacrifier en puissance." />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="/og-image.png" />
+    <meta property="og:url" content="https://interactive-play-quiz.vercel.app/" />
+    <meta property="og:image" content="https://interactive-play-quiz.vercel.app/og-image.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Ludiq — Quiz et sondages interactifs en temps réel" />
+    <meta property="og:locale" content="fr_FR" />
+    <meta property="og:locale:alternate" content="en_US" />
 
     <!-- Twitter / X -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Ludiq — Quiz et sondages interactifs en temps réel" />
     <meta name="twitter:description" content="Créez des quiz multijoueurs, sondages live et présentations interactives." />
-    <meta name="twitter:image" content="/og-image.png" />
+    <meta name="twitter:image" content="https://interactive-play-quiz.vercel.app/og-image.png" />
+    <meta name="twitter:image:alt" content="Ludiq — Quiz et sondages interactifs en temps réel" />
+
+    <!-- Favicons -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebSite",
+          "@id": "https://interactive-play-quiz.vercel.app/#website",
+          "url": "https://interactive-play-quiz.vercel.app/",
+          "name": "Ludiq",
+          "description": "Quiz et sondages interactifs en temps réel pour formateurs et enseignants",
+          "inLanguage": ["fr-FR", "en-US"],
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": {
+              "@type": "EntryPoint",
+              "urlTemplate": "https://interactive-play-quiz.vercel.app/discover?q={search_term_string}"
+            },
+            "query-input": "required name=search_term_string"
+          }
+        },
+        {
+          "@type": "SoftwareApplication",
+          "@id": "https://interactive-play-quiz.vercel.app/#app",
+          "name": "Ludiq",
+          "url": "https://interactive-play-quiz.vercel.app/",
+          "description": "Créez des quiz multijoueurs, sondages live, flashcards et présentations interactives. QR code, classement instantané, sans installation pour les participants.",
+          "applicationCategory": "EducationalApplication",
+          "operatingSystem": "Web",
+          "offers": [
+            {
+              "@type": "Offer",
+              "name": "Starter",
+              "price": "0",
+              "priceCurrency": "EUR"
+            },
+            {
+              "@type": "Offer",
+              "name": "Pro",
+              "price": "19",
+              "priceCurrency": "EUR"
+            }
+          ],
+          "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingValue": "4.9",
+            "reviewCount": "1200",
+            "bestRating": "5"
+          }
+        },
+        {
+          "@type": "Organization",
+          "@id": "https://interactive-play-quiz.vercel.app/#organization",
+          "name": "Ludiq",
+          "url": "https://interactive-play-quiz.vercel.app/",
+          "logo": "https://interactive-play-quiz.vercel.app/og-image.png",
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "contactType": "customer support",
+            "url": "https://interactive-play-quiz.vercel.app/contact"
+          }
+        }
+      ]
+    }
+    </script>
 
     <style>
       #root:empty::before {
