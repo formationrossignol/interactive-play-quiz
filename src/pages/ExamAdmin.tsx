@@ -141,7 +141,7 @@ export default function ExamAdmin() {
                 </span>
                 <button
                   className="ap-btn ap-btn--sm"
-                  onClick={() => { navigator.clipboard.writeText(exam.joinCode); toast.success('Code copié !'); }}
+                  onClick={async () => { try { await navigator.clipboard.writeText(exam.joinCode); toast.success('Code copié !'); } catch { toast.error('Copie échouée'); } }}
                   style={{ padding: '4px 10px' }}
                 >
                   Copier
@@ -153,10 +153,7 @@ export default function ExamAdmin() {
                 </span>
                 <button
                   className="ap-btn ap-btn--sm"
-                  onClick={() => {
-                    navigator.clipboard.writeText(`${window.location.origin}/join-exam/${exam.joinCode}`);
-                    toast.success('Lien copié !');
-                  }}
+                  onClick={async () => { try { await navigator.clipboard.writeText(`${window.location.origin}/join-exam/${exam.joinCode}`); toast.success('Lien copié !'); } catch { toast.error('Copie échouée'); } }}
                   style={{ padding: '4px 10px', fontSize: 12 }}
                 >
                   Copier le lien
