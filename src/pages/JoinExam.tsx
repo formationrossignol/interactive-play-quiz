@@ -80,6 +80,7 @@ export default function JoinExam() {
           onKeyDown={(e) => e.key === 'Enter' && handleJoin()}
           style={{ width: '100%', marginBottom: '16px', textAlign: 'center', letterSpacing: '0.2em' }}
           autoFocus
+          aria-label="Code d'accès"
         />
 
         <button
