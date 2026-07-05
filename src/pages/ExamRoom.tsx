@@ -25,12 +25,6 @@ function setParticipant(p: Participant) {
   sessionStorage.setItem(PART_KEY, JSON.stringify(p));
 }
 
-function fmt(secs: number): string {
-  const m = Math.floor(secs / 60).toString().padStart(2, '0');
-  const s = (secs % 60).toString().padStart(2, '0');
-  return `${m}:${s}`;
-}
-
 function getAnswerOrder(attemptId: string, questionId: string, count: number): number[] {
   let hash = 0;
   const str = attemptId + questionId;
