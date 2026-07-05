@@ -134,21 +134,37 @@ export default function ExamAdmin() {
             borderRadius: 'var(--ap-r-lg)', padding: '16px 24px', marginBottom: 20,
             display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap',
           }}>
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--ap-muted)', marginBottom: 2 }}>
-                Code d'accès
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontFamily: 'var(--ap-font-mono)', fontSize: 28, fontWeight: 800, letterSpacing: '0.15em', color: 'var(--ap-ink)' }}>
+                  {exam.joinCode}
+                </span>
+                <button
+                  className="ap-btn ap-btn--sm"
+                  onClick={() => { navigator.clipboard.writeText(exam.joinCode); toast.success('Code copié !'); }}
+                  style={{ padding: '4px 10px' }}
+                >
+                  Copier
+                </button>
               </div>
-              <div style={{ fontFamily: 'var(--ap-font-mono)', fontWeight: 800, fontSize: 32, letterSpacing: '.12em', color: 'var(--ap-ink)' }}>
-                {exam.joinCode}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--ap-muted)' }}>
+                <span style={{ fontFamily: 'var(--ap-font-mono)', fontSize: 12 }}>
+                  {window.location.origin}/join-exam/{exam.joinCode}
+                </span>
+                <button
+                  className="ap-btn ap-btn--sm"
+                  onClick={() => {
+                    navigator.clipboard.writeText(`${window.location.origin}/join-exam/${exam.joinCode}`);
+                    toast.success('Lien copié !');
+                  }}
+                  style={{ padding: '4px 10px', fontSize: 12 }}
+                >
+                  Copier le lien
+                </button>
               </div>
             </div>
             <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <button
-                onClick={() => { navigator.clipboard.writeText(exam.joinCode); toast.success('Code copié !'); }}
-                style={outlineBtn}
-              >
-                📋 Copier
-              </button>
+
               {liveStatus === 'open' && (
                 <button onClick={() => handleStatusChange('closed')} style={{ ...outlineBtn, color: '#ff5a4d', borderColor: '#ff9e96' }}>
                   🔒 Fermer
