@@ -36,6 +36,11 @@ const MyFlashcards = lazy(() => import("./pages/MyFlashcards"));
 const MyCourses = lazy(() => import("./pages/MyCourses"));
 const CourseBuilder = lazy(() => import("./pages/CourseBuilder"));
 const CourseViewer = lazy(() => import("./pages/CourseViewer"));
+const MyExams = lazy(() => import("./pages/MyExams"));
+const ExamBuilder = lazy(() => import("./pages/ExamBuilder"));
+const ExamRoom = lazy(() => import("./pages/ExamRoom"));
+const ExamResults = lazy(() => import("./pages/ExamResults"));
+const ExamAdmin = lazy(() => import("./pages/ExamAdmin"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const QuestionBank = lazy(() => import("./pages/QuestionBank"));
 const PollResults = lazy(() => import("./pages/PollResults"));
@@ -79,6 +84,11 @@ const App = () => (
               <Route path="/cgu" element={<CGU />} />
               <Route path="/quiz/:gameCode" element={<LiveQuizPage />} />
               <Route path="/join/:gameCode" element={<JoinQuiz />} />
+              <Route path="/my-exams" element={<MyExams />} />
+              <Route path="/exam-builder" element={<ExamBuilder />} />
+              <Route path="/take/:joinCode" element={<ExamRoom />} />
+              <Route path="/exam/:attemptId/results" element={<ExamResults />} />
+              <Route path="/exam/:examId/admin" element={<ExamAdmin />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

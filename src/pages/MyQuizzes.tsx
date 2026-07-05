@@ -301,6 +301,14 @@ const MyQuizzes = () => {
                 Résultats
               </button>
             )}
+            <button
+              onClick={(e) => { e.stopPropagation(); navigate(`/exam-builder?quizId=${quiz.id}`); }}
+              className="ap-btn ap-btn--ghost ap-btn--sm"
+              style={{ padding: "6px 10px", display: "flex", alignItems: "center", gap: "4px" }}
+              title="Créer un examen"
+            >
+              📝 Examen
+            </button>
             <Button size="sm" onClick={(e) => { e.stopPropagation(); handlePlayQuiz(quiz); }} className="ap-btn ap-btn--sm ap-btn--pill ap-btn--quiz gap-1.5 px-4">
               <Play className="h-3.5 w-3.5" />{t("playQuiz")}
             </Button>
@@ -357,6 +365,14 @@ const MyQuizzes = () => {
             <span className="hidden sm:inline">Résultats</span>
           </button>
         )}
+        <button
+          onClick={(e) => { e.stopPropagation(); navigate(`/exam-builder?quizId=${quiz.id}`); }}
+          className="ap-btn ap-btn--ghost ap-btn--sm"
+          style={{ padding: "5px 8px", display: "flex", alignItems: "center", gap: "3px", fontSize: "12px" }}
+          title="Créer un examen"
+        >
+          📝 <span className="hidden sm:inline">Examen</span>
+        </button>
         <Button size="sm" onClick={(e) => { e.stopPropagation(); handlePlayQuiz(quiz); }} className="ap-btn ap-btn--sm ap-btn--pill ap-btn--quiz gap-1 px-3" style={{ fontSize: "12px" }}>
           <Play className="h-3 w-3" />{t("playQuiz")}
         </Button>
@@ -466,6 +482,12 @@ const MyQuizzes = () => {
                 <FolderPlus className="h-4 w-4" /> Nouveau dossier
               </button>
             )}
+            <button
+              onClick={() => navigate('/my-exams')}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 16px', borderRadius: 999, border: '2px solid var(--ap-line)', background: 'var(--ap-paper-2)', fontFamily: 'var(--ap-font-body)', fontWeight: 800, fontSize: 13, color: 'var(--ap-ink)', cursor: 'pointer' }}
+            >
+              📝 Examens
+            </button>
             <button className="ap-btn ap-btn--sm ap-btn--pill ap-btn--quiz" onClick={() => navigate('/builder-start?type=quiz')}>{t("createQuizCta")}</button>
           </div>
         </div>

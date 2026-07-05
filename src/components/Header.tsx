@@ -61,6 +61,7 @@ export const Header = ({
     { label: t("myPolls"), icon: BarChart3, onClick: () => navigate("/my-polls"), requiresAuth: true },
     { label: t("myFlashcards"), icon: Layers, onClick: () => navigate("/my-flashcards"), requiresAuth: true },
     { label: t("myCourses"), icon: GraduationCap, onClick: () => navigate("/my-courses"), requiresAuth: true },
+    { label: "Mes examens", icon: Library, onClick: () => navigate("/my-exams"), requiresAuth: true },
     { label: t("questionBank"), icon: Library, onClick: () => navigate("/question-bank"), requiresAuth: true },
   ];
 
