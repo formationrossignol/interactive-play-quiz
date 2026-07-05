@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { getExamByJoinCode, computeExamStatus } from '@/lib/examStorage';
 import { AlertTriangle, BookOpen } from 'lucide-react';
 
@@ -7,7 +7,8 @@ type State = 'idle' | 'not-found' | 'not-open';
 
 export default function JoinExam() {
   const navigate = useNavigate();
-  const [code, setCode] = useState('');
+  const { joinCode: paramCode } = useParams<{ joinCode?: string }>();
+  const [code, setCode] = useState(paramCode?.toUpperCase() ?? '');
   const [state, setState] = useState<State>('idle');
   const [statusMsg, setStatusMsg] = useState('');
 
@@ -36,6 +37,11 @@ export default function JoinExam() {
 
     navigate(`/take/${trimmed}`);
   };
+
+  useEffect(() => {
+    if (paramCode) handleJoin();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div style={{

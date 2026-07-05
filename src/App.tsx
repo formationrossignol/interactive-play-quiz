@@ -41,6 +41,7 @@ const ExamBuilder = lazy(() => import("./pages/ExamBuilder"));
 const ExamRoom = lazy(() => import("./pages/ExamRoom"));
 const ExamResults = lazy(() => import("./pages/ExamResults"));
 const ExamAdmin = lazy(() => import("./pages/ExamAdmin"));
+const JoinExam = lazy(() => import("./pages/JoinExam"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const QuestionBank = lazy(() => import("./pages/QuestionBank"));
 const PollResults = lazy(() => import("./pages/PollResults"));
@@ -84,6 +85,8 @@ const App = () => (
               <Route path="/cgu" element={<CGU />} />
               <Route path="/quiz/:gameCode" element={<LiveQuizPage />} />
               <Route path="/join/:gameCode" element={<JoinQuiz />} />
+              <Route path="/join-exam" element={<JoinExam />} />
+              <Route path="/join-exam/:joinCode" element={<JoinExam />} />
               <Route path="/my-exams" element={<MyExams />} />
               <Route path="/exam-builder" element={<ExamBuilder />} />
               <Route path="/take/:joinCode" element={<ExamRoom />} />
