@@ -7,6 +7,7 @@ interface Player {
   avatar: string;
   score: number;
   previousScore?: number;
+  streak?: number;
 }
 
 interface RaceLeaderboardProps {
@@ -15,6 +16,9 @@ interface RaceLeaderboardProps {
   isHost?: boolean;
   isLastQuestion?: boolean;
   autoAdvance?: boolean;
+  questionIndex?: number;
+  totalQuestions?: number;
+  okPct?: number;
 }
 
 const AUTO_ADVANCE_MS = 6000;
@@ -22,40 +26,44 @@ const ROW_H = 76;
 const ROW_GAP = 10;
 const ROW_TOTAL = ROW_H + ROW_GAP;
 
-const MEDAL: Record<number, { emoji: string; bg: string; border: string; textColor: string; glow: string; ringColor: string }> = {
-  1: {
-    emoji: '🥇',
-    bg: 'linear-gradient(135deg,#FFE566,#FFCC00)',
-    border: '#e5aa00',
-    textColor: '#7a4000',
-    glow: 'rgba(255,220,50,0.12)',
-    ringColor: 'rgba(255,220,50,0.4)',
-  },
-  2: {
-    emoji: '🥈',
-    bg: 'linear-gradient(135deg,#E8E8E8,#C0C0C0)',
-    border: '#aaa',
-    textColor: '#333',
-    glow: 'rgba(200,200,200,0.06)',
-    ringColor: 'rgba(200,200,200,0.25)',
-  },
-  3: {
-    emoji: '🥉',
-    bg: 'linear-gradient(135deg,#E8A87C,#CD7F32)',
-    border: '#a06030',
-    textColor: '#4a2000',
-    glow: 'rgba(205,127,50,0.10)',
-    ringColor: 'rgba(205,127,50,0.35)',
-  },
-};
-
 export const RaceLeaderboard = ({
   players,
   onComplete,
   isHost = false,
   isLastQuestion = false,
   autoAdvance = false,
+  questionIndex,
+  totalQuestions,
+  okPct,
 }: RaceLeaderboardProps) => {
+  // Design tokens
+  const PAPER = '#fff8ee';
+  const PAPER_2 = '#f3ecdd';
+  const CARD = '#ffffff';
+  const LINE = '#efe6d3';
+  const INK = '#241b3a';
+  const MUTED = '#6d6288';
+  const BRAND = '#7048ff';
+  const BRAND_DEEP = '#4f2fd0';
+  const BRAND_SOFT = '#efe9ff';
+  const GOLD = '#ffb020';
+  const FLASH_DEEP = '#a86e00';
+  const FLASH_SOFT = '#fff7e6';
+  const PRES_DEEP = '#0b8a63';
+  const PRES_SOFT = '#e8faf3';
+  const QUIZ_DEEP = '#c93325';
+  const QUIZ_SOFT = '#fff3f0';
+  const SILVER = '#cfd4e2';
+  const BRONZE = '#e08a5a';
+  const R_MD = 16;
+  const R_PILL = 999;
+  const MEDAL_BG: Record<number, string> = { 1: GOLD, 2: SILVER, 3: BRONZE };
+  const MEDAL_SHADOW: Record<number, string> = {
+    1: `0 3px 0 ${FLASH_DEEP}`,
+    2: '0 3px 0 #9aa2b8',
+    3: '0 3px 0 #b05f30',
+  };
+
   const [displayOrder, setDisplayOrder] = useState<Player[]>([]);
   const [countingScores, setCountingScores] = useState<Record<string, number>>({});
   const [scoresReady, setScoresReady] = useState(false);
@@ -134,232 +142,278 @@ export const RaceLeaderboard = ({
   const posMap: Record<string, number> = {};
   displayOrder.forEach((p, i) => { posMap[p.id] = i * ROW_TOTAL; });
 
-  const maxScore = Math.max(...players.map(p => p.score), 1);
-  const leader = [...players].sort((a, b) => b.score - a.score)[0];
+  const bestClimber: { name: string; climb: number } | null = scoresReady
+    ? (() => {
+        let best: { name: string; climb: number } | null = null;
+        displayOrder.forEach((p) => {
+          const climb = (prevRankMap[p.id] ?? 99) - (currentRankMap[p.id] ?? 99);
+          if (climb > 0 && (!best || climb > best.climb)) best = { name: p.name, climb };
+        });
+        return best;
+      })()
+    : null;
 
   return (
-    <div
-      style={{
-        background: '#0f172a',
-        minHeight: '100vh',
-        fontFamily: 'var(--ap-font-body)',
-        color: '#fff',
-        position: 'relative',
-        overflow: 'hidden',
-      }}
-    >
-      {/* Radial glow behind leader */}
-      {scoresReady && leader && (
-        <div style={{
-          position: 'absolute',
-          top: -80, left: '50%', transform: 'translateX(-50%)',
-          width: 600, height: 400,
-          background: 'radial-gradient(ellipse at 50% 0%, rgba(255,220,50,0.08) 0%, transparent 70%)',
-          pointerEvents: 'none',
-        }} />
-      )}
+    <div style={{
+      minHeight: '100vh',
+      backgroundColor: PAPER,
+      backgroundImage: `radial-gradient(${PAPER_2} 1px, transparent 1px)`,
+      backgroundSize: '28px 28px',
+      fontFamily: 'var(--ap-font-body)',
+      color: INK,
+      display: 'flex',
+      flexDirection: 'column',
+      overflowX: 'hidden',
+    }}>
+      <div style={{ flex: 1, maxWidth: 880, margin: '0 auto', width: '100%', padding: '34px 24px 130px' }}>
 
-      <div className="overflow-auto" style={{ padding: '24px 16px 40px', position: 'relative' }}>
-        <div style={{ maxWidth: 600, margin: '0 auto' }}>
-
-          {/* Header */}
-          <div style={{ textAlign: 'center', paddingTop: 16, marginBottom: 28 }}>
-            <div style={{
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              width: 64, height: 64, borderRadius: 20,
-              background: 'linear-gradient(135deg,rgba(255,220,50,0.2),rgba(255,176,32,0.1))',
-              border: '2px solid rgba(255,220,50,0.3)',
-              fontSize: 32,
-              marginBottom: 12,
-              boxShadow: '0 0 30px rgba(255,220,50,0.15)',
-            }}>
-              🏆
-            </div>
-            <h1 style={{
-              fontFamily: 'var(--ap-font-display)',
-              fontSize: 'clamp(2rem,5vw,2.6rem)',
-              fontWeight: 700,
-              letterSpacing: '-1px',
-              margin: '0 0 4px',
-              color: '#fff',
-            }}>
-              Classement
-            </h1>
-            <p style={{
-              color: 'rgba(255,255,255,0.4)',
-              fontWeight: 700,
-              fontSize: 13,
-              margin: 0,
-              letterSpacing: '0.5px',
-              textTransform: 'uppercase',
-            }}>
-              {isLastQuestion ? 'Résultats finaux' : 'Classement provisoire'}
-            </p>
-          </div>
-
-          {/* Auto-advance bar */}
-          {isHost && scoresReady && (!isLastQuestion || autoAdvance) && (
-            <div style={{
-              marginBottom: 20,
-              borderRadius: 4,
-              overflow: 'hidden',
-              background: 'rgba(255,255,255,0.07)',
-              height: 4,
-            }}>
-              <div style={{
-                height: '100%',
-                background: 'var(--ap-brand)',
-                width: `${(countdown / AUTO_ADVANCE_MS) * 100}%`,
-                transition: 'width 50ms linear',
-                borderRadius: 4,
-              }} />
+        {/* Header */}
+        <header style={{ textAlign: 'center', marginBottom: 8 }}>
+          {questionIndex != null && totalQuestions != null && (
+            <div style={{ marginBottom: 14 }}>
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: 8,
+                fontSize: 12.5, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase' as const,
+                color: BRAND_DEEP, background: BRAND_SOFT,
+                border: `2px solid rgba(112,72,255,0.32)`,
+                padding: '6px 15px', borderRadius: R_PILL,
+              }}>
+                📊 Classement — après la question {questionIndex}/{totalQuestions}
+              </span>
             </div>
           )}
+          <h1 style={{
+            fontFamily: 'var(--ap-font-display)',
+            fontWeight: 600,
+            fontSize: 'clamp(28px, 4vw, 40px)',
+            margin: 0,
+          }}>
+            {isLastQuestion ? '🏆 Résultats finaux' : 'Qui mène la course ?'}
+          </h1>
+          {okPct != null && (
+            <p style={{ marginTop: 8, fontWeight: 700, fontSize: 14.5, color: MUTED }}>
+              Sur cette question : <b style={{ color: PRES_DEEP }}>{okPct} %</b> de bonnes réponses
+            </p>
+          )}
+        </header>
 
-          {/* Player rows */}
-          <div style={{ position: 'relative', height: players.length * ROW_TOTAL, marginBottom: 32 }}>
-            {players.map((player) => {
-              const rank = currentRankMap[player.id] ?? 99;
-              const prevRank = prevRankMap[player.id] ?? rank;
-              const rankChange = prevRank - rank;
-              const medal = MEDAL[rank];
-              const displayScore = countingScores[player.id] ?? (player.previousScore ?? 0);
-              const progress = (displayScore / maxScore) * 100;
-              const top = posMap[player.id] ?? 0;
-              const isLeader = rank === 1;
-
-              return (
-                <div
-                  key={player.id}
-                  style={{
-                    position: 'absolute',
-                    top,
-                    left: 0, right: 0,
-                    height: ROW_H,
-                    transition: 'top 0.65s cubic-bezier(0.34,1.56,0.64,1)',
-                    overflow: 'hidden',
-                    background: isLeader && scoresReady
-                      ? 'rgba(255,220,50,0.06)'
-                      : medal
-                        ? medal.glow
-                        : 'rgba(255,255,255,0.035)',
-                    border: `1.5px solid ${
-                      isLeader && scoresReady
-                        ? 'rgba(255,220,50,0.3)'
-                        : medal
-                          ? medal.ringColor
-                          : 'rgba(255,255,255,0.07)'
-                    }`,
-                    borderRadius: 16,
-                    boxShadow: isLeader && scoresReady
-                      ? '0 0 24px rgba(255,220,50,0.12)'
-                      : 'none',
-                  }}
-                >
-                  {/* Progress fill */}
-                  <div style={{
-                    position: 'absolute', top: 0, bottom: 0, left: 0,
-                    width: `${progress}%`,
-                    background: isLeader
-                      ? 'linear-gradient(90deg,rgba(255,220,50,0.12),transparent)'
-                      : 'linear-gradient(90deg,rgba(112,72,255,0.07),transparent)',
-                    transition: 'width 0.9s ease-out',
-                    pointerEvents: 'none',
-                  }} />
-
-                  <div style={{
-                    position: 'relative',
-                    display: 'flex', alignItems: 'center',
-                    gap: 12, padding: '0 16px', height: '100%',
-                  }}>
-                    {/* Medal / rank badge */}
-                    <div style={{
-                      width: 42, height: 42, borderRadius: '50%', flexShrink: 0,
-                      background: medal ? medal.bg : 'rgba(255,255,255,0.07)',
-                      border: `2px solid ${medal ? medal.border : 'rgba(255,255,255,0.12)'}`,
-                      boxShadow: medal && rank === 1 ? '0 0 14px rgba(255,220,50,0.4)' : 'none',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontWeight: 700,
-                      fontSize: medal ? (rank === 1 ? 22 : 20) : 15,
-                      color: medal ? medal.textColor : 'rgba(255,255,255,0.45)',
-                    }}>
-                      {medal ? medal.emoji : rank}
-                    </div>
-
-                    <AvatarDisplay emoji={player.avatar} size="sm" />
-
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{
-                        fontFamily: 'var(--ap-font-display)',
-                        fontWeight: 700, fontSize: 15,
-                        color: '#fff',
-                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                      }}>
-                        {player.name}
-                      </div>
-                      {scoresReady && rankChange !== 0 && (
-                        <div style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 3,
-                          marginTop: 2,
-                          padding: '1px 8px',
-                          borderRadius: 99,
-                          background: rankChange > 0 ? 'rgba(74,222,128,0.15)' : 'rgba(248,113,113,0.15)',
-                          border: `1px solid ${rankChange > 0 ? 'rgba(74,222,128,0.3)' : 'rgba(248,113,113,0.3)'}`,
-                          fontSize: 11, fontWeight: 800,
-                          color: rankChange > 0 ? '#4ade80' : '#f87171',
-                          letterSpacing: 0.3,
-                        }}>
-                          {rankChange > 0
-                            ? `▲ +${rankChange} place${rankChange > 1 ? 's' : ''}`
-                            : `▼ ${Math.abs(rankChange)} place${Math.abs(rankChange) > 1 ? 's' : ''}`}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Score */}
-                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                      <div style={{
-                        fontFamily: 'var(--ap-font-display)',
-                        fontWeight: 700,
-                        fontSize: isLeader ? 26 : 22,
-                        color: isLeader && scoresReady ? '#FFE566' : '#fff',
-                        fontVariantNumeric: 'tabular-nums',
-                        transition: 'color 0.4s, font-size 0.3s',
-                      }}>
-                        {displayScore.toLocaleString()}
-                      </div>
-                      {scoresReady && (player.score - (player.previousScore ?? 0)) > 0 && (
-                        <div style={{
-                          color: '#4ade80', fontWeight: 800, fontSize: 11,
-                          fontFamily: 'var(--ap-font-body)',
-                          letterSpacing: 0.3,
-                        }}>
-                          +{(player.score - (player.previousScore ?? 0)).toLocaleString()} pts 🎯
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Final button */}
-          {isHost && scoresReady && isLastQuestion && !autoAdvance && (
-            <div style={{ display: 'flex', justifyContent: 'center', paddingBottom: 32 }}>
-              <button
-                onClick={stableOnComplete}
-                className="ap-btn ap-btn--lg ap-btn--pill"
-                style={{ background: 'var(--ap-brand)', boxShadow: '0 5px 0 var(--ap-brand-deep)' }}
-              >
-                🏁 Voir les résultats finaux
-              </button>
-            </div>
+        {/* Callout — best climber */}
+        <div style={{ display: 'flex', justifyContent: 'center', margin: '18px 0 22px', minHeight: 44 }}>
+          {bestClimber && (
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: 9,
+              fontFamily: 'var(--ap-font-display)', fontWeight: 600, fontSize: 17,
+              color: FLASH_DEEP, background: FLASH_SOFT,
+              border: `2px solid rgba(255,176,32,0.5)`,
+              padding: '9px 20px', borderRadius: R_PILL,
+              boxShadow: `0 4px 0 rgba(255,176,32,0.45)`,
+              animation: 'callout-in 0.5s cubic-bezier(.2,.7,.3,1.3) forwards',
+            }}>
+              🚀 {bestClimber.name} gagne {bestClimber.climb} place{bestClimber.climb > 1 ? 's' : ''} !
+            </span>
           )}
         </div>
+
+        {/* Board */}
+        <section
+          aria-label="Classement des joueurs"
+          style={{ position: 'relative', height: players.length * ROW_TOTAL }}
+        >
+          {players.map((player) => {
+            const rank = currentRankMap[player.id] ?? 99;
+            const prevRank = prevRankMap[player.id] ?? rank;
+            const rankChange = prevRank - rank;
+            const displayScore = countingScores[player.id] ?? (player.previousScore ?? 0);
+            const scoreGain = player.score - (player.previousScore ?? 0);
+            const top = posMap[player.id] ?? 0;
+            const isFirst = rank === 1;
+            const leaderScore = Math.max(...players.map(p => p.score), 1);
+            const gapWidth = Math.round((displayScore / leaderScore) * 100);
+
+            return (
+              <div
+                key={player.id}
+                style={{
+                  position: 'absolute',
+                  top,
+                  left: 0, right: 0,
+                  height: ROW_H,
+                  transition: 'top 0.65s cubic-bezier(.2,.7,.3,1.3)',
+                  display: 'flex', alignItems: 'center', gap: 14,
+                  background: CARD,
+                  border: `2px solid ${isFirst && scoresReady ? 'rgba(255,176,32,0.6)' : LINE}`,
+                  borderRadius: R_MD,
+                  padding: '0 18px 0 14px',
+                  boxShadow: isFirst && scoresReady
+                    ? `0 4px 0 rgba(255,176,32,0.55), 0 14px 30px rgba(255,176,32,.14)`
+                    : `0 4px 0 ${LINE}`,
+                  overflow: 'hidden',
+                }}
+              >
+                {/* Gap bar */}
+                <div style={{
+                  position: 'absolute', left: 0, top: 0, bottom: 0, zIndex: 0,
+                  background: PAPER,
+                  borderRight: `2px solid ${LINE}`,
+                  width: `${100 - gapWidth}%`,
+                  transition: 'width 0.8s ease-out',
+                  pointerEvents: 'none',
+                }} />
+
+                {/* Rank badge */}
+                <div style={{
+                  position: 'relative', zIndex: 1,
+                  flex: 'none', width: 40, height: 40, borderRadius: 12,
+                  display: 'grid', placeItems: 'center',
+                  fontFamily: 'var(--ap-font-display)', fontWeight: 600, fontSize: 19,
+                  background: MEDAL_BG[rank] ?? PAPER_2,
+                  color: rank === 3 ? '#fff' : rank <= 2 ? INK : MUTED,
+                  boxShadow: MEDAL_SHADOW[rank] ?? 'none',
+                  transition: 'background 0.4s, color 0.4s',
+                }}>
+                  {rank}
+                </div>
+
+                {/* Avatar */}
+                <div style={{
+                  position: 'relative', zIndex: 1,
+                  flex: 'none', width: 46, height: 46, borderRadius: '50%',
+                  background: PAPER_2, border: `2px solid ${LINE}`,
+                  display: 'grid', placeItems: 'center', fontSize: 23,
+                  overflow: 'hidden',
+                }}>
+                  <AvatarDisplay emoji={player.avatar} size="sm" />
+                </div>
+
+                {/* Name + streak */}
+                <div style={{ position: 'relative', zIndex: 1, flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 9 }}>
+                  <span style={{
+                    fontWeight: 800, fontSize: 17,
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  }}>
+                    {player.name}
+                  </span>
+                  {(player.streak ?? 0) >= 2 && (
+                    <span style={{
+                      fontFamily: 'var(--ap-font-display)', fontWeight: 600, fontSize: 12.5,
+                      color: QUIZ_DEEP, background: QUIZ_SOFT,
+                      border: `2px solid rgba(255,90,77,0.4)`,
+                      borderRadius: R_PILL, padding: '2px 9px',
+                      flexShrink: 0,
+                    }}>
+                      🔥 {player.streak}
+                    </span>
+                  )}
+                </div>
+
+                {/* Movement badge */}
+                {scoresReady && rankChange !== 0 && (
+                  <div style={{
+                    position: 'relative', zIndex: 1,
+                    flex: 'none', minWidth: 46, textAlign: 'center',
+                    fontSize: 12.5, fontWeight: 800, borderRadius: R_PILL, padding: '4px 10px',
+                    color: rankChange > 0 ? PRES_DEEP : QUIZ_DEEP,
+                    background: rankChange > 0 ? PRES_SOFT : QUIZ_SOFT,
+                    animation: 'mv-pop 0.4s cubic-bezier(.2,.7,.3,1.3) forwards',
+                  }}>
+                    {rankChange > 0 ? `▲ ${rankChange}` : `▼ ${-rankChange}`}
+                  </div>
+                )}
+
+                {/* Score */}
+                <div style={{ position: 'relative', zIndex: 1, flex: 'none', textAlign: 'right', minWidth: 92 }}>
+                  <div style={{
+                    fontFamily: 'var(--ap-font-mono)', fontWeight: 700, fontSize: 18,
+                    fontVariantNumeric: 'tabular-nums',
+                    color: isFirst && scoresReady ? GOLD : INK,
+                    transition: 'color 0.4s',
+                  }}>
+                    {displayScore.toLocaleString('fr-FR')}
+                  </div>
+                  {scoresReady && scoreGain > 0 && (
+                    <div style={{
+                      fontSize: 11.5, color: PRES_DEEP, fontWeight: 700,
+                      animation: 'plus-in 0.35s ease forwards',
+                    }}>
+                      +{scoreGain.toLocaleString('fr-FR')}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </section>
+
+        <p style={{ textAlign: 'center', fontSize: 13, fontWeight: 700, color: MUTED, marginTop: 14 }}>
+          {players.length} joueur{players.length > 1 ? 's' : ''}
+        </p>
       </div>
+
+      {/* Host bar */}
+      {isHost && scoresReady && (
+        <div style={{
+          position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 30,
+          background: CARD, borderTop: `2px solid ${LINE}`,
+          boxShadow: '0 -14px 34px rgba(60,40,120,.08)',
+        }}>
+          <div style={{
+            maxWidth: 880, margin: '0 auto', padding: '14px 24px',
+            display: 'flex', alignItems: 'center', gap: 14,
+          }}>
+            {questionIndex != null && totalQuestions != null && (
+              <span style={{ display: 'flex', alignItems: 'center', gap: 10, fontWeight: 800, fontSize: 13.5, color: MUTED }}>
+                <span style={{ fontFamily: 'var(--ap-font-mono)', fontVariantNumeric: 'tabular-nums' }}>
+                  {questionIndex}/{totalQuestions}
+                </span>
+                <span style={{
+                  width: 130, height: 8, background: PAPER_2,
+                  border: `2px solid ${LINE}`, borderRadius: R_PILL, overflow: 'hidden',
+                  display: 'flex',
+                }}>
+                  <i style={{
+                    display: 'block', height: '100%', background: BRAND, borderRadius: R_PILL,
+                    width: `${(questionIndex / totalQuestions) * 100}%`,
+                    transition: 'width 0.5s ease',
+                  }} />
+                </span>
+                questions
+              </span>
+            )}
+
+            <div style={{ flex: 1 }} />
+
+            {!isLastQuestion && (
+              <div style={{ width: 100, height: 4, background: PAPER_2, borderRadius: 4, overflow: 'hidden' }}>
+                <div style={{
+                  height: '100%', background: BRAND, borderRadius: 4,
+                  width: `${(countdown / AUTO_ADVANCE_MS) * 100}%`,
+                  transition: 'width 50ms linear',
+                }} />
+              </div>
+            )}
+
+            <button
+              onClick={stableOnComplete}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 9,
+                fontFamily: 'var(--ap-font-body)', fontWeight: 800, fontSize: 15,
+                padding: '13px 26px', borderRadius: R_PILL, border: 'none', cursor: 'pointer',
+                color: isLastQuestion ? INK : '#fff',
+                background: isLastQuestion ? GOLD : BRAND,
+                boxShadow: isLastQuestion ? `0 5px 0 ${FLASH_DEEP}` : `0 5px 0 ${BRAND_DEEP}`,
+              }}
+            >
+              {isLastQuestion ? '🏆 Voir le podium final' : 'Question suivante →'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes callout-in { from { opacity: 0; transform: translateY(10px) scale(.9); } to { opacity: 1; transform: none; } }
+        @keyframes mv-pop { from { opacity: 0; transform: scale(.6); } to { opacity: 1; transform: scale(1); } }
+        @keyframes plus-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+      `}</style>
     </div>
   );
 };
