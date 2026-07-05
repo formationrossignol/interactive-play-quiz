@@ -447,6 +447,16 @@ const Index = () => {
               Rejoindre
             </button>
           </div>
+
+          <p style={{ marginTop: 12, fontSize: 13, color: 'var(--ap-muted)', textAlign: 'center', flex: '0 0 100%' }}>
+            Vous avez un code d'examen ?{' '}
+            <button
+              onClick={() => navigate('/join-exam')}
+              style={{ background: 'none', border: 'none', color: 'var(--ap-brand)', fontWeight: 600, cursor: 'pointer', fontSize: 13, padding: 0, textDecoration: 'underline' }}
+            >
+              Rejoindre un examen
+            </button>
+          </p>
         </section>
 
         <div style={{ height: 80 }} />
