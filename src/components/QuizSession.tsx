@@ -1388,6 +1388,12 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
   }
 
   if (gameState === 'leaderboard') {
+    const correctIdx = typeof currentQuestion?.correctAnswer === 'number'
+      ? currentQuestion.correctAnswer
+      : null;
+    const okPct = correctIdx !== null && answerDistribution[correctIdx] != null
+      ? answerDistribution[correctIdx]
+      : undefined;
     return (
       <RaceLeaderboard
         players={players}
@@ -1395,6 +1401,9 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
         isHost={isHost}
         isLastQuestion={currentQuestionIndex >= quiz.questions.length - 1}
         autoAdvance={autoAdvance}
+        questionIndex={currentQuestionIndex + 1}
+        totalQuestions={quiz.questions.length}
+        okPct={okPct}
       />
     );
   }
