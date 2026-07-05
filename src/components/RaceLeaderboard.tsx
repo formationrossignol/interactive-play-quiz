@@ -153,6 +153,8 @@ export const RaceLeaderboard = ({
       })()
     : null;
 
+  const leaderScore = Math.max(...players.map(p => p.score), 1);
+
   return (
     <div style={{
       minHeight: '100vh',
@@ -227,7 +229,6 @@ export const RaceLeaderboard = ({
             const scoreGain = player.score - (player.previousScore ?? 0);
             const top = posMap[player.id] ?? 0;
             const isFirst = rank === 1;
-            const leaderScore = Math.max(...players.map(p => p.score), 1);
             const gapWidth = Math.round((displayScore / leaderScore) * 100);
 
             return (
