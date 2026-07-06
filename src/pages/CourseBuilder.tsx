@@ -721,7 +721,7 @@ const CourseBuilder = () => {
                         <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--ap-muted)" }}>
                           {lesson.documentName ? "Remplacer le fichier" : "Importer un fichier"}
                         </span>
-                        <span style={{ fontSize: "11px", color: "var(--ap-muted)" }}>PDF, Word (.docx), Markdown — max 4 Mo</span>
+                        <span style={{ fontSize: "11px", color: "var(--ap-muted)" }}>PDF, Word (.docx), Markdown, max 4 Mo</span>
                         <input
                           type="file"
                           accept=".pdf,.docx,.doc,.md,.markdown"

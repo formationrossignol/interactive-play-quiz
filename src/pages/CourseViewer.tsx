@@ -429,7 +429,7 @@ const CourseViewer = () => {
           >
             <span style={{ fontSize: 38 }} aria-hidden="true">🏆</span>
             <div>
-              <h3 style={{ fontFamily: "var(--ap-font-display)", fontWeight: 600, fontSize: 19 }}>Cours terminé — bravo !</h3>
+              <h3 style={{ fontFamily: "var(--ap-font-display)", fontWeight: 600, fontSize: 19 }}>Cours terminé, bravo !</h3>
               <p style={{ fontSize: 13.5, fontWeight: 700, color: "var(--ap-muted)" }}>
                 {totalLessons} leçon{totalLessons > 1 ? "s" : ""} · {course.modules.length} module{course.modules.length > 1 ? "s" : ""} · tout validé.
               </p>
@@ -621,7 +621,7 @@ const CourseViewer = () => {
                     <span style={{ flexShrink: 0, width: 64, height: 64, borderRadius: 18, display: "grid", placeItems: "center", fontSize: 30, background: TYPE_LAUNCH_BG.document }}>🧪</span>
                     <div style={{ flex: 1 }}>
                       <h3 style={{ fontFamily: "var(--ap-font-display)", fontWeight: 600, fontSize: 18 }}>{lesson.documentName}</h3>
-                      <p style={{ fontSize: 13, fontWeight: 700, color: "var(--ap-muted)", marginTop: 3 }}>Aperçu non disponible — téléchargez.</p>
+                      <p style={{ fontSize: 13, fontWeight: 700, color: "var(--ap-muted)", marginTop: 3 }}>Aperçu non disponible, téléchargez.</p>
                     </div>
                     <a
                       href={lesson.content} download={lesson.documentName}

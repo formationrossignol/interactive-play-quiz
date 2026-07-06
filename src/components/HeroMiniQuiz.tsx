@@ -5,7 +5,7 @@ const ALL_QUESTIONS = [
     q: "Quel océan est le plus profond ?",
     answers: ["Atlantique", "Pacifique", "Indien", "Arctique"],
     correct: 1,
-    hint: "C'était le Pacifique — fosse des Mariannes, −10 984 m. ✓",
+    hint: "C'était le Pacifique : fosse des Mariannes, -10 984 m. ✓",
   },
   {
     q: "Dans quel pays a été inventé le WiFi ?",
@@ -17,19 +17,19 @@ const ALL_QUESTIONS = [
     q: "Quel animal terrestre court le plus vite ?",
     answers: ["Lion", "Guépard", "Faucon", "Éléphant"],
     correct: 1,
-    hint: "C'était le guépard — jusqu'à 112 km/h. ✓",
+    hint: "C'était le guépard, jusqu'à 112 km/h. ✓",
   },
   {
     q: "Combien de planètes dans le système solaire ?",
     answers: ["7", "8", "9", "10"],
     correct: 1,
-    hint: "C'était 8 — Pluton est naine depuis 2006. ✓",
+    hint: "C'était 8, Pluton est naine depuis 2006. ✓",
   },
   {
     q: "Quelle langue est la plus parlée au monde ?",
     answers: ["Anglais", "Espagnol", "Hindi", "Mandarin"],
     correct: 3,
-    hint: "C'était le mandarin — 1,1 milliard de locuteurs natifs. ✓",
+    hint: "C'était le mandarin, 1,1 milliard de locuteurs natifs. ✓",
   },
   {
     q: "Quelle est la capitale de l'Australie ?",
@@ -41,25 +41,25 @@ const ALL_QUESTIONS = [
     q: "En quelle année a eu lieu la Révolution française ?",
     answers: ["1776", "1789", "1799", "1815"],
     correct: 1,
-    hint: "C'était 1789 — prise de la Bastille. ✓",
+    hint: "C'était 1789, prise de la Bastille. ✓",
   },
   {
     q: "Quel élément chimique a pour symbole Au ?",
     answers: ["Argent", "Aluminium", "Or", "Cuivre"],
     correct: 2,
-    hint: "C'était l'Or — du latin Aurum. ✓",
+    hint: "C'était l'Or, du latin Aurum. ✓",
   },
   {
     q: "Combien d'os y a-t-il dans le corps humain adulte ?",
     answers: ["186", "206", "226", "256"],
     correct: 1,
-    hint: "C'était 206 — on en naît avec plus de 300 ! ✓",
+    hint: "C'était 206, on en naît avec plus de 300 ! ✓",
   },
   {
     q: "Quel pays a la plus grande superficie du monde ?",
     answers: ["Canada", "USA", "Chine", "Russie"],
     correct: 3,
-    hint: "C'était la Russie — 17,1 millions de km². ✓",
+    hint: "C'était la Russie, 17,1 millions de km². ✓",
   },
 ];
 
@@ -132,7 +132,7 @@ export function HeroMiniQuiz() {
   const [shakingIndex, setShakingIndex] = useState<number | null>(null);
   const [pillBonus, setPillBonus] = useState<number | null>(null);
   const [pillKey, setPillKey] = useState(0);
-  const [hintText, setHintText] = useState("Cliquez sur une réponse — c'est une vraie démo.");
+  const [hintText, setHintText] = useState("Cliquez sur une réponse, c'est une vraie démo.");
   const containerRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const animatedScore = useAnimatedNumber(score);
@@ -149,7 +149,7 @@ export function HeroMiniQuiz() {
         setSelected(null);
         setRevealed(false);
         setTimeLeft(TIMER_SECONDS);
-        setHintText("Cliquez sur une réponse — c'est une vraie démo.");
+        setHintText("Cliquez sur une réponse, c'est une vraie démo.");
       }, 1600);
     } else {
       setTimeout(() => setDone(true), 1600);
@@ -197,7 +197,7 @@ export function HeroMiniQuiz() {
   const restart = () => {
     setQIndex(0); setSelected(null); setRevealed(false);
     setScore(0); setTimeLeft(TIMER_SECONDS); setDone(false);
-    setHintText("Cliquez sur une réponse — c'est une vraie démo.");
+    setHintText("Cliquez sur une réponse, c'est une vraie démo.");
   };
 
   return (
@@ -215,7 +215,7 @@ export function HeroMiniQuiz() {
         userSelect: "none",
       }}
       role="group"
-      aria-label="Démo interactive — essayez une question"
+      aria-label="Démo interactive : essayez une question"
     >
       {/* Score pill */}
       {pillBonus !== null && (

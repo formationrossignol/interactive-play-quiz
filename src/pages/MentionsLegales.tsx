@@ -28,7 +28,7 @@ const MentionsLegales = () => {
           <p>Ludiq est édité par :</p>
           <p style={{ marginTop: "8px" }}>
             <strong>[Nom de la société / Nom du porteur de projet]</strong><br />
-            [Forme juridique — ex. : Auto-entrepreneur / SAS]<br />
+            [Forme juridique, ex. : Auto-entrepreneur / SAS]<br />
             [Adresse complète]<br />
             [SIRET / RCS]<br />
             Email : <a href="mailto:contact@quizmaster.app" style={{ color: "var(--ap-brand)" }}>contact@quizmaster.app</a>

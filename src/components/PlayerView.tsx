@@ -76,6 +76,8 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
   const answeredForIndexRef = useRef<number | null>(null);
   // Synchronous guard — useState is stale under rapid clicks within the same render cycle
   const hasAnsweredRef = useRef(false);
+  // Tracks whether this player was ever found in session.players (to detect kick)
+  const wasSeenInSessionRef = useRef(false);
 
   const syncFromSession = useCallback(() => {
     const session = readSessionState(gameCode);
@@ -101,10 +103,14 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
     if (playerId) {
       const player = session.players.find((p) => p.id === playerId);
       if (player) {
+        wasSeenInSessionRef.current = true;
         setPlayerScore(player.score ?? 0);
         const sorted = [...session.players].sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
         const index = sorted.findIndex((p) => p.id === playerId);
         setPlayerRank(index >= 0 ? index + 1 : 1);
+      } else if (wasSeenInSessionRef.current && session.gameState === 'waiting') {
+        // Player was in session but is now gone — host kicked them
+        navigate(`/join/${gameCode}`, { replace: true });
       }
     }
   }, [gameCode, playerId]);

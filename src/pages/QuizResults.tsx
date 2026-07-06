@@ -117,8 +117,8 @@ const QuizResults = () => {
   const stats = [
     { icon: <BarChart2 style={{ width: 20, height: 20, color: "var(--ap-brand)" }} />, label: "Sessions", value: totalSessions },
     { icon: <Users style={{ width: 20, height: 20, color: "var(--ap-quiz)" }} />, label: "Participants totaux", value: totalParticipants },
-    { icon: <Target style={{ width: 20, height: 20, color: "var(--ap-poll)" }} />, label: "Score moyen", value: avgScore > 0 ? `${avgScore} pts` : "—" },
-    { icon: <Trophy style={{ width: 20, height: 20, color: "#f59e0b" }} />, label: "Meilleur score", value: bestScore > 0 ? `${bestScore} pts` : "—" },
+    { icon: <Target style={{ width: 20, height: 20, color: "var(--ap-poll)" }} />, label: "Score moyen", value: avgScore > 0 ? `${avgScore} pts` : "-" },
+    { icon: <Trophy style={{ width: 20, height: 20, color: "#f59e0b" }} />, label: "Meilleur score", value: bestScore > 0 ? `${bestScore} pts` : "-" },
   ];
 
   return (

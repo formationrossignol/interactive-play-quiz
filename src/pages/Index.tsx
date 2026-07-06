@@ -233,7 +233,7 @@ const Index = () => {
                 maxWidth: "46ch", marginBottom: 30, lineHeight: 1.55,
               }}
             >
-              Quiz, sondages, flashcards et présentations interactives — dans un seul outil. Vos participants rejoignent en{" "}
+              Quiz, sondages, flashcards et présentations interactives dans un seul outil. Vos participants rejoignent en{" "}
               <strong style={{ color: "var(--ap-ink)", fontWeight: 700 }}>un scan de QR code</strong>, sans compte, sans installation.
             </p>
 
@@ -298,13 +298,13 @@ const Index = () => {
 
         {/* ═══ STRIP — preuve produit ═══ */}
         <section style={{ paddingBottom: 80 }}>
-          <p className="ap-strip-label ap-reveal d5">Les objets du jeu — même système, partout</p>
+          <p className="ap-strip-label ap-reveal d5">Les objets du jeu, même système partout</p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 18 }} className="strip-grid">
 
             {/* Tile 1 — Code PIN */}
             <div className="ap-card ap-card--hover ap-reveal d5" style={{ boxShadow: "0 5px 0 var(--ap-line)" }}>
               <h3 className="ap-h3" style={{ marginBottom: 4 }}>Rejoindre en 5 secondes</h3>
-              <p style={{ fontSize: 14, color: "var(--ap-muted)", marginBottom: 18 }}>Un code, un QR — jamais de compte pour les participants.</p>
+              <p style={{ fontSize: 14, color: "var(--ap-muted)", marginBottom: 18 }}>Un code, un QR, jamais de compte pour les participants.</p>
               <div className="ap-pin" aria-label="Code de partie 48 29 17">
                 48<span className="ap-pin__accent">29</span>17
               </div>
@@ -316,7 +316,7 @@ const Index = () => {
             {/* Tile 3 — Type badges */}
             <div className="ap-card ap-card--hover ap-reveal d6" style={{ boxShadow: "0 5px 0 var(--ap-line)" }}>
               <h3 className="ap-h3" style={{ marginBottom: 4 }}>Quatre formats, un langage</h3>
-              <p style={{ fontSize: 14, color: "var(--ap-muted)", marginBottom: 18 }}>Chaque type de contenu a sa couleur — repérable en un clin d'œil.</p>
+              <p style={{ fontSize: 14, color: "var(--ap-muted)", marginBottom: 18 }}>Chaque type de contenu a sa couleur, repérable en un clin d'œil.</p>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 9 }}>
                 <button className="ap-type-badge ap-type-badge--quiz" onClick={() => navigate("/builder-start?type=quiz")}>
                   <span className="ap-type-badge__dot" aria-hidden="true" />Quiz

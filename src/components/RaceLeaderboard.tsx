@@ -180,7 +180,7 @@ export const RaceLeaderboard = ({
                 border: `2px solid rgba(112,72,255,0.32)`,
                 padding: '6px 15px', borderRadius: R_PILL,
               }}>
-                📊 Classement — après la question {questionIndex}/{totalQuestions}
+                📊 Classement · question {questionIndex}/{totalQuestions}
               </span>
             </div>
           )}

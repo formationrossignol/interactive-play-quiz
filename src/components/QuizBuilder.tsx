@@ -828,7 +828,7 @@ export const QuizBuilder = () => {
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = "var(--ap-line-2)"; (e.currentTarget as HTMLElement).style.color = "var(--ap-muted)"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
             >
               <ImageIcon style={{ width: 17, height: 17, flexShrink: 0 }} />
-              Ajouter une image ou un schéma — glissez-déposez ou cliquez
+              Ajouter une image ou un schéma (glissez-déposez ou cliquez)
             </div>
             <input type="file" accept="image/*" className="hidden" onChange={e => {
               const file = e.target.files?.[0];
@@ -1023,7 +1023,7 @@ export const QuizBuilder = () => {
     if (isFlashcard && selectedQ) {
       return (
         <>
-          <div style={labelStyle}><span style={{ ...liveDotStyle, background: "var(--ap-flash)" }} />Vue carte — miroir<span style={{ flex: 1, height: 2, background: "var(--ap-line-2)", opacity: 0.5, borderRadius: 2 }} /></div>
+          <div style={labelStyle}><span style={{ ...liveDotStyle, background: "var(--ap-flash)" }} />Vue carte (miroir)<span style={{ flex: 1, height: 2, background: "var(--ap-line-2)", opacity: 0.5, borderRadius: 2 }} /></div>
           <FlashcardPreview flashcard={selectedQ} theme={activeTheme} />
         </>
       );
@@ -1032,7 +1032,7 @@ export const QuizBuilder = () => {
     if (isSlide && selectedQ) {
       return (
         <>
-          <div style={labelStyle}><span style={{ ...liveDotStyle, background: "var(--ap-pres)" }} />Vue slide — miroir<span style={{ flex: 1, height: 2, background: "var(--ap-line-2)", opacity: 0.5, borderRadius: 2 }} /></div>
+          <div style={labelStyle}><span style={{ ...liveDotStyle, background: "var(--ap-pres)" }} />Vue slide (miroir)<span style={{ flex: 1, height: 2, background: "var(--ap-line-2)", opacity: 0.5, borderRadius: 2 }} /></div>
           <SlidePreview slide={selectedQ} />
         </>
       );
@@ -1042,7 +1042,7 @@ export const QuizBuilder = () => {
       <>
         <div style={labelStyle}>
           <span style={liveDotStyle} />
-          Vue joueur — miroir en direct
+          Vue joueur (miroir en direct)
           <span style={{ flex: 1, height: 2, background: "var(--ap-line-2)", opacity: 0.5, borderRadius: 2 }} />
         </div>
         <PhonePreview
@@ -1078,7 +1078,7 @@ export const QuizBuilder = () => {
         {/* Back */}
         <button
           onClick={() => handleNavigateAway(backPath)}
-          aria-label={`Retour — ${backLabel}`}
+          aria-label={`Retour : ${backLabel}`}
           style={{
             display: "grid", placeItems: "center", width: 36, height: 36,
             borderRadius: "var(--ap-r-sm)", border: "2px solid var(--ap-line)",

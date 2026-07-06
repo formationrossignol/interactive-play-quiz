@@ -28,7 +28,7 @@ const FAQ_ITEMS = [
     questions: [
       {
         q: "Comment les participants rejoignent-ils une session ?",
-        a: "Partagez le code à 6 chiffres affiché à l'écran, ou le lien QR Code généré automatiquement. Les participants ouvrent l'application sur leur smartphone et saisissent le code — aucune inscription requise.",
+        a: "Partagez le code à 6 chiffres affiché à l'écran, ou le lien QR Code généré automatiquement. Les participants ouvrent l'application sur leur smartphone et saisissent le code, aucune inscription requise.",
       },
       {
         q: "Combien de participants peut-on accueillir simultanément ?",
@@ -40,7 +40,7 @@ const FAQ_ITEMS = [
       },
       {
         q: "Peut-on relancer un même quiz plusieurs fois ?",
-        a: "Absolument. Depuis « Mes Quiz », cliquez sur « Lancer » — chaque lancement crée une nouvelle session avec un code unique. Les sessions précédentes restent dans l'historique.",
+        a: "Absolument. Depuis « Mes Quiz », cliquez sur « Lancer », chaque lancement crée une nouvelle session avec un code unique. Les sessions précédentes restent dans l'historique.",
       },
     ],
   },

@@ -28,7 +28,7 @@ const QuestionResultCard = ({ result }: { result: PollQuestionResult }) => {
           {result.question}
         </p>
         <p className="ap-muted" style={{ fontSize: "13px" }}>
-          {result.type === "open-text" ? "Réponses libres — non disponibles dans cette vue." : `Type : ${result.type} — ${result.totalResponses} réponse(s).`}
+          {result.type === "open-text" ? "Réponses libres (non disponibles dans cette vue)." : `Type : ${result.type}, ${result.totalResponses} réponse(s).`}
         </p>
       </div>
     );

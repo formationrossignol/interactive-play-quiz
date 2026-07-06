@@ -55,10 +55,10 @@ const Confidentialite = () => {
           <p style={{ marginBottom: "12px" }}>Ludiq fait appel aux sous-traitants suivants :</p>
           <ul style={{ paddingLeft: "20px", listStyleType: "disc" }}>
             <li style={{ marginBottom: "8px" }}>
-              <strong>Supabase</strong> (stockage et authentification) — serveurs en Europe (eu-west-1).
+              <strong>Supabase</strong> (stockage et authentification), serveurs en Europe (eu-west-1).
             </li>
             <li style={{ marginBottom: "8px" }}>
-              <strong>Vercel</strong> (hébergement) — conforme aux clauses contractuelles types de l'UE.
+              <strong>Vercel</strong> (hébergement), conforme aux clauses contractuelles types de l'UE.
             </li>
           </ul>
           <p style={{ marginTop: "8px" }}>

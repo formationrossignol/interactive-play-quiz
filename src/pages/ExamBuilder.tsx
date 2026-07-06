@@ -232,7 +232,7 @@ export default function ExamBuilder() {
           <div className="eb-section-title">📋 Informations générales</div>
           <div style={{ marginBottom: 16 }}>
             <label className="eb-label">Titre de l'examen</label>
-            <input className="eb-input" placeholder="Ex : Examen final — Module 3" value={form.title} onChange={(e) => set('title', e.target.value)} />
+            <input className="eb-input" placeholder="Ex : Examen final, Module 3" value={form.title} onChange={(e) => set('title', e.target.value)} />
           </div>
           <div style={{ marginBottom: 16 }}>
             <label className="eb-label">Description (optionnel)</label>
@@ -252,7 +252,7 @@ export default function ExamBuilder() {
               value={form.quizId}
               onChange={(e) => set('quizId', e.target.value)}
             >
-              <option value="">— Choisir un quiz —</option>
+              <option value="">Choisir un quiz</option>
               {quizzes.map((q) => (
                 <option key={q.id} value={q.id}>{q.title} ({q.questions.length} questions)</option>
               ))}

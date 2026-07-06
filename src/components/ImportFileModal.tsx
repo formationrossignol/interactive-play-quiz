@@ -127,7 +127,7 @@ const DocsModal = ({ open, onClose, quizType }: DocsModalProps) => {
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Format d'import — {quizType}</DialogTitle>
+          <DialogTitle>Format d'import : {quizType}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6 text-sm">
@@ -301,7 +301,7 @@ export const ImportFileModal = ({ open, onClose, quizType, onImport }: Props) =>
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <div className="flex items-center justify-between">
-              <DialogTitle>Importer — {typeLabel}</DialogTitle>
+              <DialogTitle>Importer : {typeLabel}</DialogTitle>
               <button
                 onClick={() => setDocsOpen(true)}
                 className="flex items-center gap-1.5 rounded-full border border-slate-200 px-3 py-1 text-xs font-medium text-slate-500 hover:border-indigo-300 hover:text-indigo-600 transition-colors"

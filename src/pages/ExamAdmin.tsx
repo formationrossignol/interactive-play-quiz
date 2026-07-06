@@ -183,18 +183,18 @@ export default function ExamAdmin() {
           <StatCard
             icon="🏆"
             label="Taux de réussite"
-            value={stats.passRate !== null ? `${stats.passRate}%` : '—'}
+            value={stats.passRate !== null ? `${stats.passRate}%` : '-'}
             highlight={stats.passRate !== null}
           />
           <StatCard
             icon="📊"
             label="Score moyen"
-            value={stats.avgScore !== null ? `${stats.avgScore}%` : '—'}
+            value={stats.avgScore !== null ? `${stats.avgScore}%` : '-'}
           />
           <StatCard
             icon="⏱️"
             label="Durée moy."
-            value={stats.avgTimeMinutes !== null ? `${stats.avgTimeMinutes} min` : '—'}
+            value={stats.avgTimeMinutes !== null ? `${stats.avgTimeMinutes} min` : '-'}
           />
         </div>
 

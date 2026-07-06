@@ -69,7 +69,7 @@ export default function ExamResults() {
           style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ap-muted)', fontSize: 20, padding: 4 }}
         >←</button>
         <span style={{ fontFamily: 'var(--ap-font-display)', fontWeight: 600, fontSize: 18 }}>
-          {exam.title} — Résultats
+          {exam.title} : Résultats
         </span>
       </div>
 
@@ -164,7 +164,7 @@ function checkCorrect(q: { type: string; correctAnswer: unknown }, given: number
 }
 
 function formatAnswer(q: { type: string; answers?: string[] }, given: number | string | null | undefined): string {
-  if (given === null || given === undefined || given === '') return '— sans réponse —';
+  if (given === null || given === undefined || given === '') return '(sans réponse)';
   if (q.type === 'true-false') return given === 'true' ? 'Vrai' : 'Faux';
   if (q.type === 'short-answer') return String(given);
   if (typeof given === 'number' && q.answers) return q.answers[given] ?? String(given);

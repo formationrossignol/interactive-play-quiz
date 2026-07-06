@@ -29,6 +29,7 @@ import {
   getSessionStorageKey,
   patchSessionState,
   readSessionState,
+  removePlayerFromSession,
   resetSessionForNewRun,
   appendSessionHistory,
   readSessionHistory,
@@ -347,7 +348,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
       } else {
         const ok = await ensureSessionInSupabase(quiz.gameCode, { questions: quiz.questions, title: quiz.title });
         if (!ok) {
-          toast.error('Erreur Supabase — les joueurs ne pourront pas rejoindre depuis un autre appareil. Vérifiez la console pour les détails.');
+          toast.error('Erreur Supabase : les joueurs ne pourront pas rejoindre depuis un autre appareil. Vérifiez la console pour les détails.');
         }
         syncFromStorage();
       }
@@ -785,6 +786,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
 
     const kickPlayer = (id: string) => {
       setKickedPlayerIds(prev => new Set([...prev, id]));
+      removePlayerFromSession(quiz.gameCode, id);
     };
 
     return (
@@ -849,7 +851,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
             <span style={{ fontFamily:'var(--ap-font-display)',fontWeight:600,fontSize:19 }}>Ludiq</span>
           </span>
           <span style={{ fontWeight:800,fontSize:15,color:'var(--ap-muted)' }}>
-            · En attente — <b style={{ color:'var(--ap-ink)' }}>{quiz.title}</b>
+            · En attente : <b style={{ color:'var(--ap-ink)' }}>{quiz.title}</b>
           </span>
           <div style={{ flex:1 }} />
           {isHost && (
@@ -1465,7 +1467,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
               <div style={{ width: avatarSize, height: avatarSize, borderRadius: '50%', background: 'rgba(255,255,255,.08)', border: `4px solid rgba(255,255,255,.15)` }} />
             )}
             <span style={{ marginTop: 12, fontWeight: 800, fontSize: 17, color: '#fff' }}>
-              {player?.name ?? '—'}
+              {player?.name ?? '-'}
             </span>
             <span style={{ fontFamily: 'var(--ap-font-mono)', fontWeight: 700, fontSize: rank === 1 ? 17 : 15, color: rank === 1 ? '#ffb020' : '#b6aed0', marginTop: 2 }}>
               {(player?.score ?? 0).toLocaleString('fr-FR')} pts
@@ -1611,7 +1613,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
                 <small style={{ fontSize:12, fontWeight:800, letterSpacing:'.06em', textTransform:'uppercase', color:'#b6aed0' }}>Participation</small>
               </div>
               <div style={{ background:'rgba(255,255,255,.05)', border:'2px solid rgba(255,255,255,.1)', borderRadius:16, padding:'15px 18px', textAlign:'center' }}>
-                <b style={{ display:'block', fontFamily:'var(--ap-font-display)', fontWeight:600, fontSize:26, color:'#ffb020', fontVariantNumeric:'tabular-nums' }}>{p1?.score.toLocaleString('fr-FR') ?? '—'}</b>
+                <b style={{ display:'block', fontFamily:'var(--ap-font-display)', fontWeight:600, fontSize:26, color:'#ffb020', fontVariantNumeric:'tabular-nums' }}>{p1?.score.toLocaleString('fr-FR') ?? '-'}</b>
                 <small style={{ fontSize:12, fontWeight:800, letterSpacing:'.06em', textTransform:'uppercase', color:'#b6aed0' }}>Meilleur score</small>
               </div>
             </section>

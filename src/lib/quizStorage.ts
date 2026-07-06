@@ -29,7 +29,24 @@ export const QUIZ_STORAGE_KEY = 'saved_quizzes';
 export const getSavedQuizzes = (): SavedQuiz[] => {
   try {
     const quizzesStr = localStorage.getItem(QUIZ_STORAGE_KEY);
-    return quizzesStr ? (JSON.parse(quizzesStr) as SavedQuiz[]) : [];
+    const quizzes: SavedQuiz[] = quizzesStr ? (JSON.parse(quizzesStr) as SavedQuiz[]) : [];
+
+    // Migrate legacy non-6-digit IDs to proper game codes
+    const valid6 = /^\d{6}$/;
+    const existing = new Set(quizzes.filter(q => valid6.test(q.id)).map(q => q.id));
+    let didMigrate = false;
+    const migrated = quizzes.map(q => {
+      if (valid6.test(q.id)) return q;
+      let newId: string;
+      do { newId = (Math.floor(Math.random() * 900000) + 100000).toString(); }
+      while (existing.has(newId));
+      existing.add(newId);
+      didMigrate = true;
+      return { ...q, id: newId };
+    });
+    if (didMigrate) localStorage.setItem(QUIZ_STORAGE_KEY, JSON.stringify(migrated));
+
+    return migrated;
   } catch {
     return [];
   }
