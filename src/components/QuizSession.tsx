@@ -18,7 +18,7 @@ import { QuizSessionAnswerDistribution } from "./QuizSession_AnswerDistribution"
 import { RaceLeaderboard } from "./RaceLeaderboard";
 import { Fireworks } from "./Fireworks";
 import { TransitionTimer } from "./TransitionTimer";
-import { AvatarDisplay } from "./BetterAvatars";
+import { AvatarDisplay, getAvatarRender } from "./BetterAvatars";
 import { cn } from "@/lib/utils";
 import { DEFAULT_THEME_ID, THEMES } from "@/lib/themes";
 import { hexToRgba } from "@/lib/color";
@@ -1456,12 +1456,12 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
             {player ? (
               <div style={{
                 width: avatarSize, height: avatarSize, borderRadius: '50%',
-                background: '#fff', display: 'grid', placeItems: 'center',
-                fontSize: rank === 1 ? 42 : 36,
+                overflow: 'hidden',
                 border: `4px solid #1c1430`,
                 boxShadow: `0 0 0 4px ${borderColor},0 6px 0 ${borderDeep}${glowShadow}`,
+                flexShrink: 0,
               }}>
-                <AvatarDisplay emoji={player.avatar} size={rank === 1 ? 'xl' : 'lg'} />
+                {getAvatarRender(player.avatar)}
               </div>
             ) : (
               <div style={{ width: avatarSize, height: avatarSize, borderRadius: '50%', background: 'rgba(255,255,255,.08)', border: `4px solid rgba(255,255,255,.15)` }} />

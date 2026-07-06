@@ -1,118 +1,89 @@
-import type { CSSProperties } from "react";
+import { useEffect, useRef } from "react";
 
-const BURSTS = [
-  { x: 8,  y: 5,  color: '#FFD700', delay: 0.0,  size: 170 },
-  { x: 50, y: 3,  color: '#ff5a4d', delay: 0.5,  size: 200 },
-  { x: 92, y: 5,  color: '#7048ff', delay: 1.0,  size: 170 },
-  { x: 25, y: 7,  color: '#15c08a', delay: 1.6,  size: 150 },
-  { x: 75, y: 7,  color: '#2f7bff', delay: 0.8,  size: 150 },
-  { x: 5,  y: 28, color: '#ffb020', delay: 1.3,  size: 130 },
-  { x: 95, y: 28, color: '#ff5a4d', delay: 0.3,  size: 130 },
-  { x: 38, y: 14, color: '#FFD700', delay: 2.1,  size: 140 },
-  { x: 62, y: 14, color: '#15c08a', delay: 1.9,  size: 140 },
-  { x: 15, y: 20, color: '#7048ff', delay: 2.4,  size: 110 },
-  { x: 85, y: 20, color: '#ffb020', delay: 0.2,  size: 110 },
-];
+const COLORS = ['#ffb020', '#ff5a4d', '#7048ff', '#2f7bff', '#15c08a', '#ffffff'];
 
-const SPOKES = 22;
-const PERIOD = 2.8;
+type Rocket = { x: number; y: number; vy: number; ty: number; c: string };
+type Particle = { x: number; y: number; vx: number; vy: number; life: number; c: string };
 
-const GLITTER = BURSTS.map(b =>
-  Array.from({ length: 12 }, (_, i) => {
-    const angle = (Math.PI * 2 * i) / 12;
-    const dist = 50 + (i * 8.7) % 55;
-    return {
-      gx: Math.cos(angle) * dist,
-      gy: Math.sin(angle) * dist - 25,
-      gr: (i * 41) % 360,
-      dur: 1.3 + (i * 0.13) % 0.7,
+export const Fireworks = () => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const cv = canvasRef.current;
+    if (!cv) return;
+    const ctx = cv.getContext('2d')!;
+
+    let parts: Particle[] = [];
+    let rockets: Rocket[] = [];
+    let running = false;
+    let rafId = 0;
+
+    const fit = () => { cv.width = window.innerWidth; cv.height = window.innerHeight; };
+    fit();
+    window.addEventListener('resize', fit);
+
+    const launch = (n = 1) => {
+      for (let i = 0; i < n; i++) {
+        rockets.push({
+          x: window.innerWidth * (0.2 + Math.random() * 0.6),
+          y: window.innerHeight + 10,
+          vy: -(9 + Math.random() * 4),
+          ty: window.innerHeight * (0.16 + Math.random() * 0.3),
+          c: COLORS[(Math.random() * COLORS.length) | 0],
+        });
+      }
     };
-  })
-);
 
-export const Fireworks = () => (
-  <>
-    <style>{`
-      @keyframes burst-spoke {
-        0%   { transform: rotate(var(--a)) translateY(0) scale(1);    opacity: 1; }
-        60%  { opacity: 0.8; }
-        100% { transform: rotate(var(--a)) translateY(var(--d)) scale(0.05); opacity: 0; }
+    const explode = (x: number, y: number, c: string) => {
+      const N = 42 + ((Math.random() * 26) | 0);
+      for (let i = 0; i < N; i++) {
+        const a = (Math.PI * 2 * i) / N + Math.random() * 0.2;
+        const v = 2 + Math.random() * 3.6;
+        parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 1, c: Math.random() < 0.8 ? c : '#fff' });
       }
-      @keyframes burst-glow {
-        0%,10% { opacity: 0; transform: scale(0); }
-        22%    { opacity: 1; transform: scale(1); }
-        72%    { opacity: 0.9; }
-        100%   { opacity: 0; transform: scale(1.4); }
-      }
-      @keyframes glitter-fly {
-        0%   { transform: translate(0,0) scale(1) rotate(0deg); opacity: 1; }
-        100% { transform: translate(var(--gx),var(--gy)) scale(0) rotate(var(--gr)); opacity: 0; }
-      }
-    `}</style>
+    };
 
-    <div className="fixed inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 1 }}>
-      {/* Spokes */}
-      {BURSTS.map((b, bi) =>
-        Array.from({ length: SPOKES }, (_, i) => {
-          const angle = (360 / SPOKES) * i;
-          const dur = 1.6 + (i * 0.07) % 0.5;
-          return (
-            <div
-              key={`${bi}-${i}`}
-              style={{
-                position: 'absolute',
-                left: `${b.x}%`, top: `${b.y}%`,
-                width: 3,
-                height: b.size / 2,
-                background: `linear-gradient(to top, ${b.color} 0%, transparent 100%)`,
-                borderRadius: '2px 2px 0 0',
-                transformOrigin: '50% 100%',
-                ['--a' as string]: `${angle}deg`,
-                ['--d' as string]: `-${b.size * 1.5}px`,
-                animation: `burst-spoke ${dur}s ease-out ${b.delay + i * 0.012}s infinite`,
-              } as CSSProperties}
-            />
-          );
-        })
-      )}
+    const frame = () => {
+      ctx.clearRect(0, 0, cv.width, cv.height);
+      rockets = rockets.filter(r => {
+        r.y += r.vy;
+        ctx.fillStyle = r.c;
+        ctx.fillRect(r.x - 1.5, r.y, 3, 9);
+        if (r.y <= r.ty) { explode(r.x, r.y, r.c); return false; }
+        return true;
+      });
+      parts = parts.filter(p => {
+        p.x += p.vx; p.y += p.vy; p.vy += 0.045; p.vx *= 0.985; p.life -= 0.013;
+        if (p.life <= 0) return false;
+        ctx.globalAlpha = Math.max(0, p.life);
+        ctx.fillStyle = p.c;
+        ctx.beginPath(); ctx.arc(p.x, p.y, 2.4, 0, 7); ctx.fill();
+        ctx.globalAlpha = 1;
+        return true;
+      });
+      if (running || parts.length || rockets.length) rafId = requestAnimationFrame(frame);
+    };
 
-      {/* Glow centers */}
-      {BURSTS.map((b, bi) => (
-        <div
-          key={`glow-${bi}`}
-          style={{
-            position: 'absolute',
-            left: `${b.x}%`, top: `${b.y}%`,
-            width: 34, height: 34,
-            marginLeft: -17, marginTop: -17,
-            borderRadius: '50%',
-            background: b.color,
-            boxShadow: `0 0 32px 16px ${b.color}`,
-            animation: `burst-glow ${PERIOD}s ease-out ${b.delay}s infinite`,
-          } as CSSProperties}
-        />
-      ))}
+    running = true;
+    launch(3);
+    const t1 = setTimeout(() => launch(2), 350);
+    const t2 = setTimeout(() => launch(2), 800);
+    frame();
+    const ambient = setInterval(() => launch(1), 2600);
+    const t3 = setTimeout(() => { clearInterval(ambient); running = false; }, 12000);
 
-      {/* Glitter particles */}
-      {BURSTS.map((b, bi) =>
-        GLITTER[bi].map((g, i) => (
-          <div
-            key={`g-${bi}-${i}`}
-            style={{
-              position: 'absolute',
-              left: `${b.x}%`, top: `${b.y}%`,
-              width: 6, height: 6,
-              borderRadius: '50%',
-              background: b.color,
-              boxShadow: `0 0 5px 2px ${b.color}`,
-              ['--gx' as string]: `${g.gx}px`,
-              ['--gy' as string]: `${g.gy}px`,
-              ['--gr' as string]: `${g.gr}deg`,
-              animation: `glitter-fly ${g.dur}s ease-out ${b.delay + i * 0.07 + 0.12}s infinite`,
-            } as CSSProperties}
-          />
-        ))
-      )}
-    </div>
-  </>
-);
+    return () => {
+      clearTimeout(t1); clearTimeout(t2); clearTimeout(t3);
+      clearInterval(ambient); cancelAnimationFrame(rafId);
+      window.removeEventListener('resize', fit);
+    };
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      aria-hidden="true"
+      style={{ position: 'fixed', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 1 }}
+    />
+  );
+};

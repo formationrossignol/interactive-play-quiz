@@ -617,6 +617,11 @@ export const ENHANCED_AVATARS: EnhancedAvatar[] = [
   },
 ];
 
+export const getAvatarRender = (emojiId: string) => {
+  const avatar = ENHANCED_AVATARS.find(a => a.emoji === emojiId) || ENHANCED_AVATARS[0];
+  return avatar.render();
+};
+
 interface AvatarDisplayProps {
   emoji: string;
   size?: "xs" | "sm" | "md" | "lg" | "xl";
