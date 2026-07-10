@@ -27,9 +27,22 @@ const QuestionResultCard = ({ result }: { result: PollQuestionResult }) => {
           <span className="ap-pill" style={{ marginRight: "8px", fontSize: "11px" }}>{result.questionIndex + 1}</span>
           {result.question}
         </p>
-        <p className="ap-muted" style={{ fontSize: "13px" }}>
-          {result.type === "open-text" ? "Réponses libres (non disponibles dans cette vue)." : `Type : ${result.type}, ${result.totalResponses} réponse(s).`}
-        </p>
+        {result.type === "open-text" && result.textResponses?.length ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            <p className="ap-muted" style={{ fontSize: "12px" }}>
+              {result.textResponses.length} réponse{result.textResponses.length > 1 ? "s" : ""} libre{result.textResponses.length > 1 ? "s" : ""}
+            </p>
+            {result.textResponses.map((text, i) => (
+              <div key={i} style={{ background: "var(--ap-paper)", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-md)", padding: "10px 14px", fontSize: "13px", fontWeight: 600, color: "var(--ap-ink)" }}>
+                💬 {text}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="ap-muted" style={{ fontSize: "13px" }}>
+            {result.type === "open-text" ? "Aucune réponse libre enregistrée." : `Type : ${result.type}, ${result.totalResponses} réponse(s).`}
+          </p>
+        )}
       </div>
     );
   }

@@ -36,25 +36,29 @@ export const RaceLeaderboard = ({
   totalQuestions,
   okPct,
 }: RaceLeaderboardProps) => {
-  // Design tokens
-  const PAPER = '#fff8ee';
-  const PAPER_2 = '#f3ecdd';
-  const CARD = '#ffffff';
-  const LINE = '#efe6d3';
-  const INK = '#241b3a';
-  const MUTED = '#6d6288';
-  const BRAND = '#7048ff';
+  // Design tokens — translucent dark surfaces so the screen sits on the quiz
+  // theme (rendered by ThemedBackground in QuizSession) like the other phases.
+  const PAPER = 'rgba(10, 14, 30, 0.45)';       // gap bar
+  const PAPER_2 = 'rgba(255,255,255,0.10)';
+  const CARD = 'rgba(16, 20, 40, 0.62)';
+  const LINE = 'rgba(255,255,255,0.14)';
+  const INK = '#ffffff';
+  const MUTED = '#cfc8e8';
+  const BRAND = '#9a7dff';
   const BRAND_DEEP = '#4f2fd0';
-  const BRAND_SOFT = '#efe9ff';
+  const BRAND_SOFT = 'rgba(112,72,255,0.25)';
+  const BRAND_TEXT = '#d7c9ff';
   const GOLD = '#ffb020';
   const FLASH_DEEP = '#a86e00';
-  const FLASH_SOFT = '#fff7e6';
-  const PRES_DEEP = '#0b8a63';
-  const PRES_SOFT = '#e8faf3';
-  const QUIZ_DEEP = '#c93325';
-  const QUIZ_SOFT = '#fff3f0';
+  const FLASH_TEXT = '#ffd27a';
+  const FLASH_SOFT = 'rgba(255,176,32,0.14)';
+  const PRES_DEEP = '#4ade9d';
+  const PRES_SOFT = 'rgba(21,192,138,0.16)';
+  const QUIZ_DEEP = '#ff9a8f';
+  const QUIZ_SOFT = 'rgba(255,90,77,0.16)';
   const SILVER = '#cfd4e2';
   const BRONZE = '#e08a5a';
+  const MEDAL_TEXT = '#241b3a';
   const R_MD = 16;
   const R_PILL = 999;
   const MEDAL_BG: Record<number, string> = { 1: GOLD, 2: SILVER, 3: BRONZE };
@@ -158,9 +162,6 @@ export const RaceLeaderboard = ({
   return (
     <div style={{
       minHeight: '100vh',
-      backgroundColor: PAPER,
-      backgroundImage: `radial-gradient(${PAPER_2} 1px, transparent 1px)`,
-      backgroundSize: '28px 28px',
       fontFamily: 'var(--ap-font-body)',
       color: INK,
       display: 'flex',
@@ -176,7 +177,7 @@ export const RaceLeaderboard = ({
               <span style={{
                 display: 'inline-flex', alignItems: 'center', gap: 8,
                 fontSize: 12.5, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase' as const,
-                color: BRAND_DEEP, background: BRAND_SOFT,
+                color: BRAND_TEXT, background: BRAND_SOFT,
                 border: `2px solid rgba(112,72,255,0.32)`,
                 padding: '6px 15px', borderRadius: R_PILL,
               }}>
@@ -205,7 +206,7 @@ export const RaceLeaderboard = ({
             <span style={{
               display: 'inline-flex', alignItems: 'center', gap: 9,
               fontFamily: 'var(--ap-font-display)', fontWeight: 600, fontSize: 17,
-              color: FLASH_DEEP, background: FLASH_SOFT,
+              color: FLASH_TEXT, background: FLASH_SOFT,
               border: `2px solid rgba(255,176,32,0.5)`,
               padding: '9px 20px', borderRadius: R_PILL,
               boxShadow: `0 4px 0 rgba(255,176,32,0.45)`,
@@ -268,7 +269,7 @@ export const RaceLeaderboard = ({
                   display: 'grid', placeItems: 'center',
                   fontFamily: 'var(--ap-font-display)', fontWeight: 600, fontSize: 19,
                   background: MEDAL_BG[rank] ?? PAPER_2,
-                  color: rank === 3 ? '#fff' : rank <= 2 ? INK : MUTED,
+                  color: MEDAL_BG[rank] ? MEDAL_TEXT : MUTED,
                   boxShadow: MEDAL_SHADOW[rank] ?? 'none',
                   transition: 'background 0.4s, color 0.4s',
                 }}>
@@ -354,8 +355,9 @@ export const RaceLeaderboard = ({
       {isHost && scoresReady && (
         <div style={{
           position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 30,
-          background: CARD, borderTop: `2px solid ${LINE}`,
-          boxShadow: '0 -14px 34px rgba(60,40,120,.08)',
+          background: 'rgba(12, 15, 32, 0.85)', borderTop: `2px solid ${LINE}`,
+          backdropFilter: 'blur(10px)',
+          boxShadow: '0 -14px 34px rgba(0,0,0,.25)',
         }}>
           <div style={{
             maxWidth: 880, margin: '0 auto', padding: '14px 24px',
@@ -399,8 +401,8 @@ export const RaceLeaderboard = ({
                 display: 'inline-flex', alignItems: 'center', gap: 9,
                 fontFamily: 'var(--ap-font-body)', fontWeight: 800, fontSize: 15,
                 padding: '13px 26px', borderRadius: R_PILL, border: 'none', cursor: 'pointer',
-                color: isLastQuestion ? INK : '#fff',
-                background: isLastQuestion ? GOLD : BRAND,
+                color: isLastQuestion ? MEDAL_TEXT : '#fff',
+                background: isLastQuestion ? GOLD : 'var(--ap-brand)',
                 boxShadow: isLastQuestion ? `0 5px 0 ${FLASH_DEEP}` : `0 5px 0 ${BRAND_DEEP}`,
               }}
             >

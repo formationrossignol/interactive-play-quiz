@@ -17,11 +17,11 @@ import { CircularTimer } from "./CircularTimer";
 import { QuizSessionAnswerDistribution } from "./QuizSession_AnswerDistribution";
 import { RaceLeaderboard } from "./RaceLeaderboard";
 import { Fireworks } from "./Fireworks";
-import { TransitionTimer } from "./TransitionTimer";
+import { TransitionTimer, CountdownSplash } from "./TransitionTimer";
 import { AvatarDisplay, getAvatarRender } from "./BetterAvatars";
 import { cn } from "@/lib/utils";
 import { DEFAULT_THEME_ID, THEMES } from "@/lib/themes";
-import { hexToRgba } from "@/lib/color";
+import { hexToRgba, darkestColor, relativeLuminance } from "@/lib/color";
 import {
   ensureSessionState,
   ensureSessionInSupabase,
@@ -167,7 +167,6 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
   const [lastJoined, setLastJoined] = useState<{ name: string; avatar: string } | null>(null);
   const [toastVisible, setToastVisible] = useState(false);
   const [showCountdown, setShowCountdown] = useState(false);
-  const [countdownNum, setCountdownNum] = useState('3');
   const [kickedPlayerIds, setKickedPlayerIds] = useState<Set<string>>(new Set());
   const prevPlayersLenRef = useRef(0);
 
@@ -216,8 +215,13 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
       return "rgba(15, 23, 42, 0.72)";
     }
 
-    const midPalette = selectedTheme.palette[Math.min(2, selectedTheme.palette.length - 1)];
-    return hexToRgba(midPalette, 0.7);
+    // Use the darkest palette color so white text stays readable even on
+    // light "day" themes (Sable & Aube, Agora Moderne, Or Impérial…).
+    const base = darkestColor(selectedTheme.palette);
+    if (!base || relativeLuminance(base) > 0.45) {
+      return "rgba(15, 23, 42, 0.72)";
+    }
+    return hexToRgba(base, 0.7);
   }, [selectedTheme]);
 
   const accentOverlay = useMemo(() => {
@@ -302,11 +306,12 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
 
     // Never allow a stale player-tab write to downgrade game state (e.g. question → waiting).
     // Only advance forward: waiting < transition < question < answer-distribution < leaderboard < final
-    const STATE_ORDER = ['waiting', 'transition', 'question-intro', 'question', 'answer-distribution', 'leaderboard', 'final'];
-    const currentOrder = STATE_ORDER.indexOf(gameStateRef.current);
-    const newOrder = STATE_ORDER.indexOf(session.gameState);
+    // ('countdown' and 'abandoned' are intentionally absent — the host never adopts them from storage)
+    const STATE_ORDER = ['waiting', 'transition', 'question-intro', 'question', 'answer-distribution', 'leaderboard', 'final'] as const;
+    const currentOrder = (STATE_ORDER as readonly string[]).indexOf(gameStateRef.current);
+    const newOrder = (STATE_ORDER as readonly string[]).indexOf(session.gameState);
     if (session.gameState && newOrder > currentOrder) {
-      setGameState(session.gameState);
+      setGameState(session.gameState as (typeof STATE_ORDER)[number]);
     }
 
     if (
@@ -650,11 +655,15 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
     const answeredPlayers = freshPlayers.filter(
       (p) => p.lastAnswerQuestionIndex === qIdx
     );
-    const counts = currentQuestion.answers
-      ? currentQuestion.answers.map((_: unknown, i: number) =>
-          answeredPlayers.filter((p) => p.lastAnswer === i).length
-        )
+    // True/false questions often have no explicit answers array — count on Vrai/Faux
+    const distAnswers = currentQuestion.answers?.length
+      ? currentQuestion.answers
+      : currentQuestion.type === 'true-false'
+      ? ['Vrai', 'Faux']
       : [];
+    const counts = distAnswers.map((_: unknown, i: number) =>
+      answeredPlayers.filter((p) => p.lastAnswer === i).length
+    );
     const total = counts.reduce((s: number, c: number) => s + c, 0);
     const distribution = counts.map((c: number) =>
       total > 0 ? Math.round((c / total) * 100) : 0
@@ -772,16 +781,11 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
 
     const handleStart = () => {
       setShowCountdown(true);
-      setCountdownNum('3');
-      const seq = ['3', '2', '1', 'GO !'];
-      let k = 0;
-      const tick = () => {
-        setCountdownNum(seq[k]);
-        k++;
-        if (k < seq.length) setTimeout(tick, 900);
-        else setTimeout(() => { setShowCountdown(false); startQuiz(); }, 800);
-      };
-      tick();
+      // Broadcast the countdown so players see the same 3-2-1 as the host
+      if (isHost) {
+        patchSessionState(quiz.gameCode, { gameState: 'countdown' });
+      }
+      setTimeout(() => { setShowCountdown(false); startQuiz(); }, 3 * 900 + 800);
     };
 
     const kickPlayer = (id: string) => {
@@ -1008,13 +1012,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
         )}
 
         {/* ── Fullscreen countdown ── */}
-        {showCountdown && (
-          <div style={{ position:'fixed',inset:0,zIndex:100,display:'grid',placeItems:'center',background:'var(--ap-brand)',backgroundImage:'radial-gradient(rgba(255,255,255,.14) 1.5px,transparent 1.5px)',backgroundSize:'30px 30px' }} aria-live="assertive">
-            <span key={countdownNum} style={{ fontFamily:'var(--ap-font-display)',fontWeight:600,fontSize:'clamp(120px,30vw,280px)',color:'#fff',textShadow:'0 10px 0 var(--ap-brand-deep)',animation:'cd-pop .9s cubic-bezier(.2,.7,.3,1.3)',display:'block',lineHeight:1,textAlign:'center' }}>
-              {countdownNum}
-            </span>
-          </div>
-        )}
+        {showCountdown && <CountdownSplash fixed />}
 
         {/* Settings dialog */}
         <Dialog open={showSettings} onOpenChange={setShowSettings}>
@@ -1046,10 +1044,11 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
 
   if (gameState === 'transition') {
     return (
-      <ThemedBackground className="flex items-center justify-center p-4 text-slate-100">
+      <ThemedBackground className="min-h-screen flex items-center justify-center p-4 text-slate-100">
         <TransitionTimer
           duration={quiz.transitionTime ?? 5}
           onComplete={handleTransitionComplete}
+          badge={`Question ${Math.min(currentQuestionIndex + 2, quiz.questions.length)} / ${quiz.questions.length}`}
         />
       </ThemedBackground>
     );
@@ -1390,23 +1389,30 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
   }
 
   if (gameState === 'leaderboard') {
-    const correctIdx = typeof currentQuestion?.correctAnswer === 'number'
-      ? currentQuestion.correctAnswer
+    const rawCorrect = currentQuestion?.correctAnswer as number | string | boolean | undefined;
+    const correctIdx = typeof rawCorrect === 'number'
+      ? rawCorrect
+      : rawCorrect === 'true' || rawCorrect === true
+      ? 0
+      : rawCorrect === 'false' || rawCorrect === false
+      ? 1
       : null;
     const okPct = correctIdx !== null && answerDistribution[correctIdx] != null
       ? answerDistribution[correctIdx]
       : undefined;
     return (
-      <RaceLeaderboard
-        players={players}
-        onComplete={nextQuestion}
-        isHost={isHost}
-        isLastQuestion={currentQuestionIndex >= quiz.questions.length - 1}
-        autoAdvance={autoAdvance}
-        questionIndex={currentQuestionIndex + 1}
-        totalQuestions={quiz.questions.length}
-        okPct={okPct}
-      />
+      <ThemedBackground>
+        <RaceLeaderboard
+          players={players}
+          onComplete={nextQuestion}
+          isHost={isHost}
+          isLastQuestion={currentQuestionIndex >= quiz.questions.length - 1}
+          autoAdvance={autoAdvance}
+          questionIndex={currentQuestionIndex + 1}
+          totalQuestions={quiz.questions.length}
+          okPct={okPct}
+        />
+      </ThemedBackground>
     );
   }
 

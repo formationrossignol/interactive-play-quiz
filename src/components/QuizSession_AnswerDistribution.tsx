@@ -32,10 +32,16 @@ export const QuizSessionAnswerDistribution = ({
     totalVotes > 0 ? Math.round(count / totalVotes * 100) : 0
   );
 
+  // True/false questions may have no explicit answers array
+  const answers: string[] | undefined = currentQuestion.answers?.length
+    ? currentQuestion.answers
+    : currentQuestion.type === 'true-false'
+    ? ['Vrai', 'Faux']
+    : undefined;
+
   return (
     <div style={{
       minHeight: '100vh',
-      background: '#0f172a',
       padding: '24px 16px 32px',
       color: '#fff',
       fontFamily: 'var(--ap-font-body)',
@@ -92,9 +98,9 @@ export const QuizSessionAnswerDistribution = ({
         </div>
 
         {/* Distribution bars */}
-        {currentQuestion.answers && (
+        {answers && (
           <AnswerDistribution
-            answers={currentQuestion.answers}
+            answers={answers}
             distribution={percentages}
             correctAnswer={currentQuestion.correctAnswer}
           />

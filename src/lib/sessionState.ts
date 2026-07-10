@@ -3,6 +3,7 @@ import { supabase } from "./supabase";
 
 export type SharedGameState =
   | "waiting"
+  | "countdown"
   | "transition"
   | "question-intro"
   | "question"
@@ -20,6 +21,7 @@ export interface SharedPlayer {
   previousScore?: number;
   joinedAt: string;
   lastAnswer?: number;
+  lastAnswerText?: string;
   lastAnswerQuestionIndex?: number;
   lastAnswerCorrect?: boolean;
   lastEarnedPoints?: number;

@@ -1,3 +1,27 @@
+// Options a participant can pick for a given poll question type.
+// Shared by the host session (live counts) and the player view (answer buttons).
+export const getPollOptions = (q: {
+  type?: string;
+  answers?: string[];
+  scale?: string[];
+  maxStars?: number;
+}): string[] => {
+  switch (q.type) {
+    case "single-choice":
+    case "multiple-choice":
+      return (q.answers ?? []).filter((a) => a?.trim());
+    case "likert-scale":
+    case "frequency-scale":
+      return (q.scale ?? []).filter((s) => s?.trim());
+    case "star-rating":
+      return Array.from({ length: q.maxStars ?? 5 }, (_, i) => `${i + 1} ★`);
+    case "nps-scale":
+      return Array.from({ length: 11 }, (_, i) => String(i));
+    default:
+      return [];
+  }
+};
+
 export interface PollQuestionResult {
   questionIndex: number;
   question: string;

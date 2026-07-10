@@ -7,6 +7,7 @@ import { MultiStepProgress } from "./MultiStepProgress";
 import { BackgroundMusic } from "./BackgroundMusic";
 import { ExitQuizDialog } from "./ExitQuizDialog";
 import { CircularTimer } from "./CircularTimer";
+import { TransitionCountdown, CountdownSplash } from "./TransitionTimer";
 import { cn } from "@/lib/utils";
 import {
   ensureSessionState,
@@ -20,6 +21,7 @@ import {
   type SharedGameState,
 } from "@/lib/sessionState";
 import { supabase } from "@/lib/supabase";
+import { getPollOptions } from "@/lib/pollResults";
 
 interface PlayerViewProps {
   gameCode: string;
@@ -41,7 +43,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
   const navigate = useNavigate();
   const [playerId, setPlayerId] = useState<string | null>(null);
   const [playerAvatar, setPlayerAvatar] = useState<string>('🎮');
-  const [gameState, setGameState] = useState<'waiting' | 'question-intro' | 'question' | 'answer-feedback' | 'leaderboard' | 'transition' | 'final' | 'abandoned'>('waiting');
+  const [gameState, setGameState] = useState<'waiting' | 'countdown' | 'question-intro' | 'question' | 'answer-feedback' | 'leaderboard' | 'transition' | 'final' | 'abandoned'>('waiting');
   const [allPlayers, setAllPlayers] = useState<{ id: string; name: string; avatar: string; score: number }[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | string | null>(null);
@@ -50,12 +52,16 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
   const [playerRank, setPlayerRank] = useState(1);
   const [totalPlayers, setTotalPlayers] = useState(0);
   const [timeLeft, setTimeLeft] = useState(30);
+  const [transitionTotal, setTransitionTotal] = useState(5);
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [lastEarnedPoints, setLastEarnedPoints] = useState(0);
   const [lastAnswerCorrect, setLastAnswerCorrect] = useState(false);
   const [lastAnsweredQuestion, setLastAnsweredQuestion] = useState<any>(null);
 
   const [quizQuestions, setQuizQuestions] = useState<any[]>([]);
+  // Poll mode: no timer, no points, neutral confirmations
+  const [isPoll, setIsPoll] = useState(false);
+  const [openTextValue, setOpenTextValue] = useState('');
 
   // Type-specific answer state
   const [rankingOrder, setRankingOrder] = useState<string[]>([]);
@@ -193,6 +199,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
       ) {
         timerEndRef.current = Date.now() + state.timeLeft * 1000;
         lastTimerTransitionRef.current = state.currentQuestionIndex;
+        if (state.timeLeft > 0) setTransitionTotal(state.timeLeft);
       }
       syncRef.current();
     });
@@ -219,17 +226,21 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
         ? 'game_state,current_question_index,time_left,players,updated_at'
         : 'game_state,current_question_index,time_left,players,updated_at,quiz_data';
 
-      const { data } = await supabase
+      const { data: rawData } = await supabase
         .from('session_state')
         .select(cols)
         .eq('game_code', gameCode)
         .single();
 
-      if (!data) return;
+      if (!rawData) return;
+      // Dynamic column list defeats the supabase type parser — cast to a plain row
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const data = rawData as Record<string, any>;
 
       // Load quiz questions once when available, then stop requesting quiz_data
       if (data.quiz_data?.questions && Array.isArray(data.quiz_data.questions)) {
         setQuizQuestions((prev) => prev.length === 0 ? data.quiz_data.questions : prev);
+        if (data.quiz_data.type === 'poll') setIsPoll(true);
         hasQuizData = true;
       }
 
@@ -241,8 +252,9 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
       const players = Array.isArray(data.players) ? (data.players as SharedPlayer[]) : [];
 
       // Map host game states → player game states
-      let mapped: 'waiting' | 'question-intro' | 'question' | 'answer-feedback' | 'leaderboard' | 'transition' | 'final' | 'abandoned' = 'waiting';
-      if (remoteState === 'question-intro') mapped = 'question-intro';
+      let mapped: 'waiting' | 'countdown' | 'question-intro' | 'question' | 'answer-feedback' | 'leaderboard' | 'transition' | 'final' | 'abandoned' = 'waiting';
+      if (remoteState === 'countdown') mapped = 'countdown';
+      else if (remoteState === 'question-intro') mapped = 'question-intro';
       else if (remoteState === 'question') mapped = 'question';
       else if (remoteState === 'leaderboard') mapped = 'leaderboard';
       else if (remoteState === 'final') mapped = 'final';
@@ -259,7 +271,8 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
       }
       setGameState(mapped);
 
-      if (mapped === 'final' && players.length > 0) {
+      // Keep a sorted snapshot for leaderboard + final screens
+      if (players.length > 0) {
         setAllPlayers(
           [...players]
             .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
@@ -288,8 +301,10 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
         // Guard: only set timer on first encounter of this transition index.
         // Re-setting with stale time_left mid-transition (poll-only mode) would jump timer to full duration.
         if (tIdx !== lastTimerTransitionRef.current) {
-          timerEndRef.current = Date.now() + (data.time_left ?? 0) * 1000;
+          const tl = data.time_left ?? 0;
+          timerEndRef.current = Date.now() + tl * 1000;
           lastTimerTransitionRef.current = tIdx;
+          if (tl > 0) setTransitionTotal(tl);
         }
       }
 
@@ -439,7 +454,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
     answeredForIndexRef.current = currentQuestion;
 
     const expected = liveQuestion.correctAnswer;
-    const correct = liveQuestion.type === 'short-answer'
+    const correct = isPoll ? false : liveQuestion.type === 'short-answer'
       ? typeof expected === 'string' && String(answer).toLowerCase().trim() === expected.toLowerCase().trim()
       : liveQuestion.type === 'true-false'
       ? (answer === 'true') === (expected === true || expected === 'true')
@@ -472,7 +487,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
       : answer === expected;
 
     const base = liveQuestion.points ?? 100;
-    const earnedPoints = correct
+    const earnedPoints = !isPoll && correct
       ? Math.max(Math.round(base * (timeLeft / (liveQuestion.timeLimit ?? 30))), Math.round(base * 0.1))
       : 0;
 
@@ -490,6 +505,11 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
           score: newScore,
           correctAnswers: (storedPlayer.correctAnswers ?? 0) + (correct ? 1 : 0),
           lastAnswer: typeof answer === 'number' ? answer : answer === 'true' ? 0 : answer === 'false' ? 1 : undefined,
+          lastAnswerText:
+            typeof answer === 'string' && answer !== 'true' && answer !== 'false' &&
+            (liveQuestion.type === 'open-text' || liveQuestion.type === 'short-answer')
+              ? String(answer).slice(0, 500)
+              : undefined,
           lastAnswerQuestionIndex: currentQuestion,
           lastAnswerCorrect: correct,
           lastEarnedPoints: earnedPoints,
@@ -514,7 +534,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
             Quiz arrêté
           </h2>
           <p style={{ opacity: 0.75, marginBottom: 28, fontFamily: 'var(--ap-font-body)', fontSize: 16 }}>
-            L'hôte a mis fin au quiz.
+            L'hôte a mis fin à la session.
           </p>
           <button className="ap-btn ap-btn--pill" style={{ background: 'rgba(255,255,255,0.2)', color: '#fff', border: '2px solid rgba(255,255,255,0.4)' }} onClick={() => navigate('/')}>
             Retour à l'accueil
@@ -552,7 +572,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
               {gameCode}
             </div>
             <p style={{ color: "rgba(255,255,255,0.75)", fontFamily: "var(--ap-font-body)", fontWeight: 700 }}>
-              En attente du début du quiz...
+              {isPoll ? 'En attente du début du sondage…' : 'En attente du début du quiz…'}
             </p>
             <div className="flex items-center justify-center gap-4" style={{ color: "rgba(255,255,255,0.75)" }}>
               <div className="flex items-center gap-1">
@@ -562,7 +582,8 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
             </div>
           </div>
 
-          {/* Reaction panel (lobby) */}
+          {/* Reaction panel (lobby) — quiz only, the poll host has no reactions feed */}
+          {!isPoll && (
           <div
             className="mt-5"
             style={{
@@ -596,6 +617,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
               ))}
             </div>
           </div>
+          )}
 
           <div className="mt-6 animate-pulse">
             <div className="w-8 h-8 rounded-full mx-auto" style={{ background: "rgba(255,255,255,0.3)" }}></div>
@@ -603,6 +625,10 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
         </div>
       </div>
     );
+  }
+
+  if (gameState === 'countdown') {
+    return <CountdownSplash />;
   }
 
   if (gameState === 'question-intro') {
@@ -693,12 +719,14 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
                   color: "#fff",
                 }}
               >
-                Question {currentQuestion + 1}
+                {isPoll ? '📊 ' : ''}Question {currentQuestion + 1}
               </span>
-              <div className="flex items-center gap-1" style={{ fontFamily: "var(--ap-font-display)", fontWeight: 600 }}>
-                <Trophy className="w-4 h-4" />
-                <span>{playerScore}</span>
-              </div>
+              {!isPoll && (
+                <div className="flex items-center gap-1" style={{ fontFamily: "var(--ap-font-display)", fontWeight: 600 }}>
+                  <Trophy className="w-4 h-4" />
+                  <span>{playerScore}</span>
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <BackgroundMusic isPlaying={gameState === 'question'} />
@@ -736,9 +764,11 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
 
           {/* Question card */}
           <div className="ap-card ap-card--floaty mb-4">
-            <div className="flex justify-center mb-4">
-              <CircularTimer timeLeft={timeLeft} totalTime={liveQuestion.timeLimit} />
-            </div>
+            {!isPoll && (
+              <div className="flex justify-center mb-4">
+                <CircularTimer timeLeft={timeLeft} totalTime={liveQuestion.timeLimit} />
+              </div>
+            )}
 
             <h2 className="ap-h3 text-center mb-6" style={{ fontSize: "18px", lineHeight: 1.4 }}>
               {liveQuestion.question}
@@ -961,6 +991,101 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
                 </div>
               );
             })()}
+
+            {/* Poll scales: Likert / frequency / star rating / NPS */}
+            {['likert-scale', 'frequency-scale', 'star-rating', 'nps-scale'].includes(liveQuestion.type) && !hasAnswered && (() => {
+              const options = getPollOptions(liveQuestion);
+              if (options.length === 0) return null;
+              if (liveQuestion.type === 'nps-scale') {
+                return (
+                  <div className="flex flex-col gap-3 px-2">
+                    <div className="flex justify-between text-white/60 text-xs font-bold">
+                      <span>{liveQuestion.minLabel ?? 'Pas du tout probable'}</span>
+                      <span>{liveQuestion.maxLabel ?? 'Très probable'}</span>
+                    </div>
+                    <div className="grid grid-cols-6 gap-2">
+                      {options.map((option, index) => (
+                        <button
+                          key={index}
+                          className="rounded-xl border-2 border-white/25 bg-white/12 py-3 text-white font-bold text-base transition-all hover:bg-white/25"
+                          style={{ background: 'rgba(255,255,255,0.12)' }}
+                          onClick={() => submitAnswer(index)}
+                        >
+                          {option}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              }
+              if (liveQuestion.type === 'star-rating') {
+                return (
+                  <div className="flex justify-center gap-2 px-2 flex-wrap">
+                    {options.map((_, index) => (
+                      <button
+                        key={index}
+                        aria-label={`${index + 1} étoile${index > 0 ? 's' : ''}`}
+                        className="text-4xl transition-transform hover:scale-125"
+                        style={{ filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.3))' }}
+                        onClick={() => submitAnswer(index)}
+                      >
+                        ⭐
+                      </button>
+                    ))}
+                  </div>
+                );
+              }
+              // Likert / frequency: vertical option list
+              return (
+                <div className="flex flex-col gap-2 px-2">
+                  {options.map((option, index) => (
+                    <button
+                      key={index}
+                      className="rounded-xl border-2 border-white/25 px-4 py-3 text-white font-bold text-sm text-left transition-all hover:bg-white/25"
+                      style={{ background: 'rgba(255,255,255,0.12)' }}
+                      onClick={() => submitAnswer(index)}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              );
+            })()}
+
+            {/* Poll open text */}
+            {liveQuestion.type === 'open-text' && !hasAnswered && (
+              <form
+                className="flex flex-col gap-3 px-2"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (openTextValue.trim()) {
+                    submitAnswer(openTextValue.trim());
+                    setOpenTextValue('');
+                  }
+                }}
+              >
+                <textarea
+                  value={openTextValue}
+                  onChange={(e) => setOpenTextValue(e.target.value.slice(0, liveQuestion.maxLength ?? 500))}
+                  placeholder="Votre réponse…"
+                  rows={4}
+                  className="w-full rounded-xl border-2 border-white/30 bg-white/15 p-4 text-white placeholder-white/50 text-base outline-none focus:border-white/60 resize-none"
+                />
+                <div className="flex justify-between items-center">
+                  <span className="text-white/50 text-xs font-bold">
+                    {openTextValue.length}/{liveQuestion.maxLength ?? 500}
+                  </span>
+                  <button
+                    type="submit"
+                    className="ap-btn ap-btn--pill"
+                    style={{ background: "var(--ap-ink)", opacity: openTextValue.trim() ? 1 : 0.5 }}
+                    disabled={!openTextValue.trim()}
+                  >
+                    Envoyer
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
 
           {/* Waiting confirmation */}
@@ -973,10 +1098,10 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
                 borderRadius: "var(--ap-r-xl)",
               }}
             >
-              <div className="text-4xl mb-3">⏳</div>
-              <h3 className="ap-h3 text-white">Réponse envoyée !</h3>
+              <div className="text-4xl mb-3">{isPoll ? '🙏' : '⏳'}</div>
+              <h3 className="ap-h3 text-white">{isPoll ? 'Merci pour votre réponse !' : 'Réponse envoyée !'}</h3>
               <p className="mt-2" style={{ color: "rgba(255,255,255,0.75)", fontFamily: "var(--ap-font-body)", fontSize: "14px" }}>
-                En attente des autres joueurs…
+                {isPoll ? 'En attente de la question suivante…' : 'En attente des autres joueurs…'}
               </p>
             </div>
           )}
@@ -999,7 +1124,11 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
       if (q.type === 'short-answer') return String(q.correctAnswer ?? '');
       if (q.type === 'slider') return String(q.correctValue ?? q.correctAnswer ?? '');
       if (q.type === 'fill-blank') return (q.blanks ?? []).map((b: any) => b.correctAnswer).join(' / ');
-      if (q.type === 'ranking') return (q.items ?? []).filter((_: any, i: number) => true).join(' → ');
+      if (q.type === 'ranking') {
+        const items: string[] = q.items ?? [];
+        const order: number[] = q.correctOrder ?? [];
+        return (order.length ? order.map((i: number) => items[i]).filter(Boolean) : items).join(' → ');
+      }
       if (q.type === 'matching') return (q.correctMatches ?? []).map((m: any) => {
         const l = (q.leftColumn ?? []).find((c: any) => c.id === m.leftId)?.text ?? m.leftId;
         const r = (q.rightColumn ?? []).find((c: any) => c.id === m.rightId)?.text ?? m.rightId;
@@ -1011,7 +1140,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
     return (
       <div
         className="min-h-screen flex items-center justify-center p-4"
-        style={{ background: lastAnswerCorrect ? "var(--ap-brand)" : "#1a1a2e" }}
+        style={{ background: lastAnswerCorrect ? "var(--ap-pres)" : "var(--ap-quiz-deep)" }}
       >
         <div className="max-w-md w-full text-center">
           <div className="text-8xl mb-4 drop-shadow-xl">{lastAnswerCorrect ? '✅' : '❌'}</div>
@@ -1070,50 +1199,75 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
     return (
       <div
         className="min-h-screen flex items-center justify-center p-4"
-        style={{ background: "var(--ap-pres)" }}
+        style={{ background: "var(--ap-brand)" }}
       >
-        <div className="text-center">
-          <div className="text-6xl mb-6 drop-shadow-xl animate-bounce">⏳</div>
-          <h2 className="ap-h2 text-white mb-3">Prochaine question…</h2>
-          <div
-            className="text-6xl font-bold text-white mb-4"
-            style={{ fontFamily: "var(--ap-font-display)" }}
-          >
-            {timeLeft > 0 ? timeLeft : ''}
-          </div>
-          <p style={{ color: "rgba(255,255,255,0.65)", fontFamily: "var(--ap-font-body)", fontWeight: 600 }}>
-            Préparez-vous !
-          </p>
-        </div>
+        <TransitionCountdown
+          timeLeft={timeLeft}
+          total={transitionTotal}
+          badge={totalQuestions > 1 ? `Question ${Math.min(currentQuestion + 2, totalQuestions)} / ${totalQuestions}` : undefined}
+        />
       </div>
     );
   }
 
   if (gameState === 'leaderboard') {
+    const MEDALS = ['🥇', '🥈', '🥉'];
+    const top3 = allPlayers.slice(0, 3);
     return (
       <div
         className="min-h-screen flex items-center justify-center p-4"
-        style={{ background: "var(--ap-flash)" }}
+        style={{ background: "var(--ap-brand)" }}
       >
         <div className="max-w-md w-full text-center">
           <div className="mb-4 text-6xl drop-shadow-xl animate-bounce">🏆</div>
           <h2 className="ap-h2 text-white mb-6">Classement</h2>
 
           <div className="space-y-4 mb-6">
+            {/* Own rank */}
             <div
               className="flex items-center gap-4 p-4 text-white"
               style={{
-                background: "rgba(255,255,255,0.15)",
-                border: "2px solid rgba(255,255,255,0.25)",
+                background: "rgba(255,255,255,0.2)",
+                border: "2px solid rgba(255,255,255,0.35)",
                 borderRadius: "var(--ap-r-lg)",
               }}
             >
-              <span className="text-2xl" style={{ fontFamily: "var(--ap-font-display)", fontWeight: 600, color: "var(--ap-ink)" }}>
+              <span className="text-2xl" style={{ fontFamily: "var(--ap-font-display)", fontWeight: 600 }}>
                 #{playerRank}
               </span>
+              <AvatarDisplay emoji={playerAvatar} size="sm" />
               <span className="flex-1 text-left font-bold">{playerName}</span>
-              <span className="font-bold" style={{ color: "var(--ap-ink)" }}>{playerScore} pts</span>
+              <span className="font-bold" style={{ fontVariantNumeric: "tabular-nums" }}>{playerScore} pts</span>
             </div>
+
+            {/* Top 3 */}
+            {top3.length > 0 && (
+              <div
+                className="p-4 space-y-2"
+                style={{
+                  background: "rgba(255,255,255,0.12)",
+                  border: "2px solid rgba(255,255,255,0.2)",
+                  borderRadius: "var(--ap-r-lg)",
+                }}
+              >
+                {top3.map((p, i) => (
+                  <div
+                    key={p.id}
+                    className="flex items-center gap-3 text-white"
+                    style={{ opacity: p.id === playerId ? 1 : 0.9 }}
+                  >
+                    <span className="text-lg w-7">{MEDALS[i]}</span>
+                    <AvatarDisplay emoji={p.avatar} size="xs" />
+                    <span className="flex-1 text-left text-sm font-bold truncate">
+                      {p.name}{p.id === playerId ? ' (toi)' : ''}
+                    </span>
+                    <span className="text-sm font-bold" style={{ fontVariantNumeric: "tabular-nums", color: "rgba(255,255,255,0.85)" }}>
+                      {p.score} pts
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
 
             <div
               className="p-4 text-sm font-bold"
@@ -1124,33 +1278,45 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
                 color: "rgba(255,255,255,0.85)",
               }}
             >
-              ⏳ Attendez la prochaine question...
+              ⏳ En attente de la prochaine question…
             </div>
-          </div>
-
-          <div
-            className="p-4 text-center text-sm font-bold"
-            style={{
-              background: "rgba(255,255,255,0.12)",
-              border: "2px solid rgba(255,255,255,0.2)",
-              borderRadius: "var(--ap-r-lg)",
-              color: "rgba(255,255,255,0.85)",
-            }}
-          >
-            ⏳ En attente de la prochaine question…
           </div>
         </div>
       </div>
     );
   }
 
-  // final state
+  // final state — poll: simple thanks, no podium/scores
+  if (isPoll) {
+    return (
+      <div
+        className="min-h-screen flex items-center justify-center p-4"
+        style={{ background: "var(--ap-brand)" }}
+      >
+        <div className="max-w-md w-full text-center text-white">
+          <div style={{ fontSize: 72, marginBottom: 16 }}>🙌</div>
+          <h2 className="ap-h2 text-white mb-3">Merci d'avoir participé !</h2>
+          <p style={{ color: 'rgba(255,255,255,0.75)', fontFamily: 'var(--ap-font-body)', fontWeight: 700, marginBottom: 28 }}>
+            Le sondage est terminé. Vos réponses ont bien été enregistrées.
+          </p>
+          <button
+            className="ap-btn ap-btn--lg ap-btn--pill"
+            style={{ background: 'var(--ap-ink)', boxShadow: '0 5px 0 rgba(0,0,0,0.3)' }}
+            onClick={() => navigate('/')}
+          >
+            Retour à l'accueil
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const fp1 = allPlayers[0], fp2 = allPlayers[1], fp3 = allPlayers[2];
 
   return (
     <div
       className="min-h-screen overflow-auto"
-      style={{ background: "var(--ap-pres)" }}
+      style={{ background: "var(--ap-brand)" }}
     >
       <div className="max-w-sm mx-auto px-4 pt-6 pb-8 text-center">
         {/* Title */}
