@@ -37,6 +37,7 @@ import {
   type SessionRun,
 } from "@/lib/sessionState";
 import { supabase, supabaseUrl, supabaseKey } from "@/lib/supabase";
+import { FONT_STACKS, HOST_ANSWER_STYLES, MILLIONAIRE_ANSWER_STYLES } from "@/lib/answerVisuals";
 
 interface Player {
   id: string;
@@ -51,13 +52,6 @@ interface Player {
   streak?: number;
 }
 
-const FONT_STACKS: Record<string, string> = {
-  inter: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-  poppins: '"Poppins", "Inter", sans-serif',
-  "space-grotesk": '"Space Grotesk", "Inter", sans-serif',
-  playfair: '"Playfair Display", "Times New Roman", serif',
-  merriweather: '"Merriweather", "Georgia", serif',
-};
 
 interface QuizQuestion {
   id: string;
@@ -1122,17 +1116,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
     ).length;
     const allAnswered = activePlayers.length > 0 && answeredCount === activePlayers.length;
 
-    const ANSWER_STYLES = isMillionnaire ? [
-      { bg: 'rgba(8,12,40,0.88)', shadow: 'rgba(200,160,0,0.2)', shape: 'A' },
-      { bg: 'rgba(8,12,40,0.88)', shadow: 'rgba(200,160,0,0.2)', shape: 'B' },
-      { bg: 'rgba(8,12,40,0.88)', shadow: 'rgba(200,160,0,0.2)', shape: 'C' },
-      { bg: 'rgba(8,12,40,0.88)', shadow: 'rgba(200,160,0,0.2)', shape: 'D' },
-    ] : [
-      { bg: '#E74C3C', shadow: 'rgba(231,76,60,0.45)', shape: '▲' },
-      { bg: '#2980B9', shadow: 'rgba(41,128,185,0.45)', shape: '◆' },
-      { bg: '#F39C12', shadow: 'rgba(243,156,18,0.45)', shape: '●' },
-      { bg: '#27AE60', shadow: 'rgba(39,174,96,0.45)', shape: '■' },
-    ];
+    const ANSWER_STYLES = isMillionnaire ? MILLIONAIRE_ANSWER_STYLES : HOST_ANSWER_STYLES;
 
     return (
       <ThemedBackground className="min-h-screen flex flex-col text-white">
@@ -1308,19 +1292,19 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
                 {isMillionnaire ? (
                   <>
                     <div className="flex items-center gap-3 px-3 py-3 text-white font-bold text-xl select-none" style={{ background: 'rgba(8,12,40,0.88)', border: '1.5px solid rgba(200,160,0,0.6)', borderRadius: 40, boxShadow: '0 0 20px rgba(200,160,0,0.2)', minHeight: '64px', fontFamily: 'var(--ap-font-display)', justifyContent: 'center' }}>
-                      <span style={{ color: '#FFD700', fontSize: '1.5rem' }}>○</span> Vrai
+                      <span style={{ color: '#FFD700', fontSize: '1.5rem' }}>○</span> {currentQuestion.answers?.[0] ?? 'Vrai'}
                     </div>
                     <div className="flex items-center gap-3 px-3 py-3 text-white font-bold text-xl select-none" style={{ background: 'rgba(8,12,40,0.88)', border: '1.5px solid rgba(200,160,0,0.6)', borderRadius: 40, boxShadow: '0 0 20px rgba(200,160,0,0.2)', minHeight: '64px', fontFamily: 'var(--ap-font-display)', justifyContent: 'center' }}>
-                      <span style={{ color: '#FFD700', fontSize: '1.5rem' }}>✕</span> Faux
+                      <span style={{ color: '#FFD700', fontSize: '1.5rem' }}>✕</span> {currentQuestion.answers?.[1] ?? 'Faux'}
                     </div>
                   </>
                 ) : (
                   <>
                     <div className="flex items-center justify-center gap-3 rounded-2xl px-6 py-5 text-white font-bold text-xl select-none" style={{ background: '#27AE60', boxShadow: '0 6px 24px rgba(39,174,96,0.5)', fontFamily: 'var(--ap-font-display)' }}>
-                      <span className="text-3xl">✓</span> Vrai
+                      <span className="text-3xl">✓</span> {currentQuestion.answers?.[0] ?? 'Vrai'}
                     </div>
                     <div className="flex items-center justify-center gap-3 rounded-2xl px-6 py-5 text-white font-bold text-xl select-none" style={{ background: '#E74C3C', boxShadow: '0 6px 24px rgba(231,76,60,0.5)', fontFamily: 'var(--ap-font-display)' }}>
-                      <span className="text-3xl">✗</span> Faux
+                      <span className="text-3xl">✗</span> {currentQuestion.answers?.[1] ?? 'Faux'}
                     </div>
                   </>
                 )}

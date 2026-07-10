@@ -1,27 +1,56 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { QuizPreview } from "@/components/QuizPreview";
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Play, X } from "lucide-react";
-import { cn } from "@/lib/utils";
-
-const ANSWER_COLORS = ["#E74C3C", "#3498DB", "#F39C12", "#2ECC71"];
-const ANSWER_SHAPES = ["▲", "◆", "●", "■"];
+import { CircularTimer } from "@/components/CircularTimer";
+import { MultiStepProgress } from "@/components/MultiStepProgress";
+import { PLAYER_ANSWER_SHAPES } from "@/lib/answerVisuals";
+import { getPollOptions } from "@/lib/pollResults";
+import { Trophy, LogOut, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Play, X, RotateCcw } from "lucide-react";
 
 interface ParticipantPreviewProps {
   question: any;
+  questionIndex: number;
+  totalQuestions: number;
   isPoll: boolean;
 }
 
-const ParticipantPreview = ({ question, isPoll }: ParticipantPreviewProps) => {
+/**
+ * Réplique fidèle de l'écran joueur (PlayerView) : fond violet marque,
+ * carte blanche flottante, timer circulaire réel, cartes réponses
+ * Arcade Pop et écran de feedback vert/rouge identique au live.
+ */
+const ParticipantPreview = ({ question, questionIndex, totalQuestions, isPoll }: ParticipantPreviewProps) => {
   const [picked, setPicked] = useState<number | string | null>(null);
   const [phase, setPhase] = useState<"question" | "feedback">("question");
+  const [timeLeft, setTimeLeft] = useState<number>(question?.timeLimit ?? 20);
+  const [sliderValue, setSliderValue] = useState<number>(question?.min ?? 0);
 
   useEffect(() => {
     setPicked(null);
     setPhase("question");
+    setTimeLeft(question?.timeLimit ?? 20);
+    setSliderValue(question?.min ?? 0);
   }, [question]);
 
-  if (!question) return null;
+  // Compte à rebours réel, comme en session
+  useEffect(() => {
+    if (isPoll || phase !== "question") return;
+    if (timeLeft <= 0) return;
+    const t = setTimeout(() => setTimeLeft((v) => Math.max(0, v - 1)), 1000);
+    return () => clearTimeout(t);
+  }, [timeLeft, phase, isPoll]);
+
+  if (!question) {
+    return (
+      <div className="flex h-full items-center justify-center px-6 text-center" style={{ background: "var(--ap-brand)" }}>
+        <p className="text-white/80 text-sm font-bold" style={{ fontFamily: "var(--ap-font-body)" }}>
+          Aucune question à prévisualiser
+        </p>
+      </div>
+    );
+  }
+
+  const points = question.points ?? 1000;
 
   const handlePick = (answer: number | string) => {
     if (phase === "feedback") return;
@@ -30,187 +59,305 @@ const ParticipantPreview = ({ question, isPoll }: ParticipantPreviewProps) => {
   };
 
   const isCorrect = (() => {
+    if (isPoll) return true;
     if (picked === null) return false;
-    if (question.type === "true-false") return (picked === "true") === (question.correctAnswer === true || question.correctAnswer === "true");
-    if (question.type === "short-answer") return String(picked).toLowerCase().trim() === String(question.correctAnswer ?? "").toLowerCase().trim();
+    if (question.type === "true-false") {
+      return (picked === "true") === (question.correctAnswer === true || question.correctAnswer === "true" || question.correctAnswer === 0);
+    }
+    if (question.type === "short-answer") {
+      return String(picked).toLowerCase().trim() === String(question.correctAnswer ?? "").toLowerCase().trim();
+    }
+    if (question.type === "slider") {
+      const target = question.correctValue ?? question.correctAnswer;
+      return target === undefined || Number(picked) === Number(target);
+    }
     return picked === question.correctAnswer;
   })();
 
-  const points = question.points ?? 100;
+  const correctAnswerText = (() => {
+    if (question.type === "multiple-choice" || question.type === "single-choice") {
+      const idx = typeof question.correctAnswer === "number" ? question.correctAnswer : Number(question.correctAnswer);
+      return question.answers?.[idx] ?? "";
+    }
+    if (question.type === "true-false") {
+      return question.correctAnswer === "true" || question.correctAnswer === true
+        ? (question.answers?.[0] ?? "Vrai")
+        : (question.answers?.[1] ?? "Faux");
+    }
+    if (question.type === "short-answer") return String(question.correctAnswer ?? "");
+    if (question.type === "slider") return String(question.correctValue ?? question.correctAnswer ?? "");
+    return "";
+  })();
 
+  const retryButton = (
+    <button
+      onClick={() => { setPicked(null); setPhase("question"); setTimeLeft(question?.timeLimit ?? 20); }}
+      style={{
+        marginTop: 20, display: "inline-flex", alignItems: "center", gap: 6,
+        background: "rgba(255,255,255,0.15)", border: "2px solid rgba(255,255,255,0.3)",
+        borderRadius: 999, color: "#fff", fontFamily: "var(--ap-font-body)",
+        fontWeight: 700, fontSize: 12, padding: "7px 16px", cursor: "pointer",
+      }}
+    >
+      <RotateCcw style={{ width: 12, height: 12 }} />
+      Rejouer la question
+    </button>
+  );
+
+  // ── Écran feedback : réplique exacte de PlayerView 'answer-feedback' ──
   if (phase === "feedback") {
+    if (isPoll) {
+      return (
+        <div className="flex h-full flex-col items-center justify-center p-4 text-center" style={{ background: "var(--ap-brand)" }}>
+          <div className="text-6xl mb-3 drop-shadow-xl">📬</div>
+          <h2 className="text-white font-bold" style={{ fontFamily: "var(--ap-font-display)", fontSize: 22 }}>
+            Réponse envoyée !
+          </h2>
+          <p className="mt-2 text-sm" style={{ color: "rgba(255,255,255,0.6)", fontFamily: "var(--ap-font-body)", fontWeight: 700 }}>
+            En attente de la suite…
+          </p>
+          {retryButton}
+        </div>
+      );
+    }
     return (
       <div
-        className="flex flex-col items-center justify-center h-full text-center px-4"
-        style={{ background: isCorrect ? "var(--ap-brand)" : "#1a1a2e" }}
+        className="flex h-full flex-col items-center justify-center p-4 text-center overflow-y-auto"
+        style={{ background: isCorrect ? "var(--ap-pres)" : "var(--ap-quiz-deep)" }}
       >
-        <div style={{ fontSize: 72, marginBottom: 16 }}>{isCorrect ? "✅" : "❌"}</div>
-        <h2 style={{ fontFamily: "var(--ap-font-display)", fontSize: "1.5rem", fontWeight: 800, color: "#fff", marginBottom: 8 }}>
+        <div className="text-6xl mb-3 drop-shadow-xl">{isCorrect ? "✅" : "❌"}</div>
+        <h2 className="text-white" style={{ fontFamily: "var(--ap-font-display)", fontWeight: 600, fontSize: 24 }}>
           {isCorrect ? "Bonne réponse !" : "Mauvaise réponse !"}
         </h2>
-        {isCorrect && (
-          <div style={{ background: "rgba(255,255,255,0.2)", borderRadius: 999, padding: "8px 28px", marginTop: 12 }}>
-            <span style={{ fontFamily: "var(--ap-font-display)", fontWeight: 900, fontSize: "2rem", color: "#fff" }}>
-              +{points}
-            </span>
-          </div>
+
+        {!isCorrect && correctAnswerText && (
+          <p className="mt-2 px-3 text-sm" style={{ color: "rgba(255,255,255,0.75)", fontFamily: "var(--ap-font-body)", fontWeight: 600 }}>
+            La bonne réponse était : <span className="font-bold text-white">{correctAnswerText}</span>
+          </p>
         )}
-        <button
-          style={{
-            marginTop: 28,
-            background: "rgba(255,255,255,0.15)",
-            border: "2px solid rgba(255,255,255,0.3)",
-            borderRadius: 999,
-            color: "#fff",
-            fontFamily: "var(--ap-font-body)",
-            fontWeight: 700,
-            fontSize: 13,
-            padding: "8px 20px",
-            cursor: "pointer",
-          }}
-          onClick={() => { setPicked(null); setPhase("question"); }}
+
+        <div
+          className="mt-4 w-full max-w-[240px] p-4"
+          style={{ background: "rgba(255,255,255,0.15)", border: "2px solid rgba(255,255,255,0.25)", borderRadius: "var(--ap-r-xl)" }}
         >
-          Réessayer
-        </button>
+          <div className="text-4xl font-bold text-white" style={{ fontFamily: "var(--ap-font-display)" }}>
+            +{isCorrect ? points : 0}
+          </div>
+          <div style={{ color: "rgba(255,255,255,0.75)", fontWeight: 700, fontFamily: "var(--ap-font-body)", fontSize: 13 }}>
+            points gagnés
+          </div>
+          <div style={{ borderTop: "1px solid rgba(255,255,255,0.2)", marginTop: 12, paddingTop: 12, color: "rgba(255,255,255,0.85)", fontWeight: 700, fontFamily: "var(--ap-font-body)", fontSize: 13 }}>
+            Total : <span className="text-white font-bold">{isCorrect ? points : 0} pts</span>
+          </div>
+        </div>
+
+        <p className="mt-3 text-xs" style={{ color: "rgba(255,255,255,0.5)", fontFamily: "var(--ap-font-body)" }}>
+          En attente de la suite…
+        </p>
+        {retryButton}
       </div>
     );
   }
 
+  // ── Écran question : réplique de PlayerView 'question' ──
   const renderAnswers = () => {
-    if (question.type === "multiple-choice" || question.type === "single-choice") {
+    if (["multiple-choice", "single-choice"].includes(question.type)) {
       return (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-          {(question.answers ?? []).map((answer: string, i: number) => (
+        <div className="ap-answers">
+          {(question.answers ?? []).map((answer: string, index: number) => (
             <button
-              key={i}
-              onClick={() => handlePick(i)}
-              style={{
-                background: ANSWER_COLORS[i % 4],
-                border: "none",
-                borderRadius: 12,
-                padding: "12px 8px",
-                color: "#fff",
-                fontFamily: "var(--ap-font-body)",
-                fontWeight: 700,
-                fontSize: 13,
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                textAlign: "left",
-                transition: "filter .1s",
-              }}
-              onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.filter = "brightness(1.15)")}
-              onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.filter = "")}
+              key={index}
+              className={`ap-answer ap-answer--${(index % 4) + 1}`}
+              onClick={() => handlePick(index)}
+              style={{ fontSize: 13, padding: "12px 12px", gap: 9 }}
             >
-              <span style={{ flexShrink: 0 }}>{ANSWER_SHAPES[i % 4]}</span>
-              <span style={{ flex: 1 }}>{answer}</span>
+              <span className="ap-answer__shape" style={{ width: 28, height: 28 }}>{PLAYER_ANSWER_SHAPES[index % 4]}</span>
+              <span className="ap-answer__text">{answer || `Réponse ${index + 1}`}</span>
             </button>
           ))}
         </div>
       );
     }
+
     if (question.type === "true-false") {
       return (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-          {[{ label: question.answers?.[0] ?? "Vrai", value: "true" }, { label: question.answers?.[1] ?? "Faux", value: "false" }].map(({ label, value }, i) => (
+        <div className="ap-answers">
+          {[{ label: question.answers?.[0] ?? "Vrai", value: "true" }, { label: question.answers?.[1] ?? "Faux", value: "false" }].map(({ label, value }, index) => (
             <button
               key={value}
+              className={`ap-answer ap-answer--${index + 1}`}
               onClick={() => handlePick(value)}
-              style={{
-                background: i === 0 ? "#27AE60" : "#E74C3C",
-                border: "none",
-                borderRadius: 12,
-                padding: "14px 8px",
-                color: "#fff",
-                fontFamily: "var(--ap-font-body)",
-                fontWeight: 700,
-                fontSize: 14,
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 6,
-              }}
+              style={{ fontSize: 13, padding: "12px 12px", gap: 9 }}
             >
-              <span style={{ fontSize: 20 }}>{i === 0 ? "✓" : "✗"}</span> {label}
+              <span className="ap-answer__shape" style={{ width: 28, height: 28, fontWeight: 800 }}>{index === 0 ? "V" : "F"}</span>
+              <span className="ap-answer__text">{label}</span>
             </button>
           ))}
         </div>
       );
     }
-    if (question.type === "short-answer") {
+
+    if (question.type === "short-answer" || question.type === "open-text") {
       return (
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <form
+          className="flex flex-col gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const input = e.currentTarget.elements.namedItem("answer") as HTMLInputElement;
+            if (input.value.trim()) handlePick(input.value.trim());
+          }}
+        >
           <input
+            name="answer"
+            type="text"
             placeholder="Votre réponse…"
-            style={{
-              width: "100%",
-              borderRadius: 12,
-              border: "2px solid rgba(255,255,255,0.3)",
-              background: "rgba(255,255,255,0.15)",
-              color: "#fff",
-              padding: "12px 14px",
-              fontFamily: "var(--ap-font-body)",
-              fontWeight: 600,
-              fontSize: 14,
-              outline: "none",
-              boxSizing: "border-box",
-            }}
-            onKeyDown={(e) => e.key === "Enter" && handlePick((e.target as HTMLInputElement).value.trim())}
+            autoComplete="off"
+            className="w-full rounded-xl p-3 text-sm outline-none"
+            style={{ border: "2px solid var(--ap-line)", background: "var(--ap-paper)", color: "var(--ap-ink)", fontFamily: "var(--ap-font-body)", fontWeight: 600 }}
           />
-          <button
-            style={{ background: "rgba(255,255,255,0.2)", border: "2px solid rgba(255,255,255,0.3)", borderRadius: 999, color: "#fff", fontWeight: 700, fontSize: 14, padding: "10px", cursor: "pointer" }}
-            onClick={(e) => {
-              const input = (e.currentTarget.previousElementSibling as HTMLInputElement);
-              if (input?.value.trim()) handlePick(input.value.trim());
-            }}
-          >
+          <button type="submit" className="ap-btn ap-btn--pill" style={{ background: "var(--ap-ink)", fontSize: 14, padding: "10px 20px" }}>
             Valider
           </button>
-        </div>
+        </form>
       );
     }
+
     if (question.type === "slider") {
       return (
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <div style={{ color: "#fff", textAlign: "center", fontWeight: 800, fontSize: 28, fontFamily: "var(--ap-font-display)" }}>
-            {question.min ?? 0}
+        <div className="flex flex-col gap-3">
+          <div className="text-center font-bold" style={{ color: "var(--ap-ink)", fontSize: 26, fontFamily: "var(--ap-font-display)" }}>
+            {sliderValue}
           </div>
-          <input type="range" min={question.min ?? 0} max={question.max ?? 100} step={question.step ?? 1} defaultValue={question.min ?? 0} style={{ accentColor: "#fff", width: "100%" }} />
-          <div style={{ display: "flex", justifyContent: "space-between", color: "rgba(255,255,255,.6)", fontSize: 12 }}>
+          <input
+            type="range"
+            min={question.min ?? 0}
+            max={question.max ?? 100}
+            step={question.step ?? 1}
+            value={sliderValue}
+            onChange={(e) => setSliderValue(Number(e.target.value))}
+            style={{ accentColor: "var(--ap-brand)", width: "100%" }}
+          />
+          <div className="flex justify-between text-xs font-bold" style={{ color: "var(--ap-muted)" }}>
             <span>{question.minLabel ?? question.min ?? 0}</span>
             <span>{question.maxLabel ?? question.max ?? 100}</span>
           </div>
-          <button style={{ background: "rgba(255,255,255,0.2)", border: "2px solid rgba(255,255,255,0.3)", borderRadius: 999, color: "#fff", fontWeight: 700, fontSize: 14, padding: "10px", cursor: "pointer" }} onClick={() => handlePick(0)}>
+          <button className="ap-btn ap-btn--pill" style={{ background: "var(--ap-ink)", fontSize: 14, padding: "10px 20px" }} onClick={() => handlePick(sliderValue)}>
             Valider
           </button>
         </div>
       );
     }
+
+    if (["likert-scale", "frequency-scale"].includes(question.type)) {
+      const options = getPollOptions(question);
+      return (
+        <div className="flex flex-col gap-2">
+          {options.map((option: string, index: number) => (
+            <button
+              key={index}
+              className="rounded-xl px-3 py-2.5 text-sm font-bold text-left transition-colors"
+              style={{ border: "2px solid var(--ap-line)", background: "var(--ap-card)", color: "var(--ap-ink)", boxShadow: "0 3px 0 var(--ap-line)", fontFamily: "var(--ap-font-body)" }}
+              onClick={() => handlePick(index)}
+            >
+              {option}
+            </button>
+          ))}
+        </div>
+      );
+    }
+
+    if (question.type === "star-rating") {
+      const options = getPollOptions(question);
+      return (
+        <div className="flex justify-center gap-1.5 flex-wrap">
+          {options.map((_: string, index: number) => (
+            <button
+              key={index}
+              aria-label={`${index + 1} étoile${index > 0 ? "s" : ""}`}
+              className="text-3xl transition-transform hover:scale-125"
+              onClick={() => handlePick(index)}
+            >
+              ⭐
+            </button>
+          ))}
+        </div>
+      );
+    }
+
+    if (question.type === "nps-scale") {
+      const options = getPollOptions(question);
+      return (
+        <div className="flex flex-col gap-2">
+          <div className="flex justify-between text-[10px] font-bold" style={{ color: "var(--ap-muted)" }}>
+            <span>{question.minLabel ?? "Pas du tout probable"}</span>
+            <span>{question.maxLabel ?? "Très probable"}</span>
+          </div>
+          <div className="grid grid-cols-6 gap-1.5">
+            {options.map((option: string, index: number) => (
+              <button
+                key={index}
+                className="rounded-lg py-2 text-sm font-bold"
+                style={{ border: "2px solid var(--ap-line)", background: "var(--ap-card)", color: "var(--ap-ink)", fontFamily: "var(--ap-font-body)" }}
+                onClick={() => handlePick(index)}
+              >
+                {option}
+              </button>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
     return (
-      <p style={{ color: "rgba(255,255,255,.6)", fontSize: 13, textAlign: "center", fontStyle: "italic" }}>
-        {isPoll ? "Sondage interactif" : "Type de question avancé"}
+      <p className="text-center text-xs italic" style={{ color: "var(--ap-muted)", fontFamily: "var(--ap-font-body)" }}>
+        Type avancé — jouable en session réelle
       </p>
     );
   };
 
   return (
-    <div className="flex flex-col h-full" style={{ background: "var(--ap-brand)" }}>
-      {/* Timer bar */}
-      <div style={{ height: 6, background: "rgba(255,255,255,.3)", borderRadius: 999, margin: "12px 16px 0" }}>
-        <div style={{ height: "100%", width: "60%", background: "#fff", borderRadius: 999, transition: "width 1s linear" }} />
+    <div className="flex h-full flex-col overflow-y-auto p-3" style={{ background: "var(--ap-brand)" }}>
+      {/* Header joueur (pill question + score + quitter) */}
+      <div className="flex items-center justify-between mb-3 text-white flex-shrink-0">
+        <div className="flex items-center gap-2">
+          <span
+            className="ap-pill"
+            style={{ background: "rgba(255,255,255,0.15)", border: "2px solid rgba(255,255,255,0.2)", color: "#fff", fontSize: 11, padding: "4px 10px" }}
+          >
+            {isPoll ? "📊 " : ""}Question {questionIndex + 1}
+          </span>
+          {!isPoll && (
+            <span className="flex items-center gap-1 text-sm" style={{ fontFamily: "var(--ap-font-display)", fontWeight: 600 }}>
+              <Trophy className="w-3.5 h-3.5" />0
+            </span>
+          )}
+        </div>
+        <span
+          className="inline-flex items-center justify-center rounded-lg"
+          style={{ background: "rgba(255,255,255,0.15)", border: "2px solid rgba(255,255,255,0.2)", width: 28, height: 28 }}
+          aria-hidden
+        >
+          <LogOut className="w-3.5 h-3.5" />
+        </span>
       </div>
 
-      {/* Question */}
-      <div style={{ padding: "16px 16px 10px", flex: "0 0 auto" }}>
-        <h3 style={{ fontFamily: "var(--ap-font-display)", fontWeight: 800, fontSize: 15, color: "#fff", lineHeight: 1.4, margin: 0 }}>
-          {question.question || "Question"}
-        </h3>
+      {/* Progression */}
+      <div className="mb-3 flex-shrink-0">
+        <MultiStepProgress totalSteps={Math.min(totalQuestions, 15)} currentStep={questionIndex} className="h-2" />
       </div>
 
-      {/* Answers */}
-      <div style={{ padding: "0 12px 16px", flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+      {/* Carte question blanche — identique au live */}
+      <div className="ap-card ap-card--floaty" style={{ padding: 16 }}>
+        {!isPoll && (
+          <div className="flex justify-center mb-3" style={{ transform: "scale(0.72)", transformOrigin: "center top", marginBottom: -8 }}>
+            <CircularTimer timeLeft={timeLeft} totalTime={question.timeLimit ?? 20} />
+          </div>
+        )}
+
+        <h2 className="text-center mb-4" style={{ fontFamily: "var(--ap-font-display)", fontWeight: 600, fontSize: 15, lineHeight: 1.4, color: "var(--ap-ink)" }}>
+          {question.question || question.text || "Posez votre question…"}
+        </h2>
+
         {renderAnswers()}
       </div>
     </div>
@@ -271,18 +418,18 @@ const PreviewPage = () => {
       />
 
       {/* Main content */}
-      <div style={{ flex: 1, display: "flex", gap: 24, padding: "24px 24px 0", alignItems: "flex-start", position: "relative", zIndex: 1 }}>
+      <div style={{ flex: 1, display: "flex", gap: 28, padding: "24px 24px 0", alignItems: "flex-start", justifyContent: "center", position: "relative", zIndex: 1 }}>
 
         {/* Host panel */}
-        <div style={{ flex: "1 1 0", minWidth: 0, display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={{ flex: "1 1 0", minWidth: 0, maxWidth: 960, display: "flex", flexDirection: "column", gap: 10 }}>
           <p style={{ fontFamily: "var(--ap-font-body)", fontWeight: 700, fontSize: 13, color: "rgba(255,255,255,.6)", margin: 0, letterSpacing: "0.03em" }}>
-            Affichage du présentateur
+            🖥️ Écran du présentateur — tel qu'il sera projeté
           </p>
           <div
             style={{
               width: "100%",
               aspectRatio: "16/9",
-              borderRadius: 12,
+              borderRadius: 14,
               overflow: "hidden",
               boxShadow: "0 8px 40px rgba(0,0,0,.6)",
               border: "2px solid rgba(255,255,255,.1)",
@@ -302,27 +449,30 @@ const PreviewPage = () => {
           </div>
         </div>
 
-        {/* Participant panel — phone mockup */}
-        <div style={{ flexShrink: 0, width: 260, display: "flex", flexDirection: "column", gap: 10 }}>
+        {/* Participant panel — phone mockup (même bezel que le builder) */}
+        <div style={{ flexShrink: 0, width: 300, display: "flex", flexDirection: "column", gap: 10 }}>
           <p style={{ fontFamily: "var(--ap-font-body)", fontWeight: 700, fontSize: 13, color: "rgba(255,255,255,.6)", margin: 0, letterSpacing: "0.03em" }}>
-            Affichage des participants
+            📱 Écran des participants — interactif, essayez !
           </p>
           <div
             style={{
-              width: 260,
-              height: 480,
-              borderRadius: 24,
-              overflow: "hidden",
-              boxShadow: "0 8px 40px rgba(0,0,0,.6)",
-              border: "3px solid rgba(255,255,255,.15)",
-              background: "var(--ap-brand)",
-              position: "relative",
+              width: 300,
+              background: "var(--ap-ink)",
+              borderRadius: 38,
+              padding: 10,
+              boxShadow: "0 10px 0 #16102a, 0 30px 50px rgba(0,0,0,.55)",
             }}
           >
-            {/* Phone notch */}
-            <div style={{ position: "absolute", top: 8, left: "50%", transform: "translateX(-50%)", width: 60, height: 5, borderRadius: 999, background: "rgba(0,0,0,.3)", zIndex: 10 }} />
-            <div style={{ paddingTop: 20, height: "100%", boxSizing: "border-box" }}>
-              <ParticipantPreview question={question} isPoll={isPoll} key={currentQ} />
+            <div style={{ borderRadius: 28, overflow: "hidden", height: 560, position: "relative" }}>
+              {/* Notch */}
+              <div style={{ position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)", width: 88, height: 20, background: "var(--ap-ink)", borderRadius: "0 0 13px 13px", zIndex: 20 }} />
+              <ParticipantPreview
+                question={question}
+                questionIndex={currentQ}
+                totalQuestions={total || 1}
+                isPoll={isPoll}
+                key={currentQ}
+              />
             </div>
           </div>
         </div>
@@ -391,7 +541,7 @@ const PreviewPage = () => {
           onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.transform = "")}
         >
           <Play style={{ width: 15, height: 15 }} />
-          Lancer la démo
+          Lancer en réel
         </button>
       </div>
     </div>

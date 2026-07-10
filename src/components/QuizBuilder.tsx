@@ -53,11 +53,14 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 
 // ─── Design constants ──────────────────────────────────────────────────────
+// Ordre position → couleur/forme aligné sur l'écran joueur réel
+// (arcade-pop.css .ap-answer--N + PLAYER_ANSWER_SHAPES) :
+// 1 triangle rouge, 2 cercle bleu, 3 carré vert, 4 losange jaune.
 const ANSWER_CONFIGS = [
   { color: "var(--ap-quiz)",  shape: <path d="M12 3 22 21H2z" fill="white" /> },
-  { color: "var(--ap-poll)",  shape: <rect x="4" y="4" width="16" height="16" rx="2" fill="white" /> },
-  { color: "var(--ap-flash)", shape: <circle cx="12" cy="12" r="9" fill="white" /> },
-  { color: "var(--ap-pres)",  shape: <path d="M12 2 22 12 12 22 2 12z" fill="white" /> },
+  { color: "var(--ap-poll)",  shape: <circle cx="12" cy="12" r="9" fill="white" /> },
+  { color: "var(--ap-pres)",  shape: <rect x="4" y="4" width="16" height="16" rx="2" fill="white" /> },
+  { color: "var(--ap-flash)", shape: <path d="M12 2 22 12 12 22 2 12z" fill="white" /> },
 ] as const;
 
 const QTYPE_META: Record<string, { label: string; dot: string }> = {
