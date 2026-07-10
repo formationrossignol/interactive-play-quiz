@@ -139,7 +139,7 @@ const AnswerRow = ({
     <div
       style={{
         display: "flex", alignItems: "center", gap: 10,
-        background: "white",
+        background: "var(--ap-card)",
         border: "2px solid var(--ap-line)",
         borderRadius: "var(--ap-r-md)",
         padding: "8px 10px",
@@ -281,7 +281,7 @@ const PhonePreview = ({
           textAlign: "center", fontFamily: "var(--ap-font-display)", fontWeight: 600,
           fontSize: 10.5, color: "var(--ap-muted)", paddingBottom: 10, letterSpacing: ".04em",
         }}>
-          ⚡ Ludiq
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="var(--ap-brand)" style={{ display:"inline", verticalAlign:"-1px", marginRight:4 }} aria-hidden="true"><path d="M13 2 4.5 13.5H11l-1 8.5L19.5 10H13l0-8z"/></svg>Ludiq
         </div>
       </div>
     </div>
@@ -307,7 +307,7 @@ const RailItem = ({
         onClick={() => onSelect(index)}
         style={{
           position: "relative", textAlign: "left", width: "100%",
-          background: isActive ? "var(--ap-brand-soft)" : "white",
+          background: isActive ? "var(--ap-brand-soft)" : "var(--ap-card)",
           border: `2px solid ${isActive ? "var(--ap-brand)" : "var(--ap-line)"}`,
           borderRadius: "var(--ap-r-md)",
           padding: "11px 12px 11px 14px",
@@ -797,7 +797,7 @@ export const QuizBuilder = () => {
               width: "100%", resize: "none", overflow: "hidden",
               fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 22,
               lineHeight: 1.35, color: "var(--ap-ink)",
-              background: "white", border: "2px solid var(--ap-line)",
+              background: "var(--ap-card)", border: "2px solid var(--ap-line)",
               borderRadius: "var(--ap-r-lg)", padding: "18px 20px",
               boxShadow: "0 4px 0 var(--ap-line)", outline: "none",
               transition: "border-color .15s, box-shadow .15s",
@@ -910,7 +910,7 @@ export const QuizBuilder = () => {
             {/* Points */}
             <div>
               <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".09em", textTransform: "uppercase", color: "var(--ap-muted)", marginBottom: 9 }}>Points</div>
-              <div style={{ display: "flex", background: "white", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-md)", padding: 4, gap: 4, boxShadow: "0 3px 0 var(--ap-line)" }}>
+              <div style={{ display: "flex", background: "var(--ap-card)", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-md)", padding: 4, gap: 4, boxShadow: "0 3px 0 var(--ap-line)" }}>
                 {POINTS_OPTIONS.map(opt => {
                   const isOn = (q.points ?? 1000) === opt.value || (opt.value === 1000 && (q.points ?? 1000) !== 0 && (q.points ?? 1000) !== 2000);
                   return (
@@ -932,7 +932,7 @@ export const QuizBuilder = () => {
             {/* Time */}
             <div>
               <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".09em", textTransform: "uppercase", color: "var(--ap-muted)", marginBottom: 9 }}>Temps de réponse</div>
-              <div style={{ display: "flex", background: "white", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-md)", padding: 4, gap: 4, boxShadow: "0 3px 0 var(--ap-line)" }}>
+              <div style={{ display: "flex", background: "var(--ap-card)", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-md)", padding: 4, gap: 4, boxShadow: "0 3px 0 var(--ap-line)" }}>
                 {TIME_OPTIONS.map(opt => {
                   const isOn = (q.timeLimit ?? 20) === opt.value;
                   return (
@@ -1073,7 +1073,7 @@ export const QuizBuilder = () => {
 
       {/* ── Topbar ── */}
       <div style={{
-        height: 62, flexShrink: 0, background: "white",
+        height: 62, flexShrink: 0, background: "var(--ap-card)",
         borderBottom: "2px solid var(--ap-line)",
         display: "flex", alignItems: "center", gap: 16, padding: "0 18px",
         position: "relative", zIndex: 20,
@@ -1085,7 +1085,7 @@ export const QuizBuilder = () => {
           style={{
             display: "grid", placeItems: "center", width: 36, height: 36,
             borderRadius: "var(--ap-r-sm)", border: "2px solid var(--ap-line)",
-            background: "white", cursor: "pointer", boxShadow: "0 3px 0 var(--ap-line)",
+            background: "var(--ap-card)", cursor: "pointer", boxShadow: "0 3px 0 var(--ap-line)",
             transition: "transform .15s var(--ap-spring), box-shadow .15s var(--ap-spring)",
             flexShrink: 0,
           }}
@@ -1125,7 +1125,7 @@ export const QuizBuilder = () => {
           style={{
             display: "grid", placeItems: "center", width: 36, height: 36,
             borderRadius: "var(--ap-r-sm)", border: "2px solid var(--ap-line)",
-            background: "white", cursor: "pointer", boxShadow: "0 3px 0 var(--ap-line)",
+            background: "var(--ap-card)", cursor: "pointer", boxShadow: "0 3px 0 var(--ap-line)",
             flexShrink: 0,
           }}
         >
@@ -1158,7 +1158,7 @@ export const QuizBuilder = () => {
       <div style={{ flex: 1, minHeight: 0, display: "grid", gridTemplateColumns: "270px 1fr 330px" }}>
 
         {/* Left Rail */}
-        <aside style={{ borderRight: "2px solid var(--ap-line)", background: "white", display: "flex", flexDirection: "column", minHeight: 0 }}>
+        <aside style={{ borderRight: "2px solid var(--ap-line)", background: "var(--ap-card)", display: "flex", flexDirection: "column", minHeight: 0 }}>
           <div style={{ padding: "16px 16px 10px", display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
             <h2 style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".09em", textTransform: "uppercase", color: "var(--ap-muted)", margin: 0 }}>
               {isFlashcard ? "Cartes" : isSlide ? "Diapositives" : "Questions"}

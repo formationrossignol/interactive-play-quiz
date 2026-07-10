@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
+import { HOST_ANSWER_STYLES } from "@/lib/answerVisuals";
 
+// Mêmes couleurs et formes que les tuiles de l'écran question du présentateur
 const ANSWER_COLORS = [
-  { bg: '#ff5a4d', deep: '#d63b2f', text: '#fff' },
-  { bg: '#2f7bff', deep: '#1f5fd0', text: '#fff' },
-  { bg: '#ffb020', deep: '#d68f00', text: '#fff' },
-  { bg: '#15c08a', deep: '#0f9d72', text: '#fff' },
+  { bg: '#E74C3C', deep: '#B03A2E' },
+  { bg: '#2980B9', deep: '#1F618D' },
+  { bg: '#F39C12', deep: '#B9770E' },
+  { bg: '#27AE60', deep: '#1E8449' },
 ];
-
-const LETTERS = ['A', 'B', 'C', 'D'];
 
 interface AnswerDistributionProps {
   answers: string[];
@@ -83,7 +83,7 @@ export const AnswerDistribution = ({ answers, distribution, correctAnswer }: Ans
                   fontFamily: 'var(--ap-font-display)',
                   fontWeight: 700, fontSize: 17, color: '#fff',
                 }}>
-                  {isCorrect ? '✓' : LETTERS[i]}
+                  {isCorrect ? '✓' : HOST_ANSWER_STYLES[i % 4].shape}
                 </div>
 
                 {/* Answer text */}

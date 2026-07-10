@@ -394,6 +394,15 @@ const PreviewPage = () => {
   const go = (idx: number) => setCurrentQ(Math.max(0, Math.min(total - 1, idx)));
 
   const launchDemo = () => {
+    // Les aperçus portent un id "preview-<timestamp>" : on génère un vrai
+    // code de partie à 6 chiffres pour que le lobby affiche un code propre
+    // et scannable, comme pour un quiz sauvegardé.
+    if (quizId?.startsWith("preview-")) {
+      const gameCode = (Math.floor(Math.random() * 900000) + 100000).toString();
+      localStorage.setItem(`quiz-${gameCode}`, JSON.stringify({ ...quiz, id: gameCode }));
+      navigate(`/quiz/${gameCode}`);
+      return;
+    }
     navigate(`/quiz/${quizId}`);
   };
 
@@ -423,7 +432,7 @@ const PreviewPage = () => {
         {/* Host panel */}
         <div style={{ flex: "1 1 0", minWidth: 0, maxWidth: 960, display: "flex", flexDirection: "column", gap: 10 }}>
           <p style={{ fontFamily: "var(--ap-font-body)", fontWeight: 700, fontSize: 13, color: "rgba(255,255,255,.6)", margin: 0, letterSpacing: "0.03em" }}>
-            🖥️ Écran du présentateur — tel qu'il sera projeté
+            Écran du présentateur — tel qu'il sera projeté
           </p>
           <div
             style={{
@@ -452,7 +461,7 @@ const PreviewPage = () => {
         {/* Participant panel — phone mockup (même bezel que le builder) */}
         <div style={{ flexShrink: 0, width: 300, display: "flex", flexDirection: "column", gap: 10 }}>
           <p style={{ fontFamily: "var(--ap-font-body)", fontWeight: 700, fontSize: 13, color: "rgba(255,255,255,.6)", margin: 0, letterSpacing: "0.03em" }}>
-            📱 Écran des participants — interactif, essayez !
+            Écran des participants — interactif, essayez !
           </p>
           <div
             style={{

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Users, Clock, Trophy, Settings, Download, LogOut } from "lucide-react";
+import { Users, Clock, Trophy, Settings, Download, LogOut, Lightbulb, Flag, Gamepad2, PencilLine } from "lucide-react";
 import { QRCodeGenerator } from "./QRCodeGenerator";
 import { WordCloudQuestion } from "./WordCloudQuestion";
 import { RankingQuestion } from "./RankingQuestion";
@@ -857,7 +857,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
               onClick={() => onExitRequest?.()}
               style={{ display:'inline-flex',alignItems:'center',gap:8,fontWeight:800,fontSize:13,color:'var(--ap-muted)',cursor:'pointer',background:'var(--ap-card)',border:'2px solid var(--ap-line)',borderRadius:999,padding:'8px 15px',boxShadow:'0 3px 0 var(--ap-line)' }}
             >
-              🚪 Quitter
+              <LogOut style={{ width:14, height:14 }} /> Quitter
             </button>
           )}
         </div>
@@ -928,7 +928,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
             )}
 
             <div style={{ marginTop:12,fontSize:13,fontWeight:700,background:'var(--ap-flash-soft)',border:'2px solid rgba(255,176,32,.4)',borderRadius:'var(--ap-r-md)',padding:'10px 14px',textAlign:'left',display:'flex',gap:9,alignItems:'flex-start',color:'var(--ap-flash-deep)' }}>
-              <span aria-hidden="true">💡</span>
+              <Lightbulb aria-hidden="true" style={{ width:16, height:16, flexShrink:0, marginTop:1 }} />
               <span>Le quiz comporte {quiz.questions.length} question{quiz.questions.length > 1 ? 's' : ''}. Rejoignez avant le lancement !</span>
             </div>
           </aside>
@@ -1316,7 +1316,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
                 className="mx-4 mb-4 rounded-2xl border-2 border-dashed border-white/30 bg-white/10 p-5 text-center text-white text-lg font-bold backdrop-blur flex-shrink-0"
                 style={{ fontFamily: 'var(--ap-font-display)' }}
               >
-                ✏️ Les joueurs tapent leur réponse
+                <PencilLine style={{ width:18, height:18, display:"inline", verticalAlign:"-3px", marginRight:8 }} /> Les joueurs tapent leur réponse
               </div>
             )}
           </div>
@@ -1549,7 +1549,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
               color:'#ffb020', background:'rgba(255,176,32,.1)',
               border:'2px solid rgba(255,176,32,.35)',
               padding:'6px 15px', borderRadius:999, marginBottom:18,
-            }}>🏁 Session terminée</span>
+            }}><Flag style={{ width:13, height:13 }} /> Session terminée</span>
             <h1 style={{
               fontFamily:'var(--ap-font-display)', fontWeight:600,
               fontSize:'clamp(30px,4vw,46px)', letterSpacing:'-.01em', lineHeight:1.1, color:'#fff',
@@ -1677,7 +1677,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.boxShadow='0 7px 0 rgba(0,0,0,.35),inset 0 0 0 2px rgba(255,255,255,.3)'; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.boxShadow='0 5px 0 rgba(0,0,0,.35),inset 0 0 0 2px rgba(255,255,255,.16)'; }}
               >
-                🎮 Nouveau Quiz
+                <Gamepad2 style={{ width:16, height:16 }} /> Nouveau Quiz
               </button>
             </section>
           )}

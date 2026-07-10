@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Trophy, Edit2, Users } from "lucide-react";
+import { Trophy, Edit2, Users, PencilLine, Shuffle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DEFAULT_THEME_ID, THEMES } from "@/lib/themes";
 import { hexToRgba, darkestColor, relativeLuminance } from "@/lib/color";
@@ -168,7 +168,7 @@ export const QuizPreview = ({
           className="w-full rounded-2xl border-2 border-dashed border-white/30 bg-white/10 p-4 text-center text-white text-base font-bold backdrop-blur select-none"
           style={{ fontFamily: 'var(--ap-font-display)' }}
         >
-          ✏️ Les joueurs tapent leur réponse
+          <PencilLine style={{ width:16, height:16, display:"inline", verticalAlign:"-3px", marginRight:8 }} /> Les joueurs tapent leur réponse
         </div>
       );
     }
@@ -183,7 +183,7 @@ export const QuizPreview = ({
             </div>
           ))}
           <p className="text-center text-white/60 text-xs font-bold pt-1" style={{ fontFamily: 'var(--ap-font-body)' }}>
-            🔀 Les joueurs remettent les éléments dans l'ordre
+            <Shuffle style={{ width:13, height:13, display:"inline", verticalAlign:"-2px", marginRight:6 }} /> Les joueurs remettent les éléments dans l'ordre
           </p>
         </div>
       );

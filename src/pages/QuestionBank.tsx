@@ -21,7 +21,7 @@ import {
 import { getCurrentUser } from "@/lib/auth";
 import { t } from "@/lib/i18n";
 import { toast } from "sonner";
-import { Copy, Edit, Plus, Search, Trash2, ExternalLink } from "lucide-react";
+import { Copy, Edit, Plus, Search, Trash2, ExternalLink, LayoutGrid, List } from "lucide-react";
 import type { QuizQuestionType } from "@/lib/questionTypes";
 
 const QUESTION_TYPE_OPTIONS: { value: QuizQuestionType; label: string }[] = [
@@ -47,6 +47,7 @@ const DIFFICULTY_BADGE: Record<QuestionDifficulty, string> = {
 };
 
 const PAGE_SIZE = 12;
+const VIEW_KEY = "view-mode-question-bank";
 
 const inputStyle: React.CSSProperties = {
   width: "100%",
@@ -97,6 +98,15 @@ const QuestionBank = () => {
   const [difficulty, setDifficulty] = useState<QuestionDifficulty>("medium");
   const [tagsInput, setTagsInput] = useState("");
   const [description, setDescription] = useState("");
+
+  /* ---- view mode (partagé par les deux sections, comme Mes Quiz) ---- */
+  const [viewMode, setViewMode] = useState<"grid" | "list">(
+    () => (localStorage.getItem(VIEW_KEY) as "grid" | "list") ?? "grid"
+  );
+  const setView = (mode: "grid" | "list") => {
+    setViewMode(mode);
+    localStorage.setItem(VIEW_KEY, mode);
+  };
 
   /* ---- bank filters ---- */
   const [bankSearch, setBankSearch] = useState("");
@@ -218,6 +228,25 @@ const QuestionBank = () => {
     e.currentTarget.style.boxShadow = "none";
   };
 
+  const toggleBtnStyle = (active: boolean): React.CSSProperties => ({
+    padding: "8px",
+    background: active ? "var(--ap-brand-soft)" : "transparent",
+    color: active ? "var(--ap-brand)" : "var(--ap-muted)",
+    border: `2px solid ${active ? "var(--ap-brand)" : "var(--ap-line)"}`,
+    borderRadius: "var(--ap-r-sm)",
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  });
+
+  const ViewToggle = () => (
+    <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+      <button onClick={() => setView("grid")} style={toggleBtnStyle(viewMode === "grid")} title="Vue grille"><LayoutGrid className="w-4 h-4" /></button>
+      <button onClick={() => setView("list")} style={toggleBtnStyle(viewMode === "list")} title="Vue liste"><List className="w-4 h-4" /></button>
+    </div>
+  );
+
   const FilterRow = ({
     search, onSearch, typeFilter, onTypeFilter, diffFilter, onDiffFilter, showDiff = true,
   }: {
@@ -298,6 +327,7 @@ const QuestionBank = () => {
           </SelectContent>
         </Select>
       )}
+      <ViewToggle />
     </div>
   );
 
@@ -354,6 +384,50 @@ const QuestionBank = () => {
                 </button>
               )}
             </div>
+          ) : viewMode === "list" ? (
+            <>
+              <div className="ap-card" style={{ padding: 0, overflow: "hidden" }}>
+                {bankPaginated.map((item, idx) => {
+                  const typeLabel = QUESTION_TYPE_OPTIONS.find((o) => o.value === item.question?.type)?.label;
+                  return (
+                    <div
+                      key={item.id}
+                      style={{
+                        display: "flex", alignItems: "center", gap: "14px", padding: "14px 18px",
+                        borderTop: idx > 0 ? "2px solid var(--ap-line)" : "none",
+                      }}
+                    >
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <h3 className="ap-h3" style={{ fontSize: "15px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.title}</h3>
+                        <p className="ap-muted" style={{ fontSize: "12.5px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: 2 }}>
+                          {item.question?.question || t("noQuestionText")}
+                        </p>
+                      </div>
+                      <div style={{ display: "flex", gap: "6px", flexShrink: 0, flexWrap: "wrap", justifyContent: "flex-end" }}>
+                        {typeLabel && <span className="ap-badge ap-badge--brand">{t(typeLabel as any)}</span>}
+                        {item.difficulty && (
+                          <span className={`ap-badge ${DIFFICULTY_BADGE[item.difficulty]}`}>
+                            {t(DIFFICULTY_OPTIONS.find((o) => o.value === item.difficulty)?.label as any)}
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ display: "flex", gap: "4px", flexShrink: 0 }}>
+                        <button className="ap-btn ap-btn--ghost ap-btn--sm" style={{ padding: "7px 10px" }} onClick={() => handleDuplicate(item)} title={t("duplicate")}>
+                          <Copy className="h-3.5 w-3.5" />
+                        </button>
+                        <button className="ap-btn ap-btn--ghost ap-btn--sm" style={{ padding: "7px 10px" }} onClick={() => openEditDialog(item)} title={t("edit")}>
+                          <Edit className="h-3.5 w-3.5" />
+                        </button>
+                        <button className="ap-btn ap-btn--ghost ap-btn--sm" style={{ padding: "7px 10px", color: "var(--ap-quiz)" }} onClick={() => handleDelete(item)} title={t("delete")}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <Pagination page={bankPage} totalPages={bankTotalPages} onPageChange={setBankPage} className="mt-8" />
+            </>
           ) : (
             <>
               <div style={{ display: "grid", gap: "18px", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))" }}>
@@ -456,6 +530,36 @@ const QuestionBank = () => {
                 </button>
               )}
             </div>
+          ) : viewMode === "list" ? (
+            <>
+              <div className="ap-card" style={{ padding: 0, overflow: "hidden" }}>
+                {qqPaginated.map((item, idx) => {
+                  const typeLabel = QUESTION_TYPE_OPTIONS.find((o) => o.value === item.type)?.label;
+                  const questionText = item.question?.question?.trim() || item.question?.prompt?.trim() || item.question?.title?.trim() || t("noQuestionText");
+                  return (
+                    <div
+                      key={item.id}
+                      style={{
+                        display: "flex", alignItems: "center", gap: "14px", padding: "14px 18px",
+                        borderTop: idx > 0 ? "2px solid var(--ap-line)" : "none",
+                      }}
+                    >
+                      <span className="ap-pill" style={{ fontSize: "11px", padding: "3px 9px", flexShrink: 0 }}>#{item.position}</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <h3 className="ap-h3" style={{ fontSize: "14.5px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{questionText}</h3>
+                        <p className="ap-muted" style={{ fontSize: "12px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: 2 }}>
+                          {item.quizTitle}
+                        </p>
+                      </div>
+                      <div style={{ display: "flex", gap: "6px", flexShrink: 0 }}>
+                        {typeLabel && <span className="ap-badge ap-badge--poll">{t(typeLabel as any)}</span>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <Pagination page={qqPage} totalPages={qqTotalPages} onPageChange={setQqPage} className="mt-8" />
+            </>
           ) : (
             <>
               <div style={{ display: "grid", gap: "18px", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))" }}>

@@ -69,8 +69,59 @@
 }
 
 /* ============================================================
+   1b. MODE SOMBRE — mêmes tokens, palette aubergine profonde.
+   Activé par la classe .dark sur <html> (réglage du profil).
+   Les écrans de session live gardent leurs styles dédiés.
+   ============================================================ */
+.dark {
+  --ap-paper:       #161022;  /* fond aubergine profond */
+  --ap-paper-2:     #1e1730;  /* zones */
+  --ap-card:        #251c3b;  /* surfaces */
+  --ap-line:        #352a55;  /* bordures */
+  --ap-line-2:      #4a3d72;  /* pointillés / dropzones */
+  --ap-ink:         #f2edff;  /* texte principal */
+  --ap-muted:       #a89cc8;  /* texte secondaire */
+
+  --ap-brand-soft:  #2d2158;
+  --ap-quiz-soft:   #3b201d;
+  --ap-pres-soft:   #10322a;
+  --ap-poll-soft:   #182a4d;
+  --ap-flash-soft:  #3a2c10;
+
+  --ap-shadow-soft:  0 4px 0 rgba(0,0,0,.35);
+  --ap-shadow-card:  0 30px 60px rgba(0,0,0,.45), 0 4px 0 rgba(0,0,0,.35);
+  --ap-shadow-float: 0 14px 30px rgba(0,0,0,.5);
+}
+
+/* Les textes « deep » sur fonds soft doivent s'éclaircir en sombre.
+   (Les --ap-*-deep restent inchangés : ils servent d'ombre 3D aux boutons.) */
+.dark .ap-badge--quiz  { color: #ff9d94; }
+.dark .ap-badge--pres  { color: #4fe0b0; }
+.dark .ap-badge--poll  { color: #8db4ff; }
+.dark .ap-badge--flash { color: #ffc861; }
+.dark .ap-badge--brand { color: #b9a5ff; }
+.dark .ap-lead { color: var(--ap-muted); }
+
+:root { color-scheme: light; }
+.dark { color-scheme: dark; }
+
+/* ============================================================
    2. BASE
    ============================================================ */
+/* Scrollbars fines et arrondies — partout dans l'app */
+* { scrollbar-width: thin; scrollbar-color: var(--ap-line-2) transparent; }
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+  background: var(--ap-line-2);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover { background-color: var(--ap-muted); }
+
+/* Bascule de thème sans flash */
+body { transition: background-color .25s ease, color .25s ease; }
 /* Sélection de texte aux couleurs de la marque */
 .ap-app ::selection { background: var(--ap-brand); color: #fff; }
 
@@ -161,8 +212,8 @@
   padding: 24px;
 }
 .ap-card--floaty { box-shadow: var(--ap-shadow-card); border-radius: var(--ap-r-xl); }
-.ap-card--hover { transition: transform .12s var(--ap-ease); }
-.ap-card--hover:hover { transform: translateY(-3px); }
+.ap-card--hover { transition: transform .12s var(--ap-ease), box-shadow .12s var(--ap-ease); }
+.ap-card--hover:hover { transform: translateY(-3px); box-shadow: var(--ap-shadow-card); }
 
 /* Carte « type de contenu » avec blob décoratif d'angle */
 .ap-tile { position: relative; overflow: hidden; }

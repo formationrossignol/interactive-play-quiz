@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { LogOut, Lightbulb, PencilLine, Flag } from "lucide-react";
 import { MultiStepProgress } from "@/components/MultiStepProgress";
 import { QRCodeGenerator } from "@/components/QRCodeGenerator";
 import { AvatarDisplay } from "@/components/BetterAvatars";
@@ -227,7 +228,7 @@ export const PollSession = ({ poll }: PollSessionProps) => {
             onClick={() => navigate("/my-polls")}
             style={quitBtnSt}
           >
-            🚪 Quitter
+            <LogOut style={{ width:14, height:14 }} /> Quitter
           </button>
         </div>
 
@@ -277,7 +278,7 @@ export const PollSession = ({ poll }: PollSessionProps) => {
             )}
 
             <div style={{ marginTop: 12, fontSize: 13, fontWeight: 700, background: "var(--ap-poll-soft)", border: "2px solid rgba(47,123,255,.35)", borderRadius: "var(--ap-r-md)", padding: "10px 14px", textAlign: "left", display: "flex", gap: 9, alignItems: "flex-start", color: "var(--ap-poll-deep)" }}>
-              <span aria-hidden="true">💡</span>
+              <Lightbulb aria-hidden="true" style={{ width:16, height:16, flexShrink:0, marginTop:1 }} />
               <span>{totalQuestions} question{totalQuestions > 1 ? "s" : ""} · les réponses sont anonymes et agrégées en direct.</span>
             </div>
           </aside>
@@ -354,7 +355,7 @@ export const PollSession = ({ poll }: PollSessionProps) => {
             border: "2px solid var(--ap-line)", borderRadius: 999, padding: "5px 13px",
           }}
         >
-          ✍️ {answeredCount}<span style={{ color: "var(--ap-muted)" }}>/{Math.max(players.length, answeredCount)}</span> réponse{answeredCount > 1 ? "s" : ""}
+          <PencilLine style={{ width:14, height:14, display:"inline", verticalAlign:"-2px", marginRight:6 }} /> {answeredCount}<span style={{ color: "var(--ap-muted)" }}>/{Math.max(players.length, answeredCount)}</span> réponse{answeredCount > 1 ? "s" : ""}
         </span>
       </div>
 
@@ -448,7 +449,7 @@ export const PollSession = ({ poll }: PollSessionProps) => {
           <div style={{ flex: 1 }} />
           {isLast ? (
             <button className="ap-btn ap-btn--poll ap-btn--lg ap-btn--pill" onClick={handleFinish}>
-              🏁 Terminer et voir les résultats
+              <Flag style={{ width:16, height:16 }} /> Terminer et voir les résultats
             </button>
           ) : (
             <button className="ap-btn ap-btn--poll ap-btn--lg ap-btn--pill" onClick={() => goTo(currentIndex + 1)}>

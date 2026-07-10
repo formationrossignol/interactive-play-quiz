@@ -59,6 +59,37 @@
     --slide-accent:     160 79% 42%;   /* --ap-pres   #15c08a */
   }
 
+  /* Mode sombre — miroir des overrides --ap-* de arcade-pop.css
+     pour les composants shadcn (dialogs, selects, toasts…) */
+  .dark {
+    --background: 256 36% 10%;       /* --ap-paper   #161022 */
+    --foreground: 256 100% 96%;      /* --ap-ink     #f2edff */
+
+    --card: 258 36% 17%;             /* --ap-card    #251c3b */
+    --card-foreground: 256 100% 96%;
+
+    --popover: 258 36% 17%;
+    --popover-foreground: 256 100% 96%;
+
+    --secondary: 257 35% 14%;        /* --ap-paper-2 #1e1730 */
+    --secondary-foreground: 256 100% 96%;
+
+    --muted: 257 35% 14%;
+    --muted-foreground: 259 28% 70%; /* --ap-muted   #a89cc8 */
+
+    --accent: 259 46% 24%;           /* --ap-brand-soft #2d2158 */
+    --accent-foreground: 258 100% 82%;
+
+    --border: 256 34% 25%;           /* --ap-line    #352a55 */
+    --input: 256 34% 25%;
+
+    --sidebar-background: 258 36% 17%;
+    --sidebar-foreground: 256 100% 96%;
+    --sidebar-accent: 257 35% 14%;
+    --sidebar-accent-foreground: 256 100% 96%;
+    --sidebar-border: 256 34% 25%;
+  }
+
   * {
     @apply border-border;
   }

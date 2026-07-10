@@ -6,6 +6,11 @@ interface MultiStepProgressProps {
   className?: string;
 }
 
+/**
+ * Barre de progression segmentée, lisible sur tous les fonds de l'app
+ * (crème Arcade Pop, violet joueur, thèmes sombres de session) :
+ * fait = vert --ap-pres, en cours = jaune --ap-flash pulsé, à venir = neutre.
+ */
 export const MultiStepProgress = ({ totalSteps, currentStep, className }: MultiStepProgressProps) => {
   return (
     <div className={cn("flex gap-1", className)}>
@@ -13,13 +18,23 @@ export const MultiStepProgress = ({ totalSteps, currentStep, className }: MultiS
         <div
           key={index}
           className={cn(
-            "h-2 flex-1 rounded-full transition-all duration-300 shadow-sm",
-            index < currentStep
-              ? "bg-primary/90 shadow-[0_0_12px_rgba(59,130,246,0.45)]"
-              : index === currentStep
-              ? "bg-gradient-to-r from-sky-400/90 via-primary to-indigo-500/90 animate-pulse shadow-[0_0_16px_rgba(56,189,248,0.55)]"
-              : "bg-slate-600/50"
+            "h-2 flex-1 rounded-full transition-all duration-300",
+            index === currentStep && "animate-pulse"
           )}
+          style={{
+            background:
+              index < currentStep
+                ? "var(--ap-pres)"
+                : index === currentStep
+                ? "var(--ap-flash)"
+                : "rgba(128,128,128,0.35)",
+            boxShadow:
+              index < currentStep
+                ? "0 0 10px rgba(21,192,138,0.4)"
+                : index === currentStep
+                ? "0 0 12px rgba(255,176,32,0.5)"
+                : "none",
+          }}
         />
       ))}
     </div>

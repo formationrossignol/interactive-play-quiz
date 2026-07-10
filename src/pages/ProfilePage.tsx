@@ -273,7 +273,14 @@ const ProfilePage = () => {
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               <div>
                 <label style={labelStyle}>{t("theme")}</label>
-                <Select value={theme} onValueChange={(v: Theme) => setTheme(v)}>
+                <Select
+                  value={theme}
+                  onValueChange={(v: Theme) => {
+                    setTheme(v);
+                    // Aperçu instantané — persisté définitivement au clic sur Enregistrer
+                    document.documentElement.classList.toggle("dark", v === "dark");
+                  }}
+                >
                   <SelectTrigger style={{ ...triggerStyle, marginTop: "8px" }}>
                     <SelectValue />
                   </SelectTrigger>
