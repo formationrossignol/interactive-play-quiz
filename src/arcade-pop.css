@@ -144,6 +144,32 @@ body { transition: background-color .25s ease, color .25s ease; }
 }
 .ap-app *, .ap-app *::before, .ap-app *::after { box-sizing: border-box; }
 
+/* ── Route transitions ─────────────────────────────────────────── */
+@media (prefers-reduced-motion: no-preference) {
+  .ap-route-enter { animation: ap-route-in .18s ease-out both; }
+}
+@keyframes ap-route-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ── Route loader ──────────────────────────────────────────────── */
+.ap-route-loader { display: flex; gap: 8px; }
+.ap-route-loader span {
+  width: 12px; height: 12px; border-radius: 50%;
+  background: var(--ap-brand);
+  animation: ap-loader-bounce .9s ease-in-out infinite;
+}
+.ap-route-loader span:nth-child(2) { background: var(--ap-poll); animation-delay: .15s; }
+.ap-route-loader span:nth-child(3) { background: var(--ap-pres); animation-delay: .3s; }
+@keyframes ap-loader-bounce {
+  0%, 60%, 100% { transform: none; }
+  30% { transform: translateY(-8px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ap-route-loader span { animation: none; }
+}
+
 .ap-display { font-family: var(--ap-font-display); font-weight: 600; letter-spacing: -.5px; margin: 0; }
 .ap-h1 { font-family: var(--ap-font-display); font-weight: 600; font-size: 56px; line-height: 1; letter-spacing: -1.5px; margin: 0; }
 .ap-h2 { font-family: var(--ap-font-display); font-weight: 600; font-size: 38px; line-height: 1.05; letter-spacing: -1px; margin: 0; }
