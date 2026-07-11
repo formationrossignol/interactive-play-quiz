@@ -156,7 +156,7 @@ const PollResults = () => {
   const totalSessions = store?.sessions.length ?? 0;
 
   return (
-    <div style={{ minHeight: "100vh", backgroundColor: "var(--ap-paper)" }}>
+    <div style={{ minHeight: "100vh" }}>
       <Header subtitle="Résultats du sondage" />
       <div className="mx-auto max-w-4xl px-6 py-10">
         <button

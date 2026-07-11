@@ -92,7 +92,7 @@ export default function ExamAdmin() {
   const completed = attempts.filter((a) => a.status === 'submitted' || a.status === 'auto-submitted');
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--ap-paper)', paddingBottom: 80 }}>
+    <div style={{ minHeight: '100vh', paddingBottom: 80 }}>
       <style>{`
         .ea-row { display: grid; gap: 16px; }
         @media (min-width: 600px) { .ea-row { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); } }
@@ -392,7 +392,7 @@ const outlineBtn: React.CSSProperties = {
 };
 
 const wrapSt: React.CSSProperties = {
-  minHeight: '100vh', background: 'var(--ap-paper)',
+  minHeight: '100vh',
   display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
   padding: 24, gap: 12,
 };

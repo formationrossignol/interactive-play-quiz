@@ -351,7 +351,7 @@ export default function ExamRoom() {
     const timerWarn = secondsLeft !== null && secondsLeft < 300 && secondsLeft >= 120;
 
     return (
-      <div style={{ minHeight: '100vh', background: 'var(--ap-paper)', paddingBottom: 100 }}>
+      <div style={{ minHeight: '100vh', paddingBottom: 100 }}>
         <style>{`
           .er-opt { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border: 2px solid var(--ap-line); border-radius: var(--ap-r-sm); cursor: pointer; transition: border-color .15s, background .15s; margin-bottom: 8px; font-weight: 700; font-size: 14px; color: var(--ap-ink); background: var(--ap-paper); }
           .er-opt:hover { border-color: var(--ap-brand); background: var(--ap-brand-soft); }
@@ -528,7 +528,7 @@ export default function ExamRoom() {
 function Screen({ children, maxWidth = 400 }: { children: React.ReactNode; maxWidth?: number }) {
   return (
     <div style={{
-      minHeight: '100vh', background: 'var(--ap-paper)',
+      minHeight: '100vh',
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
       padding: 24,
     }}>

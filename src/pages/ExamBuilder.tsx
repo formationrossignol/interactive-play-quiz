@@ -146,7 +146,7 @@ export default function ExamBuilder() {
   if (!user) return null;
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--ap-paper)', paddingBottom: 80 }}>
+    <div style={{ minHeight: '100vh', paddingBottom: 80 }}>
       <style>{`
         .eb-input {
           width: 100%; padding: 10px 14px;

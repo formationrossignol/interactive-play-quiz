@@ -129,7 +129,7 @@ const ProfilePage = () => {
   if (!user) return null;
 
   return (
-    <div style={{ minHeight: "100vh", backgroundColor: "var(--ap-paper)" }}>
+    <div style={{ minHeight: "100vh" }}>
       <Header subtitle={t("myProfile")} />
 
       <div className="mx-auto max-w-4xl px-6 py-10">

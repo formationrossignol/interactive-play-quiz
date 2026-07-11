@@ -25,7 +25,7 @@ export default function MyExams() {
   if (!user) return null;
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--ap-paper)' }}>
+    <div style={{ minHeight: '100vh' }}>
       <Header />
       <div style={{ maxWidth: 820, margin: '0 auto', padding: '24px 16px' }}>
         {/* Header row */}
