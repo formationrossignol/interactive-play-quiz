@@ -10,6 +10,7 @@ import {
   type Module,
 } from "@/lib/courseStorage";
 import { getQuizById } from "@/lib/quizStorage";
+import { sanitizeHtml } from "@/lib/sanitizeHtml";
 import { toast } from "sonner";
 
 /* ─── Type system ──────────────────────────────────────────────── */
@@ -478,7 +479,7 @@ const CourseViewer = () => {
               {/* ── Text ── */}
               {lesson.type === "text" && (
                 lesson.content ? (
-                  <div className="cv-prose" dangerouslySetInnerHTML={{ __html: lesson.content }} />
+                  <div className="cv-prose" dangerouslySetInnerHTML={{ __html: sanitizeHtml(lesson.content) }} />
                 ) : (
                   <p style={{ color: "var(--ap-muted)", fontStyle: "italic", fontSize: 14 }}>Aucun contenu rédigé.</p>
                 )
@@ -603,7 +604,7 @@ const CourseViewer = () => {
                   <div
                     className="cv-prose"
                     style={{ background: "var(--ap-card)", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-lg)", boxShadow: "0 5px 0 var(--ap-line)", padding: "28px 32px" }}
-                    dangerouslySetInnerHTML={{ __html: renderMarkdown(lesson.content) }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(renderMarkdown(lesson.content)) }}
                   />
                 ) : lesson.documentMimeType === "application/pdf" ? (
                   <div style={{ borderRadius: "var(--ap-r-lg)", overflow: "hidden", border: "2px solid var(--ap-line)", boxShadow: "0 5px 0 var(--ap-line)" }}>
