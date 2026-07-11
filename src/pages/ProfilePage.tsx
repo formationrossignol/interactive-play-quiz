@@ -5,6 +5,7 @@ import { getCurrentUser, updateProfile, User as AuthUser, type Theme, type Langu
 import { getUserQuizzes } from "@/lib/quizStorage";
 import { setLanguage as setI18nLanguage, t } from "@/lib/i18n";
 import { Header } from "@/components/Header";
+import { SecuritySection } from "@/components/SecuritySection";
 import { Save, Trophy, BookOpen, Clock, Sun, Moon, Zap, Building2, User } from "lucide-react";
 import { toast } from "sonner";
 
@@ -319,6 +320,9 @@ const ProfilePage = () => {
               </div>
             </div>
           </div>
+
+          {/* Security */}
+          <SecuritySection />
 
         </div>
       </div>
