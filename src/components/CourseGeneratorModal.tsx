@@ -35,6 +35,11 @@ export const CourseGeneratorModal = ({ open, onClose }: Props) => {
   const [progress, setProgress] = useState("");
   const [error, setError] = useState("");
   const [dragging, setDragging] = useState(false);
+
+  // WARNING: VITE_* env vars are inlined into the public JS bundle by Vite at build time.
+  // Never set VITE_ANTHROPIC_API_KEY to a real key in a production deployment — it would be
+  // extractable by anyone visiting the site. Only the per-session pasted key (below,
+  // stored in sessionStorage) is safe for a publicly deployed instance.
   const [apiKey, setApiKey] = useState(
     () => import.meta.env.VITE_ANTHROPIC_API_KEY || sessionStorage.getItem("anthropic_key") || ""
   );
