@@ -250,7 +250,7 @@ const CourseBuilder = () => {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: "var(--ap-paper)", display: "flex", flexDirection: "column" }}>
+    <div className="min-h-screen" style={{ display: "flex", flexDirection: "column" }}>
       <Header
         subtitle={courseId ? "Modifier le cours" : "Nouveau cours"}
         toolbar={

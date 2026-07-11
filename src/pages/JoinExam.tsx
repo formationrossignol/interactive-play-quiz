@@ -46,7 +46,6 @@ export default function JoinExam() {
   return (
     <div style={{
       minHeight: '100vh',
-      backgroundColor: 'var(--ap-paper)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',

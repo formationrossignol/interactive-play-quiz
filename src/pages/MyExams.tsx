@@ -25,7 +25,7 @@ export default function MyExams() {
   if (!user) return null;
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--ap-paper)' }}>
+    <div style={{ minHeight: '100vh' }}>
       <Header />
       <div style={{ maxWidth: 820, margin: '0 auto', padding: '24px 16px' }}>
         {/* Header row */}
@@ -84,14 +84,12 @@ export default function MyExams() {
               return (
                 <div
                   key={exam.id}
+                  className="ap-card ap-card--hover"
                   style={{
-                    background: 'var(--ap-card)', border: '2px solid var(--ap-line)',
-                    borderRadius: 'var(--ap-r-lg)', padding: '18px 22px',
+                    padding: '18px 22px',
                     display: 'flex', alignItems: 'center', gap: 16,
-                    cursor: 'pointer', transition: 'border-color .15s',
+                    cursor: 'pointer',
                   }}
-                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--ap-brand)'; }}
-                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--ap-line)'; }}
                   onClick={() => navigate(`/exam/${exam.id}/admin`)}
                 >
                   <div style={{ flex: 1, minWidth: 0 }}>

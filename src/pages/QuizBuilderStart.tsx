@@ -55,7 +55,7 @@ export const QuizBuilderStart = () => {
     : QUIZ_TEMPLATES.slice(0, PREVIEW_COUNT);
 
   return (
-    <div style={{ minHeight: "100vh", backgroundColor: "var(--ap-paper)" }}>
+    <div style={{ minHeight: "100vh" }}>
       <Header
         subtitle={
           isSlide

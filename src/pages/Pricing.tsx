@@ -59,7 +59,7 @@ const Pricing = () => {
   ];
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", backgroundColor: "var(--ap-paper)" }}>
+    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
       <Header />
       <main style={{ flex: 1 }}>
         {/* Hero */}

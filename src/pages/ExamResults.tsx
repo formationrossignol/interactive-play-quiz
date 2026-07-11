@@ -58,7 +58,7 @@ export default function ExamResults() {
     .filter(Boolean);
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--ap-paper)', paddingBottom: 80 }}>
+    <div style={{ minHeight: '100vh', paddingBottom: 80 }}>
       {/* Header */}
       <div style={{
         background: 'var(--ap-card)', borderBottom: '2px solid var(--ap-line)',
@@ -188,7 +188,7 @@ function Stat({ label, value }: { label: string; value: string }) {
 }
 
 const wrapSt: React.CSSProperties = {
-  minHeight: '100vh', background: 'var(--ap-paper)',
+  minHeight: '100vh',
   display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
   padding: 24, gap: 12,
 };

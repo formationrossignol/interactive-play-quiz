@@ -1,4 +1,7 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
+import { initAuth } from "@/lib/auth";
+import { RouteTransition } from "@/components/RouteTransition";
+import { RouteFallback } from "@/components/RouteFallback";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -47,8 +50,20 @@ const QuestionBank = lazy(() => import("./pages/QuestionBank"));
 const PollResults = lazy(() => import("./pages/PollResults"));
 const QuizResults = lazy(() => import("./pages/QuizResults"));
 const PreviewPage = lazy(() => import("./pages/PreviewPage"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 
 const queryClient = new QueryClient();
+
+/** Blocks route rendering until the Supabase session has been restored,
+    so getCurrentUser() is reliable from the first page mount. */
+const AuthGate = ({ children }: { children: ReactNode }) => {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    void initAuth().then(() => setReady(true));
+  }, []);
+  if (!ready) return null;
+  return <>{children}</>;
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -56,11 +71,14 @@ const App = () => (
       <div className="ap-app">
         <Toaster />
         <Sonner />
+        <AuthGate>
         <BrowserRouter>
-          <Suspense fallback={null}>
+          <Suspense fallback={<RouteFallback />}>
+            <RouteTransition>
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<AuthPage />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/builder-start" element={<QuizBuilderStart />} />
               <Route path="/builder" element={<QuizBuilder />} />
               <Route path="/my-quizzes" element={<MyQuizzes />} />
@@ -95,8 +113,10 @@ const App = () => (
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
+            </RouteTransition>
           </Suspense>
         </BrowserRouter>
+        </AuthGate>
       </div>
     </TooltipProvider>
   </QueryClientProvider>
