@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { getCurrentUser, setCurrentUser, User as AuthUser, type Theme, type Language, type Plan } from "@/lib/auth";
+import { getCurrentUser, updateProfile, User as AuthUser, type Theme, type Language, type Plan } from "@/lib/auth";
 import { getUserQuizzes } from "@/lib/quizStorage";
 import { setLanguage as setI18nLanguage, t } from "@/lib/i18n";
 import { Header } from "@/components/Header";
@@ -104,15 +104,14 @@ const ProfilePage = () => {
     });
   }, [navigate]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!user) return;
     if (!username.trim()) { toast.error(t("usernameRequired")); return; }
-    const updatedUser: AuthUser = { ...user, username: username.trim(), theme, language };
-    setCurrentUser(updatedUser);
+    const updatedUser = await updateProfile({ username: username.trim(), theme, language });
+    if (!updatedUser) { toast.error(t("loginError")); return; }
     setUser(updatedUser);
     setI18nLanguage(language);
-    if (theme === "dark") document.documentElement.classList.add("dark");
-    else document.documentElement.classList.remove("dark");
+    document.documentElement.classList.toggle("dark", theme === "dark");
     toast.success(t("profileUpdated"));
     setTimeout(() => window.location.reload(), 500);
   };
