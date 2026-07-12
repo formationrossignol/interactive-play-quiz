@@ -328,13 +328,12 @@ function AttemptDetail({ att, exam, quiz }: { att: Attempt; exam: Exam; quiz: Re
                 correct = checkCorrect(q, given);
               }
               return (
-                <div key={qId} style={{
+                <div key={qId} title={`Q${i + 1}`} style={{
                   width: 28, height: 28, borderRadius: 6, fontSize: 11, fontWeight: 800,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   background: noAnswer ? 'var(--ap-paper-2)' : correct === true ? '#e8faf3' : correct === false ? '#fff3f0' : '#eef4ff',
                   color: noAnswer ? 'var(--ap-muted)' : correct === true ? '#15c08a' : correct === false ? '#ff5a4d' : '#2f7bff',
                   border: `1.5px solid ${noAnswer ? 'var(--ap-line)' : correct === true ? '#4dd9a0' : correct === false ? '#ff9e96' : '#89b4ff'}`,
-                  title: `Q${i + 1}`,
                 }}>
                   {i + 1}
                 </div>
