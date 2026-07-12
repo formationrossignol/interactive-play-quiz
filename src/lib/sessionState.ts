@@ -372,3 +372,93 @@ export const subscribeToSessionState = (
 
   return channel;
 };
+
+// --- Server-side scoring (Edge Functions) ---
+// These replace direct writes to session_state/session_quiz_answers from the
+// browser for anything answer-related — the client never holds an answer key
+// or computes its own score (audit findings C-1/H-6).
+
+export const createLiveSession = async (
+  gameCode: string,
+  title: string,
+  questions: unknown[]
+): Promise<boolean> => {
+  const { error } = await supabase.functions.invoke("create-session", {
+    body: { game_code: gameCode, title, questions },
+  });
+  if (error) console.error("[createLiveSession error]", gameCode, error);
+  return !error;
+};
+
+export const advanceLiveQuestion = async (
+  gameCode: string,
+  questionIndex: number,
+  gameState: SharedGameState,
+  timeLeft: number
+): Promise<{ ok: boolean; questionStartedAt: string | null }> => {
+  const { data, error } = await supabase.functions.invoke("advance-question", {
+    body: { game_code: gameCode, question_index: questionIndex, game_state: gameState, time_left: timeLeft },
+  });
+  if (error) {
+    console.error("[advanceLiveQuestion error]", gameCode, error);
+    return { ok: false, questionStartedAt: null };
+  }
+  return { ok: true, questionStartedAt: (data as { question_started_at: string | null }).question_started_at };
+};
+
+// Mirrors submit-answer's response shape (Task 5) — correctAnswer/correctValue/
+// correctOrder/correctMatches/blanks together cover all 7 question types'
+// answer-key shapes; only the field matching the answered question's type is
+// non-null in any given response.
+export interface SubmitAnswerResult {
+  ok: boolean;
+  correct: boolean;
+  earnedPoints: number;
+  correctAnswer: unknown;
+  correctValue: unknown;
+  correctOrder: number[] | null;
+  correctMatches: { leftId: string; rightId: string }[] | null;
+  blanks: unknown;
+}
+
+const EMPTY_ANSWER_KEY = {
+  correctAnswer: null,
+  correctValue: null,
+  correctOrder: null,
+  correctMatches: null,
+  blanks: null,
+} as const;
+
+export const submitAnswerToServer = async (
+  gameCode: string,
+  playerId: string,
+  questionIndex: number,
+  answer: number | string | null
+): Promise<SubmitAnswerResult> => {
+  const { data, error } = await supabase.functions.invoke("submit-answer", {
+    body: { game_code: gameCode, player_id: playerId, question_index: questionIndex, answer },
+  });
+  if (error) {
+    console.error("[submitAnswerToServer error]", gameCode, error);
+    return { ok: false, correct: false, earnedPoints: 0, ...EMPTY_ANSWER_KEY };
+  }
+  const result = data as {
+    correct: boolean;
+    earnedPoints: number;
+    correctAnswer: unknown;
+    correctValue: unknown;
+    correctOrder: number[] | null;
+    correctMatches: { leftId: string; rightId: string }[] | null;
+    blanks: unknown;
+  };
+  return {
+    ok: true,
+    correct: result.correct,
+    earnedPoints: result.earnedPoints,
+    correctAnswer: result.correctAnswer,
+    correctValue: result.correctValue,
+    correctOrder: result.correctOrder,
+    correctMatches: result.correctMatches,
+    blanks: result.blanks,
+  };
+};
