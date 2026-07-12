@@ -1,5 +1,6 @@
 import { isValid } from "date-fns";
 import { supabase } from "./supabase";
+import type { Question } from "./questionTypes";
 
 export type SharedGameState =
   | "waiting"
@@ -378,15 +379,33 @@ export const subscribeToSessionState = (
 // browser for anything answer-related — the client never holds an answer key
 // or computes its own score (audit findings C-1/H-6).
 
+/** supabase-js's FunctionsHttpError.message is a hardcoded generic string
+ *  ("Edge Function returned a non-2xx status code") for every non-2xx
+ *  response — the actual per-endpoint reason (404/409/500, each meaningfully
+ *  different across submit-answer/create-session/advance-question) only
+ *  lives in error.context (the raw Response). Surface the HTTP status at
+ *  minimum so logs can distinguish "not found" from "not currently active"
+ *  from "server error" instead of all looking identical. */
+async function describeFunctionsError(error: unknown): Promise<string> {
+  const context = (error as { context?: Response }).context;
+  if (!(context instanceof Response)) return String(error);
+  try {
+    const body = await context.clone().json();
+    return `HTTP ${context.status}: ${body?.error ?? JSON.stringify(body)}`;
+  } catch {
+    return `HTTP ${context.status}`;
+  }
+}
+
 export const createLiveSession = async (
   gameCode: string,
   title: string,
-  questions: unknown[]
+  questions: Question[]
 ): Promise<boolean> => {
   const { error } = await supabase.functions.invoke("create-session", {
     body: { game_code: gameCode, title, questions },
   });
-  if (error) console.error("[createLiveSession error]", gameCode, error);
+  if (error) console.error("[createLiveSession error]", gameCode, await describeFunctionsError(error));
   return !error;
 };
 
@@ -400,7 +419,7 @@ export const advanceLiveQuestion = async (
     body: { game_code: gameCode, question_index: questionIndex, game_state: gameState, time_left: timeLeft },
   });
   if (error) {
-    console.error("[advanceLiveQuestion error]", gameCode, error);
+    console.error("[advanceLiveQuestion error]", gameCode, await describeFunctionsError(error));
     return { ok: false, questionStartedAt: null };
   }
   return { ok: true, questionStartedAt: (data as { question_started_at: string | null }).question_started_at };
@@ -439,7 +458,7 @@ export const submitAnswerToServer = async (
     body: { game_code: gameCode, player_id: playerId, question_index: questionIndex, answer },
   });
   if (error) {
-    console.error("[submitAnswerToServer error]", gameCode, error);
+    console.error("[submitAnswerToServer error]", gameCode, await describeFunctionsError(error));
     return { ok: false, correct: false, earnedPoints: 0, ...EMPTY_ANSWER_KEY };
   }
   const result = data as {
@@ -451,14 +470,5 @@ export const submitAnswerToServer = async (
     correctMatches: { leftId: string; rightId: string }[] | null;
     blanks: unknown;
   };
-  return {
-    ok: true,
-    correct: result.correct,
-    earnedPoints: result.earnedPoints,
-    correctAnswer: result.correctAnswer,
-    correctValue: result.correctValue,
-    correctOrder: result.correctOrder,
-    correctMatches: result.correctMatches,
-    blanks: result.blanks,
-  };
+  return { ok: true, ...result };
 };
