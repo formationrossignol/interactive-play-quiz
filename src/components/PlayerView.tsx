@@ -162,11 +162,19 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
   // "quiz" entries retry via submit-answer (server-side scoring); "poll" entries
   // retry via the pre-existing direct upsertPlayerInSession path — polls have
   // no session_quiz_answers row for submit-answer to look up (see submitAnswer).
+  // (No gameCode field on the quiz variant — every retry closure already reads
+  // the outer gameCode prop, which is fixed for the lifetime of this component.)
   const pendingAnswerRef = useRef<
-    | { kind: 'quiz'; gameCode: string; playerId: string; questionIndex: number; answer: number | string }
+    | { kind: 'quiz'; playerId: string; questionIndex: number; answer: number | string }
     | { kind: 'poll'; player: SharedPlayer; questionIndex: number }
     | null
   >(null);
+  // Guards against two scheduled retries (1.5s/4s/9s/18s) overlapping if the
+  // first is still in flight when the next timer fires — without this, both
+  // could resolve ok and each add earnedPoints to the local playerScore
+  // accumulator, double-counting client-side (server-side idempotency
+  // protects the DB, but not this display value).
+  const retryInFlightRef = useRef(false);
 
   // Wall-clock end time of the current timed phase (question or transition)
   const timerEndRef = useRef<number | null>(null);
@@ -389,19 +397,43 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
         return;
       }
 
-      const result = await submitAnswerToServer(gameCode, pending.playerId, pending.questionIndex, pending.answer);
-      if (result.ok) {
-        setLastAnswerCorrect(result.correct);
-        setLastEarnedPoints(result.earnedPoints);
-        setPlayerScore((prev) => prev + result.earnedPoints);
-        setAnswerKey({
-          correctAnswer: result.correctAnswer,
-          correctValue: result.correctValue,
-          correctOrder: result.correctOrder,
-          correctMatches: result.correctMatches,
-          blanks: result.blanks,
-        });
-        pendingAnswerRef.current = null;
+      if (retryInFlightRef.current) return;
+      retryInFlightRef.current = true;
+      try {
+        const result = await submitAnswerToServer(gameCode, pending.playerId, pending.questionIndex, pending.answer);
+        if (result.ok) {
+          setLastAnswerCorrect(result.correct);
+          setLastEarnedPoints(result.earnedPoints);
+          setPlayerScore((prev) => prev + result.earnedPoints);
+          setAnswerKey({
+            correctAnswer: result.correctAnswer,
+            correctValue: result.correctValue,
+            correctOrder: result.correctOrder,
+            correctMatches: result.correctMatches,
+            blanks: result.blanks,
+          });
+          // Mirror into sessionStorage, same as the initial call — otherwise a
+          // refresh mid-reveal restores the stale "failed" snapshot even
+          // though this retry succeeded (see "Restore answer feedback" effect).
+          const storedPlayerRaw = sessionStorage.getItem(`quiz-player-${gameCode}`);
+          if (storedPlayerRaw) {
+            try {
+              const storedPlayer = JSON.parse(storedPlayerRaw) as SharedPlayer;
+              const updated: SharedPlayer = {
+                ...storedPlayer,
+                score: storedPlayer.score + result.earnedPoints,
+                correctAnswers: (storedPlayer.correctAnswers ?? 0) + (result.correct ? 1 : 0),
+                lastAnswerQuestionIndex: pending.questionIndex,
+                lastAnswerCorrect: result.correct,
+                lastEarnedPoints: result.earnedPoints,
+              };
+              sessionStorage.setItem(`quiz-player-${gameCode}`, JSON.stringify(updated));
+            } catch {}
+          }
+          pendingAnswerRef.current = null;
+        }
+      } finally {
+        retryInFlightRef.current = false;
       }
     };
 
@@ -417,9 +449,17 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
     };
   }, [hasAnswered, answerPending, gameCode]);
 
-  // Clear pending answer when question changes
+  // Clear pending answer when question changes. Also resets answerPending/
+  // answerKey defensively: today a new question can't arrive before the prior
+  // submit-answer round trip settles, but that's an implicit assumption about
+  // host pacing, not an enforced invariant — without this, a violation of that
+  // assumption would leave the player stuck on "Vérification en cours…" (or
+  // showing the previous question's answer key) for every subsequent question.
   useEffect(() => {
     pendingAnswerRef.current = null;
+    retryInFlightRef.current = false;
+    setAnswerPending(false);
+    setAnswerKey(null);
   }, [currentQuestion]);
 
   // Reset type-specific state when question or question data changes
@@ -528,45 +568,64 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
     if (!playerId) return;
     setAnswerPending(true);
 
-    const result = await submitAnswerToServer(gameCode, playerId, currentQuestion, answer);
+    try {
+      const result = await submitAnswerToServer(gameCode, playerId, currentQuestion, answer);
 
-    setAnswerPending(false);
-    setLastAnswerCorrect(result.correct);
-    setLastEarnedPoints(result.earnedPoints);
-    setPlayerScore((prev) => prev + (result.ok ? result.earnedPoints : 0));
-    setAnswerKey({
-      correctAnswer: result.correctAnswer,
-      correctValue: result.correctValue,
-      correctOrder: result.correctOrder,
-      correctMatches: result.correctMatches,
-      blanks: result.blanks,
-    });
+      setLastAnswerCorrect(result.correct);
+      setLastEarnedPoints(result.earnedPoints);
+      setPlayerScore((prev) => prev + (result.ok ? result.earnedPoints : 0));
+      // Only set answerKey on success — on failure result.correctAnswer etc.
+      // are all null (EMPTY_ANSWER_KEY), and rendering that as-is would show
+      // a specific, plausible-looking (but fabricated) "correct answer" for
+      // several question types instead of leaving the reveal text blank
+      // until a retry actually succeeds.
+      if (result.ok) {
+        setAnswerKey({
+          correctAnswer: result.correctAnswer,
+          correctValue: result.correctValue,
+          correctOrder: result.correctOrder,
+          correctMatches: result.correctMatches,
+          blanks: result.blanks,
+        });
+      }
 
-    // Mirror the result into sessionStorage so a page refresh mid-reveal
-    // (handled by the "Restore answer feedback" effect below) shows the
-    // same correct/points instead of resetting to a blank state.
-    const storedPlayerRaw = sessionStorage.getItem(`quiz-player-${gameCode}`);
-    if (storedPlayerRaw) {
-      try {
-        const storedPlayer = JSON.parse(storedPlayerRaw) as SharedPlayer;
-        const updated: SharedPlayer = {
-          ...storedPlayer,
-          score: storedPlayer.score + (result.ok ? result.earnedPoints : 0),
-          correctAnswers: (storedPlayer.correctAnswers ?? 0) + (result.correct ? 1 : 0),
-          lastAnswerQuestionIndex: currentQuestion,
-          lastAnswerCorrect: result.correct,
-          lastEarnedPoints: result.earnedPoints,
-        };
-        sessionStorage.setItem(`quiz-player-${gameCode}`, JSON.stringify(updated));
-      } catch {}
-    }
+      // Mirror the result into sessionStorage so a page refresh mid-reveal
+      // (handled by the "Restore answer feedback" effect below) shows the
+      // same correct/points instead of resetting to a blank state.
+      const storedPlayerRaw = sessionStorage.getItem(`quiz-player-${gameCode}`);
+      if (storedPlayerRaw) {
+        try {
+          const storedPlayer = JSON.parse(storedPlayerRaw) as SharedPlayer;
+          const updated: SharedPlayer = {
+            ...storedPlayer,
+            score: storedPlayer.score + (result.ok ? result.earnedPoints : 0),
+            correctAnswers: (storedPlayer.correctAnswers ?? 0) + (result.correct ? 1 : 0),
+            lastAnswerQuestionIndex: currentQuestion,
+            lastAnswerCorrect: result.correct,
+            lastEarnedPoints: result.earnedPoints,
+          };
+          sessionStorage.setItem(`quiz-player-${gameCode}`, JSON.stringify(updated));
+        } catch {}
+      }
 
-    if (!result.ok) {
-      // submitAnswerToServer already logged the error; retry effect below
-      // will attempt again.
-      pendingAnswerRef.current = { kind: 'quiz', gameCode, playerId, questionIndex: currentQuestion, answer };
-    } else {
-      pendingAnswerRef.current = null;
+      if (!result.ok) {
+        // submitAnswerToServer already logged the error; retry effect below
+        // will attempt again.
+        pendingAnswerRef.current = { kind: 'quiz', playerId, questionIndex: currentQuestion, answer };
+      } else {
+        pendingAnswerRef.current = null;
+      }
+    } catch (err) {
+      // submitAnswerToServer is designed to never throw (it catches its own
+      // errors and returns { ok: false, ... }), but guard anyway: without
+      // this, an unexpected throw here would leave answerPending stuck true
+      // forever (nothing else clears it once this function exits early),
+      // locking the player on "Vérification en cours…" for every subsequent
+      // question too, since the pending state isn't otherwise question-scoped.
+      console.error('[submitAnswer unexpected error]', gameCode, err);
+      pendingAnswerRef.current = { kind: 'quiz', playerId, questionIndex: currentQuestion, answer };
+    } finally {
+      setAnswerPending(false);
     }
   };
 
