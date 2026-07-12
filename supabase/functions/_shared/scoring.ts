@@ -12,12 +12,16 @@ export interface QuestionForScoring {
  *  answer key the player could read; it now runs server-side against
  *  session_quiz_answers, which the player never receives).
  *
- *  Quiz-only: the caller (submit-answer) must gate on the session's isPoll
- *  flag BEFORE calling this — polls never have a "correct" answer (the
- *  client short-circuits to false/0 for polls today), and poll-only question
- *  types (open-text, likert-scale, frequency-scale, star-rating, nps-scale)
- *  are not handled below and will hit the `default: throw` case. */
-export function checkAnswerCorrect(question: QuestionForScoring, answer: unknown): boolean {
+ *  Quiz-only: polls never have a "correct" answer (the client short-circuits
+ *  to false/0 for polls today). `isPoll` is a hard boundary enforced here —
+ *  not just caller discipline — so a forgotten gate at the call site fails
+ *  loudly for every question type, not only the poll-exclusive ones
+ *  (open-text, likert-scale, frequency-scale, star-rating, nps-scale) that
+ *  would otherwise hit the `default: throw` case on their own. */
+export function checkAnswerCorrect(question: QuestionForScoring, answer: unknown, isPoll: boolean): boolean {
+  if (isPoll) {
+    throw new Error("checkAnswerCorrect is quiz-only — polls have no correct answer to check against");
+  }
   switch (question.type) {
     case "multiple-choice":
     case "single-choice":
