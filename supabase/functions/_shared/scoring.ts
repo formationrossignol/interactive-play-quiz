@@ -10,7 +10,13 @@ export interface QuestionForScoring {
 /** Ported from src/components/PlayerView.tsx's client-side correction logic
  *  (audit findings C-1/H-6 — this used to run in the browser against an
  *  answer key the player could read; it now runs server-side against
- *  session_quiz_answers, which the player never receives). */
+ *  session_quiz_answers, which the player never receives).
+ *
+ *  Quiz-only: the caller (submit-answer) must gate on the session's isPoll
+ *  flag BEFORE calling this — polls never have a "correct" answer (the
+ *  client short-circuits to false/0 for polls today), and poll-only question
+ *  types (open-text, likert-scale, frequency-scale, star-rating, nps-scale)
+ *  are not handled below and will hit the `default: throw` case. */
 export function checkAnswerCorrect(question: QuestionForScoring, answer: unknown): boolean {
   switch (question.type) {
     case "multiple-choice":
@@ -35,8 +41,10 @@ export function checkAnswerCorrect(question: QuestionForScoring, answer: unknown
     case "fill-blank": {
       try {
         const submitted: string[] = JSON.parse(String(answer));
-        return (question.blanks ?? []).every(
-          (b, i) => submitted[i]?.toLowerCase().trim() === String(b.correctAnswer).toLowerCase().trim()
+        const blanks = question.blanks ?? [];
+        return (
+          blanks.length > 0 &&
+          blanks.every((b, i) => submitted[i]?.toLowerCase().trim() === String(b.correctAnswer).toLowerCase().trim())
         );
       } catch {
         return false;
@@ -56,7 +64,8 @@ export function checkAnswerCorrect(question: QuestionForScoring, answer: unknown
     case "matching": {
       try {
         const submitted: Record<string, string> = JSON.parse(String(answer));
-        return (question.correctMatches ?? []).every((m) => submitted[m.leftId] === m.rightId);
+        const matches = question.correctMatches ?? [];
+        return matches.length > 0 && matches.every((m) => submitted[m.leftId] === m.rightId);
       } catch {
         return false;
       }
@@ -79,6 +88,12 @@ export function calculateEarnedPoints(
   correct: boolean
 ): number {
   if (!correct) return 0;
-  const ratio = Math.min(1, Math.max(0, 1 - elapsedSeconds / timeLimitSeconds));
+  // Guard against a 0-or-negative timeLimit (malformed/imported quiz data) and
+  // negative elapsed (clock skew) — both would otherwise divide-by-zero or
+  // invert the ratio into NaN, permanently poisoning the running score this
+  // gets added to.
+  const safeLimit = Math.max(1, timeLimitSeconds);
+  const safeElapsed = Math.max(0, elapsedSeconds);
+  const ratio = Math.min(1, Math.max(0, 1 - safeElapsed / safeLimit));
   return Math.max(Math.round(basePoints * ratio), Math.round(basePoints * 0.1));
 }

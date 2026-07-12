@@ -102,3 +102,23 @@ Deno.test("calculateEarnedPoints: partial ratio between 0 and timeLimit", () => 
 Deno.test("calculateEarnedPoints: zero when incorrect regardless of timing", () => {
   assertEquals(calculateEarnedPoints(100, 0, 30, false), 0);
 });
+
+Deno.test("calculateEarnedPoints: timeLimit of 0 doesn't produce NaN (malformed quiz data)", () => {
+  // timeLimit clamped to a minimum of 1s; elapsed=0 relative to that gives a
+  // full-points ratio — not NaN, and not incorrectly zeroed either.
+  assertEquals(calculateEarnedPoints(100, 0, 0, true), 100);
+});
+
+Deno.test("calculateEarnedPoints: negative elapsed (clock skew) doesn't exceed full points", () => {
+  assertEquals(calculateEarnedPoints(100, -5, 30, true), 100);
+});
+
+Deno.test("fill-blank: empty blanks array is never correct (not vacuously true)", () => {
+  const q: QuestionForScoring = { type: "fill-blank", blanks: [] };
+  assertEquals(checkAnswerCorrect(q, JSON.stringify([])), false);
+});
+
+Deno.test("matching: empty correctMatches array is never correct (not vacuously true)", () => {
+  const q: QuestionForScoring = { type: "matching", correctMatches: [] };
+  assertEquals(checkAnswerCorrect(q, JSON.stringify({})), false);
+});
