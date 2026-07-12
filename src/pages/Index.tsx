@@ -337,10 +337,10 @@ const Index = () => {
 
         {/* ═══ Content type tiles ═══ */}
         <section className="mb-16 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-          {contentTypes.map(({ key, label, titleKey, title, descKey, desc, ctaKey, cta, accentVar, accentDeepVar, badgeClass, btnClass, icon, route }) => {
-            const resolvedTitle = titleKey ? t(titleKey) : (title as string);
-            const resolvedDesc = descKey ? t(descKey) : (desc as string);
-            const resolvedCta = ctaKey ? t(ctaKey) : (cta as string);
+          {contentTypes.map(({ key, label, titleKey, descKey, ctaKey, accentVar, accentDeepVar, badgeClass, btnClass, icon, route }) => {
+            const resolvedTitle = t(titleKey);
+            const resolvedDesc = t(descKey);
+            const resolvedCta = t(ctaKey);
             return (
               <div
                 key={key}
