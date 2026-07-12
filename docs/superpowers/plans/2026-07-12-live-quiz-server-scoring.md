@@ -443,7 +443,7 @@ Expected: PASS (6 tests).
 ```bash
 npm test
 ```
-Expected: all suites pass (existing `authMigration`/`sanitizeHtml`/`fileValidation` plus the new `sessionState` suite).
+Expected: all suites pass (existing `authMigration` plus the new `sessionState` suite — `sanitizeHtml`/`fileValidation` live on the separate, unmerged `fix/audit-remediation-phase1` branch, not this one).
 
 - [ ] **Step 6: Commit**
 
