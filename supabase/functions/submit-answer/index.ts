@@ -154,6 +154,15 @@ Deno.serve(async (req) => {
     // DIFFERENT players in the same session serialize instead of racing (a
     // naive read-modify-write here would let one player's write silently
     // overwrite another's under ordinary concurrent play).
+    //
+    // Scope note: the RPC merges by full-row REPLACE on matching id, not a
+    // delta/increment — it protects cross-player writes, not two truly
+    // concurrent submissions for the SAME player+question (e.g. overlapping
+    // client retries). Not exploitable here (both would compute the same
+    // earnedPoints for the same answer, so last-write-wins is idempotent in
+    // practice), but if this RPC is ever reused for a case where two
+    // concurrent calls for the same player could compute DIFFERENT point
+    // values, that residual race would need a delta-based merge instead.
     const { error: upsertError } = await supabase.rpc("upsert_session_player", {
       p_game_code: game_code,
       p_player: updatedPlayer,
