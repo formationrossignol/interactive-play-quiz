@@ -64,37 +64,23 @@ Deno.serve(async (req) => {
     );
 
     const publicQuestions = questions.map(stripAnswers);
-    const now = new Date().toISOString();
 
-    // Write private half first: if this fails, we bail before the public
-    // half is written, so a session is never half-created (public data
-    // visible with no matching answer key for submit-answer to use).
-    const { error: privateError } = await supabase
-      .from("session_quiz_answers")
-      .upsert({ game_code, questions, created_at: now }, { onConflict: "game_code" });
+    // Both halves are written inside a single Postgres transaction via this
+    // RPC (see supabase/migrations/20260712130000_create_session_atomic.sql)
+    // rather than two separate upserts. A two-step write here can't be made
+    // safe with simple ordering: create-session runs on EVERY host restart
+    // for the same game_code (not just first creation), so a failure between
+    // the two upserts would leave the OLD public quiz paired with the NEW
+    // private answer key — not "half-created", but silently mismatched,
+    // scoring future answers against the wrong question set.
+    const { error: rpcError } = await supabase.rpc("create_session_atomic", {
+      p_game_code: game_code,
+      p_title: title,
+      p_public_questions: publicQuestions,
+      p_private_questions: questions,
+    });
 
-    if (privateError) {
-      return new Response(JSON.stringify({ error: "Failed to store answer key" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const { error: publicError } = await supabase.from("session_state").upsert(
-      {
-        game_code,
-        players: [],
-        game_state: "waiting",
-        current_question_index: 0,
-        time_left: 0,
-        question_started_at: null,
-        quiz_data: { title, questions: publicQuestions },
-        updated_at: now,
-      },
-      { onConflict: "game_code" }
-    );
-
-    if (publicError) {
+    if (rpcError) {
       return new Response(JSON.stringify({ error: "Failed to create session" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
