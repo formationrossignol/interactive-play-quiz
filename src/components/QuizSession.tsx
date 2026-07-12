@@ -24,13 +24,13 @@ import { DEFAULT_THEME_ID, THEMES } from "@/lib/themes";
 import { hexToRgba, darkestColor, relativeLuminance } from "@/lib/color";
 import {
   ensureSessionState,
-  ensureSessionInSupabase,
+  createLiveSession,
+  advanceLiveQuestion,
   fetchSessionStateFromSupabase,
   getSessionStorageKey,
   patchSessionState,
   readSessionState,
   removePlayerFromSession,
-  resetSessionForNewRun,
   appendSessionHistory,
   readSessionHistory,
   type SharedPlayer,
@@ -339,16 +339,14 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
         if (playersToSave.length > 0) {
           appendSessionHistory(quiz.gameCode, playersToSave, quiz.questions.length);
         }
-        // Always reset — clears stale players from previous sessions
-        const ok = await resetSessionForNewRun(quiz.gameCode, { questions: quiz.questions, title: quiz.title });
+        // Always reset — clears stale players from previous sessions.
+        // create-session splits the quiz into public (quiz_data, no answer key)
+        // and private (session_quiz_answers, answer key only submit-answer reads).
+        const ok = await createLiveSession(quiz.gameCode, quiz.title, quiz.questions);
         if (!ok) {
           toast.error('Erreur Supabase lors de la réinitialisation. Vérifiez la console.');
         }
       } else {
-        const ok = await ensureSessionInSupabase(quiz.gameCode, { questions: quiz.questions, title: quiz.title });
-        if (!ok) {
-          toast.error('Erreur Supabase : les joueurs ne pourront pas rejoindre depuis un autre appareil. Vérifiez la console pour les détails.');
-        }
         syncFromStorage();
       }
 
@@ -465,10 +463,17 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
       questionEndTimeRef.current = Date.now() + timeLimit * 1000;
       setGameState('question');
       setTimeLeft(timeLimit);
-      patchSessionState(quiz.gameCode, {
-        gameState: 'question',
+      // Unlike createLiveSession, this result is checked, not discarded — a
+      // silent failure here means the host's UI advances locally while
+      // players never see the new question (their client only learns the
+      // state changed via this same write), so surfacing it matters.
+      advanceLiveQuestion(
+        quiz.gameCode,
         currentQuestionIndex,
-        timeLeft: timeLimit,
+        'question',
+        timeLimit
+      ).then(({ ok }) => {
+        if (!ok) toast.error("Erreur réseau : la question n'a peut-être pas été transmise aux joueurs.");
       });
     }, QUESTION_READING_SECS * 1000);
     return () => clearTimeout(timer);
