@@ -547,12 +547,18 @@ Read the exact current code at that location first (line numbers may have drifte
 
 ```ts
       setGameState('question');
-      void advanceLiveQuestion(
+      // Unlike createLiveSession, this result is checked, not discarded — a
+      // silent failure here means the host's UI advances locally while
+      // players never see the new question (their client only learns the
+      // state changed via this same write), so surfacing it matters.
+      advanceLiveQuestion(
         quiz.gameCode,
         currentQuestionIndex,
         'question',
         quiz.questions[currentQuestionIndex]?.timeLimit ?? 30
-      );
+      ).then(({ ok }) => {
+        if (!ok) toast.error("Erreur réseau : la question n'a peut-être pas été transmise aux joueurs.");
+      });
 ```
 
 - [ ] **Step 4: Update the import for `advanceLiveQuestion`**
@@ -564,8 +570,9 @@ In the same import block from Step 2, add:
 
 - [ ] **Step 5: Run typecheck and tests**
 
+Note: this branch's `package.json` has no `typecheck` script (that was added on a separate branch, `fix/audit-remediation-phase1`, not yet merged here) — use `tsc` directly:
 ```bash
-npm run typecheck && npm test
+npx tsc --noEmit -p tsconfig.json && npm test
 ```
 Expected: both pass. If typecheck fails because `ensureSessionInSupabase`/`resetSessionForNewRun` are still referenced elsewhere in the file, search for other call sites (`grep -n "ensureSessionInSupabase\|resetSessionForNewRun" src/components/QuizSession.tsx`) and update them the same way — there should be exactly one call site for each, both inside the `init` function replaced in Step 1.
 
@@ -776,8 +783,9 @@ Wrap the existing correct/incorrect block (unchanged) in the `else` branch of th
 
 - [ ] **Step 6: Run typecheck and tests**
 
+Note: this branch's `package.json` has no `typecheck` script — use `tsc` directly:
 ```bash
-npm run typecheck && npm test
+npx tsc --noEmit -p tsconfig.json && npm test
 ```
 Expected: both pass.
 
