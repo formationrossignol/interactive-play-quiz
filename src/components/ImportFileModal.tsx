@@ -12,6 +12,7 @@ import {
   parseFlashcardMarkdown,
   parseSlideMarkdown,
 } from "@/lib/importParsers";
+import { assertSafeImportFile } from "@/lib/fileValidation";
 
 interface Props {
   open: boolean;
@@ -262,6 +263,12 @@ export const ImportFileModal = ({ open, onClose, quizType, onImport }: Props) =>
   };
 
   const handleFile = async (file: File) => {
+    try {
+      assertSafeImportFile(file);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Fichier invalide");
+      return;
+    }
     const content = await file.text();
     const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
     const fmt: TextFormat = ext === "csv" ? "csv" : ext === "md" || ext === "markdown" ? "markdown" : "yaml";

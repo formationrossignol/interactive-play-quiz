@@ -13,4 +13,14 @@ describe('assertSafeImportFile', () => {
   it('rejects a file over 5MB', () => {
     expect(() => assertSafeImportFile(makeFile(6 * 1024 * 1024))).toThrow(/trop volumineux/i);
   });
+
+  it('accepts a file at exactly 5MB (boundary is exclusive)', () => {
+    expect(() => assertSafeImportFile(makeFile(5 * 1024 * 1024))).not.toThrow();
+  });
+
+  it('rejects a file over a custom maxBytes override even though it is under the 5MB default', () => {
+    expect(() =>
+      assertSafeImportFile(makeFile(2 * 1024 * 1024), 1 * 1024 * 1024)
+    ).toThrow(/trop volumineux/i);
+  });
 });
