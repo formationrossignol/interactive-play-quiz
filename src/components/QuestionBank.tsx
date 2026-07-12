@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Database, Plus, Search, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import * as XLSX from 'xlsx';
+import { assertSafeImportFile } from "@/lib/fileValidation";
 import type { QuizQuestionType, PollQuestionType } from "@/lib/questionTypes";
 
 export interface SavedQuestion {
@@ -54,6 +55,14 @@ export const QuestionBank = ({ onSelectQuestion }: QuestionBankProps) => {
   const handleFileImport = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+
+    try {
+      assertSafeImportFile(file);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Fichier invalide");
+      event.target.value = "";
+      return;
+    }
 
     const reader = new FileReader();
     reader.onload = (e) => {
