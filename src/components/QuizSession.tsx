@@ -459,6 +459,9 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
     const timer = setTimeout(() => {
       if (hasIntroAdvancedRef.current) return;
       hasIntroAdvancedRef.current = true;
+      // Guaranteed non-undefined here: LiveQuizPage normalizes every question
+      // with `timeLimit: question?.timeLimit ?? 30` before building `quiz`,
+      // even though the type (and questionTypes.ts) marks it optional.
       const timeLimit = quiz.questions[currentQuestionIndex].timeLimit;
       questionEndTimeRef.current = Date.now() + timeLimit * 1000;
       setGameState('question');
