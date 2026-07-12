@@ -507,7 +507,11 @@ Deno.serve(async (req) => {
       );
     }
 
-    const correct = checkAnswerCorrect(question, answer);
+    // isPoll is always false here: submit-answer is exclusively the quiz-live
+    // path (per this plan's scope decision) — polls keep using the pre-existing
+    // direct upsertPlayerInSession path, unchanged. checkAnswerCorrect's isPoll
+    // parameter is a hard boundary against future misuse, not a live branch here.
+    const correct = checkAnswerCorrect(question, answer, false);
 
     const startedAt = stateRow.question_started_at ? new Date(stateRow.question_started_at).getTime() : Date.now();
     const elapsedSeconds = Math.max(0, (Date.now() - startedAt) / 1000);
