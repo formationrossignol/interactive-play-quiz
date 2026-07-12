@@ -24,6 +24,20 @@ interface SharedPlayer {
   [key: string]: unknown;
 }
 
+/** Full answer-key payload for the reveal screen — covers every implemented
+ *  question type, not just multiple-choice/slider. Only ever returned in
+ *  response to the player's OWN submission for the CURRENT question (see the
+ *  question_index === current_question_index check below), never in advance. */
+function buildCorrectAnswerPayload(question: QuestionForScoring) {
+  return {
+    correctAnswer: question.correctAnswer ?? null,
+    correctValue: question.correctValue ?? null,
+    correctOrder: question.correctOrder ?? null,
+    correctMatches: question.correctMatches ?? null,
+    blanks: question.blanks ?? null,
+  };
+}
+
 Deno.serve(async (req) => {
   const preflight = handleCorsPreflight(req);
   if (preflight) return preflight;
@@ -68,13 +82,26 @@ Deno.serve(async (req) => {
 
     const { data: stateRow, error: stateError } = await supabase
       .from("session_state")
-      .select("players, question_started_at")
+      .select("players, question_started_at, current_question_index")
       .eq("game_code", game_code)
       .single();
 
     if (stateError || !stateRow) {
       return new Response(JSON.stringify({ error: "Session not found" }), {
         status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Trust boundary: only the question the host has actually advanced to may
+    // be answered/revealed. Without this check, any caller who knows game_code
+    // could request scoring for any question_index at any time — including
+    // ones not yet presented — and read that question's answer key from the
+    // response below. This is what actually closes audit finding H-6; the
+    // private-table split alone isn't sufficient without this check too.
+    if (question_index !== stateRow.current_question_index) {
+      return new Response(JSON.stringify({ error: "This question is not currently active" }), {
+        status: 409,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -89,7 +116,7 @@ Deno.serve(async (req) => {
         JSON.stringify({
           correct: existingPlayer.lastAnswerCorrect ?? false,
           earnedPoints: existingPlayer.lastEarnedPoints ?? 0,
-          correctAnswer: question.correctAnswer ?? question.correctValue ?? null,
+          ...buildCorrectAnswerPayload(question),
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -121,14 +148,16 @@ Deno.serve(async (req) => {
       lastEarnedPoints: earnedPoints,
     };
 
-    const nextPlayers = existingPlayer
-      ? players.map((p) => (p.id === player_id ? updatedPlayer : p))
-      : [...players, updatedPlayer];
-
-    const { error: upsertError } = await supabase
-      .from("session_state")
-      .update({ players: nextPlayers, updated_at: new Date().toISOString() })
-      .eq("game_code", game_code);
+    // Persist via the existing upsert_session_player RPC rather than a manual
+    // select-then-update: that RPC does SELECT ... FOR UPDATE + a single-row
+    // merge inside one transaction, so concurrent submit-answer calls for
+    // DIFFERENT players in the same session serialize instead of racing (a
+    // naive read-modify-write here would let one player's write silently
+    // overwrite another's under ordinary concurrent play).
+    const { error: upsertError } = await supabase.rpc("upsert_session_player", {
+      p_game_code: game_code,
+      p_player: updatedPlayer,
+    });
 
     if (upsertError) {
       return new Response(JSON.stringify({ error: "Failed to save answer" }), {
@@ -141,7 +170,7 @@ Deno.serve(async (req) => {
       JSON.stringify({
         correct,
         earnedPoints,
-        correctAnswer: question.correctAnswer ?? question.correctValue ?? null,
+        ...buildCorrectAnswerPayload(question),
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
