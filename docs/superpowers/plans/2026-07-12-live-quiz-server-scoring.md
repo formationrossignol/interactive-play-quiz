@@ -280,22 +280,50 @@ describe('advanceLiveQuestion', () => {
 });
 
 describe('submitAnswerToServer', () => {
-  it('invokes submit-answer and returns the parsed result on success', async () => {
+  it('invokes submit-answer and returns the full parsed result on success', async () => {
+    // submit-answer's actual response shape (Task 5, after review fixes)
+    // covers all 7 question types' answer-key fields, not just correctAnswer.
     invokeMock.mockResolvedValue({
-      data: { correct: true, earnedPoints: 80, correctAnswer: 2 },
+      data: {
+        correct: true,
+        earnedPoints: 80,
+        correctAnswer: 2,
+        correctValue: null,
+        correctOrder: null,
+        correctMatches: null,
+        blanks: null,
+      },
       error: null,
     });
     const result = await submitAnswerToServer('123456', 'player-1', 0, 2);
-    expect(result).toEqual({ ok: true, correct: true, earnedPoints: 80, correctAnswer: 2 });
+    expect(result).toEqual({
+      ok: true,
+      correct: true,
+      earnedPoints: 80,
+      correctAnswer: 2,
+      correctValue: null,
+      correctOrder: null,
+      correctMatches: null,
+      blanks: null,
+    });
     expect(invokeMock).toHaveBeenCalledWith('submit-answer', {
       body: { game_code: '123456', player_id: 'player-1', question_index: 0, answer: 2 },
     });
   });
 
-  it('returns ok:false when the function call errors', async () => {
+  it('returns ok:false with all answer-key fields null when the function call errors', async () => {
     invokeMock.mockResolvedValue({ data: null, error: new Error('network') });
     const result = await submitAnswerToServer('123456', 'player-1', 0, 2);
-    expect(result).toEqual({ ok: false, correct: false, earnedPoints: 0, correctAnswer: null });
+    expect(result).toEqual({
+      ok: false,
+      correct: false,
+      earnedPoints: 0,
+      correctAnswer: null,
+      correctValue: null,
+      correctOrder: null,
+      correctMatches: null,
+      blanks: null,
+    });
   });
 });
 ```
@@ -345,12 +373,28 @@ export const advanceLiveQuestion = async (
   return { ok: true, questionStartedAt: (data as { question_started_at: string | null }).question_started_at };
 };
 
+// Mirrors submit-answer's response shape (Task 5) — correctAnswer/correctValue/
+// correctOrder/correctMatches/blanks together cover all 7 question types'
+// answer-key shapes; only the field matching the answered question's type is
+// non-null in any given response.
 export interface SubmitAnswerResult {
   ok: boolean;
   correct: boolean;
   earnedPoints: number;
   correctAnswer: unknown;
+  correctValue: unknown;
+  correctOrder: number[] | null;
+  correctMatches: { leftId: string; rightId: string }[] | null;
+  blanks: unknown;
 }
+
+const EMPTY_ANSWER_KEY = {
+  correctAnswer: null,
+  correctValue: null,
+  correctOrder: null,
+  correctMatches: null,
+  blanks: null,
+} as const;
 
 export const submitAnswerToServer = async (
   gameCode: string,
@@ -363,10 +407,27 @@ export const submitAnswerToServer = async (
   });
   if (error) {
     console.error("[submitAnswerToServer error]", gameCode, error);
-    return { ok: false, correct: false, earnedPoints: 0, correctAnswer: null };
+    return { ok: false, correct: false, earnedPoints: 0, ...EMPTY_ANSWER_KEY };
   }
-  const result = data as { correct: boolean; earnedPoints: number; correctAnswer: unknown };
-  return { ok: true, correct: result.correct, earnedPoints: result.earnedPoints, correctAnswer: result.correctAnswer };
+  const result = data as {
+    correct: boolean;
+    earnedPoints: number;
+    correctAnswer: unknown;
+    correctValue: unknown;
+    correctOrder: number[] | null;
+    correctMatches: { leftId: string; rightId: string }[] | null;
+    blanks: unknown;
+  };
+  return {
+    ok: true,
+    correct: result.correct,
+    earnedPoints: result.earnedPoints,
+    correctAnswer: result.correctAnswer,
+    correctValue: result.correctValue,
+    correctOrder: result.correctOrder,
+    correctMatches: result.correctMatches,
+    blanks: result.blanks,
+  };
 };
 ```
 
