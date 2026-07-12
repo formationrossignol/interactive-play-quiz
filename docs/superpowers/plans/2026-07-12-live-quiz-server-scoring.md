@@ -204,101 +204,14 @@ Key points for anything built against this function later (Tasks 8-9):
 
 ---
 
-## Task 7: Edge Function `advance-question`
+## Task 7: Edge Function `advance-question` — DONE
 
-**Files:**
-- Create: `supabase/functions/advance-question/index.ts`
+**Status:** Implemented, reviewed (found 1 important issue, fixed), committed. Embedded code intentionally omitted here — see the actual file, `supabase/functions/advance-question/index.ts`.
 
-- [ ] **Step 1: Write the function**
-
-Create `supabase/functions/advance-question/index.ts`:
-
-```ts
-import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders, handleCorsPreflight } from "../_shared/cors.ts";
-
-interface AdvanceQuestionBody {
-  game_code: string;
-  question_index: number;
-  game_state: string;
-  time_left: number;
-}
-
-Deno.serve(async (req) => {
-  const preflight = handleCorsPreflight(req);
-  if (preflight) return preflight;
-
-  try {
-    const body: AdvanceQuestionBody = await req.json();
-    const { game_code, question_index, game_state, time_left } = body;
-
-    if (!game_code || typeof question_index !== "number" || !game_state) {
-      return new Response(JSON.stringify({ error: "Missing required fields" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
-
-    const now = new Date().toISOString();
-    const { error } = await supabase
-      .from("session_state")
-      .update({
-        current_question_index: question_index,
-        game_state,
-        time_left,
-        question_started_at: game_state === "question" ? now : null,
-        updated_at: now,
-      })
-      .eq("game_code", game_code);
-
-    if (error) {
-      return new Response(JSON.stringify({ error: "Failed to advance question" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    return new Response(JSON.stringify({ ok: true, question_started_at: game_state === "question" ? now : null }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  } catch (err) {
-    return new Response(JSON.stringify({ error: (err as Error).message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-});
-```
-
-- [ ] **Step 2: Serve locally and verify manually**
-
-```bash
-npx supabase functions serve advance-question --no-verify-jwt
-```
-```bash
-curl -i --location --request POST 'http://127.0.0.1:54321/functions/v1/advance-question' \
-  --header 'Content-Type: application/json' \
-  --data '{"game_code":"654321","question_index":0,"game_state":"question","time_left":30}'
-```
-Expected: `200 OK`, `{"ok":true,"question_started_at":"<ISO timestamp>"}`. Verify via dashboard: `session_state.question_started_at` for `game_code=654321` is set to that timestamp.
-
-- [ ] **Step 3: Deploy**
-
-```bash
-npx supabase functions deploy advance-question
-```
-
-- [ ] **Step 4: Commit**
-
-```bash
-git add supabase/functions/advance-question/index.ts
-git commit -m "feat(edge-functions): add advance-question — server-authoritative question start time"
-```
+Key points:
+- Request: `{ game_code, question_index, game_state, time_left }`. Response: `{ ok: true, question_started_at }` (or 404 if `game_code` doesn't match any row — the update-with-no-matching-row case previously reported false success, fixed by adding `.select("game_code")` and checking for an empty result).
+- `question_started_at` is stamped to `now()` only when `game_state === "question"`, else `null` — verified against `QuizSession.tsx`'s state machine: this function is only ever called on the `question-intro → question` transition, so the column always holds "when the currently active question began," which is exactly what `submit-answer` needs.
+- **Known, documented, NOT fixed here (pre-existing, not introduced by this task)**: nothing verifies the caller is actually the session's host — `game_code` alone gates the call, same as the pre-existing direct `patchSessionState`/anon-key-update path it replaces (host status was always a client-side-only UI concept, never server-enforced; see `isHost` handling in `QuizSession.tsx`/`LiveQuizPage.tsx`). One nuance worth flagging: this Edge Function uses the `service_role` key, which bypasses RLS entirely — the old anon-key path was subject to whatever RLS policy exists on `session_state` (a table that predates this repo's tracked migrations, so its RLS posture isn't verifiable here). If that untracked policy is more restrictive than "open," this Edge Function is a strict permissions increase, not a lateral move. Flagged as a separate, out-of-scope finding for the same future player/host-identity project noted in Task 5.
 
 ---
 
