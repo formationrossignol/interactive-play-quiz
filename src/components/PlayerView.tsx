@@ -15,6 +15,7 @@ import {
   getSessionStorageKey,
   readSessionState,
   subscribeToSessionState,
+  submitAnswerToServer,
   upsertPlayerInSession,
   writeSessionState,
   type SharedPlayer,
@@ -39,6 +40,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | string | null>(null);
   const [hasAnswered, setHasAnswered] = useState(false);
+  const [answerPending, setAnswerPending] = useState(false);
   const [playerScore, setPlayerScore] = useState(0);
   const [playerRank, setPlayerRank] = useState(1);
   const [totalPlayers, setTotalPlayers] = useState(0);
@@ -48,6 +50,17 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
   const [lastEarnedPoints, setLastEarnedPoints] = useState(0);
   const [lastAnswerCorrect, setLastAnswerCorrect] = useState(false);
   const [lastAnsweredQuestion, setLastAnsweredQuestion] = useState<any>(null);
+  // Answer key for lastAnsweredQuestion, as returned by submit-answer for the
+  // player's OWN submission of the CURRENT question. liveQuestion itself no
+  // longer carries these fields (create-session's stripAnswers scrubs them),
+  // so this is the only source for the "La bonne réponse était" reveal text.
+  const [answerKey, setAnswerKey] = useState<{
+    correctAnswer: unknown;
+    correctValue: unknown;
+    correctOrder: number[] | null;
+    correctMatches: { leftId: string; rightId: string }[] | null;
+    blanks: unknown;
+  } | null>(null);
 
   const [quizQuestions, setQuizQuestions] = useState<any[]>([]);
   // Poll mode: no timer, no points, neutral confirmations
@@ -146,7 +159,14 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
   }, [gameCode, navigate]);
 
   // Holds the last submitted answer payload so retries can resend it
-  const pendingAnswerRef = useRef<{ player: SharedPlayer; questionIndex: number } | null>(null);
+  // "quiz" entries retry via submit-answer (server-side scoring); "poll" entries
+  // retry via the pre-existing direct upsertPlayerInSession path — polls have
+  // no session_quiz_answers row for submit-answer to look up (see submitAnswer).
+  const pendingAnswerRef = useRef<
+    | { kind: 'quiz'; gameCode: string; playerId: string; questionIndex: number; answer: number | string }
+    | { kind: 'poll'; player: SharedPlayer; questionIndex: number }
+    | null
+  >(null);
 
   // Wall-clock end time of the current timed phase (question or transition)
   const timerEndRef = useRef<number | null>(null);
@@ -346,15 +366,43 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
     return () => clearInterval(interval);
   }, [playerId, gameCode, gameState]);
 
-  // Retry answer submission at 1.5s, 4s, 9s, 18s after initial send.
-  // Guards against "Failed to fetch" network blips — heartbeats also act as natural retries.
+  // Retry a failed submit-answer call at 1.5s, 4s, 9s, 18s after initial send.
+  // submit-answer is idempotent (same game_code/player_id/question_index
+  // returns the already-stored result), so a retry after a late success is safe.
+  //
+  // answerPending is in the deps (not just hasAnswered) because submitAnswer is
+  // now async: hasAnswered flips true (and this effect first runs, seeing a still-
+  // empty pendingAnswerRef) BEFORE the initial submitAnswerToServer call settles
+  // and populates the ref. Without answerPending here, this effect would never
+  // re-run once hasAnswered stops changing, so a failed initial call would never
+  // get retried.
   useEffect(() => {
     if (!hasAnswered || !pendingAnswerRef.current) return;
-    const { player, questionIndex } = pendingAnswerRef.current;
+    const { questionIndex } = pendingAnswerRef.current;
 
-    const retry = () => {
-      if (pendingAnswerRef.current?.questionIndex !== questionIndex) return;
-      upsertPlayerInSession(gameCode, player, true);
+    const retry = async () => {
+      const pending = pendingAnswerRef.current;
+      if (!pending || pending.questionIndex !== questionIndex) return;
+
+      if (pending.kind === 'poll') {
+        upsertPlayerInSession(gameCode, pending.player, true);
+        return;
+      }
+
+      const result = await submitAnswerToServer(gameCode, pending.playerId, pending.questionIndex, pending.answer);
+      if (result.ok) {
+        setLastAnswerCorrect(result.correct);
+        setLastEarnedPoints(result.earnedPoints);
+        setPlayerScore((prev) => prev + result.earnedPoints);
+        setAnswerKey({
+          correctAnswer: result.correctAnswer,
+          correctValue: result.correctValue,
+          correctOrder: result.correctOrder,
+          correctMatches: result.correctMatches,
+          blanks: result.blanks,
+        });
+        pendingAnswerRef.current = null;
+      }
     };
 
     const t1 = setTimeout(retry, 1500);
@@ -367,7 +415,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
       clearTimeout(t3);
       clearTimeout(t4);
     };
-  }, [hasAnswered, gameCode]);
+  }, [hasAnswered, answerPending, gameCode]);
 
   // Clear pending answer when question changes
   useEffect(() => {
@@ -435,7 +483,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
     } catch {}
   };
 
-  const submitAnswer = (answer: number | string) => {
+  const submitAnswer = async (answer: number | string) => {
     if (hasAnsweredRef.current || hasAnswered || !liveQuestion) return;
     hasAnsweredRef.current = true;
 
@@ -444,72 +492,81 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
     setHasAnswered(true);
     answeredForIndexRef.current = currentQuestion;
 
-    const expected = liveQuestion.correctAnswer;
-    const correct = isPoll ? false : liveQuestion.type === 'short-answer'
-      ? typeof expected === 'string' && String(answer).toLowerCase().trim() === expected.toLowerCase().trim()
-      : liveQuestion.type === 'true-false'
-      ? (answer === 'true') === (expected === true || expected === 'true')
-      : liveQuestion.type === 'slider'
-      ? Number(answer) === Number(liveQuestion.correctValue ?? liveQuestion.correctAnswer)
-      : liveQuestion.type === 'fill-blank'
-      ? (() => {
-          try {
-            const submitted: string[] = JSON.parse(String(answer));
-            return (liveQuestion.blanks ?? []).every((b: any, i: number) =>
-              submitted[i]?.toLowerCase().trim() === String(b.correctAnswer).toLowerCase().trim()
-            );
-          } catch { return false; }
-        })()
-      : liveQuestion.type === 'ranking'
-      ? (() => {
-          try {
-            const submitted: number[] = JSON.parse(String(answer));
-            const target: number[] = liveQuestion.correctOrder ?? [];
-            return target.length > 0 && submitted.length === target.length && submitted.every((v, i) => v === target[i]);
-          } catch { return false; }
-        })()
-      : liveQuestion.type === 'matching'
-      ? (() => {
-          try {
-            const submitted: Record<string, string> = JSON.parse(String(answer));
-            return (liveQuestion.correctMatches ?? []).every((m: any) => submitted[m.leftId] === m.rightId);
-          } catch { return false; }
-        })()
-      : answer === expected;
+    // Polls have no correct answer and never get a session_quiz_answers row —
+    // only create-session (called exclusively by the quiz-live host,
+    // QuizSession.tsx) populates that table for a game_code. submit-answer is
+    // scoped to the quiz-live path only; polls keep the pre-existing direct
+    // upsertPlayerInSession client path here, unchanged, to avoid a 404 from
+    // an Edge Function that has no row to look up for this game_code.
+    if (isPoll) {
+      setLastAnswerCorrect(false);
+      setLastEarnedPoints(0);
+      const storedPlayerRaw = sessionStorage.getItem(`quiz-player-${gameCode}`);
+      if (storedPlayerRaw) {
+        try {
+          const storedPlayer = JSON.parse(storedPlayerRaw) as SharedPlayer;
+          const updated: SharedPlayer = {
+            ...storedPlayer,
+            lastAnswer: typeof answer === 'number' ? answer : answer === 'true' ? 0 : answer === 'false' ? 1 : undefined,
+            lastAnswerText:
+              typeof answer === 'string' && answer !== 'true' && answer !== 'false' &&
+              (liveQuestion.type === 'open-text' || liveQuestion.type === 'short-answer')
+                ? String(answer).slice(0, 500)
+                : undefined,
+            lastAnswerQuestionIndex: currentQuestion,
+            lastAnswerCorrect: false,
+            lastEarnedPoints: 0,
+          };
+          sessionStorage.setItem(`quiz-player-${gameCode}`, JSON.stringify(updated));
+          pendingAnswerRef.current = { kind: 'poll', player: updated, questionIndex: currentQuestion };
+          upsertPlayerInSession(gameCode, updated, true); // urgent — bypasses debounce
+        } catch {}
+      }
+      return;
+    }
 
-    const base = liveQuestion.points ?? 100;
-    const earnedPoints = !isPoll && correct
-      ? Math.max(Math.round(base * (timeLeft / (liveQuestion.timeLimit ?? 30))), Math.round(base * 0.1))
-      : 0;
+    if (!playerId) return;
+    setAnswerPending(true);
 
-    setLastAnswerCorrect(correct);
-    setLastEarnedPoints(earnedPoints);
+    const result = await submitAnswerToServer(gameCode, playerId, currentQuestion, answer);
+
+    setAnswerPending(false);
+    setLastAnswerCorrect(result.correct);
+    setLastEarnedPoints(result.earnedPoints);
+    setPlayerScore((prev) => prev + (result.ok ? result.earnedPoints : 0));
+    setAnswerKey({
+      correctAnswer: result.correctAnswer,
+      correctValue: result.correctValue,
+      correctOrder: result.correctOrder,
+      correctMatches: result.correctMatches,
+      blanks: result.blanks,
+    });
+
+    // Mirror the result into sessionStorage so a page refresh mid-reveal
+    // (handled by the "Restore answer feedback" effect below) shows the
+    // same correct/points instead of resetting to a blank state.
     const storedPlayerRaw = sessionStorage.getItem(`quiz-player-${gameCode}`);
     if (storedPlayerRaw) {
       try {
         const storedPlayer = JSON.parse(storedPlayerRaw) as SharedPlayer;
-        // Use sessionStorage score as base — it's the last committed local score and
-        // never gets overwritten by stale Supabase reads (unlike playerScore state).
-        const newScore = (storedPlayer.score ?? 0) + earnedPoints;
         const updated: SharedPlayer = {
           ...storedPlayer,
-          score: newScore,
-          correctAnswers: (storedPlayer.correctAnswers ?? 0) + (correct ? 1 : 0),
-          lastAnswer: typeof answer === 'number' ? answer : answer === 'true' ? 0 : answer === 'false' ? 1 : undefined,
-          lastAnswerText:
-            typeof answer === 'string' && answer !== 'true' && answer !== 'false' &&
-            (liveQuestion.type === 'open-text' || liveQuestion.type === 'short-answer')
-              ? String(answer).slice(0, 500)
-              : undefined,
+          score: storedPlayer.score + (result.ok ? result.earnedPoints : 0),
+          correctAnswers: (storedPlayer.correctAnswers ?? 0) + (result.correct ? 1 : 0),
           lastAnswerQuestionIndex: currentQuestion,
-          lastAnswerCorrect: correct,
-          lastEarnedPoints: earnedPoints,
+          lastAnswerCorrect: result.correct,
+          lastEarnedPoints: result.earnedPoints,
         };
         sessionStorage.setItem(`quiz-player-${gameCode}`, JSON.stringify(updated));
-        pendingAnswerRef.current = { player: updated, questionIndex: currentQuestion };
-        upsertPlayerInSession(gameCode, updated, true); // urgent — bypasses debounce
-        setPlayerScore(newScore);
       } catch {}
+    }
+
+    if (!result.ok) {
+      // submitAnswerToServer already logged the error; retry effect below
+      // will attempt again.
+      pendingAnswerRef.current = { kind: 'quiz', gameCode, playerId, questionIndex: currentQuestion, answer };
+    } else {
+      pendingAnswerRef.current = null;
     }
   };
 
@@ -1102,25 +1159,32 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
   }
 
   if (gameState === 'answer-feedback') {
+    // Sourced from the submit-answer response (answerKey), not from
+    // lastAnsweredQuestion itself — liveQuestion (and therefore
+    // lastAnsweredQuestion, which is a copy of it) no longer carries
+    // correctAnswer/correctValue/correctOrder/correctMatches/blanks now that
+    // create-session's stripAnswers scrubs them from the public quiz_data.
+    // lastAnsweredQuestion is still used below for display-only lookups
+    // (answers/items/leftColumn/rightColumn text), which are not scrubbed.
     const correctAnswerText = (() => {
-      if (!lastAnsweredQuestion) return '';
+      if (!lastAnsweredQuestion || !answerKey) return '';
       const q = lastAnsweredQuestion;
       if (q.type === 'multiple-choice' || q.type === 'single-choice') {
-        const idx = typeof q.correctAnswer === 'number' ? q.correctAnswer : Number(q.correctAnswer);
+        const idx = typeof answerKey.correctAnswer === 'number' ? answerKey.correctAnswer : Number(answerKey.correctAnswer);
         return q.answers?.[idx] ?? '';
       }
       if (q.type === 'true-false') {
-        return q.correctAnswer === 'true' ? (q.answers?.[0] ?? 'Vrai') : (q.answers?.[1] ?? 'Faux');
+        return answerKey.correctAnswer === 'true' ? (q.answers?.[0] ?? 'Vrai') : (q.answers?.[1] ?? 'Faux');
       }
-      if (q.type === 'short-answer') return String(q.correctAnswer ?? '');
-      if (q.type === 'slider') return String(q.correctValue ?? q.correctAnswer ?? '');
-      if (q.type === 'fill-blank') return (q.blanks ?? []).map((b: any) => b.correctAnswer).join(' / ');
+      if (q.type === 'short-answer') return String(answerKey.correctAnswer ?? '');
+      if (q.type === 'slider') return String(answerKey.correctValue ?? answerKey.correctAnswer ?? '');
+      if (q.type === 'fill-blank') return ((answerKey.blanks as any[]) ?? []).map((b: any) => b.correctAnswer).join(' / ');
       if (q.type === 'ranking') {
         const items: string[] = q.items ?? [];
-        const order: number[] = q.correctOrder ?? [];
+        const order: number[] = answerKey.correctOrder ?? [];
         return (order.length ? order.map((i: number) => items[i]).filter(Boolean) : items).join(' → ');
       }
-      if (q.type === 'matching') return (q.correctMatches ?? []).map((m: any) => {
+      if (q.type === 'matching') return (answerKey.correctMatches ?? []).map((m) => {
         const l = (q.leftColumn ?? []).find((c: any) => c.id === m.leftId)?.text ?? m.leftId;
         const r = (q.rightColumn ?? []).find((c: any) => c.id === m.rightId)?.text ?? m.rightId;
         return `${l} ↔ ${r}`;
@@ -1131,56 +1195,65 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
     return (
       <div
         className="min-h-screen flex items-center justify-center p-4"
-        style={{ background: lastAnswerCorrect ? "var(--ap-pres)" : "var(--ap-quiz-deep)" }}
+        style={{ background: answerPending ? "var(--ap-brand)" : (lastAnswerCorrect ? "var(--ap-pres)" : "var(--ap-quiz-deep)") }}
       >
         <div className="max-w-md w-full text-center">
-          <div className="text-8xl mb-4 drop-shadow-xl">{lastAnswerCorrect ? '✅' : '❌'}</div>
-          <h2 className="ap-h2 text-white mb-3">
-            {lastAnswerCorrect ? 'Bonne réponse !' : 'Mauvaise réponse !'}
-          </h2>
+          {answerPending ? (
+            <div className="flex flex-col items-center justify-center text-center">
+              <div className="text-6xl mb-4 animate-pulse">⏳</div>
+              <div className="text-2xl font-bold text-white">Vérification en cours…</div>
+            </div>
+          ) : (
+            <>
+              <div className="text-8xl mb-4 drop-shadow-xl">{lastAnswerCorrect ? '✅' : '❌'}</div>
+              <h2 className="ap-h2 text-white mb-3">
+                {lastAnswerCorrect ? 'Bonne réponse !' : 'Mauvaise réponse !'}
+              </h2>
 
-          {!lastAnswerCorrect && correctAnswerText && (
-            <p className="mb-4" style={{ color: 'rgba(255,255,255,0.75)', fontFamily: 'var(--ap-font-body)', fontWeight: 600 }}>
-              La bonne réponse était :{' '}
-              <span className="font-bold text-white">{correctAnswerText}</span>
-            </p>
+              {!lastAnswerCorrect && correctAnswerText && (
+                <p className="mb-4" style={{ color: 'rgba(255,255,255,0.75)', fontFamily: 'var(--ap-font-body)', fontWeight: 600 }}>
+                  La bonne réponse était :{' '}
+                  <span className="font-bold text-white">{correctAnswerText}</span>
+                </p>
+              )}
+
+              <div
+                className="p-6"
+                style={{
+                  background: 'rgba(255,255,255,0.15)',
+                  border: '2px solid rgba(255,255,255,0.25)',
+                  borderRadius: 'var(--ap-r-xl)',
+                  marginTop: '8px',
+                }}
+              >
+                <div
+                  className="text-5xl font-bold text-white mb-1"
+                  style={{ fontFamily: 'var(--ap-font-display)' }}
+                >
+                  +{lastEarnedPoints}
+                </div>
+                <div style={{ color: 'rgba(255,255,255,0.75)', fontWeight: 700, fontFamily: 'var(--ap-font-body)' }}>
+                  points gagnés
+                </div>
+                <div
+                  style={{
+                    borderTop: '1px solid rgba(255,255,255,0.2)',
+                    marginTop: '16px',
+                    paddingTop: '16px',
+                    color: 'rgba(255,255,255,0.85)',
+                    fontWeight: 700,
+                    fontFamily: 'var(--ap-font-body)',
+                  }}
+                >
+                  Total : <span className="text-white font-bold">{playerScore} pts</span>
+                </div>
+              </div>
+
+              <p className="mt-4 text-sm" style={{ color: 'rgba(255,255,255,0.5)', fontFamily: 'var(--ap-font-body)' }}>
+                En attente de la suite…
+              </p>
+            </>
           )}
-
-          <div
-            className="p-6"
-            style={{
-              background: 'rgba(255,255,255,0.15)',
-              border: '2px solid rgba(255,255,255,0.25)',
-              borderRadius: 'var(--ap-r-xl)',
-              marginTop: '8px',
-            }}
-          >
-            <div
-              className="text-5xl font-bold text-white mb-1"
-              style={{ fontFamily: 'var(--ap-font-display)' }}
-            >
-              +{lastEarnedPoints}
-            </div>
-            <div style={{ color: 'rgba(255,255,255,0.75)', fontWeight: 700, fontFamily: 'var(--ap-font-body)' }}>
-              points gagnés
-            </div>
-            <div
-              style={{
-                borderTop: '1px solid rgba(255,255,255,0.2)',
-                marginTop: '16px',
-                paddingTop: '16px',
-                color: 'rgba(255,255,255,0.85)',
-                fontWeight: 700,
-                fontFamily: 'var(--ap-font-body)',
-              }}
-            >
-              Total : <span className="text-white font-bold">{playerScore} pts</span>
-            </div>
-          </div>
-
-          <p className="mt-4 text-sm" style={{ color: 'rgba(255,255,255,0.5)', fontFamily: 'var(--ap-font-body)' }}>
-            En attente de la suite…
-          </p>
         </div>
       </div>
     );
