@@ -96,12 +96,16 @@ export async function createFolder(
   type: ContentType,
   name: string,
   parentId: string | null = null,
+  // When set (the localStorage import passes the original folder id), the row
+  // is upserted on (user_id, source_id) so re-running the import can never
+  // create a duplicate folder. UI-created folders pass no sourceId → plain insert.
+  sourceId: string | null = null,
 ): Promise<FolderRow> {
-  const { data, error } = await supabase
-    .from('folders')
-    .insert({ user_id: userId, type, name, parent_id: parentId })
-    .select()
-    .single();
+  const row = { user_id: userId, type, name, parent_id: parentId, source_id: sourceId };
+  const builder = sourceId
+    ? supabase.from('folders').upsert(row, { onConflict: 'user_id,source_id' })
+    : supabase.from('folders').insert(row);
+  const { data, error } = await builder.select().single();
   if (error) throw error;
   return data;
 }
