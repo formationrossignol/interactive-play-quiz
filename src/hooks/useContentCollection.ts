@@ -13,6 +13,7 @@ import {
 } from '@/lib/content/foldersRepo';
 import {
   listContent,
+  listPublicContent,
   moveContent as repoMoveContent,
   removeContent,
   setPublic,
@@ -23,6 +24,7 @@ export interface UseContentCollection {
   loading: boolean;
   error: string | null;
   items: ContentRow[]; // ALL content of this type for the user (page filters via contentView)
+  publicItems: ContentRow[]; // public content of this type across all users ("public" tab)
   folders: FolderRow[];
   tree: FolderNode[]; // buildTree(folders)
   currentFolderId: string | null;
@@ -46,6 +48,7 @@ export function useContentCollection(type: ContentType): UseContentCollection {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [items, setItems] = useState<ContentRow[]>([]);
+  const [publicItems, setPublicItems] = useState<ContentRow[]>([]);
   const [folders, setFolders] = useState<FolderRow[]>([]);
   const [tree, setTree] = useState<FolderNode[]>([]);
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
@@ -57,11 +60,13 @@ export function useContentCollection(type: ContentType): UseContentCollection {
       return;
     }
     try {
-      const [contentRows, folderRows] = await Promise.all([
+      const [contentRows, folderRows, publicRows] = await Promise.all([
         listContent(userId, type),
         listFolders(userId, type),
+        listPublicContent(type).catch(() => [] as ContentRow[]),
       ]);
       setItems(contentRows);
+      setPublicItems(publicRows);
       setFolders(folderRows);
       setTree(buildTree(folderRows));
       setError(null);
@@ -192,6 +197,7 @@ export function useContentCollection(type: ContentType): UseContentCollection {
     loading,
     error,
     items,
+    publicItems,
     folders,
     tree,
     currentFolderId,
