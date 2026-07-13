@@ -1,0 +1,102 @@
+import { supabase } from '@/lib/supabase';
+import type { ContentRow, ContentType } from './types';
+
+// --- Async CRUD (Supabase-backed), polymorphic `content` table ---
+
+/**
+ * List content rows for a user of a given type.
+ * - folderId omitted (undefined): no folder filter (all folders).
+ * - folderId === null: only rows at the root (folder_id IS NULL).
+ * - folderId is a string: only rows in that folder.
+ * Ordered by updated_at descending.
+ */
+export async function listContent(
+  userId: string,
+  type: ContentType,
+  folderId?: string | null,
+): Promise<ContentRow[]> {
+  let query = supabase
+    .from('content')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('type', type);
+
+  if (folderId !== undefined) {
+    query = folderId === null
+      ? query.is('folder_id', null)
+      : query.eq('folder_id', folderId);
+  }
+
+  const { data, error } = await query.order('updated_at', { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
+
+/** Fetch a single content row by id, or null if it does not exist. */
+export async function getContent(id: string): Promise<ContentRow | null> {
+  const { data, error } = await supabase
+    .from('content')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+  if (error) throw error;
+  return data ?? null;
+}
+
+export async function createContent(
+  userId: string,
+  type: ContentType,
+  data: Record<string, unknown>,
+  folderId: string | null = null,
+): Promise<ContentRow> {
+  const { data: row, error } = await supabase
+    .from('content')
+    .insert({ user_id: userId, type, data, folder_id: folderId })
+    .select()
+    .single();
+  if (error) throw error;
+  return row;
+}
+
+export async function updateContent(
+  id: string,
+  patch: Partial<Pick<ContentRow, 'data' | 'folder_id' | 'is_public' | 'is_open'>>,
+): Promise<void> {
+  const { error } = await supabase
+    .from('content')
+    .update(patch)
+    .eq('id', id);
+  if (error) throw error;
+}
+
+export async function removeContent(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('content')
+    .delete()
+    .eq('id', id);
+  if (error) throw error;
+}
+
+export async function moveContent(id: string, folderId: string | null): Promise<void> {
+  const { error } = await supabase
+    .from('content')
+    .update({ folder_id: folderId })
+    .eq('id', id);
+  if (error) throw error;
+}
+
+export async function setPublic(id: string, isPublic: boolean): Promise<void> {
+  const { error } = await supabase
+    .from('content')
+    .update({ is_public: isPublic })
+    .eq('id', id);
+  if (error) throw error;
+}
+
+export async function setOpen(id: string, isOpen: boolean): Promise<void> {
+  const { error } = await supabase
+    .from('content')
+    .update({ is_open: isOpen })
+    .eq('id', id);
+  if (error) throw error;
+}
