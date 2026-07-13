@@ -1,6 +1,5 @@
 import { isValid } from "date-fns";
 import { supabase } from "./supabase";
-import type { Question } from "./questionTypes";
 
 export type SharedGameState =
   | "waiting"
@@ -400,7 +399,10 @@ async function describeFunctionsError(error: unknown): Promise<string> {
 export const createLiveSession = async (
   gameCode: string,
   title: string,
-  questions: Question[]
+  // Forwarded verbatim to the create-session edge function as JSON; the quiz's
+  // own question shape (QuizSession.QuizQuestion) is broader than the question-
+  // bank Question type, so keep this structurally loose to avoid a false mismatch.
+  questions: unknown[]
 ): Promise<boolean> => {
   const { error } = await supabase.functions.invoke("create-session", {
     body: { game_code: gameCode, title, questions },
