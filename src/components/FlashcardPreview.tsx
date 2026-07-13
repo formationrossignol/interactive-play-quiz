@@ -40,7 +40,7 @@ export const FlashcardPreview = ({ flashcard, theme }: FlashcardPreviewProps) =>
   }, [theme]);
 
   return (
-    <div className="relative flex h-full items-center justify-center p-8">
+    <div className="relative flex min-h-[520px] w-full items-center justify-center p-8">
       <div className="absolute inset-0" style={backgroundStyle} aria-hidden />
       <div className="absolute inset-0" style={{ background: overlay }} aria-hidden />
       <div className="relative z-10 w-full max-w-3xl">
