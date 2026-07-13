@@ -136,13 +136,17 @@ export async function migrateLocalToSupabase(
   // content can be attached to the right folder.
   const idMap = new Map<string, string>();
   for (const f of plan.folders) {
-    const row = await createFolder(userId, f.type, f.name);
+    // sourceId = original localStorage folder id → upsert, idempotent re-runs.
+    const row = await createFolder(userId, f.type, f.name, null, f.tempId);
     idMap.set(f.tempId, row.id);
   }
 
   for (const c of plan.content) {
     const folderId = c.folderTempId ? idMap.get(c.folderTempId) ?? null : null;
-    await createContent(userId, c.type, c.data, folderId);
+    // sourceId = the item's original id → upsert, so a repeated import never
+    // duplicates content (it refreshes the existing row instead).
+    const sourceId = typeof c.data.id === 'string' ? c.data.id : null;
+    await createContent(userId, c.type, c.data, folderId, sourceId);
   }
 
   localStorage.setItem(MIGRATED_FLAG, new Date().toISOString());

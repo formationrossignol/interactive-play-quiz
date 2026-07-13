@@ -11,6 +11,7 @@ export interface ContentRow {
   data: Record<string, unknown>;
   is_public: boolean;
   is_open: boolean;
+  source_id?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -21,5 +22,6 @@ export interface FolderRow {
   type: ContentType;
   name: string;
   parent_id: string | null;
+  source_id?: string | null;
   created_at: string;
 }

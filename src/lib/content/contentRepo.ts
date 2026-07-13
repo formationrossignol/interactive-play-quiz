@@ -48,12 +48,16 @@ export async function createContent(
   type: ContentType,
   data: Record<string, unknown>,
   folderId: string | null = null,
+  // When set (the localStorage import passes the item's original id), the row
+  // is upserted on (user_id, source_id) so re-running the import updates the
+  // existing row instead of duplicating it. UI-created content passes none.
+  sourceId: string | null = null,
 ): Promise<ContentRow> {
-  const { data: row, error } = await supabase
-    .from('content')
-    .insert({ user_id: userId, type, data, folder_id: folderId })
-    .select()
-    .single();
+  const insert = { user_id: userId, type, data, folder_id: folderId, source_id: sourceId };
+  const builder = sourceId
+    ? supabase.from('content').upsert(insert, { onConflict: 'user_id,source_id' })
+    : supabase.from('content').insert(insert);
+  const { data: row, error } = await builder.select().single();
   if (error) throw error;
   return row;
 }
