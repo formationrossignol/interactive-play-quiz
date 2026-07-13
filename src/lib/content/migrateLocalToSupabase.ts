@@ -116,9 +116,23 @@ function readArray(key: string): any[] {
  * Idempotent: subsequent calls no-op via the `content_migrated_v1` flag.
  * Non-destructive: the source localStorage keys are never modified or removed.
  */
-export async function migrateLocalToSupabase(
-  userId: string,
-): Promise<{ migrated: boolean; folders: number; content: number }> {
+type MigrationResult = { migrated: boolean; folders: number; content: number };
+
+// syncFromSession can fire twice on a single page load (getSession +
+// onAuthStateChange INITIAL_SESSION). Dedupe concurrent calls so the import
+// body runs once per load; combined with the source_id upsert this makes a
+// re-import fully duplicate-proof.
+let inFlight: Promise<MigrationResult> | null = null;
+
+export function migrateLocalToSupabase(userId: string): Promise<MigrationResult> {
+  if (inFlight) return inFlight;
+  inFlight = runMigration(userId).finally(() => {
+    inFlight = null;
+  });
+  return inFlight;
+}
+
+async function runMigration(userId: string): Promise<MigrationResult> {
   if (localStorage.getItem(MIGRATED_FLAG)) {
     return { migrated: false, folders: 0, content: 0 };
   }
