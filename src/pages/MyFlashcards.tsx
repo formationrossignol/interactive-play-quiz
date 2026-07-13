@@ -23,6 +23,7 @@ import {
   applySearchSort,
   filterActive,
   filterByFolder,
+  filterFavorites,
   filterTrashed,
   toDisplay,
   type ContentDisplay,
@@ -308,6 +309,14 @@ const MyFlashcards = () => {
   const display = useMemo(() => c.items.map(toDisplay), [c.items]);
   const active = useMemo(() => filterActive(display), [display]);
   const trashed = useMemo(() => filterTrashed(display), [display]);
+  const favorites = useMemo(
+    () => applySearchSort(filterFavorites(display), { search, category, sort }),
+    [display, search, category, sort],
+  );
+  const publicDisplay = useMemo(
+    () => applySearchSort(c.publicItems.map(toDisplay), { search, category, sort }),
+    [c.publicItems, search, category, sort],
+  );
 
   // Direct active-item count per folderId (badge on the explorer).
   const folderCounts = useMemo(() => {
@@ -478,7 +487,8 @@ const MyFlashcards = () => {
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
             <TabsList>
               <TabsTrigger value="my">{`${t("myFlashcardsTab")} (${active.length})`}</TabsTrigger>
-              {/* TODO: favorites + public tabs out of scope (cross-user / not yet migrated) */}
+              <TabsTrigger value="favorites">{`Favoris (${favorites.length})`}</TabsTrigger>
+              <TabsTrigger value="public">{`Flashcards publiques (${publicDisplay.length})`}</TabsTrigger>
               <TabsTrigger value="trash" className="flex items-center gap-1.5">
                 <Trash2 className="h-3.5 w-3.5" />
                 {`Corbeille${trashed.length > 0 ? ` (${trashed.length})` : ""}`}
@@ -557,6 +567,34 @@ const MyFlashcards = () => {
                   <Pagination page={clampedPage} totalPages={totalPages} onPageChange={setPage} className="mt-8" />
                 </div>
               </div>
+            </TabsContent>
+
+            <TabsContent value="favorites">
+              {favorites.length === 0 ? (
+                <p className="py-10 text-center text-sm text-slate-400">Aucun favori.</p>
+              ) : viewMode === "grid" ? (
+                <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+                  {favorites.map((d) => <FlashcardCard key={d.id} {...cardProps(d)} />)}
+                </div>
+              ) : (
+                <div className="ap-card" style={{ padding: 0, overflow: "hidden" }}>
+                  {favorites.map((d) => <FlashcardRow key={d.id} {...cardProps(d)} />)}
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="public">
+              {publicDisplay.length === 0 ? (
+                <p className="py-10 text-center text-sm text-slate-400">Aucune flashcard publique.</p>
+              ) : viewMode === "grid" ? (
+                <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+                  {publicDisplay.map((d) => <FlashcardCard key={d.id} {...cardProps(d)} />)}
+                </div>
+              ) : (
+                <div className="ap-card" style={{ padding: 0, overflow: "hidden" }}>
+                  {publicDisplay.map((d) => <FlashcardRow key={d.id} {...cardProps(d)} />)}
+                </div>
+              )}
             </TabsContent>
 
             <TabsContent value="trash">
