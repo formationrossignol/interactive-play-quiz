@@ -1,6 +1,7 @@
 import type { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 import { migrateLegacyLocalData } from './authMigration';
+import { migrateLocalToSupabase } from './content/migrateLocalToSupabase';
 
 export type Theme = 'light' | 'dark';
 export type Language = 'en' | 'fr';
@@ -65,6 +66,11 @@ const syncFromSession = async (session: Session | null) => {
   }
   setCache(mapUser(session.user));
   if (session.user.email) migrateLegacyLocalData(session.user.email, session.user.id);
+  // One-time, idempotent import of this device's localStorage content into
+  // Supabase (folders + content). No-op after the first successful run.
+  void migrateLocalToSupabase(session.user.id).catch((err) => {
+    console.error('[content-migration] failed:', err);
+  });
 };
 
 let initPromise: Promise<void> | null = null;
