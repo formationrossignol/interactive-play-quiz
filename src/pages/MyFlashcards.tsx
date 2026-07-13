@@ -1,302 +1,282 @@
-import { useCallback, useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
+import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Pagination } from "@/components/Pagination";
-import { getCurrentUser } from "@/lib/auth";
-import {
-  deleteQuiz,
-  duplicateQuiz,
-  getFavoriteFlashcardSets,
-  getPublicFlashcardSets,
-  getTrashedItems,
-  getUserFlashcardSets,
-  permanentlyDeleteQuiz,
-  purgeExpiredTrash,
-  restoreFromTrash,
-  toggleFavorite,
-  type SavedQuiz,
-} from "@/lib/quizStorage";
-import {
-  createFolder,
-  deleteFolder,
-  getFolderItemCount,
-  getFolders,
-  moveToFolder,
-  renameFolder,
-  type Folder,
-} from "@/lib/folderStorage";
-import { FolderCard } from "@/components/FolderCard";
-import { ItemContextMenu } from "@/components/ItemContextMenu";
 import { TrashView } from "@/components/TrashView";
-import { DndContext, type DragEndEvent } from "@dnd-kit/core";
 import { DeleteQuizDialog } from "@/components/DeleteQuizDialog";
+import { FolderExplorer } from "@/components/FolderExplorer";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useContentCollection } from "@/hooks/useContentCollection";
+import {
+  applySearchSort,
+  filterActive,
+  filterByFolder,
+  filterFavorites,
+  filterTrashed,
+  toDisplay,
+  type ContentDisplay,
+  type SortOption,
+} from "@/lib/content/contentView";
+import type { FolderRow } from "@/lib/content/types";
+import type { SavedQuiz } from "@/lib/quizStorage";
+import { DndContext, useDraggable, type DragEndEvent } from "@dnd-kit/core";
 import { toast } from "sonner";
-import { ChevronRight, FolderPlus, LayoutGrid, List, Search, Star, Trash2 } from "lucide-react";
+import {
+  ChevronRight,
+  FolderInput,
+  FolderOpen,
+  GripVertical,
+  LayoutGrid,
+  List,
+  MoreHorizontal,
+  Search,
+  Star,
+  Trash2,
+} from "lucide-react";
 import { t } from "@/lib/i18n";
-import { useCollectionFilters } from "@/hooks/useCollectionFilters";
 
 const VIEW_KEY = "view-mode-flashcards";
+const PAGE_SIZE = 12;
 
 const triggerStyle = {
-  fontFamily: "var(--ap-font-body)", fontWeight: 700, fontSize: "14px",
-  border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-sm)",
-  background: "var(--ap-card)", color: "var(--ap-ink)", height: "42px",
+  fontFamily: "var(--ap-font-body)",
+  fontWeight: 700,
+  fontSize: "14px",
+  border: "2px solid var(--ap-line)",
+  borderRadius: "var(--ap-r-sm)",
+  background: "var(--ap-card)",
+  color: "var(--ap-ink)",
+  height: "42px",
 };
 
-const MyFlashcards = () => {
-  const navigate = useNavigate();
-  const user = getCurrentUser();
-  const [myFlashcards, setMyFlashcards] = useState<SavedQuiz[]>([]);
-  const [favoriteFlashcards, setFavoriteFlashcards] = useState<SavedQuiz[]>([]);
-  const [publicFlashcards, setPublicFlashcards] = useState<SavedQuiz[]>([]);
-  const [trashedFlashcards, setTrashedFlashcards] = useState<SavedQuiz[]>([]);
-  const [permDeleteTarget, setPermDeleteTarget] = useState<SavedQuiz | null>(null);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("my");
-  const [viewMode, setViewMode] = useState<"grid" | "list">(() => (localStorage.getItem(VIEW_KEY) as "grid" | "list") ?? "grid");
-  const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
-  const [folders, setFolders] = useState<Folder[]>([]);
-  const [newFolderName, setNewFolderName] = useState("");
-  const [showNewFolderInput, setShowNewFolderInput] = useState(false);
+const toggleBtnStyle = (active: boolean): React.CSSProperties => ({
+  padding: "8px",
+  background: active ? "var(--ap-brand-soft)" : "transparent",
+  color: active ? "var(--ap-brand)" : "var(--ap-muted)",
+  border: `2px solid ${active ? "var(--ap-brand)" : "var(--ap-line)"}`,
+  borderRadius: "var(--ap-r-sm)",
+  cursor: "pointer",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+});
 
-  const setView = (mode: "grid" | "list") => {
-    setViewMode(mode);
-    localStorage.setItem(VIEW_KEY, mode);
+const gripStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  background: "transparent",
+  border: "none",
+  color: "var(--ap-muted)",
+  cursor: "grab",
+  touchAction: "none",
+  padding: "2px",
+  borderRadius: "4px",
+  flexShrink: 0,
+};
+
+/** ⋯ menu: Move-to-folder submenu, Favorite toggle, Trash. */
+const ItemMenu = ({
+  d,
+  folders,
+  onMove,
+  onFavorite,
+  onTrash,
+}: {
+  d: ContentDisplay;
+  folders: FolderRow[];
+  onMove: (folderId: string | null) => void;
+  onFavorite: () => void;
+  onTrash: () => void;
+}) => {
+  const menuStyle = {
+    minWidth: 188,
+    border: "2px solid var(--ap-line)",
+    background: "var(--ap-card)",
+    borderRadius: "var(--ap-r-md)",
   };
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+        <button className="ap-btn ap-btn--ghost ap-btn--sm" style={{ padding: "5px 7px" }} title="Actions">
+          <MoreHorizontal className="h-4 w-4" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" style={menuStyle} onClick={(e) => e.stopPropagation()}>
+        {folders.length > 0 && (
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger className="flex items-center gap-2 cursor-pointer text-sm">
+              <FolderInput className="h-3.5 w-3.5" /> Déplacer vers
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent style={menuStyle}>
+              {d.folderId && (
+                <DropdownMenuItem onSelect={() => onMove(null)} className="flex items-center gap-2 cursor-pointer text-sm">
+                  <FolderOpen className="h-3.5 w-3.5" /> Racine
+                </DropdownMenuItem>
+              )}
+              {folders.map((f) => (
+                <DropdownMenuItem
+                  key={f.id}
+                  onSelect={() => onMove(f.id)}
+                  className="flex items-center gap-2 cursor-pointer text-sm"
+                  disabled={d.folderId === f.id}
+                >
+                  {f.name}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
+        )}
+        <DropdownMenuItem onSelect={onFavorite} className="flex items-center gap-2 cursor-pointer text-sm">
+          <Star className="h-3.5 w-3.5" style={d.isFavorite ? { fill: "#fbbf24", color: "#fbbf24" } : {}} />
+          {d.isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onSelect={onTrash}
+          className="flex items-center gap-2 cursor-pointer text-sm"
+          style={{ color: "var(--ap-flash)" }}
+        >
+          <Trash2 className="h-3.5 w-3.5" /> Mettre à la corbeille
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
 
-  const loadFlashcards = useCallback(() => {
-    if (!user) return;
-    purgeExpiredTrash(user.id);
-    setMyFlashcards(getUserFlashcardSets(user.id));
-    setFavoriteFlashcards(getFavoriteFlashcardSets(user.id));
-    setPublicFlashcards(getPublicFlashcardSets());
-    setTrashedFlashcards(getTrashedItems(user.id, "flashcard"));
-    setFolders(getFolders(user.id, "flashcard"));
-  }, [user]);
+interface CardProps {
+  d: ContentDisplay;
+  folders: FolderRow[];
+  navigate: ReturnType<typeof useNavigate>;
+  onMove: (folderId: string | null) => void;
+  onFavorite: () => void;
+  onTrash: () => void;
+}
 
-  useEffect(() => {
-    if (!user) { navigate("/auth"); return; }
-    loadFlashcards();
-  }, [user, navigate, loadFlashcards]);
+const cardCount = (d: ContentDisplay) => (d.data.questions as unknown[] | undefined)?.length ?? 0;
+const flashcardId = (d: ContentDisplay) => String((d.data.id as string | undefined) ?? "");
 
-  const myFilters = useCollectionFilters(myFlashcards);
-  const favFilters = useCollectionFilters(favoriteFlashcards);
-  const pubFilters = useCollectionFilters(publicFlashcards);
-  const filtersFor = (tab: string) => tab === "favorites" ? favFilters : tab === "public" ? pubFilters : myFilters;
+const FlashcardCard = ({ d, folders, navigate, onMove, onFavorite, onTrash }: CardProps) => {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: d.id });
+  const cc = cardCount(d);
+  const fid = flashcardId(d);
 
-  const handleTrash = (id: string) => {
-    if (deleteQuiz(id)) { toast.success("Mis à la corbeille"); loadFlashcards(); }
-  };
-
-  const handlePermDeleteClick = (set: SavedQuiz) => { setPermDeleteTarget(set); setDeleteDialogOpen(true); };
-  const handlePermDeleteConfirm = () => {
-    if (permDeleteTarget && permanentlyDeleteQuiz(permDeleteTarget.id)) {
-      toast.success("Supprimé définitivement");
-      loadFlashcards();
-    }
-    setDeleteDialogOpen(false);
-    setPermDeleteTarget(null);
-  };
-
-  const handleRestore = (id: string) => {
-    if (restoreFromTrash(id)) { toast.success("Restauré"); loadFlashcards(); }
-  };
-
-  const handleToggleFavorite = (cardSet: SavedQuiz) => {
-    const updated = toggleFavorite(cardSet.id);
-    if (updated) { toast.success(updated.isFavorite ? t("addedToFavorites") : t("removedFromFavorites")); loadFlashcards(); }
-  };
-
-  const handleCreateFolder = () => {
-    const name = newFolderName.trim();
-    if (!name || !user) return;
-    createFolder(name, user.id, "flashcard");
-    setNewFolderName("");
-    setShowNewFolderInput(false);
-    loadFlashcards();
-    toast.success(`Dossier "${name}" créé`);
-  };
-
-  const handleRenameFolder = (id: string, name: string) => { renameFolder(id, name); loadFlashcards(); };
-
-  const handleDeleteFolder = (id: string) => {
-    const folder = folders.find((f) => f.id === id);
-    deleteFolder(id);
-    if (currentFolderId === id) setCurrentFolderId(null);
-    loadFlashcards();
-    if (folder) toast.success(`Dossier "${folder.name}" supprimé`);
-  };
-
-  const handleMoveToFolder = (setId: string, folderId: string | null) => {
-    moveToFolder(setId, folderId);
-    loadFlashcards();
-  };
-
-  const handleDuplicateSet = (id: string) => {
-    const copy = duplicateQuiz(id);
-    if (copy) { toast.success(`"${copy.title}" créé`); loadFlashcards(); }
-  };
-
-  const handleShare = (cardSet: SavedQuiz) => {
-    const url = `${window.location.origin}/builder?type=flashcard&quizId=${cardSet.id}`;
-    navigator.clipboard.writeText(url).then(
-      () => toast.success("Lien copié !"),
-      () => toast.error("Impossible de copier le lien"),
-    );
-  };
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (over && folders.some((f) => f.id === over.id)) {
-      moveToFolder(String(active.id), String(over.id));
-      loadFlashcards();
-      toast.success("Déplacé dans le dossier");
-    }
-  };
-
-  const toggleBtnStyle = (active: boolean): React.CSSProperties => ({
-    padding: "8px",
-    background: active ? "var(--ap-brand-soft)" : "transparent",
-    color: active ? "var(--ap-brand)" : "var(--ap-muted)",
-    border: `2px solid ${active ? "var(--ap-brand)" : "var(--ap-line)"}`,
-    borderRadius: "var(--ap-r-sm)",
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-  });
-
-  const renderFilters = (tab: string) => {
-    const f = filtersFor(tab);
-    return (
-      <div className="flex flex-col sm:flex-row gap-3 mb-5">
-        <div style={{ position: "relative", flex: "1 1 200px" }}>
-          <Search style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", width: 16, height: 16, color: "var(--ap-muted)", pointerEvents: "none" }} />
-          <input
-            placeholder="Rechercher..."
-            value={f.search}
-            onChange={(e) => f.setSearch(e.target.value)}
-            style={{ width: "100%", paddingLeft: "38px", padding: "10px 14px 10px 38px", fontFamily: "var(--ap-font-body)", fontWeight: 700, fontSize: "14px", color: "var(--ap-ink)", background: "var(--ap-card)", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-sm)", outline: "none", boxSizing: "border-box" as const }}
-            onFocus={(e) => { e.currentTarget.style.borderColor = "var(--ap-brand)"; e.currentTarget.style.boxShadow = "0 0 0 4px var(--ap-brand-soft)"; }}
-            onBlur={(e) => { e.currentTarget.style.borderColor = "var(--ap-line)"; e.currentTarget.style.boxShadow = "none"; }}
-          />
-        </div>
-        <Select value={f.category} onValueChange={f.setCategory}>
-          <SelectTrigger className="w-[160px]" style={triggerStyle}><SelectValue placeholder="Catégorie" /></SelectTrigger>
-          <SelectContent style={{ background: "var(--ap-card)", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-md)" }}>
-            {f.categories.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <Select value={f.sort} onValueChange={(v) => f.setSort(v as any)}>
-          <SelectTrigger className="w-[150px]" style={triggerStyle}><SelectValue placeholder="Trier" /></SelectTrigger>
-          <SelectContent style={{ background: "var(--ap-card)", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-md)" }}>
-            <SelectItem value="newest">Plus récent</SelectItem>
-            <SelectItem value="oldest">Plus ancien</SelectItem>
-            <SelectItem value="az">A → Z</SelectItem>
-            <SelectItem value="questions">Nb cartes</SelectItem>
-          </SelectContent>
-        </Select>
-        <div className="flex gap-1 flex-shrink-0">
-          <button onClick={() => setView("grid")} style={toggleBtnStyle(viewMode === "grid")} title="Vue grille"><LayoutGrid style={{ width: 16, height: 16 }} /></button>
-          <button onClick={() => setView("list")} style={toggleBtnStyle(viewMode === "list")} title="Vue liste"><List style={{ width: 16, height: 16 }} /></button>
-        </div>
-      </div>
-    );
-  };
-
-  const renderCard = (cardSet: SavedQuiz, showActions = true) => (
+  return (
     <div
-      key={cardSet.id}
+      ref={setNodeRef}
       className="ap-card ap-card--hover flex h-full cursor-pointer flex-col overflow-hidden"
-      onClick={() => navigate(`/builder?type=flashcard&quizId=${cardSet.id}`)}
+      style={{ opacity: isDragging ? 0.4 : 1 }}
+      onClick={() => navigate(`/builder?type=flashcard&quizId=${fid}`)}
     >
-      <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px", marginBottom: "10px" }}>
-          <div style={{ flex: 1 }}>
-            <h3 className="ap-h3" style={{ fontSize: "15px" }}>{cardSet.title}</h3>
-            <p className="ap-muted" style={{ fontSize: "13px", marginTop: "2px" }}>{cardSet.description}</p>
-          </div>
-          {showActions && (
+      <div className="flex flex-1 flex-col p-5">
+        <div className="mb-3 flex items-start justify-between gap-3">
+          <div className="flex items-start gap-1.5 flex-1 min-w-0">
             <button
-              onClick={(e) => { e.stopPropagation(); handleToggleFavorite(cardSet); }}
-              style={{ color: cardSet.isFavorite ? "var(--ap-flash)" : "var(--ap-muted)", cursor: "pointer", padding: "4px", background: "none", border: "none" }}
+              type="button"
+              {...attributes}
+              {...listeners}
+              onClick={(e) => e.stopPropagation()}
+              style={gripStyle}
+              title="Déplacer"
+              aria-label={`Déplacer ${d.title}`}
             >
-              <Star style={{ width: 16, height: 16, fill: cardSet.isFavorite ? "var(--ap-flash)" : "none" }} />
+              <GripVertical style={{ width: 14, height: 14 }} />
             </button>
-          )}
+            <div className="flex-1 min-w-0">
+              <h3 className="ap-h3" style={{ fontSize: "15px" }}>{d.title}</h3>
+              <p className="ap-muted mt-0.5 text-sm line-clamp-2">{d.description}</p>
+            </div>
+          </div>
+          <button
+            onClick={(e) => { e.stopPropagation(); onFavorite(); }}
+            className="text-amber-400 hover:text-amber-500 transition-colors cursor-pointer p-1"
+          >
+            <Star className={`h-4 w-4 ${d.isFavorite ? "fill-amber-400" : ""}`} />
+          </button>
         </div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "12px" }}>
-          <span className="ap-pill" style={{ fontSize: "11px", padding: "3px 9px" }}>
-            {cardSet.questions.length} {cardSet.questions.length > 1 ? t("cards") : t("card")}
-          </span>
-          {cardSet.isPublic && (
-            <span className="ap-badge ap-badge--flash">{t("publicBadge")}</span>
+        <div className="flex flex-wrap items-center gap-1.5 mb-3">
+          {d.category && (
+            <Badge variant="outline" className="rounded-full text-xs border-slate-200 text-slate-500">
+              {d.category}
+            </Badge>
           )}
-          {cardSet.tags?.map((tag) => (
+          <span className="ap-pill" style={{ fontSize: "11px", padding: "3px 9px" }}>
+            {cc} {cc > 1 ? t("cards") : t("card")}
+          </span>
+          {d.tags?.map((tag) => (
             <span key={tag} className="ap-pill" style={{ fontSize: "11px", padding: "3px 9px" }}>#{tag}</span>
           ))}
         </div>
-        {showActions && (
-          <div style={{ marginTop: "auto", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px", paddingTop: "12px", borderTop: "2px solid var(--ap-line)" }}>
-            <ItemContextMenu
-              item={cardSet}
-              folders={folders}
-              onEdit={() => navigate(`/builder?type=flashcard&quizId=${cardSet.id}`)}
-              onDuplicate={() => handleDuplicateSet(cardSet.id)}
-              onToggleFavorite={() => handleToggleFavorite(cardSet)}
-              onMoveToFolder={(fid) => handleMoveToFolder(cardSet.id, fid)}
-              onShare={() => handleShare(cardSet)}
-              onTrash={() => handleTrash(cardSet.id)}
-            />
-            <button
-              className="ap-btn ap-btn--sm ap-btn--pill ap-btn--flash"
-              onClick={(e) => { e.stopPropagation(); navigate(`/builder?type=flashcard&quizId=${cardSet.id}`); }}
-            >
-              {t("editSet")}
-            </button>
-          </div>
-        )}
+        <div className="mt-auto flex items-center justify-between gap-2 pt-3" style={{ borderTop: "2px solid var(--ap-line)" }}>
+          <ItemMenu d={d} folders={folders} onMove={onMove} onFavorite={onFavorite} onTrash={onTrash} />
+          <button
+            className="ap-btn ap-btn--sm ap-btn--pill ap-btn--flash"
+            onClick={(e) => { e.stopPropagation(); navigate(`/builder?type=flashcard&quizId=${fid}`); }}
+          >
+            {t("editSet")}
+          </button>
+        </div>
       </div>
     </div>
   );
+};
 
-  const renderRow = (cardSet: SavedQuiz, showActions = true) => (
+const FlashcardRow = ({ d, folders, navigate, onMove, onFavorite, onTrash }: CardProps) => {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: d.id });
+  const cc = cardCount(d);
+  const fid = flashcardId(d);
+
+  return (
     <div
-      key={cardSet.id}
+      ref={setNodeRef}
       className="flex items-center gap-4 cursor-pointer px-4 py-3 transition-colors"
-      style={{ borderBottom: "2px solid var(--ap-line)" }}
-      onClick={() => navigate(`/builder?type=flashcard&quizId=${cardSet.id}`)}
+      style={{ borderBottom: "2px solid var(--ap-line)", opacity: isDragging ? 0.4 : 1 }}
+      onClick={() => navigate(`/builder?type=flashcard&quizId=${fid}`)}
       onMouseEnter={(e) => (e.currentTarget.style.background = "var(--ap-paper-2)")}
       onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
     >
+      <button
+        type="button"
+        {...attributes}
+        {...listeners}
+        onClick={(e) => e.stopPropagation()}
+        style={gripStyle}
+        title="Déplacer"
+        aria-label={`Déplacer ${d.title}`}
+      >
+        <GripVertical style={{ width: 14, height: 14 }} />
+      </button>
       <div className="flex-1 min-w-0">
-        <p className="ap-h3 truncate" style={{ fontSize: "14px", marginBottom: "2px" }}>{cardSet.title}</p>
-        {cardSet.description && <p className="ap-muted truncate" style={{ fontSize: "12px" }}>{cardSet.description}</p>}
+        <p className="ap-h3 truncate" style={{ fontSize: "14px", marginBottom: "2px" }}>{d.title}</p>
+        {d.description && <p className="ap-muted truncate" style={{ fontSize: "12px" }}>{d.description}</p>}
       </div>
       <div className="hidden sm:flex items-center gap-1.5 flex-shrink-0">
+        {d.category && (
+          <Badge variant="outline" className="rounded-full text-xs border-slate-200 text-slate-500">
+            {d.category}
+          </Badge>
+        )}
         <span className="ap-pill" style={{ fontSize: "11px", padding: "2px 8px" }}>
-          {cardSet.questions.length} {cardSet.questions.length > 1 ? t("cards") : t("card")}
+          {cc} {cc > 1 ? t("cards") : t("card")}
         </span>
-        {cardSet.isPublic && <span className="ap-badge ap-badge--flash" style={{ fontSize: "11px" }}>{t("publicBadge")}</span>}
       </div>
       <div className="flex items-center gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-        {showActions && (
-          <ItemContextMenu
-            item={cardSet}
-            folders={folders}
-            onEdit={() => navigate(`/builder?type=flashcard&quizId=${cardSet.id}`)}
-            onDuplicate={() => handleDuplicateSet(cardSet.id)}
-            onToggleFavorite={() => handleToggleFavorite(cardSet)}
-            onMoveToFolder={(fid) => handleMoveToFolder(cardSet.id, fid)}
-            onShare={() => handleShare(cardSet)}
-            onTrash={() => handleTrash(cardSet.id)}
-          />
-        )}
+        <ItemMenu d={d} folders={folders} onMove={onMove} onFavorite={onFavorite} onTrash={onTrash} />
         <button
           className="ap-btn ap-btn--sm ap-btn--pill ap-btn--flash"
-          onClick={(e) => { e.stopPropagation(); navigate(`/builder?type=flashcard&quizId=${cardSet.id}`); }}
+          onClick={(e) => { e.stopPropagation(); navigate(`/builder?type=flashcard&quizId=${fid}`); }}
           style={{ fontSize: "12px", padding: "4px 12px" }}
         >
           {t("editSet")}
@@ -304,132 +284,325 @@ const MyFlashcards = () => {
       </div>
     </div>
   );
+};
 
-  const renderTabContent = (tab: string, allItems: SavedQuiz[], emptyKey: string, ctaKey?: string, showActions = true) => {
-    const isMyTab = tab === "my";
-    const folderItems = isMyTab && currentFolderId
-      ? allItems.filter((q) => q.folderId === currentFolderId)
-      : isMyTab
-      ? allItems.filter((q) => !q.folderId)
-      : allItems;
-    const f = filtersFor(tab);
-    const rootFolders = isMyTab && !currentFolderId ? folders : [];
+const MyFlashcards = () => {
+  const navigate = useNavigate();
+  const c = useContentCollection("flashcard");
 
-    if (allItems.length === 0 && rootFolders.length === 0) return (
-      <div style={{ borderRadius: "var(--ap-r-lg)", border: "2px dashed var(--ap-line-2)", background: "var(--ap-paper-2)", padding: "48px 24px", textAlign: "center" }}>
-        <p className="ap-muted" style={{ fontSize: "14px", marginBottom: ctaKey ? "16px" : 0 }}>{t(emptyKey as any)}</p>
-        {ctaKey && <button className="ap-btn ap-btn--sm ap-btn--pill" onClick={() => navigate('/builder-start?type=flashcard')}>{t(ctaKey as any)}</button>}
-      </div>
-    );
+  const [activeTab, setActiveTab] = useState("my");
+  const [viewMode, setViewMode] = useState<"grid" | "list">(
+    () => (localStorage.getItem(VIEW_KEY) as "grid" | "list") ?? "grid",
+  );
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("Tous");
+  const [sort, setSort] = useState<SortOption>("newest");
+  const [page, setPage] = useState(1);
+  const [permDeleteTarget, setPermDeleteTarget] = useState<ContentDisplay | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
-    return (
-      <>
-        {renderFilters(tab)}
-        {rootFolders.length > 0 && (
-          <div
-            className={viewMode === "grid" ? "grid gap-4 md:grid-cols-3 lg:grid-cols-4 mb-6" : "ap-card mb-6"}
-            style={viewMode === "list" ? { padding: 0, overflow: "hidden" } : {}}
-          >
-            {rootFolders.map((folder) => (
-              <FolderCard
-                key={folder.id}
-                folder={folder}
-                itemCount={getFolderItemCount(folder.id, user!.id, "flashcard")}
-                viewMode={viewMode}
-                onClick={() => setCurrentFolderId(folder.id)}
-                onRename={handleRenameFolder}
-                onDelete={handleDeleteFolder}
-              />
-            ))}
-          </div>
-        )}
-        {folderItems.length === 0 ? (
-          <p className="py-10 text-center text-sm text-slate-400">
-            {currentFolderId ? "Aucun paquet dans ce dossier." : "Aucun résultat pour cette recherche."}
-          </p>
-        ) : viewMode === "grid" ? (
-          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-            {folderItems.map((s) => renderCard(s, showActions))}
-          </div>
-        ) : (
-          <div className="ap-card" style={{ padding: 0, overflow: "hidden" }}>
-            {folderItems.map((s) => renderRow(s, showActions))}
-          </div>
-        )}
-        <Pagination
-          page={f.page}
-          totalPages={Math.max(1, Math.ceil(folderItems.length / 12))}
-          onPageChange={f.setPage}
-          className="mt-8"
-        />
-      </>
-    );
+  const setView = (mode: "grid" | "list") => {
+    setViewMode(mode);
+    localStorage.setItem(VIEW_KEY, mode);
   };
 
-  if (!user) return null;
+  const display = useMemo(() => c.items.map(toDisplay), [c.items]);
+  const active = useMemo(() => filterActive(display), [display]);
+  const trashed = useMemo(() => filterTrashed(display), [display]);
+  const favorites = useMemo(
+    () => applySearchSort(filterFavorites(display), { search, category, sort }),
+    [display, search, category, sort],
+  );
+  const publicDisplay = useMemo(
+    () => applySearchSort(c.publicItems.map(toDisplay), { search, category, sort }),
+    [c.publicItems, search, category, sort],
+  );
+
+  // Direct active-item count per folderId (badge on the explorer).
+  const folderCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const item of active) {
+      if (item.folderId) counts[item.folderId] = (counts[item.folderId] ?? 0) + 1;
+    }
+    return counts;
+  }, [active]);
+
+  const categories = useMemo(() => {
+    const cats = new Set(active.map((i) => i.category).filter(Boolean));
+    return ["Tous", ...Array.from(cats).sort()];
+  }, [active]);
+
+  const visible = useMemo(
+    () => applySearchSort(filterByFolder(active, c.currentFolderId), { search, category, sort }),
+    [active, c.currentFolderId, search, category, sort],
+  );
+
+  const totalPages = Math.max(1, Math.ceil(visible.length / PAGE_SIZE));
+  const clampedPage = Math.min(page, totalPages);
+  const paginated = visible.slice((clampedPage - 1) * PAGE_SIZE, clampedPage * PAGE_SIZE);
+
+  // Breadcrumb path from currentFolderId up the parent chain.
+  const breadcrumb = useMemo(() => {
+    const path: FolderRow[] = [];
+    let id = c.currentFolderId;
+    const byId = new Map(c.folders.map((f) => [f.id, f]));
+    while (id) {
+      const folder = byId.get(id);
+      if (!folder) break;
+      path.unshift(folder);
+      id = folder.parent_id;
+    }
+    return path;
+  }, [c.currentFolderId, c.folders]);
+
+  const handleMove = (rowId: string, folderId: string | null) => {
+    c.moveContent(rowId, folderId)
+      .then(() => toast.success("Déplacé"))
+      .catch(() => toast.error("Erreur lors du déplacement"));
+  };
+
+  const handleFavorite = (d: ContentDisplay) => {
+    c.toggleFavorite(d.id)
+      .then(() => toast.success(d.isFavorite ? t("removedFromFavorites") : t("addedToFavorites")))
+      .catch(() => toast.error("Erreur"));
+  };
+
+  const handleTrash = (rowId: string) => {
+    c.trashItem(rowId)
+      .then(() => toast.success("Mis à la corbeille"))
+      .catch(() => toast.error("Erreur"));
+  };
+
+  const handleRestore = (rowId: string) => {
+    c.restoreItem(rowId)
+      .then(() => toast.success("Restauré"))
+      .catch(() => toast.error("Erreur"));
+  };
+
+  const handlePermDeleteConfirm = () => {
+    if (permDeleteTarget) {
+      c.removeItem(permDeleteTarget.id)
+        .then(() => toast.success("Supprimé définitivement"))
+        .catch(() => toast.error("Erreur"));
+    }
+    setDeleteDialogOpen(false);
+    setPermDeleteTarget(null);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active: dragActive, over } = event;
+    if (!over) return;
+    const overId = String(over.id);
+    let target: string | null;
+    if (overId === "folder:root") target = null;
+    else if (overId.startsWith("folder:")) target = overId.slice("folder:".length);
+    else return;
+
+    const activeId = String(dragActive.id);
+    if (activeId.startsWith("movefolder:")) {
+      const folderId = activeId.slice("movefolder:".length);
+      c.moveFolder(folderId, target).catch((err) => {
+        if (err instanceof Error && err.message === "cycle") toast.error("Déplacement impossible (cycle)");
+        else toast.error("Erreur lors du déplacement");
+      });
+    } else {
+      handleMove(activeId, target);
+    }
+  };
+
+  const cardProps = (d: ContentDisplay): CardProps => ({
+    d,
+    folders: c.folders,
+    navigate,
+    onMove: (folderId) => handleMove(d.id, folderId),
+    onFavorite: () => handleFavorite(d),
+    onTrash: () => handleTrash(d.id),
+  });
+
+  const toolbar = (
+    <div className="flex flex-col sm:flex-row gap-3 mb-5">
+      <div className="relative flex-1">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: "var(--ap-muted)" }} />
+        <input
+          placeholder="Rechercher..."
+          value={search}
+          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+          style={{
+            width: "100%", padding: "10px 14px 10px 38px",
+            fontFamily: "var(--ap-font-body)", fontWeight: 700, fontSize: "14px",
+            color: "var(--ap-ink)", background: "var(--ap-card)",
+            border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-sm)",
+            outline: "none", boxSizing: "border-box" as const,
+          }}
+          onFocus={(e) => { e.currentTarget.style.borderColor = "var(--ap-brand)"; e.currentTarget.style.boxShadow = "0 0 0 4px var(--ap-brand-soft)"; }}
+          onBlur={(e) => { e.currentTarget.style.borderColor = "var(--ap-line)"; e.currentTarget.style.boxShadow = "none"; }}
+        />
+      </div>
+      <Select value={category} onValueChange={(v) => { setCategory(v); setPage(1); }}>
+        <SelectTrigger className="w-[160px]" style={triggerStyle}>
+          <SelectValue placeholder="Catégorie" />
+        </SelectTrigger>
+        <SelectContent style={{ background: "var(--ap-card)", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-md)" }}>
+          {categories.map((cat) => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+        </SelectContent>
+      </Select>
+      <Select value={sort} onValueChange={(v) => setSort(v as SortOption)}>
+        <SelectTrigger className="w-[150px]" style={triggerStyle}>
+          <SelectValue placeholder="Trier" />
+        </SelectTrigger>
+        <SelectContent style={{ background: "var(--ap-card)", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-md)" }}>
+          <SelectItem value="newest">Plus récent</SelectItem>
+          <SelectItem value="oldest">Plus ancien</SelectItem>
+          <SelectItem value="az">A → Z</SelectItem>
+        </SelectContent>
+      </Select>
+      <div className="flex gap-1 flex-shrink-0">
+        <button onClick={() => setView("grid")} style={toggleBtnStyle(viewMode === "grid")} title="Vue grille"><LayoutGrid className="w-4 h-4" /></button>
+        <button onClick={() => setView("list")} style={toggleBtnStyle(viewMode === "list")} title="Vue liste"><List className="w-4 h-4" /></button>
+      </div>
+    </div>
+  );
 
   return (
-    <div style={{ minHeight: "100vh" }}>
+    <div className="min-h-screen">
       <Header subtitle={t("myFlashcards")} />
       <div className="mx-auto max-w-6xl px-6 py-10">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
           <div>
-            <h1 className="ap-h2" style={{ fontSize: "26px" }}>
-              {currentFolderId
-                ? <span className="flex items-center gap-2 flex-wrap">
-                    <button className="ap-btn ap-btn--ghost ap-btn--sm" style={{ padding: "2px 0", fontWeight: 600, fontSize: "inherit" }} onClick={() => setCurrentFolderId(null)}>{t("myFlashcards")}</button>
-                    <ChevronRight className="h-5 w-5" style={{ color: "var(--ap-muted)" }} />
-                    {folders.find((f) => f.id === currentFolderId)?.name ?? "Dossier"}
-                  </span>
-                : t("myFlashcards")
-              }
-            </h1>
+            <h1 className="ap-h2" style={{ fontSize: "26px" }}>{t("myFlashcards")}</h1>
             <p className="ap-muted" style={{ fontSize: "14px" }}>{t("myFlashcardsSubtitle")}</p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            {showNewFolderInput ? (
-              <div className="flex items-center gap-2">
-                <input
-                  autoFocus
-                  value={newFolderName}
-                  onChange={(e) => setNewFolderName(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') handleCreateFolder(); if (e.key === 'Escape') { setShowNewFolderInput(false); setNewFolderName(""); } }}
-                  placeholder="Nom du dossier"
-                  className="ap-input"
-                  style={{ width: '180px', height: '38px', padding: '6px 12px' }}
-                />
-                <button className="ap-btn ap-btn--sm ap-btn--pill" onClick={handleCreateFolder}>Créer</button>
-                <button className="ap-btn ap-btn--sm ap-btn--pill ap-btn--ghost" onClick={() => { setShowNewFolderInput(false); setNewFolderName(""); }}>Annuler</button>
-              </div>
-            ) : (
-              <button className="ap-btn ap-btn--sm ap-btn--pill ap-btn--ghost" onClick={() => setShowNewFolderInput(true)} style={{ gap: '6px', display: 'flex', alignItems: 'center' }}>
-                <FolderPlus className="h-4 w-4" /> Nouveau dossier
-              </button>
-            )}
-            <button className="ap-btn ap-btn--sm ap-btn--pill ap-btn--flash" onClick={() => navigate('/builder-start?type=flashcard')}>{t("createFlashcardSet")}</button>
+            <button className="ap-btn ap-btn--sm ap-btn--pill ap-btn--flash" onClick={() => navigate("/builder-start?type=flashcard")}>{t("createFlashcardSet")}</button>
           </div>
         </div>
 
+        {c.error && (
+          <div style={{ borderRadius: "var(--ap-r-md)", border: "2px solid var(--ap-flash)", background: "var(--ap-paper-2)", padding: "16px", marginBottom: "16px", color: "var(--ap-flash)", fontWeight: 700 }}>
+            {c.error}
+          </div>
+        )}
+
         <DndContext onDragEnd={handleDragEnd}>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-            <TabsList style={{ background: "var(--ap-paper-2)", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-sm)", padding: "4px" }}>
-              <TabsTrigger value="my" style={{ borderRadius: "var(--ap-r-sm)", fontFamily: "var(--ap-font-display)", fontWeight: 600 }}>{`${t("myFlashcardsTab")} (${myFlashcards.length})`}</TabsTrigger>
-              <TabsTrigger value="favorites" style={{ borderRadius: "var(--ap-r-sm)", fontFamily: "var(--ap-font-display)", fontWeight: 600 }}>{`${t("favoritesTab")} (${favoriteFlashcards.length})`}</TabsTrigger>
-              <TabsTrigger value="public" style={{ borderRadius: "var(--ap-r-sm)", fontFamily: "var(--ap-font-display)", fontWeight: 600 }}>{`${t("publicFlashcardsTab")} (${publicFlashcards.length})`}</TabsTrigger>
-              <TabsTrigger value="trash" style={{ borderRadius: "var(--ap-r-sm)", fontFamily: "var(--ap-font-display)", fontWeight: 600 }} className="flex items-center gap-1.5">
+            <TabsList>
+              <TabsTrigger value="my">{`${t("myFlashcardsTab")} (${active.length})`}</TabsTrigger>
+              <TabsTrigger value="favorites">{`Favoris (${favorites.length})`}</TabsTrigger>
+              <TabsTrigger value="public">{`Flashcards publiques (${publicDisplay.length})`}</TabsTrigger>
+              <TabsTrigger value="trash" className="flex items-center gap-1.5">
                 <Trash2 className="h-3.5 w-3.5" />
-                {`Corbeille${trashedFlashcards.length > 0 ? ` (${trashedFlashcards.length})` : ""}`}
+                {`Corbeille${trashed.length > 0 ? ` (${trashed.length})` : ""}`}
               </TabsTrigger>
             </TabsList>
-            <TabsContent value="my">{renderTabContent("my", myFlashcards, "noFlashcardsSaved", "createFlashcardSet")}</TabsContent>
-            <TabsContent value="favorites">{renderTabContent("favorites", favoriteFlashcards, "noFavoriteFlashcards", undefined, false)}</TabsContent>
-            <TabsContent value="public">{renderTabContent("public", publicFlashcards, "noPublicFlashcards", undefined, false)}</TabsContent>
+
+            <TabsContent value="my">
+              <div className="flex flex-col md:flex-row gap-6">
+                <aside className="md:w-64 md:flex-shrink-0">
+                  <div className="ap-card" style={{ padding: "12px" }}>
+                    <FolderExplorer
+                      tree={c.tree}
+                      currentFolderId={c.currentFolderId}
+                      storageKey="explorer-expanded-flashcard"
+                      counts={folderCounts}
+                      onNavigate={(id) => { c.setCurrentFolderId(id); setPage(1); }}
+                      onCreate={(pid, name) => c.createFolder(pid, name)}
+                      onRename={c.renameFolder}
+                      onDelete={c.deleteFolder}
+                      onMoveFolder={c.moveFolder}
+                    />
+                  </div>
+                </aside>
+
+                <div className="flex-1 min-w-0">
+                  {/* Breadcrumb */}
+                  <div className="flex items-center gap-1 flex-wrap mb-4" style={{ fontSize: "14px" }}>
+                    <button
+                      className="ap-btn ap-btn--ghost ap-btn--sm"
+                      style={{ padding: "2px 6px", fontWeight: 700 }}
+                      onClick={() => { c.setCurrentFolderId(null); setPage(1); }}
+                    >
+                      Tous
+                    </button>
+                    {breadcrumb.map((f) => (
+                      <span key={f.id} className="flex items-center gap-1">
+                        <ChevronRight className="h-4 w-4" style={{ color: "var(--ap-muted)" }} />
+                        <button
+                          className="ap-btn ap-btn--ghost ap-btn--sm"
+                          style={{ padding: "2px 6px", fontWeight: 700, color: f.id === c.currentFolderId ? "var(--ap-brand)" : "var(--ap-ink)" }}
+                          onClick={() => { c.setCurrentFolderId(f.id); setPage(1); }}
+                        >
+                          {f.name}
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+
+                  {toolbar}
+
+                  {c.loading ? (
+                    <p className="py-10 text-center text-sm text-slate-400">Chargement…</p>
+                  ) : paginated.length === 0 ? (
+                    <div style={{ borderRadius: "var(--ap-r-lg)", border: "2px dashed var(--ap-line-2)", background: "var(--ap-paper-2)", padding: "48px 24px", textAlign: "center" }}>
+                      <p className="ap-muted" style={{ fontSize: "14px", marginBottom: "16px" }}>
+                        {search || category !== "Tous"
+                          ? "Aucun résultat pour cette recherche."
+                          : c.currentFolderId
+                          ? "Aucun paquet dans ce dossier."
+                          : t("noFlashcardsSaved")}
+                      </p>
+                      {!search && category === "Tous" && !c.currentFolderId && (
+                        <button className="ap-btn ap-btn--sm ap-btn--pill" onClick={() => navigate("/builder-start?type=flashcard")}>{t("createFlashcardSet")}</button>
+                      )}
+                    </div>
+                  ) : viewMode === "grid" ? (
+                    <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+                      {paginated.map((d) => <FlashcardCard key={d.id} {...cardProps(d)} />)}
+                    </div>
+                  ) : (
+                    <div className="ap-card" style={{ padding: 0, overflow: "hidden" }}>
+                      {paginated.map((d) => <FlashcardRow key={d.id} {...cardProps(d)} />)}
+                    </div>
+                  )}
+
+                  <Pagination page={clampedPage} totalPages={totalPages} onPageChange={setPage} className="mt-8" />
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="favorites">
+              {favorites.length === 0 ? (
+                <p className="py-10 text-center text-sm text-slate-400">Aucun favori.</p>
+              ) : viewMode === "grid" ? (
+                <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+                  {favorites.map((d) => <FlashcardCard key={d.id} {...cardProps(d)} />)}
+                </div>
+              ) : (
+                <div className="ap-card" style={{ padding: 0, overflow: "hidden" }}>
+                  {favorites.map((d) => <FlashcardRow key={d.id} {...cardProps(d)} />)}
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="public">
+              {publicDisplay.length === 0 ? (
+                <p className="py-10 text-center text-sm text-slate-400">Aucune flashcard publique.</p>
+              ) : viewMode === "grid" ? (
+                <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+                  {publicDisplay.map((d) => <FlashcardCard key={d.id} {...cardProps(d)} />)}
+                </div>
+              ) : (
+                <div className="ap-card" style={{ padding: 0, overflow: "hidden" }}>
+                  {publicDisplay.map((d) => <FlashcardRow key={d.id} {...cardProps(d)} />)}
+                </div>
+              )}
+            </TabsContent>
+
             <TabsContent value="trash">
               <TrashView
-                items={trashedFlashcards}
+                items={trashed as unknown as SavedQuiz[]}
                 viewMode={viewMode}
                 onRestore={handleRestore}
-                onPermanentDelete={handlePermDeleteClick}
+                onPermanentDelete={(item) => { setPermDeleteTarget(item as unknown as ContentDisplay); setDeleteDialogOpen(true); }}
               />
             </TabsContent>
           </Tabs>

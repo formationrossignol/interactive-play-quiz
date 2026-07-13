@@ -32,6 +32,22 @@ export async function listContent(
   return data ?? [];
 }
 
+/**
+ * List public content of a type across all users (for the "public" tab).
+ * Relies on the `content_public_read` RLS policy (select allowed when
+ * is_public = true). Ordered by updated_at descending.
+ */
+export async function listPublicContent(type: ContentType): Promise<ContentRow[]> {
+  const { data, error } = await supabase
+    .from('content')
+    .select('*')
+    .eq('type', type)
+    .eq('is_public', true)
+    .order('updated_at', { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
+
 /** Fetch a single content row by id, or null if it does not exist. */
 export async function getContent(id: string): Promise<ContentRow | null> {
   const { data, error } = await supabase
