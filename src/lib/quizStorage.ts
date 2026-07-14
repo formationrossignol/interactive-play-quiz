@@ -20,6 +20,7 @@ export interface SavedQuiz {
   headerImage?: string;
   theme?: string;
   font?: string;
+  ambianceId?: string;
   rating?: number;
   ratingCount?: number;
   folderId?: string | null;
