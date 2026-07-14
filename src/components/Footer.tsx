@@ -29,6 +29,9 @@ export const Footer = () => {
         { label: t('footerGuides'), onClick: () => navigate('/guides') },
         { label: t('footerCommunity'), onClick: () => navigate('/community') },
         { label: t('footerTestimonials'), onClick: () => navigate('/reviews') },
+        { label: t('footerRoadmap'), onClick: () => navigate('/roadmap') },
+        { label: t('footerChangelog'), onClick: () => navigate('/changelog') },
+        { label: t('footerReport'), onClick: () => navigate('/report') },
       ],
     },
   ];
