@@ -3,17 +3,18 @@
 All files are self-hosted and must be **CC0 / royalty-free**. Paths below are
 referenced by `src/lib/audioManifest.ts` — keep the exact filenames.
 
-> The files currently committed here are **silent placeholders** (~1s of MPEG
-> silence) so nothing 404s. Replace each with real audio before shipping.
+> **Music** is real (`ludiq-calm.mp3`, `ludiq-intense.mp3`). **SFX** are still
+> **silent placeholders** (~1s of MPEG silence) so nothing 404s — replace them.
 
-## Music (loops), per ambiance
-`audio/{arcade,chill,epic}/`
-- `lobby.mp3`    — light loop while players join
-- `question.mp3` — driving loop during questions
-- `results.mp3`  — upbeat loop for leaderboard/transition
-- `victory.mp3`  — celebratory loop for the final screen
+## Music (shared beds)
+`audio/`
+- `ludiq-calm.mp3`    — calm bed, used for `lobby` + `results` phases
+- `ludiq-intense.mp3` — driving bed, used for `question` + `victory` phases
 
-Ambiance vibes: **arcade** = chiptune/synth, **chill** = lo-fi, **epic** = cinematic.
+All three ambiances (arcade/chill/epic) currently reference these same two files
+via `sharedTracks` in `src/lib/audioManifest.ts` — they sound identical for now.
+To give each ambiance a distinct sound, add per-ambiance files (e.g.
+`audio/arcade/lobby.mp3`) and point each ambiance's `tracks` at them.
 
 ## SFX (one-shots)
 `audio/sfx/`

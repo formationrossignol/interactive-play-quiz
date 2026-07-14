@@ -17,34 +17,23 @@ export interface Ambiance {
   tracks: Record<MusicRole, string>;
 }
 
+// Two shared beds for now: CALM for lobby/results, INTENSE for question/victory.
+// All three ambiances reference the same files (identical sound) until distinct
+// per-ambiance tracks are dropped in — see public/audio/README.md.
+const CALM = '/audio/ludiq-calm.mp3';
+const INTENSE = '/audio/ludiq-intense.mp3';
+
+const sharedTracks: Record<MusicRole, string> = {
+  lobby: CALM,
+  results: CALM,
+  question: INTENSE,
+  victory: INTENSE,
+};
+
 export const AMBIANCES: Record<Exclude<AmbianceId, 'none'>, Ambiance> = {
-  arcade: {
-    label: 'Arcade',
-    tracks: {
-      lobby: '/audio/arcade/lobby.mp3',
-      question: '/audio/arcade/question.mp3',
-      results: '/audio/arcade/results.mp3',
-      victory: '/audio/arcade/victory.mp3',
-    },
-  },
-  chill: {
-    label: 'Chill',
-    tracks: {
-      lobby: '/audio/chill/lobby.mp3',
-      question: '/audio/chill/question.mp3',
-      results: '/audio/chill/results.mp3',
-      victory: '/audio/chill/victory.mp3',
-    },
-  },
-  epic: {
-    label: 'Épique',
-    tracks: {
-      lobby: '/audio/epic/lobby.mp3',
-      question: '/audio/epic/question.mp3',
-      results: '/audio/epic/results.mp3',
-      victory: '/audio/epic/victory.mp3',
-    },
-  },
+  arcade: { label: 'Arcade', tracks: { ...sharedTracks } },
+  chill: { label: 'Chill', tracks: { ...sharedTracks } },
+  epic: { label: 'Épique', tracks: { ...sharedTracks } },
 };
 
 export const SFX: Record<SfxName, string> = {
