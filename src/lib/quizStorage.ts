@@ -94,7 +94,10 @@ export const purgeExpiredTrash = (userId: string): void => {
   }
 };
 
-export const saveQuiz = (quiz: Omit<SavedQuiz, 'id' | 'createdAt' | 'userId'>): SavedQuiz => {
+export const saveQuiz = (
+  quiz: Omit<SavedQuiz, 'id' | 'createdAt' | 'userId' | 'speedBonus' | 'transitionTime' | 'category'> &
+    Partial<Pick<SavedQuiz, 'speedBonus' | 'transitionTime' | 'category'>>,
+): SavedQuiz => {
   const user = getCurrentUser();
   if (!user) throw new Error('User not authenticated');
   
