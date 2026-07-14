@@ -1,4 +1,9 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+
+// foldersRepo imports the real Supabase client at module load; stub it so the
+// pure tree helpers can be tested without VITE_SUPABASE_URL in the env.
+vi.mock('@/lib/supabase', () => ({ supabase: {} }));
+
 import { buildTree, getDescendantIds, wouldCreateCycle } from '../foldersRepo';
 
 const flat = [

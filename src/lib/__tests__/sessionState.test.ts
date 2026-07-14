@@ -20,7 +20,7 @@ beforeEach(() => {
 describe('createLiveSession', () => {
   it('invokes create-session with game_code, title, questions and returns true on success', async () => {
     invokeMock.mockResolvedValue({ data: { ok: true }, error: null });
-    const ok = await createLiveSession('123456', 'My Quiz', [{ id: 'q1', type: 'multiple-choice' } as any]);
+    const ok = await createLiveSession('123456', 'My Quiz', [{ id: 'q1', type: 'multiple-choice' }]);
     expect(ok).toBe(true);
     expect(invokeMock).toHaveBeenCalledWith('create-session', {
       body: { game_code: '123456', title: 'My Quiz', questions: [{ id: 'q1', type: 'multiple-choice' }] },
