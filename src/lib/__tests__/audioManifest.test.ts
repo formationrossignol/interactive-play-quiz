@@ -2,7 +2,6 @@
 import { describe, expect, it } from 'vitest';
 import {
   AMBIANCES,
-  SFX,
   DEFAULT_AMBIANCE,
   phaseToRole,
   resolveTrack,
@@ -23,12 +22,6 @@ describe('audioManifest', () => {
         const path = AMBIANCES[id].tracks[role];
         expect(path, `${id}.${role}`).toMatch(/^\/audio\/.+\.mp3$/);
       }
-    }
-  });
-
-  it('every SFX resolves to a file path', () => {
-    for (const name of Object.keys(SFX) as (keyof typeof SFX)[]) {
-      expect(SFX[name], name).toMatch(/^\/audio\/sfx\/.+\.mp3$/);
     }
   });
 

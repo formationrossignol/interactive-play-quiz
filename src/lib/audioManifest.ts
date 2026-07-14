@@ -36,13 +36,8 @@ export const AMBIANCES: Record<Exclude<AmbianceId, 'none'>, Ambiance> = {
   epic: { label: 'Épique', tracks: { ...sharedTracks } },
 };
 
-export const SFX: Record<SfxName, string> = {
-  tick: '/audio/sfx/tick.mp3',
-  'answer-correct': '/audio/sfx/correct.mp3',
-  'answer-wrong': '/audio/sfx/wrong.mp3',
-  reveal: '/audio/sfx/reveal.mp3',
-  podium: '/audio/sfx/podium.mp3',
-};
+// SFX are synthesized at runtime (Web Audio oscillators) — see src/lib/sfxSynth.ts.
+// No audio files, so this is just the name union used by playSfx.
 
 // Options for the QuizBuilder picker (includes the silent 'none' choice).
 export const AMBIANCE_OPTIONS: { id: AmbianceId; label: string }[] = [

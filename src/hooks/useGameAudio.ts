@@ -3,12 +3,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   phaseToRole,
   resolveTrack,
-  SFX,
   normalizeAmbianceId,
   type AmbianceId,
   type SfxName,
 } from '@/lib/audioManifest';
 import { loadAudioPrefs, saveAudioPrefs } from '@/lib/audioPrefs';
+import { playSynthSfx } from '@/lib/sfxSynth';
 
 interface UseGameAudioArgs {
   ambianceId: AmbianceId | string | undefined;
@@ -41,6 +41,7 @@ export function useGameAudio({ ambianceId, gameState, isHost }: UseGameAudioArgs
   const currentSrcRef = useRef<string | null>(null);
   const unlockedRef = useRef(false);
   const switchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sfxCtxRef = useRef<AudioContext | null>(null);
 
   // Live refs so effects read the latest prefs without re-subscribing.
   const mutedRef = useRef(muted);
@@ -58,6 +59,8 @@ export function useGameAudio({ ambianceId, gameState, isHost }: UseGameAudioArgs
       el.pause();
       el.src = '';
       musicRef.current = null;
+      sfxCtxRef.current?.close().catch(() => {});
+      sfxCtxRef.current = null;
     };
   }, []);
 
@@ -121,6 +124,12 @@ export function useGameAudio({ ambianceId, gameState, isHost }: UseGameAudioArgs
   }, []);
 
   const unlock = useCallback(() => {
+    // AudioContext must be created/resumed from a user gesture (autoplay policy).
+    if (!sfxCtxRef.current) {
+      const Ctx = window.AudioContext ?? (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (Ctx) sfxCtxRef.current = new Ctx();
+    }
+    sfxCtxRef.current?.resume().catch(() => {});
     if (unlockedRef.current) return;
     unlockedRef.current = true;
     const el = musicRef.current;
@@ -131,11 +140,9 @@ export function useGameAudio({ ambianceId, gameState, isHost }: UseGameAudioArgs
 
   const playSfx = useCallback((name: SfxName) => {
     if (mutedRef.current || !unlockedRef.current) return;
-    const src = SFX[name];
-    if (!src) return;
-    const sfx = new Audio(src);
-    sfx.volume = volumeRef.current;
-    sfx.play().catch(() => { /* file missing or blocked — non-fatal */ });
+    const ctx = sfxCtxRef.current;
+    if (!ctx) return;
+    playSynthSfx(ctx, name, volumeRef.current);
   }, []);
 
   // isHost currently only gates host-only SFX at the call site; kept in the

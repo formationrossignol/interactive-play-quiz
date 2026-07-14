@@ -3,8 +3,10 @@
 All files are self-hosted and must be **CC0 / royalty-free**. Paths below are
 referenced by `src/lib/audioManifest.ts` — keep the exact filenames.
 
-> **Music** is real (`ludiq-calm.mp3`, `ludiq-intense.mp3`). **SFX** are still
-> **silent placeholders** (~1s of MPEG silence) so nothing 404s — replace them.
+> **Music** is real (`ludiq-calm.mp3`, `ludiq-intense.mp3`). **SFX** are
+> **synthesized at runtime** (Web Audio oscillators, `src/lib/sfxSynth.ts`) — no
+> SFX files needed. To use recorded SFX instead, add files and switch
+> `playSfx` in `src/hooks/useGameAudio.ts` back to an `<audio>` source.
 
 ## Music (shared beds)
 `audio/`
@@ -16,15 +18,11 @@ via `sharedTracks` in `src/lib/audioManifest.ts` — they sound identical for no
 To give each ambiance a distinct sound, add per-ambiance files (e.g.
 `audio/arcade/lobby.mp3`) and point each ambiance's `tracks` at them.
 
-## SFX (one-shots)
-`audio/sfx/`
-- `tick.mp3`    — last 5s of the timer (host screen)
-- `correct.mp3` — right answer
-- `wrong.mp3`   — wrong answer
-- `reveal.mp3`  — answer distribution appears
-- `podium.mp3`  — final podium stinger
+## SFX
+Synthesized in `src/lib/sfxSynth.ts` (no files): `tick` (timer), `answer-correct`,
+`answer-wrong`, `reveal` (answer distribution), `podium` (final).
 
-## Where to get CC0 audio
+## Where to get CC0 audio (music)
 - https://pixabay.com/music/ and https://pixabay.com/sound-effects/ (CC0)
 - https://mixkit.co/free-sound-effects/ and https://mixkit.co/free-stock-music/ (free license — check terms)
 
