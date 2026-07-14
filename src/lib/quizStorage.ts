@@ -4,6 +4,9 @@ export interface SavedQuiz {
   id: string;
   title: string;
   description: string;
+  // Heterogeneous stored question shapes (quiz/poll/flashcard/slide) — kept
+  // loose deliberately; the strict Question union is narrower than runtime data.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   questions: any[];
   createdAt: string;
   userId: string;

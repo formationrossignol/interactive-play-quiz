@@ -1,9 +1,10 @@
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { AnswerDistribution } from "./AnswerDistribution";
+import type { EditableQuestion } from "@/lib/questionTypes";
 
 interface QuizSessionAnswerDistributionProps {
-  currentQuestion: any;
+  currentQuestion: EditableQuestion;
   answerDistribution: number[];
   onNext: () => void;
   onSkipToNext?: () => void;

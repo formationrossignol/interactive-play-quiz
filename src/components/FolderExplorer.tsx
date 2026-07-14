@@ -468,7 +468,6 @@ export const FolderExplorer = ({
       for (const id of collectAncestorIds(tree, currentFolderId)) set.add(id);
     }
     return set;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   });
 
   const [renamingId, setRenamingId] = useState<string | null>(null);

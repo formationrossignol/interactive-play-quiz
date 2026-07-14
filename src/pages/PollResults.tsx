@@ -73,7 +73,7 @@ const QuestionResultCard = ({ result }: { result: PollQuestionResult }) => {
             <XAxis dataKey="name" tick={{ fontSize: 11, fill: "var(--ap-muted)", fontFamily: "var(--ap-font-body)" }} />
             <YAxis tick={{ fontSize: 11, fill: "var(--ap-muted)" }} domain={[0, maxCount + 1]} allowDecimals={false} />
             <Tooltip
-              formatter={(value: number, _name: string, props: any) => [`${value} (${props.payload.pct}%)`, props.payload.fullName]}
+              formatter={(value: number, _name: string, props: { payload: { pct: number; fullName: string } }) => [`${value} (${props.payload.pct}%)`, props.payload.fullName]}
               contentStyle={{ fontFamily: "var(--ap-font-body)", fontSize: 13, border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-md)", background: "var(--ap-card)" }}
             />
             <Bar dataKey="count" radius={[6, 6, 0, 0]}>

@@ -6,15 +6,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { Upload, Trash2 } from "lucide-react";
 import { t } from "@/lib/i18n";
 
+interface Flashcard {
+  id?: string;
+  recto: string;
+  verso: string;
+  rectoImage?: string;
+  versoImage?: string;
+}
+
 interface FlashcardEditorProps {
-  flashcard: {
-    id?: string;
-    recto: string;
-    verso: string;
-    rectoImage?: string;
-    versoImage?: string;
-  };
-  onChange: (flashcard: any) => void;
+  flashcard: Flashcard;
+  onChange: (flashcard: Flashcard) => void;
 }
 
 export const FlashcardEditor = ({ flashcard, onChange }: FlashcardEditorProps) => {

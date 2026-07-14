@@ -30,7 +30,7 @@ import { DEFAULT_THEME_ID, THEMES, type Theme } from "@/lib/themes";
 import { hexToRgba } from "@/lib/color";
 import { toast } from "sonner";
 import { t } from "@/lib/i18n";
-import type { QuizQuestionType, PollQuestionType } from "@/lib/questionTypes";
+import type { QuizQuestionType, PollQuestionType, EditableQuestion } from "@/lib/questionTypes";
 import type { PollTemplate } from "@/lib/pollTemplates";
 import type { QuizTemplate } from "@/lib/quizTemplates";
 import { PollTemplateSelectorEnhanced } from "./PollTemplateSelectorEnhanced";
@@ -190,7 +190,7 @@ const AnswerRow = ({
 const PhonePreview = ({
   question, questionIndex, totalQuestions,
 }: {
-  question: any; questionIndex: number; totalQuestions: number;
+  question: EditableQuestion; questionIndex: number; totalQuestions: number;
 }) => {
   if (!question) {
     return (
@@ -291,7 +291,7 @@ const PhonePreview = ({
 const RailItem = ({
   question, index, isActive, onSelect, onDelete, onDuplicate,
 }: {
-  question: any; index: number; isActive: boolean;
+  question: EditableQuestion; index: number; isActive: boolean;
   onSelect: (i: number) => void; onDelete: (i: number) => void; onDuplicate: (i: number) => void;
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: question.id });
@@ -341,8 +341,8 @@ const RailItem = ({
             {meta.label}
           </span>
           <span style={{
-            display: "-webkit-box" as any,
-            WebkitLineClamp: 2, WebkitBoxOrient: "vertical" as any,
+            display: "-webkit-box" as React.CSSProperties["display"],
+            WebkitLineClamp: 2, WebkitBoxOrient: "vertical" as React.CSSProperties["WebkitBoxOrient"],
             overflow: "hidden", fontSize: 13, fontWeight: 700,
             lineHeight: 1.35, marginTop: 3, color: "var(--ap-ink)",
           }}>
@@ -469,7 +469,7 @@ export const QuizBuilder = () => {
   // ── State ────────────────────────────────────────────────────────────────
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [questions, setQuestions] = useState<any[]>([]);
+  const [questions, setQuestions] = useState<EditableQuestion[]>([]);
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [isPublic, setIsPublic] = useState(false);
   const [speedBonus, setSpeedBonus] = useState(true);
@@ -546,7 +546,7 @@ export const QuizBuilder = () => {
       const tpl = getSlideTemplate(templateId);
       if (!tpl) return;
       setTitle(tpl.name); setDescription(tpl.description); setCategory("Présentation");
-      const slides = tpl.slides.map((s: any, i: number) => ({ id: `${tpl.id}-${Date.now()}-${i}`, ...s }));
+      const slides = tpl.slides.map((s, i) => ({ id: `${tpl.id}-${Date.now()}-${i}`, ...s }));
       setQuestions(slides); setSelectedIdx(slides.length > 0 ? 0 : null);
       setActiveTemplateId(tpl.id); toast.success("Modèle de présentation chargé");
     } else if (isPoll) {
@@ -556,7 +556,7 @@ export const QuizBuilder = () => {
       const tpl = getFlashcardTemplate(templateId);
       if (!tpl) return;
       setTitle(tpl.name); setDescription(tpl.description); setCategory(tpl.category);
-      const cards = tpl.cards.map((c: any, i: number) => ({ id: `${tpl.id}-${Date.now()}-${i}`, ...c, type: "flashcard" }));
+      const cards = tpl.cards.map((c, i) => ({ id: `${tpl.id}-${Date.now()}-${i}`, ...c, type: "flashcard" }));
       setQuestions(cards); setSelectedIdx(cards.length > 0 ? 0 : null);
       setActiveTemplateId(tpl.id); toast.success("Modèle de flashcards chargé");
     } else {
@@ -580,7 +580,7 @@ export const QuizBuilder = () => {
   );
 
   // ── Helpers ──────────────────────────────────────────────────────────────
-  function getDefaultQuestion(type?: QuizQuestionType | PollQuestionType): any {
+  function getDefaultQuestion(type?: QuizQuestionType | PollQuestionType) {
     if (isSlide) return { type: "slide", title: "", content: "", image: "" };
     if (isFlashcard) return { type: "flashcard", recto: "", verso: "", rectoImage: "", versoImage: "" };
     if (isPoll) {
@@ -617,12 +617,12 @@ export const QuizBuilder = () => {
   const applyTemplate = (tpl: PollTemplate | QuizTemplate) => {
     setTitle(tpl.name); setDescription(tpl.description); setCategory(tpl.category);
     const qs = tpl.questions.map((q, i) => ({ id: `${tpl.id}-${Date.now()}-${i}-${Math.random().toString(36).slice(2,8)}`, ...q, image: q.image || "" }));
-    setQuestions(qs as any[]); setSelectedIdx(qs.length > 0 ? 0 : null);
+    setQuestions(qs as EditableQuestion[]); setSelectedIdx(qs.length > 0 ? 0 : null);
     setTags([]); setTemplateDialogOpen(false); setActiveTemplateId(tpl.id);
     toast.success(t("templateLoaded"));
   };
 
-  const updateQuestion = (idx: number, updates: Partial<any>) => {
+  const updateQuestion = (idx: number, updates: Partial<EditableQuestion>) => {
     setQuestions(prev => prev.map((q, i) => i === idx ? { ...q, ...updates } : q));
   };
 
@@ -679,7 +679,7 @@ export const QuizBuilder = () => {
         transitionTime, category, type: quizType,
         headerImage, theme, font: previewFont,
       };
-      quizId ? updateQuiz(quizId, data) : saveQuiz(data);
+      if (quizId) updateQuiz(quizId, data); else saveQuiz(data);
       toast.success(quizId ? (isPoll ? "Sondage mis à jour" : "Quiz mis à jour") : (isPoll ? t("pollSaved") : t("quizSaved")));
       setShouldBlockNavigation(false);
       navigate(isFlashcard ? "/my-flashcards" : isPoll ? "/my-polls" : isSlide ? "/my-courses" : "/my-quizzes");
@@ -695,7 +695,7 @@ export const QuizBuilder = () => {
   };
 
   const handleImportFromFile = (draft: import("@/lib/importParsers").ImportDraft) => {
-    const mapped = draft.questions.map((q: any, i: number) => ({ ...q, id: q.id || `imported-${Date.now()}-${i}` }));
+    const mapped = draft.questions.map((q, i) => ({ ...q, id: q.id || `imported-${Date.now()}-${i}` }));
     if (draft.title) setTitle(draft.title);
     if (draft.description) setDescription(draft.description);
     setQuestions(mapped);
@@ -726,10 +726,10 @@ export const QuizBuilder = () => {
     }
 
     const q = questions[selectedIdx];
-    const upd = (u: Partial<any>) => updateQuestion(selectedIdx, u);
+    const upd = (u: Partial<EditableQuestion>) => updateQuestion(selectedIdx, u);
 
-    if (isSlide) return <div style={{ maxWidth: 660, margin: "0 auto" }}><SlideEditor slide={q} onChange={upd} /></div>;
-    if (isFlashcard) return <div style={{ maxWidth: 660, margin: "0 auto" }}><FlashcardEditor flashcard={q} onChange={upd} /></div>;
+    if (isSlide) return <div style={{ maxWidth: 660, margin: "0 auto" }}><SlideEditor slide={q as unknown as React.ComponentProps<typeof SlideEditor>["slide"]} onChange={upd as unknown as React.ComponentProps<typeof SlideEditor>["onChange"]} /></div>;
+    if (isFlashcard) return <div style={{ maxWidth: 660, margin: "0 auto" }}><FlashcardEditor flashcard={q as unknown as React.ComponentProps<typeof FlashcardEditor>["flashcard"]} onChange={upd as unknown as React.ComponentProps<typeof FlashcardEditor>["onChange"]} /></div>;
 
     const meta = QTYPE_META[q.type] || { label: q.type, dot: "var(--ap-muted)" };
     const isMC = q.type === "multiple-choice" || q.type === "single-choice";
@@ -768,7 +768,7 @@ export const QuizBuilder = () => {
                   key={type}
                   className="gap-2 rounded-xl text-sm cursor-pointer"
                   onSelect={() => {
-                    const defaults = getDefaultQuestion(type as any);
+                    const defaults = getDefaultQuestion(type);
                     upd({ ...defaults, id: q.id, question: q.question, image: q.image });
                   }}
                 >
@@ -958,7 +958,7 @@ export const QuizBuilder = () => {
     );
   };
 
-  const renderFallbackFields = (q: any, upd: (u: any) => void) => {
+  const renderFallbackFields = (q: EditableQuestion, upd: (u: Partial<EditableQuestion>) => void) => {
     switch (q.type) {
       case "short-answer":
       case "fill-blank":
@@ -979,7 +979,7 @@ export const QuizBuilder = () => {
           <div style={{ marginTop: 24 }} className="space-y-3">
             <div><Label>Valeur min</Label><Input type="number" value={q.min ?? 0} className="mt-2" onChange={e => upd({ min: parseInt(e.target.value) })} /></div>
             <div><Label>Valeur max</Label><Input type="number" value={q.max ?? 100} className="mt-2" onChange={e => upd({ max: parseInt(e.target.value) })} /></div>
-            <div><Label>Bonne réponse</Label><Input type="number" value={q.correctAnswer ?? 50} className="mt-2" onChange={e => upd({ correctAnswer: parseInt(e.target.value) })} /></div>
+            <div><Label>Bonne réponse</Label><Input type="number" value={(q.correctAnswer as number) ?? 50} className="mt-2" onChange={e => upd({ correctAnswer: parseInt(e.target.value) })} /></div>
           </div>
         );
       case "likert-scale":
@@ -1027,7 +1027,7 @@ export const QuizBuilder = () => {
       return (
         <>
           <div style={labelStyle}><span style={{ ...liveDotStyle, background: "var(--ap-flash)" }} />Vue carte (miroir)<span style={{ flex: 1, height: 2, background: "var(--ap-line-2)", opacity: 0.5, borderRadius: 2 }} /></div>
-          <FlashcardPreview flashcard={selectedQ} theme={activeTheme} />
+          <FlashcardPreview flashcard={selectedQ as unknown as React.ComponentProps<typeof FlashcardPreview>["flashcard"]} theme={activeTheme} />
         </>
       );
     }
@@ -1036,7 +1036,7 @@ export const QuizBuilder = () => {
       return (
         <>
           <div style={labelStyle}><span style={{ ...liveDotStyle, background: "var(--ap-pres)" }} />Vue slide (miroir)<span style={{ flex: 1, height: 2, background: "var(--ap-line-2)", opacity: 0.5, borderRadius: 2 }} /></div>
-          <SlidePreview slide={selectedQ} />
+          <SlidePreview slide={selectedQ as unknown as React.ComponentProps<typeof SlidePreview>["slide"]} />
         </>
       );
     }
@@ -1391,10 +1391,10 @@ export const QuizBuilder = () => {
                       {item.topic && <CardDescription>{item.topic}</CardDescription>}
                     </CardHeader>
                     <CardContent className="flex flex-1 flex-col gap-4">
-                      <p className="text-sm line-clamp-3">{item.question.question?.trim() || t("noQuestionText")}</p>
+                      <p className="text-sm line-clamp-3">{(item.question as EditableQuestion).question?.trim() || t("noQuestionText")}</p>
                       <div className="flex flex-wrap gap-2">
-                        <Badge variant="secondary" className="rounded-full">{item.question.type}</Badge>
-                        {item.difficulty && <Badge variant="outline" className="rounded-full">{t((difficultyTranslationKeyMap[item.difficulty] || item.difficulty) as any)}</Badge>}
+                        <Badge variant="secondary" className="rounded-full">{(item.question as EditableQuestion).type}</Badge>
+                        {item.difficulty && <Badge variant="outline" className="rounded-full">{t((difficultyTranslationKeyMap[item.difficulty] || item.difficulty) as Parameters<typeof t>[0])}</Badge>}
                       </div>
                       <div className="mt-auto flex justify-end">
                         <Button onClick={() => handleImportFromQuestionBank(item)}>{t("importQuestion")}</Button>

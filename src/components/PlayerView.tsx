@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import type { EditableQuestion } from "@/lib/questionTypes";
 import { Button } from "@/components/ui/button";
 import { Users, Trophy, LogOut } from "lucide-react";
 import { AvatarDisplay } from "./BetterAvatars";
@@ -47,9 +48,9 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [lastEarnedPoints, setLastEarnedPoints] = useState(0);
   const [lastAnswerCorrect, setLastAnswerCorrect] = useState(false);
-  const [lastAnsweredQuestion, setLastAnsweredQuestion] = useState<any>(null);
+  const [lastAnsweredQuestion, setLastAnsweredQuestion] = useState<EditableQuestion | null>(null);
 
-  const [quizQuestions, setQuizQuestions] = useState<any[]>([]);
+  const [quizQuestions, setQuizQuestions] = useState<EditableQuestion[]>([]);
   // Poll mode: no timer, no points, neutral confirmations
   const [isPoll, setIsPoll] = useState(false);
   const [openTextValue, setOpenTextValue] = useState('');
@@ -339,7 +340,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
         const updated: SharedPlayer = { ...stored, lastHeartbeat: new Date().toISOString() };
         sessionStorage.setItem(`quiz-player-${gameCode}`, JSON.stringify(updated));
         upsertPlayerInSession(gameCode, updated);
-      } catch {}
+      } catch { /* ignore */ }
     };
     beat();
     const interval = setInterval(beat, 5000);
@@ -397,7 +398,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
       setLastEarnedPoints(stored.lastEarnedPoints ?? 0);
       setHasAnswered(true);
       hasAnsweredRef.current = true;
-    } catch {}
+    } catch { /* ignore */ }
   }, [gameState, currentQuestion, gameCode]);
 
   const handleExitQuiz = () => {
@@ -432,7 +433,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
       setLastSentEmoji(emoji);
       setReactionComment('');
       setTimeout(() => setLastSentEmoji(null), 1500);
-    } catch {}
+    } catch { /* ignore */ }
   };
 
   const submitAnswer = (answer: number | string) => {
@@ -455,7 +456,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
       ? (() => {
           try {
             const submitted: string[] = JSON.parse(String(answer));
-            return (liveQuestion.blanks ?? []).every((b: any, i: number) =>
+            return (liveQuestion.blanks ?? []).every((b, i) =>
               submitted[i]?.toLowerCase().trim() === String(b.correctAnswer).toLowerCase().trim()
             );
           } catch { return false; }
@@ -472,7 +473,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
       ? (() => {
           try {
             const submitted: Record<string, string> = JSON.parse(String(answer));
-            return (liveQuestion.correctMatches ?? []).every((m: any) => submitted[m.leftId] === m.rightId);
+            return (liveQuestion.correctMatches ?? []).every((m) => submitted[m.leftId] === m.rightId);
           } catch { return false; }
         })()
       : answer === expected;
@@ -509,7 +510,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
         pendingAnswerRef.current = { player: updated, questionIndex: currentQuestion };
         upsertPlayerInSession(gameCode, updated, true); // urgent — bypasses debounce
         setPlayerScore(newScore);
-      } catch {}
+      } catch { /* ignore */ }
     }
   };
 
@@ -922,8 +923,8 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
 
             {/* Matching */}
             {liveQuestion.type === 'matching' && !hasAnswered && (() => {
-              const left: { id: string; text: string }[] = liveQuestion.leftColumn ?? [];
-              const right: { id: string; text: string }[] = liveQuestion.rightColumn ?? [];
+              const left: { id?: string; text?: string }[] = liveQuestion.leftColumn ?? [];
+              const right: { id?: string; text?: string }[] = liveQuestion.rightColumn ?? [];
               const paired = Object.keys(matchingPairs);
               const allPaired = left.length > 0 && paired.length === left.length;
               return (
@@ -1114,15 +1115,15 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
       }
       if (q.type === 'short-answer') return String(q.correctAnswer ?? '');
       if (q.type === 'slider') return String(q.correctValue ?? q.correctAnswer ?? '');
-      if (q.type === 'fill-blank') return (q.blanks ?? []).map((b: any) => b.correctAnswer).join(' / ');
+      if (q.type === 'fill-blank') return (q.blanks ?? []).map((b) => b.correctAnswer).join(' / ');
       if (q.type === 'ranking') {
         const items: string[] = q.items ?? [];
         const order: number[] = q.correctOrder ?? [];
         return (order.length ? order.map((i: number) => items[i]).filter(Boolean) : items).join(' → ');
       }
-      if (q.type === 'matching') return (q.correctMatches ?? []).map((m: any) => {
-        const l = (q.leftColumn ?? []).find((c: any) => c.id === m.leftId)?.text ?? m.leftId;
-        const r = (q.rightColumn ?? []).find((c: any) => c.id === m.rightId)?.text ?? m.rightId;
+      if (q.type === 'matching') return (q.correctMatches ?? []).map((m) => {
+        const l = (q.leftColumn ?? []).find((c) => c.id === m.leftId)?.text ?? m.leftId;
+        const r = (q.rightColumn ?? []).find((c) => c.id === m.rightId)?.text ?? m.rightId;
         return `${l} ↔ ${r}`;
       }).join(', ');
       return '';

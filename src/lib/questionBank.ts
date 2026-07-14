@@ -10,7 +10,7 @@ export interface QuestionBankItem {
   topic?: string;
   difficulty?: QuestionDifficulty;
   tags?: string[];
-  question: any;
+  question: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
 }
@@ -124,7 +124,7 @@ export const getQuestionBankItemById = (id: string): QuestionBankItem | null => 
   return items.find((item) => item.id === id) ?? null;
 };
 
-export const sanitizeQuestionForBank = (question: any) => {
+export const sanitizeQuestionForBank = (question: Record<string, unknown> | null | undefined) => {
   if (!question) return question;
 
   const sanitized = { ...question };

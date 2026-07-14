@@ -6,10 +6,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Upload, Trash2 } from "lucide-react";
 import { t } from "@/lib/i18n";
+import type { EditableQuestion } from "@/lib/questionTypes";
 
 interface QuestionBankQuestionFormProps {
-  question: any;
-  onChange: (question: any) => void;
+  question: EditableQuestion;
+  onChange: (question: EditableQuestion) => void;
 }
 
 const getAcceptableAnswers = (value: string) =>
@@ -85,12 +86,12 @@ export const QuestionBankQuestionForm = ({ question, onChange }: QuestionBankQue
           {renderImageField()}
           <div>
             <Label>{t("answers")}</Label>
-            {question.answers.map((answer: string, index: number) => (
+            {(question.answers ?? []).map((answer: string, index: number) => (
               <div key={index} className="mt-2 flex gap-2">
                 <Input
                   value={answer}
                   onChange={(e) => {
-                    const updatedAnswers = [...question.answers];
+                    const updatedAnswers = [...(question.answers ?? [])];
                     updatedAnswers[index] = e.target.value;
                     onChange({ ...question, answers: updatedAnswers });
                   }}
@@ -144,7 +145,7 @@ export const QuestionBankQuestionForm = ({ question, onChange }: QuestionBankQue
           <div>
             <Label>{t("correctAnswer")}</Label>
             <Select
-              value={question.correctAnswer}
+              value={question.correctAnswer as string}
               onValueChange={(value) => onChange({ ...question, correctAnswer: value })}
             >
               <SelectTrigger className="mt-2">
@@ -195,7 +196,7 @@ export const QuestionBankQuestionForm = ({ question, onChange }: QuestionBankQue
           <div>
             <Label>{t("correctAnswer")}</Label>
             <Input
-              value={question.correctAnswer}
+              value={question.correctAnswer as string}
               onChange={(e) => onChange({ ...question, correctAnswer: e.target.value })}
               placeholder={t("answer")}
               className="mt-2"

@@ -123,7 +123,7 @@ const DiscoverQuizzes = () => {
               </SelectContent>
             </Select>
             {/* type */}
-            <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as any)}>
+            <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as "all" | "quiz" | "poll")}>
               <SelectTrigger style={{ ...triggerStyle, width: 150, flex: "0 0 auto" }}>
                 <SelectValue placeholder="Type" />
               </SelectTrigger>
@@ -218,7 +218,7 @@ const DiscoverQuizzes = () => {
                     {quiz.type === "quiz" && (
                       <span className="ap-muted" style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "13px", fontWeight: 700 }}>
                         <Clock style={{ width: 14, height: 14 }} />
-                        {Math.round(quiz.questions.reduce((s: number, q: any) => s + (q.timeLimit || 0), 0) / 60)}m
+                        {Math.round(quiz.questions.reduce((s: number, q: { timeLimit?: number }) => s + (q.timeLimit || 0), 0) / 60)}m
                       </span>
                     )}
                     {quiz.category && (

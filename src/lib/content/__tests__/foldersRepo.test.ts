@@ -5,7 +5,7 @@ const flat = [
   { id:'a', parent_id:null, name:'A' },
   { id:'b', parent_id:'a', name:'B' },
   { id:'c', parent_id:'b', name:'C' },
-] as any;
+] as unknown as Parameters<typeof buildTree>[0];
 
 describe('folder tree helpers', () => {
   it('builds a nested tree', () => {

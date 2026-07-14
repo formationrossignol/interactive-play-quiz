@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MultiStepProgress } from "@/components/MultiStepProgress";
 import { SlidePreview } from "@/components/SlidePreview";
+import type { SlideElement } from "@/components/SlideCanvas";
 import type { SavedQuiz } from "@/lib/quizStorage";
 
 interface SlidePresentationSessionProps {
@@ -13,7 +14,7 @@ interface SlidePresentationSessionProps {
 interface SlideItem {
   id?: string;
   backgroundColor?: string;
-  elements?: any[];
+  elements?: SlideElement[];
 }
 
 export const SlidePresentationSession = ({ presentation }: SlidePresentationSessionProps) => {
