@@ -402,10 +402,11 @@ export const createLiveSession = async (
   // Forwarded verbatim to the create-session edge function as JSON; the quiz's
   // own question shape (QuizSession.QuizQuestion) is broader than the question-
   // bank Question type, so keep this structurally loose to avoid a false mismatch.
-  questions: unknown[]
+  questions: unknown[],
+  ambianceId?: string
 ): Promise<boolean> => {
   const { error } = await supabase.functions.invoke("create-session", {
-    body: { game_code: gameCode, title, questions },
+    body: { game_code: gameCode, title, questions, ambiance_id: ambianceId ?? "arcade" },
   });
   if (error) console.error("[createLiveSession error]", gameCode, await describeFunctionsError(error));
   return !error;

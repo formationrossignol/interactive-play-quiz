@@ -357,7 +357,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
         // Always reset — clears stale players from previous sessions.
         // create-session splits the quiz into public (quiz_data, no answer key)
         // and private (session_quiz_answers, answer key only submit-answer reads).
-        const ok = await createLiveSession(quiz.gameCode, quiz.title, quiz.questions);
+        const ok = await createLiveSession(quiz.gameCode, quiz.title, quiz.questions, quiz.ambianceId);
         if (!ok) {
           toast.error('Erreur Supabase lors de la réinitialisation. Vérifiez la console.');
         }
