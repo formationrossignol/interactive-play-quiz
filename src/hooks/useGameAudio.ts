@@ -1,5 +1,5 @@
 // src/hooks/useGameAudio.ts
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   phaseToRole,
   resolveTrack,
@@ -142,5 +142,10 @@ export function useGameAudio({ ambianceId, gameState, isHost }: UseGameAudioArgs
   // signature so callers document intent and future host-only beds are trivial.
   void isHost;
 
-  return { muted, volume, setMuted, setVolume, unlock, playSfx };
+  // Stable identity so consumer effects keyed on the returned api only re-run
+  // when mute/volume actually change (the callbacks are already stable).
+  return useMemo(
+    () => ({ muted, volume, setMuted, setVolume, unlock, playSfx }),
+    [muted, volume, setMuted, setVolume, unlock, playSfx],
+  );
 }
