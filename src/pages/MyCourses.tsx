@@ -35,6 +35,7 @@ import {
   List,
   Plus,
   RotateCcw,
+  Search,
   Star,
   Trash2,
 } from "lucide-react";

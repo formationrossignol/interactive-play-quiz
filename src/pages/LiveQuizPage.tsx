@@ -95,7 +95,7 @@ const LiveQuizPage = () => {
       hostId: loadedQuiz.userId,
       isActive: true,
       createdAt: new Date(loadedQuiz.createdAt ?? new Date().toISOString()),
-      questions: (loadedQuiz.questions || []).map((question: any, index: number) => ({
+      questions: (loadedQuiz.questions || []).map((question, index) => ({
         ...question,
         id: question?.id ?? `${loadedQuiz.id}-${index}`,
         type: question?.type ?? "multiple-choice",

@@ -160,7 +160,7 @@ export const QuizBuilderStart = () => {
               {(isFlashcard || isSlide ? [] : previewTemplates).map((tpl, idx) => (
                 <button
                   key={tpl.id}
-                  onClick={() => handleSelectTemplate(tpl as any)}
+                  onClick={() => handleSelectTemplate(tpl)}
                   style={{
                     flexShrink: 0,
                     display: "flex",
@@ -198,7 +198,7 @@ export const QuizBuilderStart = () => {
                       (e.currentTarget as HTMLDivElement).style.boxShadow = "0 4px 16px rgba(0,0,0,.10)";
                     }}
                   >
-                    <span style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,.2))" }}>{(tpl as any).icon}</span>
+                    <span style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,.2))" }}>{tpl.icon}</span>
                   </div>
                   <span
                     style={{
@@ -212,9 +212,9 @@ export const QuizBuilderStart = () => {
                       textOverflow: "ellipsis",
                       whiteSpace: "nowrap",
                     }}
-                    title={(tpl as any).name}
+                    title={tpl.name}
                   >
-                    {(tpl as any).name}
+                    {tpl.name}
                   </span>
                 </button>
               ))}

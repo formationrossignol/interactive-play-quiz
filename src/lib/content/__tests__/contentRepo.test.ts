@@ -69,6 +69,7 @@ describe('contentRepo', () => {
       type: 'quiz',
       data: { title: 'Q' },
       folder_id: 'f1',
+      source_id: null,
     });
     expect(builder.select).toHaveBeenCalled();
     expect(builder.single).toHaveBeenCalled();
@@ -86,6 +87,7 @@ describe('contentRepo', () => {
       type: 'poll',
       data: { q: 1 },
       folder_id: null,
+      source_id: null,
     });
   });
 

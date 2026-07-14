@@ -6,9 +6,11 @@ import { MultiStepProgress } from "@/components/MultiStepProgress";
 import { PLAYER_ANSWER_SHAPES } from "@/lib/answerVisuals";
 import { getPollOptions } from "@/lib/pollResults";
 import { Trophy, LogOut, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Play, X, RotateCcw } from "lucide-react";
+import type { SavedQuiz } from "@/lib/quizStorage";
+import type { EditableQuestion } from "@/lib/questionTypes";
 
 interface ParticipantPreviewProps {
-  question: any;
+  question: EditableQuestion;
   questionIndex: number;
   totalQuestions: number;
   isPoll: boolean;
@@ -367,7 +369,7 @@ const ParticipantPreview = ({ question, questionIndex, totalQuestions, isPoll }:
 const PreviewPage = () => {
   const { quizId } = useParams<{ quizId: string }>();
   const navigate = useNavigate();
-  const [quiz, setQuiz] = useState<any>(null);
+  const [quiz, setQuiz] = useState<SavedQuiz | null>(null);
   const [currentQ, setCurrentQ] = useState(0);
 
   useEffect(() => {
@@ -375,7 +377,7 @@ const PreviewPage = () => {
     for (const key of [`quiz-${quizId}`, `poll-${quizId}`, quizId]) {
       const raw = localStorage.getItem(key);
       if (raw) {
-        try { setQuiz(JSON.parse(raw)); return; } catch {}
+        try { setQuiz(JSON.parse(raw)); return; } catch { /* try next key */ }
       }
     }
   }, [quizId]);

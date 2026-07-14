@@ -184,3 +184,47 @@ export const getQuestionTypeDescription = (type: QuizQuestionType | PollQuestion
   };
   return descriptions[type] || '';
 };
+
+/**
+ * Loosely-typed, editable question shape used by editor/preview components
+ * (builder, question bank, previews). The persisted data is heterogeneous
+ * across quiz/poll/flashcard/slide, so every field is optional; this acts as a
+ * widened supertype the concrete Question variants are assignable to.
+ */
+export interface EditableQuestion {
+  id?: string;
+  type?: string;
+  question?: string;
+  text?: string;
+  answers?: string[];
+  correctAnswer?: string | number | boolean;
+  acceptableAnswers?: string[];
+  items?: string[];
+  scale?: string[];
+  leftColumn?: { id?: string; text?: string }[];
+  rightColumn?: { id?: string; text?: string }[];
+  minLabel?: string;
+  maxLabel?: string;
+  min?: number;
+  max?: number;
+  step?: number;
+  maxStars?: number;
+  correctValue?: number;
+  timeLimit?: number;
+  points?: number;
+  image?: string;
+  prompt?: string;
+  title?: string;
+  explanation?: string;
+  description?: string;
+  content?: string;
+  recto?: string;
+  verso?: string;
+  rectoImage?: string;
+  versoImage?: string;
+  allowMultiple?: boolean;
+  maxLength?: number;
+  correctOrder?: number[];
+  correctMatches?: { leftId: string; rightId: string }[];
+  blanks?: { id?: string; correctAnswer?: string; acceptableAnswers?: string[] }[];
+}

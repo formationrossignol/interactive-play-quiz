@@ -4,6 +4,9 @@ export interface SavedQuiz {
   id: string;
   title: string;
   description: string;
+  // Heterogeneous stored question shapes (quiz/poll/flashcard/slide) — kept
+  // loose deliberately; the strict Question union is narrower than runtime data.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   questions: any[];
   createdAt: string;
   userId: string;
@@ -94,7 +97,10 @@ export const purgeExpiredTrash = (userId: string): void => {
   }
 };
 
-export const saveQuiz = (quiz: Omit<SavedQuiz, 'id' | 'createdAt' | 'userId'>): SavedQuiz => {
+export const saveQuiz = (
+  quiz: Omit<SavedQuiz, 'id' | 'createdAt' | 'userId' | 'speedBonus' | 'transitionTime' | 'category'> &
+    Partial<Pick<SavedQuiz, 'speedBonus' | 'transitionTime' | 'category'>>,
+): SavedQuiz => {
   const user = getCurrentUser();
   if (!user) throw new Error('User not authenticated');
   

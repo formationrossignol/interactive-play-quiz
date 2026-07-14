@@ -17,7 +17,7 @@ export interface SavedQuestion {
   timeLimit?: number;
   points?: number;
   createdAt: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface QuestionBankProps {
@@ -70,11 +70,11 @@ export const QuestionBank = ({ onSelectQuestion }: QuestionBankProps) => {
         const data = new Uint8Array(e.target?.result as ArrayBuffer);
         const workbook = XLSX.read(data, { type: 'array' });
         const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-        const jsonData = XLSX.utils.sheet_to_json(firstSheet) as any[];
+        const jsonData = XLSX.utils.sheet_to_json(firstSheet) as Record<string, string>[];
 
         const imported: SavedQuestion[] = jsonData.map((row, index) => ({
           id: `import-${Date.now()}-${index}`,
-          type: (row.type || 'multiple-choice') as any,
+          type: (row.type || 'multiple-choice') as QuizQuestionType | PollQuestionType,
           question: row.question || '',
           answers: row.answers ? row.answers.split('|') : [],
           correctAnswer: row.correctAnswer || 0,

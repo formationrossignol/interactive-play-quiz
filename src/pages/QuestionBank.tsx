@@ -22,7 +22,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { t } from "@/lib/i18n";
 import { toast } from "sonner";
 import { Copy, Edit, Plus, Search, Trash2, ExternalLink, LayoutGrid, List } from "lucide-react";
-import type { QuizQuestionType } from "@/lib/questionTypes";
+import type { QuizQuestionType, EditableQuestion } from "@/lib/questionTypes";
 
 const QUESTION_TYPE_OPTIONS: { value: QuizQuestionType; label: string }[] = [
   { value: "multiple-choice", label: "multipleChoice" },
@@ -85,14 +85,14 @@ const QuestionBank = () => {
     quizTitle: string;
     position: number;
     type: QuizQuestionType;
-    question: any;
+    question: EditableQuestion;
   }[]>([]);
 
   /* ---- dialog ---- */
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<QuestionBankItem | null>(null);
   const [questionType, setQuestionType] = useState<QuizQuestionType>("multiple-choice");
-  const [currentQuestion, setCurrentQuestion] = useState<any>(createDefaultQuizQuestion());
+  const [currentQuestion, setCurrentQuestion] = useState<EditableQuestion>(createDefaultQuizQuestion() as EditableQuestion);
   const [title, setTitle] = useState("");
   const [topic, setTopic] = useState("");
   const [difficulty, setDifficulty] = useState<QuestionDifficulty>("medium");
@@ -187,7 +187,7 @@ const QuestionBank = () => {
     setTitle(item.title); setTopic(item.topic || "");
     setDifficulty(item.difficulty || "medium");
     setTagsInput(item.tags?.join(", ") || "");
-    setDescription(item.question?.explanation || item.question?.description || "");
+    setDescription((item.question?.explanation as string) || (item.question?.description as string) || "");
     setDialogOpen(true);
   };
 
@@ -198,7 +198,7 @@ const QuestionBank = () => {
     const payload = {
       title: title.trim(), topic: topic.trim() || undefined, difficulty,
       tags: tagsInput.split(",").map((tag) => tag.trim()).filter(Boolean),
-      question: { ...sanitizeQuestionForBank(currentQuestion), type: questionType, explanation: description.trim() || undefined },
+      question: { ...sanitizeQuestionForBank(currentQuestion as Record<string, unknown>), type: questionType, explanation: description.trim() || undefined },
     };
     try {
       if (editingItem) { updateQuestionBankItem(editingItem.id, payload); toast.success(t("questionBankUpdated")); }
@@ -295,7 +295,7 @@ const QuestionBank = () => {
           <SelectContent style={{ background: "var(--ap-card)", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-md)" }}>
             <SelectItem value="all">Tous les types</SelectItem>
             {QUESTION_TYPE_OPTIONS.map((o) => (
-              <SelectItem key={o.value} value={o.value}>{t(o.label as any)}</SelectItem>
+              <SelectItem key={o.value} value={o.value}>{t(o.label as Parameters<typeof t>[0])}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -322,7 +322,7 @@ const QuestionBank = () => {
           <SelectContent style={{ background: "var(--ap-card)", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-md)" }}>
             <SelectItem value="all">Toutes</SelectItem>
             {DIFFICULTY_OPTIONS.map((o) => (
-              <SelectItem key={o.value} value={o.value}>{t(o.label as any)}</SelectItem>
+              <SelectItem key={o.value} value={o.value}>{t(o.label as Parameters<typeof t>[0])}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -400,14 +400,14 @@ const QuestionBank = () => {
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <h3 className="ap-h3" style={{ fontSize: "15px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.title}</h3>
                         <p className="ap-muted" style={{ fontSize: "12.5px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: 2 }}>
-                          {item.question?.question || t("noQuestionText")}
+                          {(item.question as EditableQuestion)?.question || t("noQuestionText")}
                         </p>
                       </div>
                       <div style={{ display: "flex", gap: "6px", flexShrink: 0, flexWrap: "wrap", justifyContent: "flex-end" }}>
-                        {typeLabel && <span className="ap-badge ap-badge--brand">{t(typeLabel as any)}</span>}
+                        {typeLabel && <span className="ap-badge ap-badge--brand">{t(typeLabel as Parameters<typeof t>[0])}</span>}
                         {item.difficulty && (
                           <span className={`ap-badge ${DIFFICULTY_BADGE[item.difficulty]}`}>
-                            {t(DIFFICULTY_OPTIONS.find((o) => o.value === item.difficulty)?.label as any)}
+                            {t(DIFFICULTY_OPTIONS.find((o) => o.value === item.difficulty)?.label as Parameters<typeof t>[0])}
                           </span>
                         )}
                       </div>
@@ -442,16 +442,16 @@ const QuestionBank = () => {
                       </div>
                       {/* question text */}
                       <p className="ap-muted" style={{ fontSize: "13px", lineHeight: 1.45, flex: 1 }}>
-                        {item.question?.question || t("noQuestionText")}
+                        {(item.question as EditableQuestion)?.question || t("noQuestionText")}
                       </p>
                       {/* badges */}
                       <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
                         {typeLabel && (
-                          <span className="ap-badge ap-badge--brand">{t(typeLabel as any)}</span>
+                          <span className="ap-badge ap-badge--brand">{t(typeLabel as Parameters<typeof t>[0])}</span>
                         )}
                         {item.difficulty && (
                           <span className={`ap-badge ${DIFFICULTY_BADGE[item.difficulty]}`}>
-                            {t(DIFFICULTY_OPTIONS.find((o) => o.value === item.difficulty)?.label as any)}
+                            {t(DIFFICULTY_OPTIONS.find((o) => o.value === item.difficulty)?.label as Parameters<typeof t>[0])}
                           </span>
                         )}
                         {(item.tags ?? []).map((tag) => (
@@ -552,7 +552,7 @@ const QuestionBank = () => {
                         </p>
                       </div>
                       <div style={{ display: "flex", gap: "6px", flexShrink: 0 }}>
-                        {typeLabel && <span className="ap-badge ap-badge--poll">{t(typeLabel as any)}</span>}
+                        {typeLabel && <span className="ap-badge ap-badge--poll">{t(typeLabel as Parameters<typeof t>[0])}</span>}
                       </div>
                     </div>
                   );
@@ -580,7 +580,7 @@ const QuestionBank = () => {
                       </div>
                       <h3 className="ap-h3" style={{ fontSize: "15px", lineHeight: 1.35 }}>{questionText}</h3>
                       <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginTop: "auto" }}>
-                        {typeLabel && <span className="ap-badge ap-badge--poll">{t(typeLabel as any)}</span>}
+                        {typeLabel && <span className="ap-badge ap-badge--poll">{t(typeLabel as Parameters<typeof t>[0])}</span>}
                         <span className="ap-badge ap-badge--pres">{t("fromQuiz")}</span>
                       </div>
                       {item.question?.description && (
@@ -647,7 +647,7 @@ const QuestionBank = () => {
                     </SelectTrigger>
                     <SelectContent style={{ background: "var(--ap-card)", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-md)" }}>
                       {QUESTION_TYPE_OPTIONS.map((o) => (
-                        <SelectItem key={o.value} value={o.value}>{t(o.label as any)}</SelectItem>
+                        <SelectItem key={o.value} value={o.value}>{t(o.label as Parameters<typeof t>[0])}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -660,7 +660,7 @@ const QuestionBank = () => {
                     </SelectTrigger>
                     <SelectContent style={{ background: "var(--ap-card)", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-md)" }}>
                       {DIFFICULTY_OPTIONS.map((o) => (
-                        <SelectItem key={o.value} value={o.value}>{t(o.label as any)}</SelectItem>
+                        <SelectItem key={o.value} value={o.value}>{t(o.label as Parameters<typeof t>[0])}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>

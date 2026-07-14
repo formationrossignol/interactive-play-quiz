@@ -189,7 +189,7 @@ const ProfilePage = () => {
                   {stats[key]}
                 </div>
                 <div className="ap-muted" style={{ fontSize: "13px", fontWeight: 700 }}>
-                  {t(labelKey as any)}
+                  {t(labelKey as Parameters<typeof t>[0])}
                 </div>
               </div>
             ))}

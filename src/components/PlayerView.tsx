@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import type { EditableQuestion } from "@/lib/questionTypes";
 import { Button } from "@/components/ui/button";
 import { Users, Trophy, LogOut } from "lucide-react";
 import { AvatarDisplay } from "./BetterAvatars";
@@ -49,7 +50,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [lastEarnedPoints, setLastEarnedPoints] = useState(0);
   const [lastAnswerCorrect, setLastAnswerCorrect] = useState(false);
-  const [lastAnsweredQuestion, setLastAnsweredQuestion] = useState<any>(null);
+  const [lastAnsweredQuestion, setLastAnsweredQuestion] = useState<EditableQuestion | null>(null);
   // Answer key for lastAnsweredQuestion, as returned by submit-answer for the
   // player's OWN submission of the CURRENT question. liveQuestion itself no
   // longer carries these fields (create-session's stripAnswers scrubs them),
@@ -62,7 +63,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
     blanks: unknown;
   } | null>(null);
 
-  const [quizQuestions, setQuizQuestions] = useState<any[]>([]);
+  const [quizQuestions, setQuizQuestions] = useState<EditableQuestion[]>([]);
   // Poll mode: no timer, no points, neutral confirmations
   const [isPoll, setIsPoll] = useState(false);
   const [openTextValue, setOpenTextValue] = useState('');
@@ -367,7 +368,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
         const updated: SharedPlayer = { ...stored, lastHeartbeat: new Date().toISOString() };
         sessionStorage.setItem(`quiz-player-${gameCode}`, JSON.stringify(updated));
         upsertPlayerInSession(gameCode, updated);
-      } catch {}
+      } catch { /* ignore */ }
     };
     beat();
     const interval = setInterval(beat, 5000);
@@ -428,7 +429,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
                 lastEarnedPoints: result.earnedPoints,
               };
               sessionStorage.setItem(`quiz-player-${gameCode}`, JSON.stringify(updated));
-            } catch {}
+            } catch { /* ignore */ }
           }
           pendingAnswerRef.current = null;
         }
@@ -485,7 +486,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
       setLastEarnedPoints(stored.lastEarnedPoints ?? 0);
       setHasAnswered(true);
       hasAnsweredRef.current = true;
-    } catch {}
+    } catch { /* ignore */ }
   }, [gameState, currentQuestion, gameCode]);
 
   const handleExitQuiz = () => {
@@ -520,7 +521,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
       setLastSentEmoji(emoji);
       setReactionComment('');
       setTimeout(() => setLastSentEmoji(null), 1500);
-    } catch {}
+    } catch { /* ignore */ }
   };
 
   const submitAnswer = async (answer: number | string) => {
@@ -560,7 +561,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
           sessionStorage.setItem(`quiz-player-${gameCode}`, JSON.stringify(updated));
           pendingAnswerRef.current = { kind: 'poll', player: updated, questionIndex: currentQuestion };
           upsertPlayerInSession(gameCode, updated, true); // urgent — bypasses debounce
-        } catch {}
+        } catch { /* ignore */ }
       }
       return;
     }
@@ -605,7 +606,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
             lastEarnedPoints: result.earnedPoints,
           };
           sessionStorage.setItem(`quiz-player-${gameCode}`, JSON.stringify(updated));
-        } catch {}
+        } catch { /* ignore */ }
       }
 
       if (!result.ok) {
@@ -1038,8 +1039,8 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
 
             {/* Matching */}
             {liveQuestion.type === 'matching' && !hasAnswered && (() => {
-              const left: { id: string; text: string }[] = liveQuestion.leftColumn ?? [];
-              const right: { id: string; text: string }[] = liveQuestion.rightColumn ?? [];
+              const left: { id?: string; text?: string }[] = liveQuestion.leftColumn ?? [];
+              const right: { id?: string; text?: string }[] = liveQuestion.rightColumn ?? [];
               const paired = Object.keys(matchingPairs);
               const allPaired = left.length > 0 && paired.length === left.length;
               return (
@@ -1237,15 +1238,15 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
       }
       if (q.type === 'short-answer') return String(answerKey.correctAnswer ?? '');
       if (q.type === 'slider') return String(answerKey.correctValue ?? answerKey.correctAnswer ?? '');
-      if (q.type === 'fill-blank') return ((answerKey.blanks as any[]) ?? []).map((b: any) => b.correctAnswer).join(' / ');
+      if (q.type === 'fill-blank') return ((answerKey.blanks as { correctAnswer?: string }[]) ?? []).map((b) => b.correctAnswer).join(' / ');
       if (q.type === 'ranking') {
         const items: string[] = q.items ?? [];
         const order: number[] = answerKey.correctOrder ?? [];
         return (order.length ? order.map((i: number) => items[i]).filter(Boolean) : items).join(' → ');
       }
       if (q.type === 'matching') return (answerKey.correctMatches ?? []).map((m) => {
-        const l = (q.leftColumn ?? []).find((c: any) => c.id === m.leftId)?.text ?? m.leftId;
-        const r = (q.rightColumn ?? []).find((c: any) => c.id === m.rightId)?.text ?? m.rightId;
+        const l = (q.leftColumn ?? []).find((c) => c.id === m.leftId)?.text ?? m.leftId;
+        const r = (q.rightColumn ?? []).find((c) => c.id === m.rightId)?.text ?? m.rightId;
         return `${l} ↔ ${r}`;
       }).join(', ');
       return '';

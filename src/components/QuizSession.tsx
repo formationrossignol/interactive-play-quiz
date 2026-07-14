@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef, memo } from "react";
 import type { ReactNode } from "react";
+import type { EditableQuestion } from "@/lib/questionTypes";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -652,7 +653,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
       if (result && 'data' in result && result.data?.players && Array.isArray(result.data.players)) {
         freshPlayers = result.data.players as SharedPlayer[];
       }
-    } catch {}
+    } catch { /* ignore */ }
 
     const answeredPlayers = freshPlayers.filter(
       (p) => p.lastAnswerQuestionIndex === qIdx
@@ -1368,7 +1369,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
     return (
       <ThemedBackground className="p-4 text-slate-100">
         <QuizSessionAnswerDistribution
-          currentQuestion={currentQuestion}
+          currentQuestion={currentQuestion as unknown as EditableQuestion}
           answerDistribution={answerDistribution}
           onNext={currentQuestionIndex >= quiz.questions.length - 1 ? nextQuestion : showLeaderboard}
           onSkipToNext={isHost && currentQuestionIndex + 1 < quiz.questions.length ? nextQuestion : undefined}

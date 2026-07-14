@@ -5,13 +5,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Type, Image as ImageIcon, Square, Plus } from "lucide-react";
 import { SlideCanvas, SlideElement } from "./SlideCanvas";
 
+interface Slide {
+  id: string;
+  backgroundColor?: string;
+  elements?: SlideElement[];
+}
+
 interface SlideEditorProps {
-  slide: {
-    id: string;
-    backgroundColor?: string;
-    elements?: SlideElement[];
-  };
-  onChange: (slide: any) => void;
+  slide: Slide;
+  onChange: (slide: Slide) => void;
 }
 
 export const SlideEditor = ({ slide, onChange }: SlideEditorProps) => {

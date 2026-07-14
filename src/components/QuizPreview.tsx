@@ -6,13 +6,14 @@ import { hexToRgba, darkestColor, relativeLuminance } from "@/lib/color";
 import { HOST_ANSWER_STYLES, MILLIONAIRE_ANSWER_STYLES, resolveFontFamily } from "@/lib/answerVisuals";
 import { MultiStepProgress } from "./MultiStepProgress";
 import { t } from "@/lib/i18n";
+import type { EditableQuestion } from "@/lib/questionTypes";
 
 interface QuizPreviewProps {
   title: string;
   description: string;
   category: string;
   headerImage?: string;
-  questions: any[];
+  questions: EditableQuestion[];
   isPoll: boolean;
   theme?: string;
   fontFamily?: string;
@@ -176,8 +177,8 @@ export const QuizPreview = ({
     if (questionToShow.type === 'ranking' && questionToShow.items) {
       return (
         <div className="w-full space-y-2">
-          {(questionToShow.items as any[]).slice(0, 5).map((item: any, index: number) => (
-            <div key={item?.id ?? index} className="flex items-center gap-3 rounded-xl px-4 py-2.5 text-white font-bold text-sm" style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)' }}>
+          {(questionToShow.items as unknown as Array<string | { id?: string; text?: string }>).slice(0, 5).map((item, index) => (
+            <div key={index} className="flex items-center gap-3 rounded-xl px-4 py-2.5 text-white font-bold text-sm" style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)' }}>
               <span className="w-6 text-center text-white/60">{index + 1}</span>
               <span className="flex-1 truncate">{(typeof item === 'string' ? item : item?.text)?.trim() || `${t("answer")} ${index + 1}`}</span>
             </div>
@@ -193,14 +194,14 @@ export const QuizPreview = ({
       return (
         <div className="w-full grid grid-cols-2 gap-2">
           <div className="space-y-2">
-            {(questionToShow.leftColumn ?? []).slice(0, 4).map((item: any, index: number) => (
+            {((questionToShow as { leftColumn?: { id?: string; text?: string }[] }).leftColumn ?? []).slice(0, 4).map((item, index) => (
               <div key={item?.id ?? index} className="rounded-xl px-3 py-2.5 text-white font-bold text-sm truncate" style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)' }}>
                 {item?.text?.trim() || `${t("answer")} ${index + 1}`}
               </div>
             ))}
           </div>
           <div className="space-y-2">
-            {(questionToShow.rightColumn ?? []).slice(0, 4).map((item: any, index: number) => (
+            {((questionToShow as { rightColumn?: { id?: string; text?: string }[] }).rightColumn ?? []).slice(0, 4).map((item, index) => (
               <div key={item?.id ?? index} className="rounded-xl px-3 py-2.5 text-white font-bold text-sm truncate" style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)' }}>
                 {item?.text?.trim() || `${t("answer")} ${index + 1}`}
               </div>

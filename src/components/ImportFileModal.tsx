@@ -274,8 +274,8 @@ export const ImportFileModal = ({ open, onClose, quizType, onImport }: Props) =>
     const fmt: TextFormat = ext === "csv" ? "csv" : ext === "md" || ext === "markdown" ? "markdown" : "yaml";
     try {
       finalize(parseDraft(content, fmt));
-    } catch (err: any) {
-      toast.error("Erreur d'import", { description: err?.message ?? "Vérifiez le format." });
+    } catch (err) {
+      toast.error("Erreur d'import", { description: err instanceof Error ? err.message : "Vérifiez le format." });
     }
   };
 
@@ -284,8 +284,8 @@ export const ImportFileModal = ({ open, onClose, quizType, onImport }: Props) =>
     if (!content) { toast.error("Collez du contenu d'abord."); return; }
     try {
       finalize(parseDraft(content, textFormat));
-    } catch (err: any) {
-      toast.error("Erreur d'import", { description: err?.message ?? "Vérifiez le format." });
+    } catch (err) {
+      toast.error("Erreur d'import", { description: err instanceof Error ? err.message : "Vérifiez le format." });
     }
   };
 

@@ -199,14 +199,15 @@ describe('migrateLocalToSupabase (executor)', () => {
     expect(result).toEqual({ migrated: true, folders: 1, content: 4 });
 
     expect(createFolderMock).toHaveBeenCalledTimes(1);
-    expect(createFolderMock).toHaveBeenCalledWith(USER, 'quiz', 'Mine');
+    expect(createFolderMock).toHaveBeenCalledWith(USER, 'quiz', 'Mine', null, 'f1');
 
-    // q1 attached to the remapped folder id "new:Mine"
+    // q1 attached to the remapped folder id "new:Mine"; sourceId = q1's own id
     expect(createContentMock).toHaveBeenCalledWith(
       USER,
       'quiz',
       expect.objectContaining({ id: 'q1' }),
       'new:Mine',
+      'q1',
     );
     // q4 has no folder -> null
     expect(createContentMock).toHaveBeenCalledWith(
@@ -214,6 +215,7 @@ describe('migrateLocalToSupabase (executor)', () => {
       'poll',
       expect.objectContaining({ id: 'q4' }),
       null,
+      'q4',
     );
 
     // flag written, source keys untouched
@@ -236,6 +238,7 @@ describe('migrateLocalToSupabase (executor)', () => {
       'quiz',
       expect.objectContaining({ id: 'q1' }),
       null,
+      'q1',
     );
   });
 

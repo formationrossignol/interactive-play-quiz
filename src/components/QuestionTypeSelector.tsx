@@ -11,6 +11,7 @@ import {
   BarChart3,
   MessageSquare
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { getQuestionTypeLabel, getQuestionTypeDescription } from "@/lib/questionTypes";
 import type { QuizQuestionType, PollQuestionType } from "@/lib/questionTypes";
 
@@ -20,7 +21,7 @@ interface QuestionTypeSelectorProps {
   onSelectType: (type: QuizQuestionType | PollQuestionType) => void;
 }
 
-const iconMap: Partial<Record<QuizQuestionType | PollQuestionType, any>> = {
+const iconMap: Partial<Record<QuizQuestionType | PollQuestionType, LucideIcon>> = {
   'multiple-choice': CheckSquare,
   'true-false': ToggleLeft,
   'short-answer': FileText,

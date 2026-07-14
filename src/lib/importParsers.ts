@@ -32,7 +32,7 @@ function normalizeTrueFalseAnswer(val: unknown): unknown {
   return val;
 }
 
-function mapYamlQuestion(q: any, idx: number): any {
+function mapYamlQuestion(q: Record<string, unknown>, idx: number): Record<string, unknown> {
   const type = q.type || 'multiple-choice';
   const rawAnswer = q.correctAnswer !== undefined ? q.correctAnswer : (q.correct_answer !== undefined ? q.correct_answer : 0);
   const correctAnswer = type === 'true-false' ? normalizeTrueFalseAnswer(rawAnswer) : rawAnswer;
@@ -73,7 +73,10 @@ function baseDraft(overrides: Partial<ImportDraft> = {}): ImportDraft {
 // ── Quiz / Poll YAML ────────────────────────────────────────────────────────
 
 export function parseQuizYaml(content: string, forceType?: 'quiz' | 'poll'): ImportDraft {
-  const data = jsYaml.load(content, { schema: jsYaml.JSON_SCHEMA }) as any;
+  const data = jsYaml.load(content, { schema: jsYaml.JSON_SCHEMA }) as {
+    type?: string; title?: string; description?: string; category?: string;
+    tags?: unknown; questions?: unknown;
+  };
   if (!data || typeof data !== 'object') throw new Error('Invalid YAML');
 
   const type: 'quiz' | 'poll' = forceType ?? (data.type === 'poll' ? 'poll' : 'quiz');
@@ -155,7 +158,7 @@ export function parseFlashcardMarkdown(content: string): ImportDraft {
   const titleMatch = content.match(/^#\s+(.+)$/m);
   const title = titleMatch ? titleMatch[1].trim() : 'Flashcards importées';
 
-  const cards: any[] = [];
+  const cards: Record<string, unknown>[] = [];
   // Match Q: ... R: ... pairs (multiline recto/verso supported)
   const pattern = /Q:\s*(.+?)[\r\n]+R:\s*(.+?)(?=[\r\n]+Q:|[\r\n]*$)/gs;
   let m: RegExpExecArray | null;
@@ -193,7 +196,7 @@ export function parseSlideMarkdown(content: string): ImportDraft {
   const title = titleMatch ? titleMatch[1].trim() : 'Présentation importée';
 
   const sections = content.split(/\n---\n/);
-  const slides: any[] = [];
+  const slides: Record<string, unknown>[] = [];
 
   sections.forEach((section, si) => {
     const trimmed = section.trim();

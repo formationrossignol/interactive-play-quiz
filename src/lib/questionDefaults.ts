@@ -1,4 +1,4 @@
-import type { QuizQuestionType } from "@/lib/questionTypes";
+import type { QuizQuestionType, EditableQuestion } from "@/lib/questionTypes";
 
 export const createDefaultQuizQuestion = (type: QuizQuestionType = "multiple-choice") => {
   const base = {
@@ -7,7 +7,7 @@ export const createDefaultQuizQuestion = (type: QuizQuestionType = "multiple-cho
     timeLimit: 30,
     points: 100,
     image: "",
-  } as any;
+  } as EditableQuestion;
 
   switch (type) {
     case "multiple-choice":

@@ -1,6 +1,6 @@
 import { useState, useMemo, type CSSProperties } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { computeExamStats, computeExamStatus, type Exam } from '@/lib/examStorage';
+import { computeExamStats, computeExamStatus, type Exam, type ExamStatus } from '@/lib/examStorage';
 import { getCurrentUser } from '@/lib/auth';
 import { Header } from '@/components/Header';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -203,7 +203,7 @@ export default function MyExams() {
 
   const statusOptions = useMemo(() => {
     const present = new Set(withStatus.map((e) => e.liveStatus));
-    return ['Tous', ...Object.keys(STATUS_LABEL).filter((s) => present.has(s))];
+    return ['Tous', ...Object.keys(STATUS_LABEL).filter((s) => present.has(s as ExamStatus))];
   }, [withStatus]);
 
   const folderCounts = useMemo(() => {

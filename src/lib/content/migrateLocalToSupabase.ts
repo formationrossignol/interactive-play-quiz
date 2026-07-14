@@ -14,11 +14,30 @@ import { createContent } from './contentRepo';
 
 // --- Types ---
 
+interface LocalFolder {
+  id: string;
+  userId: string;
+  type: string;
+  name: string;
+  [k: string]: unknown;
+}
+
+interface LocalRow {
+  id?: string;
+  userId?: string;
+  hostId?: string;
+  deletedAt?: unknown;
+  type?: string;
+  isPublic?: boolean;
+  folderId?: string | null;
+  [k: string]: unknown;
+}
+
 export interface LocalData {
-  folders: any[]; // parsed content_folders
-  savedQuizzes: any[]; // parsed saved_quizzes
-  exams: any[]; // parsed lms_exams
-  courses: any[]; // parsed lms_courses
+  folders: LocalFolder[]; // parsed content_folders
+  savedQuizzes: LocalRow[]; // parsed saved_quizzes
+  exams: LocalRow[]; // parsed lms_exams
+  courses: LocalRow[]; // parsed lms_courses
 }
 
 export interface FolderInsert {
@@ -100,7 +119,7 @@ export function planMigration(local: LocalData, userId: string): MigrationPlan {
 
 const MIGRATED_FLAG = 'content_migrated_v1';
 
-function readArray(key: string): any[] {
+function readArray<T = Record<string, unknown>>(key: string): T[] {
   try {
     const raw = localStorage.getItem(key);
     if (!raw) return [];
