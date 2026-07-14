@@ -241,6 +241,13 @@ body { transition: background-color .25s ease, color .25s ease; }
 .ap-card--hover { transition: transform .12s var(--ap-ease), box-shadow .12s var(--ap-ease); }
 .ap-card--hover:hover { transform: translateY(-3px); box-shadow: var(--ap-shadow-card); }
 
+/* Drag handle: revealed on hover of the enclosing card/row only (maquette #6). */
+.ap-grip { opacity: 0; transition: opacity .12s var(--ap-ease); }
+.ap-card:hover .ap-grip,
+.ap-row:hover .ap-grip,
+.ap-grip:focus-visible { opacity: 1; }
+@media (hover: none) { .ap-grip { opacity: 1; } }
+
 /* Carte « type de contenu » avec blob décoratif d'angle */
 .ap-tile { position: relative; overflow: hidden; }
 .ap-tile__blob {

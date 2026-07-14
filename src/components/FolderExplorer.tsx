@@ -44,6 +44,9 @@ export interface FolderExplorerProps {
   currentFolderId: string | null; // null = "Tous" (root)
   counts?: Record<string, number>; // folderId -> direct item count (optional badge)
   storageKey: string; // localStorage key for persisted expand state
+  rootLabel?: string; // label of the root row (default "Tous")
+  rootCount?: number; // optional total badge on the root row
+  rootActive?: boolean; // override root-row highlight (default currentFolderId === null)
   onNavigate: (folderId: string | null) => void;
   onCreate: (parentId: string | null, name: string) => void;
   onRename: (id: string, name: string) => void;
@@ -71,6 +74,9 @@ function collectAncestorIds(tree: FolderNode[], targetId: string): string[] {
 interface ExplorerCtx {
   currentFolderId: string | null;
   counts?: Record<string, number>;
+  rootLabel: string;
+  rootCount?: number;
+  rootActive?: boolean;
   expanded: Set<string>;
   toggle: (id: string) => void;
   expand: (id: string) => void;
@@ -412,8 +418,8 @@ const NodeRow = ({ node, depth }: { node: FolderNode; depth: number }) => {
 
 /** The "Tous" (root) row: a droppable target ('folder:root'), not draggable. */
 const RootRow = () => {
-  const { currentFolderId, onNavigate } = useExplorer();
-  const isCurrent = currentFolderId === null;
+  const { currentFolderId, onNavigate, rootLabel, rootCount, rootActive } = useExplorer();
+  const isCurrent = rootActive ?? currentFolderId === null;
   const { isOver, setNodeRef } = useDroppable({ id: 'folder:root' });
 
   return (
@@ -436,7 +442,12 @@ const RootRow = () => {
       }}
     >
       <span aria-hidden>📁</span>
-      <span style={{ flex: 1 }}>Tous</span>
+      <span style={{ flex: 1 }}>{rootLabel}</span>
+      {rootCount != null && (
+        <span style={{ ...badgeStyle, ...(isCurrent ? { background: 'var(--ap-card)', color: 'var(--ap-brand)' } : {}) }}>
+          {rootCount}
+        </span>
+      )}
     </div>
   );
 };
@@ -446,6 +457,9 @@ export const FolderExplorer = ({
   currentFolderId,
   counts,
   storageKey,
+  rootLabel = 'Tous',
+  rootCount,
+  rootActive,
   onNavigate,
   onCreate,
   onRename,
@@ -502,6 +516,9 @@ export const FolderExplorer = ({
   const ctx: ExplorerCtx = {
     currentFolderId,
     counts,
+    rootLabel,
+    rootCount,
+    rootActive,
     expanded,
     toggle,
     expand,
