@@ -23,6 +23,9 @@ const Pricing = lazy(() => import("./pages/Pricing"));
 const Contact = lazy(() => import("./pages/Contact"));
 const About = lazy(() => import("./pages/About"));
 const Help = lazy(() => import("./pages/Help"));
+const Guides = lazy(() => import("./pages/Guides"));
+const Communaute = lazy(() => import("./pages/Communaute"));
+const Temoignages = lazy(() => import("./pages/Temoignages"));
 const DiscoverQuizzes = lazy(() => import("./pages/DiscoverQuizzes"));
 
 // Legal pages
@@ -97,6 +100,9 @@ const App = () => (
               <Route path="/poll-results/:pollId" element={<PollResults />} />
               <Route path="/quiz-results/:quizId" element={<QuizResults />} />
               <Route path="/help" element={<Help />} />
+              <Route path="/guides" element={<Guides />} />
+              <Route path="/community" element={<Communaute />} />
+              <Route path="/reviews" element={<Temoignages />} />
               <Route path="/preview/:quizId" element={<PreviewPage />} />
               <Route path="/mentions-legales" element={<MentionsLegales />} />
               <Route path="/confidentialite" element={<Confidentialite />} />
