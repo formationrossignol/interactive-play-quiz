@@ -131,234 +131,13 @@ git commit -m "feat(db): add session_quiz_answers table and question_started_at 
 
 ---
 
-## Task 3: Shared scoring module (pure logic, TDD via Deno)
+## Task 3: Shared scoring module (pure logic, TDD via Deno) — DONE
 
-**Files:**
-- Create: `supabase/functions/_shared/scoring.ts`
-- Test: `supabase/functions/_shared/scoring.test.ts`
+**Status:** Implemented, reviewed (3 rounds), and committed. Embedded code is intentionally omitted here (a stale embedded copy previously drifted from the real files after review fixes) — see the actual files:
+- `supabase/functions/_shared/scoring.ts` — final signature: `checkAnswerCorrect(question: QuestionForScoring, answer: unknown, isPoll: boolean): boolean`. `isPoll` is a hard boundary: throws unconditionally when true (added after review found the original 2-arg version left poll-gating as unenforced caller discipline). `calculateEarnedPoints` clamps `timeLimitSeconds`/`elapsedSeconds` to safe minimums before dividing (added after review found a NaN-on-zero-timeLimit bug). `fill-blank`/`matching` guard against vacuous-true on empty arrays.
+- `supabase/functions/_shared/scoring.test.ts` — 22 tests (grew from the original 17 as each fix above gained a regression test).
 
-- [ ] **Step 1: Write the failing tests**
-
-Create `supabase/functions/_shared/scoring.test.ts`:
-
-```ts
-import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import { checkAnswerCorrect, calculateEarnedPoints, type QuestionForScoring } from "./scoring.ts";
-
-Deno.test("multiple-choice: correct when answer matches correctAnswer", () => {
-  const q: QuestionForScoring = { type: "multiple-choice", correctAnswer: 2 };
-  assertEquals(checkAnswerCorrect(q, 2), true);
-  assertEquals(checkAnswerCorrect(q, 1), false);
-});
-
-Deno.test("true-false: normalizes string/boolean correctAnswer", () => {
-  const q: QuestionForScoring = { type: "true-false", correctAnswer: "true" };
-  assertEquals(checkAnswerCorrect(q, "true"), true);
-  assertEquals(checkAnswerCorrect(q, "false"), false);
-});
-
-Deno.test("short-answer: case/whitespace insensitive", () => {
-  const q: QuestionForScoring = { type: "short-answer", correctAnswer: "Paris" };
-  assertEquals(checkAnswerCorrect(q, "  paris  "), true);
-  assertEquals(checkAnswerCorrect(q, "Lyon"), false);
-});
-
-Deno.test("short-answer: non-string answer is never correct", () => {
-  const q: QuestionForScoring = { type: "short-answer", correctAnswer: "Paris" };
-  assertEquals(checkAnswerCorrect(q, 42), false);
-});
-
-Deno.test("slider: numeric comparison against correctValue", () => {
-  const q: QuestionForScoring = { type: "slider", correctValue: 50 };
-  assertEquals(checkAnswerCorrect(q, 50), true);
-  assertEquals(checkAnswerCorrect(q, "50"), true);
-  assertEquals(checkAnswerCorrect(q, 49), false);
-});
-
-Deno.test("slider: falls back to correctAnswer if correctValue absent", () => {
-  const q: QuestionForScoring = { type: "slider", correctAnswer: 7 };
-  assertEquals(checkAnswerCorrect(q, 7), true);
-});
-
-Deno.test("fill-blank: every blank must match case/whitespace insensitively", () => {
-  const q: QuestionForScoring = {
-    type: "fill-blank",
-    blanks: [{ correctAnswer: "chat" }, { correctAnswer: "chien" }],
-  };
-  assertEquals(checkAnswerCorrect(q, JSON.stringify(["Chat", " chien "])), true);
-  assertEquals(checkAnswerCorrect(q, JSON.stringify(["chat", "oiseau"])), false);
-});
-
-Deno.test("fill-blank: malformed JSON answer is never correct", () => {
-  const q: QuestionForScoring = { type: "fill-blank", blanks: [{ correctAnswer: "chat" }] };
-  assertEquals(checkAnswerCorrect(q, "not json"), false);
-});
-
-Deno.test("ranking: exact order required", () => {
-  const q: QuestionForScoring = { type: "ranking", correctOrder: [2, 0, 1] };
-  assertEquals(checkAnswerCorrect(q, JSON.stringify([2, 0, 1])), true);
-  assertEquals(checkAnswerCorrect(q, JSON.stringify([0, 1, 2])), false);
-});
-
-Deno.test("ranking: wrong length is never correct", () => {
-  const q: QuestionForScoring = { type: "ranking", correctOrder: [2, 0, 1] };
-  assertEquals(checkAnswerCorrect(q, JSON.stringify([2, 0])), false);
-});
-
-Deno.test("matching: every pair must match", () => {
-  const q: QuestionForScoring = {
-    type: "matching",
-    correctMatches: [{ leftId: "a", rightId: "x" }, { leftId: "b", rightId: "y" }],
-  };
-  assertEquals(checkAnswerCorrect(q, JSON.stringify({ a: "x", b: "y" })), true);
-  assertEquals(checkAnswerCorrect(q, JSON.stringify({ a: "x", b: "z" })), false);
-});
-
-Deno.test("unsupported type throws an explicit error", () => {
-  const q: QuestionForScoring = { type: "drag-drop" };
-  let threw = false;
-  try {
-    checkAnswerCorrect(q, "anything");
-  } catch (e) {
-    threw = true;
-    assertEquals((e as Error).message.includes("drag-drop"), true);
-  }
-  assertEquals(threw, true);
-});
-
-Deno.test("calculateEarnedPoints: full points at elapsed=0", () => {
-  assertEquals(calculateEarnedPoints(100, 0, 30, true), 100);
-});
-
-Deno.test("calculateEarnedPoints: floor of 10% at elapsed=timeLimit", () => {
-  assertEquals(calculateEarnedPoints(100, 30, 30, true), 10);
-});
-
-Deno.test("calculateEarnedPoints: floor of 10% when elapsed exceeds timeLimit (network latency)", () => {
-  assertEquals(calculateEarnedPoints(100, 35, 30, true), 10);
-});
-
-Deno.test("calculateEarnedPoints: partial ratio between 0 and timeLimit", () => {
-  // elapsed=15 of 30 → ratio 0.5 → 50 points (above the 10-point floor)
-  assertEquals(calculateEarnedPoints(100, 15, 30, true), 50);
-});
-
-Deno.test("calculateEarnedPoints: zero when incorrect regardless of timing", () => {
-  assertEquals(calculateEarnedPoints(100, 0, 30, false), 0);
-});
-```
-
-- [ ] **Step 2: Run tests to verify they fail**
-
-```bash
-deno test supabase/functions/_shared/scoring.test.ts
-```
-Expected: FAIL — `Module not found "./scoring.ts"`.
-
-- [ ] **Step 3: Write the implementation**
-
-Create `supabase/functions/_shared/scoring.ts`:
-
-```ts
-export interface QuestionForScoring {
-  type: string;
-  correctAnswer?: unknown;
-  correctValue?: unknown;
-  correctOrder?: number[];
-  correctMatches?: { leftId: string; rightId: string }[];
-  blanks?: { correctAnswer: string }[];
-}
-
-/** Ported from src/components/PlayerView.tsx's client-side correction logic
- *  (audit findings C-1/H-6 — this used to run in the browser against an
- *  answer key the player could read; it now runs server-side against
- *  session_quiz_answers, which the player never receives). */
-export function checkAnswerCorrect(question: QuestionForScoring, answer: unknown): boolean {
-  switch (question.type) {
-    case "multiple-choice":
-    case "single-choice":
-      return answer === question.correctAnswer;
-
-    case "true-false":
-      return (answer === "true") === (question.correctAnswer === true || question.correctAnswer === "true");
-
-    case "short-answer":
-      return (
-        typeof answer === "string" &&
-        typeof question.correctAnswer === "string" &&
-        answer.toLowerCase().trim() === question.correctAnswer.toLowerCase().trim()
-      );
-
-    case "slider": {
-      const expected = question.correctValue ?? question.correctAnswer;
-      return Number(answer) === Number(expected);
-    }
-
-    case "fill-blank": {
-      try {
-        const submitted: string[] = JSON.parse(String(answer));
-        return (question.blanks ?? []).every(
-          (b, i) => submitted[i]?.toLowerCase().trim() === String(b.correctAnswer).toLowerCase().trim()
-        );
-      } catch {
-        return false;
-      }
-    }
-
-    case "ranking": {
-      try {
-        const submitted: number[] = JSON.parse(String(answer));
-        const target = question.correctOrder ?? [];
-        return target.length > 0 && submitted.length === target.length && submitted.every((v, i) => v === target[i]);
-      } catch {
-        return false;
-      }
-    }
-
-    case "matching": {
-      try {
-        const submitted: Record<string, string> = JSON.parse(String(answer));
-        return (question.correctMatches ?? []).every((m) => submitted[m.leftId] === m.rightId);
-      } catch {
-        return false;
-      }
-    }
-
-    default:
-      throw new Error(`Unsupported question type for server-side scoring: ${question.type}`);
-  }
-}
-
-/** Speed bonus based on a server-measured elapsed time, never the client's
- *  own timer (which is forgeable). Ratio clamped to [0, 1] before applying
- *  the existing 10%-of-base floor, so a network-latency-delayed submission
- *  just past timeLimit still gets the same floor a same-instant submission
- *  would (matches the pre-existing client behavior in PlayerView.tsx). */
-export function calculateEarnedPoints(
-  basePoints: number,
-  elapsedSeconds: number,
-  timeLimitSeconds: number,
-  correct: boolean
-): number {
-  if (!correct) return 0;
-  const ratio = Math.min(1, Math.max(0, 1 - elapsedSeconds / timeLimitSeconds));
-  return Math.max(Math.round(basePoints * ratio), Math.round(basePoints * 0.1));
-}
-```
-
-- [ ] **Step 4: Run tests to verify they pass**
-
-```bash
-deno test supabase/functions/_shared/scoring.test.ts
-```
-Expected: PASS (17 tests).
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add supabase/functions/_shared/scoring.ts supabase/functions/_shared/scoring.test.ts
-git commit -m "feat(scoring): port answer-correctness and speed-bonus logic to a pure, server-side module"
-```
+Any task below that calls `checkAnswerCorrect` uses the 3-arg form: `checkAnswerCorrect(question, answer, isPoll)`.
 
 ---
 
@@ -400,443 +179,39 @@ git commit -m "feat(edge-functions): add shared CORS helper"
 
 ---
 
-## Task 5: Edge Function `submit-answer`
+## Task 5: Edge Function `submit-answer` — DONE
 
-**Files:**
-- Create: `supabase/functions/submit-answer/index.ts`
+**Status:** Implemented, reviewed (found 2 critical + 2 important issues, all fixed), committed. Embedded code intentionally omitted here — see the actual file, `supabase/functions/submit-answer/index.ts`, rather than a snapshot that will drift.
 
-- [ ] **Step 1: Write the function**
-
-Create `supabase/functions/submit-answer/index.ts`:
-
-```ts
-import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders, handleCorsPreflight } from "../_shared/cors.ts";
-import { checkAnswerCorrect, calculateEarnedPoints, type QuestionForScoring } from "../_shared/scoring.ts";
-
-interface SubmitAnswerBody {
-  game_code: string;
-  player_id: string;
-  question_index: number;
-  answer: number | string | null;
-}
-
-interface SharedPlayer {
-  id: string;
-  name: string;
-  avatar: string;
-  score: number;
-  correctAnswers?: number;
-  joinedAt: string;
-  lastAnswer?: number;
-  lastAnswerText?: string;
-  lastAnswerQuestionIndex?: number;
-  lastAnswerCorrect?: boolean;
-  lastEarnedPoints?: number;
-  [key: string]: unknown;
-}
-
-Deno.serve(async (req) => {
-  const preflight = handleCorsPreflight(req);
-  if (preflight) return preflight;
-
-  try {
-    const body: SubmitAnswerBody = await req.json();
-    const { game_code, player_id, question_index, answer } = body;
-
-    if (!game_code || !player_id || typeof question_index !== "number") {
-      return new Response(JSON.stringify({ error: "Missing required fields" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
-
-    const { data: answerRow, error: answerError } = await supabase
-      .from("session_quiz_answers")
-      .select("questions")
-      .eq("game_code", game_code)
-      .single();
-
-    if (answerError || !answerRow) {
-      return new Response(JSON.stringify({ error: "Session not found" }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const questions = answerRow.questions as QuestionForScoring[];
-    const question = questions[question_index];
-    if (!question) {
-      return new Response(JSON.stringify({ error: "Question not found" }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const { data: stateRow, error: stateError } = await supabase
-      .from("session_state")
-      .select("players, question_started_at")
-      .eq("game_code", game_code)
-      .single();
-
-    if (stateError || !stateRow) {
-      return new Response(JSON.stringify({ error: "Session not found" }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const players = (stateRow.players ?? []) as SharedPlayer[];
-    const existingPlayer = players.find((p) => p.id === player_id);
-
-    // Idempotent: a retry (network blip) for the same question returns the
-    // already-computed result instead of recalculating or double-counting.
-    if (existingPlayer?.lastAnswerQuestionIndex === question_index) {
-      return new Response(
-        JSON.stringify({
-          correct: existingPlayer.lastAnswerCorrect ?? false,
-          earnedPoints: existingPlayer.lastEarnedPoints ?? 0,
-          correctAnswer: question.correctAnswer ?? question.correctValue ?? null,
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const correct = checkAnswerCorrect(question, answer);
-
-    const startedAt = stateRow.question_started_at ? new Date(stateRow.question_started_at).getTime() : Date.now();
-    const elapsedSeconds = Math.max(0, (Date.now() - startedAt) / 1000);
-    const basePoints = (question as { points?: number }).points ?? 100;
-    const timeLimit = (question as { timeLimit?: number }).timeLimit ?? 30;
-    const earnedPoints = calculateEarnedPoints(basePoints, elapsedSeconds, timeLimit, correct);
-
-    const updatedPlayer: SharedPlayer = {
-      ...(existingPlayer ?? { id: player_id, name: "", avatar: "", score: 0, joinedAt: new Date().toISOString() }),
-      score: (existingPlayer?.score ?? 0) + earnedPoints,
-      correctAnswers: (existingPlayer?.correctAnswers ?? 0) + (correct ? 1 : 0),
-      lastAnswer: typeof answer === "number" ? answer : undefined,
-      lastAnswerText:
-        typeof answer === "string" && (question.type === "short-answer" || question.type === "open-text")
-          ? answer.slice(0, 500)
-          : undefined,
-      lastAnswerQuestionIndex: question_index,
-      lastAnswerCorrect: correct,
-      lastEarnedPoints: earnedPoints,
-    };
-
-    const nextPlayers = existingPlayer
-      ? players.map((p) => (p.id === player_id ? updatedPlayer : p))
-      : [...players, updatedPlayer];
-
-    const { error: upsertError } = await supabase
-      .from("session_state")
-      .update({ players: nextPlayers, updated_at: new Date().toISOString() })
-      .eq("game_code", game_code);
-
-    if (upsertError) {
-      return new Response(JSON.stringify({ error: "Failed to save answer" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    return new Response(
-      JSON.stringify({
-        correct,
-        earnedPoints,
-        correctAnswer: question.correctAnswer ?? question.correctValue ?? null,
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  } catch (err) {
-    return new Response(JSON.stringify({ error: (err as Error).message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-});
-```
-
-- [ ] **Step 2: Serve locally and verify manually**
-
-```bash
-npx supabase functions serve submit-answer --no-verify-jwt
-```
-In another terminal, with a real `game_code`/`player_id` from a session you've created via the Supabase dashboard SQL editor (insert a test row into `session_quiz_answers` and `session_state` manually for this check):
-```bash
-curl -i --location --request POST 'http://127.0.0.1:54321/functions/v1/submit-answer' \
-  --header 'Content-Type: application/json' \
-  --data '{"game_code":"123456","player_id":"test-player","question_index":0,"answer":2}'
-```
-Expected: `200 OK` with a JSON body containing `correct`, `earnedPoints`, `correctAnswer`. Repeat the exact same request — expected: identical response (idempotence), `session_state.players` unchanged on the second call (verify via the Supabase dashboard table editor).
-
-> **Scope note:** this manual curl-based check is the verification method for this function — a full automated integration test would require a local Supabase stack (`supabase start`, Docker) which is a bigger infra investment out of scope for this plan. The pure scoring logic (the part with actual branching complexity) is fully unit-tested in Task 3.
-
-- [ ] **Step 3: Deploy**
-
-```bash
-npx supabase functions deploy submit-answer
-```
-Expected: confirms deployment, prints the function URL.
-
-- [ ] **Step 4: Commit**
-
-```bash
-git add supabase/functions/submit-answer/index.ts
-git commit -m "feat(edge-functions): add submit-answer — server-side quiz answer validation and scoring"
-```
+Key points for anything built against this function later (Tasks 8-10):
+- Request: `{ game_code, player_id, question_index, answer }`. Response: `{ correct, earnedPoints, correctAnswer, correctValue, correctOrder, correctMatches, blanks }` (the last 5 cover all 7 question types' answer-key shapes — only populated for the type actually answered, others `null`).
+- **Trust boundary**: rejects with 409 if `question_index !== session_state.current_question_index` — a question can only be answered/revealed once the host has actually advanced to it. This is what actually closes H-6 (an earlier draft of this function was missing this check and would have let any caller harvest the whole answer key upfront).
+- **Atomicity**: persists via the pre-existing `upsert_session_player(p_game_code, p_player)` Postgres RPC (already in production, does `SELECT ... FOR UPDATE` + single-row merge in one transaction) rather than a manual select-then-update — this serializes concurrent submissions from different players in the same session instead of racing.
+- `isPoll` is hardcoded `false` when calling `checkAnswerCorrect` — this endpoint is quiz-only; polls keep using the pre-existing direct `upsertPlayerInSession` client path, unchanged.
+- **Known, documented, NOT fixed here**: `player_id` is a bare UUID in the request body with no session-token binding — nothing stops a participant from submitting an answer as another player's `id` (learnable from the broadcast player list). This is a pre-existing property of the whole system (the original RPC-based flow had the same gap), not introduced by this task. Flagged as a separate, out-of-scope finding for a future player-identity/session-token sub-project — not addressed by this plan.
 
 ---
 
-## Task 6: Edge Function `create-session`
+## Task 6: Edge Function `create-session` — DONE
 
-**Files:**
-- Create: `supabase/functions/create-session/index.ts`
+**Status:** Implemented, reviewed (found 1 important issue, fixed), committed, migration pushed. Embedded code intentionally omitted here — see the actual file, `supabase/functions/create-session/index.ts`, rather than a snapshot that will drift.
 
-- [ ] **Step 1: Write the function**
-
-Create `supabase/functions/create-session/index.ts`:
-
-```ts
-import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders, handleCorsPreflight } from "../_shared/cors.ts";
-
-interface FullQuestion {
-  id: string;
-  type: string;
-  question: string;
-  answers?: string[];
-  correctAnswer?: unknown;
-  correctValue?: unknown;
-  correctOrder?: number[];
-  correctMatches?: { leftId: string; rightId: string }[];
-  blanks?: { correctAnswer: string }[];
-  points?: number;
-  timeLimit?: number;
-  [key: string]: unknown;
-}
-
-interface CreateSessionBody {
-  game_code: string;
-  title: string;
-  questions: FullQuestion[];
-}
-
-// Fields that must never reach the player. Anything not in this list is
-// considered public (question text, options, media, timing, points).
-const PRIVATE_FIELDS = ["correctAnswer", "correctValue", "correctOrder", "correctMatches", "blanks"] as const;
-
-function stripAnswers(question: FullQuestion): FullQuestion {
-  const publicQuestion = { ...question };
-  for (const field of PRIVATE_FIELDS) {
-    delete publicQuestion[field];
-  }
-  // fill-blank questions need blank *positions* (not answers) to render input
-  // fields — reconstruct a blank-count-only shape so the player still sees
-  // the right number of inputs without the answer key.
-  if (question.type === "fill-blank" && question.blanks) {
-    publicQuestion.blanks = question.blanks.map(() => ({}));
-  }
-  return publicQuestion;
-}
-
-Deno.serve(async (req) => {
-  const preflight = handleCorsPreflight(req);
-  if (preflight) return preflight;
-
-  try {
-    const body: CreateSessionBody = await req.json();
-    const { game_code, title, questions } = body;
-
-    if (!game_code || !Array.isArray(questions)) {
-      return new Response(JSON.stringify({ error: "Missing required fields" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
-
-    const publicQuestions = questions.map(stripAnswers);
-    const now = new Date().toISOString();
-
-    // Write private half first: if this fails, we bail before the public
-    // half is written, so a session is never half-created (public data
-    // visible with no matching answer key for submit-answer to use).
-    const { error: privateError } = await supabase
-      .from("session_quiz_answers")
-      .upsert({ game_code, questions, created_at: now }, { onConflict: "game_code" });
-
-    if (privateError) {
-      return new Response(JSON.stringify({ error: "Failed to store answer key" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const { error: publicError } = await supabase.from("session_state").upsert(
-      {
-        game_code,
-        players: [],
-        game_state: "waiting",
-        current_question_index: 0,
-        time_left: 0,
-        question_started_at: null,
-        quiz_data: { title, questions: publicQuestions },
-        updated_at: now,
-      },
-      { onConflict: "game_code" }
-    );
-
-    if (publicError) {
-      return new Response(JSON.stringify({ error: "Failed to create session" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    return new Response(JSON.stringify({ ok: true }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  } catch (err) {
-    return new Response(JSON.stringify({ error: (err as Error).message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-});
-```
-
-- [ ] **Step 2: Serve locally and verify manually**
-
-```bash
-npx supabase functions serve create-session --no-verify-jwt
-```
-```bash
-curl -i --location --request POST 'http://127.0.0.1:54321/functions/v1/create-session' \
-  --header 'Content-Type: application/json' \
-  --data '{"game_code":"654321","title":"Test Quiz","questions":[{"id":"q1","type":"multiple-choice","question":"2+2?","answers":["3","4","5"],"correctAnswer":1,"points":100,"timeLimit":30}]}'
-```
-Expected: `200 OK`, `{"ok":true}`. Then verify via the Supabase dashboard table editor: `session_state.quiz_data` for `game_code=654321` shows the question WITHOUT `correctAnswer`; `session_quiz_answers.questions` for the same `game_code` shows the question WITH `correctAnswer: 1`.
-
-- [ ] **Step 3: Deploy**
-
-```bash
-npx supabase functions deploy create-session
-```
-
-- [ ] **Step 4: Commit**
-
-```bash
-git add supabase/functions/create-session/index.ts
-git commit -m "feat(edge-functions): add create-session — splits quiz into public/private on session start"
-```
+Key points for anything built against this function later (Tasks 8-9):
+- Request: `{ game_code, title, questions }` (full quiz, with answer key). Response: `{ ok: true }`.
+- Splits into public (`session_state.quiz_data`, answer-key fields stripped via `stripAnswers`) and private (`session_quiz_answers.questions`, full answer key).
+- **Atomicity**: an initial two-separate-upserts version was found (in review) to have a real gap — `create-session` runs on EVERY host restart for the same `game_code` (not just first creation, per Task 9's "Always reset" behavior), so a failure between the two writes could leave the OLD public quiz paired with the NEW private answer key, silently scoring future answers against the wrong question set. Fixed by moving both writes into a single Postgres transaction via a new RPC, `create_session_atomic` (migration `supabase/migrations/20260712130000_create_session_atomic.sql`, already pushed to production) — the Edge Function now calls `supabase.rpc("create_session_atomic", {...})` instead of two separate `.upsert()` calls.
+- `stripAnswers` removes `correctAnswer`/`correctValue`/`correctOrder`/`correctMatches`/`blanks` unconditionally for every question type (not type-gated), so no answer-key field can leak through for any of the 7 question types. `fill-blank` gets a blank-count-only reconstruction (empty objects, same array length) so the player still sees the right number of input fields.
 
 ---
 
-## Task 7: Edge Function `advance-question`
+## Task 7: Edge Function `advance-question` — DONE
 
-**Files:**
-- Create: `supabase/functions/advance-question/index.ts`
+**Status:** Implemented, reviewed (found 1 important issue, fixed), committed. Embedded code intentionally omitted here — see the actual file, `supabase/functions/advance-question/index.ts`.
 
-- [ ] **Step 1: Write the function**
-
-Create `supabase/functions/advance-question/index.ts`:
-
-```ts
-import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders, handleCorsPreflight } from "../_shared/cors.ts";
-
-interface AdvanceQuestionBody {
-  game_code: string;
-  question_index: number;
-  game_state: string;
-  time_left: number;
-}
-
-Deno.serve(async (req) => {
-  const preflight = handleCorsPreflight(req);
-  if (preflight) return preflight;
-
-  try {
-    const body: AdvanceQuestionBody = await req.json();
-    const { game_code, question_index, game_state, time_left } = body;
-
-    if (!game_code || typeof question_index !== "number" || !game_state) {
-      return new Response(JSON.stringify({ error: "Missing required fields" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
-
-    const now = new Date().toISOString();
-    const { error } = await supabase
-      .from("session_state")
-      .update({
-        current_question_index: question_index,
-        game_state,
-        time_left,
-        question_started_at: game_state === "question" ? now : null,
-        updated_at: now,
-      })
-      .eq("game_code", game_code);
-
-    if (error) {
-      return new Response(JSON.stringify({ error: "Failed to advance question" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    return new Response(JSON.stringify({ ok: true, question_started_at: game_state === "question" ? now : null }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  } catch (err) {
-    return new Response(JSON.stringify({ error: (err as Error).message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-});
-```
-
-- [ ] **Step 2: Serve locally and verify manually**
-
-```bash
-npx supabase functions serve advance-question --no-verify-jwt
-```
-```bash
-curl -i --location --request POST 'http://127.0.0.1:54321/functions/v1/advance-question' \
-  --header 'Content-Type: application/json' \
-  --data '{"game_code":"654321","question_index":0,"game_state":"question","time_left":30}'
-```
-Expected: `200 OK`, `{"ok":true,"question_started_at":"<ISO timestamp>"}`. Verify via dashboard: `session_state.question_started_at` for `game_code=654321` is set to that timestamp.
-
-- [ ] **Step 3: Deploy**
-
-```bash
-npx supabase functions deploy advance-question
-```
-
-- [ ] **Step 4: Commit**
-
-```bash
-git add supabase/functions/advance-question/index.ts
-git commit -m "feat(edge-functions): add advance-question — server-authoritative question start time"
-```
+Key points:
+- Request: `{ game_code, question_index, game_state, time_left }`. Response: `{ ok: true, question_started_at }` (or 404 if `game_code` doesn't match any row — the update-with-no-matching-row case previously reported false success, fixed by adding `.select("game_code")` and checking for an empty result).
+- `question_started_at` is stamped to `now()` only when `game_state === "question"`, else `null` — verified against `QuizSession.tsx`'s state machine: this function is only ever called on the `question-intro → question` transition, so the column always holds "when the currently active question began," which is exactly what `submit-answer` needs.
+- **Known, documented, NOT fixed here (pre-existing, not introduced by this task)**: nothing verifies the caller is actually the session's host — `game_code` alone gates the call, same as the pre-existing direct `patchSessionState`/anon-key-update path it replaces (host status was always a client-side-only UI concept, never server-enforced; see `isHost` handling in `QuizSession.tsx`/`LiveQuizPage.tsx`). One nuance worth flagging: this Edge Function uses the `service_role` key, which bypasses RLS entirely — the old anon-key path was subject to whatever RLS policy exists on `session_state` (a table that predates this repo's tracked migrations, so its RLS posture isn't verifiable here). If that untracked policy is more restrictive than "open," this Edge Function is a strict permissions increase, not a lateral move. Flagged as a separate, out-of-scope finding for the same future player/host-identity project noted in Task 5.
 
 ---
 
@@ -905,22 +280,50 @@ describe('advanceLiveQuestion', () => {
 });
 
 describe('submitAnswerToServer', () => {
-  it('invokes submit-answer and returns the parsed result on success', async () => {
+  it('invokes submit-answer and returns the full parsed result on success', async () => {
+    // submit-answer's actual response shape (Task 5, after review fixes)
+    // covers all 7 question types' answer-key fields, not just correctAnswer.
     invokeMock.mockResolvedValue({
-      data: { correct: true, earnedPoints: 80, correctAnswer: 2 },
+      data: {
+        correct: true,
+        earnedPoints: 80,
+        correctAnswer: 2,
+        correctValue: null,
+        correctOrder: null,
+        correctMatches: null,
+        blanks: null,
+      },
       error: null,
     });
     const result = await submitAnswerToServer('123456', 'player-1', 0, 2);
-    expect(result).toEqual({ ok: true, correct: true, earnedPoints: 80, correctAnswer: 2 });
+    expect(result).toEqual({
+      ok: true,
+      correct: true,
+      earnedPoints: 80,
+      correctAnswer: 2,
+      correctValue: null,
+      correctOrder: null,
+      correctMatches: null,
+      blanks: null,
+    });
     expect(invokeMock).toHaveBeenCalledWith('submit-answer', {
       body: { game_code: '123456', player_id: 'player-1', question_index: 0, answer: 2 },
     });
   });
 
-  it('returns ok:false when the function call errors', async () => {
+  it('returns ok:false with all answer-key fields null when the function call errors', async () => {
     invokeMock.mockResolvedValue({ data: null, error: new Error('network') });
     const result = await submitAnswerToServer('123456', 'player-1', 0, 2);
-    expect(result).toEqual({ ok: false, correct: false, earnedPoints: 0, correctAnswer: null });
+    expect(result).toEqual({
+      ok: false,
+      correct: false,
+      earnedPoints: 0,
+      correctAnswer: null,
+      correctValue: null,
+      correctOrder: null,
+      correctMatches: null,
+      blanks: null,
+    });
   });
 });
 ```
@@ -970,12 +373,28 @@ export const advanceLiveQuestion = async (
   return { ok: true, questionStartedAt: (data as { question_started_at: string | null }).question_started_at };
 };
 
+// Mirrors submit-answer's response shape (Task 5) — correctAnswer/correctValue/
+// correctOrder/correctMatches/blanks together cover all 7 question types'
+// answer-key shapes; only the field matching the answered question's type is
+// non-null in any given response.
 export interface SubmitAnswerResult {
   ok: boolean;
   correct: boolean;
   earnedPoints: number;
   correctAnswer: unknown;
+  correctValue: unknown;
+  correctOrder: number[] | null;
+  correctMatches: { leftId: string; rightId: string }[] | null;
+  blanks: unknown;
 }
+
+const EMPTY_ANSWER_KEY = {
+  correctAnswer: null,
+  correctValue: null,
+  correctOrder: null,
+  correctMatches: null,
+  blanks: null,
+} as const;
 
 export const submitAnswerToServer = async (
   gameCode: string,
@@ -988,10 +407,27 @@ export const submitAnswerToServer = async (
   });
   if (error) {
     console.error("[submitAnswerToServer error]", gameCode, error);
-    return { ok: false, correct: false, earnedPoints: 0, correctAnswer: null };
+    return { ok: false, correct: false, earnedPoints: 0, ...EMPTY_ANSWER_KEY };
   }
-  const result = data as { correct: boolean; earnedPoints: number; correctAnswer: unknown };
-  return { ok: true, correct: result.correct, earnedPoints: result.earnedPoints, correctAnswer: result.correctAnswer };
+  const result = data as {
+    correct: boolean;
+    earnedPoints: number;
+    correctAnswer: unknown;
+    correctValue: unknown;
+    correctOrder: number[] | null;
+    correctMatches: { leftId: string; rightId: string }[] | null;
+    blanks: unknown;
+  };
+  return {
+    ok: true,
+    correct: result.correct,
+    earnedPoints: result.earnedPoints,
+    correctAnswer: result.correctAnswer,
+    correctValue: result.correctValue,
+    correctOrder: result.correctOrder,
+    correctMatches: result.correctMatches,
+    blanks: result.blanks,
+  };
 };
 ```
 
@@ -1007,7 +443,7 @@ Expected: PASS (6 tests).
 ```bash
 npm test
 ```
-Expected: all suites pass (existing `authMigration`/`sanitizeHtml`/`fileValidation` plus the new `sessionState` suite).
+Expected: all suites pass (existing `authMigration` plus the new `sessionState` suite — `sanitizeHtml`/`fileValidation` live on the separate, unmerged `fix/audit-remediation-phase1` branch, not this one).
 
 - [ ] **Step 6: Commit**
 
@@ -1111,12 +547,18 @@ Read the exact current code at that location first (line numbers may have drifte
 
 ```ts
       setGameState('question');
-      void advanceLiveQuestion(
+      // Unlike createLiveSession, this result is checked, not discarded — a
+      // silent failure here means the host's UI advances locally while
+      // players never see the new question (their client only learns the
+      // state changed via this same write), so surfacing it matters.
+      advanceLiveQuestion(
         quiz.gameCode,
         currentQuestionIndex,
         'question',
         quiz.questions[currentQuestionIndex]?.timeLimit ?? 30
-      );
+      ).then(({ ok }) => {
+        if (!ok) toast.error("Erreur réseau : la question n'a peut-être pas été transmise aux joueurs.");
+      });
 ```
 
 - [ ] **Step 4: Update the import for `advanceLiveQuestion`**
@@ -1128,8 +570,9 @@ In the same import block from Step 2, add:
 
 - [ ] **Step 5: Run typecheck and tests**
 
+Note: this branch's `package.json` has no `typecheck` script (that was added on a separate branch, `fix/audit-remediation-phase1`, not yet merged here) — use `tsc` directly:
 ```bash
-npm run typecheck && npm test
+npx tsc --noEmit -p tsconfig.json && npm test
 ```
 Expected: both pass. If typecheck fails because `ensureSessionInSupabase`/`resetSessionForNewRun` are still referenced elsewhere in the file, search for other call sites (`grep -n "ensureSessionInSupabase\|resetSessionForNewRun" src/components/QuizSession.tsx`) and update them the same way — there should be exactly one call site for each, both inside the `init` function replaced in Step 1.
 
@@ -1340,8 +783,9 @@ Wrap the existing correct/incorrect block (unchanged) in the `else` branch of th
 
 - [ ] **Step 6: Run typecheck and tests**
 
+Note: this branch's `package.json` has no `typecheck` script — use `tsc` directly:
 ```bash
-npm run typecheck && npm test
+npx tsc --noEmit -p tsconfig.json && npm test
 ```
 Expected: both pass.
 

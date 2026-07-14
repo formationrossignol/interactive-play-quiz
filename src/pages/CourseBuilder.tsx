@@ -14,6 +14,7 @@ import {
   type Module,
 } from "@/lib/courseStorage";
 import { getUserQuizzes, getUserFlashcardSets } from "@/lib/quizStorage";
+import { assertSafeImportFile } from "@/lib/fileValidation";
 import { toast } from "sonner";
 import {
   ArrowLeft,
@@ -211,9 +212,10 @@ const CourseBuilder = () => {
   ) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const MAX = 4 * 1024 * 1024; // 4MB
-    if (file.size > MAX) {
-      toast.error("Fichier trop volumineux (max 4 Mo)");
+    try {
+      assertSafeImportFile(file, 4 * 1024 * 1024);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Fichier invalide");
       return;
     }
     const isMd = file.name.match(/\.(md|markdown)$/i);

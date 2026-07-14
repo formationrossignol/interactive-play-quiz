@@ -181,6 +181,9 @@ function buildAndSave(gen: GenCourse): string {
       isFavorite: false,
       tags: [],
       type: 'quiz',
+      category: 'Formation',
+      speedBonus: true,
+      transitionTime: 5,
     });
 
     // Leçons de contenu + leçon quiz finale

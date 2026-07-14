@@ -372,3 +372,105 @@ export const subscribeToSessionState = (
 
   return channel;
 };
+
+// --- Server-side scoring (Edge Functions) ---
+// These replace direct writes to session_state/session_quiz_answers from the
+// browser for anything answer-related — the client never holds an answer key
+// or computes its own score (audit findings C-1/H-6).
+
+/** supabase-js's FunctionsHttpError.message is a hardcoded generic string
+ *  ("Edge Function returned a non-2xx status code") for every non-2xx
+ *  response — the actual per-endpoint reason (404/409/500, each meaningfully
+ *  different across submit-answer/create-session/advance-question) only
+ *  lives in error.context (the raw Response). Surface the HTTP status at
+ *  minimum so logs can distinguish "not found" from "not currently active"
+ *  from "server error" instead of all looking identical. */
+async function describeFunctionsError(error: unknown): Promise<string> {
+  const context = (error as { context?: Response }).context;
+  if (!(context instanceof Response)) return String(error);
+  try {
+    const body = await context.clone().json();
+    return `HTTP ${context.status}: ${body?.error ?? JSON.stringify(body)}`;
+  } catch {
+    return `HTTP ${context.status}`;
+  }
+}
+
+export const createLiveSession = async (
+  gameCode: string,
+  title: string,
+  // Forwarded verbatim to the create-session edge function as JSON; the quiz's
+  // own question shape (QuizSession.QuizQuestion) is broader than the question-
+  // bank Question type, so keep this structurally loose to avoid a false mismatch.
+  questions: unknown[]
+): Promise<boolean> => {
+  const { error } = await supabase.functions.invoke("create-session", {
+    body: { game_code: gameCode, title, questions },
+  });
+  if (error) console.error("[createLiveSession error]", gameCode, await describeFunctionsError(error));
+  return !error;
+};
+
+export const advanceLiveQuestion = async (
+  gameCode: string,
+  questionIndex: number,
+  gameState: SharedGameState,
+  timeLeft: number
+): Promise<{ ok: boolean; questionStartedAt: string | null }> => {
+  const { data, error } = await supabase.functions.invoke("advance-question", {
+    body: { game_code: gameCode, question_index: questionIndex, game_state: gameState, time_left: timeLeft },
+  });
+  if (error) {
+    console.error("[advanceLiveQuestion error]", gameCode, await describeFunctionsError(error));
+    return { ok: false, questionStartedAt: null };
+  }
+  return { ok: true, questionStartedAt: (data as { question_started_at: string | null }).question_started_at };
+};
+
+// Mirrors submit-answer's response shape (Task 5) — correctAnswer/correctValue/
+// correctOrder/correctMatches/blanks together cover all 7 question types'
+// answer-key shapes; only the field matching the answered question's type is
+// non-null in any given response.
+export interface SubmitAnswerResult {
+  ok: boolean;
+  correct: boolean;
+  earnedPoints: number;
+  correctAnswer: unknown;
+  correctValue: unknown;
+  correctOrder: number[] | null;
+  correctMatches: { leftId: string; rightId: string }[] | null;
+  blanks: unknown;
+}
+
+const EMPTY_ANSWER_KEY = {
+  correctAnswer: null,
+  correctValue: null,
+  correctOrder: null,
+  correctMatches: null,
+  blanks: null,
+} as const;
+
+export const submitAnswerToServer = async (
+  gameCode: string,
+  playerId: string,
+  questionIndex: number,
+  answer: number | string | null
+): Promise<SubmitAnswerResult> => {
+  const { data, error } = await supabase.functions.invoke("submit-answer", {
+    body: { game_code: gameCode, player_id: playerId, question_index: questionIndex, answer },
+  });
+  if (error) {
+    console.error("[submitAnswerToServer error]", gameCode, await describeFunctionsError(error));
+    return { ok: false, correct: false, earnedPoints: 0, ...EMPTY_ANSWER_KEY };
+  }
+  const result = data as {
+    correct: boolean;
+    earnedPoints: number;
+    correctAnswer: unknown;
+    correctValue: unknown;
+    correctOrder: number[] | null;
+    correctMatches: { leftId: string; rightId: string }[] | null;
+    blanks: unknown;
+  };
+  return { ok: true, ...result };
+};

@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Database, Plus, Search, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
-import * as XLSX from 'xlsx';
+import { assertSafeImportFile } from "@/lib/fileValidation";
 import type { QuizQuestionType, PollQuestionType } from "@/lib/questionTypes";
 
 export interface SavedQuestion {
@@ -55,9 +55,18 @@ export const QuestionBank = ({ onSelectQuestion }: QuestionBankProps) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    try {
+      assertSafeImportFile(file);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Fichier invalide");
+      event.target.value = "";
+      return;
+    }
+
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
+        const XLSX = await import('xlsx');
         const data = new Uint8Array(e.target?.result as ArrayBuffer);
         const workbook = XLSX.read(data, { type: 'array' });
         const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
@@ -84,7 +93,8 @@ export const QuestionBank = ({ onSelectQuestion }: QuestionBankProps) => {
     reader.readAsArrayBuffer(file);
   };
 
-  const exportToExcel = () => {
+  const exportToExcel = async () => {
+    const XLSX = await import('xlsx');
     const exportData = savedQuestions.map(q => ({
       question: q.question,
       type: q.type,
