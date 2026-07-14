@@ -17,7 +17,7 @@ export const Footer = () => {
     {
       title: t('footerCompany'),
       links: [
-        { label: t('footerAbout') },
+        { label: t('footerAbout'), onClick: () => navigate('/about') },
         { label: t('footerCareers') },
         { label: t('footerContact'), onClick: () => navigate('/contact') },
       ],
@@ -25,9 +25,10 @@ export const Footer = () => {
     {
       title: t('footerSupport'),
       links: [
-        { label: t('footerHelpCenter') },
-        { label: t('footerGuides') },
-        { label: t('footerCommunity') },
+        { label: t('footerHelpCenter'), onClick: () => navigate('/help') },
+        { label: t('footerGuides'), onClick: () => navigate('/guides') },
+        { label: t('footerCommunity'), onClick: () => navigate('/community') },
+        { label: t('footerTestimonials'), onClick: () => navigate('/reviews') },
       ],
     },
   ];
