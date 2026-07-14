@@ -12,7 +12,8 @@ import { QRCodeGenerator } from "./QRCodeGenerator";
 import { WordCloudQuestion } from "./WordCloudQuestion";
 import { RankingQuestion } from "./RankingQuestion";
 import { MultiStepProgress } from "./MultiStepProgress";
-import { BackgroundMusic } from "./BackgroundMusic";
+import { AudioControls } from "./AudioControls";
+import { useGameAudio } from "@/hooks/useGameAudio";
 import { ExitQuizDialog } from "./ExitQuizDialog";
 import { CircularTimer } from "./CircularTimer";
 import { QuizSessionAnswerDistribution } from "./QuizSession_AnswerDistribution";
@@ -80,6 +81,7 @@ interface QuizSession {
   theme?: string;
   font?: string;
   transitionTime?: number;
+  ambianceId?: string;
 }
 
 interface QuizSessionProps {
@@ -122,6 +124,18 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
   const [sessionReady, setSessionReady] = useState(false);
 
   const [gameState, setGameState] = useState<'waiting' | 'transition' | 'question-intro' | 'question' | 'answer-distribution' | 'leaderboard' | 'final'>('waiting');
+
+  const audio = useGameAudio({ ambianceId: quiz.ambianceId, gameState, isHost: !!isHost });
+
+  // Host-screen SFX on phase entry.
+  const prevAudioStateRef = useRef<string>('');
+  const lastTickSecondRef = useRef<number>(0);
+  useEffect(() => {
+    if (prevAudioStateRef.current === gameState) return;
+    prevAudioStateRef.current = gameState;
+    if (gameState === 'answer-distribution') audio.playSfx('reveal');
+    else if (gameState === 'final') audio.playSfx('podium');
+  }, [gameState, audio]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
   const [sessionHistory, setSessionHistory] = useState<SessionRun[]>([]);
@@ -443,6 +457,11 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
       if (questionEndTimeRef.current === null) return;
       const remaining = Math.max(0, Math.ceil((questionEndTimeRef.current - Date.now()) / 1000));
       setTimeLeft(remaining);
+      // Timer updates 4×/s; fire the tick SFX only once per whole second in the last 5s.
+      if (remaining > 0 && remaining <= 5 && remaining !== lastTickSecondRef.current) {
+        lastTickSecondRef.current = remaining;
+        audio.playSfx('tick');
+      }
       if (remaining <= 0 && !hasAutoAdvancedRef.current) {
         hasAutoAdvancedRef.current = true;
         clearInterval(interval);
@@ -783,6 +802,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
     const ghostCount = Math.max(0, 4 - visiblePlayers.length);
 
     const handleStart = () => {
+      audio.unlock();
       setShowCountdown(true);
       // Broadcast the countdown so players see the same 3-2-1 as the host
       if (isHost) {
@@ -1162,7 +1182,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
             </div>
             {isHost && (
               <>
-                <BackgroundMusic isPlaying />
+                <AudioControls audio={audio} />
                 <button
                   onClick={() => setAutoAdvance(v => !v)}
                   title={autoAdvance ? 'Auto-avance activé' : 'Auto-avance désactivé'}
