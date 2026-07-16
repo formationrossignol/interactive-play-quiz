@@ -1,0 +1,19 @@
+/* Legal / static page prose — rendered from admin-editable HTML body. */
+.static-prose { color: var(--ap-muted); font-size: 15px; line-height: 1.7; }
+.static-prose h2 {
+  font-family: var(--ap-font-display); font-size: 20px; font-weight: 600;
+  color: var(--ap-ink); margin: 32px 0 12px;
+}
+.static-prose h2:first-child { margin-top: 0; }
+.static-prose p { margin: 0 0 12px; }
+.static-prose ul { padding-left: 20px; list-style: disc; margin: 0 0 12px; }
+.static-prose li { margin-bottom: 8px; }
+.static-prose strong { color: var(--ap-ink); }
+.static-prose a { color: var(--ap-brand); font-weight: 700; }
+
+/* About mission card: injected HTML paragraphs styled like .ap-lead. */
+.about-mission p {
+  color: var(--ap-muted); font-family: var(--ap-font-body); font-weight: 700;
+  font-size: 16px; line-height: 1.6; margin: 0 0 20px;
+}
+.about-mission p:last-child { margin-bottom: 0; }

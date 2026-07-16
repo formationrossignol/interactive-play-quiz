@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import type {
   RoadmapAdminRow, GuideAdminRow, FaqAdminRow, ReleaseAdminRow, ChangelogItemAdminRow,
-  PendingReview, ReviewAdminRow, IdeaRow, AdminReportRow, SubscriberRow,
+  PendingReview, ReviewAdminRow, IdeaRow, AdminReportRow, SubscriberRow, StaticPage,
   Status, ReportStatus,
 } from './types';
 
@@ -91,6 +91,21 @@ export async function listReports(status?: ReportStatus): Promise<AdminReportRow
 }
 export const setReportStatus = (id: string, status: ReportStatus) =>
   updateRow('reports', id, { status });
+
+// ── Static pages ─────────────────────────────────────────────────────────────
+export async function listStaticPages(): Promise<StaticPage[]> {
+  const { data, error } = await supabase.from('static_pages')
+    .select('slug,title,subtitle,body,blocks,status');
+  if (error) throw error;
+  return (data ?? []) as StaticPage[];
+}
+export async function upsertStaticPage(row: StaticPage): Promise<void> {
+  const { error } = await supabase.from('static_pages').upsert({
+    slug: row.slug, title: row.title, subtitle: row.subtitle,
+    body: row.body, blocks: row.blocks, status: row.status,
+  }, { onConflict: 'slug' });
+  if (error) throw error;
+}
 
 // ── Subscribers ──────────────────────────────────────────────────────────────
 export async function listSubscribers(): Promise<SubscriberRow[]> {
