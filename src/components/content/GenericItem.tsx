@@ -192,6 +192,9 @@ function primaryButton(
   );
 }
 
+/** Accent CSS var derived from the config accentBtn suffix (ap-btn--quiz → --ap-quiz). */
+const accentVarOf = (accentBtn: string) => `--ap-${accentBtn.replace("ap-btn--", "")}`;
+
 export function GenericCard(props: GenericItemProps) {
   const { d, ctx, config, navigate } = props;
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: d.id });
@@ -199,6 +202,7 @@ export function GenericCard(props: GenericItemProps) {
   const n = config.countOf(d);
   const id = itemId(d);
   const hasHistory = !!config.results && id ? readSessionHistory(id).length > 0 : false;
+  const accentVar = accentVarOf(config.accentBtn);
 
   return (
     <div
@@ -207,39 +211,39 @@ export function GenericCard(props: GenericItemProps) {
       style={{ opacity: isDragging ? 0.4 : 1 }}
       onClick={() => navigate(config.editRoute(id))}
     >
+      {/* Accent cover strip — gives each type a consistent identity band */}
+      <div style={{ height: 6, background: `var(${accentVar})`, flexShrink: 0 }} />
       {img && (
         <div className="relative h-40 w-full overflow-hidden">
           <img src={img} alt={d.title} className="h-full w-full object-cover" />
         </div>
       )}
-      <div className="flex flex-1 flex-col p-5">
-        <div className="mb-3 flex items-start justify-between gap-3">
-          <div className="flex items-start gap-1.5 flex-1 min-w-0">
-            <button
-              type="button"
-              {...attributes}
-              {...listeners}
-              onClick={(e) => e.stopPropagation()}
-              style={gripStyle}
-              className="ap-grip"
-              title="Déplacer"
-              aria-label={`Déplacer ${d.title}`}
-            >
-              <GripVertical style={{ width: 14, height: 14 }} />
-            </button>
-            <div className="flex-1 min-w-0">
-              <h3 className="ap-h3" style={{ fontSize: "15px" }}>{d.title}</h3>
-              <p className="ap-muted mt-0.5 text-sm line-clamp-2">{d.description}</p>
-            </div>
+      <div className="flex flex-1 flex-col gap-2.5" style={{ padding: "14px 16px 12px" }}>
+        <div className="flex items-start gap-2">
+          <button
+            type="button"
+            {...attributes}
+            {...listeners}
+            onClick={(e) => e.stopPropagation()}
+            style={gripStyle}
+            className="ap-grip"
+            title="Déplacer"
+            aria-label={`Déplacer ${d.title}`}
+          >
+            <GripVertical style={{ width: 14, height: 14 }} />
+          </button>
+          <div className="flex-1 min-w-0">
+            <h3 className="ap-h3 line-clamp-2" style={{ fontSize: "15.5px", lineHeight: 1.25 }}>{d.title}</h3>
+            <p className="ap-muted mt-1 text-sm line-clamp-2">{d.description}</p>
           </div>
           <button
             onClick={(e) => { e.stopPropagation(); ctx.onFavorite(); }}
-            className="text-amber-400 hover:text-amber-500 transition-colors cursor-pointer p-1"
+            className="text-amber-400 hover:text-amber-500 transition-colors cursor-pointer p-1 -mr-1 flex-shrink-0"
           >
             <Star className={`h-4 w-4 ${d.isFavorite ? "fill-amber-400" : ""}`} />
           </button>
         </div>
-        <div className="flex flex-wrap items-center gap-1.5 mb-3">
+        <div className="flex flex-wrap items-center gap-1.5">
           {d.category && (
             <Badge variant="outline" className="rounded-full text-xs border-slate-200 text-slate-500">
               {d.category}
@@ -250,20 +254,20 @@ export function GenericCard(props: GenericItemProps) {
             <span key={tag} className="ap-pill" style={{ fontSize: "11px", padding: "3px 9px" }}>#{tag}</span>
           ))}
         </div>
-        <div className="mt-auto flex items-center gap-2 pt-3" style={{ borderTop: "2px solid var(--ap-line)" }}>
+        <div className="mt-auto flex items-center gap-1.5 pt-3" style={{ borderTop: "2px solid var(--ap-line)" }}>
           <ItemMenu d={d} ctx={ctx} config={config} navigate={navigate} />
           <div style={{ flex: 1 }} />
-          <div style={{ display: "flex", gap: "6px", alignItems: "center" }} onClick={(e) => e.stopPropagation()}>
+          <div style={{ display: "flex", gap: "6px", alignItems: "center", minWidth: 0 }} onClick={(e) => e.stopPropagation()}>
             {hasHistory && config.results && (
               <button
                 onClick={() => navigate(config.results!(id))}
                 className="ap-btn ap-btn--ghost ap-btn--sm"
-                style={{ padding: "6px 10px", display: "flex", alignItems: "center", gap: "4px" }}
+                style={{ padding: "6px 10px", display: "flex", alignItems: "center", gap: "4px", flexShrink: 0 }}
               >
                 <BarChart2 style={{ width: 13, height: 13 }} /> Résultats
               </button>
             )}
-            {primaryButton(props, { text: "13px", pad: "8px 16px" })}
+            {primaryButton(props, { text: "13px", pad: "8px 15px" })}
           </div>
         </div>
       </div>
