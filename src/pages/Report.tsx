@@ -4,6 +4,9 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { useSEO } from "@/hooks/useSEO";
 import { Info, Upload } from "lucide-react";
+import { useSubmitReport, useMyReports } from "@/lib/pages/interactionHooks";
+import { requireAuth } from "@/lib/pages/requireAuth";
+import type { ReportType, ReportSeverity } from "@/lib/pages/types";
 import "./roadmap-pages.css";
 
 const TYPES = [
@@ -18,18 +21,15 @@ const SEVS = [
   { s: "3", emoji: "⚪", label: "Mineur", sub: "Cosmétique, suggestion" },
 ];
 
-const TICKETS = [
-  { id: "#1284", title: "Joueurs « code invalide » à l'ouverture", meta: "Bug · ouvert il y a 2 h", st: "tst--prog", stLabel: "En cours" },
-  { id: "#1271", title: "Facture avec numéro de TVA intra", meta: "Facturation · hier", st: "tst--wait", stLabel: "Attend votre réponse" },
-  { id: "#1246", title: "Export PDF coupe les noms longs", meta: "Bug · il y a 8 j", st: "tst--done", stLabel: "Résolu · v2.14" },
-  { id: "#1230", title: "Question sur la limite de joueurs", meta: "Question · il y a 12 j", st: "tst--done", stLabel: "Résolu" },
-];
-
 const Report = () => {
   const navigate = useNavigate();
   const [type, setType] = useState("bug");
   const [sev, setSev] = useState("2");
   const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+  const [sent, setSent] = useState(false);
+  const submit = useSubmitReport();
+  const { data: tickets, isLoading: ticketsLoading } = useMyReports();
   useSEO({
     title: "Signaler un problème",
     description: "Un souci avec Ludiq ? Décrivez ce qui s'est passé — type, gravité, contexte technique — et suivez la résolution de vos tickets.",
@@ -94,7 +94,7 @@ const Report = () => {
 
               <div className="field">
                 <label>Ce qui s'est passé</label>
-                <textarea rows={4} placeholder={"1. J'ai lancé la session…\n2. Les joueurs ont saisi le code…\n3. Résultat : … / Attendu : …"} />
+                <textarea rows={4} value={body} onChange={(e) => setBody(e.target.value)} placeholder={"1. J'ai lancé la session…\n2. Les joueurs ont saisi le code…\n3. Résultat : … / Attendu : …"} />
                 <p className="fhint">Astuce : les étapes numérotées « fait → obtenu → attendu » divisent le temps de résolution par deux.</p>
               </div>
 
@@ -117,7 +117,17 @@ const Report = () => {
                 </div>
               </div>
 
-              <button className="btn" style={{ width: "100%" }} onClick={() => navigate("/contact")}>Envoyer le ticket</button>
+              <button className="btn" style={{ width: "100%" }}
+                disabled={submit.isPending || !title.trim()}
+                onClick={() => {
+                  if (!requireAuth(navigate)) return;
+                  submit.mutate(
+                    { type: type as ReportType, severity: Number(sev) as ReportSeverity, title: title.trim(), body },
+                    { onSuccess: () => { setTitle(""); setBody(""); setSent(true); setTimeout(() => setSent(false), 3000); } },
+                  );
+                }}>
+                {sent ? "Ticket envoyé ✓" : "Envoyer le ticket"}
+              </button>
               <p style={{ color: "var(--ap-muted)", fontWeight: 700, fontSize: "12px", textAlign: "center", margin: "12px 0 0" }}>
                 Vous recevrez un numéro de suivi par email immédiatement.
               </p>
@@ -126,13 +136,19 @@ const Report = () => {
             <div>
               <div className="card" style={{ overflow: "hidden", position: "relative" }}>
                 <div style={{ padding: "16px 18px 8px" }}><h3 style={{ fontSize: "16px" }}>Mes tickets</h3></div>
-                {TICKETS.map((tk) => (
-                  <div className="ticketrow" key={tk.id}>
-                    <span className="tid">{tk.id}</span>
-                    <div className="tt2"><b>{tk.title}</b><small>{tk.meta}</small></div>
-                    <span className={`tst ${tk.st}`}>{tk.stLabel}</span>
-                  </div>
-                ))}
+                {ticketsLoading ? (
+                  <div className="ticketrow"><small style={{ opacity: 0.6 }}>Chargement…</small></div>
+                ) : !tickets || tickets.length === 0 ? (
+                  <div className="ticketrow"><small style={{ opacity: 0.6 }}>Aucun ticket pour le moment.</small></div>
+                ) : (
+                  tickets.map((tk) => (
+                    <div className="ticketrow" key={tk.id}>
+                      <span className="tid">{tk.shortId}</span>
+                      <div className="tt2"><b>{tk.title}</b><small>{tk.meta}</small></div>
+                      <span className={`tst ${tk.statusClass}`}>{tk.statusLabel}</span>
+                    </div>
+                  ))
+                )}
               </div>
 
               <div className="card slabox">

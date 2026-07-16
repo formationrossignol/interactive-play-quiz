@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
-import { fetchRoadmap, fetchChangelog, fetchGuides, fetchFaq, fetchReviews } from './repo';
+import { fetchRoadmapWithVotes, fetchChangelog, fetchGuides, fetchFaq, fetchReviews } from './repo';
 
 export const useRoadmap = () =>
-  useQuery({ queryKey: ['pages', 'roadmap'], queryFn: fetchRoadmap });
+  useQuery({ queryKey: ['pages', 'roadmap'], queryFn: fetchRoadmapWithVotes });
 
 export const useChangelog = () =>
   useQuery({ queryKey: ['pages', 'changelog'], queryFn: fetchChangelog });

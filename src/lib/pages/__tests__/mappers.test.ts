@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { groupRoadmap, groupChangelog, mapGuide, groupFaq, mapReview } from '../mappers';
-import type { RoadmapRow, ReleaseRow, ChangelogItemRow, GuideRow, FaqRow, ReviewRow } from '../types';
+import { groupRoadmap, groupChangelog, mapGuide, groupFaq, mapReview, mergeRoadmapVotes, mapReport } from '../mappers';
+import type { RoadmapRow, ReleaseRow, ChangelogItemRow, GuideRow, FaqRow, ReviewRow, ReportRow, RoadmapView } from '../types';
 
 describe('groupRoadmap', () => {
   const rows: RoadmapRow[] = [
@@ -17,7 +17,7 @@ describe('groupRoadmap', () => {
   });
   it('maps a card with votes from base_votes and cat from category', () => {
     const card = groupRoadmap(rows).idea[0];
-    expect(card).toEqual({ id: '1', votes: 64, title: 'A', sub: 'sa', tags: [{ label: 'Builder' }], cat: 'builder', locked: false, beta: false });
+    expect(card).toEqual({ id: '1', votes: 64, title: 'A', sub: 'sa', tags: [{ label: 'Builder' }], cat: 'builder', locked: false, beta: false, voted: false });
   });
   it('maps a shipped card with link flag', () => {
     const s = groupRoadmap(rows).shipped[0];
@@ -76,5 +76,51 @@ describe('mapReview', () => {
   it('renames columns to the page shape', () => {
     const row: ReviewRow = { id: 'v1', persona: 'formateur', stars: 5, text: 'great', author_name: 'Karim T.', author_role: 'Formateur', avatar_emoji: '🧔', sort: 10 };
     expect(mapReview(row)).toEqual({ id: 'v1', p: 'formateur', stars: 5, text: 'great', av: '🧔', name: 'Karim T.', role: 'Formateur' });
+  });
+});
+
+describe('groupRoadmap voted default', () => {
+  it('sets voted=false on freshly mapped cards', () => {
+    const rows = [
+      { id: '1', col: 'idea', category: 'builder', title: 'A', subtitle: 's', tags: [], beta: false, locked: false, base_votes: 5, shipped_label: null, shipped_link: false, sort: 10 },
+    ] as Parameters<typeof groupRoadmap>[0];
+    expect(groupRoadmap(rows).idea[0].voted).toBe(false);
+  });
+});
+
+describe('mergeRoadmapVotes', () => {
+  const baseView: RoadmapView = {
+    idea: [{ id: 'a', votes: 10, title: 'A', sub: 's', tags: [], cat: 'builder', locked: false, beta: false, voted: false }],
+    planned: [],
+    dev: [{ id: 'b', votes: 20, title: 'B', sub: 's', tags: [], cat: 'live', locked: true, beta: true, voted: false }],
+    shipped: [{ id: 'c', votes: 30, title: 'C', sub: 's', cat: 'builder', link: false }],
+  };
+  it('adds live counts to base votes and flags my votes', () => {
+    const counts = new Map<string, number>([['a', 3], ['b', 7]]);
+    const myVotes = new Set<string>(['a']);
+    const { view, remaining } = mergeRoadmapVotes(baseView, counts, myVotes);
+    expect(view.idea[0].votes).toBe(13);
+    expect(view.idea[0].voted).toBe(true);
+    expect(view.dev[0].votes).toBe(27);
+    expect(view.dev[0].voted).toBe(false);
+    expect(remaining).toBe(2);
+  });
+  it('leaves shipped cards untouched and remaining=3 with no votes', () => {
+    const { view, remaining } = mergeRoadmapVotes(baseView, new Map(), new Set());
+    expect(view.shipped[0].votes).toBe(30);
+    expect(view.idea[0].votes).toBe(10);
+    expect(remaining).toBe(3);
+  });
+});
+
+describe('mapReport', () => {
+  it('maps a row to the Mes-tickets shape', () => {
+    const row: ReportRow = { id: 'abcd1234-0000-0000-0000-000000000000', type: 'bug', severity: 1, title: 'Boom', body: '', status: 'in_progress', created_at: '2026-07-14T10:00:00Z' };
+    const r = mapReport(row);
+    expect(r.shortId).toBe('#abcd');
+    expect(r.title).toBe('Boom');
+    expect(r.statusClass).toBe('tst--prog');
+    expect(r.statusLabel).toBe('En cours');
+    expect(r.meta.startsWith('Bug · ')).toBe(true);
   });
 });

@@ -3,7 +3,8 @@ import type {
   RoadmapRow, RoadmapView, ReleaseRow, ChangelogItemRow, Release,
   GuideRow, Guide, FaqRow, FaqGroup, ReviewRow, Review,
 } from './types';
-import { groupRoadmap, groupChangelog, mapGuide, groupFaq, mapReview } from './mappers';
+import { groupRoadmap, groupChangelog, mapGuide, groupFaq, mapReview, mergeRoadmapVotes } from './mappers';
+import { fetchVoteCounts, fetchMyVotes } from './interactionsRepo';
 
 // RLS returns only status='published' rows to anon/non-admin callers.
 
@@ -14,6 +15,15 @@ export async function fetchRoadmap(): Promise<RoadmapView> {
     .order('sort', { ascending: true });
   if (error) throw error;
   return groupRoadmap((data ?? []) as RoadmapRow[]);
+}
+
+export async function fetchRoadmapWithVotes(): Promise<{ view: RoadmapView; remaining: number }> {
+  const [view, counts, myVotes] = await Promise.all([
+    fetchRoadmap(),
+    fetchVoteCounts(),
+    fetchMyVotes(),
+  ]);
+  return mergeRoadmapVotes(view, counts, myVotes);
 }
 
 export async function fetchChangelog(): Promise<Release[]> {
