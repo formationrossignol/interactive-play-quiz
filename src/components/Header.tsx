@@ -14,6 +14,7 @@ import {
   GraduationCap,
   ChevronDown,
   ClipboardList,
+  Shield,
 } from "lucide-react";
 import { useState, useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
 import { getLanguage, setLanguage, t, type Language } from "@/lib/i18n";
@@ -281,6 +282,19 @@ export const Header = ({
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
+          )}
+
+          {/* Admin console shortcut (admins only) */}
+          {isAdmin && (
+            <button
+              className="ap-btn ap-btn--ghost ap-btn--sm"
+              style={{ padding: "8px 10px" }}
+              onClick={() => navigate("/admin")}
+              aria-label="Administration"
+              title="Administration"
+            >
+              <Shield className="h-4 w-4" />
+            </button>
           )}
 
           {/* Language switcher */}

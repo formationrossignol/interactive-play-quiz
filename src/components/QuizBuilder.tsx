@@ -22,6 +22,8 @@ import {
 import { ImportFileModal } from "./ImportFileModal";
 import { getCurrentUser } from "@/lib/auth";
 import { saveQuiz, updateQuiz, getQuizById } from "@/lib/quizStorage";
+import { upsertContentBySource } from "@/lib/content/contentRepo";
+import type { ContentType } from "@/lib/content/types";
 import { getPollTemplate } from "@/lib/pollTemplates";
 import { getQuizTemplate } from "@/lib/quizTemplates";
 import { getFlashcardTemplate } from "@/lib/flashcardTemplates";
@@ -670,7 +672,7 @@ export const QuizBuilder = () => {
     }
   };
 
-  const handleSaveQuiz = () => {
+  const handleSaveQuiz = async () => {
     if (!title.trim()) { toast.error(t("titleRequired")); return; }
     if (questions.length === 0) { toast.error(t("oneQuestionRequired")); return; }
     try {
@@ -682,7 +684,18 @@ export const QuizBuilder = () => {
         transitionTime, category, type: quizType,
         headerImage, theme, font: previewFont, ambianceId,
       };
-      if (quizId) updateQuiz(quizId, data); else saveQuiz(data);
+      const saved = quizId ? updateQuiz(quizId, data) : saveQuiz(data);
+      // Mirror into the Supabase `content` table so the item appears in the
+      // content-backed lists (My Quizzes/Polls/Flashcards read from there, not
+      // from the legacy `saved_quizzes` localStorage store). Slides are excluded
+      // (they live in the separate course flow). Non-blocking: a local save
+      // already succeeded, so a network hiccup must not break the flow.
+      const user = getCurrentUser();
+      if (saved && user && saved.type !== "slide") {
+        try {
+          await upsertContentBySource(user.id, saved.type as ContentType, saved.id, saved as unknown as Record<string, unknown>, !!saved.isPublic);
+        } catch (e) { console.error("[QuizBuilder] content mirror failed", e); }
+      }
       toast.success(quizId ? (isPoll ? "Sondage mis à jour" : "Quiz mis à jour") : (isPoll ? t("pollSaved") : t("quizSaved")));
       setShouldBlockNavigation(false);
       navigate(isFlashcard ? "/my-flashcards" : isPoll ? "/my-polls" : isSlide ? "/my-courses" : "/my-quizzes");

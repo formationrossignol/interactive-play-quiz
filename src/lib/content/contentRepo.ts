@@ -78,6 +78,44 @@ export async function createContent(
   return row;
 }
 
+/**
+ * Mirror a localStorage-backed item (quiz/poll/flashcard) into the `content`
+ * table, keyed by its original id (`source_id`). Used by the builder so newly
+ * saved items show up in the content-backed lists — the one-time
+ * localStorage→Supabase migration only covers items that existed when it ran.
+ *
+ * Idempotent: updates the existing row's `data`/`is_public` (preserving its
+ * folder) when one exists for (user_id, source_id); otherwise inserts at root.
+ */
+export async function upsertContentBySource(
+  userId: string,
+  type: ContentType,
+  sourceId: string,
+  data: Record<string, unknown>,
+  isPublic: boolean,
+): Promise<void> {
+  const { data: existing, error: findError } = await supabase
+    .from('content')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('source_id', sourceId)
+    .maybeSingle();
+  if (findError) throw findError;
+
+  if (existing) {
+    const { error } = await supabase
+      .from('content')
+      .update({ data, is_public: isPublic })
+      .eq('id', (existing as { id: string }).id);
+    if (error) throw error;
+  } else {
+    const { error } = await supabase
+      .from('content')
+      .insert({ user_id: userId, type, data, folder_id: null, source_id: sourceId, is_public: isPublic });
+    if (error) throw error;
+  }
+}
+
 export async function updateContent(
   id: string,
   patch: Partial<Pick<ContentRow, 'data' | 'folder_id' | 'is_public' | 'is_open'>>,

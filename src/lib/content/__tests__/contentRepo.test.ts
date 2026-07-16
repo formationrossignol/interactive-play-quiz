@@ -9,6 +9,7 @@ import {
   moveContent,
   setPublic,
   setOpen,
+  upsertContentBySource,
 } from '../contentRepo';
 
 // Mock the Supabase client. `from()` returns a chainable builder whose methods
@@ -184,6 +185,40 @@ describe('contentRepo', () => {
 
     expect(builder.update).toHaveBeenCalledWith({ is_open: false });
     expect(builder.eq).toHaveBeenCalledWith('id', 'r1');
+  });
+
+  it('upsertContentBySource updates existing row data/is_public, preserving its folder', async () => {
+    const findBuilder = makeBuilder({ data: { id: 'r9' }, error: null });
+    const updateBuilder = makeBuilder({ data: null, error: null });
+    fromMock.mockReturnValueOnce(findBuilder).mockReturnValueOnce(updateBuilder);
+
+    await upsertContentBySource('u1', 'quiz', '123456', { id: '123456', title: 'Q' }, true);
+
+    // Lookup by (user_id, source_id).
+    expect(findBuilder.eq).toHaveBeenCalledWith('user_id', 'u1');
+    expect(findBuilder.eq).toHaveBeenCalledWith('source_id', '123456');
+    // Update patches only data + is_public (folder_id untouched) by row id.
+    expect(updateBuilder.update).toHaveBeenCalledWith({ data: { id: '123456', title: 'Q' }, is_public: true });
+    expect(updateBuilder.eq).toHaveBeenCalledWith('id', 'r9');
+    expect(updateBuilder.insert).not.toHaveBeenCalled();
+  });
+
+  it('upsertContentBySource inserts a new root row when none exists for the source id', async () => {
+    const findBuilder = makeBuilder({ data: null, error: null });
+    const insertBuilder = makeBuilder({ data: null, error: null });
+    fromMock.mockReturnValueOnce(findBuilder).mockReturnValueOnce(insertBuilder);
+
+    await upsertContentBySource('u1', 'poll', '654321', { id: '654321' }, false);
+
+    expect(insertBuilder.insert).toHaveBeenCalledWith({
+      user_id: 'u1',
+      type: 'poll',
+      data: { id: '654321' },
+      folder_id: null,
+      source_id: '654321',
+      is_public: false,
+    });
+    expect(insertBuilder.update).not.toHaveBeenCalled();
   });
 
   it('throws when the client returns an error', async () => {
