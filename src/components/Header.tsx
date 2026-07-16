@@ -18,6 +18,7 @@ import {
 import { useState, useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
 import { getLanguage, setLanguage, t, type Language } from "@/lib/i18n";
 import { useLanguage } from "@/hooks/useLanguage";
+import { useIsAdmin } from "@/lib/pages/useIsAdmin";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,6 +46,7 @@ export const Header = ({
 }: HeaderProps) => {
   const navigate = useNavigate();
   useLanguage();
+  const { isAdmin } = useIsAdmin();
   const [user, setUser] = useState(getCurrentUser());
   const [currentLanguage, setCurrentLanguage] = useState<Language>(getLanguage());
   const headerRef = useRef<HTMLElement | null>(null);
@@ -265,6 +267,15 @@ export const Header = ({
                     >
                       <User className="h-4 w-4" style={{ color: "var(--ap-muted)" }} />
                       {t("profile")}
+                    </DropdownMenuItem>
+                  )}
+                  {isAdmin && (
+                    <DropdownMenuItem
+                      className="gap-2 rounded-xl text-sm cursor-pointer"
+                      style={{ color: "var(--ap-ink)" }}
+                      onSelect={() => navigate("/admin")}
+                    >
+                      Admin
                     </DropdownMenuItem>
                   )}
                 </DropdownMenuContent>
