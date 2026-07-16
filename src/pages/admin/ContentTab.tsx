@@ -1,21 +1,24 @@
 import { useState } from "react";
-import { useAdminRoadmap, useAdminGuides, useAdminFaq, useAdminReleases, useContentMutations } from "@/lib/pages/adminHooks";
+import { useAdminRoadmap, useAdminGuides, useAdminFaq, useAdminReleases, useAdminReviews, useContentMutations } from "@/lib/pages/adminHooks";
 import type { RoadmapCol, Status } from "@/lib/pages/types";
 import { RoadmapBoard } from "./RoadmapBoard";
 import { GuidesGrid } from "./GuidesGrid";
 import { ChangelogList } from "./ChangelogList";
 import { FaqAccordion } from "./FaqAccordion";
+import { ReviewsList } from "./ReviewsList";
 import { RoadmapEditor } from "./editors/RoadmapEditor";
 import { GuideEditor } from "./editors/GuideEditor";
 import { FaqEditor } from "./editors/FaqEditor";
 import { ChangelogEditor } from "./editors/ChangelogEditor";
+import { ReviewEditor } from "./editors/ReviewEditor";
 
-type Res = "roadmap_items" | "guides" | "faq_items" | "changelog_releases";
+type Res = "roadmap_items" | "guides" | "faq_items" | "changelog_releases" | "reviews";
 const RES: { key: Res; label: string; icon: string }[] = [
   { key: "roadmap_items", label: "Roadmap", icon: "🗺️" },
   { key: "guides", label: "Guides", icon: "📚" },
   { key: "faq_items", label: "FAQ", icon: "❓" },
   { key: "changelog_releases", label: "Changelog", icon: "📦" },
+  { key: "reviews", label: "Témoignages", icon: "💬" },
 ];
 
 export const ContentTab = () => {
@@ -26,6 +29,7 @@ export const ContentTab = () => {
   const guides = useAdminGuides();
   const faq = useAdminFaq();
   const releases = useAdminReleases();
+  const reviews = useAdminReviews();
   const mut = useContentMutations(res);
 
   const onSave = (values: Record<string, unknown>) => {
@@ -89,6 +93,15 @@ export const ContentTab = () => {
           onDelete={del}
         />
       )}
+      {res === "reviews" && (
+        <ReviewsList
+          rows={reviews.data ?? []}
+          onEdit={edit}
+          onNew={() => setEditing({ open: true, row: undefined })}
+          onUnpublish={(row) => mut.update.mutate({ id: row.id, patch: { status: "pending" } })}
+          onDelete={del}
+        />
+      )}
 
       {editing.open && res === "roadmap_items" && (
         <RoadmapEditor
@@ -119,6 +132,14 @@ export const ContentTab = () => {
           open={editing.open}
           onOpenChange={(o) => setEditing({ open: o })}
           initial={editing.row as Parameters<typeof ChangelogEditor>[0]["initial"]}
+          onSave={onSave}
+        />
+      )}
+      {editing.open && res === "reviews" && (
+        <ReviewEditor
+          open={editing.open}
+          onOpenChange={(o) => setEditing({ open: o })}
+          initial={editing.row as Parameters<typeof ReviewEditor>[0]["initial"]}
           onSave={onSave}
         />
       )}

@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import type {
   RoadmapAdminRow, GuideAdminRow, FaqAdminRow, ReleaseAdminRow, ChangelogItemAdminRow,
-  PendingReview, IdeaRow, AdminReportRow, SubscriberRow,
+  PendingReview, ReviewAdminRow, IdeaRow, AdminReportRow, SubscriberRow,
   Status, ReportStatus,
 } from './types';
 
@@ -48,6 +48,15 @@ export async function listReviews(status = 'pending'): Promise<PendingReview[]> 
 }
 export const setReviewStatus = (id: string, status: 'published' | 'rejected') =>
   updateRow('reviews', id, { status });
+
+/** Full review rows (incl. avatar/status/sort) for a given status — admin curation of the public page. */
+export async function listReviewsFull(status = 'published'): Promise<ReviewAdminRow[]> {
+  const { data, error } = await supabase.from('reviews')
+    .select('id,persona,stars,text,author_name,author_role,avatar_emoji,status,sort')
+    .eq('status', status).order('sort', { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as ReviewAdminRow[];
+}
 
 export async function listIdeas(status = 'pending'): Promise<IdeaRow[]> {
   const { data, error } = await supabase.from('roadmap_ideas').select('*')

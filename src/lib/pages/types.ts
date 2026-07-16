@@ -201,6 +201,12 @@ export interface PendingReview {
   id: string; persona: ReviewPersona; stars: number; text: string;
   author_name: string; author_role: string; created_at: string;
 }
+export type ReviewStatus = 'pending' | 'published' | 'rejected';
+export interface ReviewAdminRow {
+  id: string; persona: ReviewPersona; stars: number; text: string;
+  author_name: string; author_role: string; avatar_emoji: string;
+  status: ReviewStatus; sort: number;
+}
 export interface IdeaRow {
   id: string; user_id: string; text: string; status: 'pending' | 'converted' | 'rejected'; created_at: string;
 }
