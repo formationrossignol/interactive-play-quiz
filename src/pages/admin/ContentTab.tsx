@@ -1,11 +1,10 @@
 import { useState } from "react";
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { useAdminRoadmap, useAdminGuides, useAdminFaq, useAdminReleases, useContentMutations } from "@/lib/pages/adminHooks";
-import type { RoadmapAdminRow, RoadmapCol } from "@/lib/pages/types";
+import type { RoadmapCol, Status } from "@/lib/pages/types";
 import { RoadmapBoard } from "./RoadmapBoard";
+import { GuidesGrid } from "./GuidesGrid";
+import { ChangelogList } from "./ChangelogList";
+import { FaqAccordion } from "./FaqAccordion";
 import { RoadmapEditor } from "./editors/RoadmapEditor";
 import { GuideEditor } from "./editors/GuideEditor";
 import { FaqEditor } from "./editors/FaqEditor";
@@ -29,19 +28,6 @@ export const ContentTab = () => {
   const releases = useAdminReleases();
   const mut = useContentMutations(res);
 
-  const rows: { id: string; label: string; status: string }[] = (() => {
-    if (res === "roadmap_items") return (roadmap.data ?? []).map((r) => ({ id: r.id, label: r.title, status: r.status }));
-    if (res === "guides") return (guides.data ?? []).map((r) => ({ id: r.id, label: r.title, status: r.status }));
-    if (res === "faq_items") return (faq.data ?? []).map((r) => ({ id: r.id, label: r.question, status: r.status }));
-    return (releases.data ?? []).map((r) => ({ id: r.id, label: `${r.version} — ${r.title}`, status: r.status }));
-  })();
-  const fullRow = (id: string): unknown => {
-    if (res === "roadmap_items") return roadmap.data?.find((r) => r.id === id);
-    if (res === "guides") return guides.data?.find((r) => r.id === id);
-    if (res === "faq_items") return faq.data?.find((r) => r.id === id);
-    return releases.data?.find((r) => r.id === id);
-  };
-
   const onSave = (values: Record<string, unknown>) => {
     const row = editing.row as { id?: string } | undefined;
     if (row?.id) mut.update.mutate({ id: row.id, patch: values });
@@ -49,7 +35,11 @@ export const ContentTab = () => {
     setEditing({ open: false });
   };
 
-  const current = RES.find((r) => r.key === res)!;
+  // Shared handlers passed to every public-form view.
+  const edit = (row: unknown) => setEditing({ open: true, row });
+  const toggle = (row: { id: string; status: Status }) =>
+    mut.setStatus.mutate({ id: row.id, status: row.status === "published" ? "draft" : "published" });
+  const del = (id: string) => mut.remove.mutate(id);
 
   return (
     <div className="adm-panel">
@@ -61,54 +51,43 @@ export const ContentTab = () => {
             </button>
           ))}
         </div>
-        {res !== "roadmap_items" && (
-          <button className="adm-btn" onClick={() => setEditing({ open: true, row: undefined })}>+ Nouveau</button>
-        )}
       </div>
 
-      {res === "roadmap_items" ? (
+      {res === "roadmap_items" && (
         <RoadmapBoard
-          rows={(roadmap.data ?? []) as RoadmapAdminRow[]}
-          onEdit={(row) => setEditing({ open: true, row })}
+          rows={roadmap.data ?? []}
+          onEdit={edit}
           onNew={(col: RoadmapCol) => setEditing({ open: true, row: { col } })}
-          onToggleStatus={(row) => mut.setStatus.mutate({ id: row.id, status: row.status === "published" ? "draft" : "published" })}
-          onDelete={(id) => mut.remove.mutate(id)}
+          onToggleStatus={toggle}
+          onDelete={del}
         />
-      ) : rows.length === 0 ? (
-        <div className="adm-empty">
-          <span className="e-emo">{current.icon}</span>
-          Aucun contenu dans « {current.label} » pour le moment.
-        </div>
-      ) : (
-        <div className="adm-rows">
-          {rows.map((row) => (
-            <div key={row.id} className="adm-row">
-              <span className="r-title">{row.label}</span>
-              <span className={`adm-status ${row.status === "published" ? "is-published" : "is-draft"}`}>
-                {row.status === "published" ? "publié" : "brouillon"}
-              </span>
-              <div className="r-actions">
-                <button className="adm-btn adm-btn--ghost adm-btn--sm" onClick={() => setEditing({ open: true, row: fullRow(row.id) })}>Éditer</button>
-                <button
-                  className={`adm-btn adm-btn--sm ${row.status === "published" ? "adm-btn--ghost" : "adm-btn--pres"}`}
-                  onClick={() => mut.setStatus.mutate({ id: row.id, status: row.status === "published" ? "draft" : "published" })}
-                >
-                  {row.status === "published" ? "Dépublier" : "Publier"}
-                </button>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild><button className="adm-btn adm-btn--danger adm-btn--sm">Suppr.</button></AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader><AlertDialogTitle>Supprimer ?</AlertDialogTitle><AlertDialogDescription>Action irréversible.</AlertDialogDescription></AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Annuler</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => mut.remove.mutate(row.id)}>Supprimer</AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
-            </div>
-          ))}
-        </div>
+      )}
+      {res === "guides" && (
+        <GuidesGrid
+          rows={guides.data ?? []}
+          onEdit={edit}
+          onNew={() => setEditing({ open: true, row: undefined })}
+          onToggleStatus={toggle}
+          onDelete={del}
+        />
+      )}
+      {res === "changelog_releases" && (
+        <ChangelogList
+          rows={releases.data ?? []}
+          onEdit={edit}
+          onNew={() => setEditing({ open: true, row: undefined })}
+          onToggleStatus={toggle}
+          onDelete={del}
+        />
+      )}
+      {res === "faq_items" && (
+        <FaqAccordion
+          rows={faq.data ?? []}
+          onEdit={edit}
+          onNew={() => setEditing({ open: true, row: undefined })}
+          onToggleStatus={toggle}
+          onDelete={del}
+        />
       )}
 
       {editing.open && res === "roadmap_items" && (
