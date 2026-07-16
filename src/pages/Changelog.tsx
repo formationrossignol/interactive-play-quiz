@@ -7,6 +7,7 @@ import { useChangelog } from "@/lib/pages/hooks";
 import { useChangelogSubscription } from "@/lib/pages/interactionHooks";
 import { requireAuth } from "@/lib/pages/requireAuth";
 import type { Release } from "@/lib/pages/types";
+import { sanitizeHtml } from "@/lib/sanitizeHtml";
 import "./roadmap-pages.css";
 
 type Kind = "all" | "new" | "imp" | "fix";
@@ -77,7 +78,7 @@ const Changelog = () => {
                       <h3>{r.title}</h3>
                       <span className="rel-date">{r.date}</span>
                     </div>
-                    {r.intro && <p>{r.intro}</p>}
+                    {r.intro && <div className="rel-intro" dangerouslySetInnerHTML={{ __html: sanitizeHtml(r.intro) }} />}
                     {r.media && <div className="rel-media">{r.media}</div>}
                     {r.items
                       .filter((it) => filter === "all" || it.t === filter)
