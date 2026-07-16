@@ -4,7 +4,9 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { useSEO } from "@/hooks/useSEO";
 import { useReviews } from "@/lib/pages/hooks";
-import type { Review } from "@/lib/pages/types";
+import { useSubmitReview } from "@/lib/pages/interactionHooks";
+import { requireAuth } from "@/lib/pages/requireAuth";
+import type { Review, ReviewPersona } from "@/lib/pages/types";
 import "./community-pages.css";
 
 type Persona = "all" | "formateur" | "enseignant" | "entreprise";
@@ -30,6 +32,12 @@ const Temoignages = () => {
   const navigate = useNavigate();
   const [persona, setPersona] = useState<Persona>("all");
   const { data: reviews, isLoading } = useReviews();
+  const [rvPersona, setRvPersona] = useState<ReviewPersona>("formateur");
+  const [rvStars, setRvStars] = useState(5);
+  const [rvText, setRvText] = useState("");
+  const [rvRole, setRvRole] = useState("");
+  const [rvSent, setRvSent] = useState(false);
+  const submitReview = useSubmitReview();
   useSEO({
     title: "Témoignages",
     description: "Avis vérifiés de formateurs, enseignants et responsables formation qui animent avec Ludiq. Note moyenne 4,8/5 sur 312 avis.",
@@ -106,6 +114,35 @@ const Temoignages = () => {
                     </div>
                   </div>
                 ))
+            )}
+          </div>
+
+          <div className="card" style={{ padding: "24px 28px", marginBottom: "28px", display: "flex", flexDirection: "column", gap: "12px" }}>
+            <h3 style={{ fontSize: "16px" }}>Partagez votre expérience</h3>
+            {rvSent ? (
+              <p style={{ color: "var(--ap-muted)", fontWeight: 700 }}>Merci ! Votre avis sera publié après modération.</p>
+            ) : (
+              <>
+                <div className="chips">
+                  {CHIPS.filter((c) => c.p !== "all").map((c) => (
+                    <button key={c.p} className={`chip${rvPersona === c.p ? " on" : ""}`} onClick={() => setRvPersona(c.p as ReviewPersona)}>{c.label}</button>
+                  ))}
+                </div>
+                <div style={{ display: "flex", gap: "6px" }}>
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <button key={n} onClick={() => setRvStars(n)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "22px", color: n <= rvStars ? "var(--ap-brand)" : "var(--ap-line-2)" }} aria-label={`${n} étoiles`}>★</button>
+                  ))}
+                </div>
+                <input value={rvRole} onChange={(e) => setRvRole(e.target.value)} placeholder="Votre rôle (ex. Formateur indépendant)" />
+                <textarea rows={3} value={rvText} onChange={(e) => setRvText(e.target.value)} placeholder="Qu'est-ce qui vous a plu ?" />
+                <button className="btn" style={{ alignSelf: "flex-start" }} disabled={submitReview.isPending || !rvText.trim()} onClick={() => {
+                  if (!requireAuth(navigate)) return;
+                  submitReview.mutate(
+                    { persona: rvPersona, stars: rvStars, text: rvText.trim(), authorRole: rvRole.trim() },
+                    { onSuccess: () => setRvSent(true) },
+                  );
+                }}>Envoyer mon avis</button>
+              </>
             )}
           </div>
 
