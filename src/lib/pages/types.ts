@@ -173,6 +173,17 @@ export interface NewReview {
   authorRole: string;
 }
 
+// ── Static pages (legal + marketing, admin-editable) ────────────────────────
+export interface StaticPageBlock { title: string; desc: string }
+export interface StaticPage {
+  slug: string;
+  title: string;
+  subtitle: string;
+  body: string;            // sanitized HTML (legal pages, About mission)
+  blocks: StaticPageBlock[]; // icon cards (Features / About values)
+  status: 'draft' | 'published';
+}
+
 // ── Admin rows (full, incl. status/sort) ────────────────────────────────────
 export type Status = 'draft' | 'published';
 

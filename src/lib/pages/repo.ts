@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import type {
   RoadmapRow, RoadmapView, ReleaseRow, ChangelogItemRow, Release,
-  GuideRow, Guide, FaqRow, FaqGroup, ReviewRow, Review,
+  GuideRow, Guide, FaqRow, FaqGroup, ReviewRow, Review, StaticPage,
 } from './types';
 import { groupRoadmap, groupChangelog, mapGuide, groupFaq, mapReview, mergeRoadmapVotes } from './mappers';
 import { fetchVoteCounts, fetchMyVotes } from './interactionsRepo';
@@ -66,4 +66,23 @@ export async function fetchReviews(): Promise<Review[]> {
     .order('sort', { ascending: true });
   if (error) throw error;
   return ((data ?? []) as ReviewRow[]).map(mapReview);
+}
+
+/**
+ * Static page row by slug. Returns null on any failure (incl. table not yet
+ * deployed) so callers can fall back to their in-code defaults.
+ */
+export async function fetchStaticPage(slug: string): Promise<StaticPage | null> {
+  try {
+    const { data, error } = await supabase
+      .from('static_pages')
+      .select('slug,title,subtitle,body,blocks,status')
+      .eq('slug', slug)
+      .eq('status', 'published')
+      .maybeSingle();
+    if (error) throw error;
+    return data ? (data as StaticPage) : null;
+  } catch {
+    return null;
+  }
 }

@@ -67,3 +67,17 @@ export const useSubscribers = () => useQuery({ queryKey: ['admin', 'subscribers'
 // Published reviews — the testimonials shown on /reviews, curated in public form.
 export const useAdminReviews = () =>
   useQuery({ queryKey: ['admin', 'reviews', 'published'], queryFn: () => repo.listReviewsFull('published') });
+
+// Static pages (legal + marketing) — edited in place, one row per slug.
+export function useAdminStaticPages() {
+  const qc = useQueryClient();
+  const list = useQuery({ queryKey: ['admin', 'static_pages'], queryFn: repo.listStaticPages });
+  const save = useMutation({
+    mutationFn: (row: import('./types').StaticPage) => repo.upsertStaticPage(row),
+    onSuccess: (_r, row) => {
+      qc.invalidateQueries({ queryKey: ['admin', 'static_pages'] });
+      qc.invalidateQueries({ queryKey: ['pages', 'static', row.slug] });
+    },
+  });
+  return { list, save };
+}

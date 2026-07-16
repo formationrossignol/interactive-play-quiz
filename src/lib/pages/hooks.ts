@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { fetchRoadmapWithVotes, fetchChangelog, fetchGuides, fetchFaq, fetchReviews } from './repo';
+import { fetchRoadmapWithVotes, fetchChangelog, fetchGuides, fetchFaq, fetchReviews, fetchStaticPage } from './repo';
 
 export const useRoadmap = () =>
   useQuery({ queryKey: ['pages', 'roadmap'], queryFn: fetchRoadmapWithVotes });
@@ -15,3 +15,6 @@ export const useFaq = () =>
 
 export const useReviews = () =>
   useQuery({ queryKey: ['pages', 'reviews'], queryFn: fetchReviews });
+
+export const useStaticPage = (slug: string) =>
+  useQuery({ queryKey: ['pages', 'static', slug], queryFn: () => fetchStaticPage(slug), retry: false });

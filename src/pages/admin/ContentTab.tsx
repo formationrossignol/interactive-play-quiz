@@ -6,19 +6,21 @@ import { GuidesGrid } from "./GuidesGrid";
 import { ChangelogList } from "./ChangelogList";
 import { FaqAccordion } from "./FaqAccordion";
 import { ReviewsList } from "./ReviewsList";
+import { StaticPagesList } from "./StaticPagesList";
 import { RoadmapEditor } from "./editors/RoadmapEditor";
 import { GuideEditor } from "./editors/GuideEditor";
 import { FaqEditor } from "./editors/FaqEditor";
 import { ChangelogEditor } from "./editors/ChangelogEditor";
 import { ReviewEditor } from "./editors/ReviewEditor";
 
-type Res = "roadmap_items" | "guides" | "faq_items" | "changelog_releases" | "reviews";
+type Res = "roadmap_items" | "guides" | "faq_items" | "changelog_releases" | "reviews" | "static_pages";
 const RES: { key: Res; label: string; icon: string }[] = [
   { key: "roadmap_items", label: "Roadmap", icon: "🗺️" },
   { key: "guides", label: "Guides", icon: "📚" },
   { key: "faq_items", label: "FAQ", icon: "❓" },
   { key: "changelog_releases", label: "Changelog", icon: "📦" },
   { key: "reviews", label: "Témoignages", icon: "💬" },
+  { key: "static_pages", label: "Pages", icon: "📄" },
 ];
 
 export const ContentTab = () => {
@@ -102,6 +104,7 @@ export const ContentTab = () => {
           onDelete={del}
         />
       )}
+      {res === "static_pages" && <StaticPagesList />}
 
       {editing.open && res === "roadmap_items" && (
         <RoadmapEditor
