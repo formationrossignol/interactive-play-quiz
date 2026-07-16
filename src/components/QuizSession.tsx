@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Users, Clock, Trophy, Settings, Download, LogOut, Lightbulb, Flag, Gamepad2, PencilLine } from "lucide-react";
+import { Users, Clock, Trophy, Settings, Download, LogOut, Flag, Gamepad2, PencilLine } from "lucide-react";
 import { QRCodeGenerator } from "./QRCodeGenerator";
 import { WordCloudQuestion } from "./WordCloudQuestion";
 import { RankingQuestion } from "./RankingQuestion";
@@ -799,7 +799,6 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
 
   if (gameState === 'waiting') {
     const visiblePlayers = players.filter(p => !kickedPlayerIds.has(p.id));
-    const ghostCount = Math.max(0, 4 - visiblePlayers.length);
 
     const handleStart = () => {
       audio.unlock();
@@ -816,17 +815,22 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
       removePlayerFromSession(quiz.gameCode, id);
     };
 
+    const codeLen = quiz.gameCode.length;
+    const digitSize = codeLen > 8 ? 26 : codeLen > 6 ? 34 : 44;
+    const digitBox = codeLen > 8 ? 34 : codeLen > 6 ? 44 : 52;
+
     return (
       <div style={{
-        background: 'var(--ap-paper)',
-        backgroundImage: 'radial-gradient(var(--ap-line-2) 1px,transparent 1px)',
-        backgroundSize: '28px 28px',
+        background: 'linear-gradient(160deg,var(--ap-brand) 0%,#5a35e6 55%,#4526c2 100%)',
         minHeight: '100vh',
         fontFamily: 'var(--ap-font-body)',
         color: 'var(--ap-ink)',
         display: 'flex', flexDirection: 'column',
+        position: 'relative', overflow: 'hidden',
         WebkitFontSmoothing: 'antialiased',
       }}>
+        {/* Projected dot pattern — the "screen that sells" look */}
+        <div aria-hidden="true" style={{ position:'absolute',inset:0,backgroundImage:'radial-gradient(rgba(255,255,255,.14) 1.5px,transparent 1.5px)',backgroundSize:'30px 30px',pointerEvents:'none',zIndex:0 }} />
         <style>{`
           @keyframes floatUpLobby { 0%{opacity:1;transform:translateY(0) scale(1);}80%{opacity:.8;}100%{opacity:0;transform:translateY(-200px) scale(1.02);} }
           .reaction-float-lobby { animation:floatUpLobby 2.8s ease-out forwards; pointer-events:none; position:fixed; z-index:9999; }
@@ -841,6 +845,10 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
           .lobby-player:hover { transform:translateY(-3px); box-shadow:0 7px 0 var(--ap-line-2) !important; }
           .lobby-player .kick-btn { opacity:0; transform:scale(.6); transition:opacity .15s,transform .15s cubic-bezier(.2,.7,.3,1.3); }
           .lobby-player:hover .kick-btn { opacity:1; transform:scale(1); }
+          @keyframes pchip-pop { 0%{transform:scale(.3);opacity:0;}100%{transform:scale(1);opacity:1;} }
+          .pchip { position:relative; animation:pchip-pop .35s cubic-bezier(.2,.7,.3,1.3); }
+          .pchip .kick-btn { opacity:0; transform:scale(.6); transition:opacity .15s,transform .15s cubic-bezier(.2,.7,.3,1.3); }
+          .pchip:hover .kick-btn { opacity:1; transform:scale(1); }
         `}</style>
 
         {/* Floating reactions */}
@@ -870,133 +878,132 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
         </div>
 
         {/* Topbar */}
-        <div style={{ display:'flex',alignItems:'center',gap:14,padding:'16px 24px',maxWidth:1240,margin:'0 auto',width:'100%' }}>
-          <span style={{ display:'flex',alignItems:'center',gap:9 }}>
-            <span style={{ width:36,height:36,borderRadius:12,background:'var(--ap-brand)',display:'grid',placeItems:'center',boxShadow:'0 4px 0 var(--ap-brand-deep)',transform:'rotate(-6deg)',flexShrink:0 }} aria-hidden="true">
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="#fff"><path d="M13 2 4.5 13.5H11l-1 8.5L19.5 10H13l0-8z"/></svg>
+        <div style={{ position:'relative',zIndex:2,display:'flex',alignItems:'center',gap:14,padding:'20px 32px',maxWidth:1240,margin:'0 auto',width:'100%' }}>
+          <span style={{ display:'flex',alignItems:'center',gap:10,color:'#fff',fontFamily:'var(--ap-font-display)',fontWeight:600,fontSize:20 }}>
+            <span style={{ width:40,height:40,borderRadius:13,background:'rgba(255,255,255,.16)',border:'2px solid rgba(255,255,255,.35)',display:'grid',placeItems:'center',flexShrink:0 }} aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M13 2 4.5 13.5H11l-1 8.5L19.5 10H13l0-8z"/></svg>
             </span>
-            <span style={{ fontFamily:'var(--ap-font-display)',fontWeight:600,fontSize:19 }}>Ludiq</span>
+            Ludiq
           </span>
-          <span style={{ fontWeight:800,fontSize:15,color:'var(--ap-muted)' }}>
-            · En attente : <b style={{ color:'var(--ap-ink)' }}>{quiz.title}</b>
+          <span style={{ fontWeight:800,fontSize:14,color:'rgba(255,255,255,.85)',background:'rgba(255,255,255,.14)',border:'2px solid rgba(255,255,255,.25)',borderRadius:999,padding:'6px 16px' }}>
+            {quiz.title}
           </span>
           <div style={{ flex:1 }} />
           {isHost && (
             <button
               onClick={() => onExitRequest?.()}
-              style={{ display:'inline-flex',alignItems:'center',gap:8,fontWeight:800,fontSize:13,color:'var(--ap-muted)',cursor:'pointer',background:'var(--ap-card)',border:'2px solid var(--ap-line)',borderRadius:999,padding:'8px 15px',boxShadow:'0 3px 0 var(--ap-line)' }}
+              style={{ display:'inline-flex',alignItems:'center',gap:8,fontWeight:800,fontSize:13,color:'#fff',cursor:'pointer',background:'rgba(255,255,255,.14)',border:'2px solid rgba(255,255,255,.3)',borderRadius:999,padding:'9px 16px' }}
             >
               <LogOut style={{ width:14, height:14 }} /> Quitter
             </button>
           )}
         </div>
 
-        {/* Main 2-col layout */}
-        <div style={{ flex:1,display:'grid',gridTemplateColumns:'380px 1fr',gap:26,maxWidth:1240,margin:'0 auto',width:'100%',padding:'8px 24px 120px',alignItems:'start' }}>
+        {/* Main 2-col layout — projected "join" screen */}
+        <div style={{ position:'relative',zIndex:2,flex:1,display:'grid',gridTemplateColumns:'1fr 380px',gap:28,maxWidth:1180,margin:'0 auto',width:'100%',padding:'16px 32px 130px',alignItems:'start' }}>
 
-          {/* ── Join card (sticky left) ── */}
-          <aside style={{ background:'var(--ap-card)',border:'2px solid var(--ap-line)',borderRadius:'var(--ap-r-lg)',boxShadow:'0 6px 0 var(--ap-line),0 30px 55px rgba(60,40,120,.1)',padding:26,textAlign:'center',position:'sticky',top:18 }} aria-label="Comment rejoindre la partie">
-            <h2 style={{ fontFamily:'var(--ap-font-display)',fontWeight:600,fontSize:21,marginBottom:4 }}>Rejoignez la partie</h2>
-            <p style={{ fontWeight:800,fontSize:15,color:'var(--ap-muted)',marginBottom:18 }}>
-              Sur <b style={{ color:'var(--ap-brand-deep)' }}>ludiq.app</b>, entrez le code
-            </p>
-
-            {/* PIN + QR side by side */}
-            <div style={{ display:'grid',gridTemplateColumns:'1fr auto 1fr',gap:12,alignItems:'center' }}>
-              <div>
-                <p style={{ fontSize:11,fontWeight:800,letterSpacing:'.09em',textTransform:'uppercase',color:'var(--ap-muted)',marginBottom:8 }}>Code de la partie</p>
-                <div style={{ background:'var(--ap-paper-2)',border:'2px dashed var(--ap-line-2)',borderRadius:'var(--ap-r-md)',padding:'16px 10px',overflow:'hidden' }}>
-                  <div style={{ fontFamily:'var(--ap-font-mono)',fontWeight:700,fontSize: quiz.gameCode.length > 8 ? Math.max(14, 32 - (quiz.gameCode.length - 6) * 1.8) : 32,letterSpacing:'.08em',fontVariantNumeric:'tabular-nums',lineHeight:1.1,animation:'pin-breathe 3.2s ease-in-out infinite',color:'var(--ap-ink)',wordBreak:'break-all' }} aria-label={`Code : ${quiz.gameCode}`}>
-                    {quiz.gameCode.slice(0,3)}<span style={{ color:'var(--ap-brand)' }}>{quiz.gameCode.slice(3)}</span>
-                  </div>
-                </div>
-              </div>
-              <span style={{ fontFamily:'var(--ap-font-display)',fontWeight:600,fontSize:13,color:'var(--ap-line-2)',textTransform:'uppercase' }} aria-hidden="true">ou</span>
-              <div>
-                <p style={{ fontSize:11,fontWeight:800,letterSpacing:'.09em',textTransform:'uppercase',color:'var(--ap-muted)',marginBottom:8 }}>Scannez</p>
-                <div style={{ background:'var(--ap-card)',border:'2px solid var(--ap-line)',borderRadius:'var(--ap-r-md)',padding:8,boxShadow:'0 3px 0 var(--ap-line)',display:'grid',placeItems:'center' }}>
-                  {sessionReady ? (
-                    <QRCodeGenerator gameCode={quiz.gameCode} joinUrl={joinUrl} compact compactSize={108} />
-                  ) : (
-                    <div style={{ width:108,height:108,display:'grid',placeItems:'center',color:'var(--ap-muted)',fontSize:12,fontWeight:700 }}>Chargement…</div>
-                  )}
-                </div>
-              </div>
+          {/* ── Join card (the screen that sells) ── */}
+          <aside style={{ background:'var(--ap-card)',borderRadius:'var(--ap-r-xl)',boxShadow:'0 40px 80px rgba(20,10,60,.4),0 6px 0 rgba(20,10,60,.25)',padding:'30px 34px',textAlign:'center',position:'sticky',top:18 }} aria-label="Comment rejoindre la partie">
+            <div style={{ display:'flex',alignItems:'center',justifyContent:'center',gap:10,color:'var(--ap-muted)',fontWeight:800,fontSize:14,marginBottom:10 }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M11 18h2"/></svg>
+              Sur votre téléphone, ouvrez
+            </div>
+            <div style={{ fontFamily:'var(--ap-font-display)',fontWeight:600,fontSize:24,color:'var(--ap-ink)' }}>
+              ludiq.app/<b style={{ color:'var(--ap-brand)' }}>rejoindre</b>
             </div>
 
-            {/* Copy / share actions */}
-            {sessionReady && (
-              <div style={{ display:'flex',gap:8,marginTop:12 }}>
-                <button
-                  className="ap-btn ap-btn--sm ap-btn--ghost"
-                  style={{ flex:1,display:'flex',alignItems:'center',justifyContent:'center',gap:6 }}
-                  onClick={async () => {
-                    try { await navigator.clipboard.writeText(joinUrl); toast.success('Lien copié !'); }
-                    catch { toast.error('Échec de la copie'); }
-                  }}
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                  Copier le lien
-                </button>
-                <button
-                  className="ap-btn ap-btn--sm ap-btn--ghost"
-                  style={{ flex:1,display:'flex',alignItems:'center',justifyContent:'center',gap:6 }}
-                  onClick={async () => {
-                    if (navigator.share) {
-                      try { await navigator.share({ title:'Rejoignez mon quiz !', text:`Code : ${quiz.gameCode}`, url: joinUrl }); }
-                      catch (e) { if ((e as Error).name !== 'AbortError') { await navigator.clipboard.writeText(joinUrl); toast.success('Lien copié !'); } }
-                    } else {
-                      await navigator.clipboard.writeText(joinUrl); toast.success('Lien copié !');
-                    }
-                  }}
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-                  Partager
-                </button>
-              </div>
-            )}
+            {/* Big code digit boxes */}
+            <div style={{ margin:'18px auto 8px',display:'flex',justifyContent:'center',gap:10,flexWrap:'wrap' }} aria-label={`Code : ${quiz.gameCode}`}>
+              {quiz.gameCode.split('').map((ch, i) => (
+                <span key={i} style={{ fontFamily:'var(--ap-font-mono)',fontWeight:700,fontSize:digitSize,lineHeight:1,color:'var(--ap-ink)',background:'var(--ap-paper)',border:'2px solid var(--ap-line)',borderRadius:16,padding:'14px 10px',minWidth:digitBox,boxShadow:'0 4px 0 var(--ap-line)',fontVariantNumeric:'tabular-nums',animation:'pin-breathe 3.2s ease-in-out infinite' }}>{ch}</span>
+              ))}
+            </div>
+            <p style={{ color:'var(--ap-muted)',fontWeight:800,fontSize:13,margin:'0 0 6px' }}>puis saisissez ce code</p>
 
-            <div style={{ marginTop:12,fontSize:13,fontWeight:700,background:'var(--ap-flash-soft)',border:'2px solid rgba(255,176,32,.4)',borderRadius:'var(--ap-r-md)',padding:'10px 14px',textAlign:'left',display:'flex',gap:9,alignItems:'flex-start',color:'var(--ap-flash-deep)' }}>
-              <Lightbulb aria-hidden="true" style={{ width:16, height:16, flexShrink:0, marginTop:1 }} />
-              <span>Le quiz comporte {quiz.questions.length} question{quiz.questions.length > 1 ? 's' : ''}. Rejoignez avant le lancement !</span>
+            {/* status + actions | QR */}
+            <div style={{ display:'grid',gridTemplateColumns:'1fr auto',gap:22,alignItems:'center',marginTop:8,textAlign:'left' }}>
+              <div>
+                <div style={{ display:'flex',alignItems:'center',gap:8,fontWeight:800,fontSize:13.5,marginBottom:10 }}>
+                  <span style={{ width:9,height:9,borderRadius:'50%',background:'var(--ap-pres)',animation:'lobby-pulse 1.4s infinite',display:'inline-block',flexShrink:0 }} aria-hidden="true" />
+                  La salle est ouverte — les joueurs peuvent rejoindre
+                </div>
+                {sessionReady && (
+                  <div style={{ display:'flex',gap:8,flexWrap:'wrap' }}>
+                    <button
+                      className="ap-btn ap-btn--sm ap-btn--ghost"
+                      style={{ display:'flex',alignItems:'center',justifyContent:'center',gap:6 }}
+                      onClick={async () => {
+                        try { await navigator.clipboard.writeText(joinUrl); toast.success('Lien copié !'); }
+                        catch { toast.error('Échec de la copie'); }
+                      }}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                      Copier le lien
+                    </button>
+                    <button
+                      className="ap-btn ap-btn--sm ap-btn--ghost"
+                      style={{ display:'flex',alignItems:'center',justifyContent:'center',gap:6 }}
+                      onClick={async () => {
+                        if (navigator.share) {
+                          try { await navigator.share({ title:'Rejoignez mon quiz !', text:`Code : ${quiz.gameCode}`, url: joinUrl }); }
+                          catch (e) { if ((e as Error).name !== 'AbortError') { await navigator.clipboard.writeText(joinUrl); toast.success('Lien copié !'); } }
+                        } else {
+                          await navigator.clipboard.writeText(joinUrl); toast.success('Lien copié !');
+                        }
+                      }}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                      Partager
+                    </button>
+                  </div>
+                )}
+              </div>
+              <div style={{ width:150,height:150,borderRadius:18,border:'2px solid var(--ap-line)',background:'#fff',boxShadow:'0 4px 0 var(--ap-line)',display:'grid',placeItems:'center' }}>
+                {sessionReady ? (
+                  <QRCodeGenerator gameCode={quiz.gameCode} joinUrl={joinUrl} compact compactSize={128} />
+                ) : (
+                  <span style={{ color:'var(--ap-muted)',fontSize:12,fontWeight:700 }}>Chargement…</span>
+                )}
+              </div>
             </div>
           </aside>
 
-          {/* ── Arena ── */}
-          <section aria-label="Joueurs connectés">
-            <div style={{ display:'flex',alignItems:'baseline',gap:12,margin:'4px 2px 16px' }}>
-              <h2 style={{ fontFamily:'var(--ap-font-display)',fontWeight:600,fontSize:22,margin:0 }}>Joueurs</h2>
-              <span style={{ fontFamily:'var(--ap-font-mono)',fontWeight:700,fontSize:15,fontVariantNumeric:'tabular-nums',color:'var(--ap-pres-deep)',background:'var(--ap-pres-soft)',border:'2px solid rgba(21,192,138,.4)',borderRadius:999,padding:'4px 13px',animation: visiblePlayers.length > prevPlayersLenRef.current ? 'lobby-bump .35s cubic-bezier(.2,.7,.3,1.3)' : undefined }} role="status" aria-live="polite">
-                {visiblePlayers.length}
-              </span>
-              {isHost && <span style={{ fontSize:13,fontWeight:700,color:'var(--ap-muted)' }}>Survolez un joueur pour le retirer</span>}
-            </div>
-
-            <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(128px,1fr))',gap:13 }}>
-              {visiblePlayers.map((player) => (
-                <div
-                  key={player.id}
-                  className="lobby-player"
-                  style={{ position:'relative',background:'var(--ap-card)',border:'2px solid var(--ap-line)',borderRadius:'var(--ap-r-md)',padding:'15px 10px 13px',textAlign:'center',boxShadow:'0 4px 0 var(--ap-line)' }}
-                >
-                  {isHost && (
-                    <button
-                      className="kick-btn"
-                      onClick={() => kickPlayer(player.id)}
-                      aria-label={`Retirer ${player.name}`}
-                      style={{ position:'absolute',top:-8,right:-8,width:24,height:24,borderRadius:'50%',border:'2px solid var(--ap-card)',background:'var(--ap-quiz)',color:'#fff',fontWeight:800,fontSize:12,lineHeight:1,cursor:'pointer',display:'grid',placeItems:'center',boxShadow:'0 2px 0 var(--ap-quiz-deep)' }}
-                    >✕</button>
-                  )}
-                  <div style={{ width:52,height:52,margin:'0 auto 8px',borderRadius:'50%',background:'var(--ap-paper-2)',border:'2px solid var(--ap-line)',display:'grid',placeItems:'center',fontSize:27,animation:'idle-wiggle 4.5s ease-in-out infinite' }} aria-hidden="true">
-                    <AvatarDisplay emoji={player.avatar} size="sm" />
-                  </div>
-                  <span style={{ fontWeight:800,fontSize:13.5,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',display:'block' }}>{player.name}</span>
-                </div>
-              ))}
-              {/* Ghost slots */}
-              {Array.from({ length: ghostCount }).map((_, i) => (
-                <div key={`ghost-${i}`} style={{ border:'2px dashed var(--ap-line-2)',borderRadius:'var(--ap-r-md)',display:'grid',placeItems:'center',minHeight:118,color:'var(--ap-line-2)',fontFamily:'var(--ap-font-display)',fontWeight:600,fontSize:22 }} aria-hidden="true">?</div>
-              ))}
+          {/* ── Players glass panel ── */}
+          <section aria-label="Joueurs connectés" style={{ position:'sticky',top:18 }}>
+            <div style={{ background:'rgba(255,255,255,.12)',border:'2px solid rgba(255,255,255,.28)',borderRadius:'var(--ap-r-xl)',padding:20,backdropFilter:'blur(4px)' }}>
+              <div style={{ display:'flex',alignItems:'center',gap:10,color:'#fff',marginBottom:14 }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                <h3 style={{ fontFamily:'var(--ap-font-display)',fontWeight:600,fontSize:17,margin:0 }}>Joueurs</h3>
+                <span style={{ marginLeft:'auto',fontFamily:'var(--ap-font-mono)',fontWeight:700,fontSize:15,color:'#fff',background:'rgba(255,255,255,.18)',border:'2px solid rgba(255,255,255,.3)',borderRadius:999,padding:'4px 13px',fontVariantNumeric:'tabular-nums',animation: visiblePlayers.length > prevPlayersLenRef.current ? 'lobby-bump .35s cubic-bezier(.2,.7,.3,1.3)' : undefined }} role="status" aria-live="polite">
+                  {visiblePlayers.length}
+                </span>
+              </div>
+              <div style={{ display:'flex',flexWrap:'wrap',gap:8,minHeight:120,alignContent:'flex-start' }}>
+                {visiblePlayers.map((player) => (
+                  <span
+                    key={player.id}
+                    className="pchip"
+                    style={{ display:'flex',alignItems:'center',gap:7,background:'#fff',borderRadius:999,padding:'6px 13px 6px 7px',fontWeight:800,fontSize:13,color:'var(--ap-ink)',boxShadow:'0 3px 0 rgba(20,10,60,.3)' }}
+                  >
+                    {isHost && (
+                      <button
+                        className="kick-btn"
+                        onClick={() => kickPlayer(player.id)}
+                        aria-label={`Retirer ${player.name}`}
+                        style={{ position:'absolute',top:-7,right:-7,width:22,height:22,borderRadius:'50%',border:'2px solid var(--ap-brand)',background:'var(--ap-quiz)',color:'#fff',fontWeight:800,fontSize:11,lineHeight:1,cursor:'pointer',display:'grid',placeItems:'center',boxShadow:'0 2px 0 var(--ap-quiz-deep)' }}
+                      >✕</button>
+                    )}
+                    <span style={{ display:'flex',flexShrink:0 }}><AvatarDisplay emoji={player.avatar} size="xs" /></span>
+                    <span style={{ overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',maxWidth:120 }}>{player.name}</span>
+                  </span>
+                ))}
+                {visiblePlayers.length === 0 && (
+                  <span style={{ alignSelf:'center',color:'rgba(255,255,255,.75)',fontWeight:700,fontSize:13 }}>En attente des premiers joueurs…</span>
+                )}
+              </div>
+              {isHost && visiblePlayers.length > 0 && (
+                <p style={{ color:'rgba(255,255,255,.6)',fontWeight:700,fontSize:12,margin:'12px 0 0' }}>Survolez un joueur pour le retirer</p>
+              )}
             </div>
           </section>
         </div>
