@@ -34,6 +34,7 @@ const normalizeStoredQuiz = (quiz: Partial<SavedQuiz>, fallbackId: string): Save
   headerImage: quiz.headerImage,
   theme: quiz.theme,
   font: quiz.font,
+  ambianceId: quiz.ambianceId,
   rating: quiz.rating,
   ratingCount: quiz.ratingCount,
 });
@@ -108,6 +109,7 @@ const LiveQuizPage = () => {
       headerImage: loadedQuiz.headerImage,
       theme: loadedQuiz.theme,
       font: loadedQuiz.font,
+      ambianceId: loadedQuiz.ambianceId,
       transitionTime: loadedQuiz.transitionTime,
     };
   }, [loadedQuiz]);

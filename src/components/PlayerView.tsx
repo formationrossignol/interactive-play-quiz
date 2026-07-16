@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Users, Trophy, LogOut } from "lucide-react";
 import { AvatarDisplay } from "./BetterAvatars";
 import { MultiStepProgress } from "./MultiStepProgress";
-import { BackgroundMusic } from "./BackgroundMusic";
+import { AudioControls } from "./AudioControls";
+import { useGameAudio } from "@/hooks/useGameAudio";
 import { ExitQuizDialog } from "./ExitQuizDialog";
 import { CircularTimer } from "./CircularTimer";
 import { TransitionCountdown, CountdownSplash } from "./TransitionTimer";
@@ -37,6 +38,16 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
   const [playerId, setPlayerId] = useState<string | null>(null);
   const [playerAvatar, setPlayerAvatar] = useState<string>('🎮');
   const [gameState, setGameState] = useState<'waiting' | 'countdown' | 'question-intro' | 'question' | 'answer-feedback' | 'leaderboard' | 'transition' | 'final' | 'abandoned'>('waiting');
+
+  const [ambianceId, setAmbianceId] = useState<string>('arcade');
+  const audio = useGameAudio({ ambianceId, gameState, isHost: false });
+
+  // Autoplay policy: unlock on the first user tap anywhere.
+  useEffect(() => {
+    const onFirst = () => audio.unlock();
+    window.addEventListener('pointerdown', onFirst, { once: true });
+    return () => window.removeEventListener('pointerdown', onFirst);
+  }, [audio]);
   const [allPlayers, setAllPlayers] = useState<{ id: string; name: string; avatar: string; score: number }[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | string | null>(null);
@@ -261,6 +272,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
       if (data.quiz_data?.questions && Array.isArray(data.quiz_data.questions)) {
         setQuizQuestions((prev) => prev.length === 0 ? data.quiz_data.questions : prev);
         if (data.quiz_data.type === 'poll') setIsPoll(true);
+        if (typeof data.quiz_data.ambianceId === 'string') setAmbianceId(data.quiz_data.ambianceId);
         hasQuizData = true;
       }
 
@@ -404,6 +416,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
         const result = await submitAnswerToServer(gameCode, pending.playerId, pending.questionIndex, pending.answer);
         if (result.ok) {
           setLastAnswerCorrect(result.correct);
+          audio.playSfx(result.correct ? 'answer-correct' : 'answer-wrong');
           setLastEarnedPoints(result.earnedPoints);
           setPlayerScore((prev) => prev + result.earnedPoints);
           setAnswerKey({
@@ -573,6 +586,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
       const result = await submitAnswerToServer(gameCode, playerId, currentQuestion, answer);
 
       setLastAnswerCorrect(result.correct);
+      audio.playSfx(result.correct ? 'answer-correct' : 'answer-wrong');
       setLastEarnedPoints(result.earnedPoints);
       setPlayerScore((prev) => prev + (result.ok ? result.earnedPoints : 0));
       // Only set answerKey on success — on failure result.correctAnswer etc.
@@ -837,7 +851,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
               )}
             </div>
             <div className="flex items-center gap-2">
-              <BackgroundMusic isPlaying={gameState === 'question'} />
+              <AudioControls audio={audio} />
               <button
                 className="ap-btn ap-btn--ghost ap-btn--sm"
                 style={{

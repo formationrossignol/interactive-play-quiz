@@ -27,6 +27,7 @@ import { getQuizTemplate } from "@/lib/quizTemplates";
 import { getFlashcardTemplate } from "@/lib/flashcardTemplates";
 import { getSlideTemplate } from "@/lib/slideTemplates";
 import { DEFAULT_THEME_ID, THEMES, type Theme } from "@/lib/themes";
+import { AMBIANCE_OPTIONS, DEFAULT_AMBIANCE } from "@/lib/audioManifest";
 import { hexToRgba } from "@/lib/color";
 import { toast } from "sonner";
 import { t } from "@/lib/i18n";
@@ -479,6 +480,7 @@ export const QuizBuilder = () => {
   const [newTag, setNewTag] = useState("");
   const [headerImage, setHeaderImage] = useState("");
   const [theme, setTheme] = useState<string>(DEFAULT_THEME_ID);
+  const [ambianceId, setAmbianceId] = useState<string>(isPoll ? "none" : DEFAULT_AMBIANCE);
   const [previewFont, setPreviewFont] = useState(FONT_OPTIONS[0].value);
   const [saveState, setSaveState] = useState<"saved" | "saving">("saved");
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -531,6 +533,7 @@ export const QuizBuilder = () => {
     setTags(eq.tags || []);
     setHeaderImage(eq.headerImage || "");
     setTheme(THEMES.some(t => t.id === eq.theme) ? eq.theme : DEFAULT_THEME_ID);
+    setAmbianceId(eq.ambianceId ?? (isPoll ? "none" : DEFAULT_AMBIANCE));
     setPreviewFont(FONT_OPTIONS.some(f => f.value === eq.font) ? eq.font : FONT_OPTIONS[0].value);
     const qs = eq.questions.map((q, i) => ({ id: q.id || String(Date.now()) + i, ...q, image: q.image || "" }));
     setQuestions(qs);
@@ -677,7 +680,7 @@ export const QuizBuilder = () => {
         isFavorite: false, tags,
         speedBonus: isPoll ? false : speedBonus,
         transitionTime, category, type: quizType,
-        headerImage, theme, font: previewFont,
+        headerImage, theme, font: previewFont, ambianceId,
       };
       if (quizId) updateQuiz(quizId, data); else saveQuiz(data);
       toast.success(quizId ? (isPoll ? "Sondage mis à jour" : "Quiz mis à jour") : (isPoll ? t("pollSaved") : t("quizSaved")));
@@ -1347,6 +1350,22 @@ export const QuizBuilder = () => {
                 <div className="rounded-2xl border border-border/60 bg-muted/30 p-4"><ThemePreviewPanel theme={activeTheme} /></div>
               </div>
             </div>
+            {!isFlashcard && !isSlide && (
+              <div>
+                <Label>Ambiance musicale</Label>
+                <div className="mt-3">
+                  <select
+                    value={ambianceId}
+                    onChange={(e) => setAmbianceId(e.target.value)}
+                    className="w-full rounded-xl border border-border/60 bg-background px-3 py-2 text-sm font-semibold"
+                  >
+                    {AMBIANCE_OPTIONS.map((o) => (
+                      <option key={o.id} value={o.id}>{o.label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
             <div>
               <Label>Police d'écriture</Label>
               <Select value={previewFont} onValueChange={setPreviewFont}>
