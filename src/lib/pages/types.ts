@@ -172,3 +172,40 @@ export interface NewReview {
   text: string;
   authorRole: string;
 }
+
+// ── Admin rows (full, incl. status/sort) ────────────────────────────────────
+export type Status = 'draft' | 'published';
+
+export interface RoadmapAdminRow {
+  id: string; col: RoadmapCol; category: string; title: string; subtitle: string;
+  tags: RoadmapTag[]; beta: boolean; locked: boolean; base_votes: number;
+  shipped_label: string | null; shipped_link: boolean; status: Status; sort: number;
+}
+export interface GuideAdminRow {
+  id: string; emoji: string; cover_token: string; duration_label: string; title: string;
+  level: 'deb' | 'int' | 'avc'; format: 'video' | 'article'; url: string | null;
+  body: string | null; status: Status; sort: number;
+}
+export interface FaqAdminRow {
+  id: string; category: string; question: string; answer: string; status: Status; sort: number;
+}
+export interface ReleaseAdminRow {
+  id: string; version: string; title: string; date_label: string;
+  intro: string | null; media: string | null; status: Status; sort: number;
+}
+export interface ChangelogItemAdminRow {
+  id: string; release_id: string; kind: ChangelogKind; text: string; from_votes: boolean; sort: number;
+}
+
+export interface PendingReview {
+  id: string; persona: ReviewPersona; stars: number; text: string;
+  author_name: string; author_role: string; created_at: string;
+}
+export interface IdeaRow {
+  id: string; user_id: string; text: string; status: 'pending' | 'converted' | 'rejected'; created_at: string;
+}
+export interface AdminReportRow {
+  id: string; user_id: string; type: ReportType; severity: ReportSeverity;
+  title: string; body: string; status: ReportStatus; created_at: string;
+}
+export interface SubscriberRow { user_id: string; created_at: string; }
