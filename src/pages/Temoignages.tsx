@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { useSEO } from "@/hooks/useSEO";
+import { useReviews } from "@/lib/pages/hooks";
+import type { Review } from "@/lib/pages/types";
 import "./community-pages.css";
 
 type Persona = "all" | "formateur" | "enseignant" | "entreprise";
@@ -22,20 +24,12 @@ const CHIPS: { p: Persona; label: string }[] = [
   { p: "entreprise", label: "Entreprises & écoles" },
 ];
 
-const REVIEWS = [
-  { p: "formateur", stars: 5, text: "Le lobby projeté fait son effet à chaque fois : les stagiaires dégainent leur téléphone avant même que j'aie fini d'expliquer. Zéro friction, zéro installation.", av: "🧔", name: "Karim T.", role: "Formateur DevOps indépendant" },
-  { p: "entreprise", stars: 5, text: "On a remplacé notre ancien outil pour la conformité RGPD : hébergement UE, DPA signé en 48 h. Le service juridique a validé sans aller-retour — une première.", av: "🏢", name: "Claire D.", role: "Responsable formation, ETI industrielle" },
-  { p: "enseignant", stars: 5, text: "Mes M2 réclament le quiz de fin de module. Le mode examen avec alertes de sortie d'onglet m'a évité deux litiges ce semestre : tout est tracé, horodaté, incontestable.", av: "👨‍🏫", name: "Julien P.", role: "Enseignant vacataire, M2 cloud" },
-  { p: "formateur", stars: 4, text: "La génération IA depuis mes PDF me fait gagner une heure par module. Je retouche 20 % des questions, le reste est directement exploitable. Il manque juste les questions avec images.", av: "👩‍💻", name: "Nadia B.", role: "Formatrice Kubernetes" },
-  { p: "enseignant", stars: 5, text: "Testé avec 160 étudiants en amphi : aucune latence, le podium final a déclenché une ovation. Je ne pensais pas dire ça d'un cours de réseaux à 8 h.", av: "👩‍🏫", name: "Sarah M.", role: "Enseignante-chercheuse" },
-  { p: "entreprise", stars: 5, text: "Déployé pour 6 formateurs internes. La banque de questions partagée évite que chacun réinvente les mêmes QCM — on capitalise enfin sur nos contenus.", av: "🏫", name: "Marc L.", role: "Directeur pédagogique, CFA" },
-] as const;
-
 const stars = (n: number) => "★★★★★☆☆☆☆☆".slice(5 - n, 10 - n);
 
 const Temoignages = () => {
   const navigate = useNavigate();
   const [persona, setPersona] = useState<Persona>("all");
+  const { data: reviews, isLoading } = useReviews();
   useSEO({
     title: "Témoignages",
     description: "Avis vérifiés de formateurs, enseignants et responsables formation qui animent avec Ludiq. Note moyenne 4,8/5 sur 312 avis.",
@@ -93,20 +87,26 @@ const Temoignages = () => {
           </div>
 
           <div className="tgrid">
-            {REVIEWS.filter((r) => persona === "all" || r.p === persona).map((r, i) => (
-              <div className="card tcard" key={i}>
-                <div className="tstars">{stars(r.stars)}</div>
-                <p>{r.text}</p>
-                <div className="twho">
-                  <span className="tw-av">{r.av}</span>
-                  <div>
-                    <b>{r.name}</b>
-                    <small>{r.role}</small>
+            {isLoading ? (
+              <div style={{ opacity: 0.5 }}>Chargement…</div>
+            ) : (
+              (reviews ?? [])
+                .filter((r: Review) => persona === "all" || r.p === persona)
+                .map((r) => (
+                  <div className="card tcard" key={r.id}>
+                    <div className="tstars">{stars(r.stars)}</div>
+                    <p>{r.text}</p>
+                    <div className="twho">
+                      <span className="tw-av">{r.av}</span>
+                      <div>
+                        <b>{r.name}</b>
+                        <small>{r.role}</small>
+                      </div>
+                      <span className="pill tsrc">✓ Vérifié</span>
+                    </div>
                   </div>
-                  <span className="pill tsrc">✓ Vérifié</span>
-                </div>
-              </div>
-            ))}
+                ))
+            )}
           </div>
 
           <div className="finalcta">
