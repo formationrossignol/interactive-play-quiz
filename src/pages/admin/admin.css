@@ -325,6 +325,29 @@
 .adm-faqrow .a { margin: 7px 0 0; font-weight: 600; font-size: 13.5px; line-height: 1.55; color: var(--ap-muted); }
 .adm-faqrow .adm-cardactions { border-top: none; padding-top: 10px; max-width: 320px; }
 
+/* ── Testimonials grid (public-form editing) ── */
+.adm-tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+.adm-tcard {
+  display: flex; flex-direction: column;
+  background: var(--ap-card); border: 2px solid var(--ap-line); border-radius: var(--ap-r-lg, 24px);
+  padding: 17px 19px; box-shadow: var(--ap-shadow-soft); transition: transform .1s, box-shadow .12s, border-color .12s;
+}
+.adm-tcard:hover { transform: translateY(-3px); box-shadow: var(--ap-shadow-float); border-color: var(--ap-line-2); }
+.adm-tstars { color: var(--ap-brand); font-size: 15px; letter-spacing: 1px; margin-bottom: 8px; }
+.adm-tcard > p { margin: 0 0 14px; font-weight: 600; font-size: 14px; line-height: 1.55; color: var(--ap-ink); }
+.adm-twho { display: flex; align-items: center; gap: 10px; margin-top: auto; }
+.adm-tav {
+  display: grid; place-items: center; width: 38px; height: 38px; border-radius: 999px;
+  background: var(--ap-paper-2); font-size: 19px; flex-shrink: 0;
+}
+.adm-twho .who-name { display: block; font-weight: 900; font-size: 13.5px; }
+.adm-twho .who-role { display: block; font-size: 12px; color: var(--ap-muted); font-weight: 700; }
+.adm-tverif {
+  margin-left: auto; font-size: 10.5px; font-weight: 900; white-space: nowrap;
+  padding: 3px 9px; border-radius: 999px; background: var(--ap-pres-soft); color: var(--ap-pres-deep);
+}
+.dark .adm-tverif { color: var(--ap-pres); }
+
 /* ── Empty state ── */
 .adm-empty {
   display: flex; flex-direction: column; align-items: center; gap: 6px;
