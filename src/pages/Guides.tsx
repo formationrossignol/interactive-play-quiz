@@ -3,20 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { useSEO } from "@/hooks/useSEO";
+import { useGuides } from "@/lib/pages/hooks";
+import type { Guide } from "@/lib/pages/types";
 import "./community-pages.css";
 
 type Filter = "all" | "deb" | "int" | "avc" | "video";
-
-const GUIDES = [
-  { emoji: "🎬", cover: "--ap-quiz-soft", dur: "▶ 4:32", title: "Créer un quiz de A à Z", lvl: "deb", fmt: "video" },
-  { emoji: "🪄", cover: "--ap-brand-soft", dur: "6 min", title: "Générer un quiz par IA depuis un PDF de cours", lvl: "deb", fmt: "article" },
-  { emoji: "🎯", cover: "--ap-pres-soft", dur: "8 min", title: "Doser la difficulté : la règle des 70/20/10", lvl: "int", fmt: "article" },
-  { emoji: "🎬", cover: "--ap-poll-soft", dur: "▶ 7:15", title: "Animer un groupe de 100+ : rythme, pauses, relances", lvl: "int", fmt: "video" },
-  { emoji: "🎓", cover: "--ap-flash-soft", dur: "12 min", title: "Monter un examen blanc certifiant (fenêtres, barème, litiges)", lvl: "avc", fmt: "article" },
-  { emoji: "📊", cover: "--ap-pres-soft", dur: "10 min", title: "Exploiter les analytics pour réviser son cours", lvl: "avc", fmt: "article" },
-  { emoji: "🧊", cover: "--ap-quiz-soft", dur: "5 min", title: "10 icebreakers qui marchent (même à 8 h 30)", lvl: "deb", fmt: "article" },
-  { emoji: "🎬", cover: "--ap-brand-soft", dur: "▶ 5:48", title: "Flashcards & répétition espacée : le mode d'emploi", lvl: "int", fmt: "video" },
-] as const;
 
 const LVL_LABEL: Record<string, { cls: string; label: string }> = {
   deb: { cls: "lvl--deb", label: "Débutant" },
@@ -35,14 +26,16 @@ const CHIPS: { f: Filter; label: string }[] = [
 const Guides = () => {
   const navigate = useNavigate();
   const [filter, setFilter] = useState<Filter>("all");
+  const { data: guides, isLoading } = useGuides();
   useSEO({
     title: "Guides & tutoriels",
     description: "Des guides courts et concrets pour animer des quiz, sondages et examens en salle — écrits par des formateurs.",
     path: "/guides",
   });
 
-  const visible = (g: (typeof GUIDES)[number]) =>
-    filter === "all" || g.lvl === filter || (filter === "video" && g.fmt === "video");
+  const visible = (guides ?? []).filter((g: Guide) =>
+    filter === "all" ? true : filter === "video" ? g.fmt === "video" : g.lvl === filter,
+  );
 
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
@@ -85,21 +78,25 @@ const Guides = () => {
           </div>
 
           <div className="ggrid">
-            {GUIDES.filter(visible).map((g, i) => (
-              <article className="card gcard" key={i}>
-                <div className="gcover" style={{ background: `var(${g.cover})` }}>
-                  {g.emoji}
-                  <span className="gdur">{g.dur}</span>
-                </div>
-                <div className="gbody">
-                  <h3>{g.title}</h3>
-                  <div className="gmeta">
-                    <span className={`lvl ${LVL_LABEL[g.lvl].cls}`}>{LVL_LABEL[g.lvl].label}</span>
-                    <span className="fmt">{g.fmt === "video" ? "Vidéo" : "Article"}</span>
+            {isLoading ? (
+              <div style={{ opacity: 0.5 }}>Chargement…</div>
+            ) : (
+              visible.map((g) => (
+                <article className="card gcard" key={g.id}>
+                  <div className="gcover" style={{ background: `var(${g.cover})` }}>
+                    {g.emoji}
+                    <span className="gdur">{g.dur}</span>
                   </div>
-                </div>
-              </article>
-            ))}
+                  <div className="gbody">
+                    <h3>{g.title}</h3>
+                    <div className="gmeta">
+                      <span className={`lvl ${LVL_LABEL[g.lvl].cls}`}>{LVL_LABEL[g.lvl].label}</span>
+                      <span className="fmt">{g.fmt === "video" ? "Vidéo" : "Article"}</span>
+                    </div>
+                  </div>
+                </article>
+              ))
+            )}
           </div>
         </div>
       </main>

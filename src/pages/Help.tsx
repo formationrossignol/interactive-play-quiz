@@ -4,73 +4,8 @@ import { Footer } from "@/components/Footer";
 import { ChevronDown, ChevronUp, HelpCircle, Mail } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useSEO } from "@/hooks/useSEO";
-
-const FAQ_ITEMS = [
-  {
-    category: "Démarrage",
-    questions: [
-      {
-        q: "Comment créer mon premier quiz ?",
-        a: "Cliquez sur « Créer gratuitement » depuis l'accueil, choisissez le type de contenu (Quiz, Sondage, Flashcard ou Présentation), puis construisez vos questions. Vous pouvez aussi partir d'un modèle prêt à l'emploi.",
-      },
-      {
-        q: "Faut-il un compte pour utiliser l'application ?",
-        a: "Vous pouvez créer et lancer du contenu sans compte, mais un compte permet de sauvegarder vos créations, d'accéder à vos statistiques et de retrouver vos résultats depuis n'importe quel appareil.",
-      },
-      {
-        q: "L'application est-elle gratuite ?",
-        a: "Oui, les fonctionnalités essentielles sont entièrement gratuites. Des options avancées (personnalisation avancée, export, analytics détaillées) sont disponibles dans les plans supérieurs.",
-      },
-    ],
-  },
-  {
-    category: "Quiz & Sondages en direct",
-    questions: [
-      {
-        q: "Comment les participants rejoignent-ils une session ?",
-        a: "Partagez le code à 6 chiffres affiché à l'écran, ou le lien QR Code généré automatiquement. Les participants ouvrent l'application sur leur smartphone et saisissent le code, aucune inscription requise.",
-      },
-      {
-        q: "Combien de participants peut-on accueillir simultanément ?",
-        a: "Il n'y a pas de limite stricte côté application. En pratique, les sessions fonctionnent très bien jusqu'à plusieurs centaines de participants. La synchronisation repose sur Supabase Realtime.",
-      },
-      {
-        q: "Les réponses des sondages sont-elles sauvegardées ?",
-        a: "Oui. Dès que vous lancez un sondage, les réponses des participants sont collectées en temps réel et accessibles dans la page « Résultats » du sondage, avec des graphiques par question.",
-      },
-      {
-        q: "Peut-on relancer un même quiz plusieurs fois ?",
-        a: "Absolument. Depuis « Mes Quiz », cliquez sur « Lancer », chaque lancement crée une nouvelle session avec un code unique. Les sessions précédentes restent dans l'historique.",
-      },
-    ],
-  },
-  {
-    category: "Flashcards & Présentations",
-    questions: [
-      {
-        q: "Comment fonctionne le mode Flashcard ?",
-        a: "Les flashcards s'affichent une par une en mode révision : recto (question ou terme) puis verso (réponse ou définition). Idéal pour mémoriser du vocabulaire, des formules ou des concepts clés.",
-      },
-      {
-        q: "Puis-je insérer des images dans mes slides ?",
-        a: "Oui, chaque diapositive et chaque question peut inclure une image (URL ou upload). Les images sont affichées en pleine largeur dans le mode présentation.",
-      },
-    ],
-  },
-  {
-    category: "Données & Confidentialité",
-    questions: [
-      {
-        q: "Où sont stockées mes données ?",
-        a: "Les contenus créés sont stockés localement dans votre navigateur (localStorage) et, lorsqu'un compte est actif, synchronisés via Supabase (hébergé en Europe). Aucune donnée n'est vendue à des tiers.",
-      },
-      {
-        q: "Comment supprimer mes créations ?",
-        a: "Dans les pages « Mes Quiz », « Mes Sondages » ou « Mes Flashcards », cliquez sur l'icône corbeille de la carte concernée, puis confirmez la suppression.",
-      },
-    ],
-  },
-];
+import { useFaq } from "@/lib/pages/hooks";
+import type { FaqGroup } from "@/lib/pages/types";
 
 const FAQItem = ({ q, a }: { q: string; a: string }) => {
   const [open, setOpen] = useState(false);
@@ -103,6 +38,7 @@ const FAQItem = ({ q, a }: { q: string; a: string }) => {
 
 const Help = () => {
   const navigate = useNavigate();
+  const { data: faq, isLoading } = useFaq();
   useSEO({
     title: "Centre d'aide",
     description: "FAQ et guides pour créer vos premiers quiz, lancer une session en direct, gérer vos participants et exporter vos résultats sur Ludiq.",
@@ -131,16 +67,20 @@ const Help = () => {
 
           {/* FAQ sections */}
           <div style={{ display: "flex", flexDirection: "column", gap: "20px", marginBottom: "48px" }}>
-            {FAQ_ITEMS.map((section) => (
-              <div key={section.category} className="ap-card" style={{ padding: "24px 28px" }}>
-                <h2 style={{ fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: "11px", letterSpacing: "0.5px", textTransform: "uppercase", color: "var(--ap-brand)", marginBottom: "4px" }}>
-                  {section.category}
-                </h2>
-                {section.questions.map((item) => (
-                  <FAQItem key={item.q} q={item.q} a={item.a} />
-                ))}
-              </div>
-            ))}
+            {isLoading || !faq ? (
+              <div style={{ opacity: 0.5 }}>Chargement…</div>
+            ) : (
+              faq.map((section: FaqGroup) => (
+                <div key={section.category} className="ap-card" style={{ padding: "24px 28px" }}>
+                  <h2 style={{ fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: "11px", letterSpacing: "0.5px", textTransform: "uppercase", color: "var(--ap-brand)", marginBottom: "4px" }}>
+                    {section.category}
+                  </h2>
+                  {section.questions.map((item) => (
+                    <FAQItem key={item.q} q={item.q} a={item.a} />
+                  ))}
+                </div>
+              ))
+            )}
           </div>
 
           {/* CTA — contact */}
