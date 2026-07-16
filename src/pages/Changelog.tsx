@@ -1,8 +1,11 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { useSEO } from "@/hooks/useSEO";
 import { useChangelog } from "@/lib/pages/hooks";
+import { useChangelogSubscription } from "@/lib/pages/interactionHooks";
+import { requireAuth } from "@/lib/pages/requireAuth";
 import type { Release } from "@/lib/pages/types";
 import "./roadmap-pages.css";
 
@@ -22,8 +25,10 @@ const KIND_LABEL: Record<string, { cls: string; label: string }> = {
 };
 
 const Changelog = () => {
+  const navigate = useNavigate();
   const [filter, setFilter] = useState<Kind>("all");
   const { data: releases, isLoading } = useChangelog();
+  const sub = useChangelogSubscription();
   useSEO({
     title: "Nouveautés produit",
     description: "Toutes les nouveautés, améliorations et corrections de Ludiq, mois par mois — et d'où elles viennent.",
@@ -44,8 +49,12 @@ const Changelog = () => {
           </div>
 
           <div className="subscribe">
-            <input type="email" placeholder="votre@email.fr" />
-            <button className="btn btn--sm">Recevoir les nouveautés</button>
+            <button className="btn btn--sm" disabled={sub.isLoading || sub.toggle.isPending} onClick={() => {
+              if (!requireAuth(navigate)) return;
+              sub.toggle.mutate(sub.isSubscribed);
+            }}>
+              {sub.isSubscribed ? "Abonné ✓ — se désabonner" : "Recevoir les nouveautés"}
+            </button>
           </div>
 
           <div className="chips">
