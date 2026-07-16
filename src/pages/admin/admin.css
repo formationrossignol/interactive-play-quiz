@@ -1,0 +1,220 @@
+/* ──────────────────────────────────────────────────────────
+   Admin Console — "Arcade Console"
+   Scoped under `.adm`. Reuses Arcade Pop --ap-* tokens, so it
+   follows light / dark automatically. Design anchors:
+   chunky icon nav-rail with 3D active pill + oversized Fredoka
+   KPI numbers under colored accent chips.
+   ────────────────────────────────────────────────────────── */
+
+.adm {
+  --disp: var(--ap-font-display, 'Fredoka', system-ui, sans-serif);
+  --body: var(--ap-font-body, 'Nunito', system-ui, sans-serif);
+  color: var(--ap-ink);
+  font-family: var(--body);
+  padding: 28px 0 72px;
+}
+.adm .wrap { max-width: 1180px; margin: 0 auto; padding: 0 28px; }
+.adm h1, .adm h2, .adm h3, .adm h4 { font-family: var(--disp); font-weight: 600; margin: 0; letter-spacing: -.5px; }
+
+/* ── Console header ── */
+.adm-top { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; margin-bottom: 26px; flex-wrap: wrap; }
+.adm-eyebrow {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 11px; font-weight: 900; letter-spacing: 1.4px; text-transform: uppercase;
+  color: var(--ap-brand);
+}
+.adm-eyebrow::before {
+  content: ""; width: 9px; height: 9px; border-radius: 999px;
+  background: var(--ap-pres); box-shadow: 0 0 0 4px var(--ap-pres-soft);
+}
+.adm-top h1 { font-size: clamp(30px, 4vw, 46px); margin-top: 8px; }
+
+/* ── Shell: rail + main ── */
+.adm-shell { display: grid; grid-template-columns: 224px minmax(0, 1fr); gap: 26px; align-items: start; }
+
+/* ── Nav rail ── */
+.adm-rail {
+  position: sticky; top: 90px;
+  display: flex; flex-direction: column; gap: 6px;
+  background: var(--ap-card); border: 2px solid var(--ap-line);
+  border-radius: var(--ap-r-lg, 24px); padding: 12px;
+  box-shadow: var(--ap-shadow-soft);
+}
+.adm-rail-label {
+  font-size: 10px; font-weight: 900; letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--ap-muted); padding: 6px 10px 8px;
+}
+.adm-navitem {
+  display: flex; align-items: center; gap: 11px;
+  padding: 11px 13px; border-radius: 14px; border: 2px solid transparent;
+  background: transparent; color: var(--ap-ink);
+  font-family: var(--disp); font-weight: 600; font-size: 15px; text-align: left;
+  cursor: pointer; transition: background .12s, transform .1s, box-shadow .12s;
+}
+.adm-navitem .ico {
+  display: grid; place-items: center; width: 30px; height: 30px; border-radius: 9px;
+  background: var(--ap-paper-2); font-size: 15px; flex-shrink: 0; transition: background .12s;
+}
+.adm-navitem:hover { background: var(--ap-paper-2); }
+.adm-navitem.on {
+  background: var(--ap-brand); color: #fff;
+  box-shadow: 0 4px 0 var(--ap-brand-deep); transform: translateY(-1px);
+}
+.adm-navitem.on .ico { background: rgba(255,255,255,.22); }
+.adm-navitem .count {
+  margin-left: auto; font-family: var(--body); font-weight: 900; font-size: 12px;
+  min-width: 22px; text-align: center; padding: 2px 7px; border-radius: 999px;
+  background: var(--ap-paper-2); color: var(--ap-muted);
+}
+.adm-navitem.on .count { background: rgba(255,255,255,.22); color: #fff; }
+.adm-navitem .count.alert { background: var(--ap-quiz); color: #fff; }
+
+/* ── KPI stat cards ── */
+.adm-kpi { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin-bottom: 22px; }
+.adm-stat {
+  position: relative; overflow: hidden;
+  background: var(--ap-card); border: 2px solid var(--ap-line);
+  border-radius: var(--ap-r-lg, 24px); padding: 18px 18px 16px;
+  box-shadow: var(--ap-shadow-soft);
+}
+.adm-stat::before {
+  content: ""; position: absolute; inset: 0 0 auto 0; height: 5px; background: var(--acc, var(--ap-brand));
+}
+.adm-stat .chip {
+  display: grid; place-items: center; width: 34px; height: 34px; border-radius: 11px;
+  background: var(--acc-soft, var(--ap-brand-soft)); font-size: 17px; margin-bottom: 12px;
+}
+.adm-stat .num { font-family: var(--disp); font-weight: 600; font-size: 40px; line-height: 1; letter-spacing: -1.5px; }
+.adm-stat .lbl { font-weight: 800; font-size: 12.5px; color: var(--ap-muted); margin-top: 4px; }
+.adm-stat.acc-brand { --acc: var(--ap-brand); --acc-soft: var(--ap-brand-soft); }
+.adm-stat.acc-flash { --acc: var(--ap-flash); --acc-soft: var(--ap-flash-soft); }
+.adm-stat.acc-quiz  { --acc: var(--ap-quiz);  --acc-soft: var(--ap-quiz-soft); }
+.adm-stat.acc-poll  { --acc: var(--ap-poll);  --acc-soft: var(--ap-poll-soft); }
+.adm-stat.acc-pres  { --acc: var(--ap-pres);  --acc-soft: var(--ap-pres-soft); }
+
+/* ── Content panel ── */
+.adm-panel {
+  background: var(--ap-card); border: 2px solid var(--ap-line);
+  border-radius: var(--ap-r-xl, 30px); padding: 22px; box-shadow: var(--ap-shadow-soft);
+}
+.adm-panel + .adm-panel { margin-top: 20px; }
+.adm-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 18px; flex-wrap: wrap; }
+.adm-panel-head h2 { font-size: 22px; }
+.adm-panel-head h3 { font-size: 18px; display: flex; align-items: center; gap: 9px; }
+.adm-tag {
+  font-family: var(--body); font-weight: 900; font-size: 11px;
+  padding: 3px 9px; border-radius: 999px; background: var(--ap-paper-2); color: var(--ap-muted);
+}
+
+/* ── Chunky buttons ── */
+.adm-btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-family: var(--disp); font-weight: 600; font-size: 14px; color: #fff;
+  background: var(--ap-brand); border: none; border-radius: 13px; padding: 10px 17px;
+  cursor: pointer; box-shadow: 0 4px 0 var(--ap-brand-deep);
+  transition: transform .1s var(--ap-ease), box-shadow .1s;
+}
+.adm-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 0 var(--ap-brand-deep); }
+.adm-btn:active { transform: translateY(4px); box-shadow: 0 0 0 var(--ap-brand-deep); }
+.adm-btn--sm { font-size: 12.5px; padding: 7px 12px; border-radius: 10px; }
+.adm-btn--ghost {
+  background: var(--ap-card); color: var(--ap-ink);
+  border: 2px solid var(--ap-line); box-shadow: 0 3px 0 var(--ap-line);
+}
+.adm-btn--ghost:hover { box-shadow: 0 5px 0 var(--ap-line); }
+.adm-btn--ghost:active { box-shadow: 0 0 0 var(--ap-line); }
+.adm-btn--danger { background: var(--ap-quiz); box-shadow: 0 3px 0 var(--ap-quiz-deep); }
+.adm-btn--danger:hover { box-shadow: 0 5px 0 var(--ap-quiz-deep); }
+.adm-btn--danger:active { box-shadow: 0 0 0 var(--ap-quiz-deep); }
+.adm-btn--pres { background: var(--ap-pres); box-shadow: 0 3px 0 var(--ap-pres-deep); }
+.adm-btn--pres:hover { box-shadow: 0 5px 0 var(--ap-pres-deep); }
+.adm-btn--pres:active { box-shadow: 0 0 0 var(--ap-pres-deep); }
+
+/* ── Filter pills ── */
+.adm-pills { display: flex; gap: 8px; flex-wrap: wrap; }
+.adm-pill {
+  font-family: var(--disp); font-weight: 600; font-size: 13.5px;
+  padding: 8px 15px; border-radius: 999px; cursor: pointer;
+  background: var(--ap-paper-2); border: 2px solid transparent; color: var(--ap-ink);
+  transition: background .12s, transform .1s, box-shadow .12s;
+}
+.adm-pill:hover { transform: translateY(-1px); }
+.adm-pill.on { background: var(--ap-brand); color: #fff; box-shadow: 0 3px 0 var(--ap-brand-deep); }
+
+/* ── Data rows (replaces bland table) ── */
+.adm-rows { display: flex; flex-direction: column; gap: 8px; }
+.adm-row {
+  display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 14px;
+  padding: 13px 16px; border: 2px solid var(--ap-line); border-radius: 15px;
+  background: var(--ap-paper); transition: border-color .12s, transform .1s, box-shadow .12s;
+}
+.adm-row:hover { transform: translateX(2px); box-shadow: -3px 0 0 var(--ap-brand); border-color: var(--ap-line-2); }
+.adm-row .r-title { font-weight: 800; font-size: 14.5px; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.adm-row .r-actions { display: flex; gap: 7px; flex-wrap: wrap; justify-content: flex-end; }
+
+/* ── Status badge ── */
+.adm-status {
+  display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+  font-weight: 900; font-size: 11px; letter-spacing: .3px;
+  padding: 4px 11px; border-radius: 999px; text-transform: uppercase;
+}
+.adm-status::before { content: ""; width: 7px; height: 7px; border-radius: 999px; background: currentColor; }
+.adm-status.is-published { background: var(--ap-pres-soft); color: var(--ap-pres-deep); }
+.dark .adm-status.is-published { color: var(--ap-pres); }
+.adm-status.is-draft { background: var(--ap-flash-soft); color: var(--ap-flash-deep); }
+.dark .adm-status.is-draft { color: var(--ap-flash); }
+.adm-status.is-open { background: var(--ap-poll-soft); color: var(--ap-poll-deep); }
+.dark .adm-status.is-open { color: var(--ap-poll); }
+.adm-status.is-neutral { background: var(--ap-paper-2); color: var(--ap-muted); }
+
+/* ── Moderation cards ── */
+.adm-modgrid { display: grid; gap: 12px; }
+.adm-modcard {
+  border: 2px solid var(--ap-line); border-left: 5px solid var(--acc, var(--ap-brand));
+  border-radius: 15px; padding: 15px 17px; background: var(--ap-paper);
+}
+.adm-modcard.acc-flash { --acc: var(--ap-flash); }
+.adm-modcard.acc-poll  { --acc: var(--ap-poll); }
+.adm-modcard .m-head { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; flex-wrap: wrap; }
+.adm-modcard .m-stars { color: var(--ap-flash); font-size: 14px; letter-spacing: 1px; }
+.adm-modcard .m-name { font-weight: 900; font-size: 14px; }
+.adm-modcard .m-role { font-size: 12px; color: var(--ap-muted); font-weight: 700; }
+.adm-modcard p { margin: 0 0 12px; font-weight: 600; font-size: 14px; line-height: 1.5; color: var(--ap-ink); }
+.adm-modcard .m-actions { display: flex; gap: 8px; }
+
+/* ── Subscribers table ── */
+.adm-tbl { width: 100%; border-collapse: separate; border-spacing: 0; }
+.adm-tbl thead th {
+  text-align: left; font-family: var(--disp); font-weight: 600; font-size: 12.5px;
+  color: var(--ap-muted); text-transform: uppercase; letter-spacing: .6px;
+  padding: 0 14px 10px; border-bottom: 2px solid var(--ap-line);
+}
+.adm-tbl tbody td { padding: 12px 14px; border-bottom: 1px solid var(--ap-line); font-weight: 700; font-size: 13.5px; }
+.adm-tbl tbody tr:last-child td { border-bottom: none; }
+.adm-tbl tbody tr:hover td { background: var(--ap-paper-2); }
+.adm-mono { font-family: var(--ap-font-mono, monospace); font-size: 12.5px; color: var(--ap-muted); }
+
+/* ── Empty state ── */
+.adm-empty {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 34px 20px; text-align: center; color: var(--ap-muted);
+  border: 2px dashed var(--ap-line-2); border-radius: 16px; font-weight: 700;
+}
+.adm-empty .e-emo { font-size: 30px; opacity: .8; }
+
+/* ── Loading ── */
+.adm-loading { display: grid; place-items: center; min-height: 40vh; }
+.adm-spinner { width: 34px; height: 34px; border-radius: 999px; border: 4px solid var(--ap-line); border-top-color: var(--ap-brand); animation: spin .7s linear infinite; }
+
+/* ── Responsive: rail → horizontal scroller ── */
+@media (max-width: 860px) {
+  .adm-shell { grid-template-columns: 1fr; }
+  .adm-rail { position: static; flex-direction: row; overflow-x: auto; padding: 8px; }
+  .adm-rail-label { display: none; }
+  .adm-navitem { white-space: nowrap; }
+  .adm-navitem .count { margin-left: 8px; }
+}
+@media (max-width: 560px) {
+  .adm-row { grid-template-columns: 1fr; gap: 10px; }
+  .adm-row .r-actions { justify-content: flex-start; }
+}

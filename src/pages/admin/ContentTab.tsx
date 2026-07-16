@@ -1,8 +1,4 @@
 import { useState } from "react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -14,9 +10,12 @@ import { FaqEditor } from "./editors/FaqEditor";
 import { ChangelogEditor } from "./editors/ChangelogEditor";
 
 type Res = "roadmap_items" | "guides" | "faq_items" | "changelog_releases";
-const RES_LABEL: Record<Res, string> = {
-  roadmap_items: "Roadmap", guides: "Guides", faq_items: "FAQ", changelog_releases: "Changelog",
-};
+const RES: { key: Res; label: string; icon: string }[] = [
+  { key: "roadmap_items", label: "Roadmap", icon: "🗺️" },
+  { key: "guides", label: "Guides", icon: "📚" },
+  { key: "faq_items", label: "FAQ", icon: "❓" },
+  { key: "changelog_releases", label: "Changelog", icon: "📦" },
+];
 
 export const ContentTab = () => {
   const [res, setRes] = useState<Res>("roadmap_items");
@@ -48,30 +47,44 @@ export const ContentTab = () => {
     setEditing({ open: false });
   };
 
+  const current = RES.find((r) => r.key === res)!;
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16, paddingTop: 16 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <Select value={res} onValueChange={(x) => setRes(x as Res)}>
-          <SelectTrigger style={{ width: 220 }}><SelectValue /></SelectTrigger>
-          <SelectContent>{(Object.keys(RES_LABEL) as Res[]).map((r) => <SelectItem key={r} value={r}>{RES_LABEL[r]}</SelectItem>)}</SelectContent>
-        </Select>
-        <Button onClick={() => setEditing({ open: true, row: undefined })}>Nouveau</Button>
+    <div className="adm-panel">
+      <div className="adm-panel-head">
+        <div className="adm-pills">
+          {RES.map((r) => (
+            <button key={r.key} className={`adm-pill${res === r.key ? " on" : ""}`} onClick={() => setRes(r.key)}>
+              {r.icon} {r.label}
+            </button>
+          ))}
+        </div>
+        <button className="adm-btn" onClick={() => setEditing({ open: true, row: undefined })}>+ Nouveau</button>
       </div>
 
-      <Table>
-        <TableHeader><TableRow><TableHead>Titre</TableHead><TableHead>Statut</TableHead><TableHead>Actions</TableHead></TableRow></TableHeader>
-        <TableBody>
+      {rows.length === 0 ? (
+        <div className="adm-empty">
+          <span className="e-emo">{current.icon}</span>
+          Aucun contenu dans « {current.label} » pour le moment.
+        </div>
+      ) : (
+        <div className="adm-rows">
           {rows.map((row) => (
-            <TableRow key={row.id}>
-              <TableCell>{row.label}</TableCell>
-              <TableCell><Badge variant={row.status === "published" ? "default" : "secondary"}>{row.status}</Badge></TableCell>
-              <TableCell style={{ display: "flex", gap: 8 }}>
-                <Button size="sm" variant="outline" onClick={() => setEditing({ open: true, row: fullRow(row.id) })}>Éditer</Button>
-                <Button size="sm" variant="outline" onClick={() => mut.setStatus.mutate({ id: row.id, status: row.status === "published" ? "draft" : "published" })}>
+            <div key={row.id} className="adm-row">
+              <span className="r-title">{row.label}</span>
+              <span className={`adm-status ${row.status === "published" ? "is-published" : "is-draft"}`}>
+                {row.status === "published" ? "publié" : "brouillon"}
+              </span>
+              <div className="r-actions">
+                <button className="adm-btn adm-btn--ghost adm-btn--sm" onClick={() => setEditing({ open: true, row: fullRow(row.id) })}>Éditer</button>
+                <button
+                  className={`adm-btn adm-btn--sm ${row.status === "published" ? "adm-btn--ghost" : "adm-btn--pres"}`}
+                  onClick={() => mut.setStatus.mutate({ id: row.id, status: row.status === "published" ? "draft" : "published" })}
+                >
                   {row.status === "published" ? "Dépublier" : "Publier"}
-                </Button>
+                </button>
                 <AlertDialog>
-                  <AlertDialogTrigger asChild><Button size="sm" variant="destructive">Suppr.</Button></AlertDialogTrigger>
+                  <AlertDialogTrigger asChild><button className="adm-btn adm-btn--danger adm-btn--sm">Suppr.</button></AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader><AlertDialogTitle>Supprimer ?</AlertDialogTitle><AlertDialogDescription>Action irréversible.</AlertDialogDescription></AlertDialogHeader>
                     <AlertDialogFooter>
@@ -80,11 +93,11 @@ export const ContentTab = () => {
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
-              </TableCell>
-            </TableRow>
+              </div>
+            </div>
           ))}
-        </TableBody>
-      </Table>
+        </div>
+      )}
 
       {editing.open && res === "roadmap_items" && (
         <RoadmapEditor
