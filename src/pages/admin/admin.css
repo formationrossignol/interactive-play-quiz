@@ -194,6 +194,73 @@
 .adm-tbl tbody tr:hover td { background: var(--ap-paper-2); }
 .adm-mono { font-family: var(--ap-font-mono, monospace); font-size: 12.5px; color: var(--ap-muted); }
 
+/* ── Roadmap kanban board (public-form editing) ── */
+.adm-board { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; align-items: start; }
+.adm-bcol { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.adm-bcol-head {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--disp); font-weight: 600; font-size: 13.5px;
+  padding: 9px 13px; border-radius: 13px; border: 2px solid var(--ap-line-2);
+  background: var(--ap-paper-2); color: var(--ap-muted);
+}
+.adm-bcol-head .cnt {
+  margin-left: auto; font-family: var(--body); font-weight: 900; font-size: 11px;
+  min-width: 20px; text-align: center; padding: 1px 7px; border-radius: 999px;
+  background: rgba(0,0,0,.06);
+}
+.dark .adm-bcol-head .cnt { background: rgba(255,255,255,.12); }
+.adm-bcol.col-planned .adm-bcol-head { background: var(--ap-poll-soft); border-color: var(--ap-poll); color: var(--ap-poll-deep); }
+.adm-bcol.col-dev     .adm-bcol-head { background: var(--ap-flash-soft); border-color: var(--ap-flash); color: var(--ap-flash-deep); }
+.adm-bcol.col-shipped .adm-bcol-head { background: var(--ap-pres-soft); border-color: var(--ap-pres); color: var(--ap-pres-deep); }
+.dark .adm-bcol.col-planned .adm-bcol-head { color: var(--ap-poll); }
+.dark .adm-bcol.col-dev     .adm-bcol-head { color: var(--ap-flash); }
+.dark .adm-bcol.col-shipped .adm-bcol-head { color: var(--ap-pres); }
+
+.adm-bcard {
+  position: relative; background: var(--ap-card); border: 2px solid var(--ap-line);
+  border-radius: 15px; padding: 12px 13px; box-shadow: var(--ap-shadow-soft);
+  transition: transform .1s, box-shadow .12s, border-color .12s;
+}
+.adm-bcard:hover { transform: translateY(-2px); box-shadow: var(--ap-shadow-float); border-color: var(--ap-line-2); }
+.adm-bcard.is-draft { border-style: dashed; opacity: .82; }
+.adm-bcard .bc-top { display: flex; align-items: center; gap: 7px; margin-bottom: 7px; }
+.adm-bcard .bc-cat {
+  font-weight: 900; font-size: 10px; letter-spacing: .5px; text-transform: uppercase;
+  padding: 2px 8px; border-radius: 999px; background: var(--ap-brand-soft); color: var(--ap-brand-deep);
+}
+.dark .adm-bcard .bc-cat { color: var(--ap-brand); }
+.adm-bcard .bc-votes { margin-left: auto; font-weight: 900; font-size: 11px; color: var(--ap-muted); }
+.adm-bcard b { display: block; font-size: 14px; line-height: 1.25; }
+.adm-bcard small { display: block; color: var(--ap-muted); font-weight: 700; font-size: 12px; line-height: 1.4; margin-top: 3px; }
+.adm-bcard .bc-flags { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 8px; }
+.adm-bcard .bc-flag { font-size: 10px; font-weight: 900; padding: 2px 7px; border-radius: 999px; background: var(--ap-paper-2); color: var(--ap-muted); }
+.adm-bcard .bc-actions { display: flex; gap: 5px; margin-top: 11px; padding-top: 10px; border-top: 1px solid var(--ap-line); }
+.adm-iconbtn {
+  flex: 1; display: grid; place-items: center; gap: 3px; cursor: pointer;
+  font-family: var(--body); font-weight: 800; font-size: 11px; padding: 6px 4px;
+  border-radius: 9px; border: 2px solid var(--ap-line); background: var(--ap-paper); color: var(--ap-ink);
+  transition: background .1s, border-color .1s, color .1s;
+}
+.adm-iconbtn:hover { background: var(--ap-paper-2); border-color: var(--ap-line-2); }
+.adm-iconbtn.pub:hover { border-color: var(--ap-pres); color: var(--ap-pres-deep); }
+.adm-iconbtn.del:hover { border-color: var(--ap-quiz); color: var(--ap-quiz-deep); }
+.dark .adm-iconbtn.pub:hover { color: var(--ap-pres); }
+.dark .adm-iconbtn.del:hover { color: var(--ap-quiz); }
+.adm-bcol-add {
+  display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer;
+  font-family: var(--disp); font-weight: 600; font-size: 13px; color: var(--ap-muted);
+  padding: 11px; border-radius: 13px; border: 2px dashed var(--ap-line-2); background: transparent;
+  transition: color .12s, border-color .12s, background .12s;
+}
+.adm-bcol-add:hover { color: var(--ap-brand); border-color: var(--ap-brand); background: var(--ap-brand-soft); }
+
+@media (max-width: 900px) {
+  .adm-board { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 560px) {
+  .adm-board { grid-template-columns: 1fr; }
+}
+
 /* ── Empty state ── */
 .adm-empty {
   display: flex; flex-direction: column; align-items: center; gap: 6px;

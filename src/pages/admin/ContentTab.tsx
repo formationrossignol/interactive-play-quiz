@@ -4,6 +4,8 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useAdminRoadmap, useAdminGuides, useAdminFaq, useAdminReleases, useContentMutations } from "@/lib/pages/adminHooks";
+import type { RoadmapAdminRow, RoadmapCol } from "@/lib/pages/types";
+import { RoadmapBoard } from "./RoadmapBoard";
 import { RoadmapEditor } from "./editors/RoadmapEditor";
 import { GuideEditor } from "./editors/GuideEditor";
 import { FaqEditor } from "./editors/FaqEditor";
@@ -59,10 +61,20 @@ export const ContentTab = () => {
             </button>
           ))}
         </div>
-        <button className="adm-btn" onClick={() => setEditing({ open: true, row: undefined })}>+ Nouveau</button>
+        {res !== "roadmap_items" && (
+          <button className="adm-btn" onClick={() => setEditing({ open: true, row: undefined })}>+ Nouveau</button>
+        )}
       </div>
 
-      {rows.length === 0 ? (
+      {res === "roadmap_items" ? (
+        <RoadmapBoard
+          rows={(roadmap.data ?? []) as RoadmapAdminRow[]}
+          onEdit={(row) => setEditing({ open: true, row })}
+          onNew={(col: RoadmapCol) => setEditing({ open: true, row: { col } })}
+          onToggleStatus={(row) => mut.setStatus.mutate({ id: row.id, status: row.status === "published" ? "draft" : "published" })}
+          onDelete={(id) => mut.remove.mutate(id)}
+        />
+      ) : rows.length === 0 ? (
         <div className="adm-empty">
           <span className="e-emo">{current.icon}</span>
           Aucun contenu dans « {current.label} » pour le moment.
