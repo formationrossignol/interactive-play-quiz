@@ -31,6 +31,7 @@ export interface RoadmapCard {
   cat: string;
   locked: boolean;
   beta: boolean;
+  voted: boolean;
 }
 export interface ShippedCard {
   id: string;
@@ -133,4 +134,41 @@ export interface Review {
   av: string;
   name: string;
   role: string;
+}
+
+// ── Interactions (SP2) ──────────────────────────────────────────────────────
+export type ReportType = 'bug' | 'question' | 'billing';
+export type ReportSeverity = 1 | 2 | 3;
+export type ReportStatus = 'open' | 'in_progress' | 'waiting' | 'resolved';
+
+export interface ReportRow {
+  id: string;
+  type: ReportType;
+  severity: ReportSeverity;
+  title: string;
+  body: string;
+  status: ReportStatus;
+  created_at: string;
+}
+// Shape the Report page renders in "Mes tickets".
+export interface MyReport {
+  id: string;
+  shortId: string;   // "#" + first 4 hex of uuid
+  title: string;
+  meta: string;      // e.g. "Bug · 14 juil. 2026"
+  statusClass: string;
+  statusLabel: string;
+}
+
+export interface NewReport {
+  type: ReportType;
+  severity: ReportSeverity;
+  title: string;
+  body: string;
+}
+export interface NewReview {
+  persona: ReviewPersona;
+  stars: number;
+  text: string;
+  authorRole: string;
 }
