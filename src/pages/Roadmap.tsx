@@ -5,6 +5,8 @@ import { Footer } from "@/components/Footer";
 import { useSEO } from "@/hooks/useSEO";
 import { ChevronUp } from "lucide-react";
 import { useRoadmap } from "@/lib/pages/hooks";
+import { useVote, useSubmitIdea } from "@/lib/pages/interactionHooks";
+import { requireAuth } from "@/lib/pages/requireAuth";
 import type { RoadmapCard } from "@/lib/pages/types";
 import "./roadmap-pages.css";
 
@@ -27,9 +29,14 @@ const COLS: { key: 'idea' | 'planned' | 'dev'; head: string; headStyle: React.CS
 const Roadmap = () => {
   const navigate = useNavigate();
   const [filter, setFilter] = useState<Cat>("all");
-  const { data: view, isLoading } = useRoadmap();
-  const [voted, setVoted] = useState<Record<string, boolean>>({});
-  const [remaining, setRemaining] = useState(1);
+  const { data: roadmap, isLoading } = useRoadmap();
+  const view = roadmap?.view;
+  const remaining = roadmap?.remaining ?? 3;
+  const vote = useVote();
+  const submitIdea = useSubmitIdea();
+  const [ideaText, setIdeaText] = useState("");
+  const [ideaSent, setIdeaSent] = useState(false);
+  const usedDots = 3 - remaining;
   const [shake, setShake] = useState<string | null>(null);
   useSEO({
     title: "Roadmap publique",
@@ -39,18 +46,16 @@ const Roadmap = () => {
 
   const match = (cat: string) => filter === "all" || cat === filter;
 
-  const toggleVote = (id: string) => {
-    const on = !!voted[id];
-    if (!on && remaining === 0) {
-      setShake(id);
+  const onVote = (card: { id: string; voted: boolean; locked: boolean }) => {
+    if (card.locked) return;
+    if (!requireAuth(navigate)) return;
+    if (!card.voted && remaining === 0) {
+      setShake(card.id);
       setTimeout(() => setShake(null), 240);
       return;
     }
-    setVoted((v) => ({ ...v, [id]: !on }));
-    setRemaining((r) => r + (on ? 1 : -1));
+    vote.mutate({ itemId: card.id, voted: card.voted });
   };
-
-  const usedDots = 3 - remaining;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
@@ -98,15 +103,14 @@ const Roadmap = () => {
                         <span className="cnt">{cards.length}</span>
                       </div>
                       {cards.map((card: RoadmapCard) => {
-                        const on = card.locked || !!voted[card.id];
                         return (
                           <div className="card rcard" key={card.id}
                             style={col.key === "dev" ? { borderColor: "var(--ap-flash)" } : undefined}>
-                            <button className={`vote${on ? " on" : ""}`} disabled={card.locked}
-                              onClick={() => !card.locked && toggleVote(card.id)}
+                            <button className={`vote${card.locked || card.voted ? " on" : ""}`} disabled={card.locked || vote.isPending}
+                              onClick={() => onVote(card)}
                               style={shake === card.id ? { animation: "lq-shake .24s" } : undefined}>
                               <ChevronUp size={13} strokeWidth={3} />
-                              <span>{card.votes + (voted[card.id] ? 1 : 0)}</span>
+                              <span>{card.votes}</span>
                             </button>
                             <div className="rt">
                               <b>{card.title}</b>
@@ -154,9 +158,15 @@ const Roadmap = () => {
           <div className="card submit-idea">
             <div>
               <h3 style={{ fontSize: "16px", marginBottom: "4px" }}>Une idée qui n'est pas dans la liste ?</h3>
-              <input placeholder="Décrivez-la en une phrase… on vérifie qu'elle n'existe pas déjà" />
+              <input value={ideaText} onChange={(e) => setIdeaText(e.target.value)}
+                placeholder="Décrivez-la en une phrase… on vérifie qu'elle n'existe pas déjà" />
             </div>
-            <button className="btn" onClick={() => navigate("/contact")}>Proposer l'idée</button>
+            <button className="btn" disabled={submitIdea.isPending || !ideaText.trim()} onClick={() => {
+              if (!requireAuth(navigate)) return;
+              submitIdea.mutate(ideaText.trim(), {
+                onSuccess: () => { setIdeaText(""); setIdeaSent(true); setTimeout(() => setIdeaSent(false), 3000); },
+              });
+            }}>{ideaSent ? "Merci !" : "Proposer l'idée"}</button>
           </div>
         </div>
       </main>
