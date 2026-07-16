@@ -1,47 +1,123 @@
+import { useState } from "react";
 import { Navigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useSEO } from "@/hooks/useSEO";
 import { useIsAdmin } from "@/lib/pages/useIsAdmin";
+import {
+  useAdminRoadmap, useAdminGuides, useAdminFaq, useAdminReleases,
+  useModerationReviews, useModerationIdeas, useModerationReports, useSubscribers,
+} from "@/lib/pages/adminHooks";
 import { ContentTab } from "./ContentTab";
 import { ModerationTab } from "./ModerationTab";
 import { SubscribersTab } from "./SubscribersTab";
+import "./admin.css";
+
+type Section = "content" | "moderation" | "subscribers";
 
 const Admin = () => {
   const { isAdmin, isLoading } = useIsAdmin();
+  const [section, setSection] = useState<Section>("content");
   useSEO({ title: "Administration", description: "Gestion du contenu et modération.", path: "/admin" });
+
+  // KPI sources (react-query dedupes with the tab components' own queries).
+  const roadmap = useAdminRoadmap();
+  const guides = useAdminGuides();
+  const faq = useAdminFaq();
+  const releases = useAdminReleases();
+  const reviews = useModerationReviews();
+  const ideas = useModerationIdeas();
+  const reports = useModerationReports();
+  const subs = useSubscribers();
 
   if (isLoading) {
     return (
       <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
         <Header />
-        <main className="lq" style={{ flex: 1, display: "grid", placeItems: "center" }}>Chargement…</main>
+        <main className="adm" style={{ flex: 1 }}>
+          <div className="adm-loading"><span className="adm-spinner" /></div>
+        </main>
         <Footer />
       </div>
     );
   }
   if (!isAdmin) return <Navigate to="/" replace />;
 
+  const allContent = [
+    ...(roadmap.data ?? []), ...(guides.data ?? []),
+    ...(faq.data ?? []), ...(releases.data ?? []),
+  ];
+  const published = allContent.filter((r) => (r as { status?: string }).status === "published").length;
+  const drafts = allContent.length - published;
+  const pendingMod =
+    (reviews.list.data?.length ?? 0) + (ideas.list.data?.length ?? 0) +
+    (reports.list.data ?? []).filter((r) => r.status !== "resolved").length;
+  const subCount = subs.data?.length ?? 0;
+
+  const nav: { key: Section; icon: string; label: string; count: number; alert?: boolean }[] = [
+    { key: "content", icon: "📝", label: "Contenu", count: allContent.length },
+    { key: "moderation", icon: "🛡️", label: "Modération", count: pendingMod, alert: pendingMod > 0 },
+    { key: "subscribers", icon: "👥", label: "Abonnés", count: subCount },
+  ];
+
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
       <Header />
-      <main className="lq" style={{ flex: 1 }}>
+      <main className="adm" style={{ flex: 1 }}>
         <div className="wrap">
-          <div className="page-hero">
-            <span className="eyebrow">Administration</span>
-            <h1>Console de gestion</h1>
+          <div className="adm-top">
+            <div>
+              <span className="adm-eyebrow">Console · en ligne</span>
+              <h1>Administration</h1>
+            </div>
           </div>
-          <Tabs defaultValue="content">
-            <TabsList>
-              <TabsTrigger value="content">Contenu</TabsTrigger>
-              <TabsTrigger value="moderation">Modération</TabsTrigger>
-              <TabsTrigger value="subscribers">Abonnés</TabsTrigger>
-            </TabsList>
-            <TabsContent value="content"><ContentTab /></TabsContent>
-            <TabsContent value="moderation"><ModerationTab /></TabsContent>
-            <TabsContent value="subscribers"><SubscribersTab /></TabsContent>
-          </Tabs>
+
+          <div className="adm-kpi">
+            <div className="adm-stat acc-brand">
+              <div className="chip">🚀</div>
+              <div className="num">{published}</div>
+              <div className="lbl">Contenus publiés</div>
+            </div>
+            <div className="adm-stat acc-flash">
+              <div className="chip">✏️</div>
+              <div className="num">{drafts}</div>
+              <div className="lbl">Brouillons</div>
+            </div>
+            <div className="adm-stat acc-quiz">
+              <div className="chip">🛡️</div>
+              <div className="num">{pendingMod}</div>
+              <div className="lbl">En modération</div>
+            </div>
+            <div className="adm-stat acc-pres">
+              <div className="chip">💌</div>
+              <div className="num">{subCount}</div>
+              <div className="lbl">Abonnés changelog</div>
+            </div>
+          </div>
+
+          <div className="adm-shell">
+            <nav className="adm-rail">
+              <div className="adm-rail-label">Sections</div>
+              {nav.map((n) => (
+                <button
+                  key={n.key}
+                  className={`adm-navitem${section === n.key ? " on" : ""}`}
+                  onClick={() => setSection(n.key)}
+                  aria-current={section === n.key ? "page" : undefined}
+                >
+                  <span className="ico">{n.icon}</span>
+                  {n.label}
+                  <span className={`count${n.alert && section !== n.key ? " alert" : ""}`}>{n.count}</span>
+                </button>
+              ))}
+            </nav>
+
+            <div>
+              {section === "content" && <ContentTab />}
+              {section === "moderation" && <ModerationTab />}
+              {section === "subscribers" && <SubscribersTab />}
+            </div>
+          </div>
         </div>
       </main>
       <Footer />
