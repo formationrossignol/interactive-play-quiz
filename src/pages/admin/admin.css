@@ -53,14 +53,15 @@
 }
 .adm-navitem .ico {
   display: grid; place-items: center; width: 30px; height: 30px; border-radius: 9px;
-  background: var(--ap-paper-2); font-size: 15px; flex-shrink: 0; transition: background .12s;
+  background: var(--ap-paper-2); color: var(--ap-muted); flex-shrink: 0; transition: background .12s, color .12s;
 }
+.adm-navitem .ico svg { width: 16px; height: 16px; stroke-width: 2.25; }
 .adm-navitem:hover { background: var(--ap-paper-2); }
 .adm-navitem.on {
   background: var(--ap-brand); color: #fff;
   box-shadow: 0 4px 0 var(--ap-brand-deep); transform: translateY(-1px);
 }
-.adm-navitem.on .ico { background: rgba(255,255,255,.22); }
+.adm-navitem.on .ico { background: rgba(255,255,255,.22); color: #fff; }
 .adm-navitem .count {
   margin-left: auto; font-family: var(--body); font-weight: 900; font-size: 12px;
   min-width: 22px; text-align: center; padding: 2px 7px; border-radius: 999px;
@@ -82,8 +83,9 @@
 }
 .adm-stat .chip {
   display: grid; place-items: center; width: 34px; height: 34px; border-radius: 11px;
-  background: var(--acc-soft, var(--ap-brand-soft)); font-size: 17px; margin-bottom: 12px;
+  background: var(--acc-soft, var(--ap-brand-soft)); color: var(--acc, var(--ap-brand)); margin-bottom: 12px;
 }
+.adm-stat .chip svg { width: 17px; height: 17px; stroke-width: 2.25; }
 .adm-stat .num { font-family: var(--disp); font-weight: 600; font-size: 40px; line-height: 1; letter-spacing: -1.5px; }
 .adm-stat .lbl { font-weight: 800; font-size: 12.5px; color: var(--ap-muted); margin-top: 4px; }
 .adm-stat.acc-brand { --acc: var(--ap-brand); --acc-soft: var(--ap-brand-soft); }

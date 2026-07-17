@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { AvatarSelector } from "@/components/AvatarSelector";
-import { AlertTriangle, Loader2 } from "lucide-react";
+import { AlertTriangle, Loader2, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { normalizeControl } from "@/lib/sessionState";
@@ -162,7 +162,9 @@ const JoinQuiz = () => {
     return (
       <div style={{ minHeight: "100vh", background: "var(--ap-paper)", display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
         <div className="ap-card ap-card--floaty" style={{ maxWidth: 440, width: "100%", textAlign: "center", padding: "40px" }}>
-          <div style={{ fontSize: 60, marginBottom: 12 }}>🔒</div>
+          <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'var(--ap-brand-soft)', display: 'grid', placeItems: 'center', margin: '0 auto 16px' }}>
+            <Lock style={{ width: 32, height: 32, color: 'var(--ap-brand)' }} strokeWidth={2} />
+          </div>
           <h2 className="ap-h2" style={{ fontSize: "24px", marginBottom: "12px" }}>Salle verrouillée</h2>
           <p className="ap-muted" style={{ fontSize: "15px", marginBottom: "24px" }}>
             L'hôte a fermé l'accès à cette partie. Vous ne pouvez pas la rejoindre pour le moment.

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Navigate } from "react-router-dom";
+import { Rocket, PenLine, ShieldCheck, Mail, FileText, Users, Link2 } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { useSEO } from "@/hooks/useSEO";
@@ -55,11 +56,11 @@ const Admin = () => {
     (reports.list.data ?? []).filter((r) => r.status !== "resolved").length;
   const subCount = subs.data?.length ?? 0;
 
-  const nav: { key: Section; icon: string; label: string; count: number; alert?: boolean }[] = [
-    { key: "content", icon: "📝", label: "Contenu", count: allContent.length },
-    { key: "moderation", icon: "🛡️", label: "Modération", count: pendingMod, alert: pendingMod > 0 },
-    { key: "subscribers", icon: "👥", label: "Abonnés", count: subCount },
-    { key: "settings", icon: "🔗", label: "Réglages", count: 0 },
+  const nav: { key: Section; icon: React.ElementType; label: string; count: number; alert?: boolean }[] = [
+    { key: "content", icon: FileText, label: "Contenu", count: allContent.length },
+    { key: "moderation", icon: ShieldCheck, label: "Modération", count: pendingMod, alert: pendingMod > 0 },
+    { key: "subscribers", icon: Users, label: "Abonnés", count: subCount },
+    { key: "settings", icon: Link2, label: "Réglages", count: 0 },
   ];
 
   return (
@@ -76,22 +77,22 @@ const Admin = () => {
 
           <div className="adm-kpi">
             <div className="adm-stat acc-brand">
-              <div className="chip">🚀</div>
+              <div className="chip"><Rocket /></div>
               <div className="num">{published}</div>
               <div className="lbl">Contenus publiés</div>
             </div>
             <div className="adm-stat acc-flash">
-              <div className="chip">✏️</div>
+              <div className="chip"><PenLine /></div>
               <div className="num">{drafts}</div>
               <div className="lbl">Brouillons</div>
             </div>
             <div className="adm-stat acc-quiz">
-              <div className="chip">🛡️</div>
+              <div className="chip"><ShieldCheck /></div>
               <div className="num">{pendingMod}</div>
               <div className="lbl">En modération</div>
             </div>
             <div className="adm-stat acc-pres">
-              <div className="chip">💌</div>
+              <div className="chip"><Mail /></div>
               <div className="num">{subCount}</div>
               <div className="lbl">Abonnés changelog</div>
             </div>
@@ -100,20 +101,23 @@ const Admin = () => {
           <div className="adm-shell">
             <nav className="adm-rail">
               <div className="adm-rail-label">Sections</div>
-              {nav.map((n) => (
+              {nav.map((n) => {
+                const Icon = n.icon;
+                return (
                 <button
                   key={n.key}
                   className={`adm-navitem${section === n.key ? " on" : ""}`}
                   onClick={() => setSection(n.key)}
                   aria-current={section === n.key ? "page" : undefined}
                 >
-                  <span className="ico">{n.icon}</span>
+                  <span className="ico"><Icon /></span>
                   {n.label}
                   {n.key !== "settings" && (
                     <span className={`count${n.alert && section !== n.key ? " alert" : ""}`}>{n.count}</span>
                   )}
                 </button>
-              ))}
+                );
+              })}
             </nav>
 
             <div>
