@@ -107,10 +107,11 @@ export const saveQuiz = (
   if (!user) throw new Error('User not authenticated');
 
   const type = quiz.type || 'quiz';
-  const cap = CONTENT_CAPS[getPlan(user)][type as ContentKind];
+  const plan = getPlan(user);
+  const cap = CONTENT_CAPS[plan][type as ContentKind];
   if (cap !== null) {
     const used = getUserQuizzes(user.id).filter((q) => q.type === type).length;
-    if (used >= cap) throw new PlanLimitError(type as ContentKind, cap);
+    if (used >= cap) throw new PlanLimitError(type as ContentKind, cap, plan);
   }
 
   const newQuiz: SavedQuiz = {
@@ -252,10 +253,11 @@ export const duplicateQuiz = (id: string): SavedQuiz | null => {
   const original = getQuizById(id);
   if (!original || original.userId !== user.id) return null;
 
-  const cap = CONTENT_CAPS[getPlan(user)][original.type as ContentKind];
+  const plan = getPlan(user);
+  const cap = CONTENT_CAPS[plan][original.type as ContentKind];
   if (cap !== null) {
     const used = getUserQuizzes(user.id).filter((q) => q.type === original.type).length;
-    if (used >= cap) throw new PlanLimitError(original.type as ContentKind, cap);
+    if (used >= cap) throw new PlanLimitError(original.type as ContentKind, cap, plan);
   }
 
   const existing = new Set(getSavedQuizzes().map((q) => q.id));
