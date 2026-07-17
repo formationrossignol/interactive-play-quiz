@@ -1,4 +1,5 @@
 @import "./arcade-pop.css";
+@import "./theme-thales.css";
 
 @tailwind base;
 @tailwind components;
@@ -88,6 +89,90 @@
     --sidebar-accent: 257 35% 14%;
     --sidebar-accent-foreground: 256 100% 96%;
     --sidebar-border: 256 34% 25%;
+  }
+
+  /* Thème « Thales » — miroir des tokens --ap-* de theme-thales.css
+     pour les composants shadcn. Se combine avec .dark ci-dessous. */
+  :root[data-theme="thales"] {
+    --background: 228 33% 97%;       /* --ap-paper   #f5f6fa */
+    --foreground: 236 54% 10%;       /* --ap-ink     #0c0d29 */
+
+    --card: 0 0% 100%;
+    --card-foreground: 236 54% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 236 54% 10%;
+
+    --primary: 234 64% 25%;          /* --ap-brand   #171f69 */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 228 33% 94%;        /* --ap-paper-2 #ebedf5 */
+    --secondary-foreground: 236 54% 10%;
+
+    --muted: 228 33% 94%;
+    --muted-foreground: 230 19% 41%; /* --ap-muted   #555c7e */
+
+    --accent: 231 47% 94%;           /* --ap-brand-soft #e9ebf7 */
+    --accent-foreground: 234 64% 25%;
+
+    --destructive: 5 55% 43%;        /* --ap-quiz    #a93a31 */
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 229 32% 91%;           /* --ap-line    #e2e5f0 */
+    --input: 229 32% 91%;
+    --ring: 187 63% 53%;             /* accent cyan  #3cc2d2 */
+
+    --radius: 0.5rem;
+
+    --success: 158 59% 30%;          /* --ap-pres    #1f7a5c */
+    --warning: 38 71% 40%;           /* --ap-flash   #b07a1e */
+    --warning-foreground: 0 0% 100%;
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 236 54% 10%;
+    --sidebar-primary: 234 64% 25%;
+    --sidebar-accent: 228 33% 94%;
+    --sidebar-accent-foreground: 236 54% 10%;
+    --sidebar-border: 229 32% 91%;
+    --sidebar-ring: 187 63% 53%;
+
+    --quiz-accent:      5 55% 43%;   /* #a93a31 */
+    --poll-accent:      187 63% 53%; /* #3cc2d2 */
+    --flashcard-accent: 38 71% 40%;  /* #b07a1e */
+    --slide-accent:     158 59% 30%; /* #1f7a5c */
+  }
+
+  .dark[data-theme="thales"] {
+    --background: 236 54% 10%;       /* --ap-paper   #0c0d29 */
+    --foreground: 231 100% 98%;      /* --ap-ink     #f4f6ff */
+
+    --card: 235 51% 18%;             /* --ap-card    #171b47 */
+    --card-foreground: 231 100% 98%;
+
+    --popover: 235 51% 18%;
+    --popover-foreground: 231 100% 98%;
+
+    --primary: 231 64% 61%;          /* --ap-brand   #5a68db */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 235 53% 15%;        /* --ap-paper-2 #12153a */
+    --secondary-foreground: 231 100% 98%;
+
+    --muted: 235 53% 15%;
+    --muted-foreground: 231 34% 71%; /* --ap-muted   #9aa2ce */
+
+    --accent: 232 49% 22%;           /* --ap-brand-soft #1b2153 */
+    --accent-foreground: 231 80% 81%;
+
+    --border: 234 46% 27%;           /* --ap-line    #262c66 */
+    --input: 234 46% 27%;
+    --ring: 187 63% 53%;
+
+    --sidebar-background: 235 51% 18%;
+    --sidebar-foreground: 231 100% 98%;
+    --sidebar-accent: 235 53% 15%;
+    --sidebar-accent-foreground: 231 100% 98%;
+    --sidebar-border: 234 46% 27%;
   }
 
   * {

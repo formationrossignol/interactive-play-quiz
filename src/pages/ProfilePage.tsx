@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getCurrentUser, updateProfile, User as AuthUser, type Theme, type Language, type Plan } from "@/lib/auth";
 import { getUserQuizzes } from "@/lib/quizStorage";
-import { setLanguage as setI18nLanguage, t } from "@/lib/i18n";
+import { setLanguage as setI18nLanguage, getLanguage, t } from "@/lib/i18n";
+import { SITE_THEMES, applySiteTheme, normalizeSiteTheme, type SiteTheme } from "@/lib/siteTheme";
 import { Header } from "@/components/Header";
 import { SecuritySection } from "@/components/SecuritySection";
 import { Save, Trophy, BookOpen, Clock, Sun, Moon, Zap, Building2, User } from "lucide-react";
@@ -84,6 +85,7 @@ const ProfilePage = () => {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [theme, setTheme] = useState<Theme>("light");
+  const [siteTheme, setSiteTheme] = useState<SiteTheme>("arcade");
   const [language, setLanguage] = useState<Language>("en");
   const [plan, setPlan] = useState<Plan>("perso");
   const [stats, setStats] = useState({ totalQuizzes: 0, publicQuizzes: 0, totalQuestions: 0 });
@@ -95,6 +97,7 @@ const ProfilePage = () => {
     setUsername(currentUser.username);
     setEmail(currentUser.email);
     setTheme(currentUser.theme || "light");
+    setSiteTheme(normalizeSiteTheme(currentUser.siteTheme));
     setLanguage(currentUser.language || "en");
     setPlan(currentUser.plan || "perso");
     const userQuizzes = getUserQuizzes(currentUser.id).filter((q) => q.type === "quiz");
@@ -108,11 +111,12 @@ const ProfilePage = () => {
   const handleSave = async () => {
     if (!user) return;
     if (!username.trim()) { toast.error(t("usernameRequired")); return; }
-    const updatedUser = await updateProfile({ username: username.trim(), theme, language });
+    const updatedUser = await updateProfile({ username: username.trim(), theme, siteTheme, language });
     if (!updatedUser) { toast.error(t("loginError")); return; }
     setUser(updatedUser);
     setI18nLanguage(language);
     document.documentElement.classList.toggle("dark", theme === "dark");
+    applySiteTheme(siteTheme);
     toast.success(t("profileUpdated"));
     setTimeout(() => window.location.reload(), 500);
   };
@@ -271,6 +275,62 @@ const ProfilePage = () => {
           <div className="ap-card ap-card--floaty" style={{ padding: "28px 32px" }}>
             <h2 className="ap-h3" style={{ marginBottom: "20px" }}>{t("preferences")}</h2>
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div>
+                <label style={labelStyle}>{t("siteTheme")}</label>
+                <div role="radiogroup" aria-label={t("siteTheme")} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: "10px", marginTop: "8px" }}>
+                  {SITE_THEMES.map((def) => {
+                    const selected = siteTheme === def.id;
+                    return (
+                      <button
+                        key={def.id}
+                        type="button"
+                        role="radio"
+                        aria-checked={selected}
+                        onClick={() => {
+                          setSiteTheme(def.id);
+                          // Aperçu instantané — persisté définitivement au clic sur Enregistrer
+                          applySiteTheme(def.id);
+                        }}
+                        style={{
+                          display: "flex", alignItems: "center", gap: "12px", textAlign: "left",
+                          cursor: "pointer", padding: "12px 14px",
+                          background: selected ? "var(--ap-brand-soft)" : "var(--ap-card)",
+                          border: `2px solid ${selected ? "var(--ap-brand)" : "var(--ap-line)"}`,
+                          borderRadius: "var(--ap-r-md)",
+                          transition: "border-color .12s, background .12s",
+                        }}
+                      >
+                        <span
+                          aria-hidden="true"
+                          style={{
+                            width: 42, height: 42, borderRadius: 10, flexShrink: 0,
+                            display: "grid", placeItems: "center",
+                            fontFamily: def.previewFont, fontWeight: 600, fontSize: 17,
+                            color: "#fff", background: def.colors[0],
+                          }}
+                        >
+                          Aa
+                        </span>
+                        <span style={{ minWidth: 0 }}>
+                          <span style={{ display: "block", fontWeight: 800, fontSize: "14px", color: "var(--ap-ink)" }}>
+                            {def.name}
+                          </span>
+                          <span className="ap-muted" style={{ display: "block", fontSize: "12px", lineHeight: 1.3, margin: "2px 0 6px" }}>
+                            {def.tagline[getLanguage()]}
+                          </span>
+                          <span aria-hidden="true" style={{ display: "flex", gap: "4px" }}>
+                            {def.colors.map((c) => (
+                              <span key={c} style={{ width: 12, height: 12, borderRadius: "50%", background: c, border: "1px solid var(--ap-line-2)" }} />
+                            ))}
+                          </span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="ap-muted" style={{ fontSize: "11px", marginTop: "6px" }}>{t("siteThemeHint")}</p>
+              </div>
+
               <div>
                 <label style={labelStyle}>{t("theme")}</label>
                 <Select

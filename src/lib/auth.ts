@@ -2,6 +2,7 @@ import type { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 import { migrateLegacyLocalData } from './authMigration';
 import { migrateLocalToSupabase } from './content/migrateLocalToSupabase';
+import type { SiteTheme } from './siteTheme';
 
 export type Theme = 'light' | 'dark';
 export type Language = 'en' | 'fr';
@@ -13,6 +14,8 @@ export interface User {
   username: string;
   createdAt: string;
   theme?: Theme;
+  /** Visual skin of the whole site (Arcade Pop, Thales…). */
+  siteTheme?: SiteTheme;
   language?: Language;
   plan?: Plan;
 }
@@ -25,6 +28,7 @@ const mapUser = (u: SupabaseUser): User => ({
   username: (u.user_metadata?.username as string) || (u.email ?? '').split('@')[0],
   createdAt: u.created_at,
   theme: u.user_metadata?.theme as Theme | undefined,
+  siteTheme: u.user_metadata?.siteTheme as SiteTheme | undefined,
   language: u.user_metadata?.language as Language | undefined,
   plan: u.user_metadata?.plan as Plan | undefined,
 });
@@ -186,7 +190,7 @@ export const changePassword = async (
 /* ── Profile metadata ─────────────────────────────────────────── */
 
 export const updateProfile = async (
-  patch: Partial<Pick<User, 'username' | 'theme' | 'language' | 'plan'>>
+  patch: Partial<Pick<User, 'username' | 'theme' | 'siteTheme' | 'language' | 'plan'>>
 ): Promise<User | null> => {
   const { data, error } = await supabase.auth.updateUser({ data: patch });
   if (error || !data.user) return null;
