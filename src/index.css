@@ -1,6 +1,6 @@
 @import "./arcade-pop.css";
 @import "./theme-thales.css";
-@import "./theme-ynov.css";
+@import "./theme-innov.css";
 
 @tailwind base;
 @tailwind components;
@@ -176,9 +176,9 @@
     --sidebar-border: 234 46% 27%;
   }
 
-  /* Thème « Ynov Campus » — miroir des tokens --ap-* de theme-ynov.css
+  /* Thème « Innov Campus » — miroir des tokens --ap-* de theme-innov.css
      pour les composants shadcn. Se combine avec .dark ci-dessous. */
-  :root[data-theme="ynov"] {
+  :root[data-theme="innov"] {
     --background: 0 0% 100%;         /* --ap-paper   #ffffff */
     --foreground: 0 0% 0%;           /* --ap-ink     #000000 */
 
@@ -227,7 +227,7 @@
     --slide-accent:     145 80% 35%; /* #12a150 */
   }
 
-  .dark[data-theme="ynov"] {
+  .dark[data-theme="innov"] {
     --background: 0 0% 4%;           /* --ap-paper   #0a0a0a */
     --foreground: 0 0% 100%;         /* --ap-ink     #ffffff */
 

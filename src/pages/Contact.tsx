@@ -57,7 +57,7 @@ const Contact = () => {
   const navigate = useNavigate();
   useSEO({
     title: "Contact",
-    description: "Contactez l'équipe Ludiq pour toute question sur nos quiz interactifs, sondages live et outils de formation. Réponse sous 24h.",
+    description: "Contactez l'équipe Brivia pour toute question sur nos quiz interactifs, sondages live et outils de formation. Réponse sous 24h.",
     path: "/contact",
   });
   const [formData, setFormData] = useState({ name: "", email: "", subject: "", message: "" });

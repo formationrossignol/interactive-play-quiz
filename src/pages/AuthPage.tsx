@@ -4,6 +4,8 @@ import { useSEO } from "@/hooks/useSEO";
 import { login, register, requestPasswordReset, verifyMfaLogin, getCurrentUser } from "@/lib/auth";
 import { toast } from "sonner";
 import { t } from "@/lib/i18n";
+import { BrandMonogram } from "@/components/BrandMonogram";
+import { BrandWordmark } from "@/components/BrandWordmark";
 
 type View = "login" | "register" | "mfa" | "forgot" | "confirm-email";
 
@@ -506,9 +508,9 @@ const AuthPage = () => {
           onClick={() => navigate("/")}
         >
           <span style={{ width: 46, height: 46, borderRadius: "14px", background: "rgba(255,255,255,.16)", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M13 2L4.5 13.5H11l-1 8.5L19.5 10H13l0-8z" /></svg>
+            <BrandMonogram size={24} diamondColor="#b4a9ff" />
           </span>
-          <span style={{ fontFamily: "var(--ap-font-display)", fontWeight: 600, fontSize: "26px", letterSpacing: "-.5px" }}>Ludiq</span>
+          <BrandWordmark size={26} color="#fff" />
         </div>
 
         <h1 style={{ fontFamily: "var(--ap-font-display)", fontWeight: 600, fontSize: "clamp(30px, 3.4vw, 42px)", lineHeight: 1.08, letterSpacing: "-1px", margin: "0 0 34px" }}>
@@ -529,7 +531,7 @@ const AuthPage = () => {
         {/* Testimonial */}
         <div style={{ background: "rgba(255,255,255,.10)", border: "1px solid rgba(255,255,255,.18)", borderRadius: "18px", padding: "20px 22px", backdropFilter: "blur(4px)" }}>
           <p style={{ margin: "0 0 12px", fontSize: "14.5px", fontWeight: 700, lineHeight: 1.5, color: "#fff" }}>
-            « Mes M2 réclament le quiz Ludiq à chaque fin de module. Le taux de réussite à l'examen a gagné 12 points. »
+            « Mes M2 réclament le quiz Brivia à chaque fin de module. Le taux de réussite à l'examen a gagné 12 points. »
           </p>
           <p style={{ margin: 0, fontSize: "12.5px", fontWeight: 800, color: "rgba(255,255,255,.75)" }}>
             — Formatrice cloud &amp; DevOps, Toulouse

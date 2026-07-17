@@ -5,6 +5,7 @@ import { LogOut, Lightbulb, PencilLine, Flag } from "lucide-react";
 import { MultiStepProgress } from "@/components/MultiStepProgress";
 import { QRCodeGenerator } from "@/components/QRCodeGenerator";
 import { AvatarDisplay } from "@/components/BetterAvatars";
+import { BrandMonogram } from "@/components/BrandMonogram";
 import type { SavedQuiz } from "@/lib/quizStorage";
 import {
   ensureSessionState,
@@ -216,9 +217,9 @@ export const PollSession = ({ poll }: PollSessionProps) => {
         <div style={topbarSt}>
           <span style={{ display: "flex", alignItems: "center", gap: 9 }}>
             <span style={logoSt} aria-hidden="true">
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="#fff"><path d="M13 2 4.5 13.5H11l-1 8.5L19.5 10H13l0-8z"/></svg>
+              <BrandMonogram size={16} />
             </span>
-            <span style={{ fontFamily: "var(--ap-font-display)", fontWeight: 600, fontSize: 19 }}>Ludiq</span>
+            <span style={{ fontFamily: "'Sora Variable', 'Sora', system-ui, sans-serif", fontWeight: 600, fontSize: 19, letterSpacing: "-0.035em" }}>brivia</span>
           </span>
           <span style={{ fontWeight: 800, fontSize: 15, color: "var(--ap-muted)" }}>
             · Sondage : <b style={{ color: "var(--ap-ink)" }}>{poll.title}</b>

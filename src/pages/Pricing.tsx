@@ -9,7 +9,7 @@ const Pricing = () => {
   const navigate = useNavigate();
   useSEO({
     title: "Tarifs",
-    description: "Offre gratuite jusqu'à 20 participants, plan Pro à 19 €/mois jusqu'à 200 participants, et formule Entreprise sur devis. Choisissez la formule Ludiq adaptée à votre équipe.",
+    description: "Offre gratuite jusqu'à 20 participants, plan Pro à 19 €/mois jusqu'à 200 participants, et formule Entreprise sur devis. Choisissez la formule Brivia adaptée à votre équipe.",
     path: "/pricing",
   });
 

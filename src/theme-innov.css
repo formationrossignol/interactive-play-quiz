@@ -1,9 +1,9 @@
 /* ============================================================
-   Ludiq · Thème « Ynov Campus » — noir / blanc / turquoise
+   Brivia · Thème « Innov Campus » — noir / blanc / turquoise
    ------------------------------------------------------------
-   Activé par data-theme="ynov" sur <html> (réglage du profil).
+   Activé par data-theme="innov" sur <html> (réglage du profil).
    Même grammaire de tokens et de classes que Arcade Pop, langage
-   graphique inspiré de l'identité Ynov Campus :
+   graphique inspiré de l'identité Innov Campus :
 
      · noir principal #000000, blanc #FFFFFF, turquoise #00B8A9
      · sans-serif géométrique (Montserrat, repli Aptos / Arial)
@@ -26,7 +26,7 @@
 /* ============================================================
    1. TOKENS
    ============================================================ */
-:root[data-theme="ynov"] {
+:root[data-theme="innov"] {
   /* Couleurs par TYPE de contenu — aplats francs, énergie campus */
   --ap-quiz:        #e63946;  --ap-quiz-deep:   #b22633;  --ap-quiz-soft:  #fdecee;
   --ap-pres:        #12a150;  --ap-pres-deep:   #0c7038;  --ap-pres-soft:  #e7f6ee;
@@ -67,8 +67,8 @@
   --ap-border-w: 1px;
 }
 
-/* ── Variante sombre — noir Ynov, turquoise incandescent ── */
-.dark[data-theme="ynov"] {
+/* ── Variante sombre — noir Innov, turquoise incandescent ── */
+.dark[data-theme="innov"] {
   --ap-paper:       #0a0a0a;
   --ap-paper-2:     #141414;
   --ap-card:        #161616;
@@ -92,51 +92,51 @@
 }
 
 /* Textes « deep » sur fonds soft, version sombre */
-.dark[data-theme="ynov"] .ap-badge--quiz  { color: #f2848c; }
-.dark[data-theme="ynov"] .ap-badge--pres  { color: #5ed695; }
-.dark[data-theme="ynov"] .ap-badge--poll  { color: #7fb3e8; }
-.dark[data-theme="ynov"] .ap-badge--flash { color: #ffd066; }
-.dark[data-theme="ynov"] .ap-badge--brand { color: #4fd9cc; }
+.dark[data-theme="innov"] .ap-badge--quiz  { color: #f2848c; }
+.dark[data-theme="innov"] .ap-badge--pres  { color: #5ed695; }
+.dark[data-theme="innov"] .ap-badge--poll  { color: #7fb3e8; }
+.dark[data-theme="innov"] .ap-badge--flash { color: #ffd066; }
+.dark[data-theme="innov"] .ap-badge--brand { color: #4fd9cc; }
 
 /* ============================================================
    2. FOND & SIGNALÉTIQUE GLOBALE
    ============================================================ */
 
 /* Fond uni — pas de trame de points */
-[data-theme="ynov"] .ap-app { background-image: none; }
+[data-theme="innov"] .ap-app { background-image: none; }
 
 /* Turquoise = signal interactif : focus + sélection (texte noir) */
-[data-theme="ynov"] .ap-app :focus-visible {
+[data-theme="innov"] .ap-app :focus-visible {
   outline: 3px solid #00b8a9;
   outline-offset: 2px;
   border-radius: 4px;
 }
-[data-theme="ynov"] .ap-app ::selection {
+[data-theme="innov"] .ap-app ::selection {
   background: #00b8a9;
   color: #000;
 }
 
 /* Liens nus : noir souligné turquoise, survol turquoise */
-[data-theme="ynov"] a:not([class]) {
+[data-theme="innov"] a:not([class]) {
   color: var(--ap-ink);
   text-decoration: underline;
   text-decoration-color: #00b8a9;
   text-underline-offset: 3px;
   text-decoration-thickness: 2px;
 }
-[data-theme="ynov"] a:not([class]):hover { color: #00b8a9; }
+[data-theme="innov"] a:not([class]):hover { color: #00b8a9; }
 
 /* ============================================================
    3. TYPOGRAPHIE — Montserrat dense, signatures turquoise
    ============================================================ */
-[data-theme="ynov"] .ap-display,
-[data-theme="ynov"] .ap-h1 { font-weight: 800; letter-spacing: -1px; }
-[data-theme="ynov"] .ap-h2 { font-weight: 800; letter-spacing: -.5px; }
-[data-theme="ynov"] .ap-h3 { font-weight: 700; }
-[data-theme="ynov"] .ap-lead { color: var(--ap-muted); }
+[data-theme="innov"] .ap-display,
+[data-theme="innov"] .ap-h1 { font-weight: 800; letter-spacing: -1px; }
+[data-theme="innov"] .ap-h2 { font-weight: 800; letter-spacing: -.5px; }
+[data-theme="innov"] .ap-h3 { font-weight: 700; }
+[data-theme="innov"] .ap-lead { color: var(--ap-muted); }
 
 /* Signature : les titres de page sont soulignés au marqueur turquoise */
-[data-theme="ynov"] .ap-h1 {
+[data-theme="innov"] .ap-h1 {
   text-decoration-line: underline;
   text-decoration-color: #00b8a9;
   text-decoration-thickness: 5px;
@@ -145,8 +145,8 @@
 }
 
 /* Motif : chevron « » » devant les micro-labels */
-[data-theme="ynov"] .ap-label::before,
-[data-theme="ynov"] .ap-strip-label::before {
+[data-theme="innov"] .ap-label::before,
+[data-theme="innov"] .ap-strip-label::before {
   content: "» ";
   color: #00b8a9;
   font-weight: 800;
@@ -154,10 +154,10 @@
 
 /* ============================================================
    4. BOUTONS — CTA turquoise plein, texte blanc (identité officielle
-   Ynov : bg turquoise, texte blanc, radius 0.5rem, aucune élévation —
+   Innov : bg turquoise, texte blanc, radius 0.5rem, aucune élévation —
    seules la couleur et la bordure transitionnent, jamais de lift).
    ============================================================ */
-[data-theme="ynov"] .ap-btn {
+[data-theme="innov"] .ap-btn {
   color: #fff;
   border: 1px solid var(--ap-brand);
   border-radius: var(--ap-r-md);
@@ -165,14 +165,14 @@
   box-shadow: none;
   transition: background-color .3s var(--ap-ease), border-color .3s var(--ap-ease), color .3s var(--ap-ease);
 }
-[data-theme="ynov"] .ap-btn:hover {
+[data-theme="innov"] .ap-btn:hover {
   transform: none;
   box-shadow: none;
   background: var(--ap-brand-deep);
   border-color: var(--ap-brand-deep);
   color: #fff;
 }
-[data-theme="ynov"] .ap-btn:active {
+[data-theme="innov"] .ap-btn:active {
   transform: none;
   box-shadow: none;
   background: #006b62;
@@ -180,57 +180,60 @@
   color: #fff;
 }
 /* Le site officiel n'a pas de CTA pilule : toutes les tailles restent 0.5rem. */
-[data-theme="ynov"] .ap-btn--pill { border-radius: var(--ap-r-md); }
+[data-theme="innov"] .ap-btn--pill { border-radius: var(--ap-r-md); }
 
 /* Boutons typés : aplat plein, bordure assortie, texte blanc */
-[data-theme="ynov"] .ap-btn--quiz  { border-color: var(--ap-quiz);  color: #fff; box-shadow: none; }
-[data-theme="ynov"] .ap-btn--pres  { border-color: var(--ap-pres);  color: #fff; box-shadow: none; }
-[data-theme="ynov"] .ap-btn--poll  { border-color: var(--ap-poll);  color: #fff; box-shadow: none; }
-[data-theme="ynov"] .ap-btn--flash { border-color: var(--ap-flash); color: #fff; box-shadow: none; }
-[data-theme="ynov"] .ap-btn--quiz:hover  { background: var(--ap-quiz-deep);  border-color: var(--ap-quiz-deep);  box-shadow: none; color: #fff; }
-[data-theme="ynov"] .ap-btn--pres:hover  { background: var(--ap-pres-deep);  border-color: var(--ap-pres-deep);  box-shadow: none; color: #fff; }
-[data-theme="ynov"] .ap-btn--poll:hover  { background: var(--ap-poll-deep);  border-color: var(--ap-poll-deep);  box-shadow: none; color: #fff; }
-[data-theme="ynov"] .ap-btn--flash:hover { background: var(--ap-flash-deep); border-color: var(--ap-flash-deep); box-shadow: none; color: #fff; }
-[data-theme="ynov"] .ap-btn--quiz:active,
-[data-theme="ynov"] .ap-btn--pres:active,
-[data-theme="ynov"] .ap-btn--poll:active,
-[data-theme="ynov"] .ap-btn--flash:active { box-shadow: none; color: #fff; }
+[data-theme="innov"] .ap-btn--quiz  { border-color: var(--ap-quiz);  color: #fff; box-shadow: none; }
+[data-theme="innov"] .ap-btn--pres  { border-color: var(--ap-pres);  color: #fff; box-shadow: none; }
+[data-theme="innov"] .ap-btn--poll  { border-color: var(--ap-poll);  color: #fff; box-shadow: none; }
+[data-theme="innov"] .ap-btn--flash { border-color: var(--ap-flash); color: #fff; box-shadow: none; }
+[data-theme="innov"] .ap-btn--quiz:hover  { background: var(--ap-quiz-deep);  border-color: var(--ap-quiz-deep);  box-shadow: none; color: #fff; }
+[data-theme="innov"] .ap-btn--pres:hover  { background: var(--ap-pres-deep);  border-color: var(--ap-pres-deep);  box-shadow: none; color: #fff; }
+[data-theme="innov"] .ap-btn--poll:hover  { background: var(--ap-poll-deep);  border-color: var(--ap-poll-deep);  box-shadow: none; color: #fff; }
+[data-theme="innov"] .ap-btn--flash:hover { background: var(--ap-flash-deep); border-color: var(--ap-flash-deep); box-shadow: none; color: #fff; }
+[data-theme="innov"] .ap-btn--quiz:active,
+[data-theme="innov"] .ap-btn--pres:active,
+[data-theme="innov"] .ap-btn--poll:active,
+[data-theme="innov"] .ap-btn--flash:active { box-shadow: none; color: #fff; }
 
 /* Secondaire : contour neutre au repos, liseré turquoise au survol —
    comme les CTA outline officiels ("Toutes les actualités"). Couvre aussi
    les boutons icône seule du header (même classe .ap-btn--ghost). */
-[data-theme="ynov"] .ap-btn--ghost {
+[data-theme="innov"] .ap-btn--ghost {
   background: var(--ap-card);
   color: var(--ap-ink);
   box-shadow: inset 0 0 0 1px var(--ap-line-2);
 }
-[data-theme="ynov"] .ap-btn--ghost:hover {
+[data-theme="innov"] .ap-btn--ghost:hover {
   transform: none;
   background: #fff;
   color: var(--ap-brand);
   box-shadow: inset 0 0 0 2px var(--ap-brand);
 }
-[data-theme="ynov"] .ap-btn--ghost:active {
+/* Actif : couleurs inversées (fond plein turquoise, texte blanc) — pas
+   un simple assombrissement, l'inversion est le signal officiel de
+   pression. */
+[data-theme="innov"] .ap-btn--ghost:active {
   transform: none;
-  background: var(--ap-brand-soft);
-  color: var(--ap-brand-deep);
+  background: var(--ap-brand);
+  color: #fff;
   box-shadow: inset 0 0 0 2px var(--ap-brand);
 }
 
 /* Icon-only header buttons (admin/lang/profile/logout/mobile-menu) — the
    official site fills these with the border's own color, glyph in white,
    instead of the generic outline treatment. */
-[data-theme="ynov"] .ap-btn--ghost.ap-icon-btn {
+[data-theme="innov"] .ap-btn--ghost.ap-icon-btn {
   background: var(--ap-brand);
   color: #fff;
   box-shadow: inset 0 0 0 1px var(--ap-brand);
 }
-[data-theme="ynov"] .ap-btn--ghost.ap-icon-btn:hover {
+[data-theme="innov"] .ap-btn--ghost.ap-icon-btn:hover {
   background: var(--ap-brand-deep);
   color: #fff;
   box-shadow: inset 0 0 0 1px var(--ap-brand-deep);
 }
-[data-theme="ynov"] .ap-btn--ghost.ap-icon-btn:active {
+[data-theme="innov"] .ap-btn--ghost.ap-icon-btn:active {
   background: #006b62;
   color: #fff;
   box-shadow: inset 0 0 0 1px #006b62;
@@ -239,11 +242,11 @@
 /* ============================================================
    5. CARTES — blanches, filet fin, cadre noir au survol
    ============================================================ */
-[data-theme="ynov"] .ap-card {
+[data-theme="innov"] .ap-card {
   border-width: 1px;
 }
-[data-theme="ynov"] .ap-card--floaty { border-radius: var(--ap-r-lg); }
-[data-theme="ynov"] .ap-card--hover:hover {
+[data-theme="innov"] .ap-card--floaty { border-radius: var(--ap-r-lg); }
+[data-theme="innov"] .ap-card--hover:hover {
   transform: translateY(-2px);
   border-color: var(--ap-ink);
   box-shadow: var(--ap-shadow-card);
@@ -252,63 +255,63 @@
 /* ============================================================
    6. PILLS, BADGES, EYEBROW — compacts, gras
    ============================================================ */
-[data-theme="ynov"] .ap-pill,
-[data-theme="ynov"] .ap-badge {
+[data-theme="innov"] .ap-pill,
+[data-theme="innov"] .ap-badge {
   border-radius: var(--ap-r-sm);
   font-weight: 700;
 }
-[data-theme="ynov"] .ap-eyebrow {
+[data-theme="innov"] .ap-eyebrow {
   border-radius: var(--ap-r-sm);
   background: var(--ap-ink);
   border: none;
   color: var(--ap-paper);
 }
-[data-theme="ynov"] .ap-eyebrow__dot { background: #00b8a9; }
+[data-theme="innov"] .ap-eyebrow__dot { background: #00b8a9; }
 
 /* ============================================================
    7. FORMULAIRES — filets fins, focus turquoise
    ============================================================ */
-[data-theme="ynov"] .ap-input,
-[data-theme="ynov"] .ap-textarea,
-[data-theme="ynov"] .ap-code {
+[data-theme="innov"] .ap-input,
+[data-theme="innov"] .ap-textarea,
+[data-theme="innov"] .ap-code {
   border-width: 1px;
   font-weight: 500;
 }
-[data-theme="ynov"] .ap-input::placeholder,
-[data-theme="ynov"] .ap-textarea::placeholder { color: var(--ap-line-2); }
-[data-theme="ynov"] .ap-input:focus,
-[data-theme="ynov"] .ap-textarea:focus,
-[data-theme="ynov"] .ap-code:focus {
+[data-theme="innov"] .ap-input::placeholder,
+[data-theme="innov"] .ap-textarea::placeholder { color: var(--ap-line-2); }
+[data-theme="innov"] .ap-input:focus,
+[data-theme="innov"] .ap-textarea:focus,
+[data-theme="innov"] .ap-code:focus {
   border-color: #00b8a9;
   box-shadow: 0 0 0 3px rgba(0, 184, 169, .25);
 }
-[data-theme="ynov"] .ap-dropzone {
+[data-theme="innov"] .ap-dropzone {
   border: 1px dashed var(--ap-line-2);
   background: var(--ap-paper-2);
 }
-[data-theme="ynov"] .ap-dropzone:hover {
+[data-theme="innov"] .ap-dropzone:hover {
   border-color: #00b8a9;
   background: var(--ap-card);
 }
 
 /* Segmented control : actif = bloc noir */
-[data-theme="ynov"] .ap-seg button {
+[data-theme="innov"] .ap-seg button {
   border-width: 1px;
   background: var(--ap-card);
 }
-[data-theme="ynov"] .ap-seg button.is-on {
+[data-theme="innov"] .ap-seg button.is-on {
   background: var(--ap-ink);
   border-color: var(--ap-ink);
   color: var(--ap-paper);
 }
 
 /* Interrupteur : rail neutre, turquoise à l'activation */
-[data-theme="ynov"] .ap-switch { background: var(--ap-line-2); box-shadow: none; }
-[data-theme="ynov"] .ap-switch[aria-checked="true"],
-[data-theme="ynov"] .ap-switch.is-on { background: #00b8a9; }
+[data-theme="innov"] .ap-switch { background: var(--ap-line-2); box-shadow: none; }
+[data-theme="innov"] .ap-switch[aria-checked="true"],
+[data-theme="innov"] .ap-switch.is-on { background: #00b8a9; }
 
 /* Icônes réseaux : inversion monochrome au survol */
-[data-theme="ynov"] .ap-social:hover {
+[data-theme="innov"] .ap-social:hover {
   transform: none;
   background: var(--ap-ink);
   color: var(--ap-paper);
@@ -320,69 +323,69 @@
    ============================================================ */
 /* Règle d'usage logo : monochrome noir sur fond clair (glyphe blanc
    dans la tuile), pas de rotation ludique. */
-[data-theme="ynov"] .ap-logo {
+[data-theme="innov"] .ap-logo {
   background: var(--ap-ink);
   border-radius: var(--ap-r-md);
   box-shadow: none;
   transform: none;
 }
-[data-theme="ynov"] .ap-logo:hover { transform: none; }
-.dark[data-theme="ynov"] .ap-logo { background: #00b8a9; }
-.dark[data-theme="ynov"] .ap-logo svg { fill: #000; }
+[data-theme="innov"] .ap-logo:hover { transform: none; }
+.dark[data-theme="innov"] .ap-logo { background: #00b8a9; }
+.dark[data-theme="innov"] .ap-logo svg { fill: #000; }
 
 /* Le header officiel occupe davantage l'espace horizontal : header plus
    haut, bordure fine en pied, pas de pilule de regroupement — items nus,
    largement espacés, indicateur d'état par soulignement turquoise. */
-[data-theme="ynov"] header {
+[data-theme="innov"] header {
   border-bottom: 1px solid var(--ap-line);
 }
-[data-theme="ynov"] header > div:first-child {
+[data-theme="innov"] header > div:first-child {
   padding-top: 22px;
   padding-bottom: 22px;
 }
-[data-theme="ynov"] .ap-nav-pill {
+[data-theme="innov"] .ap-nav-pill {
   background: transparent;
   border: none;
   box-shadow: none;
   padding: 0;
   gap: 34px;
 }
-[data-theme="ynov"] .ap-nav-pill__item {
+[data-theme="innov"] .ap-nav-pill__item {
   font-weight: 600;
   padding: 8px 2px;
   border-radius: 0;
   box-shadow: inset 0 -2px 0 transparent;
   transition: color .15s var(--ap-ease), box-shadow .15s var(--ap-ease);
 }
-[data-theme="ynov"] .ap-nav-pill__item:hover {
+[data-theme="innov"] .ap-nav-pill__item:hover {
   background: transparent;
   color: var(--ap-ink);
   box-shadow: inset 0 -2px 0 var(--ap-brand);
 }
-[data-theme="ynov"] .ap-nav-pill__item[aria-current="page"] {
+[data-theme="innov"] .ap-nav-pill__item[aria-current="page"] {
   background: transparent;
   color: var(--ap-ink);
   box-shadow: inset 0 -2px 0 var(--ap-brand);
 }
-/* Chevron turns turquoise while its menu is open, like the official
-   "Entreprises" dropdown arrow. */
-[data-theme="ynov"] .ap-nav-pill__item[data-state="open"] .chevron-icon {
+/* Déclencheur ouvert : barre turquoise pleine sous l'item lui-même (pas
+   sur le panneau) + chevron turquoise, comme "Entreprises" sur le site
+   officiel. Le panneau en dessous reste blanc et net, sans filet. */
+[data-theme="innov"] .ap-nav-pill__item[data-state="open"] {
+  background: transparent;
+  color: var(--ap-ink);
+  box-shadow: inset 0 -3px 0 var(--ap-brand);
+}
+[data-theme="innov"] .ap-nav-pill__item[data-state="open"] .chevron-icon {
   color: var(--ap-brand) !important;
 }
 
-/* Panneau de sous-menu : items plats, généreux, radius cohérent. Barre
-   pleine turquoise en tête, comme le mega-menu officiel (cf. "Entreprises"
-   sur ynov.com) — le panneau lui-même reste blanc, seul un filet plein
-   marque la liaison avec le déclencheur actif. */
-[data-theme="ynov"] .ap-mega-menu {
-  border-top: 3px solid var(--ap-brand) !important;
-}
-[data-theme="ynov"] [role="menu"] [role="menuitem"] {
+/* Panneau de sous-menu : items plats, généreux, radius cohérent. */
+[data-theme="innov"] [role="menu"] [role="menuitem"] {
   border-radius: var(--ap-r-sm);
 }
 /* En-tête de section (ex. « Mes créations » dans le menu mobile) :
    barre turquoise pleine dessous, comme le mega-menu officiel. */
-[data-theme="ynov"] [role="menu"] .uppercase.tracking-wide {
+[data-theme="innov"] [role="menu"] .uppercase.tracking-wide {
   border-bottom: 2px solid var(--ap-brand);
   padding-bottom: 8px !important;
   margin-bottom: 4px;
@@ -391,19 +394,19 @@
 /* ============================================================
    9. MOUVEMENT — chargeur noir / turquoise / gris
    ============================================================ */
-[data-theme="ynov"] .ap-route-loader span { background: var(--ap-ink); }
-[data-theme="ynov"] .ap-route-loader span:nth-child(2) { background: #00b8a9; }
-[data-theme="ynov"] .ap-route-loader span:nth-child(3) { background: var(--ap-line-2); }
+[data-theme="innov"] .ap-route-loader span { background: var(--ap-ink); }
+[data-theme="innov"] .ap-route-loader span:nth-child(2) { background: #00b8a9; }
+[data-theme="innov"] .ap-route-loader span:nth-child(3) { background: var(--ap-line-2); }
 
 /* ============================================================
    10. CONSOLE ADMIN — mêmes aplats que le reste du site
    ============================================================ */
-[data-theme="ynov"] .adm-btn {
+[data-theme="innov"] .adm-btn {
   border-radius: var(--ap-r-md);
   box-shadow: none;
 }
-[data-theme="ynov"] .adm-btn:hover { transform: none; box-shadow: none; filter: brightness(.94); }
-[data-theme="ynov"] .adm-btn:active { transform: none; box-shadow: none; filter: brightness(.88); }
+[data-theme="innov"] .adm-btn:hover { transform: none; box-shadow: none; filter: brightness(.94); }
+[data-theme="innov"] .adm-btn:active { transform: none; box-shadow: none; filter: brightness(.88); }
 
 /* ============================================================
    11. FOOTER — bandeau noir, quelle que soit le mode clair/sombre
@@ -411,52 +414,56 @@
    var(--ap-ink)/var(--ap-muted)/var(--ap-brand)/var(--ap-paper-2)/
    var(--ap-line) : les redéfinir ici, scopés au <footer>, suffit.
    ============================================================ */
-[data-theme="ynov"] footer {
+[data-theme="innov"] footer {
   --ap-paper-2: #0a0a0a;
   --ap-line: #2a2a2a;
   --ap-muted: #a3a3a3;
   --ap-ink: #ffffff;
   border-top: none !important;
 }
-[data-theme="ynov"] footer h3 { color: var(--ap-muted); }
+[data-theme="innov"] footer h3 { color: var(--ap-muted); }
 /* Séparateurs verticaux entre colonnes, comme le footer officiel */
-[data-theme="ynov"] footer .grid > div:not(:first-child) {
+[data-theme="innov"] footer .grid > div:not(:first-child) {
   border-left: 1px solid var(--ap-line);
   padding-left: 24px;
 }
-[data-theme="ynov"] footer .ap-logo { background: #00b8a9; }
-[data-theme="ynov"] footer .ap-logo svg { fill: #000; }
+[data-theme="innov"] footer .ap-logo { background: #00b8a9; }
+[data-theme="innov"] footer .ap-logo svg { fill: #000; }
 /* Icônes réseaux : cercle plein blanc, glyphe noir — comme ynov.com */
-[data-theme="ynov"] footer .ap-social {
+[data-theme="innov"] footer .ap-social {
   background: #fff;
   border-color: #fff;
   color: #000;
   border-radius: 50%;
 }
-[data-theme="ynov"] footer .ap-social:hover {
+[data-theme="innov"] footer .ap-social:hover {
   background: #00b8a9;
   border-color: #00b8a9;
   color: #000;
 }
 
 /* ============================================================
-   11b. HERO — fond vert clair, comme les bannières de page
-   ynov.com (ex. "Téléchargement de brochures").
+   11b. HERO — fond vert clair pleine largeur, comme les bannières
+   de page ynov.com (ex. "Téléchargement de brochures"). Uniquement
+   sur les pages secondaires (.page-hero) : PAS sur l'accueil
+   (.hero-grid n'est volontairement pas ciblé ici). Le texte garde
+   sa position/largeur actuelle — seul un ::before en pleine largeur
+   du viewport porte la couleur, en arrière-plan.
    ============================================================ */
-[data-theme="ynov"] .hero-grid {
-  background: var(--ap-brand-soft);
-  border-radius: var(--ap-r-lg);
-  padding-left: 40px;
-  padding-right: 40px;
-  margin-left: -40px;
-  margin-right: -40px;
+[data-theme="innov"] .lq .page-hero {
+  position: relative;
+  z-index: 0;
 }
-[data-theme="ynov"] .lq .page-hero {
+[data-theme="innov"] .lq .page-hero::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 100vw;
+  margin-left: -50vw;
   background: var(--ap-brand-soft);
-  border-radius: var(--ap-r-lg);
-  max-width: none;
-  padding: 48px 32px;
-  margin: 0 0 30px;
+  z-index: -1;
 }
 
 /* ============================================================
@@ -467,7 +474,7 @@
    nette, seul le contenu de page en dessous se grise — comme sur
    ynov.com, où le bandeau de navigation ne s'assombrit jamais.
    ============================================================ */
-[data-theme="ynov"] .ap-menu-scrim.is-open {
+[data-theme="innov"] .ap-menu-scrim.is-open {
   top: var(--app-header-height, 64px);
   background: rgba(10, 10, 10, .45);
   pointer-events: auto;

@@ -30,9 +30,9 @@ export const STATIC_PAGE_DEFAULTS: Record<StaticSlug, StaticPage> = {
   },
   about: {
     slug: 'about',
-    title: 'Ludiq',
-    subtitle: 'Ludiq est né de la volonté de transformer l’apprentissage et l’engagement en expériences interactives et mémorables.',
-    body: '<p>Nous croyons que l’apprentissage et l’engagement doivent être dynamiques, collaboratifs et amusants. C’est pourquoi nous avons créé Ludiq, une plateforme tout-en-un qui permet aux éducateurs, formateurs et animateurs de concevoir des expériences interactives captivantes.</p><p>Que vous organisiez un quiz en classe, un sondage en entreprise ou des flashcards pour réviser, Ludiq vous offre tous les outils nécessaires pour captiver votre audience et mesurer l’impact en temps réel.</p>',
+    title: 'Brivia',
+    subtitle: 'Brivia est né de la volonté de transformer l’apprentissage et l’engagement en expériences interactives et mémorables.',
+    body: '<p>Nous croyons que l’apprentissage et l’engagement doivent être dynamiques, collaboratifs et amusants. C’est pourquoi nous avons créé Brivia, une plateforme tout-en-un qui permet aux éducateurs, formateurs et animateurs de concevoir des expériences interactives captivantes.</p><p>Que vous organisiez un quiz en classe, un sondage en entreprise ou des flashcards pour réviser, Brivia vous offre tous les outils nécessaires pour captiver votre audience et mesurer l’impact en temps réel.</p>',
     status: 'published',
     blocks: [
       { title: 'Innovation', desc: 'Nous innovons constamment pour offrir des expériences toujours plus engageantes et intuitives.' },
@@ -49,18 +49,18 @@ export const STATIC_PAGE_DEFAULTS: Record<StaticSlug, StaticPage> = {
     blocks: [],
     body: `
 <h2>Éditeur du site</h2>
-<p>Ludiq est édité par :</p>
+<p>Brivia est édité par :</p>
 <p><strong>[Nom de la société / Nom du porteur de projet]</strong><br>[Forme juridique, ex. : Auto-entrepreneur / SAS]<br>[Adresse complète]<br>[SIRET / RCS]<br>Email : <a href="mailto:contact@quizmaster.app">contact@quizmaster.app</a></p>
 <h2>Directeur de la publication</h2>
 <p>[Prénom Nom], [Qualité]</p>
 <h2>Hébergement</h2>
 <p>Le site est hébergé par :<br><strong>Vercel Inc.</strong><br>340 Pine Street, Suite 701, San Francisco, CA 94104, États-Unis<br><a href="https://vercel.com" target="_blank" rel="noopener noreferrer">vercel.com</a></p>
 <h2>Propriété intellectuelle</h2>
-<p>L’ensemble des contenus présents sur Ludiq (textes, images, logotypes, icônes, sons) sont protégés par le droit de la propriété intellectuelle. Toute reproduction, représentation ou diffusion, en tout ou partie, sans autorisation expresse est interdite.</p>
+<p>L’ensemble des contenus présents sur Brivia (textes, images, logotypes, icônes, sons) sont protégés par le droit de la propriété intellectuelle. Toute reproduction, représentation ou diffusion, en tout ou partie, sans autorisation expresse est interdite.</p>
 <h2>Données personnelles</h2>
 <p>Le traitement de vos données personnelles est décrit dans notre <a href="/confidentialite">Politique de confidentialité</a>.</p>
 <h2>Cookies</h2>
-<p>Ludiq utilise des cookies strictement nécessaires au fonctionnement du service (authentification, préférences de langue). Aucun cookie publicitaire ou de traçage tiers n’est déposé sans votre consentement.</p>
+<p>Brivia utilise des cookies strictement nécessaires au fonctionnement du service (authentification, préférences de langue). Aucun cookie publicitaire ou de traçage tiers n’est déposé sans votre consentement.</p>
 <h2>Droit applicable</h2>
 <p>Les présentes mentions légales sont soumises au droit français. Tout litige relatif à leur interprétation ou à leur exécution relève de la compétence des tribunaux français.</p>`.trim(),
   },
@@ -74,14 +74,14 @@ export const STATIC_PAGE_DEFAULTS: Record<StaticSlug, StaticPage> = {
 <h2>Responsable du traitement</h2>
 <p><strong>[Nom de la société / Porteur de projet]</strong><br>[Adresse]<br>Email DPO / contact RGPD : <a href="mailto:privacy@quizmaster.app">privacy@quizmaster.app</a></p>
 <h2>Données collectées et finalités</h2>
-<p>Ludiq collecte les données suivantes :</p>
+<p>Brivia collecte les données suivantes :</p>
 <ul>
 <li><strong>Compte utilisateur</strong> : adresse e-mail, nom d’utilisateur, mot de passe haché. Finalité : authentification et gestion du compte. Base légale : exécution du contrat (art. 6.1.b).</li>
 <li><strong>Données de quiz</strong> : contenu des quiz créés, scores des participants. Finalité : fourniture du service. Base légale : exécution du contrat (art. 6.1.b).</li>
 <li><strong>Données de navigation</strong> : logs techniques (adresse IP, user-agent) conservés par l’hébergeur Vercel à des fins de sécurité. Durée : 90 jours maximum.</li>
 </ul>
 <h2>Sous-traitants et transferts</h2>
-<p>Ludiq fait appel aux sous-traitants suivants :</p>
+<p>Brivia fait appel aux sous-traitants suivants :</p>
 <ul>
 <li><strong>Supabase</strong> (stockage et authentification), serveurs en Europe (eu-west-1).</li>
 <li><strong>Vercel</strong> (hébergement), conforme aux clauses contractuelles types de l’UE.</li>
@@ -103,20 +103,20 @@ export const STATIC_PAGE_DEFAULTS: Record<StaticSlug, StaticPage> = {
     blocks: [],
     body: `
 <h2>1. Objet</h2>
-<p>Les présentes Conditions Générales d’Utilisation (CGU) régissent l’accès et l’utilisation du service Ludiq, plateforme de création de quiz interactifs, sondages et présentations en temps réel. Tout accès au service vaut acceptation des présentes CGU.</p>
+<p>Les présentes Conditions Générales d’Utilisation (CGU) régissent l’accès et l’utilisation du service Brivia, plateforme de création de quiz interactifs, sondages et présentations en temps réel. Tout accès au service vaut acceptation des présentes CGU.</p>
 <h2>2. Accès au service</h2>
-<p>Ludiq est accessible via navigateur web. La création de contenu nécessite la création d’un compte. La participation à un quiz public ne nécessite pas de compte. L’accès au service est gratuit dans les limites du plan Starter ; des plans payants sont disponibles pour les fonctionnalités avancées.</p>
+<p>Brivia est accessible via navigateur web. La création de contenu nécessite la création d’un compte. La participation à un quiz public ne nécessite pas de compte. L’accès au service est gratuit dans les limites du plan Starter ; des plans payants sont disponibles pour les fonctionnalités avancées.</p>
 <h2>3. Création de compte</h2>
 <p>L’utilisateur s’engage à fournir des informations exactes lors de la création de son compte et à maintenir la confidentialité de ses identifiants. Toute activité effectuée depuis un compte est réputée effectuée par son titulaire.</p>
 <h2>4. Contenu utilisateur</h2>
-<p>L’utilisateur reste propriétaire du contenu qu’il crée. En publiant du contenu sur Ludiq, il accorde à Ludiq une licence non exclusive, mondiale et gratuite pour héberger, afficher et distribuer ce contenu dans le cadre du service.</p>
-<p>L’utilisateur s’engage à ne pas publier de contenu illicite, diffamatoire, discriminatoire ou portant atteinte aux droits de tiers. Ludiq se réserve le droit de supprimer tout contenu non conforme.</p>
+<p>L’utilisateur reste propriétaire du contenu qu’il crée. En publiant du contenu sur Brivia, il accorde à Brivia une licence non exclusive, mondiale et gratuite pour héberger, afficher et distribuer ce contenu dans le cadre du service.</p>
+<p>L’utilisateur s’engage à ne pas publier de contenu illicite, diffamatoire, discriminatoire ou portant atteinte aux droits de tiers. Brivia se réserve le droit de supprimer tout contenu non conforme.</p>
 <h2>5. Responsabilité</h2>
-<p>Ludiq est fourni « en l’état ». Ludiq ne saurait être tenu responsable des interruptions de service, des pertes de données ou des dommages indirects. La responsabilité de Ludiq est limitée au montant des sommes versées par l’utilisateur au cours des 12 derniers mois.</p>
+<p>Brivia est fourni « en l’état ». Brivia ne saurait être tenu responsable des interruptions de service, des pertes de données ou des dommages indirects. La responsabilité de Brivia est limitée au montant des sommes versées par l’utilisateur au cours des 12 derniers mois.</p>
 <h2>6. Résiliation</h2>
-<p>L’utilisateur peut supprimer son compte à tout moment depuis les paramètres de profil. Ludiq peut suspendre ou résilier un compte en cas de violation des présentes CGU, après mise en demeure restée sans effet pendant 7 jours.</p>
+<p>L’utilisateur peut supprimer son compte à tout moment depuis les paramètres de profil. Brivia peut suspendre ou résilier un compte en cas de violation des présentes CGU, après mise en demeure restée sans effet pendant 7 jours.</p>
 <h2>7. Modifications</h2>
-<p>Ludiq se réserve le droit de modifier les présentes CGU. Les utilisateurs sont informés par email de toute modification substantielle avec un préavis de 30 jours. L’utilisation continue du service après ce délai vaut acceptation des nouvelles CGU.</p>
+<p>Brivia se réserve le droit de modifier les présentes CGU. Les utilisateurs sont informés par email de toute modification substantielle avec un préavis de 30 jours. L’utilisation continue du service après ce délai vaut acceptation des nouvelles CGU.</p>
 <h2>8. Droit applicable et juridiction</h2>
 <p>Les présentes CGU sont soumises au droit français. Tout litige relatif à leur interprétation ou à leur exécution sera soumis aux tribunaux compétents du ressort de Paris, sauf disposition légale impérative contraire.</p>`.trim(),
   },

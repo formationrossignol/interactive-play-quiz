@@ -32,7 +32,7 @@ const Changelog = () => {
   const sub = useChangelogSubscription();
   useSEO({
     title: "Nouveautés produit",
-    description: "Toutes les nouveautés, améliorations et corrections de Ludiq, mois par mois — et d'où elles viennent.",
+    description: "Toutes les nouveautés, améliorations et corrections de Brivia, mois par mois — et d'où elles viennent.",
     path: "/changelog",
   });
 
@@ -45,7 +45,7 @@ const Changelog = () => {
         <div className="wrap">
           <div className="page-hero">
             <span className="eyebrow">Nouveautés produit</span>
-            <h1>Ludiq s'améliore chaque mois.</h1>
+            <h1>Brivia s'améliore chaque mois.</h1>
             <p className="lead">Toutes les nouveautés, améliorations et corrections — et d'où elles viennent.</p>
           </div>
 

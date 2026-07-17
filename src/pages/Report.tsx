@@ -32,7 +32,7 @@ const Report = () => {
   const { data: tickets, isLoading: ticketsLoading } = useMyReports();
   useSEO({
     title: "Signaler un problème",
-    description: "Un souci avec Ludiq ? Décrivez ce qui s'est passé — type, gravité, contexte technique — et suivez la résolution de vos tickets.",
+    description: "Un souci avec Brivia ? Décrivez ce qui s'est passé — type, gravité, contexte technique — et suivez la résolution de vos tickets.",
     path: "/report",
   });
 
