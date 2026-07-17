@@ -273,7 +273,7 @@ export default function ExamRoom() {
   if (phase === 'ready' && exam && quiz) return (
     <Screen maxWidth={520}>
       <div style={{
-        background: 'var(--ap-card)', border: '2px solid var(--ap-line)',
+        background: 'var(--ap-card)', border: 'var(--ap-border-w) solid var(--ap-line)',
         borderRadius: 'var(--ap-r-lg)', padding: '28px 28px', width: '100%', textAlign: 'center',
       }}>
         <div style={{ fontSize: 52, marginBottom: 12 }}>📝</div>
@@ -353,17 +353,17 @@ export default function ExamRoom() {
     return (
       <div style={{ minHeight: '100vh', paddingBottom: 100 }}>
         <style>{`
-          .er-opt { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border: 2px solid var(--ap-line); border-radius: var(--ap-r-sm); cursor: pointer; transition: border-color .15s, background .15s; margin-bottom: 8px; font-weight: 700; font-size: 14px; color: var(--ap-ink); background: var(--ap-paper); }
+          .er-opt { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border: var(--ap-border-w) solid var(--ap-line); border-radius: var(--ap-r-sm); cursor: pointer; transition: border-color .15s, background .15s; margin-bottom: 8px; font-weight: 700; font-size: 14px; color: var(--ap-ink); background: var(--ap-paper); }
           .er-opt:hover { border-color: var(--ap-brand); background: var(--ap-brand-soft); }
           .er-opt.sel { border-color: var(--ap-brand); background: var(--ap-brand-soft); }
-          .er-dot { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--ap-line); flex-shrink: 0; transition: background .15s, border-color .15s; }
+          .er-dot { width: 18px; height: 18px; border-radius: 50%; border: var(--ap-border-w) solid var(--ap-line); flex-shrink: 0; transition: background .15s, border-color .15s; }
           .er-opt.sel .er-dot { background: var(--ap-brand); border-color: var(--ap-brand); }
         `}</style>
 
         {/* Topbar */}
         <div style={{
           position: 'sticky', top: 0, zIndex: 10,
-          background: 'var(--ap-card)', borderBottom: '2px solid var(--ap-line)',
+          background: 'var(--ap-card)', borderBottom: 'var(--ap-border-w) solid var(--ap-line)',
           padding: '0 20px', height: 56, display: 'flex', alignItems: 'center', gap: 12,
         }}>
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -411,7 +411,7 @@ export default function ExamRoom() {
 
             return (
               <div key={q.id} style={{
-                background: 'var(--ap-card)', border: '2px solid var(--ap-line)',
+                background: 'var(--ap-card)', border: 'var(--ap-border-w) solid var(--ap-line)',
                 borderRadius: 'var(--ap-r-lg)', padding: '22px', marginBottom: 16,
               }}>
                 <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
@@ -487,7 +487,7 @@ export default function ExamRoom() {
             </button>
           ) : (
             <div style={{
-              background: 'var(--ap-card)', border: '2px solid var(--ap-line)',
+              background: 'var(--ap-card)', border: 'var(--ap-border-w) solid var(--ap-line)',
               borderRadius: 'var(--ap-r-lg)', padding: 20, textAlign: 'center',
             }}>
               <p style={{ fontFamily: 'var(--ap-font-display)', fontWeight: 600, fontSize: 16, marginBottom: 6 }}>
@@ -501,7 +501,7 @@ export default function ExamRoom() {
               <div style={{ display: 'flex', gap: 10 }}>
                 <button
                   onClick={() => setConfirmSubmit(false)}
-                  style={{ flex: 1, padding: '12px 0', borderRadius: 999, border: '2px solid var(--ap-line)', background: 'var(--ap-paper-2)', fontFamily: 'var(--ap-font-body)', fontWeight: 800, fontSize: 14, cursor: 'pointer', color: 'var(--ap-ink)' }}
+                  style={{ flex: 1, padding: '12px 0', borderRadius: 999, border: 'var(--ap-border-w) solid var(--ap-line)', background: 'var(--ap-paper-2)', fontFamily: 'var(--ap-font-body)', fontWeight: 800, fontSize: 14, cursor: 'pointer', color: 'var(--ap-ink)' }}
                 >
                   Continuer
                 </button>
@@ -564,7 +564,7 @@ function Info({ icon, label }: { icon: string; label: string }) {
     <div style={{
       display: 'flex', alignItems: 'center', gap: 6,
       fontSize: 13, fontWeight: 800, color: 'var(--ap-ink)',
-      background: 'var(--ap-paper)', border: '2px solid var(--ap-line)',
+      background: 'var(--ap-paper)', border: 'var(--ap-border-w) solid var(--ap-line)',
       borderRadius: 999, padding: '6px 14px',
     }}>
       <span>{icon}</span><span>{label}</span>
@@ -603,7 +603,7 @@ const labelSt: React.CSSProperties = {
 const inputSt: React.CSSProperties = {
   width: '100%', padding: '11px 14px', fontFamily: 'var(--ap-font-body)',
   fontWeight: 700, fontSize: 14, color: 'var(--ap-ink)',
-  background: 'var(--ap-paper-2)', border: '2px solid var(--ap-line)',
+  background: 'var(--ap-paper-2)', border: 'var(--ap-border-w) solid var(--ap-line)',
   borderRadius: 'var(--ap-r-sm)', outline: 'none',
   boxSizing: 'border-box', marginBottom: 4,
 };

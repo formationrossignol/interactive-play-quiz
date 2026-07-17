@@ -364,7 +364,7 @@ const NodeRow = ({ node, depth }: { node: FolderNode; depth: number }) => {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
                   align="end"
-                  style={{ minWidth: 180, border: '2px solid var(--ap-line)', background: 'var(--ap-card)', borderRadius: 'var(--ap-r-md)' }}
+                  style={{ minWidth: 180, border: 'var(--ap-border-w) solid var(--ap-line)', background: 'var(--ap-card)', borderRadius: 'var(--ap-r-md)' }}
                   onClick={(e) => e.stopPropagation()}
                 >
                   <DropdownMenuItem
@@ -565,7 +565,7 @@ export const FolderExplorer = ({
               marginTop: '4px',
               padding: '6px 12px',
               background: 'transparent',
-              border: '2px dashed var(--ap-line)',
+              border: 'var(--ap-border-w) dashed var(--ap-line)',
               borderRadius: 'var(--ap-r-sm)',
               color: 'var(--ap-muted)',
               fontFamily: 'var(--ap-font-body)',

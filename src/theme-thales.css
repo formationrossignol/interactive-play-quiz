@@ -56,6 +56,10 @@
   /* Transitions sèches — pas de dépassement élastique */
   --ap-ease:   cubic-bezier(.25, .1, .25, 1);
   --ap-spring: cubic-bezier(.25, .1, .25, 1);
+
+  /* Pas de trame de points, filets fins partout */
+  --ap-texture: none;
+  --ap-border-w: 1px;
 }
 
 /* ── Variante sombre — bleu très sombre #0C0D29 ── */
@@ -108,6 +112,17 @@
   color: #0c0d29;
 }
 
+/* Liens nus : bleu marque souligné, survol cyan — jamais le violet arcade */
+[data-theme="thales"] a:not([class]) {
+  color: var(--ap-brand);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
+[data-theme="thales"] a:not([class]):hover { color: #1e8a99; }
+.dark[data-theme="thales"] a:not([class]) { color: #7bd8e4; }
+.dark[data-theme="thales"] a:not([class]):hover { color: #3cc2d2; }
+
 /* ============================================================
    3. TYPOGRAPHIE — grotesque serrée, micro-labels « / »
    ============================================================ */
@@ -144,16 +159,16 @@
 [data-theme="thales"] .ap-btn--lg { font-size: 14px; }
 [data-theme="thales"] .ap-btn--sm { font-size: 11.5px; }
 
-/* Survol : fond assombri + filet cyan en pied — jamais de rebond */
-[data-theme="thales"] .ap-btn:hover,
-[data-theme="thales"] .ap-btn--quiz:hover,
-[data-theme="thales"] .ap-btn--pres:hover,
-[data-theme="thales"] .ap-btn--poll:hover,
-[data-theme="thales"] .ap-btn--flash:hover {
+/* Survol : fond éclairci explicite + filet cyan en pied — jamais de rebond */
+[data-theme="thales"] .ap-btn:hover {
   transform: none;
   box-shadow: inset 0 -3px 0 #3cc2d2;
-  filter: brightness(1.12);
+  background: color-mix(in srgb, var(--ap-brand) 84%, #fff);
 }
+[data-theme="thales"] .ap-btn--quiz:hover  { transform: none; box-shadow: inset 0 -3px 0 #3cc2d2; background: color-mix(in srgb, var(--ap-quiz) 84%, #fff); }
+[data-theme="thales"] .ap-btn--pres:hover  { transform: none; box-shadow: inset 0 -3px 0 #3cc2d2; background: color-mix(in srgb, var(--ap-pres) 84%, #fff); }
+[data-theme="thales"] .ap-btn--poll:hover  { transform: none; box-shadow: inset 0 -3px 0 #3cc2d2; background: color-mix(in srgb, var(--ap-poll) 84%, #fff); }
+[data-theme="thales"] .ap-btn--flash:hover { transform: none; box-shadow: inset 0 -3px 0 #3cc2d2; background: color-mix(in srgb, var(--ap-flash) 84%, #fff); }
 [data-theme="thales"] .ap-btn:active,
 [data-theme="thales"] .ap-btn--quiz:active,
 [data-theme="thales"] .ap-btn--pres:active,
@@ -161,7 +176,6 @@
 [data-theme="thales"] .ap-btn--flash:active {
   transform: none;
   box-shadow: inset 0 -3px 0 #3cc2d2;
-  filter: brightness(.95);
 }
 
 /* Secondaire : contour 1px, inversion complète au survol */
@@ -268,6 +282,14 @@
 [data-theme="thales"] .ap-switch[aria-checked="true"],
 [data-theme="thales"] .ap-switch.is-on { background: var(--ap-brand); }
 
+/* Icônes réseaux : pas d'élévation, survol marque plein */
+[data-theme="thales"] .ap-social:hover {
+  transform: none;
+  background: var(--ap-brand);
+  color: #fff;
+  border-color: var(--ap-brand);
+}
+
 /* ============================================================
    8. MARQUE & NAVIGATION — aplomb, soulignement, zéro rotation
    ============================================================ */
@@ -307,3 +329,21 @@
 [data-theme="thales"] .ap-route-loader span { background: var(--ap-brand); }
 [data-theme="thales"] .ap-route-loader span:nth-child(2) { background: #3cc2d2; }
 [data-theme="thales"] .ap-route-loader span:nth-child(3) { background: var(--ap-line-2); }
+
+/* ============================================================
+   10. CONSOLE ADMIN — même sobriété que le reste du site
+   ============================================================ */
+[data-theme="thales"] .adm-btn {
+  border-radius: 0;
+  box-shadow: none;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  font-size: 12.5px;
+}
+[data-theme="thales"] .adm-btn:hover {
+  transform: none;
+  box-shadow: inset 0 -3px 0 #3cc2d2;
+}
+[data-theme="thales"] .adm-btn:active { transform: none; box-shadow: inset 0 -3px 0 #3cc2d2; }
+[data-theme="thales"] .adm-btn--ghost:hover,
+[data-theme="thales"] .adm-btn--ghost:active { box-shadow: inset 0 0 0 1px var(--ap-line-2); }

@@ -98,7 +98,7 @@ const RichTextEditor = ({ value, onChange, placeholder = "Rédigez le contenu de
 
   return (
     <div style={{
-      border: "2px solid var(--ap-line)",
+      border: "var(--ap-border-w) solid var(--ap-line)",
       borderRadius: "var(--ap-r-sm)",
       background: "var(--ap-card)",
       overflow: "hidden",
@@ -110,7 +110,7 @@ const RichTextEditor = ({ value, onChange, placeholder = "Rédigez le contenu de
         flexWrap: "wrap",
         gap: "2px",
         padding: "6px 8px",
-        borderBottom: "2px solid var(--ap-line)",
+        borderBottom: "var(--ap-border-w) solid var(--ap-line)",
         background: "var(--ap-paper-2)",
       }}>
         {/* Undo / Redo */}

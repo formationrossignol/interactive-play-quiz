@@ -89,7 +89,7 @@ const triggerStyle = {
   fontFamily: "var(--ap-font-body)",
   fontWeight: 700,
   fontSize: "14px",
-  border: "2px solid var(--ap-line)",
+  border: "var(--ap-border-w) solid var(--ap-line)",
   borderRadius: "var(--ap-r-sm)",
   background: "var(--ap-card)",
   color: "var(--ap-ink)",
@@ -98,7 +98,7 @@ const triggerStyle = {
 
 const selectContentStyle = {
   background: "var(--ap-card)",
-  border: "2px solid var(--ap-line)",
+  border: "var(--ap-border-w) solid var(--ap-line)",
   borderRadius: "var(--ap-r-md)",
 } as const;
 
@@ -394,8 +394,8 @@ export function ContentExplorer({
     );
 
   const emptyBox = (title: string, body: string, cs: ReactNode) => (
-    <div style={{ borderRadius: "var(--ap-r-lg)", border: "2px dashed var(--ap-line-2)", background: "var(--ap-paper-2)", padding: "48px 24px", textAlign: "center" }}>
-      <div style={{ width: 64, height: 64, margin: "0 auto 16px", borderRadius: 20, background: "var(--ap-card)", border: "2px solid var(--ap-line)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ap-brand)" }}>
+    <div style={{ borderRadius: "var(--ap-r-lg)", border: "var(--ap-border-w) dashed var(--ap-line-2)", background: "var(--ap-paper-2)", padding: "48px 24px", textAlign: "center" }}>
+      <div style={{ width: 64, height: 64, margin: "0 auto 16px", borderRadius: 20, background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ap-brand)" }}>
         {cs}
       </div>
       <h3 className="ap-h3" style={{ fontSize: 19, marginBottom: 6 }}>{title}</h3>
@@ -556,7 +556,7 @@ export function ContentExplorer({
                     onMoveFolder={c.moveFolder}
                   />
 
-                  <div style={{ borderTop: "2px solid var(--ap-line)", margin: "10px 0 8px" }} />
+                  <div style={{ borderTop: "var(--ap-border-w) solid var(--ap-line)", margin: "10px 0 8px" }} />
                   <div style={SIDE_LABEL}>Raccourcis</div>
                   <ShortcutRow
                     icon={<Star style={{ width: 16, height: 16 }} />}
@@ -627,7 +627,7 @@ export function ContentExplorer({
                           width: "100%", padding: "10px 14px 10px 38px",
                           fontFamily: "var(--ap-font-body)", fontWeight: 700, fontSize: 14,
                           color: "var(--ap-ink)", background: "var(--ap-card)",
-                          border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-sm)",
+                          border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-sm)",
                           outline: "none", boxSizing: "border-box",
                         }}
                         onFocus={(e) => { e.currentTarget.style.borderColor = "var(--ap-brand)"; e.currentTarget.style.boxShadow = "0 0 0 4px var(--ap-brand-soft)"; }}

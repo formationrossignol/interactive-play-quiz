@@ -19,7 +19,7 @@ interface CourseContextMenuProps {
 
 const menuStyle = {
   minWidth: 188,
-  border: "2px solid var(--ap-line)",
+  border: "var(--ap-border-w) solid var(--ap-line)",
   background: "var(--ap-card)",
   borderRadius: "var(--ap-r-md)",
 };

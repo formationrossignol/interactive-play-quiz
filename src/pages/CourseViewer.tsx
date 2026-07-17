@@ -234,7 +234,7 @@ const CourseViewer = () => {
       height: "100vh", overflow: "hidden", display: "flex", flexDirection: "column",
       fontFamily: "var(--ap-font-body)", color: "var(--ap-ink)",
       background: "var(--ap-paper)",
-      backgroundImage: "radial-gradient(var(--ap-line-2) 1px, transparent 1px)",
+      backgroundImage: "var(--ap-texture)",
       backgroundSize: "26px 26px",
       WebkitFontSmoothing: "antialiased",
     }}>
@@ -279,7 +279,7 @@ const CourseViewer = () => {
       {/* ── Topbar ──────────────────────────────────────────── */}
       <div style={{
         height: 62, flexShrink: 0, zIndex: 20,
-        background: "var(--ap-card)", borderBottom: "2px solid var(--ap-line)",
+        background: "var(--ap-card)", borderBottom: "var(--ap-border-w) solid var(--ap-line)",
         display: "flex", alignItems: "center", gap: 14, padding: "0 18px",
       }}>
         <button
@@ -288,7 +288,7 @@ const CourseViewer = () => {
           onClick={() => navigate("/my-courses")}
           style={{
             display: "grid", placeItems: "center", width: 36, height: 36,
-            borderRadius: "var(--ap-r-sm)", border: "2px solid var(--ap-line)",
+            borderRadius: "var(--ap-r-sm)", border: "var(--ap-border-w) solid var(--ap-line)",
             background: "var(--ap-card)", cursor: "pointer",
             boxShadow: "0 3px 0 var(--ap-line)",
           }}
@@ -313,7 +313,7 @@ const CourseViewer = () => {
 
         {/* Sidebar */}
         <nav className="cv-plan" style={{
-          borderRight: "2px solid var(--ap-line)", background: "var(--ap-card)",
+          borderRight: "var(--ap-border-w) solid var(--ap-line)", background: "var(--ap-card)",
           overflowY: "auto", padding: "14px 12px 24px",
         }}>
           {course.modules.map((mod, mi) => {
@@ -327,7 +327,7 @@ const CourseViewer = () => {
                   onClick={() => toggleModule(mod.id)}
                   style={{
                     width: "100%", display: "flex", alignItems: "center", gap: 10, textAlign: "left",
-                    background: "var(--ap-paper)", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-md)",
+                    background: "var(--ap-paper)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-md)",
                     padding: "10px 12px", cursor: "pointer", fontFamily: "inherit",
                   }}
                 >
@@ -492,12 +492,12 @@ const CourseViewer = () => {
                     aspectRatio: "16/9", borderRadius: "var(--ap-r-lg)",
                     background: "linear-gradient(135deg, #2d2150, var(--ap-ink))",
                     display: "grid", placeItems: "center",
-                    border: "2px solid var(--ap-line)", boxShadow: "0 5px 0 var(--ap-line)",
+                    border: "var(--ap-border-w) solid var(--ap-line)", boxShadow: "0 5px 0 var(--ap-line)",
                   }}>
                     <p style={{ color: "rgba(255,255,255,.5)", fontSize: 14, fontWeight: 700 }}>Aucune vidéo configurée.</p>
                   </div>
                 ) : lesson.videoType === "youtube" && extractYouTubeId(lesson.videoUrl) ? (
-                  <div style={{ aspectRatio: "16/9", borderRadius: "var(--ap-r-lg)", overflow: "hidden", border: "2px solid var(--ap-line)", boxShadow: "0 5px 0 var(--ap-line)" }}>
+                  <div style={{ aspectRatio: "16/9", borderRadius: "var(--ap-r-lg)", overflow: "hidden", border: "var(--ap-border-w) solid var(--ap-line)", boxShadow: "0 5px 0 var(--ap-line)" }}>
                     <iframe
                       src={`https://www.youtube.com/embed/${extractYouTubeId(lesson.videoUrl)}`}
                       style={{ width: "100%", height: "100%", border: "none", display: "block" }}
@@ -507,7 +507,7 @@ const CourseViewer = () => {
                     />
                   </div>
                 ) : (
-                  <div style={{ borderRadius: "var(--ap-r-lg)", overflow: "hidden", border: "2px solid var(--ap-line)", boxShadow: "0 5px 0 var(--ap-line)" }}>
+                  <div style={{ borderRadius: "var(--ap-r-lg)", overflow: "hidden", border: "var(--ap-border-w) solid var(--ap-line)", boxShadow: "0 5px 0 var(--ap-line)" }}>
                     <video src={lesson.videoUrl} controls style={{ width: "100%", maxHeight: "70vh", display: "block", background: "#000" }} />
                   </div>
                 )
@@ -516,7 +516,7 @@ const CourseViewer = () => {
               {/* ── Quiz launch card ── */}
               {lesson.type === "quiz" && (
                 <div style={{
-                  background: "var(--ap-card)", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-lg)",
+                  background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-lg)",
                   boxShadow: "0 5px 0 var(--ap-line)", padding: 24,
                   display: "flex", alignItems: "center", gap: 20,
                 }}>
@@ -554,7 +554,7 @@ const CourseViewer = () => {
               {/* ── Flashcard launch card ── */}
               {lesson.type === "flashcard" && (
                 <div style={{
-                  background: "var(--ap-card)", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-lg)",
+                  background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-lg)",
                   boxShadow: "0 5px 0 var(--ap-line)", padding: 24,
                   display: "flex", alignItems: "center", gap: 20,
                 }}>
@@ -593,7 +593,7 @@ const CourseViewer = () => {
               {lesson.type === "document" && (
                 !lesson.content ? (
                   <div style={{
-                    background: "var(--ap-card)", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-lg)",
+                    background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-lg)",
                     boxShadow: "0 5px 0 var(--ap-line)", padding: 24,
                     display: "flex", alignItems: "center", gap: 20,
                   }}>
@@ -603,11 +603,11 @@ const CourseViewer = () => {
                 ) : lesson.documentMimeType === "text/markdown" ? (
                   <div
                     className="cv-prose"
-                    style={{ background: "var(--ap-card)", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-lg)", boxShadow: "0 5px 0 var(--ap-line)", padding: "28px 32px" }}
+                    style={{ background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-lg)", boxShadow: "0 5px 0 var(--ap-line)", padding: "28px 32px" }}
                     dangerouslySetInnerHTML={{ __html: sanitizeHtml(renderMarkdown(lesson.content)) }}
                   />
                 ) : lesson.documentMimeType === "application/pdf" ? (
-                  <div style={{ borderRadius: "var(--ap-r-lg)", overflow: "hidden", border: "2px solid var(--ap-line)", boxShadow: "0 5px 0 var(--ap-line)" }}>
+                  <div style={{ borderRadius: "var(--ap-r-lg)", overflow: "hidden", border: "var(--ap-border-w) solid var(--ap-line)", boxShadow: "0 5px 0 var(--ap-line)" }}>
                     {pdfObjectUrl
                       ? <iframe src={pdfObjectUrl} title={lesson.documentName ?? "Document"} style={{ width: "100%", height: "75vh", border: "none", display: "block" }} />
                       : <p style={{ padding: 24, color: "var(--ap-muted)", fontSize: 13, textAlign: "center" }}>Chargement…</p>
@@ -615,7 +615,7 @@ const CourseViewer = () => {
                   </div>
                 ) : (
                   <div style={{
-                    background: "var(--ap-card)", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-lg)",
+                    background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-lg)",
                     boxShadow: "0 5px 0 var(--ap-line)", padding: 24,
                     display: "flex", alignItems: "center", gap: 20,
                   }}>
@@ -644,7 +644,7 @@ const CourseViewer = () => {
 
               {/* ── Lesson footer ── */}
               <div style={{
-                marginTop: 34, paddingTop: 22, borderTop: "2px solid var(--ap-line)",
+                marginTop: 34, paddingTop: 22, borderTop: "var(--ap-border-w) solid var(--ap-line)",
                 display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap",
               }}>
                 <button

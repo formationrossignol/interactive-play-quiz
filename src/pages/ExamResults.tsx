@@ -61,7 +61,7 @@ export default function ExamResults() {
     <div style={{ minHeight: '100vh', paddingBottom: 80 }}>
       {/* Header */}
       <div style={{
-        background: 'var(--ap-card)', borderBottom: '2px solid var(--ap-line)',
+        background: 'var(--ap-card)', borderBottom: 'var(--ap-border-w) solid var(--ap-line)',
         padding: '0 24px', height: 60, display: 'flex', alignItems: 'center', gap: 16,
       }}>
         <button

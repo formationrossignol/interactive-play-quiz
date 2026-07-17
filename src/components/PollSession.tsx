@@ -243,7 +243,7 @@ export const PollSession = ({ poll }: PollSessionProps) => {
             <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 12, alignItems: "center" }}>
               <div>
                 <p style={smallLabelSt}>Code du sondage</p>
-                <div style={{ background: "var(--ap-paper-2)", border: "2px dashed var(--ap-line-2)", borderRadius: "var(--ap-r-md)", padding: "16px 10px", overflow: "hidden" }}>
+                <div style={{ background: "var(--ap-paper-2)", border: "var(--ap-border-w) dashed var(--ap-line-2)", borderRadius: "var(--ap-r-md)", padding: "16px 10px", overflow: "hidden" }}>
                   <div style={{ fontFamily: "var(--ap-font-mono)", fontWeight: 700, fontSize: poll.id.length > 8 ? Math.max(14, 32 - (poll.id.length - 6) * 1.8) : 32, letterSpacing: ".08em", fontVariantNumeric: "tabular-nums", lineHeight: 1.1, color: "var(--ap-ink)", wordBreak: "break-all" }} aria-label={`Code : ${poll.id}`}>
                     {poll.id.slice(0, 3)}<span style={{ color: "var(--ap-poll)" }}>{poll.id.slice(3)}</span>
                   </div>
@@ -252,7 +252,7 @@ export const PollSession = ({ poll }: PollSessionProps) => {
               <span style={{ fontFamily: "var(--ap-font-display)", fontWeight: 600, fontSize: 13, color: "var(--ap-line-2)", textTransform: "uppercase" }} aria-hidden="true">ou</span>
               <div>
                 <p style={smallLabelSt}>Scannez</p>
-                <div style={{ background: "var(--ap-card)", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-md)", padding: 8, boxShadow: "0 3px 0 var(--ap-line)", display: "grid", placeItems: "center" }}>
+                <div style={{ background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-md)", padding: 8, boxShadow: "0 3px 0 var(--ap-line)", display: "grid", placeItems: "center" }}>
                   {sessionReady ? (
                     <QRCodeGenerator gameCode={poll.id} joinUrl={joinUrl} compact compactSize={108} />
                   ) : (
@@ -293,15 +293,15 @@ export const PollSession = ({ poll }: PollSessionProps) => {
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(128px,1fr))", gap: 13 }}>
               {players.map((player) => (
-                <div key={player.id} style={{ background: "var(--ap-card)", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-md)", padding: "15px 10px 13px", textAlign: "center", boxShadow: "0 4px 0 var(--ap-line)" }}>
-                  <div style={{ width: 52, height: 52, margin: "0 auto 8px", borderRadius: "50%", background: "var(--ap-paper-2)", border: "2px solid var(--ap-line)", display: "grid", placeItems: "center" }} aria-hidden="true">
+                <div key={player.id} style={{ background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-md)", padding: "15px 10px 13px", textAlign: "center", boxShadow: "var(--ap-shadow-soft)" }}>
+                  <div style={{ width: 52, height: 52, margin: "0 auto 8px", borderRadius: "50%", background: "var(--ap-paper-2)", border: "var(--ap-border-w) solid var(--ap-line)", display: "grid", placeItems: "center" }} aria-hidden="true">
                     <AvatarDisplay emoji={player.avatar} size="sm" />
                   </div>
                   <span style={{ fontWeight: 800, fontSize: 13.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>{player.name}</span>
                 </div>
               ))}
               {Array.from({ length: Math.max(0, 4 - players.length) }).map((_, i) => (
-                <div key={`ghost-${i}`} style={{ border: "2px dashed var(--ap-line-2)", borderRadius: "var(--ap-r-md)", display: "grid", placeItems: "center", minHeight: 118, color: "var(--ap-line-2)", fontFamily: "var(--ap-font-display)", fontWeight: 600, fontSize: 22 }} aria-hidden="true">?</div>
+                <div key={`ghost-${i}`} style={{ border: "var(--ap-border-w) dashed var(--ap-line-2)", borderRadius: "var(--ap-r-md)", display: "grid", placeItems: "center", minHeight: 118, color: "var(--ap-line-2)", fontFamily: "var(--ap-font-display)", fontWeight: 600, fontSize: 22 }} aria-hidden="true">?</div>
               ))}
             </div>
           </section>
@@ -336,7 +336,7 @@ export const PollSession = ({ poll }: PollSessionProps) => {
   return (
     <div style={{ ...pageSt, paddingBottom: 110 }}>
       {/* Topbar */}
-      <div style={{ ...topbarSt, position: "sticky", top: 0, zIndex: 20, background: "var(--ap-card)", borderBottom: "2px solid var(--ap-line)" }}>
+      <div style={{ ...topbarSt, position: "sticky", top: 0, zIndex: 20, background: "var(--ap-card)", borderBottom: "var(--ap-border-w) solid var(--ap-line)" }}>
         <span style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--ap-poll-deep)", background: "var(--ap-poll-soft)", border: "2px solid rgba(47,123,255,.35)", padding: "5px 13px", borderRadius: 999 }}>
           📊 Sondage en direct
         </span>
@@ -352,7 +352,7 @@ export const PollSession = ({ poll }: PollSessionProps) => {
             fontFamily: "var(--ap-font-mono)", fontWeight: 700, fontSize: 14, fontVariantNumeric: "tabular-nums",
             color: answeredCount > 0 && answeredCount >= players.length && players.length > 0 ? "var(--ap-pres-deep)" : "var(--ap-ink)",
             background: answeredCount > 0 && answeredCount >= players.length && players.length > 0 ? "var(--ap-pres-soft)" : "var(--ap-paper-2)",
-            border: "2px solid var(--ap-line)", borderRadius: 999, padding: "5px 13px",
+            border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: 999, padding: "5px 13px",
           }}
         >
           <PencilLine style={{ width:14, height:14, display:"inline", verticalAlign:"-2px", marginRight:6 }} /> {answeredCount}<span style={{ color: "var(--ap-muted)" }}>/{Math.max(players.length, answeredCount)}</span> réponse{answeredCount > 1 ? "s" : ""}
@@ -368,7 +368,7 @@ export const PollSession = ({ poll }: PollSessionProps) => {
             {currentQuestion?.question || `Question ${currentIndex + 1}`}
           </h1>
           {currentQuestion?.image && (
-            <div style={{ margin: "14px auto 4px", maxWidth: 480, overflow: "hidden", borderRadius: "var(--ap-r-md)", border: "2px solid var(--ap-line)" }}>
+            <div style={{ margin: "14px auto 4px", maxWidth: 480, overflow: "hidden", borderRadius: "var(--ap-r-md)", border: "var(--ap-border-w) solid var(--ap-line)" }}>
               <img src={currentQuestion.image} alt="Illustration" style={{ width: "100%", height: 220, objectFit: "cover", display: "block" }} />
             </div>
           )}
@@ -382,7 +382,7 @@ export const PollSession = ({ poll }: PollSessionProps) => {
                   const barPct = (count / maxCount) * 100;
                   const color = POLL_BAR_COLORS[index % POLL_BAR_COLORS.length];
                   return (
-                    <div key={`${option}-${index}`} style={{ position: "relative", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-md)", overflow: "hidden", background: "var(--ap-paper)" }}>
+                    <div key={`${option}-${index}`} style={{ position: "relative", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-md)", overflow: "hidden", background: "var(--ap-paper)" }}>
                       {/* Live fill bar */}
                       <div style={{ position: "absolute", inset: 0, width: `${totalVotes > 0 ? barPct : 0}%`, background: `${color}1f`, borderRight: count > 0 ? `2px solid ${color}55` : "none", transition: "width .5s cubic-bezier(.2,.7,.3,1)" }} aria-hidden="true" />
                       <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 12, padding: "13px 16px" }}>
@@ -404,13 +404,13 @@ export const PollSession = ({ poll }: PollSessionProps) => {
                   Réponses libres ({texts.length})
                 </p>
                 {texts.length === 0 ? (
-                  <div style={{ border: "2px dashed var(--ap-line-2)", borderRadius: "var(--ap-r-md)", padding: "22px 16px", textAlign: "center", fontWeight: 700, color: "var(--ap-muted)" }}>
+                  <div style={{ border: "var(--ap-border-w) dashed var(--ap-line-2)", borderRadius: "var(--ap-r-md)", padding: "22px 16px", textAlign: "center", fontWeight: 700, color: "var(--ap-muted)" }}>
                     En attente des premières réponses…
                   </div>
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 300, overflowY: "auto" }}>
                     {texts.slice().reverse().map((t, i) => (
-                      <div key={i} style={{ background: "var(--ap-paper)", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-md)", padding: "10px 14px", fontWeight: 700, fontSize: 14 }}>
+                      <div key={i} style={{ background: "var(--ap-paper)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-md)", padding: "10px 14px", fontWeight: 700, fontSize: 14 }}>
                         💬 {t}
                       </div>
                     ))}
@@ -420,14 +420,14 @@ export const PollSession = ({ poll }: PollSessionProps) => {
             ) : currentQuestion?.type === "ranking" ? (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {(currentQuestion.items || []).filter((item) => item?.trim()).map((item, index) => (
-                  <div key={`${item}-${index}`} style={{ display: "flex", alignItems: "center", gap: 12, background: "var(--ap-paper)", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-md)", padding: "12px 16px" }}>
+                  <div key={`${item}-${index}`} style={{ display: "flex", alignItems: "center", gap: 12, background: "var(--ap-paper)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-md)", padding: "12px 16px" }}>
                     <span style={{ width: 30, height: 30, borderRadius: 9, display: "grid", placeItems: "center", fontWeight: 800, fontSize: 13, color: "#fff", background: "var(--ap-poll)" }}>{index + 1}</span>
                     <span style={{ fontWeight: 800, fontSize: 15 }}>{item}</span>
                   </div>
                 ))}
               </div>
             ) : (
-              <div style={{ border: "2px dashed var(--ap-line-2)", borderRadius: "var(--ap-r-md)", padding: "22px 16px", textAlign: "center", fontWeight: 700, color: "var(--ap-muted)" }}>
+              <div style={{ border: "var(--ap-border-w) dashed var(--ap-line-2)", borderRadius: "var(--ap-r-md)", padding: "22px 16px", textAlign: "center", fontWeight: 700, color: "var(--ap-muted)" }}>
                 Ce type de question n'a pas d'options configurées.
               </div>
             )}
@@ -467,7 +467,7 @@ export const PollSession = ({ poll }: PollSessionProps) => {
 const pageSt: React.CSSProperties = {
   minHeight: "100vh",
   background: "var(--ap-paper)",
-  backgroundImage: "radial-gradient(var(--ap-line-2) 1px,transparent 1px)",
+  backgroundImage: "var(--ap-texture)",
   backgroundSize: "28px 28px",
   fontFamily: "var(--ap-font-body)",
   color: "var(--ap-ink)",
@@ -489,13 +489,13 @@ const logoSt: React.CSSProperties = {
 const quitBtnSt: React.CSSProperties = {
   display: "inline-flex", alignItems: "center", gap: 8,
   fontWeight: 800, fontSize: 13, color: "var(--ap-muted)", cursor: "pointer",
-  background: "var(--ap-card)", border: "2px solid var(--ap-line)",
+  background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)",
   borderRadius: 999, padding: "8px 15px", boxShadow: "0 3px 0 var(--ap-line)",
   fontFamily: "var(--ap-font-body)",
 };
 
 const joinCardSt: React.CSSProperties = {
-  background: "var(--ap-card)", border: "2px solid var(--ap-line)",
+  background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)",
   borderRadius: "var(--ap-r-lg)",
   boxShadow: "0 6px 0 var(--ap-line),0 30px 55px rgba(60,40,120,.1)",
   padding: 26, textAlign: "center", position: "sticky", top: 18,
@@ -508,7 +508,7 @@ const smallLabelSt: React.CSSProperties = {
 
 const bottomBarSt: React.CSSProperties = {
   position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 30,
-  background: "var(--ap-card)", borderTop: "2px solid var(--ap-line)",
+  background: "var(--ap-card)", borderTop: "var(--ap-border-w) solid var(--ap-line)",
   boxShadow: "0 -14px 34px rgba(60,40,120,.08)",
 };
 

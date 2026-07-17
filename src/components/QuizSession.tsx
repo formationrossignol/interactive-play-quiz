@@ -1033,7 +1033,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
             {/* Big code digit boxes */}
             <div style={{ margin:'18px auto 8px',display:'flex',justifyContent:'center',gap:10,flexWrap:'wrap' }} aria-label={`Code : ${quiz.gameCode}`}>
               {quiz.gameCode.split('').map((ch, i) => (
-                <span key={i} style={{ fontFamily:'var(--ap-font-mono)',fontWeight:700,fontSize:digitSize,lineHeight:1,color:'var(--ap-ink)',background:'var(--ap-paper)',border:'2px solid var(--ap-line)',borderRadius:16,padding:'14px 10px',minWidth:digitBox,boxShadow:'0 4px 0 var(--ap-line)',fontVariantNumeric:'tabular-nums',animation:'pin-breathe 3.2s ease-in-out infinite' }}>{ch}</span>
+                <span key={i} style={{ fontFamily:'var(--ap-font-mono)',fontWeight:700,fontSize:digitSize,lineHeight:1,color:'var(--ap-ink)',background:'var(--ap-paper)',border:'var(--ap-border-w) solid var(--ap-line)',borderRadius:16,padding:'14px 10px',minWidth:digitBox,boxShadow:'0 4px 0 var(--ap-line)',fontVariantNumeric:'tabular-nums',animation:'pin-breathe 3.2s ease-in-out infinite' }}>{ch}</span>
               ))}
             </div>
             <p style={{ color:'var(--ap-muted)',fontWeight:800,fontSize:13,margin:'0 0 6px' }}>puis saisissez ce code</p>
@@ -1076,7 +1076,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
                   </div>
                 )}
               </div>
-              <div style={{ width:150,height:150,borderRadius:18,border:'2px solid var(--ap-line)',background:'#fff',boxShadow:'0 4px 0 var(--ap-line)',display:'grid',placeItems:'center' }}>
+              <div style={{ width:150,height:150,borderRadius:18,border:'var(--ap-border-w) solid var(--ap-line)',background:'#fff',boxShadow:'0 4px 0 var(--ap-line)',display:'grid',placeItems:'center' }}>
                 {sessionReady ? (
                   <QRCodeGenerator gameCode={quiz.gameCode} joinUrl={joinUrl} compact compactSize={128} />
                 ) : (
@@ -1128,7 +1128,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
 
         {/* ── Launch bar (host, fixed bottom) ── */}
         {isHost && (
-          <div style={{ position:'fixed',bottom:0,left:0,right:0,zIndex:30,background:'var(--ap-card)',borderTop:'2px solid var(--ap-line)',boxShadow:'0 -14px 34px rgba(60,40,120,.08)' }}>
+          <div style={{ position:'fixed',bottom:0,left:0,right:0,zIndex:30,background:'var(--ap-card)',borderTop:'var(--ap-border-w) solid var(--ap-line)',boxShadow:'0 -14px 34px rgba(60,40,120,.08)' }}>
             <div style={{ maxWidth:1240,margin:'0 auto',padding:'14px 24px',display:'flex',alignItems:'center',gap:16 }}>
               <span style={{ fontWeight:800,fontSize:14,color:'var(--ap-muted)',display:'flex',alignItems:'center',gap:9 }}>
                 <span style={{ width:9,height:9,borderRadius:'50%',background:'var(--ap-pres)',animation:'lobby-pulse 1.8s infinite',display:'inline-block',flexShrink:0 }} aria-hidden="true" />

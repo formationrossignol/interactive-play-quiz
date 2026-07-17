@@ -121,7 +121,7 @@ const SaveStateIndicator = ({ state }: { state: "saved" | "saving" }) => (
     }}
   >
     {state === "saving" ? (
-      <span style={{ width: 11, height: 11, borderRadius: "50%", border: "2px solid var(--ap-line-2)", borderTopColor: "var(--ap-brand)", display: "inline-block", animation: "spin .7s linear infinite", flexShrink: 0 }} />
+      <span style={{ width: 11, height: 11, borderRadius: "50%", border: "var(--ap-border-w) solid var(--ap-line-2)", borderTopColor: "var(--ap-brand)", display: "inline-block", animation: "spin .7s linear infinite", flexShrink: 0 }} />
     ) : (
       <svg style={{ width: 14, height: 14 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M4 12.5 10 18 20 6" />
@@ -143,7 +143,7 @@ const AnswerRow = ({
       style={{
         display: "flex", alignItems: "center", gap: 10,
         background: "var(--ap-card)",
-        border: "2px solid var(--ap-line)",
+        border: "var(--ap-border-w) solid var(--ap-line)",
         borderRadius: "var(--ap-r-md)",
         padding: "8px 10px",
         boxShadow: "0 3px 0 var(--ap-line)",
@@ -229,7 +229,7 @@ const PhonePreview = ({
           <span style={{
             fontFamily: "var(--ap-font-display)", fontWeight: 600, fontSize: 13,
             display: "inline-flex", alignItems: "center", gap: 5,
-            background: "white", border: "2px solid var(--ap-line)", borderRadius: 999,
+            background: "white", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: 999,
             padding: "4px 10px",
           }}>
             <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--ap-brand)", display: "inline-block" }} />
@@ -261,7 +261,7 @@ const PhonePreview = ({
             return (
               <div key={i} style={{
                 display: "flex", alignItems: "center", gap: 9,
-                background: "white", border: "2px solid var(--ap-line)",
+                background: "white", border: "var(--ap-border-w) solid var(--ap-line)",
                 borderRadius: 13, padding: "10px 11px",
                 fontWeight: 700, fontSize: 12.5,
                 boxShadow: "0 3px 0 var(--ap-line)", color: "var(--ap-ink)",
@@ -774,7 +774,7 @@ export const QuizBuilder = () => {
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            style={{ background: "var(--ap-card)", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-lg)", boxShadow: "var(--ap-shadow-card)" }}
+            style={{ background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-lg)", boxShadow: "var(--ap-shadow-card)" }}
             className="z-50 p-1.5"
           >
             {getAvailableTypes().map(type => {
@@ -813,13 +813,13 @@ export const QuizBuilder = () => {
               width: "100%", resize: "none", overflow: "hidden",
               fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 22,
               lineHeight: 1.35, color: "var(--ap-ink)",
-              background: "var(--ap-card)", border: "2px solid var(--ap-line)",
+              background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)",
               borderRadius: "var(--ap-r-lg)", padding: "18px 20px",
-              boxShadow: "0 4px 0 var(--ap-line)", outline: "none",
+              boxShadow: "var(--ap-shadow-soft)", outline: "none",
               transition: "border-color .15s, box-shadow .15s",
             }}
             onFocus={e => { e.target.style.borderColor = "var(--ap-brand)"; e.target.style.boxShadow = "0 4px 0 color-mix(in srgb, var(--ap-brand) 40%, transparent)"; }}
-            onBlur={e => { e.target.style.borderColor = "var(--ap-line)"; e.target.style.boxShadow = "0 4px 0 var(--ap-line)"; }}
+            onBlur={e => { e.target.style.borderColor = "var(--ap-line)"; e.target.style.boxShadow = "var(--ap-shadow-soft)"; }}
           />
         </div>
 
@@ -838,7 +838,7 @@ export const QuizBuilder = () => {
           <label style={{ display: "block", marginBottom: 18, cursor: "pointer" }}>
             <div
               style={{
-                border: "2px dashed var(--ap-line-2)", borderRadius: "var(--ap-r-md)",
+                border: "var(--ap-border-w) dashed var(--ap-line-2)", borderRadius: "var(--ap-r-md)",
                 padding: "13px 16px", display: "flex", alignItems: "center", gap: 10,
                 color: "var(--ap-muted)", fontSize: 13, fontWeight: 700,
                 transition: "border-color .15s, background .15s, color .15s",
@@ -926,7 +926,7 @@ export const QuizBuilder = () => {
             {/* Points */}
             <div>
               <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".09em", textTransform: "uppercase", color: "var(--ap-muted)", marginBottom: 9 }}>Points</div>
-              <div style={{ display: "flex", background: "var(--ap-card)", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-md)", padding: 4, gap: 4, boxShadow: "0 3px 0 var(--ap-line)" }}>
+              <div style={{ display: "flex", background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-md)", padding: 4, gap: 4, boxShadow: "0 3px 0 var(--ap-line)" }}>
                 {POINTS_OPTIONS.map(opt => {
                   const isOn = (q.points ?? 1000) === opt.value || (opt.value === 1000 && (q.points ?? 1000) !== 0 && (q.points ?? 1000) !== 2000);
                   return (
@@ -948,7 +948,7 @@ export const QuizBuilder = () => {
             {/* Time */}
             <div>
               <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".09em", textTransform: "uppercase", color: "var(--ap-muted)", marginBottom: 9 }}>Temps de réponse</div>
-              <div style={{ display: "flex", background: "var(--ap-card)", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-md)", padding: 4, gap: 4, boxShadow: "0 3px 0 var(--ap-line)" }}>
+              <div style={{ display: "flex", background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-md)", padding: 4, gap: 4, boxShadow: "0 3px 0 var(--ap-line)" }}>
                 {TIME_OPTIONS.map(opt => {
                   const isOn = (q.timeLimit ?? 20) === opt.value;
                   return (
@@ -1090,7 +1090,7 @@ export const QuizBuilder = () => {
       {/* ── Topbar ── */}
       <div style={{
         height: 62, flexShrink: 0, background: "var(--ap-card)",
-        borderBottom: "2px solid var(--ap-line)",
+        borderBottom: "var(--ap-border-w) solid var(--ap-line)",
         display: "flex", alignItems: "center", gap: 16, padding: "0 18px",
         position: "relative", zIndex: 20,
       }}>
@@ -1100,7 +1100,7 @@ export const QuizBuilder = () => {
           aria-label={`Retour : ${backLabel}`}
           style={{
             display: "grid", placeItems: "center", width: 36, height: 36,
-            borderRadius: "var(--ap-r-sm)", border: "2px solid var(--ap-line)",
+            borderRadius: "var(--ap-r-sm)", border: "var(--ap-border-w) solid var(--ap-line)",
             background: "var(--ap-card)", cursor: "pointer", boxShadow: "0 3px 0 var(--ap-line)",
             transition: "transform .15s var(--ap-spring), box-shadow .15s var(--ap-spring)",
             flexShrink: 0,
@@ -1140,7 +1140,7 @@ export const QuizBuilder = () => {
           title="Paramètres"
           style={{
             display: "grid", placeItems: "center", width: 36, height: 36,
-            borderRadius: "var(--ap-r-sm)", border: "2px solid var(--ap-line)",
+            borderRadius: "var(--ap-r-sm)", border: "var(--ap-border-w) solid var(--ap-line)",
             background: "var(--ap-card)", cursor: "pointer", boxShadow: "0 3px 0 var(--ap-line)",
             flexShrink: 0,
           }}
@@ -1174,7 +1174,7 @@ export const QuizBuilder = () => {
       <div style={{ flex: 1, minHeight: 0, display: "grid", gridTemplateColumns: "270px 1fr 330px" }}>
 
         {/* Left Rail */}
-        <aside style={{ borderRight: "2px solid var(--ap-line)", background: "var(--ap-card)", display: "flex", flexDirection: "column", minHeight: 0 }}>
+        <aside style={{ borderRight: "var(--ap-border-w) solid var(--ap-line)", background: "var(--ap-card)", display: "flex", flexDirection: "column", minHeight: 0 }}>
           <div style={{ padding: "16px 16px 10px", display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
             <h2 style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".09em", textTransform: "uppercase", color: "var(--ap-muted)", margin: 0 }}>
               {isFlashcard ? "Cartes" : isSlide ? "Diapositives" : "Questions"}
@@ -1189,7 +1189,7 @@ export const QuizBuilder = () => {
                     <MoreHorizontal style={{ width: 15, height: 15 }} />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="z-50 p-1.5" style={{ background: "var(--ap-card)", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-lg)", boxShadow: "var(--ap-shadow-card)" }}>
+                <DropdownMenuContent className="z-50 p-1.5" style={{ background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-lg)", boxShadow: "var(--ap-shadow-card)" }}>
                   <DropdownMenuItem className="gap-2 rounded-xl text-sm cursor-pointer" onSelect={() => setImportFileOpen(true)}>
                     <Upload style={{ width: 13, height: 13 }} /> Importer depuis un fichier
                   </DropdownMenuItem>
@@ -1236,7 +1236,7 @@ export const QuizBuilder = () => {
             style={{
               margin: "0 12px 14px",
               padding: 11,
-              border: "2px dashed var(--ap-line-2)",
+              border: "var(--ap-border-w) dashed var(--ap-line-2)",
               borderRadius: "var(--ap-r-md)",
               background: "transparent",
               fontFamily: "inherit",
@@ -1260,9 +1260,9 @@ export const QuizBuilder = () => {
 
         {/* Right Preview */}
         <aside style={{
-          borderLeft: "2px solid var(--ap-line)",
+          borderLeft: "var(--ap-border-w) solid var(--ap-line)",
           background: "var(--ap-paper-2)",
-          backgroundImage: "radial-gradient(var(--ap-line-2) 1px, transparent 1px)",
+          backgroundImage: "var(--ap-texture)",
           backgroundSize: "22px 22px",
           display: "flex",
           flexDirection: "column",

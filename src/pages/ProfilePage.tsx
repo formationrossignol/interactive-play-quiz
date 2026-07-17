@@ -17,7 +17,7 @@ const inputStyle: React.CSSProperties = {
   fontSize: "14px",
   color: "var(--ap-ink)",
   background: "var(--ap-card)",
-  border: "2px solid var(--ap-line)",
+  border: "var(--ap-border-w) solid var(--ap-line)",
   borderRadius: "var(--ap-r-sm)",
   padding: "11px 14px",
   outline: "none",
@@ -38,7 +38,7 @@ const labelStyle: React.CSSProperties = {
 
 const triggerStyle = {
   fontFamily: "var(--ap-font-body)", fontWeight: 700, fontSize: "14px",
-  border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-sm)",
+  border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-sm)",
   background: "var(--ap-card)", color: "var(--ap-ink)", height: "44px",
   width: "100%",
 };
@@ -344,7 +344,7 @@ const ProfilePage = () => {
                   <SelectTrigger style={{ ...triggerStyle, marginTop: "8px" }}>
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent style={{ background: "var(--ap-card)", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-md)" }}>
+                  <SelectContent style={{ background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-md)" }}>
                     <SelectItem value="light">
                       <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                         <Sun className="w-4 h-4" />{t("lightMode")}
@@ -365,7 +365,7 @@ const ProfilePage = () => {
                   <SelectTrigger style={{ ...triggerStyle, marginTop: "8px" }}>
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent style={{ background: "var(--ap-card)", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-md)" }}>
+                  <SelectContent style={{ background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-md)" }}>
                     <SelectItem value="en">🇬🇧 English</SelectItem>
                     <SelectItem value="fr">🇫🇷 Français</SelectItem>
                   </SelectContent>

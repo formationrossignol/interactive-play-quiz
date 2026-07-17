@@ -105,7 +105,7 @@ export const CourseGeneratorModal = ({ open, onClose }: Props) => {
           style={{
             pointerEvents:"auto", width:"100%", maxWidth:520,
             background:"var(--ap-card)", borderRadius:"var(--ap-r-lg)",
-            border:"2px solid var(--ap-line)", boxShadow:"0 8px 0 var(--ap-line), 0 40px 80px rgba(36,27,58,.25)",
+            border:"var(--ap-border-w) solid var(--ap-line)", boxShadow:"0 8px 0 var(--ap-line), 0 40px 80px rgba(36,27,58,.25)",
             padding:32,
             animation:"modal-in .3s cubic-bezier(.2,.7,.3,1.3)",
           }}
@@ -198,7 +198,7 @@ export const CourseGeneratorModal = ({ open, onClose }: Props) => {
                   width:"100%", padding:"10px 14px",
                   fontFamily:"var(--ap-font-mono)", fontWeight:700, fontSize:13,
                   color:"var(--ap-ink)", background:"var(--ap-paper-2)",
-                  border:"2px solid var(--ap-line)", borderRadius:"var(--ap-r-sm)",
+                  border:"var(--ap-border-w) solid var(--ap-line)", borderRadius:"var(--ap-r-sm)",
                   outline:"none", boxSizing:"border-box",
                 }}
                 onFocus={(e) => { e.currentTarget.style.borderColor = "var(--ap-brand)"; }}
@@ -265,7 +265,7 @@ export const CourseGeneratorModal = ({ open, onClose }: Props) => {
                 <button
                   onClick={reset}
                   style={{
-                    flex:1, padding:"13px 0", borderRadius:999, border:"2px solid var(--ap-line)",
+                    flex:1, padding:"13px 0", borderRadius:999, border:"var(--ap-border-w) solid var(--ap-line)",
                     background:"var(--ap-card)", fontFamily:"var(--ap-font-body)", fontWeight:800, fontSize:15,
                     color:"var(--ap-ink)", cursor:"pointer",
                   }}

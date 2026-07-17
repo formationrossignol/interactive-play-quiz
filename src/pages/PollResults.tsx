@@ -33,7 +33,7 @@ const QuestionResultCard = ({ result }: { result: PollQuestionResult }) => {
               {result.textResponses.length} réponse{result.textResponses.length > 1 ? "s" : ""} libre{result.textResponses.length > 1 ? "s" : ""}
             </p>
             {result.textResponses.map((text, i) => (
-              <div key={i} style={{ background: "var(--ap-paper)", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-md)", padding: "10px 14px", fontSize: "13px", fontWeight: 600, color: "var(--ap-ink)" }}>
+              <div key={i} style={{ background: "var(--ap-paper)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-md)", padding: "10px 14px", fontSize: "13px", fontWeight: 600, color: "var(--ap-ink)" }}>
                 💬 {text}
               </div>
             ))}
@@ -74,7 +74,7 @@ const QuestionResultCard = ({ result }: { result: PollQuestionResult }) => {
             <YAxis tick={{ fontSize: 11, fill: "var(--ap-muted)" }} domain={[0, maxCount + 1]} allowDecimals={false} />
             <Tooltip
               formatter={(value: number, _name: string, props: { payload: { pct: number; fullName: string } }) => [`${value} (${props.payload.pct}%)`, props.payload.fullName]}
-              contentStyle={{ fontFamily: "var(--ap-font-body)", fontSize: 13, border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-md)", background: "var(--ap-card)" }}
+              contentStyle={{ fontFamily: "var(--ap-font-body)", fontSize: 13, border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-md)", background: "var(--ap-card)" }}
             />
             <Bar dataKey="count" radius={[6, 6, 0, 0]}>
               {chartData.map((_, index) => (
@@ -126,7 +126,7 @@ const SessionCard = ({ session, defaultOpen }: { session: PollResultSession; def
       </button>
 
       {open && (
-        <div style={{ padding: "0 16px 16px", display: "flex", flexDirection: "column", gap: "12px", borderTop: "2px solid var(--ap-line)" }}>
+        <div style={{ padding: "0 16px 16px", display: "flex", flexDirection: "column", gap: "12px", borderTop: "var(--ap-border-w) solid var(--ap-line)" }}>
           {session.questions.map((q) => (
             <QuestionResultCard key={q.questionIndex} result={q} />
           ))}
@@ -192,7 +192,7 @@ const PollResults = () => {
         </div>
 
         {!store || store.sessions.length === 0 ? (
-          <div style={{ borderRadius: "var(--ap-r-lg)", border: "2px dashed var(--ap-line-2)", background: "var(--ap-paper-2)", padding: "48px 24px", textAlign: "center" }}>
+          <div style={{ borderRadius: "var(--ap-r-lg)", border: "var(--ap-border-w) dashed var(--ap-line-2)", background: "var(--ap-paper-2)", padding: "48px 24px", textAlign: "center" }}>
             <BarChart2 style={{ width: 40, height: 40, color: "var(--ap-muted)", margin: "0 auto 12px" }} />
             <p className="ap-muted" style={{ fontSize: "14px", marginBottom: "8px" }}>Aucune session enregistrée pour ce sondage.</p>
             <p className="ap-muted" style={{ fontSize: "13px" }}>Lancez le sondage et les résultats apparaîtront ici.</p>

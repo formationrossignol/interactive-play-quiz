@@ -48,7 +48,7 @@ const inputStyle: React.CSSProperties = {
   fontSize: "14px",
   color: "var(--ap-ink)",
   background: "var(--ap-card)",
-  border: "2px solid var(--ap-line)",
+  border: "var(--ap-border-w) solid var(--ap-line)",
   borderRadius: "var(--ap-r-sm)",
   outline: "none",
   boxSizing: "border-box",
@@ -58,7 +58,7 @@ const selectStyle: React.CSSProperties = {
   fontFamily: "var(--ap-font-body)",
   fontWeight: 700,
   fontSize: "14px",
-  border: "2px solid var(--ap-line)",
+  border: "var(--ap-border-w) solid var(--ap-line)",
   borderRadius: "var(--ap-r-sm)",
   background: "var(--ap-card)",
   color: "var(--ap-ink)",
@@ -283,14 +283,14 @@ const CourseBuilder = () => {
         <aside style={{
           width: 272,
           flexShrink: 0,
-          borderRight: "2px solid var(--ap-line)",
+          borderRight: "var(--ap-border-w) solid var(--ap-line)",
           background: "var(--ap-paper-2)",
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",
         }}>
           {/* Sidebar top actions */}
-          <div style={{ padding: "12px 12px 8px", display: "flex", gap: "8px", borderBottom: "2px solid var(--ap-line)" }}>
+          <div style={{ padding: "12px 12px 8px", display: "flex", gap: "8px", borderBottom: "var(--ap-border-w) solid var(--ap-line)" }}>
             <button
               className="ap-btn ap-btn--sm ap-btn--pill"
               style={{ flex: 1, background: "var(--ap-brand)", color: "#fff", border: "none", gap: "6px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "13px" }}
@@ -304,7 +304,7 @@ const CourseBuilder = () => {
             </button>
             <button
               className="ap-btn ap-btn--sm"
-              style={{ flex: 1, border: "2px solid var(--ap-line)", background: "var(--ap-card)", gap: "6px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "13px", borderRadius: "var(--ap-r-pill)", fontWeight: 700 }}
+              style={{ flex: 1, border: "var(--ap-border-w) solid var(--ap-line)", background: "var(--ap-card)", gap: "6px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "13px", borderRadius: "var(--ap-r-pill)", fontWeight: 700 }}
               onClick={addModule}
             >
               <Plus className="h-3.5 w-3.5" /> Module
@@ -479,7 +479,7 @@ const CourseBuilder = () => {
                       {fieldLabel("Catégorie")}
                       <Select value={category} onValueChange={setCategory}>
                         <SelectTrigger style={selectStyle}><SelectValue /></SelectTrigger>
-                        <SelectContent style={{ background: "var(--ap-card)", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-md)" }}>
+                        <SelectContent style={{ background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-md)" }}>
                           {CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                         </SelectContent>
                       </Select>
@@ -509,7 +509,7 @@ const CourseBuilder = () => {
               </div>
 
               {modules.length === 0 && (
-                <div style={{ marginTop: "32px", borderRadius: "var(--ap-r-lg)", border: "2px dashed var(--ap-line-2)", background: "var(--ap-paper-2)", padding: "36px 24px", textAlign: "center" }}>
+                <div style={{ marginTop: "32px", borderRadius: "var(--ap-r-lg)", border: "var(--ap-border-w) dashed var(--ap-line-2)", background: "var(--ap-paper-2)", padding: "36px 24px", textAlign: "center" }}>
                   <p className="ap-muted" style={{ fontSize: "14px", marginBottom: "12px" }}>Aucun module. Créez un module dans le panneau gauche pour structurer votre cours.</p>
                   <button
                     className="ap-btn ap-btn--sm ap-btn--pill"
@@ -549,7 +549,7 @@ const CourseBuilder = () => {
                         onValueChange={(v) => updateLesson(moduleId, lessonId, { type: v as Lesson["type"], linkedItemId: undefined })}
                       >
                         <SelectTrigger style={{ ...selectStyle, height: "40px" }}><SelectValue /></SelectTrigger>
-                        <SelectContent style={{ background: "var(--ap-card)", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-md)" }}>
+                        <SelectContent style={{ background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-md)" }}>
                           <SelectItem value="text">Texte</SelectItem>
                           <SelectItem value="quiz">Quiz</SelectItem>
                           <SelectItem value="flashcard">Flashcards</SelectItem>
@@ -592,7 +592,7 @@ const CourseBuilder = () => {
                         <SelectTrigger style={{ ...selectStyle, height: "40px", width: "100%" }}>
                           <SelectValue placeholder="Choisir un quiz..." />
                         </SelectTrigger>
-                        <SelectContent style={{ background: "var(--ap-card)", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-md)" }}>
+                        <SelectContent style={{ background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-md)" }}>
                           {userQuizzes.length === 0
                             ? <SelectItem value="" disabled>Aucun quiz disponible</SelectItem>
                             : userQuizzes.map((q) => (
@@ -614,7 +614,7 @@ const CourseBuilder = () => {
                         <SelectTrigger style={{ ...selectStyle, height: "40px", width: "100%" }}>
                           <SelectValue placeholder="Choisir un set..." />
                         </SelectTrigger>
-                        <SelectContent style={{ background: "var(--ap-card)", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-md)" }}>
+                        <SelectContent style={{ background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-md)" }}>
                           {userFlashcards.length === 0
                             ? <SelectItem value="" disabled>Aucun set disponible</SelectItem>
                             : userFlashcards.map((f) => (
@@ -694,7 +694,7 @@ const CourseBuilder = () => {
                           display: "flex", alignItems: "center", gap: "10px",
                           padding: "10px 14px",
                           background: "var(--ap-paper-2)",
-                          border: "2px solid var(--ap-line)",
+                          border: "var(--ap-border-w) solid var(--ap-line)",
                           borderRadius: "var(--ap-r-sm)",
                           marginBottom: "10px",
                         }}>
@@ -714,7 +714,7 @@ const CourseBuilder = () => {
                       <label style={{
                         display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
                         gap: "8px", padding: "24px",
-                        border: "2px dashed var(--ap-line-2)",
+                        border: "var(--ap-border-w) dashed var(--ap-line-2)",
                         borderRadius: "var(--ap-r-sm)",
                         cursor: "pointer",
                         background: "var(--ap-paper-2)",
@@ -737,7 +737,7 @@ const CourseBuilder = () => {
                           <div style={{
                             padding: "16px",
                             background: "var(--ap-paper-2)",
-                            border: "2px solid var(--ap-line)",
+                            border: "var(--ap-border-w) solid var(--ap-line)",
                             borderRadius: "var(--ap-r-sm)",
                             fontFamily: "monospace",
                             fontSize: "12px",

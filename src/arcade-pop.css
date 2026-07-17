@@ -66,6 +66,12 @@
 
   /* Typographie mono — chiffres tabulaires pour codes et compteurs */
   --ap-font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', ui-monospace, monospace;
+
+  /* Texture de fond (trame de points) — les thèmes sobres la neutralisent */
+  --ap-texture: radial-gradient(var(--ap-line-2) 1px, transparent 1px);
+
+  /* Épaisseur de bordure structurelle (cartes, menus, filets) */
+  --ap-border-w: 2px;
 }
 
 /* ============================================================
@@ -135,7 +141,7 @@ body { transition: background-color .25s ease, color .25s ease; }
 .ap-app {
   background: var(--ap-paper);
   /* Trame de points en filigrane — texture « papier de jeu » */
-  background-image: radial-gradient(var(--ap-line-2) 1px, transparent 1px);
+  background-image: var(--ap-texture);
   background-size: 28px 28px;
   color: var(--ap-ink);
   font-family: var(--ap-font-body);
@@ -547,6 +553,22 @@ body { transition: background-color .25s ease, color .25s ease; }
 
 /* Curseur personnalisé sur zones de jeu */
 .ap-game-zone { cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='5' fill='%237048ff' opacity='.7'/%3E%3C/svg%3E") 12 12, pointer; }
+
+/* ── Icônes réseaux sociaux (footer) — thémable par tokens ── */
+.ap-social {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; flex: 0 0 auto;
+  color: var(--ap-muted); background: var(--ap-card);
+  border: var(--ap-border-w) solid var(--ap-line);
+  border-radius: var(--ap-r-sm);
+  transition: color .15s var(--ap-ease), border-color .15s var(--ap-ease),
+              background .15s var(--ap-ease), transform .12s var(--ap-ease);
+}
+.ap-social:hover {
+  color: var(--ap-brand);
+  border-color: var(--ap-brand);
+  transform: translateY(-2px);
+}
 
 /* ============================================================
    11. NAV PILL

@@ -96,14 +96,14 @@ export default function ExamAdmin() {
       <style>{`
         .ea-row { display: grid; gap: 16px; }
         @media (min-width: 600px) { .ea-row { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); } }
-        .ea-attempt { background: var(--ap-card); border: 2px solid var(--ap-line); border-radius: var(--ap-r-lg); overflow: hidden; }
+        .ea-attempt { background: var(--ap-card); border: var(--ap-border-w) solid var(--ap-line); border-radius: var(--ap-r-lg); overflow: hidden; }
         .ea-attempt-header { padding: 14px 18px; display: flex; align-items: center; gap: 12; cursor: pointer; transition: background .15s; }
         .ea-attempt-header:hover { background: var(--ap-paper); }
       `}</style>
 
       {/* Topbar */}
       <div style={{
-        background: 'var(--ap-card)', borderBottom: '2px solid var(--ap-line)',
+        background: 'var(--ap-card)', borderBottom: 'var(--ap-border-w) solid var(--ap-line)',
         padding: '0 24px', height: 60, display: 'flex', alignItems: 'center', gap: 16,
         position: 'sticky', top: 0, zIndex: 10,
       }}>
@@ -119,7 +119,7 @@ export default function ExamAdmin() {
         </span>
         <button
           onClick={() => navigate(`/exam-builder?examId=${exam.id}`)}
-          style={{ padding: '6px 14px', borderRadius: 999, border: '2px solid var(--ap-line)', background: 'none', fontFamily: 'var(--ap-font-body)', fontWeight: 800, fontSize: 12, color: 'var(--ap-ink)', cursor: 'pointer', flexShrink: 0 }}
+          style={{ padding: '6px 14px', borderRadius: 999, border: 'var(--ap-border-w) solid var(--ap-line)', background: 'none', fontFamily: 'var(--ap-font-body)', fontWeight: 800, fontSize: 12, color: 'var(--ap-ink)', cursor: 'pointer', flexShrink: 0 }}
         >
           Modifier
         </button>
@@ -130,7 +130,7 @@ export default function ExamAdmin() {
         {/* Join code */}
         {liveStatus !== 'draft' && (
           <div style={{
-            background: 'var(--ap-card)', border: '2px solid var(--ap-line)',
+            background: 'var(--ap-card)', border: 'var(--ap-border-w) solid var(--ap-line)',
             borderRadius: 'var(--ap-r-lg)', padding: '16px 24px', marginBottom: 20,
             display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap',
           }}>
@@ -200,7 +200,7 @@ export default function ExamAdmin() {
 
         {/* Exam info */}
         <div style={{
-          background: 'var(--ap-card)', border: '2px solid var(--ap-line)',
+          background: 'var(--ap-card)', border: 'var(--ap-border-w) solid var(--ap-line)',
           borderRadius: 'var(--ap-r-lg)', padding: '16px 20px', marginBottom: 20,
           fontSize: 12, fontWeight: 700, color: 'var(--ap-muted)',
           display: 'flex', gap: 20, flexWrap: 'wrap', alignItems: 'center',
@@ -229,7 +229,7 @@ export default function ExamAdmin() {
 
         {attempts.length === 0 ? (
           <div style={{
-            background: 'var(--ap-card)', border: '2px solid var(--ap-line)',
+            background: 'var(--ap-card)', border: 'var(--ap-border-w) solid var(--ap-line)',
             borderRadius: 'var(--ap-r-lg)', padding: '36px 24px', textAlign: 'center',
             color: 'var(--ap-muted)', fontWeight: 700, fontSize: 14,
           }}>
@@ -302,7 +302,7 @@ function AttemptDetail({ att, exam, quiz }: { att: Attempt; exam: Exam; quiz: Re
   const navigate = useNavigate();
 
   return (
-    <div style={{ padding: '0 18px 18px', borderTop: '2px solid var(--ap-line)' }}>
+    <div style={{ padding: '0 18px 18px', borderTop: 'var(--ap-border-w) solid var(--ap-line)' }}>
       <div style={{ display: 'flex', gap: 20, padding: '14px 0', fontSize: 12, fontWeight: 700, color: 'var(--ap-muted)', flexWrap: 'wrap', borderBottom: '1px solid var(--ap-line)', marginBottom: 14 }}>
         <span>▶ {new Date(att.startedAt).toLocaleString('fr')}</span>
         {att.submittedAt && <span>🏁 {new Date(att.submittedAt).toLocaleString('fr')}</span>}
@@ -366,7 +366,7 @@ function checkCorrect(q: { type: string; correctAnswer: unknown }, given: number
 function StatCard({ icon, label, value, highlight }: { icon: string; label: string; value: string; highlight?: boolean }) {
   return (
     <div style={{
-      background: 'var(--ap-card)', border: '2px solid var(--ap-line)',
+      background: 'var(--ap-card)', border: 'var(--ap-border-w) solid var(--ap-line)',
       borderRadius: 'var(--ap-r-lg)', padding: '16px 20px', textAlign: 'center',
     }}>
       <div style={{ fontSize: 22, marginBottom: 6 }}>{icon}</div>
@@ -385,7 +385,7 @@ function StatCard({ icon, label, value, highlight }: { icon: string; label: stri
 
 const outlineBtn: React.CSSProperties = {
   padding: '8px 14px', borderRadius: 999,
-  border: '2px solid var(--ap-line)', background: 'var(--ap-paper-2)',
+  border: 'var(--ap-border-w) solid var(--ap-line)', background: 'var(--ap-paper-2)',
   fontFamily: 'var(--ap-font-body)', fontWeight: 800, fontSize: 13,
   color: 'var(--ap-ink)', cursor: 'pointer',
 };

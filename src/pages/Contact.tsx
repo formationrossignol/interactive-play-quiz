@@ -34,7 +34,7 @@ const inputStyle: React.CSSProperties = {
   fontSize: "14px",
   color: "var(--ap-ink)",
   background: "var(--ap-card)",
-  border: "2px solid var(--ap-line)",
+  border: "var(--ap-border-w) solid var(--ap-line)",
   borderRadius: "var(--ap-r-sm)",
   padding: "11px 14px",
   outline: "none",

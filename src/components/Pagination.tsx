@@ -28,7 +28,7 @@ export const Pagination = ({ page, totalPages, onPageChange, className }: Pagina
     width: 36,
     height: 36,
     borderRadius: "var(--ap-r-sm)",
-    border: "2px solid var(--ap-line)",
+    border: "var(--ap-border-w) solid var(--ap-line)",
     background: "var(--ap-card)",
     color: "var(--ap-ink)",
     fontFamily: "var(--ap-font-display)",
