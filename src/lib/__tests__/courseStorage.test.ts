@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getCurrentUser } from '../auth';
-import { createCourse, getUserCourses, type Course } from '../courseStorage';
+import { createCourse, duplicateCourse, getUserCourses, type Course } from '../courseStorage';
 import { PlanLimitError } from '../plans';
 
 vi.mock('../auth', () => ({ getCurrentUser: vi.fn() }));
@@ -40,5 +40,12 @@ describe('createCourse cap enforcement', () => {
     });
     createCourse(coursePayload());
     expect(() => createCourse(coursePayload())).not.toThrow();
+  });
+});
+
+describe('duplicateCourse cap enforcement', () => {
+  it('throws PlanLimitError when duplicating would exceed the starter cap (1)', () => {
+    const created = createCourse(coursePayload());
+    expect(() => duplicateCourse(created.id)).toThrow(PlanLimitError);
   });
 });
