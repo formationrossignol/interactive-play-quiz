@@ -19,7 +19,10 @@ const fetchRoomLocked = async (gameCode: string): Promise<boolean> => {
 
 /** Read the baked-in participant cap (quiz_data.maxParticipants) and the
  *  current player count, so a join can be blocked once the room is full.
- *  Error-tolerant like fetchRoomLocked — a query failure just reports "not full". */
+ *  Error-tolerant like fetchRoomLocked — a query failure just reports "not full".
+ *  Client-only check, same as the room-lock mechanism above: two players
+ *  joining the last slot near-simultaneously can both be admitted (no
+ *  server-side atomic reservation). Accepted trade-off, not a bug. */
 const fetchCapacity = async (gameCode: string): Promise<{ full: boolean }> => {
   const { data } = await supabase
     .from("session_state")
@@ -134,8 +137,9 @@ const JoinQuiz = () => {
   useEffect(() => {
     if (!gameCode || quizExists !== true) return;
     const interval = setInterval(async () => {
-      setRoomLocked(await fetchRoomLocked(gameCode));
-      setRoomFull((await fetchCapacity(gameCode)).full);
+      const [locked, capacity] = await Promise.all([fetchRoomLocked(gameCode), fetchCapacity(gameCode)]);
+      setRoomLocked(locked);
+      setRoomFull(capacity.full);
     }, 3000);
     return () => clearInterval(interval);
   }, [gameCode, quizExists]);
