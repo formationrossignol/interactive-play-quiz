@@ -1,4 +1,5 @@
 import { getCurrentUser } from './auth';
+import { CONTENT_CAPS, getPlan, PlanLimitError } from './plans';
 
 export interface Lesson {
   id: string;
@@ -89,6 +90,11 @@ export const createCourse = (
 ): Course => {
   const user = getCurrentUser();
   if (!user) throw new Error('Not authenticated');
+
+  const plan = getPlan(user);
+  const cap = CONTENT_CAPS[plan].course;
+  if (cap !== null && getUserCourses(user.id).length >= cap) throw new PlanLimitError('course', cap, plan);
+
   const now = new Date().toISOString();
   const course: Course = { ...data, id: genId(), userId: user.id, createdAt: now, updatedAt: now };
   const all = getAllCourses();
