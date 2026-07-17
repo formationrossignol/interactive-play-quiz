@@ -19,8 +19,11 @@ import {
   submitAnswerToServer,
   upsertPlayerInSession,
   writeSessionState,
+  normalizeControl,
+  DEFAULT_SESSION_CONTROL,
   type SharedPlayer,
   type SharedGameState,
+  type SessionControl,
 } from "@/lib/sessionState";
 import { supabase } from "@/lib/supabase";
 import { getPollOptions } from "@/lib/pollResults";
@@ -39,7 +42,12 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
   const [gameState, setGameState] = useState<'waiting' | 'countdown' | 'question-intro' | 'question' | 'answer-feedback' | 'leaderboard' | 'transition' | 'final' | 'abandoned'>('waiting');
 
   const [ambianceId, setAmbianceId] = useState<string>('arcade');
-  const audio = useGameAudio({ ambianceId, gameState, isHost: false });
+  // Host-authoritative control state (room lock / global mute / kick list).
+  const [control, setControl] = useState<SessionControl>({ ...DEFAULT_SESSION_CONTROL });
+  const isKicked = !!playerId && control.kickedIds.includes(playerId);
+  const isKickedRef = useRef(false);
+  useEffect(() => { isKickedRef.current = isKicked; }, [isKicked]);
+  const audio = useGameAudio({ ambianceId, gameState, isHost: false, globalMuted: control.globalMuted });
 
   // Autoplay policy: unlock on the first user tap anywhere.
   useEffect(() => {
@@ -100,25 +108,41 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
   const hasAnsweredRef = useRef(false);
   // Tracks whether this player was ever found in session.players (to detect kick)
   const wasSeenInSessionRef = useRef(false);
+  // Highest question index for which the player has entered the 'question' phase.
+  // Once a question is live for the player, a late/stale event must never drag
+  // them back to 'question-intro'/'countdown' for that same index (regression:
+  // "answers vanish, only the question shows"). PlayerView has no other ordering
+  // guard, unlike the host (QuizSession STATE_ORDER).
+  const enteredQuestionIndexRef = useRef<number>(-1);
+  const shouldApplyPhase = useCallback((mapped: string, newIndex: number) => {
+    if ((mapped === 'question-intro' || mapped === 'countdown') && newIndex === enteredQuestionIndexRef.current) {
+      return false;
+    }
+    return true;
+  }, []);
 
   const syncFromSession = useCallback(() => {
     const session = readSessionState(gameCode);
     setTotalPlayers(session.players.length);
+    setControl(normalizeControl(session.control));
     // Map host states to player states (host uses 'answer-distribution', player uses 'answer-feedback')
     const mapped = session.gameState === 'answer-distribution' ? 'answer-feedback' : session.gameState;
-    setGameState((prev) => (prev !== mapped ? mapped : prev));
-    if (session.gameState === 'question' || session.gameState === 'question-intro') {
-      const newIndex = session.currentQuestionIndex ?? 0;
-      // Reset answer UI immediately when a new question arrives via storage/realtime event.
-      // Without this, the player sees "Réponse envoyée!" for up to 6s (poll throttle + realtime skip).
-      if (newIndex !== answeredForIndexRef.current) {
-        hasAnsweredRef.current = false;
-        setHasAnswered(false);
-        setSelectedAnswer(null);
-      }
-      setCurrentQuestion(newIndex);
-      if (session.timeLeft > 0) {
-        setTimeLeft(session.timeLeft);
+    const newIndex = session.currentQuestionIndex ?? 0;
+    if (shouldApplyPhase(mapped, newIndex)) {
+      if (mapped === 'question') enteredQuestionIndexRef.current = newIndex;
+      setGameState((prev) => (prev !== mapped ? mapped : prev));
+      if (session.gameState === 'question' || session.gameState === 'question-intro') {
+        // Reset answer UI immediately when a new question arrives via storage/realtime event.
+        // Without this, the player sees "Réponse envoyée!" for up to 6s (poll throttle + realtime skip).
+        if (newIndex !== answeredForIndexRef.current) {
+          hasAnsweredRef.current = false;
+          setHasAnswered(false);
+          setSelectedAnswer(null);
+        }
+        setCurrentQuestion(newIndex);
+        if (session.timeLeft > 0) {
+          setTimeLeft(session.timeLeft);
+        }
       }
     }
 
@@ -130,12 +154,9 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
         const sorted = [...session.players].sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
         const index = sorted.findIndex((p) => p.id === playerId);
         setPlayerRank(index >= 0 ? index + 1 : 1);
-      } else if (wasSeenInSessionRef.current && session.gameState === 'waiting') {
-        // Player was in session but is now gone — host kicked them
-        navigate(`/join/${gameCode}`, { replace: true });
       }
     }
-  }, [gameCode, playerId]);
+  }, [gameCode, playerId, shouldApplyPhase]);
 
   // On mount, always fetch authoritative state from Supabase.
   // Local localStorage may be stale (e.g. 'final' from a previous run of the same quiz).
@@ -157,7 +178,10 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
         const storedPlayer = JSON.parse(storedPlayerRaw) as SharedPlayer;
         setPlayerId(storedPlayer.id);
         setPlayerAvatar(storedPlayer.avatar || '🎮');
-        upsertPlayerInSession(gameCode, storedPlayer);
+        // Don't re-add ourselves if the host already excluded us.
+        if (!readSessionState(gameCode).control.kickedIds.includes(storedPlayer.id)) {
+          upsertPlayerInSession(gameCode, storedPlayer);
+        }
       } catch (error) {
         console.warn('Failed to parse stored player information', error);
       }
@@ -248,20 +272,29 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
   useEffect(() => {
     let prevUpdatedAt = '';
     let hasQuizData = false;
+    // The control column may not be deployed yet — degrade gracefully if so.
+    let hasControlColumn = true;
 
     const poll = async () => {
       // Realtime is healthy — skip this poll tick
       if (Date.now() - lastRealtimeFireRef.current < 4000) return;
 
+      const ctrlCol = hasControlColumn ? ',control' : '';
       const cols = hasQuizData
-        ? 'game_state,current_question_index,time_left,players,updated_at'
-        : 'game_state,current_question_index,time_left,players,updated_at,quiz_data';
+        ? `game_state,current_question_index,time_left,players${ctrlCol},updated_at`
+        : `game_state,current_question_index,time_left,players${ctrlCol},updated_at,quiz_data`;
 
-      const { data: rawData } = await supabase
+      const { data: rawData, error } = await supabase
         .from('session_state')
         .select(cols)
         .eq('game_code', gameCode)
         .single();
+
+      // Retry without the control column if it isn't there yet (pre-deploy).
+      if (error && hasControlColumn && /control/i.test(error.message)) {
+        hasControlColumn = false;
+        return;
+      }
 
       if (!rawData) return;
       // Dynamic column list defeats the supabase type parser — cast to a plain row
@@ -275,6 +308,9 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
         if (typeof data.quiz_data.ambianceId === 'string') setAmbianceId(data.quiz_data.ambianceId);
         hasQuizData = true;
       }
+
+      // Control state (lock / global mute / kick list) is host-authoritative.
+      setControl(normalizeControl(data.control));
 
       // Skip state sync if nothing changed
       if (data.updated_at === prevUpdatedAt) return;
@@ -296,12 +332,17 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
 
       // Reset answer state when a NEW question starts (index changed), on either intro or active phase
       const newIndex = data.current_question_index ?? 0;
-      if ((mapped === 'question' || mapped === 'question-intro') && newIndex !== answeredForIndexRef.current) {
-        hasAnsweredRef.current = false;
-        setHasAnswered(false);
-        setSelectedAnswer(null);
+      // Never regress to intro/countdown for a question the player already started.
+      const applyPhase = shouldApplyPhase(mapped, newIndex);
+      if (applyPhase) {
+        if (mapped === 'question') enteredQuestionIndexRef.current = newIndex;
+        if ((mapped === 'question' || mapped === 'question-intro') && newIndex !== answeredForIndexRef.current) {
+          hasAnsweredRef.current = false;
+          setHasAnswered(false);
+          setSelectedAnswer(null);
+        }
+        setGameState(mapped);
       }
-      setGameState(mapped);
 
       // Keep a sorted snapshot for leaderboard + final screens
       if (players.length > 0) {
@@ -315,10 +356,10 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
       // Only update totalPlayers when we have data — avoids overwriting with 0 on edge polls
       if (players.length > 0) setTotalPlayers(players.length);
 
-      if (remoteState === 'question-intro') {
+      if (applyPhase && remoteState === 'question-intro') {
         // Show question text; timer not yet running — just update the index.
         setCurrentQuestion(data.current_question_index ?? 0);
-      } else if (remoteState === 'question') {
+      } else if (applyPhase && remoteState === 'question') {
         const newIndex = data.current_question_index ?? 0;
         setCurrentQuestion(newIndex);
         // Set the wall-clock end time only when a NEW question starts.
@@ -354,7 +395,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
     poll(); // immediate first fetch
     const interval = setInterval(poll, 2000);
     return () => clearInterval(interval);
-  }, [gameCode, playerId]);
+  }, [gameCode, playerId, shouldApplyPhase]);
 
   // Timer countdown — Date.now()-based interval, no drift, smooth 250ms updates
   useEffect(() => {
@@ -373,6 +414,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
   useEffect(() => {
     if (!playerId || gameState !== 'question') return;
     const beat = () => {
+      if (isKickedRef.current) return; // excluded — stop re-adding ourselves
       const raw = sessionStorage.getItem(`quiz-player-${gameCode}`);
       if (!raw) return;
       try {
@@ -386,6 +428,13 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
     const interval = setInterval(beat, 5000);
     return () => clearInterval(interval);
   }, [playerId, gameCode, gameState]);
+
+  // Excluded by the host: purge our stored identity so no effect re-adds us,
+  // and remove ourselves from the shared player list immediately.
+  useEffect(() => {
+    if (!isKicked) return;
+    sessionStorage.removeItem(`quiz-player-${gameCode}`);
+  }, [isKicked, gameCode]);
 
   // Retry a failed submit-answer call at 1.5s, 4s, 9s, 18s after initial send.
   // submit-answer is idempotent (same game_code/player_id/question_index
@@ -645,6 +694,29 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
       setAnswerPending(false);
     }
   };
+
+  // Excluded by the host — takes priority over every game phase.
+  if (isKicked) {
+    return (
+      <div
+        className="min-h-screen flex items-center justify-center p-4"
+        style={{ background: 'var(--ap-brand)' }}
+      >
+        <div className="max-w-md w-full text-center text-white">
+          <div style={{ fontSize: 72, marginBottom: 20 }}>🚫</div>
+          <h2 style={{ fontFamily: 'var(--ap-font-display)', fontSize: '1.8rem', fontWeight: 700, marginBottom: 12 }}>
+            Vous avez été exclu
+          </h2>
+          <p style={{ opacity: 0.75, marginBottom: 28, fontFamily: 'var(--ap-font-body)', fontSize: 16 }}>
+            L'hôte vous a retiré de la partie.
+          </p>
+          <button className="ap-btn ap-btn--pill" style={{ background: 'rgba(255,255,255,0.2)', color: '#fff', border: '2px solid rgba(255,255,255,0.4)' }} onClick={() => navigate('/')}>
+            Retour à l'accueil
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (gameState === 'abandoned') {
     return (

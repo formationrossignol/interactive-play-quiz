@@ -15,6 +15,10 @@ interface UseGameAudioArgs {
   gameState: string;
   /** Host screen plays the shared music bed; players share the same engine. */
   isHost: boolean;
+  /** Host cut the music for everyone. Silences output regardless of the local
+   *  (personal) mute preference; the personal preference is preserved so audio
+   *  resumes correctly when the host un-mutes. */
+  globalMuted?: boolean;
 }
 
 export interface GameAudioApi {
@@ -30,7 +34,7 @@ export interface GameAudioApi {
 const FADE_VOLUME = 0.12; // music ducks to this under 'fade' phases
 const SWITCH_DEBOUNCE_MS = 150;
 
-export function useGameAudio({ ambianceId, gameState, isHost }: UseGameAudioArgs): GameAudioApi {
+export function useGameAudio({ ambianceId, gameState, isHost, globalMuted = false }: UseGameAudioArgs): GameAudioApi {
   const ambiance = normalizeAmbianceId(ambianceId);
 
   const initial = loadAudioPrefs();
@@ -46,8 +50,12 @@ export function useGameAudio({ ambianceId, gameState, isHost }: UseGameAudioArgs
   // Live refs so effects read the latest prefs without re-subscribing.
   const mutedRef = useRef(muted);
   const volumeRef = useRef(volume);
+  const globalMutedRef = useRef(globalMuted);
   useEffect(() => { mutedRef.current = muted; }, [muted]);
   useEffect(() => { volumeRef.current = volume; }, [volume]);
+
+  // Effective mute = personal preference OR host's global mute.
+  const isMuted = useCallback(() => mutedRef.current || globalMutedRef.current, []);
 
   // One reused music element for the lifetime of the session screen.
   useEffect(() => {
@@ -67,9 +75,9 @@ export function useGameAudio({ ambianceId, gameState, isHost }: UseGameAudioArgs
   const applyMusicVolume = useCallback((ducked: boolean) => {
     const el = musicRef.current;
     if (!el) return;
-    el.muted = mutedRef.current;
+    el.muted = isMuted();
     el.volume = (ducked ? FADE_VOLUME : 1) * volumeRef.current;
-  }, []);
+  }, [isMuted]);
 
   // React to phase / ambiance / mute / volume changes.
   useEffect(() => {
@@ -99,21 +107,38 @@ export function useGameAudio({ ambianceId, gameState, isHost }: UseGameAudioArgs
         el.src = src;
       }
       applyMusicVolume(false);
-      if (unlockedRef.current && !mutedRef.current) {
+      if (unlockedRef.current && !isMuted()) {
         el.play().catch(() => { /* autoplay still blocked — AudioControls prompts a tap */ });
       }
     }, SWITCH_DEBOUNCE_MS);
 
     return () => { if (switchTimer.current) clearTimeout(switchTimer.current); };
-  }, [ambiance, gameState, muted, volume, applyMusicVolume]);
+  }, [ambiance, gameState, muted, volume, applyMusicVolume, isMuted]);
+
+  // React to the host's global mute toggling. Silences immediately when set;
+  // when cleared, restores playback if the local preference allows it.
+  useEffect(() => {
+    globalMutedRef.current = globalMuted;
+    const el = musicRef.current;
+    if (!el) return;
+    const effective = isMuted();
+    el.muted = effective;
+    if (effective) {
+      el.pause();
+    } else if (unlockedRef.current && currentSrcRef.current) {
+      el.play().catch(() => {});
+    }
+  }, [globalMuted, isMuted]);
 
   const setMuted = useCallback((m: boolean) => {
     setMutedState(m);
+    mutedRef.current = m;
     saveAudioPrefs({ muted: m, volume: volumeRef.current });
     const el = musicRef.current;
     if (el) {
-      el.muted = m;
-      if (m) el.pause();
+      const effective = m || globalMutedRef.current;
+      el.muted = effective;
+      if (effective) el.pause();
       else if (unlockedRef.current) el.play().catch(() => {});
     }
   }, []);
@@ -133,17 +158,17 @@ export function useGameAudio({ ambianceId, gameState, isHost }: UseGameAudioArgs
     if (unlockedRef.current) return;
     unlockedRef.current = true;
     const el = musicRef.current;
-    if (el && currentSrcRef.current && !mutedRef.current) {
+    if (el && currentSrcRef.current && !isMuted()) {
       el.play().catch(() => {});
     }
-  }, []);
+  }, [isMuted]);
 
   const playSfx = useCallback((name: SfxName) => {
-    if (mutedRef.current || !unlockedRef.current) return;
+    if (isMuted() || !unlockedRef.current) return;
     const ctx = sfxCtxRef.current;
     if (!ctx) return;
     playSynthSfx(ctx, name, volumeRef.current);
-  }, []);
+  }, [isMuted]);
 
   // isHost currently only gates host-only SFX at the call site; kept in the
   // signature so callers document intent and future host-only beds are trivial.

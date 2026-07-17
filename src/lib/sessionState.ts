@@ -29,11 +29,44 @@ export interface SharedPlayer {
   lastReaction?: { emoji: string; comment?: string; sentAt: string };
 }
 
+/** Host-authoritative control state, synced host → players via the
+ *  session_state.control jsonb column. */
+export interface SessionControl {
+  /** Room is locked — new players can't join. */
+  locked: boolean;
+  /** ISO timestamp when the room was locked (used to filter late joiners). */
+  lockedAt: string | null;
+  /** Host cut the music for everyone. */
+  globalMuted: boolean;
+  /** Player ids the host has excluded (server-authoritative kick list). */
+  kickedIds: string[];
+}
+
+export const DEFAULT_SESSION_CONTROL: SessionControl = {
+  locked: false,
+  lockedAt: null,
+  globalMuted: false,
+  kickedIds: [],
+};
+
+/** Coerce an unknown value (row.control from Supabase/localStorage) into a
+ *  well-formed SessionControl, tolerating partial/legacy shapes. */
+export const normalizeControl = (raw: unknown): SessionControl => {
+  const c = (raw && typeof raw === "object" ? raw : {}) as Partial<SessionControl>;
+  return {
+    locked: typeof c.locked === "boolean" ? c.locked : false,
+    lockedAt: typeof c.lockedAt === "string" ? c.lockedAt : null,
+    globalMuted: typeof c.globalMuted === "boolean" ? c.globalMuted : false,
+    kickedIds: Array.isArray(c.kickedIds) ? c.kickedIds.filter((id): id is string => typeof id === "string") : [],
+  };
+};
+
 export interface SharedSessionState {
   players: SharedPlayer[];
   gameState: SharedGameState;
   currentQuestionIndex: number;
   timeLeft: number;
+  control: SessionControl;
   updatedAt: string;
 }
 
@@ -42,6 +75,7 @@ const DEFAULT_SESSION_STATE: SharedSessionState = {
   gameState: "waiting",
   currentQuestionIndex: 0,
   timeLeft: 0,
+  control: { ...DEFAULT_SESSION_CONTROL },
   updatedAt: new Date().toISOString(),
 };
 
@@ -68,6 +102,7 @@ export const readSessionState = (gameCode: string): SharedSessionState => {
       gameState: (parsed.gameState as SharedGameState) ?? "waiting",
       currentQuestionIndex: typeof parsed.currentQuestionIndex === "number" ? parsed.currentQuestionIndex : 0,
       timeLeft: typeof parsed.timeLeft === "number" ? parsed.timeLeft : 0,
+      control: normalizeControl(parsed.control),
       updatedAt: parsed.updatedAt && typeof parsed.updatedAt === "string" ? parsed.updatedAt : new Date().toISOString(),
     };
   } catch (error) {
@@ -89,6 +124,10 @@ const pushStateToSupabase = (gameCode: string, state: SharedSessionState) => {
   // Writing players from the host's local state would overwrite concurrent player answers.
   supabase
     .from("session_state")
+    // control is intentionally NOT written here — it's host-authoritative and
+    // pushed separately via pushControlToSupabase. Keeping it out of the general
+    // state write avoids clobbering it and keeps core flow independent of the
+    // (optionally not-yet-deployed) control column.
     .update({
       game_state: state.gameState,
       current_question_index: state.currentQuestionIndex,
@@ -98,6 +137,20 @@ const pushStateToSupabase = (gameCode: string, state: SharedSessionState) => {
     .eq("game_code", gameCode)
     .then(({ error }) => {
       if (error) console.error("[Supabase write error]", gameCode, state.gameState, error);
+    });
+};
+
+/** Push only the host-authoritative control state (lock / global mute / kick list).
+ *  Also mirrored into localStorage so same-device tabs stay consistent. */
+export const pushControlToSupabase = (gameCode: string, control: SessionControl) => {
+  const current = readSessionState(gameCode);
+  writeSessionState(gameCode, { ...current, control });
+  supabase
+    .from("session_state")
+    .update({ control, updated_at: new Date().toISOString() })
+    .eq("game_code", gameCode)
+    .then(({ error }) => {
+      if (error) console.error("[Supabase control write error]", gameCode, error);
     });
 };
 
@@ -336,6 +389,7 @@ export const fetchSessionStateFromSupabase = async (gameCode: string): Promise<S
     gameState: (data.game_state as SharedGameState) ?? "waiting",
     currentQuestionIndex: typeof data.current_question_index === "number" ? data.current_question_index : 0,
     timeLeft: typeof data.time_left === "number" ? data.time_left : 0,
+    control: normalizeControl(data.control),
     updatedAt: typeof data.updated_at === "string" ? data.updated_at : new Date().toISOString(),
   };
 };
@@ -362,6 +416,7 @@ export const subscribeToSessionState = (
           gameState: (row.game_state as SharedGameState) ?? "waiting",
           currentQuestionIndex: typeof row.current_question_index === "number" ? row.current_question_index : 0,
           timeLeft: typeof row.time_left === "number" ? row.time_left : 0,
+          control: normalizeControl(row.control),
           updatedAt: typeof row.updated_at === "string" ? row.updated_at : new Date().toISOString(),
         };
         writeSessionState(gameCode, state);

@@ -4,7 +4,18 @@ import { AvatarSelector } from "@/components/AvatarSelector";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
+import { normalizeControl } from "@/lib/sessionState";
 import { t } from "@/lib/i18n";
+
+/** Read the host's control state (room lock etc.) for a session. */
+const fetchRoomLocked = async (gameCode: string): Promise<boolean> => {
+  const { data } = await supabase
+    .from("session_state")
+    .select("control")
+    .eq("game_code", gameCode)
+    .single();
+  return normalizeControl((data as { control?: unknown } | null)?.control).locked;
+};
 
 const checkSupabase = async (gameCode: string): Promise<boolean | null> => {
   const { data, error } = await supabase
@@ -25,6 +36,7 @@ const JoinQuiz = () => {
   const navigate = useNavigate();
   const [quizExists, setQuizExists] = useState<boolean | null>(null);
   const [quizTitle, setQuizTitle] = useState<string>("");
+  const [roomLocked, setRoomLocked] = useState(false);
 
   useEffect(() => {
     if (!gameCode) return;
@@ -94,9 +106,30 @@ const JoinQuiz = () => {
         const title = (data?.quiz_data as { title?: string } | null)?.title;
         if (title) setQuizTitle(title);
       });
+    // Separate, error-tolerant read so a not-yet-deployed control column can't
+    // break the title fetch above.
+    fetchRoomLocked(gameCode).then(setRoomLocked);
   }, [gameCode, quizExists, navigate]);
 
-  const handleAvatarComplete = (name: string, avatar: string) => {
+  // Keep the lock state fresh so a player waiting on this screen learns the
+  // moment the host locks the room (poll every 3s).
+  useEffect(() => {
+    if (!gameCode || quizExists !== true) return;
+    const interval = setInterval(async () => {
+      setRoomLocked(await fetchRoomLocked(gameCode));
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [gameCode, quizExists]);
+
+  const handleAvatarComplete = async (name: string, avatar: string) => {
+    if (!gameCode) return;
+    // Re-check at submit time — the host may have locked the room while the
+    // player was picking an avatar.
+    if (await fetchRoomLocked(gameCode)) {
+      setRoomLocked(true);
+      toast.error("Salle verrouillée", { description: "L'hôte a fermé l'accès, impossible de rejoindre." });
+      return;
+    }
     const id =
       typeof crypto !== 'undefined' && 'randomUUID' in crypto
         ? crypto.randomUUID()
@@ -117,6 +150,23 @@ const JoinQuiz = () => {
           <AlertTriangle className="w-16 h-16 mx-auto mb-4 animate-pulse" style={{ color: "var(--ap-flash)" }} />
           <h2 className="ap-h2" style={{ fontSize: "24px", marginBottom: "12px" }}>Code invalide</h2>
           <p className="ap-muted" style={{ fontSize: "15px", marginBottom: "24px" }}>Ce code de quiz ou sondage n'existe pas.</p>
+          <button className="ap-btn ap-btn--pill" onClick={() => navigate("/")}>
+            Retour
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (roomLocked) {
+    return (
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
+        <div className="ap-card ap-card--floaty" style={{ maxWidth: 440, width: "100%", textAlign: "center", padding: "40px" }}>
+          <div style={{ fontSize: 60, marginBottom: 12 }}>🔒</div>
+          <h2 className="ap-h2" style={{ fontSize: "24px", marginBottom: "12px" }}>Salle verrouillée</h2>
+          <p className="ap-muted" style={{ fontSize: "15px", marginBottom: "24px" }}>
+            L'hôte a fermé l'accès à cette partie. Vous ne pouvez pas la rejoindre pour le moment.
+          </p>
           <button className="ap-btn ap-btn--pill" onClick={() => navigate("/")}>
             Retour
           </button>
