@@ -65,7 +65,7 @@ function CourseCard({ d, ctx, navigate, userId }: CourseItemProps) {
         </div>
 
         <div className="flex flex-wrap gap-1.5 mb-3">
-          <Badge variant="outline" className={`rounded-full text-xs ${course.isPublic ? "border-indigo-200 bg-indigo-50 text-indigo-700" : "border-slate-200 text-slate-500"}`}>
+          <Badge variant="outline" className={`rounded-full text-xs ${course.isPublic ? "border-primary/30 bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}>
             {course.isPublic ? "Public" : "Privé"}
           </Badge>
           {course.category && course.category !== "Autre" && (

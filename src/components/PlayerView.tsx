@@ -115,6 +115,12 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
   // guard, unlike the host (QuizSession STATE_ORDER).
   const enteredQuestionIndexRef = useRef<number>(-1);
   const shouldApplyPhase = useCallback((mapped: string, newIndex: number) => {
+    // Back to lobby (replay of the same session): clear the guard so the next
+    // run's question 0 intro/countdown is not swallowed.
+    if (mapped === 'waiting') {
+      enteredQuestionIndexRef.current = -1;
+      return true;
+    }
     if ((mapped === 'question-intro' || mapped === 'countdown') && newIndex === enteredQuestionIndexRef.current) {
       return false;
     }

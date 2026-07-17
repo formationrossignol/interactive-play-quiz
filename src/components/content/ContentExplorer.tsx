@@ -417,7 +417,7 @@ export function ContentExplorer({
   // ---- content by view ----
   let content: ReactNode;
   if (c.loading) {
-    content = <p className="py-10 text-center text-sm text-slate-400">Chargement…</p>;
+    content = <p className="py-10 text-center text-sm text-muted-foreground">Chargement…</p>;
   } else if (view === "trash") {
     content = (
       <TrashView

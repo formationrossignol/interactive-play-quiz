@@ -153,11 +153,12 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
   const controlRef = useRef(control);
   useEffect(() => { controlRef.current = control; }, [control]);
   const updateControl = useCallback((patch: Partial<SessionControl>) => {
-    setControl((prev) => {
-      const next = { ...prev, ...patch };
-      if (isHost) pushControlToSupabase(quiz.gameCode, next);
-      return next;
-    });
+    // Compute from the ref and push OUTSIDE the setState updater — updaters may
+    // be re-invoked (StrictMode) and must stay side-effect free.
+    const next = { ...controlRef.current, ...patch };
+    controlRef.current = next;
+    setControl(next);
+    if (isHost) pushControlToSupabase(quiz.gameCode, next);
   }, [isHost, quiz.gameCode]);
 
   const roomLocked = control.locked;
