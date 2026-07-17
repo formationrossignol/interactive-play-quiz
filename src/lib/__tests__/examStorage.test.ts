@@ -103,4 +103,18 @@ describe('startAttempt audience cap', () => {
     for (let i = 0; i < 5; i++) seedSubmittedAttempt(exam.id, `p${i}`);
     expect(() => startAttempt(exam, 'p5', 'P5', 'p5@b.com')).not.toThrow();
   });
+
+  it("never blocks a retake even if the participant's only prior attempt was cancelled", () => {
+    const exam = makeExam(1);
+    const raw = localStorage.getItem('lms_exam_attempts');
+    const attempts: Attempt[] = raw ? JSON.parse(raw) : [];
+    attempts.push({
+      id: 'att-p1-cancelled', examId: exam.id, participantId: 'p1', participantName: 'p1',
+      participantEmail: 'p1@b.com', startedAt: '2026-01-01T00:00:00Z', submittedAt: null,
+      timeUsedSeconds: 60, questionOrder: ['a', 'b'], answers: {}, score: null, percentage: null,
+      passed: null, submissionMode: null, status: 'cancelled', logs: [],
+    });
+    localStorage.setItem('lms_exam_attempts', JSON.stringify(attempts));
+    expect(() => startAttempt(exam, 'p1', 'P1', 'p1@b.com')).not.toThrow(AudienceCapError);
+  });
 });
