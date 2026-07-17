@@ -94,7 +94,7 @@
   /* Thème « Thales » — miroir des tokens --ap-* de theme-thales.css
      pour les composants shadcn. Se combine avec .dark ci-dessous. */
   :root[data-theme="thales"] {
-    --background: 228 33% 97%;       /* --ap-paper   #f5f6fa */
+    --background: 0 0% 100%;         /* --ap-paper   #ffffff */
     --foreground: 236 54% 10%;       /* --ap-ink     #0c0d29 */
 
     --card: 0 0% 100%;
@@ -106,23 +106,23 @@
     --primary: 234 64% 25%;          /* --ap-brand   #171f69 */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 228 33% 94%;        /* --ap-paper-2 #ebedf5 */
+    --secondary: 220 30% 96%;        /* --ap-paper-2 #f2f4f8 */
     --secondary-foreground: 236 54% 10%;
 
-    --muted: 228 33% 94%;
-    --muted-foreground: 230 19% 41%; /* --ap-muted   #555c7e */
+    --muted: 220 30% 96%;
+    --muted-foreground: 230 20% 41%; /* --ap-muted   #545b7d */
 
-    --accent: 231 47% 94%;           /* --ap-brand-soft #e9ebf7 */
+    --accent: 230 46% 95%;           /* --ap-brand-soft #eceef8 */
     --accent-foreground: 234 64% 25%;
 
     --destructive: 5 55% 43%;        /* --ap-quiz    #a93a31 */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 229 32% 91%;           /* --ap-line    #e2e5f0 */
-    --input: 229 32% 91%;
+    --border: 224 22% 90%;           /* --ap-line    #e1e4ec */
+    --input: 224 22% 90%;
     --ring: 187 63% 53%;             /* accent cyan  #3cc2d2 */
 
-    --radius: 0.5rem;
+    --radius: 0rem;                  /* géométrie angulaire */
 
     --success: 158 59% 30%;          /* --ap-pres    #1f7a5c */
     --warning: 38 71% 40%;           /* --ap-flash   #b07a1e */
@@ -146,10 +146,10 @@
     --background: 236 54% 10%;       /* --ap-paper   #0c0d29 */
     --foreground: 231 100% 98%;      /* --ap-ink     #f4f6ff */
 
-    --card: 235 51% 18%;             /* --ap-card    #171b47 */
+    --card: 236 54% 16%;             /* --ap-card    #131640 */
     --card-foreground: 231 100% 98%;
 
-    --popover: 235 51% 18%;
+    --popover: 236 54% 16%;
     --popover-foreground: 231 100% 98%;
 
     --primary: 231 64% 61%;          /* --ap-brand   #5a68db */
@@ -168,7 +168,7 @@
     --input: 234 46% 27%;
     --ring: 187 63% 53%;
 
-    --sidebar-background: 235 51% 18%;
+    --sidebar-background: 236 54% 16%;
     --sidebar-foreground: 231 100% 98%;
     --sidebar-accent: 235 53% 15%;
     --sidebar-accent-foreground: 231 100% 98%;

@@ -1,54 +1,68 @@
 /* ============================================================
-   Ludiq · Thème « Thales » — habillage institutionnel
+   Ludiq · Thème « Thales » — transformation institutionnelle
    ------------------------------------------------------------
    Activé par data-theme="thales" sur <html> (réglage du profil).
-   Même grammaire de tokens que Arcade Pop : seuls la palette, la
-   typographie et le relief changent. Se combine avec .dark.
+   Même grammaire de tokens et de classes que Arcade Pop, mais un
+   autre langage graphique, inspiré de thalesgroup.com :
 
-   Palette de marque :
-     bleu principal  #171F69   ·  bleu accent  #3CC2D2
-     blanc           #FFFFFF   ·  bleu sombre  #0C0D29
-   Typo : Gibson, repli bureautique Aptos / Arial / Helvetica.
+     · blanc dominant, bleu profond #171F69, accent cyan #3CC2D2
+     · géométrie angulaire — aucun arrondi, filets 1px
+     · relief par la ligne, pas par l'ombre
+     · typographie grotesque (Gibson / Aptos / Arial), CTA en
+       capitales espacées, micro-labels précédés d'un « / » cyan
+     · aucun rebond ni rotation — les transitions sont sèches
+
+   Importé APRÈS arcade-pop.css : à spécificité égale ou
+   supérieure, ces règles gagnent la cascade. Se combine avec
+   la classe .dark (variante bleu très sombre #0C0D29).
    ============================================================ */
 
+/* ============================================================
+   1. TOKENS
+   ============================================================ */
 :root[data-theme="thales"] {
-  /* Couleurs par TYPE de contenu — mêmes familles, versions sobres */
+  /* Couleurs par TYPE de contenu — versions sobres, même sémantique */
   --ap-quiz:        #a93a31;  --ap-quiz-deep:   #7c2a24;  --ap-quiz-soft:  #f9edec;
   --ap-pres:        #1f7a5c;  --ap-pres-deep:   #155743;  --ap-pres-soft:  #e9f4f0;
   --ap-poll:        #3cc2d2;  --ap-poll-deep:   #1e8a99;  --ap-poll-soft:  #e8f7f9;
   --ap-flash:       #b07a1e;  --ap-flash-deep:  #7d5613;  --ap-flash-soft: #f8f1e4;
 
-  /* Marque + neutres froids */
-  --ap-brand:       #171f69;  --ap-brand-deep:  #0c0d29;  --ap-brand-soft: #e9ebf7;
+  /* Marque + neutres froids — blanc dominant, bleu profond */
+  --ap-brand:       #171f69;  --ap-brand-deep:  #0c0d29;  --ap-brand-soft: #eceef8;
   --ap-ink:         #0c0d29;
-  --ap-muted:       #555c7e;
-  --ap-paper:       #f5f6fa;
-  --ap-paper-2:     #ebedf5;
+  --ap-muted:       #545b7d;
+  --ap-paper:       #ffffff;
+  --ap-paper-2:     #f2f4f8;
   --ap-card:        #ffffff;
-  --ap-line:        #e2e5f0;
-  --ap-line-2:      #c6cbe0;
+  --ap-line:        #e1e4ec;
+  --ap-line-2:      #c3c8d8;
 
-  /* Rayons resserrés — géométrie institutionnelle */
-  --ap-r-sm: 6px;
-  --ap-r-md: 8px;
-  --ap-r-lg: 12px;
-  --ap-r-xl: 16px;
+  /* Géométrie angulaire — rien n'est rond */
+  --ap-r-sm: 0px;
+  --ap-r-md: 0px;
+  --ap-r-lg: 0px;
+  --ap-r-xl: 0px;
+  --ap-r-pill: 0px;
 
-  /* Relief plat : diffuses discrètes, plus d'offsets « jouet » */
-  --ap-shadow-soft:  0 1px 2px rgba(12, 13, 41, .08);
-  --ap-shadow-card:  0 8px 24px rgba(12, 13, 41, .10), 0 1px 2px rgba(12, 13, 41, .06);
-  --ap-shadow-float: 0 12px 28px rgba(12, 13, 41, .14);
+  /* Le relief vient des filets, pas des ombres */
+  --ap-shadow-soft:  none;
+  --ap-shadow-card:  0 12px 32px rgba(12, 13, 41, .08);
+  --ap-shadow-float: 0 16px 36px rgba(12, 13, 41, .12);
 
   /* Typo — Gibson si installée, replis bureautiques sinon */
   --ap-font-display: 'Gibson', 'Aptos', 'Segoe UI', Arial, Helvetica, sans-serif;
   --ap-font-body:    'Gibson', 'Aptos', 'Segoe UI', Arial, Helvetica, sans-serif;
+
+  /* Transitions sèches — pas de dépassement élastique */
+  --ap-ease:   cubic-bezier(.25, .1, .25, 1);
+  --ap-spring: cubic-bezier(.25, .1, .25, 1);
 }
 
-/* ── Variante sombre du thème — bleu très sombre #0C0D29 ── */
+/* ── Variante sombre — bleu très sombre #0C0D29 ── */
 .dark[data-theme="thales"] {
   --ap-paper:       #0c0d29;
   --ap-paper-2:     #12153a;
-  --ap-card:        #171b47;
+  --ap-card:        #131640;
   --ap-line:        #262c66;
   --ap-line-2:      #3a4185;
   --ap-ink:         #f4f6ff;
@@ -64,9 +78,9 @@
   --ap-poll-soft:   #0f2e36;
   --ap-flash-soft:  #33280f;
 
-  --ap-shadow-soft:  0 1px 2px rgba(0, 0, 0, .4);
-  --ap-shadow-card:  0 8px 24px rgba(0, 0, 0, .5), 0 1px 2px rgba(0, 0, 0, .35);
-  --ap-shadow-float: 0 12px 28px rgba(0, 0, 0, .55);
+  --ap-shadow-soft:  none;
+  --ap-shadow-card:  0 12px 32px rgba(0, 0, 0, .5);
+  --ap-shadow-float: 0 16px 36px rgba(0, 0, 0, .55);
 }
 
 /* Textes « deep » sur fonds soft, version sombre */
@@ -77,64 +91,219 @@
 .dark[data-theme="thales"] .ap-badge--brand { color: #aab4f2; }
 
 /* ============================================================
-   Ajustements de composants — aplatir le relief « arcade ».
-   Ce fichier est importé APRÈS arcade-pop.css : à spécificité
-   égale, ces règles gagnent la cascade.
+   2. FOND & SIGNALÉTIQUE GLOBALE
    ============================================================ */
 
-/* Fond uni — pas de trame de points en filigrane */
+/* Fond uni — pas de trame de points */
 [data-theme="thales"] .ap-app { background-image: none; }
 
-/* Boutons : ombre diffuse unique, course verticale réduite */
+/* L'accent cyan est la signature interactive : focus + sélection */
+[data-theme="thales"] .ap-app :focus-visible {
+  outline: 2px solid #3cc2d2;
+  outline-offset: 2px;
+  border-radius: 0;
+}
+[data-theme="thales"] .ap-app ::selection {
+  background: #3cc2d2;
+  color: #0c0d29;
+}
+
+/* ============================================================
+   3. TYPOGRAPHIE — grotesque serrée, micro-labels « / »
+   ============================================================ */
+[data-theme="thales"] .ap-display,
+[data-theme="thales"] .ap-h1 { font-weight: 700; letter-spacing: -.5px; }
+[data-theme="thales"] .ap-h2 { font-weight: 700; letter-spacing: -.3px; }
+[data-theme="thales"] .ap-h3 { font-weight: 700; letter-spacing: 0; }
+[data-theme="thales"] .ap-lead { color: var(--ap-muted); }
+
+/* Motif signature : chaque micro-label est précédé d'un « / » cyan */
+[data-theme="thales"] .ap-label::before,
+[data-theme="thales"] .ap-strip-label::before {
+  content: "/ ";
+  color: #3cc2d2;
+  font-weight: 800;
+}
+
+/* ============================================================
+   4. BOUTONS — rectangles, capitales espacées, inversion au survol
+   ============================================================ */
 [data-theme="thales"] .ap-btn,
 [data-theme="thales"] .ap-btn--quiz,
 [data-theme="thales"] .ap-btn--pres,
 [data-theme="thales"] .ap-btn--poll,
 [data-theme="thales"] .ap-btn--flash {
-  box-shadow: 0 1px 2px rgba(12, 13, 41, .25);
+  border-radius: 0;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: none;
+  transition: background .15s var(--ap-ease), color .15s var(--ap-ease), box-shadow .15s var(--ap-ease);
 }
+[data-theme="thales"] .ap-btn--lg { font-size: 14px; }
+[data-theme="thales"] .ap-btn--sm { font-size: 11.5px; }
+
+/* Survol : fond assombri + filet cyan en pied — jamais de rebond */
 [data-theme="thales"] .ap-btn:hover,
 [data-theme="thales"] .ap-btn--quiz:hover,
 [data-theme="thales"] .ap-btn--pres:hover,
 [data-theme="thales"] .ap-btn--poll:hover,
 [data-theme="thales"] .ap-btn--flash:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 10px rgba(12, 13, 41, .28);
+  transform: none;
+  box-shadow: inset 0 -3px 0 #3cc2d2;
+  filter: brightness(1.12);
 }
 [data-theme="thales"] .ap-btn:active,
 [data-theme="thales"] .ap-btn--quiz:active,
 [data-theme="thales"] .ap-btn--pres:active,
 [data-theme="thales"] .ap-btn--poll:active,
 [data-theme="thales"] .ap-btn--flash:active {
-  transform: translateY(0);
-  box-shadow: 0 1px 2px rgba(12, 13, 41, .2);
+  transform: none;
+  box-shadow: inset 0 -3px 0 #3cc2d2;
+  filter: brightness(.95);
 }
+
+/* Secondaire : contour 1px, inversion complète au survol */
 [data-theme="thales"] .ap-btn--ghost {
+  background: transparent;
+  color: var(--ap-ink);
   box-shadow: inset 0 0 0 1px var(--ap-line-2);
 }
 [data-theme="thales"] .ap-btn--ghost:hover {
   transform: none;
+  background: var(--ap-brand);
+  color: #fff;
   box-shadow: inset 0 0 0 1px var(--ap-brand);
+  filter: none;
 }
 [data-theme="thales"] .ap-btn--ghost:active {
   transform: none;
-  box-shadow: inset 0 0 0 1px var(--ap-brand);
+  background: var(--ap-brand-deep);
+  color: #fff;
+  box-shadow: inset 0 0 0 1px var(--ap-brand-deep);
+  filter: none;
 }
 
-/* Cartes : trait fin, survol discret */
-[data-theme="thales"] .ap-card { border-width: 1px; }
+/* ============================================================
+   5. CARTES — plaques blanches, filet 1px, liseré marque en tête
+   ============================================================ */
+[data-theme="thales"] .ap-card {
+  border-width: 1px;
+  border-radius: 0;
+}
+[data-theme="thales"] .ap-card--floaty {
+  border-top: 3px solid var(--ap-brand);
+  border-radius: 0;
+}
 [data-theme="thales"] .ap-card--hover:hover {
-  transform: translateY(-2px);
+  transform: none;
+  border-color: var(--ap-brand);
   box-shadow: var(--ap-shadow-card);
 }
 
-/* Focus : l'accent cyan devient la signature interactive */
-[data-theme="thales"] .ap-app :focus-visible {
-  outline: 2px solid #3cc2d2;
-  outline-offset: 2px;
-  border-radius: 4px;
+/* ============================================================
+   6. PILLS, BADGES, EYEBROW — étiquettes carrées en capitales
+   ============================================================ */
+[data-theme="thales"] .ap-pill,
+[data-theme="thales"] .ap-badge {
+  border-radius: 0;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  font-size: 11px;
 }
-[data-theme="thales"] .ap-app ::selection {
-  background: #3cc2d2;
-  color: #0c0d29;
+[data-theme="thales"] .ap-eyebrow {
+  border-radius: 0;
+  background: transparent;
+  border: 1px solid var(--ap-line-2);
+  color: var(--ap-ink);
 }
+[data-theme="thales"] .ap-eyebrow__dot { background: #3cc2d2; }
+
+/* ============================================================
+   7. FORMULAIRES — filets fins, focus cyan
+   ============================================================ */
+[data-theme="thales"] .ap-input,
+[data-theme="thales"] .ap-textarea,
+[data-theme="thales"] .ap-code {
+  border-width: 1px;
+  border-radius: 0;
+  font-weight: 500;
+}
+[data-theme="thales"] .ap-input::placeholder,
+[data-theme="thales"] .ap-textarea::placeholder { color: var(--ap-line-2); }
+[data-theme="thales"] .ap-input:focus,
+[data-theme="thales"] .ap-textarea:focus,
+[data-theme="thales"] .ap-code:focus {
+  border-color: var(--ap-brand);
+  box-shadow: 0 0 0 3px rgba(60, 194, 210, .25);
+}
+[data-theme="thales"] .ap-dropzone {
+  border: 1px dashed var(--ap-line-2);
+  border-radius: 0;
+  background: var(--ap-paper-2);
+}
+[data-theme="thales"] .ap-dropzone:hover {
+  border-color: var(--ap-brand);
+  background: var(--ap-card);
+}
+
+/* Segmented control : rectangles, actif = marque pleine */
+[data-theme="thales"] .ap-seg button {
+  border-width: 1px;
+  border-radius: 0;
+  background: var(--ap-card);
+}
+
+/* Interrupteur : rail et curseur carrés */
+[data-theme="thales"] .ap-switch {
+  border-radius: 0;
+  background: var(--ap-line-2);
+  box-shadow: none;
+}
+[data-theme="thales"] .ap-switch::after {
+  border-radius: 0;
+  box-shadow: none;
+}
+[data-theme="thales"] .ap-switch[aria-checked="true"],
+[data-theme="thales"] .ap-switch.is-on { background: var(--ap-brand); }
+
+/* ============================================================
+   8. MARQUE & NAVIGATION — aplomb, soulignement, zéro rotation
+   ============================================================ */
+[data-theme="thales"] .ap-logo {
+  border-radius: 0;
+  box-shadow: none;
+  transform: none;
+}
+[data-theme="thales"] .ap-logo:hover { transform: none; }
+
+/* Nav : barre blanche à filet, item actif souligné à la marque */
+[data-theme="thales"] .ap-nav-pill {
+  border-width: 1px;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0;
+  gap: 0;
+}
+[data-theme="thales"] .ap-nav-pill__item {
+  border-radius: 0;
+  font-weight: 600;
+  padding: 10px 18px;
+}
+[data-theme="thales"] .ap-nav-pill__item:hover {
+  background: transparent;
+  color: var(--ap-brand);
+}
+[data-theme="thales"] .ap-nav-pill__item[aria-current="page"] {
+  background: transparent;
+  color: var(--ap-ink);
+  box-shadow: inset 0 -3px 0 var(--ap-brand);
+}
+
+/* ============================================================
+   9. MOUVEMENT — révélations sobres, chargeur monochrome
+   ============================================================ */
+[data-theme="thales"] .ap-route-loader span { background: var(--ap-brand); }
+[data-theme="thales"] .ap-route-loader span:nth-child(2) { background: #3cc2d2; }
+[data-theme="thales"] .ap-route-loader span:nth-child(3) { background: var(--ap-line-2); }
