@@ -807,6 +807,7 @@ export const QuizBuilder = () => {
                     upd({ ...defaults, id: q.id, question: q.question, image: q.image });
                   }}
                   style={locked ? { opacity: 0.5 } : undefined}
+                  aria-disabled={locked}
                 >
                   <i style={{ width: 7, height: 7, borderRadius: 2, background: m.dot, display: "inline-block", flexShrink: 0 }} />
                   {m.label}
