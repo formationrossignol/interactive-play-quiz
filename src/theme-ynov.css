@@ -1,0 +1,305 @@
+/* ============================================================
+   Ludiq · Thème « Ynov Campus » — noir / blanc / turquoise
+   ------------------------------------------------------------
+   Activé par data-theme="ynov" sur <html> (réglage du profil).
+   Même grammaire de tokens et de classes que Arcade Pop, langage
+   graphique inspiré de l'identité Ynov Campus :
+
+     · noir principal #000000, blanc #FFFFFF, turquoise #00B8A9
+     · sans-serif géométrique (Montserrat, repli Aptos / Arial)
+     · CTA turquoise à texte noir, secondaire noir monochrome
+     · arrondis légers (4–12px), aplats francs, ombres minimales
+     · signatures : titres h1 soulignés turquoise, chevron « » »
+       devant les micro-labels, nav active en bloc noir
+
+   Règle logo : monochrome noir sur fond clair, blanc sur fond
+   coloré — la tuile logo passe en noir, glyphe blanc.
+
+   Importé APRÈS arcade-pop.css : à spécificité égale ou
+   supérieure, ces règles gagnent la cascade. Se combine avec .dark.
+   ============================================================ */
+
+@import '@fontsource-variable/montserrat';
+
+/* ============================================================
+   1. TOKENS
+   ============================================================ */
+:root[data-theme="ynov"] {
+  /* Couleurs par TYPE de contenu — aplats francs, énergie campus */
+  --ap-quiz:        #e63946;  --ap-quiz-deep:   #b22633;  --ap-quiz-soft:  #fdecee;
+  --ap-pres:        #12a150;  --ap-pres-deep:   #0c7038;  --ap-pres-soft:  #e7f6ee;
+  --ap-poll:        #2d7dd2;  --ap-poll-deep:   #1d5a9e;  --ap-poll-soft:  #eaf2fb;
+  --ap-flash:       #f5a800;  --ap-flash-deep:  #b37b00;  --ap-flash-soft: #fef5e0;
+
+  /* Marque : turquoise interactif sur base noir & blanc */
+  --ap-brand:       #00b8a9;  --ap-brand-deep:  #00857a;  --ap-brand-soft: #e0f7f4;
+  --ap-ink:         #000000;
+  --ap-muted:       #595959;
+  --ap-paper:       #ffffff;
+  --ap-paper-2:     #f5f5f5;
+  --ap-card:        #ffffff;
+  --ap-line:        #e6e6e6;
+  --ap-line-2:      #c9c9c9;
+
+  /* Arrondis légers — moderne sans être joueur */
+  --ap-r-sm: 4px;
+  --ap-r-md: 8px;
+  --ap-r-lg: 12px;
+  --ap-r-xl: 14px;
+
+  /* Aplats francs, ombres minimales */
+  --ap-shadow-soft:  0 2px 8px rgba(0, 0, 0, .06);
+  --ap-shadow-card:  0 12px 28px rgba(0, 0, 0, .10);
+  --ap-shadow-float: 0 16px 32px rgba(0, 0, 0, .12);
+
+  /* Typo — Montserrat (géométrique), replis bureautiques */
+  --ap-font-display: 'Montserrat Variable', 'Montserrat', 'Aptos', Arial, Helvetica, sans-serif;
+  --ap-font-body:    'Montserrat Variable', 'Montserrat', 'Aptos', Arial, Helvetica, sans-serif;
+
+  /* Transitions nettes, léger élan sans rebond excessif */
+  --ap-ease:   cubic-bezier(.25, .1, .25, 1);
+  --ap-spring: cubic-bezier(.3, .7, .4, 1.1);
+}
+
+/* ── Variante sombre — noir Ynov, turquoise incandescent ── */
+.dark[data-theme="ynov"] {
+  --ap-paper:       #0a0a0a;
+  --ap-paper-2:     #141414;
+  --ap-card:        #161616;
+  --ap-line:        #2a2a2a;
+  --ap-line-2:      #3d3d3d;
+  --ap-ink:         #ffffff;
+  --ap-muted:       #a3a3a3;
+
+  --ap-brand:       #00b8a9;
+  --ap-brand-deep:  #007c72;
+  --ap-brand-soft:  #06312d;
+
+  --ap-quiz-soft:   #3a1518;
+  --ap-pres-soft:   #0d2b1b;
+  --ap-poll-soft:   #12253c;
+  --ap-flash-soft:  #332608;
+
+  --ap-shadow-soft:  0 2px 8px rgba(0, 0, 0, .5);
+  --ap-shadow-card:  0 12px 28px rgba(0, 0, 0, .6);
+  --ap-shadow-float: 0 16px 32px rgba(0, 0, 0, .65);
+}
+
+/* Textes « deep » sur fonds soft, version sombre */
+.dark[data-theme="ynov"] .ap-badge--quiz  { color: #f2848c; }
+.dark[data-theme="ynov"] .ap-badge--pres  { color: #5ed695; }
+.dark[data-theme="ynov"] .ap-badge--poll  { color: #7fb3e8; }
+.dark[data-theme="ynov"] .ap-badge--flash { color: #ffd066; }
+.dark[data-theme="ynov"] .ap-badge--brand { color: #4fd9cc; }
+
+/* ============================================================
+   2. FOND & SIGNALÉTIQUE GLOBALE
+   ============================================================ */
+
+/* Fond uni — pas de trame de points */
+[data-theme="ynov"] .ap-app { background-image: none; }
+
+/* Turquoise = signal interactif : focus + sélection (texte noir) */
+[data-theme="ynov"] .ap-app :focus-visible {
+  outline: 3px solid #00b8a9;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+[data-theme="ynov"] .ap-app ::selection {
+  background: #00b8a9;
+  color: #000;
+}
+
+/* ============================================================
+   3. TYPOGRAPHIE — Montserrat dense, signatures turquoise
+   ============================================================ */
+[data-theme="ynov"] .ap-display,
+[data-theme="ynov"] .ap-h1 { font-weight: 800; letter-spacing: -1px; }
+[data-theme="ynov"] .ap-h2 { font-weight: 800; letter-spacing: -.5px; }
+[data-theme="ynov"] .ap-h3 { font-weight: 700; }
+[data-theme="ynov"] .ap-lead { color: var(--ap-muted); }
+
+/* Signature : les titres de page sont soulignés au marqueur turquoise */
+[data-theme="ynov"] .ap-h1 {
+  text-decoration-line: underline;
+  text-decoration-color: #00b8a9;
+  text-decoration-thickness: 5px;
+  text-underline-offset: 10px;
+  text-decoration-skip-ink: none;
+}
+
+/* Motif : chevron « » » devant les micro-labels */
+[data-theme="ynov"] .ap-label::before,
+[data-theme="ynov"] .ap-strip-label::before {
+  content: "» ";
+  color: #00b8a9;
+  font-weight: 800;
+}
+
+/* ============================================================
+   4. BOUTONS — CTA turquoise texte noir, secondaire monochrome
+   ============================================================ */
+[data-theme="ynov"] .ap-btn {
+  color: #000;
+  border-radius: var(--ap-r-md);
+  font-weight: 700;
+  box-shadow: none;
+  transition: background .15s var(--ap-ease), color .15s var(--ap-ease),
+              transform .12s var(--ap-ease), box-shadow .15s var(--ap-ease);
+}
+[data-theme="ynov"] .ap-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(0, 184, 169, .35);
+  background: var(--ap-brand-deep);
+  color: #fff;
+}
+[data-theme="ynov"] .ap-btn:active {
+  transform: none;
+  box-shadow: none;
+  background: var(--ap-brand-deep);
+  color: #fff;
+}
+[data-theme="ynov"] .ap-btn--pill { border-radius: var(--ap-r-pill); }
+
+/* Boutons typés : aplat plein, texte blanc, assombrissement au survol */
+[data-theme="ynov"] .ap-btn--quiz,
+[data-theme="ynov"] .ap-btn--pres,
+[data-theme="ynov"] .ap-btn--poll,
+[data-theme="ynov"] .ap-btn--flash {
+  color: #fff;
+  box-shadow: none;
+}
+[data-theme="ynov"] .ap-btn--quiz:hover  { background: var(--ap-quiz-deep);  box-shadow: none; color: #fff; }
+[data-theme="ynov"] .ap-btn--pres:hover  { background: var(--ap-pres-deep);  box-shadow: none; color: #fff; }
+[data-theme="ynov"] .ap-btn--poll:hover  { background: var(--ap-poll-deep);  box-shadow: none; color: #fff; }
+[data-theme="ynov"] .ap-btn--flash:hover { background: var(--ap-flash-deep); box-shadow: none; color: #fff; }
+[data-theme="ynov"] .ap-btn--quiz:active,
+[data-theme="ynov"] .ap-btn--pres:active,
+[data-theme="ynov"] .ap-btn--poll:active,
+[data-theme="ynov"] .ap-btn--flash:active { box-shadow: none; color: #fff; }
+
+/* Secondaire : contour noir monochrome, inversion noir/blanc au survol */
+[data-theme="ynov"] .ap-btn--ghost {
+  background: transparent;
+  color: var(--ap-ink);
+  box-shadow: inset 0 0 0 2px var(--ap-ink);
+}
+[data-theme="ynov"] .ap-btn--ghost:hover {
+  transform: none;
+  background: var(--ap-ink);
+  color: var(--ap-paper);
+  box-shadow: inset 0 0 0 2px var(--ap-ink);
+}
+[data-theme="ynov"] .ap-btn--ghost:active {
+  transform: none;
+  background: var(--ap-ink);
+  color: var(--ap-paper);
+  box-shadow: inset 0 0 0 2px var(--ap-ink);
+}
+
+/* ============================================================
+   5. CARTES — blanches, filet fin, cadre noir au survol
+   ============================================================ */
+[data-theme="ynov"] .ap-card {
+  border-width: 1px;
+}
+[data-theme="ynov"] .ap-card--floaty { border-radius: var(--ap-r-lg); }
+[data-theme="ynov"] .ap-card--hover:hover {
+  transform: translateY(-2px);
+  border-color: var(--ap-ink);
+  box-shadow: var(--ap-shadow-card);
+}
+
+/* ============================================================
+   6. PILLS, BADGES, EYEBROW — compacts, gras
+   ============================================================ */
+[data-theme="ynov"] .ap-pill,
+[data-theme="ynov"] .ap-badge {
+  border-radius: var(--ap-r-sm);
+  font-weight: 700;
+}
+[data-theme="ynov"] .ap-eyebrow {
+  border-radius: var(--ap-r-sm);
+  background: var(--ap-ink);
+  border: none;
+  color: var(--ap-paper);
+}
+[data-theme="ynov"] .ap-eyebrow__dot { background: #00b8a9; }
+
+/* ============================================================
+   7. FORMULAIRES — filets fins, focus turquoise
+   ============================================================ */
+[data-theme="ynov"] .ap-input,
+[data-theme="ynov"] .ap-textarea,
+[data-theme="ynov"] .ap-code {
+  border-width: 1px;
+  font-weight: 500;
+}
+[data-theme="ynov"] .ap-input::placeholder,
+[data-theme="ynov"] .ap-textarea::placeholder { color: var(--ap-line-2); }
+[data-theme="ynov"] .ap-input:focus,
+[data-theme="ynov"] .ap-textarea:focus,
+[data-theme="ynov"] .ap-code:focus {
+  border-color: #00b8a9;
+  box-shadow: 0 0 0 3px rgba(0, 184, 169, .25);
+}
+[data-theme="ynov"] .ap-dropzone {
+  border: 1px dashed var(--ap-line-2);
+  background: var(--ap-paper-2);
+}
+[data-theme="ynov"] .ap-dropzone:hover {
+  border-color: #00b8a9;
+  background: var(--ap-card);
+}
+
+/* Segmented control : actif = bloc noir */
+[data-theme="ynov"] .ap-seg button {
+  border-width: 1px;
+  background: var(--ap-card);
+}
+[data-theme="ynov"] .ap-seg button.is-on {
+  background: var(--ap-ink);
+  border-color: var(--ap-ink);
+  color: var(--ap-paper);
+}
+
+/* Interrupteur : rail neutre, turquoise à l'activation */
+[data-theme="ynov"] .ap-switch { background: var(--ap-line-2); box-shadow: none; }
+[data-theme="ynov"] .ap-switch[aria-checked="true"],
+[data-theme="ynov"] .ap-switch.is-on { background: #00b8a9; }
+
+/* ============================================================
+   8. MARQUE & NAVIGATION — logo monochrome, nav active en bloc noir
+   ============================================================ */
+/* Règle d'usage logo : monochrome noir sur fond clair (glyphe blanc
+   dans la tuile), pas de rotation ludique. */
+[data-theme="ynov"] .ap-logo {
+  background: var(--ap-ink);
+  border-radius: var(--ap-r-md);
+  box-shadow: none;
+  transform: none;
+}
+[data-theme="ynov"] .ap-logo:hover { transform: none; }
+.dark[data-theme="ynov"] .ap-logo { background: #00b8a9; }
+.dark[data-theme="ynov"] .ap-logo svg { fill: #000; }
+
+[data-theme="ynov"] .ap-nav-pill {
+  border-width: 1px;
+  box-shadow: none;
+}
+[data-theme="ynov"] .ap-nav-pill__item { font-weight: 700; }
+[data-theme="ynov"] .ap-nav-pill__item:hover {
+  background: transparent;
+  color: var(--ap-ink);
+}
+[data-theme="ynov"] .ap-nav-pill__item[aria-current="page"] {
+  background: var(--ap-ink);
+  color: var(--ap-paper);
+}
+
+/* ============================================================
+   9. MOUVEMENT — chargeur noir / turquoise / gris
+   ============================================================ */
+[data-theme="ynov"] .ap-route-loader span { background: var(--ap-ink); }
+[data-theme="ynov"] .ap-route-loader span:nth-child(2) { background: #00b8a9; }
+[data-theme="ynov"] .ap-route-loader span:nth-child(3) { background: var(--ap-line-2); }

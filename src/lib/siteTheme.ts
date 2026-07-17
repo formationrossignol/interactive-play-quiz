@@ -3,7 +3,7 @@
 // The active skin is stamped on <html> as data-theme="<id>" (none for the
 // default Arcade Pop) and every skin ships a light + dark token set.
 
-export type SiteTheme = "arcade" | "thales";
+export type SiteTheme = "arcade" | "thales" | "ynov";
 
 export interface SiteThemeDef {
   id: SiteTheme;
@@ -36,6 +36,16 @@ export const SITE_THEMES: SiteThemeDef[] = [
     },
     colors: ["#171F69", "#3CC2D2", "#0C0D29", "#FFFFFF"],
     previewFont: "'Gibson', 'Aptos', 'Segoe UI', Arial, Helvetica, sans-serif",
+  },
+  {
+    id: "ynov",
+    name: "Ynov Campus",
+    tagline: {
+      en: "Campus energy — black, white, turquoise",
+      fr: "Énergie campus — noir, blanc, turquoise",
+    },
+    colors: ["#000000", "#00B8A9", "#FFFFFF", "#595959"],
+    previewFont: "'Montserrat Variable', 'Montserrat', 'Aptos', Arial, Helvetica, sans-serif",
   },
 ];
 
