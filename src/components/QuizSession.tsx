@@ -891,7 +891,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
 
     return (
       <div style={{
-        background: 'linear-gradient(160deg,var(--ap-brand) 0%,#5a35e6 55%,#4526c2 100%)',
+        background: 'linear-gradient(160deg,var(--ap-brand) 0%,color-mix(in srgb,var(--ap-brand) 72%,var(--ap-brand-deep)) 55%,color-mix(in srgb,var(--ap-brand) 40%,var(--ap-brand-deep)) 100%)',
         minHeight: '100vh',
         fontFamily: 'var(--ap-font-body)',
         color: 'var(--ap-ink)',

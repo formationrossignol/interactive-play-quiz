@@ -1,0 +1,140 @@
+/* ============================================================
+   Ludiq · Thème « Thales » — habillage institutionnel
+   ------------------------------------------------------------
+   Activé par data-theme="thales" sur <html> (réglage du profil).
+   Même grammaire de tokens que Arcade Pop : seuls la palette, la
+   typographie et le relief changent. Se combine avec .dark.
+
+   Palette de marque :
+     bleu principal  #171F69   ·  bleu accent  #3CC2D2
+     blanc           #FFFFFF   ·  bleu sombre  #0C0D29
+   Typo : Gibson, repli bureautique Aptos / Arial / Helvetica.
+   ============================================================ */
+
+:root[data-theme="thales"] {
+  /* Couleurs par TYPE de contenu — mêmes familles, versions sobres */
+  --ap-quiz:        #a93a31;  --ap-quiz-deep:   #7c2a24;  --ap-quiz-soft:  #f9edec;
+  --ap-pres:        #1f7a5c;  --ap-pres-deep:   #155743;  --ap-pres-soft:  #e9f4f0;
+  --ap-poll:        #3cc2d2;  --ap-poll-deep:   #1e8a99;  --ap-poll-soft:  #e8f7f9;
+  --ap-flash:       #b07a1e;  --ap-flash-deep:  #7d5613;  --ap-flash-soft: #f8f1e4;
+
+  /* Marque + neutres froids */
+  --ap-brand:       #171f69;  --ap-brand-deep:  #0c0d29;  --ap-brand-soft: #e9ebf7;
+  --ap-ink:         #0c0d29;
+  --ap-muted:       #555c7e;
+  --ap-paper:       #f5f6fa;
+  --ap-paper-2:     #ebedf5;
+  --ap-card:        #ffffff;
+  --ap-line:        #e2e5f0;
+  --ap-line-2:      #c6cbe0;
+
+  /* Rayons resserrés — géométrie institutionnelle */
+  --ap-r-sm: 6px;
+  --ap-r-md: 8px;
+  --ap-r-lg: 12px;
+  --ap-r-xl: 16px;
+
+  /* Relief plat : diffuses discrètes, plus d'offsets « jouet » */
+  --ap-shadow-soft:  0 1px 2px rgba(12, 13, 41, .08);
+  --ap-shadow-card:  0 8px 24px rgba(12, 13, 41, .10), 0 1px 2px rgba(12, 13, 41, .06);
+  --ap-shadow-float: 0 12px 28px rgba(12, 13, 41, .14);
+
+  /* Typo — Gibson si installée, replis bureautiques sinon */
+  --ap-font-display: 'Gibson', 'Aptos', 'Segoe UI', Arial, Helvetica, sans-serif;
+  --ap-font-body:    'Gibson', 'Aptos', 'Segoe UI', Arial, Helvetica, sans-serif;
+}
+
+/* ── Variante sombre du thème — bleu très sombre #0C0D29 ── */
+.dark[data-theme="thales"] {
+  --ap-paper:       #0c0d29;
+  --ap-paper-2:     #12153a;
+  --ap-card:        #171b47;
+  --ap-line:        #262c66;
+  --ap-line-2:      #3a4185;
+  --ap-ink:         #f4f6ff;
+  --ap-muted:       #9aa2ce;
+
+  /* La marque s'éclaircit pour rester lisible sur fond sombre */
+  --ap-brand:       #5a68db;
+  --ap-brand-deep:  #171f69;
+  --ap-brand-soft:  #1b2153;
+
+  --ap-quiz-soft:   #3a1f1e;
+  --ap-pres-soft:   #10302c;
+  --ap-poll-soft:   #0f2e36;
+  --ap-flash-soft:  #33280f;
+
+  --ap-shadow-soft:  0 1px 2px rgba(0, 0, 0, .4);
+  --ap-shadow-card:  0 8px 24px rgba(0, 0, 0, .5), 0 1px 2px rgba(0, 0, 0, .35);
+  --ap-shadow-float: 0 12px 28px rgba(0, 0, 0, .55);
+}
+
+/* Textes « deep » sur fonds soft, version sombre */
+.dark[data-theme="thales"] .ap-badge--quiz  { color: #e58b84; }
+.dark[data-theme="thales"] .ap-badge--pres  { color: #6fcdad; }
+.dark[data-theme="thales"] .ap-badge--poll  { color: #7bd8e4; }
+.dark[data-theme="thales"] .ap-badge--flash { color: #d9a85c; }
+.dark[data-theme="thales"] .ap-badge--brand { color: #aab4f2; }
+
+/* ============================================================
+   Ajustements de composants — aplatir le relief « arcade ».
+   Ce fichier est importé APRÈS arcade-pop.css : à spécificité
+   égale, ces règles gagnent la cascade.
+   ============================================================ */
+
+/* Fond uni — pas de trame de points en filigrane */
+[data-theme="thales"] .ap-app { background-image: none; }
+
+/* Boutons : ombre diffuse unique, course verticale réduite */
+[data-theme="thales"] .ap-btn,
+[data-theme="thales"] .ap-btn--quiz,
+[data-theme="thales"] .ap-btn--pres,
+[data-theme="thales"] .ap-btn--poll,
+[data-theme="thales"] .ap-btn--flash {
+  box-shadow: 0 1px 2px rgba(12, 13, 41, .25);
+}
+[data-theme="thales"] .ap-btn:hover,
+[data-theme="thales"] .ap-btn--quiz:hover,
+[data-theme="thales"] .ap-btn--pres:hover,
+[data-theme="thales"] .ap-btn--poll:hover,
+[data-theme="thales"] .ap-btn--flash:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(12, 13, 41, .28);
+}
+[data-theme="thales"] .ap-btn:active,
+[data-theme="thales"] .ap-btn--quiz:active,
+[data-theme="thales"] .ap-btn--pres:active,
+[data-theme="thales"] .ap-btn--poll:active,
+[data-theme="thales"] .ap-btn--flash:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(12, 13, 41, .2);
+}
+[data-theme="thales"] .ap-btn--ghost {
+  box-shadow: inset 0 0 0 1px var(--ap-line-2);
+}
+[data-theme="thales"] .ap-btn--ghost:hover {
+  transform: none;
+  box-shadow: inset 0 0 0 1px var(--ap-brand);
+}
+[data-theme="thales"] .ap-btn--ghost:active {
+  transform: none;
+  box-shadow: inset 0 0 0 1px var(--ap-brand);
+}
+
+/* Cartes : trait fin, survol discret */
+[data-theme="thales"] .ap-card { border-width: 1px; }
+[data-theme="thales"] .ap-card--hover:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--ap-shadow-card);
+}
+
+/* Focus : l'accent cyan devient la signature interactive */
+[data-theme="thales"] .ap-app :focus-visible {
+  outline: 2px solid #3cc2d2;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+[data-theme="thales"] .ap-app ::selection {
+  background: #3cc2d2;
+  color: #0c0d29;
+}
