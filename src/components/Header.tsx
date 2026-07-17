@@ -30,6 +30,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { BrandMonogram } from "@/components/BrandMonogram";
+import { BrandWordmark } from "@/components/BrandWordmark";
 
 interface HeaderProps {
   subtitle?: string;
@@ -53,7 +55,7 @@ export const Header = ({
   const [currentLanguage, setCurrentLanguage] = useState<Language>(getLanguage());
   const headerRef = useRef<HTMLElement | null>(null);
   // Controlled so the mega-menu can carry a themed scrim + close button
-  // (Ynov dims the page behind the open menu; other themes just ignore it).
+  // (Innov dims the page behind the open menu; other themes just ignore it).
   const [creationsOpen, setCreationsOpen] = useState(false);
 
   const primaryNavigationItems = [
@@ -131,10 +133,10 @@ export const Header = ({
           onClick={() => navigate("/")}
         >
           <span className="ap-logo">
-            <svg viewBox="0 0 24 24"><path d="M13 2L4.5 13.5H11l-1 8.5L19.5 10H13l0-8z"/></svg>
+            <BrandMonogram size={22} />
           </span>
           <div>
-            <span className="ap-brandname" style={{ fontSize: "20px" }}>{t("quizMaster")}</span>
+            <BrandWordmark size={20} />
             {subtitle && (
               <p className="text-xs font-semibold mt-0.5" style={{ color: "var(--ap-muted)" }}>{subtitle}</p>
             )}

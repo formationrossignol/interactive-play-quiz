@@ -40,7 +40,7 @@ const Temoignages = () => {
   const submitReview = useSubmitReview();
   useSEO({
     title: "Témoignages",
-    description: "Avis vérifiés de formateurs, enseignants et responsables formation qui animent avec Ludiq. Note moyenne 4,8/5 sur 312 avis.",
+    description: "Avis vérifiés de formateurs, enseignants et responsables formation qui animent avec Brivia. Note moyenne 4,8/5 sur 312 avis.",
     path: "/reviews",
   });
 
@@ -51,7 +51,7 @@ const Temoignages = () => {
         <div className="wrap">
           <div className="page-hero">
             <span className="eyebrow">Témoignages</span>
-            <h1>Ils animent avec Ludiq.</h1>
+            <h1>Ils animent avec Brivia.</h1>
             <p className="lead">Avis vérifiés de formateurs, enseignants et responsables formation.</p>
           </div>
 

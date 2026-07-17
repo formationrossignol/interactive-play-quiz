@@ -17,7 +17,7 @@ const THREADS = [
   { av: "🧑‍🏫", title: "Comment gérer les retardataires sans casser le rythme ?", meta: "Entraide · par Julien P. · il y a 2 h", solved: true, likes: null, replies: 14 },
   { av: "👩‍💻", title: "[Partage] Pack 40 questions Kubernetes CKA, niveau examen", meta: "Partage de quiz · par Nadia B. · il y a 5 h", solved: false, likes: 28, replies: 9 },
   { av: "🧔", title: "Session à 180 joueurs hier : mon retour d'expérience complet", meta: "Entraide · par Karim T. · hier", solved: false, likes: 41, replies: 22 },
-  { av: "📣", title: "Nouveauté juillet : le mode équipes arrive en bêta", meta: "Annonces · par l'équipe Ludiq · il y a 3 j", solved: false, likes: 96, replies: 37 },
+  { av: "📣", title: "Nouveauté juillet : le mode équipes arrive en bêta", meta: "Annonces · par l'équipe Brivia · il y a 3 j", solved: false, likes: 96, replies: 37 },
   { av: "👩‍🏫", title: "Examens : que répondre à un étudiant qui conteste une alerte onglet ?", meta: "Entraide · par Sarah M. · il y a 4 j", solved: true, likes: null, replies: 11 },
 ];
 

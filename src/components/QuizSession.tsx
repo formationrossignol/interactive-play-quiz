@@ -18,6 +18,7 @@ import { ExitQuizDialog } from "./ExitQuizDialog";
 import { CircularTimer } from "./CircularTimer";
 import { QuizSessionAnswerDistribution } from "./QuizSession_AnswerDistribution";
 import { RaceLeaderboard } from "./RaceLeaderboard";
+import { BrandMonogram } from "./BrandMonogram";
 import { Fireworks } from "./Fireworks";
 import { TransitionTimer, CountdownSplash } from "./TransitionTimer";
 import { AvatarDisplay, getAvatarRender } from "./BetterAvatars";
@@ -951,9 +952,9 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
         <div style={{ position:'relative',zIndex:2,display:'flex',alignItems:'center',gap:14,padding:'20px 32px',maxWidth:1240,margin:'0 auto',width:'100%' }}>
           <span style={{ display:'flex',alignItems:'center',gap:10,color:'#fff',fontFamily:'var(--ap-font-display)',fontWeight:600,fontSize:20 }}>
             <span style={{ width:40,height:40,borderRadius:13,background:'rgba(255,255,255,.16)',border:'2px solid rgba(255,255,255,.35)',display:'grid',placeItems:'center',flexShrink:0 }} aria-hidden="true">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M13 2 4.5 13.5H11l-1 8.5L19.5 10H13l0-8z"/></svg>
+              <BrandMonogram size={18} diamondColor="#b4a9ff" />
             </span>
-            Ludiq
+            <span style={{ fontFamily: "'Sora Variable', 'Sora', system-ui, sans-serif", letterSpacing: "-0.035em" }}>brivia</span>
           </span>
           <span style={{ fontWeight:800,fontSize:14,color:'rgba(255,255,255,.85)',background:'rgba(255,255,255,.14)',border:'2px solid rgba(255,255,255,.25)',borderRadius:999,padding:'6px 16px' }}>
             {quiz.title}

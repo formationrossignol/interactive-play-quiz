@@ -1,6 +1,9 @@
 import { useNavigate } from "react-router-dom";
 import { t } from "@/lib/i18n";
 import { SocialLinksRow } from "@/components/SocialLinksRow";
+import { BrandMonogram } from "@/components/BrandMonogram";
+import { BrandWordmark } from "@/components/BrandWordmark";
+import { PartnersStrip } from "@/components/PartnersStrip";
 
 export const Footer = () => {
   const navigate = useNavigate();
@@ -39,14 +42,17 @@ export const Footer = () => {
 
   return (
     <footer style={{ borderTop: "var(--ap-border-w) solid var(--ap-line)", background: "var(--ap-paper-2)" }}>
+      <div className="mx-auto max-w-6xl px-6">
+        <PartnersStrip />
+      </div>
       <div className="mx-auto flex max-w-6xl flex-col gap-10 px-6 py-12 md:flex-row md:justify-between">
         <div className="max-w-sm">
           <div className="ap-row ap-gap-12" style={{ marginBottom: "16px" }}>
             <span className="ap-logo">
-              <svg viewBox="0 0 24 24"><path d="M13 2L4.5 13.5H11l-1 8.5L19.5 10H13l0-8z"/></svg>
+              <BrandMonogram size={20} />
             </span>
             <div>
-              <p className="ap-brandname" style={{ fontSize: "18px" }}>{t('quizMaster')}</p>
+              <BrandWordmark size={18} />
               <p className="text-xs font-bold uppercase tracking-widest mt-0.5" style={{ color: "var(--ap-muted)" }}>
                 {t('footerTagline')}
               </p>
@@ -96,7 +102,7 @@ export const Footer = () => {
           className="mx-auto max-w-6xl px-6 py-4 text-xs font-bold"
           style={{ color: "var(--ap-muted)", display: "flex", flexWrap: "wrap", gap: "16px", alignItems: "center", justifyContent: "space-between" }}
         >
-          <span>© 2026 Ludiq. Tous droits réservés.</span>
+          <span>© 2026 Brivia. Tous droits réservés.</span>
           <nav style={{ display: "flex", gap: "16px" }}>
             {[
               { label: t('footerMentionsLegales'), href: "/mentions-legales" },

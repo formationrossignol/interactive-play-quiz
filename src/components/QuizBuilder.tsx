@@ -54,6 +54,7 @@ import {
   useSortable, verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { BrandMonogram } from "./BrandMonogram";
 
 // ─── Design constants ──────────────────────────────────────────────────────
 // Ordre position → couleur/forme aligné sur l'écran joueur réel
@@ -284,7 +285,10 @@ const PhonePreview = ({
           textAlign: "center", fontFamily: "var(--ap-font-display)", fontWeight: 600,
           fontSize: 10.5, color: "var(--ap-muted)", paddingBottom: 10, letterSpacing: ".04em",
         }}>
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="var(--ap-brand)" style={{ display:"inline", verticalAlign:"-1px", marginRight:4 }} aria-hidden="true"><path d="M13 2 4.5 13.5H11l-1 8.5L19.5 10H13l0-8z"/></svg>Ludiq
+          <span style={{ display: "inline-flex", verticalAlign: "-2px", marginRight: 4 }}>
+            <BrandMonogram size={11} color="var(--ap-brand)" />
+          </span>
+          brivia
         </div>
       </div>
     </div>

@@ -20,7 +20,7 @@ const About = () => {
   const navigate = useNavigate();
   useSEO({
     title: "À propos",
-    description: "Ludiq est l'outil de quiz et sondages interactifs conçu pour les formateurs et enseignants. Notre mission : rendre chaque session de formation engageante et mémorable.",
+    description: "Brivia est l'outil de quiz et sondages interactifs conçu pour les formateurs et enseignants. Notre mission : rendre chaque session de formation engageante et mémorable.",
     path: "/about",
   });
   const { data } = useStaticPage("about");
@@ -77,7 +77,7 @@ const About = () => {
           <div style={{ background: "var(--ap-brand)", borderRadius: "var(--ap-r-xl)", padding: "40px 40px", textAlign: "center", position: "relative", overflow: "hidden" }}>
             <span style={{ position: "absolute", width: 200, height: 200, borderRadius: "50%", background: "rgba(255,255,255,0.07)", right: -60, top: -60, pointerEvents: "none" }} />
             <h2 className="ap-h2" style={{ fontSize: "28px", color: "#fff", marginBottom: "12px" }}>
-              Rejoignez la communauté Ludiq
+              Rejoignez la communauté Brivia
             </h2>
             <p style={{ color: "rgba(255,255,255,0.8)", fontFamily: "var(--ap-font-body)", fontWeight: 700, fontSize: "15px", marginBottom: "28px" }}>
               Des milliers d'éducateurs, formateurs et animateurs créent déjà des expériences inoubliables.

@@ -51,3 +51,54 @@ export const saveSocialLinks = async (links: SocialLinks): Promise<boolean> => {
     .upsert({ key: SOCIAL_LINKS_KEY, value: sanitize(links), updated_at: new Date().toISOString() });
   return !error;
 };
+
+// ── Partners strip — "Partenaires" logo band, same site_settings pattern. ──
+
+export interface Partner {
+  id: string;
+  name: string;
+  logoUrl: string;
+  link?: string;
+}
+
+const PARTNERS_KEY = "partners_logos";
+
+const sanitizePartners = (raw: unknown): Partner[] => {
+  if (!Array.isArray(raw)) return [];
+  const out: Partner[] = [];
+  for (const entry of raw) {
+    if (!entry || typeof entry !== "object") continue;
+    const { id, name, logoUrl, link } = entry as Record<string, unknown>;
+    if (typeof name !== "string" || !name.trim()) continue;
+    if (typeof logoUrl !== "string" || !/^https?:\/\//i.test(logoUrl.trim())) continue;
+    out.push({
+      id: typeof id === "string" && id ? id : crypto.randomUUID(),
+      name: name.trim(),
+      logoUrl: logoUrl.trim(),
+      ...(typeof link === "string" && /^https?:\/\//i.test(link.trim()) ? { link: link.trim() } : {}),
+    });
+  }
+  return out;
+};
+
+export const fetchPartners = async (): Promise<Partner[]> => {
+  try {
+    const { data, error } = await supabase
+      .from("site_settings")
+      .select("value")
+      .eq("key", PARTNERS_KEY)
+      .maybeSingle();
+    if (error || !data) return [];
+    return sanitizePartners(data.value);
+  } catch {
+    return [];
+  }
+};
+
+/** Admin-only (enforced by RLS). Stores the full list; invalid rows dropped. */
+export const savePartners = async (partners: Partner[]): Promise<boolean> => {
+  const { error } = await supabase
+    .from("site_settings")
+    .upsert({ key: PARTNERS_KEY, value: sanitizePartners(partners), updated_at: new Date().toISOString() });
+  return !error;
+};

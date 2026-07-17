@@ -41,7 +41,7 @@ const Help = () => {
   const { data: faq, isLoading } = useFaq();
   useSEO({
     title: "Centre d'aide",
-    description: "FAQ et guides pour créer vos premiers quiz, lancer une session en direct, gérer vos participants et exporter vos résultats sur Ludiq.",
+    description: "FAQ et guides pour créer vos premiers quiz, lancer une session en direct, gérer vos participants et exporter vos résultats sur Brivia.",
     path: "/help",
   });
 

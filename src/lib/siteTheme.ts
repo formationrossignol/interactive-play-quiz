@@ -3,7 +3,7 @@
 // The active skin is stamped on <html> as data-theme="<id>" (none for the
 // default Arcade Pop) and every skin ships a light + dark token set.
 
-export type SiteTheme = "arcade" | "thales" | "ynov";
+export type SiteTheme = "arcade" | "thales" | "innov";
 
 export interface SiteThemeDef {
   id: SiteTheme;
@@ -38,8 +38,8 @@ export const SITE_THEMES: SiteThemeDef[] = [
     previewFont: "'Gibson', 'Aptos', 'Segoe UI', Arial, Helvetica, sans-serif",
   },
   {
-    id: "ynov",
-    name: "Ynov Campus",
+    id: "innov",
+    name: "Innov Campus",
     tagline: {
       en: "Campus energy — black, white, turquoise",
       fr: "Énergie campus — noir, blanc, turquoise",
@@ -51,8 +51,14 @@ export const SITE_THEMES: SiteThemeDef[] = [
 
 export const DEFAULT_SITE_THEME: SiteTheme = "arcade";
 
-export const normalizeSiteTheme = (raw: unknown): SiteTheme =>
-  SITE_THEMES.some((t) => t.id === raw) ? (raw as SiteTheme) : DEFAULT_SITE_THEME;
+// "ynov" is the old id (pre-rename) — still present in already-saved
+// profiles, mapped forward so existing users don't silently lose their pick.
+const LEGACY_THEME_IDS: Record<string, SiteTheme> = { ynov: "innov" };
+
+export const normalizeSiteTheme = (raw: unknown): SiteTheme => {
+  if (typeof raw === "string" && raw in LEGACY_THEME_IDS) return LEGACY_THEME_IDS[raw];
+  return SITE_THEMES.some((t) => t.id === raw) ? (raw as SiteTheme) : DEFAULT_SITE_THEME;
+};
 
 /** Stamp the skin on <html>. Arcade Pop is the bare default (no attribute). */
 export const applySiteTheme = (theme: SiteTheme) => {

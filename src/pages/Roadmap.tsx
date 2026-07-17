@@ -40,7 +40,7 @@ const Roadmap = () => {
   const [shake, setShake] = useState<string | null>(null);
   useSEO({
     title: "Roadmap publique",
-    description: "Votez pour les prochaines fonctionnalités de Ludiq. Les idées les plus votées passent en développement — et vous êtes prévenu quand elles sortent.",
+    description: "Votez pour les prochaines fonctionnalités de Brivia. Les idées les plus votées passent en développement — et vous êtes prévenu quand elles sortent.",
     path: "/roadmap",
   });
 

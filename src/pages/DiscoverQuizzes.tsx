@@ -28,7 +28,7 @@ const DiscoverQuizzes = () => {
   const navigate = useNavigate();
   useSEO({
     title: "Découvrir les quiz",
-    description: "Parcourez des centaines de quiz publics créés par la communauté Ludiq. Quiz de culture générale, science, histoire, géographie : rejoignez une partie en 5 secondes.",
+    description: "Parcourez des centaines de quiz publics créés par la communauté Brivia. Quiz de culture générale, science, histoire, géographie : rejoignez une partie en 5 secondes.",
     path: "/discover",
   });
   const user = getCurrentUser();
