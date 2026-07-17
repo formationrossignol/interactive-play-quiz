@@ -1,4 +1,5 @@
 import { getCurrentUser } from './auth';
+import { CONTENT_CAPS, getPlan, PlanLimitError, type ContentKind } from './plans';
 
 export interface SavedQuiz {
   id: string;
@@ -104,14 +105,21 @@ export const saveQuiz = (
 ): SavedQuiz => {
   const user = getCurrentUser();
   if (!user) throw new Error('User not authenticated');
-  
+
+  const type = quiz.type || 'quiz';
+  const cap = CONTENT_CAPS[getPlan(user)][type as ContentKind];
+  if (cap !== null) {
+    const used = getUserQuizzes(user.id).filter((q) => q.type === type).length;
+    if (used >= cap) throw new PlanLimitError(type as ContentKind, cap);
+  }
+
   const newQuiz: SavedQuiz = {
     ...quiz,
     tags: quiz.tags || [],
     speedBonus: quiz.speedBonus ?? true,
     transitionTime: quiz.transitionTime ?? 5,
     category: quiz.category || 'Autre',
-    type: quiz.type || 'quiz',
+    type,
     id: (() => {
       const existing = new Set(getSavedQuizzes().map((q) => q.id));
       let candidate: string;
@@ -243,6 +251,12 @@ export const duplicateQuiz = (id: string): SavedQuiz | null => {
   if (!user) return null;
   const original = getQuizById(id);
   if (!original || original.userId !== user.id) return null;
+
+  const cap = CONTENT_CAPS[getPlan(user)][original.type as ContentKind];
+  if (cap !== null) {
+    const used = getUserQuizzes(user.id).filter((q) => q.type === original.type).length;
+    if (used >= cap) throw new PlanLimitError(original.type as ContentKind, cap);
+  }
 
   const existing = new Set(getSavedQuizzes().map((q) => q.id));
   let newId: string;
