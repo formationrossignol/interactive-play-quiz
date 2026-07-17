@@ -398,7 +398,7 @@ export default function MyExams() {
                 </div>
 
                 {c.loading ? (
-                  <p className="py-10 text-center text-sm text-slate-400">Chargement…</p>
+                  <p className="py-10 text-center text-sm text-muted-foreground">Chargement…</p>
                 ) : filtered.length === 0 ? (
                   <div style={{ padding: '48px 24px', textAlign: 'center', color: 'var(--ap-muted)', fontWeight: 700, fontSize: 14 }}>
                     {c.currentFolderId ? 'Aucun examen dans ce dossier.' : 'Aucun examen ne correspond à votre recherche.'}

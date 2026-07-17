@@ -245,7 +245,7 @@ export function GenericCard(props: GenericItemProps) {
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
           {d.category && (
-            <Badge variant="outline" className="rounded-full text-xs border-slate-200 text-slate-500">
+            <Badge variant="outline" className="rounded-full text-xs border-border text-muted-foreground">
               {d.category}
             </Badge>
           )}
@@ -311,7 +311,7 @@ export function GenericRow(props: GenericItemProps) {
       </div>
       <div className="hidden sm:flex items-center gap-1.5 flex-shrink-0">
         {d.category && (
-          <Badge variant="outline" className="rounded-full text-xs border-slate-200 text-slate-500">
+          <Badge variant="outline" className="rounded-full text-xs border-border text-muted-foreground">
             {d.category}
           </Badge>
         )}
