@@ -589,6 +589,29 @@ body { transition: background-color .25s ease, color .25s ease; }
 .ap-nav-pill__item[aria-current="page"] {
   color: var(--ap-ink); background: var(--ap-paper-2);
 }
+/* Chevron flips when its menu is open — reused by every nav dropdown. */
+.chevron-icon { transition: transform .18s var(--ap-ease); }
+.ap-nav-pill__item[data-state="open"] .chevron-icon { transform: rotate(180deg); }
+
+/* Close affordance inside the mega-menu — small, themed via --ap-brand so
+   each skin gets its own accent color for free (teal on Ynov, etc.). */
+.ap-mega-menu__close {
+  position: absolute; top: 8px; right: 8px; z-index: 1;
+  width: 26px; height: 26px; display: grid; place-items: center;
+  border: none; background: transparent; color: var(--ap-muted);
+  border-radius: var(--ap-r-sm); cursor: pointer;
+  transition: color .12s, background .12s;
+}
+.ap-mega-menu__close svg { width: 15px; height: 15px; }
+.ap-mega-menu__close:hover { color: var(--ap-brand); background: var(--ap-brand-soft); }
+
+/* Scrim behind the mega-menu — transparent/inert by default; themes that
+   want the "rest of the page dims" treatment turn it on (see theme-ynov.css). */
+.ap-menu-scrim {
+  position: fixed; inset: 0; z-index: 45;
+  background: transparent; pointer-events: none; opacity: 0;
+  transition: opacity .18s var(--ap-ease);
+}
 
 /* ============================================================
    12. EYEBROW — badge live avec dot pulsant

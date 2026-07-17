@@ -15,6 +15,7 @@ import {
   ChevronDown,
   ClipboardList,
   Shield,
+  X,
 } from "lucide-react";
 import { useState, useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
 import { getLanguage, setLanguage, t, type Language } from "@/lib/i18n";
@@ -51,6 +52,9 @@ export const Header = ({
   const [user, setUser] = useState(getCurrentUser());
   const [currentLanguage, setCurrentLanguage] = useState<Language>(getLanguage());
   const headerRef = useRef<HTMLElement | null>(null);
+  // Controlled so the mega-menu can carry a themed scrim + close button
+  // (Ynov dims the page behind the open menu; other themes just ignore it).
+  const [creationsOpen, setCreationsOpen] = useState(false);
 
   const primaryNavigationItems = [
     { label: t("home"), onClick: () => navigate("/"), requiresAuth: false },
@@ -161,23 +165,32 @@ export const Header = ({
               ))}
 
             {availableCreationItems.length > 0 && (
-              <DropdownMenu>
+              <DropdownMenu open={creationsOpen} onOpenChange={setCreationsOpen}>
                 <DropdownMenuTrigger asChild>
                   <button className="ap-nav-pill__item flex items-center gap-1.5">
                     <Layers className="h-4 w-4" />
                     {t("myCreations")}
-                    <ChevronDown className="h-3.5 w-3.5" style={{ color: "var(--ap-muted)" }} />
+                    <ChevronDown className="chevron-icon h-3.5 w-3.5" style={{ color: "var(--ap-muted)" }} />
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
-                  className="z-50 w-52 p-1.5"
+                  className="z-50 w-52 p-1.5 ap-mega-menu"
                   style={{
                     background: "var(--ap-card)",
                     border: "var(--ap-border-w) solid var(--ap-line)",
                     borderRadius: "var(--ap-r-lg)",
                     boxShadow: "var(--ap-shadow-card)",
+                    position: "relative",
                   }}
                 >
+                  <button
+                    type="button"
+                    className="ap-mega-menu__close"
+                    aria-label="Fermer le menu"
+                    onClick={() => setCreationsOpen(false)}
+                  >
+                    <X />
+                  </button>
                   {availableCreationItems.map((item) => {
                     const Icon = item.icon;
                     return (
@@ -198,6 +211,13 @@ export const Header = ({
             </div>
           </nav>
         )}
+        {/* Scrim behind the mega-menu — inert (transparent, no pointer-events)
+            except under themes that dim the page while the menu is open. */}
+        <div
+          className={cn("ap-menu-scrim", creationsOpen && "is-open")}
+          onClick={() => setCreationsOpen(false)}
+          aria-hidden="true"
+        />
 
         {/* Right actions */}
         <div className={cn("flex items-center gap-2", alignLeft && "ml-auto")}>
