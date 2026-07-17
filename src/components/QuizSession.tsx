@@ -127,6 +127,33 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
 
   const audio = useGameAudio({ ambianceId: quiz.ambianceId, gameState, isHost: !!isHost });
 
+  // Lobby tools (host): lock the room + track fullscreen.
+  const [roomLocked, setRoomLocked] = useState(false);
+  const lockedAtRef = useRef<string | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  useEffect(() => {
+    const onFsChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', onFsChange);
+    return () => document.removeEventListener('fullscreenchange', onFsChange);
+  }, []);
+  const toggleFullscreen = useCallback(() => {
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    } else {
+      document.documentElement.requestFullscreen().catch(() => {});
+    }
+  }, []);
+  const toggleRoomLock = useCallback(() => {
+    setRoomLocked((prev) => {
+      const next = !prev;
+      lockedAtRef.current = next ? new Date().toISOString() : null;
+      toast[next ? 'success' : 'message'](next ? 'Salle verrouillée' : 'Salle rouverte', {
+        description: next ? 'Les nouveaux joueurs ne peuvent plus rejoindre.' : 'Les joueurs peuvent à nouveau rejoindre.',
+      });
+      return next;
+    });
+  }, []);
+
   // Host-screen SFX on phase entry.
   const prevAudioStateRef = useRef<string>('');
   const lastTickSecondRef = useRef<number>(0);
@@ -798,7 +825,10 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
   };
 
   if (gameState === 'waiting') {
-    const visiblePlayers = players.filter(p => !kickedPlayerIds.has(p.id));
+    const lockedAt = lockedAtRef.current;
+    const visiblePlayers = players.filter(
+      (p) => !kickedPlayerIds.has(p.id) && (!roomLocked || !lockedAt || p.joinedAt.toISOString() <= lockedAt),
+    );
 
     const handleStart = () => {
       audio.unlock();
@@ -889,14 +919,62 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
             {quiz.title}
           </span>
           <div style={{ flex:1 }} />
-          {isHost && (
-            <button
-              onClick={() => onExitRequest?.()}
-              style={{ display:'inline-flex',alignItems:'center',gap:8,fontWeight:800,fontSize:13,color:'#fff',cursor:'pointer',background:'rgba(255,255,255,.14)',border:'2px solid rgba(255,255,255,.3)',borderRadius:999,padding:'9px 16px' }}
-            >
-              <LogOut style={{ width:14, height:14 }} /> Quitter
-            </button>
-          )}
+          {(() => {
+            const toolBase: React.CSSProperties = { width:40,height:40,borderRadius:13,border:'2px solid rgba(255,255,255,.3)',color:'#fff',display:'grid',placeItems:'center',cursor:'pointer',flexShrink:0 };
+            const toolOff: React.CSSProperties = { ...toolBase, background:'rgba(255,255,255,.14)' };
+            const toolOn: React.CSSProperties = { ...toolBase, background:'rgba(255,255,255,.9)', color:'var(--ap-brand-deep)', borderColor:'#fff' };
+            return (
+              <div style={{ display:'flex',gap:8 }}>
+                {isHost && (
+                  <button
+                    onClick={() => audio.setMuted(!audio.muted)}
+                    style={audio.muted ? toolOff : toolOn}
+                    title={audio.muted ? 'Activer la musique' : "Couper la musique"}
+                    aria-label={audio.muted ? 'Activer la musique' : "Couper la musique"}
+                    aria-pressed={!audio.muted}
+                  >
+                    {audio.muted ? (
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/><line x1="3" y1="3" x2="21" y2="21"/></svg>
+                    ) : (
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                    )}
+                  </button>
+                )}
+                {isHost && (
+                  <button
+                    onClick={toggleRoomLock}
+                    style={roomLocked ? toolOn : toolOff}
+                    title={roomLocked ? 'Déverrouiller la salle' : 'Verrouiller la salle'}
+                    aria-label={roomLocked ? 'Déverrouiller la salle' : 'Verrouiller la salle'}
+                    aria-pressed={roomLocked}
+                  >
+                    {roomLocked ? (
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+                    ) : (
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0"/></svg>
+                    )}
+                  </button>
+                )}
+                <button
+                  onClick={toggleFullscreen}
+                  style={isFullscreen ? toolOn : toolOff}
+                  title={isFullscreen ? 'Quitter le plein écran' : 'Plein écran'}
+                  aria-label={isFullscreen ? 'Quitter le plein écran' : 'Plein écran'}
+                  aria-pressed={isFullscreen}
+                >
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+                </button>
+                {isHost && (
+                  <button
+                    onClick={() => onExitRequest?.()}
+                    style={{ display:'inline-flex',alignItems:'center',gap:8,fontWeight:800,fontSize:13,color:'#fff',cursor:'pointer',background:'rgba(255,255,255,.14)',border:'2px solid rgba(255,255,255,.3)',borderRadius:999,padding:'9px 16px' }}
+                  >
+                    <LogOut style={{ width:14, height:14 }} /> Quitter
+                  </button>
+                )}
+              </div>
+            );
+          })()}
         </div>
 
         {/* Main 2-col layout — projected "join" screen */}
