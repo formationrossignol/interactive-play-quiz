@@ -1,5 +1,6 @@
 @import "./arcade-pop.css";
 @import "./theme-thales.css";
+@import "./theme-ynov.css";
 
 @tailwind base;
 @tailwind components;
@@ -173,6 +174,90 @@
     --sidebar-accent: 235 53% 15%;
     --sidebar-accent-foreground: 231 100% 98%;
     --sidebar-border: 234 46% 27%;
+  }
+
+  /* Thème « Ynov Campus » — miroir des tokens --ap-* de theme-ynov.css
+     pour les composants shadcn. Se combine avec .dark ci-dessous. */
+  :root[data-theme="ynov"] {
+    --background: 0 0% 100%;         /* --ap-paper   #ffffff */
+    --foreground: 0 0% 0%;           /* --ap-ink     #000000 */
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 0%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 0%;
+
+    --primary: 175 100% 36%;         /* --ap-brand   #00b8a9 */
+    --primary-foreground: 0 0% 0%;
+
+    --secondary: 0 0% 96%;           /* --ap-paper-2 #f5f5f5 */
+    --secondary-foreground: 0 0% 0%;
+
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 35%;    /* --ap-muted   #595959 */
+
+    --accent: 172 63% 92%;           /* --ap-brand-soft #e0f7f4 */
+    --accent-foreground: 175 100% 26%;
+
+    --destructive: 355 78% 56%;      /* --ap-quiz    #e63946 */
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 90%;              /* --ap-line    #e6e6e6 */
+    --input: 0 0% 90%;
+    --ring: 175 100% 36%;            /* turquoise    #00b8a9 */
+
+    --radius: 0.5rem;
+
+    --success: 145 80% 35%;          /* --ap-pres    #12a150 */
+    --warning: 41 100% 48%;          /* --ap-flash   #f5a800 */
+    --warning-foreground: 0 0% 0%;
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 0 0% 0%;
+    --sidebar-primary: 175 100% 36%;
+    --sidebar-accent: 0 0% 96%;
+    --sidebar-accent-foreground: 0 0% 0%;
+    --sidebar-border: 0 0% 90%;
+    --sidebar-ring: 175 100% 36%;
+
+    --quiz-accent:      355 78% 56%; /* #e63946 */
+    --poll-accent:      211 65% 50%; /* #2d7dd2 */
+    --flashcard-accent: 41 100% 48%; /* #f5a800 */
+    --slide-accent:     145 80% 35%; /* #12a150 */
+  }
+
+  .dark[data-theme="ynov"] {
+    --background: 0 0% 4%;           /* --ap-paper   #0a0a0a */
+    --foreground: 0 0% 100%;         /* --ap-ink     #ffffff */
+
+    --card: 0 0% 9%;                 /* --ap-card    #161616 */
+    --card-foreground: 0 0% 100%;
+
+    --popover: 0 0% 9%;
+    --popover-foreground: 0 0% 100%;
+
+    --primary: 175 100% 36%;         /* turquoise inchangé sur noir */
+    --primary-foreground: 0 0% 0%;
+
+    --secondary: 0 0% 8%;            /* --ap-paper-2 #141414 */
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 0 0% 8%;
+    --muted-foreground: 0 0% 64%;    /* --ap-muted   #a3a3a3 */
+
+    --accent: 173 78% 11%;           /* --ap-brand-soft #06312d */
+    --accent-foreground: 174 100% 58%;
+
+    --border: 0 0% 16%;              /* --ap-line    #2a2a2a */
+    --input: 0 0% 16%;
+    --ring: 175 100% 36%;
+
+    --sidebar-background: 0 0% 9%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 8%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 0 0% 16%;
   }
 
   * {
