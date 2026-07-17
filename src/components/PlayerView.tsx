@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import type { EditableQuestion } from "@/lib/questionTypes";
 import { Button } from "@/components/ui/button";
-import { Users, LogOut, Zap } from "lucide-react";
+import { Users, LogOut, Zap, Ban, OctagonX, PartyPopper } from "lucide-react";
 import { AvatarDisplay } from "./BetterAvatars";
 import { MultiStepProgress } from "./MultiStepProgress";
 import { AudioControls } from "./AudioControls";
@@ -709,7 +709,9 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
         style={{ background: 'var(--ap-brand)' }}
       >
         <div className="max-w-md w-full text-center text-white">
-          <div style={{ fontSize: 72, marginBottom: 20 }}>🚫</div>
+          <div style={{ width: 88, height: 88, borderRadius: '50%', background: 'rgba(255,255,255,0.14)', border: '2px solid rgba(255,255,255,0.3)', display: 'grid', placeItems: 'center', margin: '0 auto 20px' }}>
+            <Ban style={{ width: 40, height: 40 }} strokeWidth={2} />
+          </div>
           <h2 style={{ fontFamily: 'var(--ap-font-display)', fontSize: '1.8rem', fontWeight: 700, marginBottom: 12 }}>
             Vous avez été exclu
           </h2>
@@ -731,7 +733,9 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
         style={{ background: 'var(--ap-brand)' }}
       >
         <div className="max-w-md w-full text-center text-white">
-          <div style={{ fontSize: 72, marginBottom: 20 }}>😢</div>
+          <div style={{ width: 88, height: 88, borderRadius: '50%', background: 'rgba(255,255,255,0.14)', border: '2px solid rgba(255,255,255,0.3)', display: 'grid', placeItems: 'center', margin: '0 auto 20px' }}>
+            <OctagonX style={{ width: 40, height: 40 }} strokeWidth={2} />
+          </div>
           <h2 style={{ fontFamily: 'var(--ap-font-display)', fontSize: '1.8rem', fontWeight: 700, marginBottom: 12 }}>
             Quiz arrêté
           </h2>
@@ -1534,7 +1538,9 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
         style={{ background: "var(--ap-brand)" }}
       >
         <div className="max-w-md w-full text-center text-white">
-          <div style={{ fontSize: 72, marginBottom: 16 }}>🙌</div>
+          <div style={{ width: 88, height: 88, borderRadius: '50%', background: 'rgba(255,255,255,0.14)', border: '2px solid rgba(255,255,255,0.3)', display: 'grid', placeItems: 'center', margin: '0 auto 16px' }}>
+            <PartyPopper style={{ width: 40, height: 40 }} strokeWidth={2} />
+          </div>
           <h2 className="ap-h2 text-white mb-3">Merci d'avoir participé !</h2>
           <p style={{ color: 'rgba(255,255,255,0.75)', fontFamily: 'var(--ap-font-body)', fontWeight: 700, marginBottom: 28 }}>
             Le sondage est terminé. Vos réponses ont bien été enregistrées.
