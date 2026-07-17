@@ -977,7 +977,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
           <div className="ap-card ap-card--floaty mb-4">
             {!isPoll && (
               <div
-                style={{ height: 8, background: "var(--ap-paper-2)", border: "2px solid var(--ap-line)", borderRadius: 99, overflow: "hidden", marginBottom: 16 }}
+                style={{ height: 8, background: "var(--ap-paper-2)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: 99, overflow: "hidden", marginBottom: 16 }}
                 role="timer"
                 aria-label={`Temps restant : ${timeLeft} secondes`}
               >

@@ -40,7 +40,7 @@ const MyQuizzes = () => {
       headerExtras={
         <button
           onClick={() => navigate("/my-exams")}
-          style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 16px", borderRadius: 999, border: "2px solid var(--ap-line)", background: "var(--ap-paper-2)", fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 13, color: "var(--ap-ink)", cursor: "pointer" }}
+          style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 16px", borderRadius: 999, border: "var(--ap-border-w) solid var(--ap-line)", background: "var(--ap-paper-2)", fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 13, color: "var(--ap-ink)", cursor: "pointer" }}
         >
           📝 Examens
         </button>

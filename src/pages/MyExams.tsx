@@ -25,7 +25,7 @@ const VIEW_KEY = 'view-mode-exams';
 
 const triggerStyle: CSSProperties = {
   fontFamily: 'var(--ap-font-body)', fontWeight: 700, fontSize: '14px',
-  border: '2px solid var(--ap-line)', borderRadius: 'var(--ap-r-sm)',
+  border: 'var(--ap-border-w) solid var(--ap-line)', borderRadius: 'var(--ap-r-sm)',
   background: 'var(--ap-card)', color: 'var(--ap-ink)', height: '42px',
 };
 
@@ -39,7 +39,7 @@ const toggleBtnStyle = (active: boolean): CSSProperties => ({
 });
 
 const selectContentStyle: CSSProperties = {
-  background: 'var(--ap-card)', border: '2px solid var(--ap-line)', borderRadius: 'var(--ap-r-md)',
+  background: 'var(--ap-card)', border: 'var(--ap-border-w) solid var(--ap-line)', borderRadius: 'var(--ap-r-md)',
 };
 
 const gripStyle: CSSProperties = {
@@ -80,7 +80,7 @@ const actionButtons = (exam: Exam, navigate: ReturnType<typeof useNavigate>) => 
     <button
       onClick={(e) => { e.stopPropagation(); navigate(`/exam-builder?examId=${exam.id}`); }}
       style={{
-        padding: '6px 14px', borderRadius: 999, border: '2px solid var(--ap-line)',
+        padding: '6px 14px', borderRadius: 999, border: 'var(--ap-border-w) solid var(--ap-line)',
         background: 'var(--ap-paper-2)', fontFamily: 'var(--ap-font-body)',
         fontWeight: 800, fontSize: 12, color: 'var(--ap-ink)', cursor: 'pointer',
       }}
@@ -299,7 +299,7 @@ export default function MyExams() {
 
         {!c.loading && c.items.length === 0 ? (
           <div style={{
-            background: 'var(--ap-card)', border: '2px solid var(--ap-line)',
+            background: 'var(--ap-card)', border: 'var(--ap-border-w) solid var(--ap-line)',
             borderRadius: 'var(--ap-r-lg)', padding: '48px 24px', textAlign: 'center',
           }}>
             <div style={{ fontSize: 52, marginBottom: 16 }}>📝</div>
@@ -363,7 +363,7 @@ export default function MyExams() {
                         width: '100%', padding: '10px 14px 10px 38px',
                         fontFamily: 'var(--ap-font-body)', fontWeight: 700, fontSize: '14px',
                         color: 'var(--ap-ink)', background: 'var(--ap-card)',
-                        border: '2px solid var(--ap-line)', borderRadius: 'var(--ap-r-sm)',
+                        border: 'var(--ap-border-w) solid var(--ap-line)', borderRadius: 'var(--ap-r-sm)',
                         outline: 'none', boxSizing: 'border-box',
                       }}
                       onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--ap-brand)'; e.currentTarget.style.boxShadow = '0 0 0 4px var(--ap-brand-soft)'; }}

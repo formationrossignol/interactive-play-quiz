@@ -56,7 +56,7 @@ const inputStyle: React.CSSProperties = {
   fontSize: "14px",
   color: "var(--ap-ink)",
   background: "var(--ap-card)",
-  border: "2px solid var(--ap-line)",
+  border: "var(--ap-border-w) solid var(--ap-line)",
   borderRadius: "var(--ap-r-sm)",
   padding: "10px 14px",
   outline: "none",
@@ -283,7 +283,7 @@ const QuestionBank = () => {
               fontFamily: "var(--ap-font-body)",
               fontWeight: 700,
               fontSize: "14px",
-              border: "2px solid var(--ap-line)",
+              border: "var(--ap-border-w) solid var(--ap-line)",
               borderRadius: "var(--ap-r-sm)",
               background: "var(--ap-card)",
               color: "var(--ap-ink)",
@@ -292,7 +292,7 @@ const QuestionBank = () => {
           >
             <SelectValue placeholder="Type" />
           </SelectTrigger>
-          <SelectContent style={{ background: "var(--ap-card)", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-md)" }}>
+          <SelectContent style={{ background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-md)" }}>
             <SelectItem value="all">Tous les types</SelectItem>
             {QUESTION_TYPE_OPTIONS.map((o) => (
               <SelectItem key={o.value} value={o.value}>{t(o.label as Parameters<typeof t>[0])}</SelectItem>
@@ -310,7 +310,7 @@ const QuestionBank = () => {
               fontFamily: "var(--ap-font-body)",
               fontWeight: 700,
               fontSize: "14px",
-              border: "2px solid var(--ap-line)",
+              border: "var(--ap-border-w) solid var(--ap-line)",
               borderRadius: "var(--ap-r-sm)",
               background: "var(--ap-card)",
               color: "var(--ap-ink)",
@@ -319,7 +319,7 @@ const QuestionBank = () => {
           >
             <SelectValue placeholder="Difficulté" />
           </SelectTrigger>
-          <SelectContent style={{ background: "var(--ap-card)", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-md)" }}>
+          <SelectContent style={{ background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-md)" }}>
             <SelectItem value="all">Toutes</SelectItem>
             {DIFFICULTY_OPTIONS.map((o) => (
               <SelectItem key={o.value} value={o.value}>{t(o.label as Parameters<typeof t>[0])}</SelectItem>
@@ -371,7 +371,7 @@ const QuestionBank = () => {
           {filteredBank.length === 0 ? (
             <div
               style={{
-                borderRadius: "var(--ap-r-lg)", border: "2px dashed var(--ap-line-2)",
+                borderRadius: "var(--ap-r-lg)", border: "var(--ap-border-w) dashed var(--ap-line-2)",
                 background: "var(--ap-paper-2)", padding: "48px 24px", textAlign: "center",
               }}
             >
@@ -394,7 +394,7 @@ const QuestionBank = () => {
                       key={item.id}
                       style={{
                         display: "flex", alignItems: "center", gap: "14px", padding: "14px 18px",
-                        borderTop: idx > 0 ? "2px solid var(--ap-line)" : "none",
+                        borderTop: idx > 0 ? "var(--ap-border-w) solid var(--ap-line)" : "none",
                       }}
                     >
                       <div style={{ flex: 1, minWidth: 0 }}>
@@ -464,7 +464,7 @@ const QuestionBank = () => {
                       <div
                         style={{
                           display: "flex", alignItems: "center", gap: "4px",
-                          paddingTop: "12px", borderTop: "2px solid var(--ap-line)",
+                          paddingTop: "12px", borderTop: "var(--ap-border-w) solid var(--ap-line)",
                         }}
                       >
                         <button
@@ -517,7 +517,7 @@ const QuestionBank = () => {
           {filteredQQ.length === 0 ? (
             <div
               style={{
-                borderRadius: "var(--ap-r-lg)", border: "2px dashed var(--ap-line-2)",
+                borderRadius: "var(--ap-r-lg)", border: "var(--ap-border-w) dashed var(--ap-line-2)",
                 background: "var(--ap-paper-2)", padding: "48px 24px", textAlign: "center",
               }}
             >
@@ -541,7 +541,7 @@ const QuestionBank = () => {
                       key={item.id}
                       style={{
                         display: "flex", alignItems: "center", gap: "14px", padding: "14px 18px",
-                        borderTop: idx > 0 ? "2px solid var(--ap-line)" : "none",
+                        borderTop: idx > 0 ? "var(--ap-border-w) solid var(--ap-line)" : "none",
                       }}
                     >
                       <span className="ap-pill" style={{ fontSize: "11px", padding: "3px 9px", flexShrink: 0 }}>#{item.position}</span>
@@ -602,7 +602,7 @@ const QuestionBank = () => {
           className="max-w-3xl"
           style={{
             background: "var(--ap-card)",
-            border: "2px solid var(--ap-line)",
+            border: "var(--ap-border-w) solid var(--ap-line)",
             borderRadius: "var(--ap-r-xl)",
             boxShadow: "var(--ap-shadow-card)",
           }}
@@ -642,10 +642,10 @@ const QuestionBank = () => {
                 <div>
                   <label style={labelStyle}>{t("questionType")}</label>
                   <Select value={questionType} onValueChange={(v: QuizQuestionType) => handleTypeChange(v)}>
-                    <SelectTrigger style={{ marginTop: "8px", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-sm)", background: "var(--ap-card)", fontFamily: "var(--ap-font-body)", fontWeight: 700, fontSize: "14px" }}>
+                    <SelectTrigger style={{ marginTop: "8px", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-sm)", background: "var(--ap-card)", fontFamily: "var(--ap-font-body)", fontWeight: 700, fontSize: "14px" }}>
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent style={{ background: "var(--ap-card)", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-md)" }}>
+                    <SelectContent style={{ background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-md)" }}>
                       {QUESTION_TYPE_OPTIONS.map((o) => (
                         <SelectItem key={o.value} value={o.value}>{t(o.label as Parameters<typeof t>[0])}</SelectItem>
                       ))}
@@ -655,10 +655,10 @@ const QuestionBank = () => {
                 <div>
                   <label style={labelStyle}>{t("questionDifficulty")}</label>
                   <Select value={difficulty} onValueChange={(v: QuestionDifficulty) => setDifficulty(v)}>
-                    <SelectTrigger style={{ marginTop: "8px", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-sm)", background: "var(--ap-card)", fontFamily: "var(--ap-font-body)", fontWeight: 700, fontSize: "14px" }}>
+                    <SelectTrigger style={{ marginTop: "8px", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-sm)", background: "var(--ap-card)", fontFamily: "var(--ap-font-body)", fontWeight: 700, fontSize: "14px" }}>
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent style={{ background: "var(--ap-card)", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-md)" }}>
+                    <SelectContent style={{ background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-md)" }}>
                       {DIFFICULTY_OPTIONS.map((o) => (
                         <SelectItem key={o.value} value={o.value}>{t(o.label as Parameters<typeof t>[0])}</SelectItem>
                       ))}
@@ -693,7 +693,7 @@ const QuestionBank = () => {
             </div>
           </ScrollArea>
 
-          <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", paddingTop: "16px", borderTop: "2px solid var(--ap-line)" }}>
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", paddingTop: "16px", borderTop: "var(--ap-border-w) solid var(--ap-line)" }}>
             <button className="ap-btn ap-btn--ghost ap-btn--sm ap-btn--pill" onClick={() => setDialogOpen(false)}>
               {t("cancel")}
             </button>

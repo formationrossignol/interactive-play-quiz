@@ -152,21 +152,21 @@ export default function ExamBuilder() {
           width: 100%; padding: 10px 14px;
           font-family: var(--ap-font-body); font-weight: 700; font-size: 14px;
           color: var(--ap-ink); background: var(--ap-paper-2);
-          border: 2px solid var(--ap-line); border-radius: var(--ap-r-sm);
+          border: var(--ap-border-w) solid var(--ap-line); border-radius: var(--ap-r-sm);
           outline: none; box-sizing: border-box; transition: border-color .15s;
         }
         .eb-input:focus { border-color: var(--ap-brand); }
         .eb-label { display: block; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--ap-muted); margin-bottom: 6px; }
-        .eb-section { background: var(--ap-card); border: 2px solid var(--ap-line); border-radius: var(--ap-r-lg); padding: 24px; margin-bottom: 16px; }
+        .eb-section { background: var(--ap-card); border: var(--ap-border-w) solid var(--ap-line); border-radius: var(--ap-r-lg); padding: 24px; margin-bottom: 16px; }
         .eb-section-title { font-family: var(--ap-font-display); font-weight: 600; font-size: 16px; margin-bottom: 18px; display: flex; align-items: center; gap: 8px; }
         .eb-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
         .eb-toggle { display: flex; align-items: center; gap: 10px; cursor: pointer; }
-        .eb-check { width: 20px; height: 20px; border: 2px solid var(--ap-line); border-radius: 4px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background .15s, border-color .15s; }
+        .eb-check { width: 20px; height: 20px; border: var(--ap-border-w) solid var(--ap-line); border-radius: 4px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background .15s, border-color .15s; }
         .eb-check.on { background: var(--ap-brand); border-color: var(--ap-brand); }
         .eb-radio-group { display: flex; flex-direction: column; gap: 8px; }
-        .eb-radio { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border: 2px solid var(--ap-line); border-radius: var(--ap-r-sm); cursor: pointer; transition: border-color .15s, background .15s; }
+        .eb-radio { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border: var(--ap-border-w) solid var(--ap-line); border-radius: var(--ap-r-sm); cursor: pointer; transition: border-color .15s, background .15s; }
         .eb-radio.on { border-color: var(--ap-brand); background: var(--ap-brand-soft); }
-        .eb-radio-dot { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--ap-line); flex-shrink: 0; margin-top: 2px; transition: background .15s, border-color .15s; }
+        .eb-radio-dot { width: 16px; height: 16px; border-radius: 50%; border: var(--ap-border-w) solid var(--ap-line); flex-shrink: 0; margin-top: 2px; transition: background .15s, border-color .15s; }
         .eb-radio.on .eb-radio-dot { background: var(--ap-brand); border-color: var(--ap-brand); }
         .eb-range { width: 100%; accent-color: var(--ap-brand); }
         @media (max-width: 640px) { .eb-row { grid-template-columns: 1fr; } }
@@ -174,7 +174,7 @@ export default function ExamBuilder() {
 
       {/* Topbar */}
       <div style={{
-        background: 'var(--ap-card)', borderBottom: '2px solid var(--ap-line)',
+        background: 'var(--ap-card)', borderBottom: 'var(--ap-border-w) solid var(--ap-line)',
         padding: '0 24px', height: 60, display: 'flex', alignItems: 'center', gap: 16,
         position: 'sticky', top: 0, zIndex: 10,
       }}>
@@ -428,7 +428,7 @@ export default function ExamBuilder() {
             disabled={saving}
             style={{
               flex: 1, padding: '14px 0', borderRadius: 999,
-              border: '2px solid var(--ap-line)', background: 'var(--ap-card)',
+              border: 'var(--ap-border-w) solid var(--ap-line)', background: 'var(--ap-card)',
               fontFamily: 'var(--ap-font-body)', fontWeight: 800, fontSize: 15,
               color: 'var(--ap-ink)', cursor: saving ? 'not-allowed' : 'pointer',
               opacity: saving ? .6 : 1,

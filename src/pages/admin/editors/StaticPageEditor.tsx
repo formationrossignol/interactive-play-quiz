@@ -36,7 +36,7 @@ export function StaticPageEditor({ open, onOpenChange, initial, hasBlocks, onSav
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <label style={{ fontWeight: 800, fontSize: 12 }}>Cartes</label>
               {v.blocks.map((b, i) => (
-                <div key={i} style={{ display: "flex", flexDirection: "column", gap: 6, border: "2px solid var(--ap-line)", borderRadius: 12, padding: 10 }}>
+                <div key={i} style={{ display: "flex", flexDirection: "column", gap: 6, border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: 12, padding: 10 }}>
                   <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                     <Input placeholder="Titre de la carte" value={b.title} onChange={(e) => setBlock(i, { title: e.target.value })} />
                     <button className="adm-iconbtn del" style={{ flex: "0 0 auto", padding: "8px 10px" }} onClick={() => removeBlock(i)}>🗑</button>

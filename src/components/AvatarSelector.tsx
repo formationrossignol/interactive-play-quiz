@@ -79,7 +79,7 @@ export const AvatarSelector = ({ onComplete, gameCode, quizTitle }: AvatarSelect
                   onClick={() => setSelectedAvatar(avatar.emoji)}
                   style={{
                     background: selectedAvatar === avatar.emoji ? 'var(--ap-brand)' : 'var(--ap-paper)',
-                    border: selectedAvatar === avatar.emoji ? '2px solid var(--ap-brand)' : '2px solid var(--ap-line)',
+                    border: selectedAvatar === avatar.emoji ? '2px solid var(--ap-brand)' : 'var(--ap-border-w) solid var(--ap-line)',
                     borderRadius: 'var(--ap-r-md)',
                     padding: 4,
                     cursor: 'pointer',
@@ -115,7 +115,7 @@ export const AvatarSelector = ({ onComplete, gameCode, quizTitle }: AvatarSelect
                 fontSize: '1rem',
                 color: 'var(--ap-ink)',
                 background: 'var(--ap-paper)',
-                border: '2px solid var(--ap-line)',
+                border: 'var(--ap-border-w) solid var(--ap-line)',
                 borderRadius: 'var(--ap-r-md)',
                 outline: 'none',
               }}
@@ -129,7 +129,7 @@ export const AvatarSelector = ({ onComplete, gameCode, quizTitle }: AvatarSelect
             gap: 14,
             padding: '12px 16px',
             background: 'var(--ap-paper)',
-            border: '2px solid var(--ap-line)',
+            border: 'var(--ap-border-w) solid var(--ap-line)',
             borderRadius: 'var(--ap-r-md)',
             marginBottom: 20,
           }}>

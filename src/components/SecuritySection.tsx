@@ -11,7 +11,7 @@ const inputStyle: React.CSSProperties = {
   fontSize: "14px",
   color: "var(--ap-ink)",
   background: "var(--ap-card)",
-  border: "2px solid var(--ap-line)",
+  border: "var(--ap-border-w) solid var(--ap-line)",
   borderRadius: "var(--ap-r-sm)",
   padding: "11px 14px",
   outline: "none",
@@ -140,7 +140,7 @@ export const SecuritySection = () => {
       </form>
 
       {/* MFA */}
-      <div style={{ borderTop: "2px solid var(--ap-line)", paddingTop: "24px" }}>
+      <div style={{ borderTop: "var(--ap-border-w) solid var(--ap-line)", paddingTop: "24px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px" }}>
           {mfaEnabled
             ? <ShieldCheck style={{ width: 18, height: 18, color: "var(--ap-quiz)" }} />
@@ -160,7 +160,7 @@ export const SecuritySection = () => {
         {enrollment && (
           <form onSubmit={handleVerifyEnroll} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
             <p className="ap-muted" style={{ fontSize: "13px", margin: 0 }}>{t("mfaScanQr")}</p>
-            <div style={{ background: "#fff", borderRadius: "var(--ap-r-md)", padding: "12px", width: "fit-content", border: "2px solid var(--ap-line)" }}>
+            <div style={{ background: "#fff", borderRadius: "var(--ap-r-md)", padding: "12px", width: "fit-content", border: "var(--ap-border-w) solid var(--ap-line)" }}>
               <img
                 src={`data:image/svg+xml;utf8,${encodeURIComponent(enrollment.qrCodeSvg)}`}
                 alt="QR code"

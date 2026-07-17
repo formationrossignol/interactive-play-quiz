@@ -133,7 +133,7 @@ export const QuizBuilderStart = () => {
                     width: 140,
                     height: 100,
                     borderRadius: "var(--ap-r-md)",
-                    border: "2px dashed var(--ap-line)",
+                    border: "var(--ap-border-w) dashed var(--ap-line)",
                     background: "var(--ap-card)",
                     display: "flex",
                     alignItems: "center",

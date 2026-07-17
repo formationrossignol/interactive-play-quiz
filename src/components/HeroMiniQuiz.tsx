@@ -208,7 +208,7 @@ export function HeroMiniQuiz() {
         width: "100%",
         maxWidth: 400,
         background: "var(--ap-card)",
-        border: "2px solid var(--ap-line)",
+        border: "var(--ap-border-w) solid var(--ap-line)",
         borderRadius: "var(--ap-r-lg)",
         padding: 26,
         boxShadow: "0 6px 0 var(--ap-line), 0 34px 60px rgba(60,40,120,.13)",
@@ -295,8 +295,8 @@ export function HeroMiniQuiz() {
               const isSelected = selected === i;
               const isCorrect = i === q.correct;
               let bg = "var(--ap-card)";
-              let border = "2px solid var(--ap-line)";
-              let shadow = "0 4px 0 var(--ap-line)";
+              let border = "var(--ap-border-w) solid var(--ap-line)";
+              let shadow = "var(--ap-shadow-soft)";
               let color = "var(--ap-ink)";
               let shapeBg = SHAPE_COLORS[i];
               if (revealed) {
@@ -304,11 +304,11 @@ export function HeroMiniQuiz() {
                   bg = "var(--ap-pres-deep)"; border = "2px solid var(--ap-pres-deep)";
                   shadow = "0 4px 0 #076346"; color = "#fff"; shapeBg = "rgba(255,255,255,.22)";
                 } else if (isSelected) {
-                  bg = "var(--ap-paper-2)"; border = "2px solid var(--ap-line)";
-                  shadow = "0 4px 0 var(--ap-line)"; color = "var(--ap-muted)"; shapeBg = "var(--ap-line-2)";
+                  bg = "var(--ap-paper-2)"; border = "var(--ap-border-w) solid var(--ap-line)";
+                  shadow = "var(--ap-shadow-soft)"; color = "var(--ap-muted)"; shapeBg = "var(--ap-line-2)";
                 } else {
-                  bg = "var(--ap-paper-2)"; border = "2px solid var(--ap-line)";
-                  shadow = "0 4px 0 var(--ap-line)"; color = "var(--ap-muted)"; shapeBg = "var(--ap-line-2)";
+                  bg = "var(--ap-paper-2)"; border = "var(--ap-border-w) solid var(--ap-line)";
+                  shadow = "var(--ap-shadow-soft)"; color = "var(--ap-muted)"; shapeBg = "var(--ap-line-2)";
                 }
               }
               return (

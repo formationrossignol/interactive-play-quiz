@@ -21,7 +21,7 @@ const triggerStyle = {
   fontFamily: "var(--ap-font-body)",
   fontWeight: 700,
   fontSize: "14px",
-  border: "2px solid var(--ap-line)",
+  border: "var(--ap-border-w) solid var(--ap-line)",
   borderRadius: "var(--ap-r-sm)",
   background: "var(--ap-card)",
   color: "var(--ap-ink)",
@@ -42,7 +42,7 @@ export const TrashView = ({ items, viewMode, onRestore, onPermanentDelete }: Tra
       <div
         style={{
           borderRadius: "var(--ap-r-lg)",
-          border: "2px dashed var(--ap-line-2)",
+          border: "var(--ap-border-w) dashed var(--ap-line-2)",
           background: "var(--ap-paper-2)",
           padding: "48px 24px",
           textAlign: "center",
@@ -71,7 +71,7 @@ export const TrashView = ({ items, viewMode, onRestore, onPermanentDelete }: Tra
           <SelectContent
             style={{
               background: "var(--ap-card)",
-              border: "2px solid var(--ap-line)",
+              border: "var(--ap-border-w) solid var(--ap-line)",
               borderRadius: "var(--ap-r-md)",
             }}
           >
@@ -102,7 +102,7 @@ export const TrashView = ({ items, viewMode, onRestore, onPermanentDelete }: Tra
                 </div>
                 <div
                   className="flex items-center justify-between gap-2 pt-3"
-                  style={{ borderTop: "2px solid var(--ap-line)" }}
+                  style={{ borderTop: "var(--ap-border-w) solid var(--ap-line)" }}
                 >
                   <span
                     className="text-xs font-semibold"
@@ -140,7 +140,7 @@ export const TrashView = ({ items, viewMode, onRestore, onPermanentDelete }: Tra
               <div
                 key={item.id}
                 className="flex items-center gap-4 px-4 py-3"
-                style={{ borderBottom: "2px solid var(--ap-line)", opacity: 0.85 }}
+                style={{ borderBottom: "var(--ap-border-w) solid var(--ap-line)", opacity: 0.85 }}
               >
                 <div className="flex-1 min-w-0">
                   <p className="ap-h3 truncate" style={{ fontSize: "14px", marginBottom: "2px" }}>

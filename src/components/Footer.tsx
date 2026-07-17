@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { t } from "@/lib/i18n";
+import { SocialLinksRow } from "@/components/SocialLinksRow";
 
 export const Footer = () => {
   const navigate = useNavigate();
@@ -37,7 +38,7 @@ export const Footer = () => {
   ];
 
   return (
-    <footer style={{ borderTop: "2px solid var(--ap-line)", background: "var(--ap-paper-2)" }}>
+    <footer style={{ borderTop: "var(--ap-border-w) solid var(--ap-line)", background: "var(--ap-paper-2)" }}>
       <div className="mx-auto flex max-w-6xl flex-col gap-10 px-6 py-12 md:flex-row md:justify-between">
         <div className="max-w-sm">
           <div className="ap-row ap-gap-12" style={{ marginBottom: "16px" }}>
@@ -54,6 +55,7 @@ export const Footer = () => {
           <p className="text-sm leading-relaxed" style={{ color: "var(--ap-muted)" }}>
             {t('footerDescription')}
           </p>
+          <SocialLinksRow />
         </div>
 
         <div className="grid flex-1 gap-8 sm:grid-cols-3">
@@ -89,7 +91,7 @@ export const Footer = () => {
         </div>
       </div>
 
-      <div style={{ borderTop: "2px solid var(--ap-line)" }}>
+      <div style={{ borderTop: "var(--ap-border-w) solid var(--ap-line)" }}>
         <div
           className="mx-auto max-w-6xl px-6 py-4 text-xs font-bold"
           style={{ color: "var(--ap-muted)", display: "flex", flexWrap: "wrap", gap: "16px", alignItems: "center", justifyContent: "space-between" }}

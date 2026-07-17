@@ -109,7 +109,7 @@ export const Header = ({
       className="sticky top-0 z-40"
       style={{
         backgroundColor: "var(--ap-paper)",
-        backgroundImage: "radial-gradient(var(--ap-line-2) 1px, transparent 1px)",
+        backgroundImage: "var(--ap-texture)",
         backgroundSize: "28px 28px",
       }}
     >
@@ -173,7 +173,7 @@ export const Header = ({
                   className="z-50 w-52 p-1.5"
                   style={{
                     background: "var(--ap-card)",
-                    border: "2px solid var(--ap-line)",
+                    border: "var(--ap-border-w) solid var(--ap-line)",
                     borderRadius: "var(--ap-r-lg)",
                     boxShadow: "var(--ap-shadow-card)",
                   }}
@@ -183,7 +183,7 @@ export const Header = ({
                     return (
                       <DropdownMenuItem
                         key={item.label}
-                        className="gap-2 rounded-xl text-sm cursor-pointer"
+                        className="gap-2 rounded-md text-sm cursor-pointer"
                         style={{ color: "var(--ap-ink)", fontFamily: "var(--ap-font-body)" }}
                         onSelect={item.onClick}
                       >
@@ -218,7 +218,7 @@ export const Header = ({
                   className="z-50 w-56 p-1.5"
                   style={{
                     background: "var(--ap-card)",
-                    border: "2px solid var(--ap-line)",
+                    border: "var(--ap-border-w) solid var(--ap-line)",
                     borderRadius: "var(--ap-r-lg)",
                     boxShadow: "var(--ap-shadow-card)",
                   }}
@@ -228,7 +228,7 @@ export const Header = ({
                     .map((item) => (
                       <DropdownMenuItem
                         key={item.label}
-                        className="rounded-xl text-sm cursor-pointer"
+                        className="rounded-md text-sm cursor-pointer"
                         style={{ color: "var(--ap-ink)" }}
                         onSelect={item.onClick}
                       >
@@ -249,7 +249,7 @@ export const Header = ({
                         return (
                           <DropdownMenuItem
                             key={item.label}
-                            className="gap-2 rounded-xl text-sm cursor-pointer"
+                            className="gap-2 rounded-md text-sm cursor-pointer"
                             style={{ color: "var(--ap-ink)" }}
                             onSelect={item.onClick}
                           >
@@ -262,7 +262,7 @@ export const Header = ({
                   )}
                   {user && (
                     <DropdownMenuItem
-                      className="gap-2 rounded-xl text-sm cursor-pointer"
+                      className="gap-2 rounded-md text-sm cursor-pointer"
                       style={{ color: "var(--ap-ink)" }}
                       onSelect={() => navigate("/profile")}
                     >
@@ -272,7 +272,7 @@ export const Header = ({
                   )}
                   {isAdmin && (
                     <DropdownMenuItem
-                      className="gap-2 rounded-xl text-sm cursor-pointer"
+                      className="gap-2 rounded-md text-sm cursor-pointer"
                       style={{ color: "var(--ap-ink)" }}
                       onSelect={() => navigate("/admin")}
                     >
@@ -312,20 +312,20 @@ export const Header = ({
               className="z-50 p-1.5"
               style={{
                 background: "var(--ap-card)",
-                border: "2px solid var(--ap-line)",
+                border: "var(--ap-border-w) solid var(--ap-line)",
                 borderRadius: "var(--ap-r-lg)",
                 boxShadow: "var(--ap-shadow-card)",
               }}
             >
               <DropdownMenuItem
-                className="rounded-xl text-sm cursor-pointer"
+                className="rounded-md text-sm cursor-pointer"
                 style={{ color: "var(--ap-ink)" }}
                 onClick={() => handleLanguageChange("en")}
               >
                 🇬🇧 English
               </DropdownMenuItem>
               <DropdownMenuItem
-                className="rounded-xl text-sm cursor-pointer"
+                className="rounded-md text-sm cursor-pointer"
                 style={{ color: "var(--ap-ink)" }}
                 onClick={() => handleLanguageChange("fr")}
               >
@@ -368,7 +368,7 @@ export const Header = ({
 
       {/* Secondary toolbar row */}
       {toolbar && toolbarPlacement === "secondary" && (
-        <div style={{ borderTop: "2px solid var(--ap-line)", backgroundColor: "var(--ap-paper)", backgroundImage: "radial-gradient(var(--ap-line-2) 1px, transparent 1px)", backgroundSize: "28px 28px" }}>
+        <div style={{ borderTop: "var(--ap-border-w) solid var(--ap-line)", backgroundColor: "var(--ap-paper)", backgroundImage: "var(--ap-texture)", backgroundSize: "28px 28px" }}>
           <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-2.5">
             {toolbar}
           </div>
@@ -378,7 +378,7 @@ export const Header = ({
         <div className="w-full px-6 pb-3 lg:hidden">
           <div
             className="flex flex-wrap items-center gap-2 px-4 py-2.5"
-            style={{ borderTop: "2px solid var(--ap-line)", backgroundColor: "var(--ap-paper)", backgroundImage: "radial-gradient(var(--ap-line-2) 1px, transparent 1px)", backgroundSize: "28px 28px" }}
+            style={{ borderTop: "var(--ap-border-w) solid var(--ap-line)", backgroundColor: "var(--ap-paper)", backgroundImage: "var(--ap-texture)", backgroundSize: "28px 28px" }}
           >
             {toolbar}
           </div>

@@ -11,7 +11,7 @@ const inputStyle: React.CSSProperties = {
   fontSize: "15px",
   color: "var(--ap-ink)",
   background: "var(--ap-card)",
-  border: "2px solid var(--ap-line)",
+  border: "var(--ap-border-w) solid var(--ap-line)",
   borderRadius: "var(--ap-r-sm)",
   padding: "12px 15px",
   outline: "none",

@@ -215,7 +215,7 @@ const ParticipantPreview = ({ question, questionIndex, totalQuestions, isPoll }:
             placeholder="Votre réponse…"
             autoComplete="off"
             className="w-full rounded-xl p-3 text-sm outline-none"
-            style={{ border: "2px solid var(--ap-line)", background: "var(--ap-paper)", color: "var(--ap-ink)", fontFamily: "var(--ap-font-body)", fontWeight: 600 }}
+            style={{ border: "var(--ap-border-w) solid var(--ap-line)", background: "var(--ap-paper)", color: "var(--ap-ink)", fontFamily: "var(--ap-font-body)", fontWeight: 600 }}
           />
           <button type="submit" className="ap-btn ap-btn--pill" style={{ background: "var(--ap-ink)", fontSize: 14, padding: "10px 20px" }}>
             Valider
@@ -258,7 +258,7 @@ const ParticipantPreview = ({ question, questionIndex, totalQuestions, isPoll }:
             <button
               key={index}
               className="rounded-xl px-3 py-2.5 text-sm font-bold text-left transition-colors"
-              style={{ border: "2px solid var(--ap-line)", background: "var(--ap-card)", color: "var(--ap-ink)", boxShadow: "0 3px 0 var(--ap-line)", fontFamily: "var(--ap-font-body)" }}
+              style={{ border: "var(--ap-border-w) solid var(--ap-line)", background: "var(--ap-card)", color: "var(--ap-ink)", boxShadow: "0 3px 0 var(--ap-line)", fontFamily: "var(--ap-font-body)" }}
               onClick={() => handlePick(index)}
             >
               {option}
@@ -299,7 +299,7 @@ const ParticipantPreview = ({ question, questionIndex, totalQuestions, isPoll }:
               <button
                 key={index}
                 className="rounded-lg py-2 text-sm font-bold"
-                style={{ border: "2px solid var(--ap-line)", background: "var(--ap-card)", color: "var(--ap-ink)", fontFamily: "var(--ap-font-body)" }}
+                style={{ border: "var(--ap-border-w) solid var(--ap-line)", background: "var(--ap-card)", color: "var(--ap-ink)", fontFamily: "var(--ap-font-body)" }}
                 onClick={() => handlePick(index)}
               >
                 {option}

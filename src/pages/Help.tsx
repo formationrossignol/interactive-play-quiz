@@ -10,7 +10,7 @@ import type { FaqGroup } from "@/lib/pages/types";
 const FAQItem = ({ q, a }: { q: string; a: string }) => {
   const [open, setOpen] = useState(false);
   return (
-    <div style={{ borderBottom: "2px solid var(--ap-line)" }}>
+    <div style={{ borderBottom: "var(--ap-border-w) solid var(--ap-line)" }}>
       <button
         onClick={() => setOpen((v) => !v)}
         style={{

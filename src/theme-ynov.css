@@ -59,6 +59,10 @@
   /* Transitions nettes, léger élan sans rebond excessif */
   --ap-ease:   cubic-bezier(.25, .1, .25, 1);
   --ap-spring: cubic-bezier(.3, .7, .4, 1.1);
+
+  /* Pas de trame de points, filets fins partout */
+  --ap-texture: none;
+  --ap-border-w: 1px;
 }
 
 /* ── Variante sombre — noir Ynov, turquoise incandescent ── */
@@ -110,6 +114,16 @@
   color: #000;
 }
 
+/* Liens nus : noir souligné turquoise, survol turquoise */
+[data-theme="ynov"] a:not([class]) {
+  color: var(--ap-ink);
+  text-decoration: underline;
+  text-decoration-color: #00b8a9;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 2px;
+}
+[data-theme="ynov"] a:not([class]):hover { color: #00b8a9; }
+
 /* ============================================================
    3. TYPOGRAPHIE — Montserrat dense, signatures turquoise
    ============================================================ */
@@ -147,17 +161,18 @@
   transition: background .15s var(--ap-ease), color .15s var(--ap-ease),
               transform .12s var(--ap-ease), box-shadow .15s var(--ap-ease);
 }
+/* Survol : turquoise assombri, texte noir conservé — pas d'inversion flash */
 [data-theme="ynov"] .ap-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 14px rgba(0, 184, 169, .35);
-  background: var(--ap-brand-deep);
-  color: #fff;
+  box-shadow: 0 4px 12px rgba(0, 184, 169, .3);
+  background: #00a296;
+  color: #000;
 }
 [data-theme="ynov"] .ap-btn:active {
   transform: none;
   box-shadow: none;
-  background: var(--ap-brand-deep);
-  color: #fff;
+  background: #008c82;
+  color: #000;
 }
 [data-theme="ynov"] .ap-btn--pill { border-radius: var(--ap-r-pill); }
 
@@ -268,6 +283,14 @@
 [data-theme="ynov"] .ap-switch[aria-checked="true"],
 [data-theme="ynov"] .ap-switch.is-on { background: #00b8a9; }
 
+/* Icônes réseaux : inversion monochrome au survol */
+[data-theme="ynov"] .ap-social:hover {
+  transform: none;
+  background: var(--ap-ink);
+  color: var(--ap-paper);
+  border-color: var(--ap-ink);
+}
+
 /* ============================================================
    8. MARQUE & NAVIGATION — logo monochrome, nav active en bloc noir
    ============================================================ */
@@ -303,3 +326,13 @@
 [data-theme="ynov"] .ap-route-loader span { background: var(--ap-ink); }
 [data-theme="ynov"] .ap-route-loader span:nth-child(2) { background: #00b8a9; }
 [data-theme="ynov"] .ap-route-loader span:nth-child(3) { background: var(--ap-line-2); }
+
+/* ============================================================
+   10. CONSOLE ADMIN — mêmes aplats que le reste du site
+   ============================================================ */
+[data-theme="ynov"] .adm-btn {
+  border-radius: var(--ap-r-md);
+  box-shadow: none;
+}
+[data-theme="ynov"] .adm-btn:hover { transform: none; box-shadow: none; filter: brightness(.94); }
+[data-theme="ynov"] .adm-btn:active { transform: none; box-shadow: none; filter: brightness(.88); }

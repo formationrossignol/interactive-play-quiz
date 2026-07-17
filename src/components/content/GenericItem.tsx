@@ -75,7 +75,7 @@ const gripStyle: React.CSSProperties = {
 
 const menuStyle = {
   minWidth: 200,
-  border: "2px solid var(--ap-line)",
+  border: "var(--ap-border-w) solid var(--ap-line)",
   background: "var(--ap-card)",
   borderRadius: "var(--ap-r-md)",
 } as const;
@@ -254,7 +254,7 @@ export function GenericCard(props: GenericItemProps) {
             <span key={tag} className="ap-pill" style={{ fontSize: "11px", padding: "3px 9px" }}>#{tag}</span>
           ))}
         </div>
-        <div className="mt-auto flex items-center gap-1.5 pt-3" style={{ borderTop: "2px solid var(--ap-line)" }}>
+        <div className="mt-auto flex items-center gap-1.5 pt-3" style={{ borderTop: "var(--ap-border-w) solid var(--ap-line)" }}>
           <ItemMenu d={d} ctx={ctx} config={config} navigate={navigate} />
           <div style={{ flex: 1 }} />
           <div style={{ display: "flex", gap: "6px", alignItems: "center", minWidth: 0 }} onClick={(e) => e.stopPropagation()}>
@@ -287,7 +287,7 @@ export function GenericRow(props: GenericItemProps) {
     <div
       ref={setNodeRef}
       className="ap-row flex items-center gap-4 cursor-pointer px-4 py-3 transition-colors"
-      style={{ borderBottom: "2px solid var(--ap-line)", opacity: isDragging ? 0.4 : 1 }}
+      style={{ borderBottom: "var(--ap-border-w) solid var(--ap-line)", opacity: isDragging ? 0.4 : 1 }}
       onClick={() => navigate(config.editRoute(id))}
       onMouseEnter={(e) => (e.currentTarget.style.background = "var(--ap-paper-2)")}
       onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}

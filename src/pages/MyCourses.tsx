@@ -87,7 +87,7 @@ function CourseCard({ d, ctx, navigate, userId }: CourseItemProps) {
           </div>
         )}
 
-        <div className="mt-auto flex items-center justify-between gap-2 pt-3" style={{ borderTop: "2px solid var(--ap-line)" }} onClick={(e) => e.stopPropagation()}>
+        <div className="mt-auto flex items-center justify-between gap-2 pt-3" style={{ borderTop: "var(--ap-border-w) solid var(--ap-line)" }} onClick={(e) => e.stopPropagation()}>
           <CourseContextMenu
             course={course}
             onEdit={() => navigate(`/course-builder?courseId=${course.id}`)}
@@ -118,7 +118,7 @@ function CourseRow({ d, ctx, navigate, userId }: CourseItemProps) {
     <div
       ref={setNodeRef}
       className="ap-row flex items-center gap-4 cursor-pointer px-4 py-3 transition-colors"
-      style={{ borderBottom: "2px solid var(--ap-line)", opacity: isDragging ? 0.4 : 1 }}
+      style={{ borderBottom: "var(--ap-border-w) solid var(--ap-line)", opacity: isDragging ? 0.4 : 1 }}
       onClick={() => navigate(`/course/${course.id}`)}
       onMouseEnter={(e) => (e.currentTarget.style.background = "var(--ap-paper-2)")}
       onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}

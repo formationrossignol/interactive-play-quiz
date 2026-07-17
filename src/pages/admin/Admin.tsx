@@ -11,9 +11,10 @@ import {
 import { ContentTab } from "./ContentTab";
 import { ModerationTab } from "./ModerationTab";
 import { SubscribersTab } from "./SubscribersTab";
+import { SettingsTab } from "./SettingsTab";
 import "./admin.css";
 
-type Section = "content" | "moderation" | "subscribers";
+type Section = "content" | "moderation" | "subscribers" | "settings";
 
 const Admin = () => {
   const { isAdmin, isLoading } = useIsAdmin();
@@ -58,6 +59,7 @@ const Admin = () => {
     { key: "content", icon: "📝", label: "Contenu", count: allContent.length },
     { key: "moderation", icon: "🛡️", label: "Modération", count: pendingMod, alert: pendingMod > 0 },
     { key: "subscribers", icon: "👥", label: "Abonnés", count: subCount },
+    { key: "settings", icon: "🔗", label: "Réglages", count: 0 },
   ];
 
   return (
@@ -107,7 +109,9 @@ const Admin = () => {
                 >
                   <span className="ico">{n.icon}</span>
                   {n.label}
-                  <span className={`count${n.alert && section !== n.key ? " alert" : ""}`}>{n.count}</span>
+                  {n.key !== "settings" && (
+                    <span className={`count${n.alert && section !== n.key ? " alert" : ""}`}>{n.count}</span>
+                  )}
                 </button>
               ))}
             </nav>
@@ -116,6 +120,7 @@ const Admin = () => {
               {section === "content" && <ContentTab />}
               {section === "moderation" && <ModerationTab />}
               {section === "subscribers" && <SubscribersTab />}
+              {section === "settings" && <SettingsTab />}
             </div>
           </div>
         </div>

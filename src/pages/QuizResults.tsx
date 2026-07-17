@@ -53,7 +53,7 @@ const SessionCard = ({ run, defaultOpen }: { run: SessionRun; defaultOpen?: bool
       </button>
 
       {open && (
-        <div style={{ borderTop: "2px solid var(--ap-line)", padding: "16px 24px", display: "flex", flexDirection: "column", gap: "8px" }}>
+        <div style={{ borderTop: "var(--ap-border-w) solid var(--ap-line)", padding: "16px 24px", display: "flex", flexDirection: "column", gap: "8px" }}>
           {sorted.length === 0 && (
             <p className="ap-muted" style={{ fontSize: "13px" }}>Aucun joueur enregistré.</p>
           )}
@@ -158,7 +158,7 @@ const QuizResults = () => {
         </div>
 
         {runs.length === 0 ? (
-          <div style={{ borderRadius: "var(--ap-r-lg)", border: "2px dashed var(--ap-line-2)", background: "var(--ap-paper-2)", padding: "48px 24px", textAlign: "center" }}>
+          <div style={{ borderRadius: "var(--ap-r-lg)", border: "var(--ap-border-w) dashed var(--ap-line-2)", background: "var(--ap-paper-2)", padding: "48px 24px", textAlign: "center" }}>
             <BarChart2 style={{ width: 40, height: 40, color: "var(--ap-muted)", margin: "0 auto 12px" }} />
             <p className="ap-muted" style={{ fontSize: "14px", marginBottom: "8px" }}>Aucune session enregistrée pour ce quiz.</p>
             <p className="ap-muted" style={{ fontSize: "13px" }}>Lancez le quiz et les résultats apparaîtront ici.</p>

@@ -20,7 +20,7 @@ const PAGE_SIZE = 12;
 
 const triggerStyle = {
   fontFamily: "var(--ap-font-body)", fontWeight: 700, fontSize: "14px",
-  border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-sm)",
+  border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-sm)",
   background: "var(--ap-card)", color: "var(--ap-ink)", height: "42px",
 };
 
@@ -106,7 +106,7 @@ const DiscoverQuizzes = () => {
                   width: "100%", padding: "10px 14px 10px 38px",
                   fontFamily: "var(--ap-font-body)", fontWeight: 700, fontSize: "14px",
                   color: "var(--ap-ink)", background: "var(--ap-card)",
-                  border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-sm)",
+                  border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-sm)",
                   outline: "none", boxSizing: "border-box" as const,
                 }}
                 onFocus={(e) => { e.currentTarget.style.borderColor = "var(--ap-brand)"; e.currentTarget.style.boxShadow = "0 0 0 4px var(--ap-brand-soft)"; }}
@@ -118,7 +118,7 @@ const DiscoverQuizzes = () => {
               <SelectTrigger style={{ ...triggerStyle, width: 200, flex: "0 0 auto" }}>
                 <SelectValue placeholder="Catégorie" />
               </SelectTrigger>
-              <SelectContent style={{ background: "var(--ap-card)", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-md)" }}>
+              <SelectContent style={{ background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-md)" }}>
                 {QUIZ_CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
               </SelectContent>
             </Select>
@@ -127,7 +127,7 @@ const DiscoverQuizzes = () => {
               <SelectTrigger style={{ ...triggerStyle, width: 150, flex: "0 0 auto" }}>
                 <SelectValue placeholder="Type" />
               </SelectTrigger>
-              <SelectContent style={{ background: "var(--ap-card)", border: "2px solid var(--ap-line)", borderRadius: "var(--ap-r-md)" }}>
+              <SelectContent style={{ background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-md)" }}>
                 <SelectItem value="all">Tous</SelectItem>
                 <SelectItem value="quiz">Quiz</SelectItem>
                 <SelectItem value="poll">Sondage</SelectItem>
@@ -171,7 +171,7 @@ const DiscoverQuizzes = () => {
 
         {/* Cards grid */}
         {filteredQuizzes.length === 0 ? (
-          <div style={{ borderRadius: "var(--ap-r-lg)", border: "2px dashed var(--ap-line-2)", background: "var(--ap-paper-2)", padding: "64px 24px", textAlign: "center" }}>
+          <div style={{ borderRadius: "var(--ap-r-lg)", border: "var(--ap-border-w) dashed var(--ap-line-2)", background: "var(--ap-paper-2)", padding: "64px 24px", textAlign: "center" }}>
             <p className="ap-muted" style={{ fontSize: "16px" }}>Aucun résultat trouvé</p>
           </div>
         ) : (
