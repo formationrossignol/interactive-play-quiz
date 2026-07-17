@@ -227,7 +227,7 @@ export const Header = ({
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
-                    className="ap-btn ap-btn--ghost ap-btn--sm"
+                    className="ap-btn ap-btn--ghost ap-btn--sm ap-icon-btn"
                     style={{ padding: "8px 10px" }}
                     aria-label="Menu"
                   >
@@ -307,7 +307,7 @@ export const Header = ({
           {/* Admin console shortcut (admins only) */}
           {isAdmin && (
             <button
-              className="ap-btn ap-btn--ghost ap-btn--sm"
+              className="ap-btn ap-btn--ghost ap-btn--sm ap-icon-btn"
               style={{ padding: "8px 10px" }}
               onClick={() => navigate("/admin")}
               aria-label="Administration"
@@ -321,7 +321,7 @@ export const Header = ({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
-                className="ap-btn ap-btn--ghost ap-btn--sm"
+                className="ap-btn ap-btn--ghost ap-btn--sm ap-icon-btn"
                 style={{ padding: "8px 10px" }}
                 aria-label="Language"
               >
@@ -358,7 +358,7 @@ export const Header = ({
           {user ? (
             <>
               <button
-                className="ap-btn ap-btn--ghost ap-btn--sm"
+                className="ap-btn ap-btn--ghost ap-btn--sm ap-icon-btn"
                 style={{ padding: "8px 10px" }}
                 onClick={() => navigate("/profile")}
                 title={user.username}
@@ -366,7 +366,7 @@ export const Header = ({
                 <User className="h-4 w-4" />
               </button>
               <button
-                className="ap-btn ap-btn--ghost ap-btn--sm"
+                className="ap-btn ap-btn--ghost ap-btn--sm ap-icon-btn"
                 style={{ padding: "8px 10px" }}
                 onClick={handleLogout}
                 title={t("logout")}

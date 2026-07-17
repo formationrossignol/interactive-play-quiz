@@ -217,6 +217,25 @@
   box-shadow: inset 0 0 0 2px var(--ap-brand);
 }
 
+/* Icon-only header buttons (admin/lang/profile/logout/mobile-menu) — the
+   official site fills these with the border's own color, glyph in white,
+   instead of the generic outline treatment. */
+[data-theme="ynov"] .ap-btn--ghost.ap-icon-btn {
+  background: var(--ap-brand);
+  color: #fff;
+  box-shadow: inset 0 0 0 1px var(--ap-brand);
+}
+[data-theme="ynov"] .ap-btn--ghost.ap-icon-btn:hover {
+  background: var(--ap-brand-deep);
+  color: #fff;
+  box-shadow: inset 0 0 0 1px var(--ap-brand-deep);
+}
+[data-theme="ynov"] .ap-btn--ghost.ap-icon-btn:active {
+  background: #006b62;
+  color: #fff;
+  box-shadow: inset 0 0 0 1px #006b62;
+}
+
 /* ============================================================
    5. CARTES — blanches, filet fin, cadre noir au survol
    ============================================================ */
@@ -345,8 +364,19 @@
   color: var(--ap-ink);
   box-shadow: inset 0 -2px 0 var(--ap-brand);
 }
+/* Chevron turns turquoise while its menu is open, like the official
+   "Entreprises" dropdown arrow. */
+[data-theme="ynov"] .ap-nav-pill__item[data-state="open"] .chevron-icon {
+  color: var(--ap-brand) !important;
+}
 
-/* Panneau de sous-menu : items plats, généreux, radius cohérent. */
+/* Panneau de sous-menu : items plats, généreux, radius cohérent. Barre
+   pleine turquoise en tête, comme le mega-menu officiel (cf. "Entreprises"
+   sur ynov.com) — le panneau lui-même reste blanc, seul un filet plein
+   marque la liaison avec le déclencheur actif. */
+[data-theme="ynov"] .ap-mega-menu {
+  border-top: 3px solid var(--ap-brand) !important;
+}
 [data-theme="ynov"] [role="menu"] [role="menuitem"] {
   border-radius: var(--ap-r-sm);
 }
@@ -410,11 +440,35 @@
 }
 
 /* ============================================================
+   11b. HERO — fond vert clair, comme les bannières de page
+   ynov.com (ex. "Téléchargement de brochures").
+   ============================================================ */
+[data-theme="ynov"] .hero-grid {
+  background: var(--ap-brand-soft);
+  border-radius: var(--ap-r-lg);
+  padding-left: 40px;
+  padding-right: 40px;
+  margin-left: -40px;
+  margin-right: -40px;
+}
+[data-theme="ynov"] .lq .page-hero {
+  background: var(--ap-brand-soft);
+  border-radius: var(--ap-r-lg);
+  max-width: none;
+  padding: 48px 32px;
+  margin: 0 0 30px;
+}
+
+/* ============================================================
    12. MEGA-MENU — scrim assombri derrière le menu ouvert, comme
    le site officiel (le reste de la page se grise quand une
-   section de nav est ouverte).
+   section de nav est ouverte). Le scrim démarre SOUS le header :
+   la nav (et le sous-menu blanc qu'elle contient) reste blanche et
+   nette, seul le contenu de page en dessous se grise — comme sur
+   ynov.com, où le bandeau de navigation ne s'assombrit jamais.
    ============================================================ */
 [data-theme="ynov"] .ap-menu-scrim.is-open {
+  top: var(--app-header-height, 64px);
   background: rgba(10, 10, 10, .45);
   pointer-events: auto;
   opacity: 1;
