@@ -9,7 +9,7 @@
      · sans-serif géométrique (Montserrat, repli Aptos / Arial)
      · CTA turquoise plein à texte blanc (identité officielle —
        aucune élévation au survol, juste couleur/bordure), secondaire
-       noir monochrome inversé
+       en contour qui se teinte de turquoise au survol
      · arrondis légers (4–12px) cohérents partout, y compris pilule
      · signatures : titres h1 soulignés turquoise, chevron « » »
        devant les micro-labels, indicateur nav = soulignement turquoise
@@ -196,23 +196,25 @@
 [data-theme="ynov"] .ap-btn--poll:active,
 [data-theme="ynov"] .ap-btn--flash:active { box-shadow: none; color: #fff; }
 
-/* Secondaire : contour noir monochrome, inversion noir/blanc au survol */
+/* Secondaire : contour neutre au repos, liseré turquoise au survol —
+   comme les CTA outline officiels ("Toutes les actualités"). Couvre aussi
+   les boutons icône seule du header (même classe .ap-btn--ghost). */
 [data-theme="ynov"] .ap-btn--ghost {
-  background: transparent;
+  background: var(--ap-card);
   color: var(--ap-ink);
-  box-shadow: inset 0 0 0 2px var(--ap-ink);
+  box-shadow: inset 0 0 0 1px var(--ap-line-2);
 }
 [data-theme="ynov"] .ap-btn--ghost:hover {
   transform: none;
-  background: var(--ap-ink);
-  color: var(--ap-paper);
-  box-shadow: inset 0 0 0 2px var(--ap-ink);
+  background: #fff;
+  color: var(--ap-brand);
+  box-shadow: inset 0 0 0 2px var(--ap-brand);
 }
 [data-theme="ynov"] .ap-btn--ghost:active {
   transform: none;
-  background: var(--ap-ink);
-  color: var(--ap-paper);
-  box-shadow: inset 0 0 0 2px var(--ap-ink);
+  background: var(--ap-brand-soft);
+  color: var(--ap-brand-deep);
+  box-shadow: inset 0 0 0 2px var(--ap-brand);
 }
 
 /* ============================================================
@@ -309,14 +311,22 @@
 .dark[data-theme="ynov"] .ap-logo { background: #00b8a9; }
 .dark[data-theme="ynov"] .ap-logo svg { fill: #000; }
 
-/* Le header officiel n'a pas de pilule de regroupement : items nus,
-   espacés, indicateur d'état par soulignement turquoise (pas de bloc plein). */
+/* Le header officiel occupe davantage l'espace horizontal : header plus
+   haut, bordure fine en pied, pas de pilule de regroupement — items nus,
+   largement espacés, indicateur d'état par soulignement turquoise. */
+[data-theme="ynov"] header {
+  border-bottom: 1px solid var(--ap-line);
+}
+[data-theme="ynov"] header > div:first-child {
+  padding-top: 22px;
+  padding-bottom: 22px;
+}
 [data-theme="ynov"] .ap-nav-pill {
   background: transparent;
   border: none;
   box-shadow: none;
   padding: 0;
-  gap: 22px;
+  gap: 34px;
 }
 [data-theme="ynov"] .ap-nav-pill__item {
   font-weight: 600;
@@ -397,4 +407,15 @@
   background: #00b8a9;
   border-color: #00b8a9;
   color: #000;
+}
+
+/* ============================================================
+   12. MEGA-MENU — scrim assombri derrière le menu ouvert, comme
+   le site officiel (le reste de la page se grise quand une
+   section de nav est ouverte).
+   ============================================================ */
+[data-theme="ynov"] .ap-menu-scrim.is-open {
+  background: rgba(10, 10, 10, .45);
+  pointer-events: auto;
+  opacity: 1;
 }
