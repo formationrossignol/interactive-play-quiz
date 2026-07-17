@@ -23,6 +23,8 @@ import { Fireworks } from "./Fireworks";
 import { TransitionTimer, CountdownSplash } from "./TransitionTimer";
 import { AvatarDisplay, getAvatarRender } from "./BetterAvatars";
 import { cn } from "@/lib/utils";
+import { getCurrentUser } from "@/lib/auth";
+import { AUDIENCE_CAP, getPlan } from "@/lib/plans";
 import { DEFAULT_THEME_ID, THEMES } from "@/lib/themes";
 import { hexToRgba, darkestColor, relativeLuminance } from "@/lib/color";
 import {
@@ -430,7 +432,10 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
         // Always reset — clears stale players from previous sessions.
         // create-session splits the quiz into public (quiz_data, no answer key)
         // and private (session_quiz_answers, answer key only submit-answer reads).
-        const ok = await createLiveSession(quiz.gameCode, quiz.title, quiz.questions, quiz.ambianceId);
+        const ok = await createLiveSession(
+          quiz.gameCode, quiz.title, quiz.questions, quiz.ambianceId,
+          AUDIENCE_CAP[getPlan(getCurrentUser())]
+        );
         if (!ok) {
           toast.error('Erreur Supabase lors de la réinitialisation. Vérifiez la console.');
         }
