@@ -33,9 +33,12 @@ import {
   patchSessionState,
   readSessionState,
   removePlayerFromSession,
+  pushControlToSupabase,
   appendSessionHistory,
   readSessionHistory,
+  DEFAULT_SESSION_CONTROL,
   type SharedPlayer,
+  type SessionControl,
   type SessionRun,
 } from "@/lib/sessionState";
 import { supabase, supabaseUrl, supabaseKey } from "@/lib/supabase";
@@ -96,11 +99,12 @@ interface PlayerSidebarItemProps {
   player: Player;
   answered: boolean;
   offline: boolean;
+  onKick?: (id: string) => void;
 }
 
-const PlayerSidebarItem = memo(({ player, answered, offline }: PlayerSidebarItemProps) => (
+const PlayerSidebarItem = memo(({ player, answered, offline, onKick }: PlayerSidebarItemProps) => (
   <div
-    className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition-all duration-300"
+    className="sidebar-player flex items-center gap-2 rounded-lg px-2 py-1.5 transition-all duration-300"
     style={{
       background: offline
         ? 'rgba(239,68,68,0.1)'
@@ -115,6 +119,21 @@ const PlayerSidebarItem = memo(({ player, answered, offline }: PlayerSidebarItem
     <span className="flex-1 truncate text-xs font-bold text-white">{player.name}</span>
     {offline && <span className="text-red-400 text-xs flex-shrink-0">✗</span>}
     {!offline && answered && <span className="text-xs flex-shrink-0" style={{ color: '#6ee7b7' }}>✓</span>}
+    {onKick && (
+      <button
+        className="kick-btn flex-shrink-0"
+        onClick={() => onKick(player.id)}
+        title={`Exclure ${player.name}`}
+        aria-label={`Exclure ${player.name}`}
+        style={{
+          width: 20, height: 20, borderRadius: 6, border: 'none', cursor: 'pointer',
+          display: 'grid', placeItems: 'center', color: '#fff',
+          background: 'rgba(239,68,68,0.85)', lineHeight: 1, fontSize: 13, fontWeight: 900,
+        }}
+      >
+        ×
+      </button>
+    )}
   </div>
 ));
 
@@ -127,9 +146,23 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
 
   const audio = useGameAudio({ ambianceId: quiz.ambianceId, gameState, isHost: !!isHost });
 
-  // Lobby tools (host): lock the room + track fullscreen.
-  const [roomLocked, setRoomLocked] = useState(false);
-  const lockedAtRef = useRef<string | null>(null);
+  // Host-authoritative control state (room lock / global mute / kick list),
+  // synced to players via session_state.control. The host owns and pushes it.
+  const [kickedPlayerIds, setKickedPlayerIds] = useState<Set<string>>(new Set());
+  const [control, setControl] = useState<SessionControl>({ ...DEFAULT_SESSION_CONTROL });
+  const controlRef = useRef(control);
+  useEffect(() => { controlRef.current = control; }, [control]);
+  const updateControl = useCallback((patch: Partial<SessionControl>) => {
+    setControl((prev) => {
+      const next = { ...prev, ...patch };
+      if (isHost) pushControlToSupabase(quiz.gameCode, next);
+      return next;
+    });
+  }, [isHost, quiz.gameCode]);
+
+  const roomLocked = control.locked;
+
+  // Lobby tools (host): track fullscreen.
   const [isFullscreen, setIsFullscreen] = useState(false);
   useEffect(() => {
     const onFsChange = () => setIsFullscreen(!!document.fullscreenElement);
@@ -144,15 +177,27 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
     }
   }, []);
   const toggleRoomLock = useCallback(() => {
-    setRoomLocked((prev) => {
-      const next = !prev;
-      lockedAtRef.current = next ? new Date().toISOString() : null;
-      toast[next ? 'success' : 'message'](next ? 'Salle verrouillée' : 'Salle rouverte', {
-        description: next ? 'Les nouveaux joueurs ne peuvent plus rejoindre.' : 'Les joueurs peuvent à nouveau rejoindre.',
-      });
-      return next;
+    const next = !controlRef.current.locked;
+    updateControl({ locked: next, lockedAt: next ? new Date().toISOString() : null });
+    toast[next ? 'success' : 'message'](next ? 'Salle verrouillée' : 'Salle rouverte', {
+      description: next ? 'Les nouveaux joueurs ne peuvent plus rejoindre.' : 'Les joueurs peuvent à nouveau rejoindre.',
     });
-  }, []);
+  }, [updateControl]);
+
+  // Host mute button: mute the host's own audio AND cut music for everyone.
+  const toggleGlobalMute = useCallback(() => {
+    const next = !audio.muted;
+    audio.setMuted(next);
+    updateControl({ globalMuted: next });
+  }, [audio, updateControl]);
+
+  // Exclude a player: server-authoritative kick list (so they can't rejoin or
+  // re-add themselves mid-game) + immediate removal from the players array.
+  const kickPlayer = useCallback((id: string) => {
+    setKickedPlayerIds((prev) => new Set([...prev, id]));
+    updateControl({ kickedIds: [...new Set([...controlRef.current.kickedIds, id])] });
+    removePlayerFromSession(quiz.gameCode, id);
+  }, [updateControl, quiz.gameCode]);
 
   // Host-screen SFX on phase entry.
   const prevAudioStateRef = useRef<string>('');
@@ -203,7 +248,6 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
   const [lastJoined, setLastJoined] = useState<{ name: string; avatar: string } | null>(null);
   const [toastVisible, setToastVisible] = useState(false);
   const [showCountdown, setShowCountdown] = useState(false);
-  const [kickedPlayerIds, setKickedPlayerIds] = useState<Set<string>>(new Set());
   const prevPlayersLenRef = useRef(0);
 
   useEffect(() => {
@@ -825,7 +869,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
   };
 
   if (gameState === 'waiting') {
-    const lockedAt = lockedAtRef.current;
+    const lockedAt = control.lockedAt;
     const visiblePlayers = players.filter(
       (p) => !kickedPlayerIds.has(p.id) && (!roomLocked || !lockedAt || p.joinedAt.toISOString() <= lockedAt),
     );
@@ -838,11 +882,6 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
         patchSessionState(quiz.gameCode, { gameState: 'countdown' });
       }
       setTimeout(() => { setShowCountdown(false); startQuiz(); }, 3 * 900 + 800);
-    };
-
-    const kickPlayer = (id: string) => {
-      setKickedPlayerIds(prev => new Set([...prev, id]));
-      removePlayerFromSession(quiz.gameCode, id);
     };
 
     const codeLen = quiz.gameCode.length;
@@ -927,10 +966,10 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
               <div style={{ display:'flex',gap:8 }}>
                 {isHost && (
                   <button
-                    onClick={() => audio.setMuted(!audio.muted)}
+                    onClick={toggleGlobalMute}
                     style={audio.muted ? toolOff : toolOn}
-                    title={audio.muted ? 'Activer la musique' : "Couper la musique"}
-                    aria-label={audio.muted ? 'Activer la musique' : "Couper la musique"}
+                    title={audio.muted ? 'Activer la musique' : "Couper la musique (pour tous)"}
+                    aria-label={audio.muted ? 'Activer la musique' : "Couper la musique pour tous"}
                     aria-pressed={!audio.muted}
                   >
                     {audio.muted ? (
@@ -1438,6 +1477,10 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
           {/* ── Player sidebar (dedicated column, host only) ── */}
           {isHost && (
             <div className="w-52 border-l border-white/10 bg-black/40 backdrop-blur-md p-3 flex flex-col flex-shrink-0">
+              <style>{`
+                .sidebar-player .kick-btn { opacity:0; transform:scale(.6); transition:opacity .15s,transform .15s cubic-bezier(.2,.7,.3,1.3); }
+                .sidebar-player:hover .kick-btn { opacity:1; transform:scale(1); }
+              `}</style>
               <div className="flex items-center justify-between mb-3 flex-shrink-0">
                 <span className="text-xs font-bold text-white/60" style={{ fontFamily: 'var(--ap-font-display)' }}>
                   Joueurs
@@ -1460,6 +1503,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
                     player={p}
                     answered={p.lastAnswerQuestionIndex === currentQuestionIndex}
                     offline={disconnectedIds.has(p.id)}
+                    onKick={isHost ? kickPlayer : undefined}
                   />
                 ))}
               </div>
