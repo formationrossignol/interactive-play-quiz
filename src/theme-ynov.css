@@ -7,10 +7,12 @@
 
      · noir principal #000000, blanc #FFFFFF, turquoise #00B8A9
      · sans-serif géométrique (Montserrat, repli Aptos / Arial)
-     · CTA turquoise à texte noir, secondaire noir monochrome
-     · arrondis légers (4–12px), aplats francs, ombres minimales
+     · CTA turquoise plein à texte blanc (identité officielle —
+       aucune élévation au survol, juste couleur/bordure), secondaire
+       noir monochrome inversé
+     · arrondis légers (4–12px) cohérents partout, y compris pilule
      · signatures : titres h1 soulignés turquoise, chevron « » »
-       devant les micro-labels, nav active en bloc noir
+       devant les micro-labels, indicateur nav = soulignement turquoise
 
    Règle logo : monochrome noir sur fond clair, blanc sur fond
    coloré — la tuile logo passe en noir, glyphe blanc.
@@ -151,43 +153,44 @@
 }
 
 /* ============================================================
-   4. BOUTONS — CTA turquoise texte noir, secondaire monochrome
+   4. BOUTONS — CTA turquoise plein, texte blanc (identité officielle
+   Ynov : bg turquoise, texte blanc, radius 0.5rem, aucune élévation —
+   seules la couleur et la bordure transitionnent, jamais de lift).
    ============================================================ */
 [data-theme="ynov"] .ap-btn {
-  color: #000;
+  color: #fff;
+  border: 1px solid var(--ap-brand);
   border-radius: var(--ap-r-md);
-  font-weight: 700;
+  font-weight: 600;
   box-shadow: none;
-  transition: background .15s var(--ap-ease), color .15s var(--ap-ease),
-              transform .12s var(--ap-ease), box-shadow .15s var(--ap-ease);
+  transition: background-color .3s var(--ap-ease), border-color .3s var(--ap-ease), color .3s var(--ap-ease);
 }
-/* Survol : turquoise assombri, texte noir conservé — pas d'inversion flash */
 [data-theme="ynov"] .ap-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 184, 169, .3);
-  background: #00a296;
-  color: #000;
+  transform: none;
+  box-shadow: none;
+  background: var(--ap-brand-deep);
+  border-color: var(--ap-brand-deep);
+  color: #fff;
 }
 [data-theme="ynov"] .ap-btn:active {
   transform: none;
   box-shadow: none;
-  background: #008c82;
-  color: #000;
-}
-[data-theme="ynov"] .ap-btn--pill { border-radius: var(--ap-r-pill); }
-
-/* Boutons typés : aplat plein, texte blanc, assombrissement au survol */
-[data-theme="ynov"] .ap-btn--quiz,
-[data-theme="ynov"] .ap-btn--pres,
-[data-theme="ynov"] .ap-btn--poll,
-[data-theme="ynov"] .ap-btn--flash {
+  background: #006b62;
+  border-color: #006b62;
   color: #fff;
-  box-shadow: none;
 }
-[data-theme="ynov"] .ap-btn--quiz:hover  { background: var(--ap-quiz-deep);  box-shadow: none; color: #fff; }
-[data-theme="ynov"] .ap-btn--pres:hover  { background: var(--ap-pres-deep);  box-shadow: none; color: #fff; }
-[data-theme="ynov"] .ap-btn--poll:hover  { background: var(--ap-poll-deep);  box-shadow: none; color: #fff; }
-[data-theme="ynov"] .ap-btn--flash:hover { background: var(--ap-flash-deep); box-shadow: none; color: #fff; }
+/* Le site officiel n'a pas de CTA pilule : toutes les tailles restent 0.5rem. */
+[data-theme="ynov"] .ap-btn--pill { border-radius: var(--ap-r-md); }
+
+/* Boutons typés : aplat plein, bordure assortie, texte blanc */
+[data-theme="ynov"] .ap-btn--quiz  { border-color: var(--ap-quiz);  color: #fff; box-shadow: none; }
+[data-theme="ynov"] .ap-btn--pres  { border-color: var(--ap-pres);  color: #fff; box-shadow: none; }
+[data-theme="ynov"] .ap-btn--poll  { border-color: var(--ap-poll);  color: #fff; box-shadow: none; }
+[data-theme="ynov"] .ap-btn--flash { border-color: var(--ap-flash); color: #fff; box-shadow: none; }
+[data-theme="ynov"] .ap-btn--quiz:hover  { background: var(--ap-quiz-deep);  border-color: var(--ap-quiz-deep);  box-shadow: none; color: #fff; }
+[data-theme="ynov"] .ap-btn--pres:hover  { background: var(--ap-pres-deep);  border-color: var(--ap-pres-deep);  box-shadow: none; color: #fff; }
+[data-theme="ynov"] .ap-btn--poll:hover  { background: var(--ap-poll-deep);  border-color: var(--ap-poll-deep);  box-shadow: none; color: #fff; }
+[data-theme="ynov"] .ap-btn--flash:hover { background: var(--ap-flash-deep); border-color: var(--ap-flash-deep); box-shadow: none; color: #fff; }
 [data-theme="ynov"] .ap-btn--quiz:active,
 [data-theme="ynov"] .ap-btn--pres:active,
 [data-theme="ynov"] .ap-btn--poll:active,
@@ -306,18 +309,43 @@
 .dark[data-theme="ynov"] .ap-logo { background: #00b8a9; }
 .dark[data-theme="ynov"] .ap-logo svg { fill: #000; }
 
+/* Le header officiel n'a pas de pilule de regroupement : items nus,
+   espacés, indicateur d'état par soulignement turquoise (pas de bloc plein). */
 [data-theme="ynov"] .ap-nav-pill {
-  border-width: 1px;
+  background: transparent;
+  border: none;
   box-shadow: none;
+  padding: 0;
+  gap: 22px;
 }
-[data-theme="ynov"] .ap-nav-pill__item { font-weight: 700; }
+[data-theme="ynov"] .ap-nav-pill__item {
+  font-weight: 600;
+  padding: 8px 2px;
+  border-radius: 0;
+  box-shadow: inset 0 -2px 0 transparent;
+  transition: color .15s var(--ap-ease), box-shadow .15s var(--ap-ease);
+}
 [data-theme="ynov"] .ap-nav-pill__item:hover {
   background: transparent;
   color: var(--ap-ink);
+  box-shadow: inset 0 -2px 0 var(--ap-brand);
 }
 [data-theme="ynov"] .ap-nav-pill__item[aria-current="page"] {
-  background: var(--ap-ink);
-  color: var(--ap-paper);
+  background: transparent;
+  color: var(--ap-ink);
+  box-shadow: inset 0 -2px 0 var(--ap-brand);
+}
+
+/* Panneau de sous-menu : items plats, généreux, radius cohérent. */
+[data-theme="ynov"] [role="menu"] [role="menuitem"] {
+  border-radius: var(--ap-r-sm);
+}
+/* En-tête de section (ex. « Mes créations » dans le menu mobile) :
+   barre turquoise pleine dessous, comme le mega-menu officiel. */
+[data-theme="ynov"] [role="menu"] .uppercase.tracking-wide {
+  border-bottom: 2px solid var(--ap-brand);
+  padding-bottom: 8px !important;
+  margin-bottom: 4px;
 }
 
 /* ============================================================
@@ -336,3 +364,37 @@
 }
 [data-theme="ynov"] .adm-btn:hover { transform: none; box-shadow: none; filter: brightness(.94); }
 [data-theme="ynov"] .adm-btn:active { transform: none; box-shadow: none; filter: brightness(.88); }
+
+/* ============================================================
+   11. FOOTER — bandeau noir, quelle que soit le mode clair/sombre
+   (constante de marque, comme ynov.com). Footer.tsx lit déjà
+   var(--ap-ink)/var(--ap-muted)/var(--ap-brand)/var(--ap-paper-2)/
+   var(--ap-line) : les redéfinir ici, scopés au <footer>, suffit.
+   ============================================================ */
+[data-theme="ynov"] footer {
+  --ap-paper-2: #0a0a0a;
+  --ap-line: #2a2a2a;
+  --ap-muted: #a3a3a3;
+  --ap-ink: #ffffff;
+  border-top: none !important;
+}
+[data-theme="ynov"] footer h3 { color: var(--ap-muted); }
+/* Séparateurs verticaux entre colonnes, comme le footer officiel */
+[data-theme="ynov"] footer .grid > div:not(:first-child) {
+  border-left: 1px solid var(--ap-line);
+  padding-left: 24px;
+}
+[data-theme="ynov"] footer .ap-logo { background: #00b8a9; }
+[data-theme="ynov"] footer .ap-logo svg { fill: #000; }
+/* Icônes réseaux : cercle plein blanc, glyphe noir — comme ynov.com */
+[data-theme="ynov"] footer .ap-social {
+  background: #fff;
+  border-color: #fff;
+  color: #000;
+  border-radius: 50%;
+}
+[data-theme="ynov"] footer .ap-social:hover {
+  background: #00b8a9;
+  border-color: #00b8a9;
+  color: #000;
+}

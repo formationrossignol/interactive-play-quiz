@@ -91,9 +91,11 @@ export default {
         },
       },
       borderRadius: {
+        // max(0px, …) guards square themes (--radius: 0) from producing an
+        // invalid negative calc() that browsers silently drop.
         lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        md: "max(0px, calc(var(--radius) - 2px))",
+        sm: "max(0px, calc(var(--radius) - 4px))",
       },
       boxShadow: {
         card: "0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.06)",
