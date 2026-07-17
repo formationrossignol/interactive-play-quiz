@@ -2,13 +2,12 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import type { EditableQuestion } from "@/lib/questionTypes";
 import { Button } from "@/components/ui/button";
-import { Users, Trophy, LogOut } from "lucide-react";
+import { Users, LogOut, Zap } from "lucide-react";
 import { AvatarDisplay } from "./BetterAvatars";
 import { MultiStepProgress } from "./MultiStepProgress";
 import { AudioControls } from "./AudioControls";
 import { useGameAudio } from "@/hooks/useGameAudio";
 import { ExitQuizDialog } from "./ExitQuizDialog";
-import { CircularTimer } from "./CircularTimer";
 import { TransitionCountdown, CountdownSplash } from "./TransitionTimer";
 import { cn } from "@/lib/utils";
 import {
@@ -61,6 +60,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [lastEarnedPoints, setLastEarnedPoints] = useState(0);
   const [lastAnswerCorrect, setLastAnswerCorrect] = useState(false);
+  const [streak, setStreak] = useState(0);
   const [lastAnsweredQuestion, setLastAnsweredQuestion] = useState<EditableQuestion | null>(null);
   // Answer key for lastAnsweredQuestion, as returned by submit-answer for the
   // player's OWN submission of the CURRENT question. liveQuestion itself no
@@ -416,6 +416,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
         const result = await submitAnswerToServer(gameCode, pending.playerId, pending.questionIndex, pending.answer);
         if (result.ok) {
           setLastAnswerCorrect(result.correct);
+          setStreak((s) => (result.correct ? s + 1 : 0));
           audio.playSfx(result.correct ? 'answer-correct' : 'answer-wrong');
           setLastEarnedPoints(result.earnedPoints);
           setPlayerScore((prev) => prev + result.earnedPoints);
@@ -586,6 +587,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
       const result = await submitAnswerToServer(gameCode, playerId, currentQuestion, answer);
 
       setLastAnswerCorrect(result.correct);
+      setStreak((s) => (result.correct ? s + 1 : 0));
       audio.playSfx(result.correct ? 'answer-correct' : 'answer-wrong');
       setLastEarnedPoints(result.earnedPoints);
       setPlayerScore((prev) => prev + (result.ok ? result.earnedPoints : 0));
@@ -831,42 +833,51 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
       >
         <div className="max-w-2xl mx-auto">
           {/* Header */}
-          <div className="flex items-center justify-between mb-6 text-white">
-            <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 mb-4 text-white">
+            <span style={{ fontWeight: 900, fontSize: 13, color: "rgba(255,255,255,0.85)" }}>
+              {isPoll ? '📊 ' : ''}Question {currentQuestion + 1}/{totalQuestions}
+            </span>
+            {!isPoll && streak >= 2 && (
               <span
-                className="ap-pill"
                 style={{
-                  background: "rgba(255,255,255,0.15)",
-                  border: "2px solid rgba(255,255,255,0.2)",
-                  color: "#fff",
+                  display: "flex", alignItems: "center", gap: 4, fontWeight: 900, fontSize: 12,
+                  color: "var(--ap-flash-deep)", background: "var(--ap-flash-soft)",
+                  border: "2px solid var(--ap-flash)", borderRadius: 999, padding: "3px 10px",
                 }}
+                aria-label={`Série de ${streak}`}
               >
-                {isPoll ? '📊 ' : ''}Question {currentQuestion + 1}
+                🔥 ×{streak}
               </span>
-              {!isPoll && (
-                <div className="flex items-center gap-1" style={{ fontFamily: "var(--ap-font-display)", fontWeight: 600 }}>
-                  <Trophy className="w-4 h-4" />
-                  <span>{playerScore}</span>
-                </div>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <AudioControls audio={audio} />
-              <button
-                className="ap-btn ap-btn--ghost ap-btn--sm"
+            )}
+            <div style={{ flex: 1 }} />
+            {!isPoll && (
+              <span
                 style={{
-                  background: "rgba(255,255,255,0.15)",
-                  border: "2px solid rgba(255,255,255,0.2)",
-                  color: "#fff",
-                  boxShadow: "none",
-                  padding: "8px 10px",
+                  display: "flex", alignItems: "center", gap: 6,
+                  fontFamily: "var(--ap-font-mono, var(--ap-font-display))", fontWeight: 800, fontSize: 14,
+                  background: "rgba(255,255,255,0.15)", border: "2px solid rgba(255,255,255,0.25)",
+                  borderRadius: 999, padding: "5px 13px", color: "#fff",
                 }}
-                aria-label="Quitter le quiz"
-                onClick={() => setShowExitDialog(true)}
               >
-                <LogOut className="w-4 h-4" />
-              </button>
-            </div>
+                <Zap className="w-3.5 h-3.5" style={{ fill: "var(--ap-flash)", color: "var(--ap-flash)" }} />
+                {playerScore.toLocaleString('fr-FR')}
+              </span>
+            )}
+            <AudioControls audio={audio} />
+            <button
+              className="ap-btn ap-btn--ghost ap-btn--sm"
+              style={{
+                background: "rgba(255,255,255,0.15)",
+                border: "2px solid rgba(255,255,255,0.2)",
+                color: "#fff",
+                boxShadow: "none",
+                padding: "8px 10px",
+              }}
+              aria-label="Quitter le quiz"
+              onClick={() => setShowExitDialog(true)}
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
           </div>
 
           {/* Progress */}
@@ -887,8 +898,20 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
           {/* Question card */}
           <div className="ap-card ap-card--floaty mb-4">
             {!isPoll && (
-              <div className="flex justify-center mb-4">
-                <CircularTimer timeLeft={timeLeft} totalTime={liveQuestion.timeLimit} />
+              <div
+                style={{ height: 8, background: "var(--ap-paper-2)", border: "2px solid var(--ap-line)", borderRadius: 99, overflow: "hidden", marginBottom: 16 }}
+                role="timer"
+                aria-label={`Temps restant : ${timeLeft} secondes`}
+              >
+                <div
+                  style={{
+                    height: "100%",
+                    width: `${Math.max(0, Math.min(100, (liveQuestion.timeLimit > 0 ? timeLeft / liveQuestion.timeLimit : 0) * 100))}%`,
+                    background: timeLeft <= 5 ? "var(--ap-quiz)" : "var(--ap-brand)",
+                    borderRadius: 99,
+                    transition: "width .3s linear, background .3s",
+                  }}
+                />
               </div>
             )}
 
@@ -903,7 +926,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
                   <button
                     key={index}
                     className={cn(
-                      `ap-answer ap-answer--${(index % 4) + 1}`,
+                      `ap-answer ap-answer--solid ap-answer--${(index % 4) + 1}`,
                       selectedAnswer === index && "ap-answer--selected",
                       hasAnswered && selectedAnswer !== index && "ap-answer--dim"
                     )}
@@ -924,7 +947,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
                   <button
                     key={value}
                     className={cn(
-                      `ap-answer ap-answer--${index + 1}`,
+                      `ap-answer ap-answer--solid ap-answer--${index + 1}`,
                       selectedAnswer === value && "ap-answer--selected",
                       hasAnswered && selectedAnswer !== value && "ap-answer--dim"
                     )}
@@ -1266,6 +1289,11 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
       return '';
     })();
 
+    // Relative standing — "Tu es 2ᵉ · 140 pts derrière Camille"
+    const ahead = playerRank > 1 ? allPlayers[playerRank - 2] : null;
+    const deltaBehind = ahead ? Math.max(0, ahead.score - playerScore) : 0;
+    const ordinal = playerRank === 1 ? '1er' : `${playerRank}ᵉ`;
+
     return (
       <div
         className="min-h-screen flex items-center justify-center p-4"
@@ -1279,52 +1307,48 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
             </div>
           ) : (
             <>
-              <div className="text-8xl mb-4 drop-shadow-xl">{lastAnswerCorrect ? '✅' : '❌'}</div>
-              <h2 className="ap-h2 text-white mb-3">
-                {lastAnswerCorrect ? 'Bonne réponse !' : 'Mauvaise réponse !'}
+              <div className="text-7xl mb-3 drop-shadow-xl">{lastAnswerCorrect ? '🎉' : '😅'}</div>
+              <h2 className="ap-h2 text-white mb-3" style={{ fontSize: 34 }}>
+                {lastAnswerCorrect ? 'Bonne réponse !' : 'Pas cette fois !'}
               </h2>
 
+              {/* Points earned pill */}
+              <div
+                style={{
+                  display: 'inline-block',
+                  fontFamily: 'var(--ap-font-mono, var(--ap-font-display))', fontWeight: 800, fontSize: 22,
+                  color: '#fff', background: 'rgba(255,255,255,0.2)', borderRadius: 999, padding: '6px 20px',
+                }}
+              >
+                {lastAnswerCorrect ? `+ ${lastEarnedPoints.toLocaleString('fr-FR')} pts` : '+ 0 pt'}
+              </div>
+
+              {/* Streak */}
+              {lastAnswerCorrect && streak >= 2 && (
+                <div style={{ marginTop: 12, fontWeight: 900, fontSize: 14, color: '#fff' }}>
+                  🔥 Série de {streak}
+                </div>
+              )}
+
+              {/* Wrong → reveal the right answer */}
               {!lastAnswerCorrect && correctAnswerText && (
-                <p className="mb-4" style={{ color: 'rgba(255,255,255,0.75)', fontFamily: 'var(--ap-font-body)', fontWeight: 600 }}>
-                  La bonne réponse était :{' '}
-                  <span className="font-bold text-white">{correctAnswerText}</span>
+                <p className="mt-3" style={{ color: 'rgba(255,255,255,0.85)', fontFamily: 'var(--ap-font-body)', fontWeight: 700 }}>
+                  La bonne réponse était{' '}
+                  <span className="font-bold text-white">{correctAnswerText}</span> ⭐
                 </p>
               )}
 
-              <div
-                className="p-6"
-                style={{
-                  background: 'rgba(255,255,255,0.15)',
-                  border: '2px solid rgba(255,255,255,0.25)',
-                  borderRadius: 'var(--ap-r-xl)',
-                  marginTop: '8px',
-                }}
-              >
-                <div
-                  className="text-5xl font-bold text-white mb-1"
-                  style={{ fontFamily: 'var(--ap-font-display)' }}
-                >
-                  +{lastEarnedPoints}
-                </div>
-                <div style={{ color: 'rgba(255,255,255,0.75)', fontWeight: 700, fontFamily: 'var(--ap-font-body)' }}>
-                  points gagnés
-                </div>
-                <div
-                  style={{
-                    borderTop: '1px solid rgba(255,255,255,0.2)',
-                    marginTop: '16px',
-                    paddingTop: '16px',
-                    color: 'rgba(255,255,255,0.85)',
-                    fontWeight: 700,
-                    fontFamily: 'var(--ap-font-body)',
-                  }}
-                >
-                  Total : <span className="text-white font-bold">{playerScore} pts</span>
-                </div>
-              </div>
+              {/* Relative standing */}
+              <p className="mt-4" style={{ color: 'rgba(255,255,255,0.9)', fontWeight: 800, fontSize: 14, fontFamily: 'var(--ap-font-body)' }}>
+                {playerRank === 1
+                  ? 'Tu es en tête 🏆'
+                  : ahead
+                    ? `Tu es ${ordinal} · ${deltaBehind.toLocaleString('fr-FR')} pts derrière ${ahead.name}`
+                    : `Tu es ${ordinal}`}
+              </p>
 
-              <p className="mt-4 text-sm" style={{ color: 'rgba(255,255,255,0.5)', fontFamily: 'var(--ap-font-body)' }}>
-                En attente de la suite…
+              <p className="mt-3 text-sm" style={{ color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--ap-font-body)' }}>
+                Total : {playerScore.toLocaleString('fr-FR')} pts · en attente de la suite…
               </p>
             </>
           )}

@@ -342,6 +342,28 @@ body { transition: background-color .25s ease, color .25s ease; }
   box-shadow: 0 4px 0 var(--ap-flash-deep); transform: translateY(-1px);
 }
 
+/* Variante pleine (vue joueur mobile) — bouton entièrement coloré, forme + texte blancs */
+.ap-answer--solid {
+  flex-direction: column; justify-content: center; text-align: center;
+  gap: 8px; color: #fff; border: none; min-height: 92px; font-size: 14.5px;
+}
+.ap-answer--solid .ap-answer__text { flex: 0 1 auto; }
+.ap-answer--solid .ap-answer__shape { background: rgba(255,255,255,.22); color: #fff; }
+.ap-answer--solid.ap-answer--1 { background: var(--ap-quiz);  box-shadow: 0 5px 0 var(--ap-quiz-deep); }
+.ap-answer--solid.ap-answer--2 { background: var(--ap-poll);  box-shadow: 0 5px 0 var(--ap-poll-deep); }
+.ap-answer--solid.ap-answer--3 { background: var(--ap-pres);  box-shadow: 0 5px 0 var(--ap-pres-deep); }
+.ap-answer--solid.ap-answer--4 { background: var(--ap-flash); box-shadow: 0 5px 0 var(--ap-flash-deep); }
+.ap-answer--solid:hover { transform: translateY(-2px); }
+.ap-answer--solid.ap-answer--1:hover { background: var(--ap-quiz);  box-shadow: 0 7px 0 var(--ap-quiz-deep); }
+.ap-answer--solid.ap-answer--2:hover { background: var(--ap-poll);  box-shadow: 0 7px 0 var(--ap-poll-deep); }
+.ap-answer--solid.ap-answer--3:hover { background: var(--ap-pres);  box-shadow: 0 7px 0 var(--ap-pres-deep); }
+.ap-answer--solid.ap-answer--4:hover { background: var(--ap-flash); box-shadow: 0 7px 0 var(--ap-flash-deep); }
+.ap-answer--solid:active { transform: translateY(4px); }
+.ap-answer--solid.ap-answer--selected,
+.ap-answer--solid.ap-answer--selected:hover {
+  outline: 4px solid #fff; outline-offset: -6px; transform: translateY(-1px);
+}
+
 /* États de révélation — bonne / mauvaise / estompée */
 @keyframes ap-correct-bounce {
   0%   { transform: scale(1) translateY(0); }
