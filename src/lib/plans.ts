@@ -55,15 +55,17 @@ export function isQuestionTypeLocked(type: string, plan: Plan): boolean {
 export class PlanLimitError extends Error {
   kind: ContentKind;
   cap: number;
+  plan: Plan;
 
-  constructor(kind: ContentKind, cap: number) {
+  constructor(kind: ContentKind, cap: number, plan: Plan = 'starter') {
     super(
-      `Limite du plan Starter atteinte (${cap} ${CONTENT_KIND_LABELS[kind]} max). ` +
+      `Limite du plan ${PLAN_LABELS[plan]} atteinte (${cap} ${CONTENT_KIND_LABELS[kind]} max). ` +
       `Passez au plan Pro pour continuer.`
     );
     this.name = 'PlanLimitError';
     this.kind = kind;
     this.cap = cap;
+    this.plan = plan;
   }
 }
 
@@ -74,7 +76,7 @@ export class PlanLimitError extends Error {
  */
 export class AudienceCapError extends Error {
   constructor() {
-    super('Capacité maximale atteinte. Contactez l\'organisateur.');
+    super("Capacité maximale atteinte. Contactez l'organisateur.");
     this.name = 'AudienceCapError';
   }
 }
