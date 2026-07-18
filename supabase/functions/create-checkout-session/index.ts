@@ -47,10 +47,13 @@ Deno.serve(async (req) => {
         metadata: { supabase_user_id: user.id },
       });
       customerId = customer.id;
-      await supabaseAdmin
+      const { error: updateError } = await supabaseAdmin
         .from("profiles")
         .update({ stripe_customer_id: customerId })
         .eq("id", user.id);
+      if (updateError) {
+        console.error("[create-checkout-session] failed to persist stripe_customer_id:", updateError);
+      }
     }
 
     const origin = req.headers.get("origin") ?? Deno.env.get("APP_ORIGIN") ?? "https://brivia.app";
