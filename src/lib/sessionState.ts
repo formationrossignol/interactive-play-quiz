@@ -458,10 +458,11 @@ export const createLiveSession = async (
   // own question shape (QuizSession.QuizQuestion) is broader than the question-
   // bank Question type, so keep this structurally loose to avoid a false mismatch.
   questions: unknown[],
-  ambianceId?: string
+  ambianceId?: string,
+  maxParticipants?: number | null
 ): Promise<boolean> => {
   const { error } = await supabase.functions.invoke("create-session", {
-    body: { game_code: gameCode, title, questions, ambiance_id: ambianceId ?? "arcade" },
+    body: { game_code: gameCode, title, questions, ambiance_id: ambianceId ?? "arcade", max_participants: maxParticipants ?? null },
   });
   if (error) console.error("[createLiveSession error]", gameCode, await describeFunctionsError(error));
   return !error;
