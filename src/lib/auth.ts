@@ -3,10 +3,11 @@ import { supabase } from './supabase';
 import { migrateLegacyLocalData } from './authMigration';
 import { migrateLocalToSupabase } from './content/migrateLocalToSupabase';
 import type { SiteTheme } from './siteTheme';
+import type { Plan } from './plans';
 
 export type Theme = 'light' | 'dark';
 export type Language = 'en' | 'fr';
-export type Plan = 'perso' | 'pro' | 'entreprise';
+export type { Plan };
 
 export interface User {
   id: string;

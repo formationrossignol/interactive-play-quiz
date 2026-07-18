@@ -17,6 +17,25 @@ const fetchRoomLocked = async (gameCode: string): Promise<boolean> => {
   return normalizeControl((data as { control?: unknown } | null)?.control).locked;
 };
 
+/** Read the baked-in participant cap (quiz_data.maxParticipants) and the
+ *  current player count, so a join can be blocked once the room is full.
+ *  Error-tolerant like fetchRoomLocked — a query failure just reports "not full".
+ *  Client-only check, same as the room-lock mechanism above: two players
+ *  joining the last slot near-simultaneously can both be admitted (no
+ *  server-side atomic reservation). Accepted trade-off, not a bug. */
+const fetchCapacity = async (gameCode: string): Promise<{ full: boolean }> => {
+  const { data } = await supabase
+    .from("session_state")
+    .select("quiz_data, players")
+    .eq("game_code", gameCode)
+    .single();
+  const maxParticipants = (data as { quiz_data?: { maxParticipants?: number | null } } | null)?.quiz_data?.maxParticipants;
+  if (maxParticipants === null || maxParticipants === undefined) return { full: false };
+  const players = (data as { players?: unknown[] } | null)?.players;
+  const count = Array.isArray(players) ? players.length : 0;
+  return { full: count >= maxParticipants };
+};
+
 const checkSupabase = async (gameCode: string): Promise<boolean | null> => {
   const { data, error } = await supabase
     .from("session_state")
@@ -37,6 +56,7 @@ const JoinQuiz = () => {
   const [quizExists, setQuizExists] = useState<boolean | null>(null);
   const [quizTitle, setQuizTitle] = useState<string>("");
   const [roomLocked, setRoomLocked] = useState(false);
+  const [roomFull, setRoomFull] = useState(false);
 
   useEffect(() => {
     if (!gameCode) return;
@@ -109,6 +129,7 @@ const JoinQuiz = () => {
     // Separate, error-tolerant read so a not-yet-deployed control column can't
     // break the title fetch above.
     fetchRoomLocked(gameCode).then(setRoomLocked);
+    fetchCapacity(gameCode).then(({ full }) => setRoomFull(full));
   }, [gameCode, quizExists, navigate]);
 
   // Keep the lock state fresh so a player waiting on this screen learns the
@@ -116,18 +137,25 @@ const JoinQuiz = () => {
   useEffect(() => {
     if (!gameCode || quizExists !== true) return;
     const interval = setInterval(async () => {
-      setRoomLocked(await fetchRoomLocked(gameCode));
+      const [locked, capacity] = await Promise.all([fetchRoomLocked(gameCode), fetchCapacity(gameCode)]);
+      setRoomLocked(locked);
+      setRoomFull(capacity.full);
     }, 3000);
     return () => clearInterval(interval);
   }, [gameCode, quizExists]);
 
   const handleAvatarComplete = async (name: string, avatar: string) => {
     if (!gameCode) return;
-    // Re-check at submit time — the host may have locked the room while the
-    // player was picking an avatar.
+    // Re-check at submit time — the host may have locked the room or it may
+    // have filled up while the player was picking an avatar.
     if (await fetchRoomLocked(gameCode)) {
       setRoomLocked(true);
       toast.error("Salle verrouillée", { description: "L'hôte a fermé l'accès, impossible de rejoindre." });
+      return;
+    }
+    if ((await fetchCapacity(gameCode)).full) {
+      setRoomFull(true);
+      toast.error("Session complète", { description: "Le nombre maximum de participants est atteint." });
       return;
     }
     const id =
@@ -168,6 +196,25 @@ const JoinQuiz = () => {
           <h2 className="ap-h2" style={{ fontSize: "24px", marginBottom: "12px" }}>Salle verrouillée</h2>
           <p className="ap-muted" style={{ fontSize: "15px", marginBottom: "24px" }}>
             L'hôte a fermé l'accès à cette partie. Vous ne pouvez pas la rejoindre pour le moment.
+          </p>
+          <button className="ap-btn ap-btn--pill" onClick={() => navigate("/")}>
+            Retour
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (roomFull) {
+    return (
+      <div style={{ minHeight: "100vh", background: "var(--ap-paper)", display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
+        <div className="ap-card ap-card--floaty" style={{ maxWidth: 440, width: "100%", textAlign: "center", padding: "40px" }}>
+          <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'var(--ap-brand-soft)', display: 'grid', placeItems: 'center', margin: '0 auto 16px' }}>
+            <Lock style={{ width: 32, height: 32, color: 'var(--ap-brand)' }} strokeWidth={2} />
+          </div>
+          <h2 className="ap-h2" style={{ fontSize: "24px", marginBottom: "12px" }}>Session complète</h2>
+          <p className="ap-muted" style={{ fontSize: "15px", marginBottom: "24px" }}>
+            Le nombre maximum de participants pour cette session est atteint.
           </p>
           <button className="ap-btn ap-btn--pill" onClick={() => navigate("/")}>
             Retour

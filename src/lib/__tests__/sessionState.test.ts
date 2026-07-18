@@ -23,7 +23,7 @@ describe('createLiveSession', () => {
     const ok = await createLiveSession('123456', 'My Quiz', [{ id: 'q1', type: 'multiple-choice' }]);
     expect(ok).toBe(true);
     expect(invokeMock).toHaveBeenCalledWith('create-session', {
-      body: { game_code: '123456', title: 'My Quiz', questions: [{ id: 'q1', type: 'multiple-choice' }], ambiance_id: 'arcade' },
+      body: { game_code: '123456', title: 'My Quiz', questions: [{ id: 'q1', type: 'multiple-choice' }], ambiance_id: 'arcade', max_participants: null },
     });
   });
 

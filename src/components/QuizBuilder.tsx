@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { ImportFileModal } from "./ImportFileModal";
 import { getCurrentUser } from "@/lib/auth";
+import { getPlan, isQuestionTypeLocked, PlanLimitError } from "@/lib/plans";
 import { saveQuiz, updateQuiz, getQuizById } from "@/lib/quizStorage";
 import { upsertContentBySource } from "@/lib/content/contentRepo";
 import type { ContentType } from "@/lib/content/types";
@@ -468,6 +469,7 @@ export const QuizBuilder = () => {
   const templateId = sp.get("templateId");
   const quizId = sp.get("quizId");
   const user = getCurrentUser();
+  const plan = getPlan(user);
 
   const isPoll = quizType === "poll";
   const isFlashcard = quizType === "flashcard";
@@ -703,7 +705,13 @@ export const QuizBuilder = () => {
       toast.success(quizId ? (isPoll ? "Sondage mis à jour" : "Quiz mis à jour") : (isPoll ? t("pollSaved") : t("quizSaved")));
       setShouldBlockNavigation(false);
       navigate(isFlashcard ? "/my-flashcards" : isPoll ? "/my-polls" : isSlide ? "/my-courses" : "/my-quizzes");
-    } catch { toast.error("Erreur lors de l'enregistrement"); }
+    } catch (e) {
+      if (e instanceof PlanLimitError) {
+        toast.error(e.message, { action: { label: "Passer Pro", onClick: () => navigate("/pricing") } });
+      } else {
+        toast.error("Erreur lors de l'enregistrement");
+      }
+    }
   };
 
   const handlePreviewQuiz = () => {
@@ -783,17 +791,31 @@ export const QuizBuilder = () => {
           >
             {getAvailableTypes().map(type => {
               const m = QTYPE_META[type] || { label: type, dot: "var(--ap-muted)" };
+              const locked = !isPoll && isQuestionTypeLocked(type, plan);
               return (
                 <DropdownMenuItem
                   key={type}
                   className="gap-2 rounded-xl text-sm cursor-pointer"
                   onSelect={() => {
+                    if (locked) {
+                      toast.error("Type de question réservé au plan Pro", {
+                        action: { label: "Passer Pro", onClick: () => navigate("/pricing") },
+                      });
+                      return;
+                    }
                     const defaults = getDefaultQuestion(type);
                     upd({ ...defaults, id: q.id, question: q.question, image: q.image });
                   }}
+                  style={locked ? { opacity: 0.5 } : undefined}
+                  aria-disabled={locked}
                 >
                   <i style={{ width: 7, height: 7, borderRadius: 2, background: m.dot, display: "inline-block", flexShrink: 0 }} />
                   {m.label}
+                  {locked && (
+                    <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 800, color: "var(--ap-brand)", background: "var(--ap-brand-soft)", padding: "2px 6px", borderRadius: 999 }}>
+                      Pro
+                    </span>
+                  )}
                 </DropdownMenuItem>
               );
             })}
