@@ -31,7 +31,27 @@ const mapUser = (u: SupabaseUser): User => ({
   theme: u.user_metadata?.theme as Theme | undefined,
   siteTheme: u.user_metadata?.siteTheme as SiteTheme | undefined,
   language: u.user_metadata?.language as Language | undefined,
-  plan: u.user_metadata?.plan as Plan | undefined,
+});
+
+/**
+ * Reads plan from public.profiles — the only source of truth now that
+ * plan is server-controlled (see stripe-webhook, the sole writer).
+ * Defaults to 'starter' on any error so a transient read failure never
+ * silently grants elevated caps.
+ */
+export const fetchPlan = async (userId: string): Promise<Plan> => {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('plan')
+    .eq('id', userId)
+    .single();
+  if (error || !data) return 'starter';
+  return data.plan as Plan;
+};
+
+const mapUserWithPlan = async (u: SupabaseUser): Promise<User> => ({
+  ...mapUser(u),
+  plan: await fetchPlan(u.id),
 });
 
 /* ── Synchronous cache ──────────────────────────────────────────
@@ -69,7 +89,7 @@ const syncFromSession = async (session: Session | null) => {
     setCache(null);
     return;
   }
-  setCache(mapUser(session.user));
+  setCache(await mapUserWithPlan(session.user));
   if (session.user.email) migrateLegacyLocalData(session.user.email, session.user.id);
   // One-time, idempotent import of this device's localStorage content into
   // Supabase (folders + content). No-op after the first successful run.
@@ -96,6 +116,13 @@ export const initAuth = (): Promise<void> => {
   return initPromise;
 };
 
+/** Re-reads the current Supabase session and refreshes the cached User (plan included). */
+export const refreshCurrentUser = async (): Promise<User | null> => {
+  const { data } = await supabase.auth.getSession();
+  await syncFromSession(data.session);
+  return getCurrentUser();
+};
+
 /* ── Sign in / sign up / sign out ─────────────────────────────── */
 
 export type LoginResult =
@@ -116,7 +143,7 @@ export const login = async (email: string, password: string): Promise<LoginResul
   if (aal && aal.currentLevel === 'aal1' && aal.nextLevel === 'aal2') {
     return { status: 'mfa_required' };
   }
-  const user = mapUser(data.user);
+  const user = await mapUserWithPlan(data.user);
   setCache(user);
   migrateLegacyLocalData(user.email, user.id);
   return { status: 'ok', user };
@@ -146,7 +173,7 @@ export const register = async (
     return { status: 'error', message: error.message };
   }
   if (!data.session) return { status: 'confirm_email' };
-  const user = mapUser(data.user!);
+  const user = await mapUserWithPlan(data.user!);
   setCache(user);
   migrateLegacyLocalData(user.email, user.id);
   return { status: 'ok', user };
@@ -191,11 +218,11 @@ export const changePassword = async (
 /* ── Profile metadata ─────────────────────────────────────────── */
 
 export const updateProfile = async (
-  patch: Partial<Pick<User, 'username' | 'theme' | 'siteTheme' | 'language' | 'plan'>>
+  patch: Partial<Pick<User, 'username' | 'theme' | 'siteTheme' | 'language'>>
 ): Promise<User | null> => {
   const { data, error } = await supabase.auth.updateUser({ data: patch });
   if (error || !data.user) return null;
-  const user = mapUser(data.user);
+  const user = await mapUserWithPlan(data.user);
   setCache(user);
   return user;
 };
@@ -247,7 +274,7 @@ export const verifyMfaLogin = async (code: string): Promise<User | null> => {
   if (!ok) return null;
   const { data } = await supabase.auth.getUser();
   if (!data.user) return null;
-  const user = mapUser(data.user);
+  const user = await mapUserWithPlan(data.user);
   setCache(user);
   migrateLegacyLocalData(user.email, user.id);
   return user;
