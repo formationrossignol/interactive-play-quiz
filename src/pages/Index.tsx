@@ -408,7 +408,7 @@ const Index = () => {
         {/* ═══ STATS ═══ */}
         <section style={{ padding: "0 0 80px" }}>
           <p className="ap-strip-label">En ce moment</p>
-          <StatsBand />
+          <StatsBand liveVisitors={liveVisitors} />
         </section>
 
         {/* ═══ DÉMO ═══ */}

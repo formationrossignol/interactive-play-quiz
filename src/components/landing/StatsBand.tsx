@@ -1,8 +1,8 @@
-import { useLiveVisitors } from "@/hooks/useLiveVisitors";
-
 /** Only the visitor count is real (Supabase presence channel, same source
- *  as the hero pill). The other two tiles are explicit placeholders — do
- *  not replace them with an invented number. */
+ *  as the hero pill — passed down as a prop so both consumers share one
+ *  channel subscription instead of opening a second one with the same
+ *  topic name). The other two tiles are explicit placeholders — do not
+ *  replace them with an invented number. */
 const PlaceholderTile = ({ label }: { label: string }) => (
   <div
     className="ap-card"
@@ -16,9 +16,7 @@ const PlaceholderTile = ({ label }: { label: string }) => (
   </div>
 );
 
-export const StatsBand = () => {
-  const liveVisitors = useLiveVisitors();
-
+export const StatsBand = ({ liveVisitors }: { liveVisitors: number | null }) => {
   return (
     <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 18 }} className="strip-grid">
       <div className="ap-card ap-card--hover" style={{ textAlign: "center", padding: "22px 18px" }}>
