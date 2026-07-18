@@ -2,6 +2,8 @@ import { useNavigate } from "react-router-dom";
 import { useSEO } from "@/hooks/useSEO";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { PlanComparator } from "@/components/PlanComparator";
+import { PaymentFaq } from "@/components/PaymentFaq";
 import { t } from "@/lib/i18n";
 import { Check, Rocket, Crown, Building2 } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
@@ -169,6 +171,29 @@ const Pricing = () => {
               );
             })}
           </div>
+        </section>
+
+        {/* Comparateur détaillé */}
+        <section style={{ maxWidth: 1100, margin: "0 auto", padding: "0 24px 96px" }}>
+          <div style={{ textAlign: "center", marginBottom: "40px" }}>
+            <h2 className="ap-h2" style={{ marginBottom: "8px" }}>Comparez les formules en détail</h2>
+            <p className="ap-muted" style={{ maxWidth: 480, margin: "0 auto" }}>
+              Toutes les limites et fonctionnalités, plan par plan.
+            </p>
+          </div>
+          <PlanComparator plans={plans} />
+        </section>
+
+        {/* FAQ paiement */}
+        <section style={{ maxWidth: 720, margin: "0 auto", padding: "0 24px 96px" }}>
+          <div style={{ textAlign: "center", marginBottom: "32px" }}>
+            <span className="ap-badge ap-badge--brand" style={{ marginBottom: "20px", display: "inline-flex" }}>
+              FAQ
+            </span>
+            <h2 className="ap-h2" style={{ marginBottom: "8px" }}>Questions sur le paiement</h2>
+            <p className="ap-muted">Tout ce qu'il faut savoir avant de passer au plan Pro.</p>
+          </div>
+          <PaymentFaq />
         </section>
       </main>
       <Footer />

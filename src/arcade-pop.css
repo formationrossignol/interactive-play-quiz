@@ -836,6 +836,39 @@ body { transition: background-color .25s ease, color .25s ease; }
   .ap-cookie-modal__actions .ap-btn { width: 100%; }
 }
 
+/* ============================================================
+   17. PLAN COMPARATOR — tableau détaillé sous les cartes tarifs
+   (page /pricing). Thémable : ne touche que des tokens.
+   ============================================================ */
+.ap-compare-wrap {
+  overflow-x: auto; border: var(--ap-border-w) solid var(--ap-line);
+  border-radius: var(--ap-r-xl); background: var(--ap-card);
+}
+.ap-compare { width: 100%; min-width: 640px; border-collapse: collapse; }
+.ap-compare thead th {
+  padding: 24px 16px; vertical-align: bottom; border-bottom: var(--ap-border-w) solid var(--ap-line);
+}
+.ap-compare thead th.is-highlight { background: var(--ap-brand-soft); }
+.ap-compare__plan { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.ap-compare__planname { font-family: var(--ap-font-display); font-weight: 600; font-size: 17px; }
+.ap-compare__category td {
+  padding: 18px 16px 8px;
+  font-family: var(--ap-font-body); font-size: 11px; font-weight: 800;
+  letter-spacing: .08em; text-transform: uppercase; color: var(--ap-muted);
+  border-bottom: 1px solid var(--ap-line);
+}
+.ap-compare tbody tr:not(.ap-compare__category) td { border-bottom: 1px solid var(--ap-line); }
+.ap-compare tbody tr:last-child td { border-bottom: none; }
+.ap-compare tbody td {
+  padding: 13px 16px; text-align: center;
+  font-family: var(--ap-font-body); font-size: 13.5px; color: var(--ap-ink);
+}
+.ap-compare tbody td.is-highlight { background: color-mix(in srgb, var(--ap-brand-soft) 55%, transparent); }
+.ap-compare__labelcol { text-align: left !important; font-weight: 700; }
+.ap-compare__value { font-weight: 700; }
+.ap-compare__icon { width: 18px; height: 18px; margin: 0 auto; display: block; }
+.ap-compare__icon--no { color: var(--ap-line-2); }
+
 /* ── Responsive hero / strip ────────────────────────────────── */
 @media (max-width: 900px) {
   .hero-grid { grid-template-columns: 1fr !important; gap: 44px !important; padding-top: 36px !important; }
