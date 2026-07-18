@@ -1,10 +1,9 @@
-import { useState } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { FaqAccordion } from "@/components/FaqAccordion";
 
 /** Grounded in the current Stripe integration (Checkout + Billing Portal,
  *  no trial, no annual tier, monthly $19 Pro plan — see
  *  docs/superpowers/specs/2026-07-18-stripe-billing-design.md). */
-const PAYMENT_FAQ: { q: string; a: string }[] = [
+const PAYMENT_FAQ = [
   {
     q: "Quels moyens de paiement acceptez-vous ?",
     a: "Le plan Pro se paie par carte bancaire via Stripe, notre prestataire de paiement sécurisé. Vos coordonnées bancaires ne transitent jamais par nos serveurs.",
@@ -35,39 +34,4 @@ const PAYMENT_FAQ: { q: string; a: string }[] = [
   },
 ];
 
-const FAQItem = ({ q, a }: { q: string; a: string }) => {
-  const [open, setOpen] = useState(false);
-  return (
-    <div style={{ borderBottom: "var(--ap-border-w) solid var(--ap-line)" }}>
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        style={{
-          width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
-          padding: "16px 0", background: "none", border: "none", cursor: "pointer",
-          textAlign: "left", gap: "12px",
-        }}
-      >
-        <span style={{ fontFamily: "var(--ap-font-display)", fontWeight: 700, fontSize: "15px", color: "var(--ap-ink)", flex: 1 }}>
-          {q}
-        </span>
-        {open
-          ? <ChevronUp style={{ width: 18, height: 18, color: "var(--ap-brand)", flexShrink: 0 }} />
-          : <ChevronDown style={{ width: 18, height: 18, color: "var(--ap-muted)", flexShrink: 0 }} />}
-      </button>
-      {open && (
-        <p style={{ fontFamily: "var(--ap-font-body)", fontSize: "14px", lineHeight: 1.6, color: "var(--ap-muted)", paddingBottom: "18px" }}>
-          {a}
-        </p>
-      )}
-    </div>
-  );
-};
-
-export const PaymentFaq = () => (
-  <div className="ap-card" style={{ padding: "8px 28px" }}>
-    {PAYMENT_FAQ.map((item) => (
-      <FAQItem key={item.q} q={item.q} a={item.a} />
-    ))}
-  </div>
-);
+export const PaymentFaq = () => <FaqAccordion items={PAYMENT_FAQ} />;

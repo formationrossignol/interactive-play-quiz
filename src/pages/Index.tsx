@@ -2,12 +2,19 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSEO } from "@/hooks/useSEO";
 import { useLanguage } from "@/hooks/useLanguage";
+import { useLiveVisitors } from "@/hooks/useLiveVisitors";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { HeroMiniQuiz } from "@/components/HeroMiniQuiz";
 import { PartnersStrip } from "@/components/PartnersStrip";
+import { UseCaseTabs } from "@/components/landing/UseCaseTabs";
+import { StatsBand } from "@/components/landing/StatsBand";
+import { DemoShowcase } from "@/components/landing/DemoShowcase";
+import { LandingTestimonials } from "@/components/landing/LandingTestimonials";
+import { TrustSection } from "@/components/landing/TrustSection";
+import { LandingFaq } from "@/components/landing/LandingFaq";
 import { t } from "@/lib/i18n";
-import { supabase } from "@/lib/supabase";
+import { useReviews } from "@/lib/pages/hooks";
 
 function useCountUp(target: number, duration = 900) {
   const [value, setValue] = useState(0);
@@ -140,31 +147,14 @@ function LeaderboardTile() {
   );
 }
 
-function useLiveVisitors() {
-  const [count, setCount] = useState<number | null>(null);
-  useEffect(() => {
-    const channel = supabase.channel("live-visitors", {
-      config: { presence: { key: crypto.randomUUID() } },
-    });
-    channel
-      .on("presence", { event: "sync" }, () => {
-        const state = channel.presenceState();
-        setCount(Object.keys(state).length);
-      })
-      .subscribe(async (status) => {
-        if (status === "SUBSCRIBED") {
-          await channel.track({ online_at: new Date().toISOString() });
-        }
-      });
-    return () => { void supabase.removeChannel(channel); };
-  }, []);
-  return count;
-}
-
 const Index = () => {
   const [gameCode, setGameCode] = useState("");
   const navigate = useNavigate();
   const liveVisitors = useLiveVisitors();
+  const { data: reviews } = useReviews();
+  const avgRating = reviews && reviews.length > 0
+    ? (reviews.reduce((sum, r) => sum + r.stars, 0) / reviews.length).toFixed(1)
+    : null;
   useLanguage();
   useSEO({ path: "/" });
 
@@ -194,7 +184,7 @@ const Index = () => {
             {/* Eyebrow */}
             <div className="ap-eyebrow ap-reveal d2" style={{ marginBottom: 22 }}>
               <span className="ap-eyebrow__dot" aria-hidden="true" />
-              2 314 sessions en direct cette semaine
+              Quiz, sondages, flashcards &amp; présentations en direct
             </div>
 
             {/* H1 */}
@@ -271,9 +261,11 @@ const Index = () => {
                   }}>{emoji}</span>
                 ))}
               </div>
-              <small style={{ fontSize: 13.5, fontWeight: 700, color: "var(--ap-muted)", fontFamily: "var(--ap-font-body)" }}>
-                <b style={{ color: "var(--ap-ink)", fontWeight: 800 }}>4,9/5</b> par 1 200+ formateurs et enseignants
-              </small>
+              {avgRating != null && (
+                <small style={{ fontSize: 13.5, fontWeight: 700, color: "var(--ap-muted)", fontFamily: "var(--ap-font-body)" }}>
+                  <b style={{ color: "var(--ap-ink)", fontWeight: 800 }}>{avgRating}/5</b> sur {reviews!.length} avis vérifiés
+                </small>
+              )}
             </div>
           </div>
 
@@ -376,6 +368,85 @@ const Index = () => {
           })}
         </section>
 
+        {/* ═══ COMMENT ÇA MARCHE ═══ */}
+        <section style={{ padding: "24px 0 80px" }}>
+          <div style={{ textAlign: "center", maxWidth: 560, margin: "0 auto 40px" }}>
+            <span className="ap-badge ap-badge--brand" style={{ marginBottom: 16, display: "inline-flex" }}>Comment ça marche</span>
+            <h2 className="ap-h2" style={{ marginBottom: 8 }}>Trois étapes, zéro friction.</h2>
+            <p className="ap-muted">De la création à la partie en direct, sans détour.</p>
+          </div>
+          <div className="grid gap-5 md:grid-cols-3">
+            {[
+              { n: "1", title: "Créer", desc: "Composez un quiz, sondage, flashcard ou présentation en quelques minutes." },
+              { n: "2", title: "Partager le code", desc: "Un code à 6 chiffres ou un QR code, affiché à l'écran." },
+              { n: "3", title: "Jouer", desc: "Les participants rejoignent sans compte, les scores tombent en direct." },
+            ].map((step) => (
+              <div key={step.n} className="ap-card ap-card--hover" style={{ padding: "26px 24px" }}>
+                <div
+                  className="ap-tile__icon"
+                  style={{ background: "var(--ap-brand)", boxShadow: "0 5px 0 var(--ap-brand-deep)", marginBottom: 16 }}
+                >
+                  <span style={{ fontFamily: "var(--ap-font-display)", fontWeight: 700, fontSize: 18, color: "#fff" }}>{step.n}</span>
+                </div>
+                <h3 className="ap-h3" style={{ marginBottom: 6 }}>{step.title}</h3>
+                <p className="ap-muted" style={{ fontSize: 13.5, lineHeight: 1.5 }}>{step.desc}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ═══ CAS D'USAGE ═══ */}
+        <section style={{ padding: "0 0 80px", maxWidth: 720, margin: "0 auto" }}>
+          <div style={{ textAlign: "center", maxWidth: 560, margin: "0 auto 32px" }}>
+            <span className="ap-badge ap-badge--brand" style={{ marginBottom: 16, display: "inline-flex" }}>Cas d'usage</span>
+            <h2 className="ap-h2" style={{ marginBottom: 8 }}>Fait pour votre contexte.</h2>
+            <p className="ap-muted">Même outil, deux façons de l'utiliser.</p>
+          </div>
+          <UseCaseTabs />
+        </section>
+
+        {/* ═══ STATS ═══ */}
+        <section style={{ padding: "0 0 80px" }}>
+          <p className="ap-strip-label">En ce moment</p>
+          <StatsBand />
+        </section>
+
+        {/* ═══ DÉMO ═══ */}
+        <section style={{ padding: "0 0 80px", maxWidth: 900, margin: "0 auto" }}>
+          <div style={{ textAlign: "center", maxWidth: 560, margin: "0 auto 28px" }}>
+            <span className="ap-badge ap-badge--brand" style={{ marginBottom: 16, display: "inline-flex" }}>Démo</span>
+            <h2 className="ap-h2" style={{ marginBottom: 8 }}>Voir une session en direct.</h2>
+          </div>
+          <DemoShowcase />
+        </section>
+
+        {/* ═══ TÉMOIGNAGES ═══ */}
+        <section style={{ padding: "0 0 80px" }}>
+          <div style={{ textAlign: "center", maxWidth: 560, margin: "0 auto 32px" }}>
+            <span className="ap-badge ap-badge--brand" style={{ marginBottom: 16, display: "inline-flex" }}>Avis</span>
+            <h2 className="ap-h2" style={{ marginBottom: 8 }}>Ce qu'ils en disent.</h2>
+          </div>
+          <LandingTestimonials />
+        </section>
+
+        {/* ═══ CONFIANCE ═══ */}
+        <section style={{ padding: "0 0 80px" }}>
+          <div style={{ textAlign: "center", maxWidth: 560, margin: "0 auto 32px" }}>
+            <span className="ap-badge ap-badge--brand" style={{ marginBottom: 16, display: "inline-flex" }}>Confiance</span>
+            <h2 className="ap-h2" style={{ marginBottom: 8 }}>Vos données, respectées.</h2>
+          </div>
+          <TrustSection />
+        </section>
+
+        {/* ═══ FAQ ═══ */}
+        <section style={{ padding: "0 0 80px", maxWidth: 720, margin: "0 auto" }}>
+          <div style={{ textAlign: "center", maxWidth: 560, margin: "0 auto 32px" }}>
+            <span className="ap-badge ap-badge--brand" style={{ marginBottom: 16, display: "inline-flex" }}>Questions fréquentes</span>
+            <h2 className="ap-h2" style={{ marginBottom: 8 }}>Tout ce qu'il faut savoir.</h2>
+          </div>
+          <LandingFaq />
+        </section>
+
         {/* ═══ JOIN BANNER ═══ */}
         <section
           id="join-banner"
@@ -469,6 +540,15 @@ const Index = () => {
               Rejoindre un examen
             </button>
           </p>
+        </section>
+
+        {/* ═══ CTA FINALE ═══ */}
+        <section className="ap-reveal" style={{ padding: "80px 0 80px", textAlign: "center" }}>
+          <h2 className="ap-h2" style={{ marginBottom: 12 }}>Prêt à réveiller vos formations ?</h2>
+          <p className="ap-muted" style={{ marginBottom: 28 }}>Gratuit pour commencer, aucune carte bancaire requise.</p>
+          <button className="ap-btn ap-btn--pill ap-btn--lg" onClick={() => navigate("/builder-start?type=quiz")}>
+            Créer gratuitement
+          </button>
         </section>
 
         <div style={{ height: 80 }} />
