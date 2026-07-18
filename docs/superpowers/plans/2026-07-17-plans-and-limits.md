@@ -658,7 +658,7 @@ export const createExam = (
 
   const plan = getPlan(user);
   const cap = CONTENT_CAPS[plan].exam;
-  if (cap !== null && getHostExams(user.id).length >= cap) throw new PlanLimitError('exam', cap);
+  if (cap !== null && getHostExams(user.id).length >= cap) throw new PlanLimitError('exam', cap, plan);
 
   const all = readExams();
   const now = new Date().toISOString();
@@ -800,8 +800,9 @@ export const createCourse = (
   const user = getCurrentUser();
   if (!user) throw new Error('Not authenticated');
 
-  const cap = CONTENT_CAPS[getPlan(user)].course;
-  if (cap !== null && getUserCourses(user.id).length >= cap) throw new PlanLimitError('course', cap);
+  const plan = getPlan(user);
+  const cap = CONTENT_CAPS[plan].course;
+  if (cap !== null && getUserCourses(user.id).length >= cap) throw new PlanLimitError('course', cap, plan);
 
   const now = new Date().toISOString();
   const course: Course = { ...data, id: genId(), userId: user.id, createdAt: now, updatedAt: now };

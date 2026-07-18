@@ -4,6 +4,9 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { t } from "@/lib/i18n";
 import { Check, Rocket, Crown, Building2 } from "lucide-react";
+import { getCurrentUser } from "@/lib/auth";
+import { startProCheckout } from "@/lib/billing";
+import { toast } from "sonner";
 
 const Pricing = () => {
   const navigate = useNavigate();
@@ -38,7 +41,11 @@ const Pricing = () => {
       accentDeep: "--ap-brand-deep",
       accentSoft: "--ap-brand-soft",
       features: [t('pricingProFeature1'), t('pricingProFeature2'), t('pricingProFeature3')],
-      onClick: () => navigate('/auth'),
+      onClick: async () => {
+        if (!getCurrentUser()) { navigate('/auth'); return; }
+        const result = await startProCheckout();
+        if (!result.ok) toast.error(result.error ?? 'Erreur lors de la préparation du paiement.');
+      },
       billing: t('pricingPerMonth'),
       highlight: true,
     },
