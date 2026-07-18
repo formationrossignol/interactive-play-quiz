@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getCurrentUser, updateProfile, User as AuthUser, type Theme, type Language } from "@/lib/auth";
 import { type Plan, CONTENT_KIND_LABELS, type ContentKind } from "@/lib/plans";
 import { getContentUsage, type ContentUsage } from "@/lib/planUsage";
+import { openBillingPortal, pollForPlanUpgrade } from "@/lib/billing";
 import { getUserQuizzes } from "@/lib/quizStorage";
 import { setLanguage as setI18nLanguage, getLanguage, t } from "@/lib/i18n";
 import { SITE_THEMES, applySiteTheme, normalizeSiteTheme, type SiteTheme } from "@/lib/siteTheme";
@@ -98,6 +99,7 @@ const statCards = [
 
 const ProfilePage = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -126,6 +128,37 @@ const ProfilePage = () => {
       totalQuestions: userQuizzes.reduce((sum, q) => sum + q.questions.length, 0),
     });
   }, [navigate]);
+
+  useEffect(() => {
+    if (searchParams.get("checkout") !== "success" || !user) return;
+    let cancelled = false;
+    (async () => {
+      const upgraded = await pollForPlanUpgrade(user.id);
+      if (cancelled) return;
+      if (upgraded) {
+        const refreshed = getCurrentUser();
+        if (refreshed) {
+          setUser(refreshed);
+          setPlan(refreshed.plan || "starter");
+          setUsage(getContentUsage(refreshed.id, refreshed.plan || "starter"));
+        }
+        toast.success("Abonnement Pro activé !");
+      } else {
+        toast.message("Paiement en cours de traitement, actualisez la page dans un instant.");
+      }
+      setSearchParams(
+        (prev) => {
+          prev.delete("checkout");
+          return prev;
+        },
+        { replace: true }
+      );
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   const handleSave = async () => {
     if (!user) return;
@@ -222,7 +255,6 @@ const ProfilePage = () => {
           {(() => {
             const meta = PLAN_META[plan];
             const PlanIcon = meta.icon;
-            const isEntreprise = plan === 'entreprise';
             return (
               <div className="ap-card ap-card--floaty" style={{ padding: "28px 32px" }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "16px", marginBottom: "20px" }}>
@@ -270,14 +302,27 @@ const ProfilePage = () => {
                     })}
                   </div>
                 )}
-                {!isEntreprise && (
+                {plan === 'pro' && (
+                  <button
+                    className="ap-btn ap-btn--pill"
+                    style={{ gap: "8px" }}
+                    onClick={async () => {
+                      const result = await openBillingPortal();
+                      if (!result.ok) toast.error(result.error ?? "Erreur lors de l'ouverture de la gestion d'abonnement.");
+                    }}
+                  >
+                    <Zap style={{ width: 15, height: 15 }} />
+                    Gérer mon abonnement
+                  </button>
+                )}
+                {plan === 'starter' && (
                   <button
                     className="ap-btn ap-btn--pill"
                     style={{ gap: "8px" }}
                     onClick={() => navigate("/pricing")}
                   >
                     <Zap style={{ width: 15, height: 15 }} />
-                    Passer à {plan === 'starter' ? 'Pro' : 'Entreprise'}
+                    Passer à Pro
                   </button>
                 )}
               </div>
