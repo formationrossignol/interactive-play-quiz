@@ -7,6 +7,7 @@ import { getCurrentUser } from "@/lib/auth";
 import {
   createCourse,
   getCourseById,
+  getUserCourses,
   genId,
   updateCourse,
   type Course,
@@ -15,6 +16,8 @@ import {
 } from "@/lib/courseStorage";
 import { getUserQuizzes, getUserFlashcardSets } from "@/lib/quizStorage";
 import { assertSafeImportFile } from "@/lib/fileValidation";
+import { CONTENT_CAPS, getPlan, PlanLimitError } from "@/lib/plans";
+import { PlanLimitBlocker } from "@/components/PlanLimitBlocker";
 import { toast } from "sonner";
 import {
   ArrowLeft,
@@ -93,6 +96,10 @@ const CourseBuilder = () => {
   const userQuizzes = user ? getUserQuizzes(user.id).filter((q) => q.type === "quiz") : [];
   const userFlashcards = user ? getUserFlashcardSets(user.id) : [];
 
+  const cap = CONTENT_CAPS[getPlan(user)].course;
+  const usedCourses = user ? getUserCourses(user.id).length : 0;
+  const atCap = !courseId && cap !== null && usedCourses >= cap;
+
   useEffect(() => {
     if (!user) { navigate("/auth"); return; }
     if (courseId) {
@@ -132,7 +139,11 @@ const CourseBuilder = () => {
         navigate("/my-courses");
       }
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Erreur lors de l'enregistrement");
+      if (e instanceof PlanLimitError) {
+        toast.error(e.message, { action: { label: 'Passer Pro', onClick: () => navigate('/pricing') } });
+      } else {
+        toast.error(e instanceof Error ? e.message : "Erreur lors de l'enregistrement");
+      }
     } finally {
       setSaving(false);
     }
@@ -250,6 +261,18 @@ const CourseBuilder = () => {
   const firstModuleId = modules[0]?.id ?? null;
 
   if (!user) return null;
+
+  if (atCap) {
+    return (
+      <div style={{ minHeight: "100vh" }}>
+        <Header subtitle="Créateur de cours" />
+        <PlanLimitBlocker
+          title="Limite du plan Starter atteinte"
+          description={`Le plan Starter est limité à ${cap} cours. Passez au plan Pro pour en créer davantage.`}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen" style={{ display: "flex", flexDirection: "column" }}>

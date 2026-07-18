@@ -8,6 +8,7 @@ import {
   type Exam, type Attempt,
 } from '@/lib/examStorage';
 import { getQuizById } from '@/lib/quizStorage';
+import { AudienceCapError } from '@/lib/plans';
 
 const PART_KEY = 'exam_participant';
 
@@ -46,7 +47,7 @@ function getAnswerOrder(attemptId: string, questionId: string, count: number): n
   return order;
 }
 
-type Phase = 'loading' | 'not-found' | 'not-open' | 'identify' | 'ready' | 'taking' | 'submitted' | 'exhausted';
+type Phase = 'loading' | 'not-found' | 'not-open' | 'identify' | 'ready' | 'taking' | 'submitted' | 'exhausted' | 'full';
 
 export default function ExamRoom() {
   const { joinCode } = useParams<{ joinCode: string }>();
@@ -124,7 +125,7 @@ export default function ExamRoom() {
       setElapsed(att.timeUsedSeconds);
       setPhase('taking');
     } catch (e) {
-      setPhase('exhausted');
+      setPhase(e instanceof AudienceCapError ? 'full' : 'exhausted');
     }
   };
 
@@ -238,6 +239,14 @@ export default function ExamRoom() {
       {exam && participant && (
         <ViewResultsBtn examId={exam.id} participantId={participant.id} exam={exam} navigate={navigate} />
       )}
+    </Screen>
+  );
+
+  if (phase === 'full') return (
+    <Screen>
+      <BigIcon>🚪</BigIcon>
+      <Title>Capacité maximale atteinte</Title>
+      <Sub>Cet examen a atteint son nombre maximum de participants. Contactez l'organisateur.</Sub>
     </Screen>
   );
 

@@ -1,5 +1,6 @@
 import { getCurrentUser } from './auth';
 import { getQuizById } from './quizStorage';
+import { CONTENT_CAPS, AUDIENCE_CAP, getPlan, PlanLimitError, AudienceCapError } from './plans';
 
 /* ══ Types ══════════════════════════════════════════════════════ */
 
@@ -34,6 +35,9 @@ export interface Exam {
   scoreRetentionPolicy: ScoreRetentionPolicy;
   status: ExamStatus;
   joinCode: string;
+  /** Host's plan-derived audience cap, baked in at creation (host has no
+   *  Supabase-synced session to re-check plan against at attempt time). */
+  maxParticipants: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -99,9 +103,16 @@ export const getExamByJoinCode = (code: string): Exam | null =>
 export const getHostExams = (hostId: string): Exam[] =>
   readExams().filter((e) => e.hostId === hostId && e.status !== 'archived');
 
-export const createExam = (data: Omit<Exam, 'id' | 'hostId' | 'joinCode' | 'createdAt' | 'updatedAt'>): Exam => {
+export const createExam = (
+  data: Omit<Exam, 'id' | 'hostId' | 'joinCode' | 'createdAt' | 'updatedAt' | 'maxParticipants'>,
+): Exam => {
   const user = getCurrentUser();
   if (!user) throw new Error('Not authenticated');
+
+  const plan = getPlan(user);
+  const cap = CONTENT_CAPS[plan].exam;
+  if (cap !== null && getHostExams(user.id).length >= cap) throw new PlanLimitError('exam', cap, plan);
+
   const all = readExams();
   const now = new Date().toISOString();
   const exam: Exam = {
@@ -109,6 +120,7 @@ export const createExam = (data: Omit<Exam, 'id' | 'hostId' | 'joinCode' | 'crea
     id: genExamId(),
     hostId: user.id,
     joinCode: uniqueJoinCode(all),
+    maxParticipants: AUDIENCE_CAP[plan],
     createdAt: now,
     updatedAt: now,
   };
@@ -187,6 +199,11 @@ export const startAttempt = (
 
   const active = getActiveAttempt(exam.id, participantId);
   if (active) return active; // resume existing
+
+  if (exam.maxParticipants !== null && existing.length === 0) {
+    const distinctParticipants = new Set(getAttemptsForExam(exam.id).map((a) => a.participantId));
+    if (distinctParticipants.size >= exam.maxParticipants) throw new AudienceCapError();
+  }
 
   let qIds = quiz.questions.map((q: { id: string }) => q.id);
   if (exam.shuffleQuestions) qIds = shuffle(qIds);

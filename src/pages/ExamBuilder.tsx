@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { createExam, updateExam, getExamById, type Exam } from '@/lib/examStorage';
+import { createExam, updateExam, getExamById, getHostExams, type Exam } from '@/lib/examStorage';
 import { getUserQuizzes } from '@/lib/quizStorage';
 import { getCurrentUser } from '@/lib/auth';
+import { CONTENT_CAPS, getPlan, PlanLimitError } from '@/lib/plans';
+import { PlanLimitBlocker } from '@/components/PlanLimitBlocker';
 import { toast } from 'sonner';
 
 const now = () => {
@@ -66,6 +68,10 @@ export default function ExamBuilder() {
 
   const quizzes = user ? getUserQuizzes(user.id).filter((q) => q.type === 'quiz') : [];
 
+  const cap = CONTENT_CAPS[getPlan(user)].exam;
+  const used = user ? getHostExams(user.id).length : 0;
+  const atCap = !examId && cap !== null && used >= cap;
+
   useEffect(() => {
     if (examId) {
       const exam = getExamById(examId);
@@ -108,7 +114,7 @@ export default function ExamBuilder() {
     }
     setSaving(true);
     try {
-      const payload: Omit<Exam, 'id' | 'hostId' | 'joinCode' | 'createdAt' | 'updatedAt'> = {
+      const payload: Omit<Exam, 'id' | 'hostId' | 'joinCode' | 'createdAt' | 'updatedAt' | 'maxParticipants'> = {
         title: form.title.trim(),
         description: form.description.trim(),
         quizId: form.quizId,
@@ -137,13 +143,26 @@ export default function ExamBuilder() {
       toast.success(publish ? 'Examen publié !' : 'Brouillon sauvegardé');
       if (publish) setTimeout(() => navigate(`/exam/${exam!.id}/admin`), 600);
     } catch (e) {
-      toast.error((e as Error).message);
+      if (e instanceof PlanLimitError) {
+        toast.error(e.message, { action: { label: 'Passer Pro', onClick: () => navigate('/pricing') } });
+      } else {
+        toast.error((e as Error).message);
+      }
     } finally {
       setSaving(false);
     }
   };
 
   if (!user) return null;
+
+  if (atCap) {
+    return (
+      <PlanLimitBlocker
+        title="Limite du plan Starter atteinte"
+        description={`Le plan Starter est limité à ${cap} examens. Passez au plan Pro pour en créer davantage.`}
+      />
+    );
+  }
 
   return (
     <div style={{ minHeight: '100vh', paddingBottom: 80 }}>

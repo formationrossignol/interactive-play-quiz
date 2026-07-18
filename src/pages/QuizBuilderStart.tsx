@@ -9,6 +9,10 @@ import { SlideTemplateSelectorEnhanced } from "@/components/SlideTemplateSelecto
 import { QUIZ_TEMPLATES } from "@/lib/quizTemplates";
 import { POLL_TEMPLATES } from "@/lib/pollTemplates";
 import { t } from "@/lib/i18n";
+import { getCurrentUser } from "@/lib/auth";
+import { getUserQuizzes } from "@/lib/quizStorage";
+import { CONTENT_CAPS, CONTENT_KIND_LABELS, getPlan, type ContentKind } from "@/lib/plans";
+import { PlanLimitBlocker } from "@/components/PlanLimitBlocker";
 import type { PollTemplate } from "@/lib/pollTemplates";
 import type { QuizTemplate } from "@/lib/quizTemplates";
 import type { FlashcardTemplate } from "@/lib/flashcardTemplates";
@@ -32,6 +36,12 @@ export const QuizBuilderStart = () => {
   const searchParams = new URLSearchParams(location.search);
   const quizType = (searchParams.get("type") || "quiz") as "quiz" | "poll" | "flashcard" | "slide";
 
+  const user = getCurrentUser();
+  const plan = getPlan(user);
+  const cap = CONTENT_CAPS[plan][quizType as ContentKind];
+  const used = user ? getUserQuizzes(user.id).filter((q) => q.type === quizType).length : 0;
+  const atCap = cap !== null && used >= cap;
+
   const [showAll, setShowAll] = useState(false);
   const isPoll = quizType === "poll";
   const isFlashcard = quizType === "flashcard";
@@ -53,6 +63,18 @@ export const QuizBuilderStart = () => {
   const previewTemplates = isPoll
     ? POLL_TEMPLATES.slice(0, PREVIEW_COUNT)
     : QUIZ_TEMPLATES.slice(0, PREVIEW_COUNT);
+
+  if (atCap) {
+    return (
+      <div style={{ minHeight: "100vh" }}>
+        <Header subtitle={pageTitle} />
+        <PlanLimitBlocker
+          title="Limite du plan Starter atteinte"
+          description={`Le plan Starter est limité à ${cap} ${CONTENT_KIND_LABELS[quizType as ContentKind]}. Passez au plan Pro pour créer sans limite.`}
+        />
+      </div>
+    );
+  }
 
   return (
     <div style={{ minHeight: "100vh" }}>
