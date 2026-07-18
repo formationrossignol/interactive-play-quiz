@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { getCurrentUser, updateProfile, User as AuthUser, type Theme, type Language, type Plan } from "@/lib/auth";
+import { getCurrentUser, updateProfile, User as AuthUser, type Theme, type Language } from "@/lib/auth";
+import { type Plan, CONTENT_KIND_LABELS, type ContentKind } from "@/lib/plans";
+import { getContentUsage, type ContentUsage } from "@/lib/planUsage";
 import { getUserQuizzes } from "@/lib/quizStorage";
 import { setLanguage as setI18nLanguage, getLanguage, t } from "@/lib/i18n";
 import { SITE_THEMES, applySiteTheme, normalizeSiteTheme, type SiteTheme } from "@/lib/siteTheme";
@@ -50,26 +52,41 @@ const PLAN_META: Record<Plan, {
   icon: React.ElementType;
   features: string[];
 }> = {
-  perso: {
-    label: 'Perso',
+  starter: {
+    label: 'Starter',
     color: '--ap-brand',
     colorDeep: '--ap-brand-deep',
     icon: User,
-    features: ['Jusqu\'à 10 quiz', 'Types de questions classiques', '30 joueurs simultanés'],
+    features: [
+      '5 quiz, sondages, jeux de cartes et présentations',
+      '1 cours',
+      "Jusqu'à 20 participants en direct",
+      'Types de questions classiques',
+    ],
   },
   pro: {
     label: 'Pro',
     color: '--ap-poll',
     colorDeep: '--ap-poll-deep',
     icon: Zap,
-    features: ['Quiz illimités', 'Tous les types de questions', '200 joueurs simultanés', 'Statistiques avancées'],
+    features: [
+      'Quiz, sondages, jeux de cartes, présentations, examens et cours illimités',
+      "Jusqu'à 200 participants en direct",
+      'Tous les types de questions',
+      'Statistiques avancées',
+    ],
   },
   entreprise: {
     label: 'Entreprise',
     color: '--ap-pres',
     colorDeep: '--ap-pres-deep',
     icon: Building2,
-    features: ['Tout Pro inclus', 'Joueurs illimités', 'Marque blanche', 'Support dédié'],
+    features: [
+      'Tout Pro inclus',
+      'Participants illimités',
+      'Single sign-on (SSO)',
+      'Marque blanche et templates personnalisés',
+    ],
   },
 };
 
@@ -87,8 +104,9 @@ const ProfilePage = () => {
   const [theme, setTheme] = useState<Theme>("light");
   const [siteTheme, setSiteTheme] = useState<SiteTheme>("arcade");
   const [language, setLanguage] = useState<Language>("en");
-  const [plan, setPlan] = useState<Plan>("perso");
+  const [plan, setPlan] = useState<Plan>("starter");
   const [stats, setStats] = useState({ totalQuizzes: 0, publicQuizzes: 0, totalQuestions: 0 });
+  const [usage, setUsage] = useState<Record<ContentKind, ContentUsage> | null>(null);
 
   useEffect(() => {
     const currentUser = getCurrentUser();
@@ -99,7 +117,8 @@ const ProfilePage = () => {
     setTheme(currentUser.theme || "light");
     setSiteTheme(normalizeSiteTheme(currentUser.siteTheme));
     setLanguage(currentUser.language || "en");
-    setPlan(currentUser.plan || "perso");
+    setPlan(currentUser.plan || "starter");
+    setUsage(getContentUsage(currentUser.id, currentUser.plan || "starter"));
     const userQuizzes = getUserQuizzes(currentUser.id).filter((q) => q.type === "quiz");
     setStats({
       totalQuizzes: userQuizzes.length,
@@ -231,6 +250,26 @@ const ProfilePage = () => {
                     </li>
                   ))}
                 </ul>
+                {plan === 'starter' && usage && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "20px" }}>
+                    {(Object.keys(usage) as ContentKind[]).map((kind) => {
+                      const { used, cap } = usage[kind];
+                      if (cap === null) return null;
+                      const pct = Math.min(100, (used / cap) * 100);
+                      return (
+                        <div key={kind}>
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", fontWeight: 700, color: "var(--ap-muted)", marginBottom: "4px", textTransform: "capitalize" }}>
+                            <span>{CONTENT_KIND_LABELS[kind]}</span>
+                            <span>{used} / {cap}</span>
+                          </div>
+                          <div style={{ height: "6px", borderRadius: "999px", background: "var(--ap-line)", overflow: "hidden" }}>
+                            <div style={{ height: "100%", width: `${pct}%`, background: used >= cap ? "var(--ap-flash)" : "var(--ap-brand)", borderRadius: "999px" }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
                 {!isEntreprise && (
                   <button
                     className="ap-btn ap-btn--pill"
@@ -238,7 +277,7 @@ const ProfilePage = () => {
                     onClick={() => navigate("/pricing")}
                   >
                     <Zap style={{ width: 15, height: 15 }} />
-                    Passer à {plan === 'perso' ? 'Pro' : 'Entreprise'}
+                    Passer à {plan === 'starter' ? 'Pro' : 'Entreprise'}
                   </button>
                 )}
               </div>
