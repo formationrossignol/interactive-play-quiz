@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { fetchPartners, type Partner } from "@/lib/siteSettings";
 
-/** "Partenaires" band with an auto-scrolling logo row — content is entirely
- *  admin-managed (site_settings.partners_logos). Renders nothing until at
- *  least one partner is configured, on every theme. */
+/** Trust band — fixed headline on the left, logos auto-scroll on the
+ *  right (grayed out, colored on hover). Own band, visually decoupled
+ *  from the footer. Content is entirely admin-managed
+ *  (site_settings.partners_logos). Renders nothing until at least one
+ *  partner is configured, on every theme. */
 export const PartnersStrip = () => {
   const [partners, setPartners] = useState<Partner[]>([]);
 
@@ -15,30 +17,39 @@ export const PartnersStrip = () => {
 
   if (partners.length === 0) return null;
 
-  // Logos are duplicated once so the CSS marquee can loop seamlessly at -50%.
-  const track = [...partners, ...partners];
+  const logos = (
+    <span className="ap-partners__set">
+      {partners.map((p) => {
+        const img = <img src={p.logoUrl} alt={p.name} loading="lazy" />;
+        return (
+          <span className="ap-partners__logo" key={p.id} title={p.name}>
+            {p.link ? (
+              <a href={p.link} target="_blank" rel="noopener noreferrer" aria-label={p.name}>
+                {img}
+              </a>
+            ) : (
+              img
+            )}
+          </span>
+        );
+      })}
+    </span>
+  );
 
   return (
-    <div className="ap-partners" aria-label="Partenaires">
-      <p className="ap-partners__label">Partenaires</p>
-      <div className="ap-partners__viewport">
-        <div className="ap-partners__track" style={{ ["--ap-partners-count" as string]: partners.length }}>
-          {track.map((p, i) => {
-            const img = <img src={p.logoUrl} alt={p.name} loading="lazy" />;
-            return (
-              <span className="ap-partners__logo" key={`${p.id}-${i}`} title={p.name}>
-                {p.link ? (
-                  <a href={p.link} target="_blank" rel="noopener noreferrer" aria-label={p.name}>
-                    {img}
-                  </a>
-                ) : (
-                  img
-                )}
-              </span>
-            );
-          })}
+    <section className="ap-partners" aria-label="Partenaires">
+      <div className="ap-partners__inner">
+        <div className="ap-partners__intro">
+          <h2 className="ap-partners__title">Ils nous font confiance</h2>
+          <p className="ap-partners__sub">Alors pourquoi pas vous&nbsp;?</p>
+        </div>
+        <div className="ap-partners__viewport">
+          <div className="ap-partners__track">
+            {logos}
+            {logos}
+          </div>
         </div>
       </div>
-    </div>
+    </section>
   );
 };

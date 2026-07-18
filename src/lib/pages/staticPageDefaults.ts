@@ -60,7 +60,7 @@ export const STATIC_PAGE_DEFAULTS: Record<StaticSlug, StaticPage> = {
 <h2>Données personnelles</h2>
 <p>Le traitement de vos données personnelles est décrit dans notre <a href="/confidentialite">Politique de confidentialité</a>.</p>
 <h2>Cookies</h2>
-<p>Brivia utilise des cookies strictement nécessaires au fonctionnement du service (authentification, préférences de langue). Aucun cookie publicitaire ou de traçage tiers n’est déposé sans votre consentement.</p>
+<p>Brivia dépose des cookies strictement nécessaires au fonctionnement du service (authentification, sécurité). Les cookies de préférence, de mesure d’audience et marketing ne sont déposés qu’avec votre consentement, recueilli via le bandeau affiché à votre première visite. Vous pouvez modifier votre choix à tout moment via le lien « Gérer les cookies » en pied de page — voir notre <a href="/confidentialite">Politique de confidentialité</a>.</p>
 <h2>Droit applicable</h2>
 <p>Les présentes mentions légales sont soumises au droit français. Tout litige relatif à leur interprétation ou à leur exécution relève de la compétence des tribunaux français.</p>`.trim(),
   },
@@ -93,7 +93,14 @@ export const STATIC_PAGE_DEFAULTS: Record<StaticSlug, StaticPage> = {
 <p>Conformément au RGPD, vous disposez des droits suivants : accès, rectification, effacement, portabilité, opposition et limitation du traitement.</p>
 <p>Pour exercer ces droits, contactez-nous à <a href="mailto:privacy@quizmaster.app">privacy@quizmaster.app</a>. Vous pouvez également introduire une réclamation auprès de la <a href="https://www.cnil.fr" target="_blank" rel="noopener noreferrer">CNIL</a>.</p>
 <h2>Cookies</h2>
-<p>Cookies strictement nécessaires uniquement (session, préférences de langue). Pas de cookies publicitaires, pas de traceurs tiers. Aucun consentement n’est requis pour ces cookies (art. 82 loi Informatique et Libertés, exemption CNIL).</p>`.trim(),
+<p>Brivia distingue quatre catégories de cookies :</p>
+<ul>
+<li><strong>Nécessaires</strong> : session, authentification, sécurité. Indispensables au fonctionnement du site, exemptés de consentement (art. 82 loi Informatique et Libertés) et toujours actifs.</li>
+<li><strong>Préférences</strong> : mémorisation de vos choix d’affichage (langue, thème).</li>
+<li><strong>Analytics</strong> : mesure d’audience. Aucun cookie de ce type n’est déposé à ce jour.</li>
+<li><strong>Marketing</strong> : personnalisation publicitaire. Aucun cookie de ce type n’est déposé à ce jour.</li>
+</ul>
+<p>Les catégories Préférences, Analytics et Marketing ne sont activées qu’avec votre accord explicite, recueilli via le bandeau de consentement à votre première visite. Vous pouvez accepter, refuser ou personnaliser votre choix à tout moment depuis le lien « Gérer les cookies » en pied de page.</p>`.trim(),
   },
   cgu: {
     slug: 'cgu',
