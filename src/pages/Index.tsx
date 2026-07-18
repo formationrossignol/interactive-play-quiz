@@ -5,6 +5,7 @@ import { useLanguage } from "@/hooks/useLanguage";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { HeroMiniQuiz } from "@/components/HeroMiniQuiz";
+import { PartnersStrip } from "@/components/PartnersStrip";
 import { t } from "@/lib/i18n";
 import { supabase } from "@/lib/supabase";
 
@@ -472,6 +473,8 @@ const Index = () => {
 
         <div style={{ height: 80 }} />
       </main>
+
+      <PartnersStrip />
 
       <Footer />
     </div>

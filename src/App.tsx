@@ -5,6 +5,8 @@ import { RouteFallback } from "@/components/RouteFallback";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { CookieConsentProvider } from "@/contexts/CookieConsentContext";
+import { CookieConsent } from "@/components/CookieConsent";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
@@ -75,9 +77,11 @@ const AuthGate = ({ children }: { children: ReactNode }) => {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
+      <CookieConsentProvider>
       <div className="ap-app">
         <Toaster />
         <Sonner />
+        <CookieConsent />
         <AuthGate>
         <BrowserRouter>
           <Suspense fallback={<RouteFallback />}>
@@ -132,6 +136,7 @@ const App = () => (
         </BrowserRouter>
         </AuthGate>
       </div>
+      </CookieConsentProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

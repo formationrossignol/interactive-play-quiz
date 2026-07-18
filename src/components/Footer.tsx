@@ -3,10 +3,11 @@ import { t } from "@/lib/i18n";
 import { SocialLinksRow } from "@/components/SocialLinksRow";
 import { BrandMonogram } from "@/components/BrandMonogram";
 import { BrandWordmark } from "@/components/BrandWordmark";
-import { PartnersStrip } from "@/components/PartnersStrip";
+import { useCookieConsent } from "@/contexts/CookieConsentContext";
 
 export const Footer = () => {
   const navigate = useNavigate();
+  const { openPreferences } = useCookieConsent();
 
   const footerSections = [
     {
@@ -42,9 +43,6 @@ export const Footer = () => {
 
   return (
     <footer style={{ borderTop: "var(--ap-border-w) solid var(--ap-line)", background: "var(--ap-paper-2)" }}>
-      <div className="mx-auto max-w-6xl px-6">
-        <PartnersStrip />
-      </div>
       <div className="mx-auto flex max-w-6xl flex-col gap-10 px-6 py-12 md:flex-row md:justify-between">
         <div className="max-w-sm">
           <div className="ap-row ap-gap-12" style={{ marginBottom: "16px" }}>
@@ -118,6 +116,13 @@ export const Footer = () => {
                 {label}
               </button>
             ))}
+            <button
+              type="button"
+              onClick={openPreferences}
+              className="text-xs font-bold text-ap-muted hover:text-ap-brand focus-visible:text-ap-brand font-body transition-colors"
+            >
+              Gérer les cookies
+            </button>
           </nav>
         </div>
       </div>
