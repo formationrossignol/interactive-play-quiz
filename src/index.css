@@ -1,6 +1,7 @@
 @import "./arcade-pop.css";
 @import "./theme-thales.css";
 @import "./theme-innov.css";
+@import "./theme-premium.css";
 
 @tailwind base;
 @tailwind components;

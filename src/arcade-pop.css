@@ -828,9 +828,24 @@ body { transition: background-color .25s ease, color .25s ease; }
   margin-top: 26px; padding-top: 20px; border-top: var(--ap-border-w) solid var(--ap-line);
 }
 @media (max-width: 640px) {
-  .ap-cookie-banner { padding: 16px; }
-  .ap-cookie-banner__actions { width: 100%; }
+  /* Slim mobile bar: the full 3-button stack (refuse/customize/accept) can
+     run 5-6 lines tall and swallow the first viewport, hiding whatever sits
+     just below the fold (e.g. a hero CTA). Keep only the primary action as
+     a button; "Tout refuser" and "Personnaliser" both become plain text
+     links so reject stays a genuine one-tap action, not buried behind
+     "Personnaliser" + the preferences modal (accept must never be easier
+     than reject). */
+  .ap-cookie-banner { padding: 14px 16px; gap: 10px; }
+  .ap-cookie-banner__text { font-size: 12.5px; line-height: 1.45; }
+  .ap-cookie-banner__actions { width: 100%; align-items: center; gap: 4px 14px; }
   .ap-cookie-banner__actions .ap-btn { flex: 1 1 auto; }
+  .ap-cookie-banner__decline,
+  .ap-cookie-banner__customize {
+    flex: 0 0 auto; width: auto;
+    background: none; box-shadow: none; border: none; padding: 4px 2px;
+    font-family: var(--ap-font-body); font-weight: 700; font-size: 13px;
+    text-decoration: underline; color: var(--ap-brand);
+  }
   .ap-cookie-modal { padding: 24px; }
   .ap-cookie-modal__actions { flex-direction: column-reverse; }
   .ap-cookie-modal__actions .ap-btn { width: 100%; }
