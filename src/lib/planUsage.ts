@@ -11,7 +11,7 @@ export interface ContentUsage {
 const QUIZ_STORAGE_KINDS: ContentKind[] = ['quiz', 'poll', 'flashcard', 'slide'];
 
 /** Usage for all 6 content kinds, for the given user under the given plan. */
-export function getContentUsage(userId: string, plan: Plan): Record<ContentKind, ContentUsage> {
+export async function getContentUsage(userId: string, plan: Plan): Promise<Record<ContentKind, ContentUsage>> {
   const quizzes = getUserQuizzes(userId);
   const caps = CONTENT_CAPS[plan];
 
@@ -19,7 +19,7 @@ export function getContentUsage(userId: string, plan: Plan): Record<ContentKind,
   for (const kind of QUIZ_STORAGE_KINDS) {
     usage[kind] = { used: quizzes.filter((q) => q.type === kind).length, cap: caps[kind] };
   }
-  usage.exam = { used: getHostExams(userId).length, cap: caps.exam };
+  usage.exam = { used: (await getHostExams(userId)).length, cap: caps.exam };
   usage.course = { used: getUserCourses(userId).length, cap: caps.course };
   return usage;
 }

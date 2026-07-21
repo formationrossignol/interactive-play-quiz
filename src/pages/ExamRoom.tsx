@@ -266,6 +266,14 @@ export default function ExamRoom() {
     </Screen>
   );
 
+  if (exam && !quiz) return (
+    <Screen>
+      <BigIcon>⚠️</BigIcon>
+      <Title>Quiz introuvable</Title>
+      <Sub>Le contenu associé à cet examen n'est pas disponible sur cet appareil. Contactez l'organisateur.</Sub>
+    </Screen>
+  );
+
   if (phase === 'identify') return (
     <Screen maxWidth={420}>
       <BigIcon>✏️</BigIcon>
