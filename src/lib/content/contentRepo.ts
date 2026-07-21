@@ -59,6 +59,28 @@ export async function getContent(id: string): Promise<ContentRow | null> {
   return data ?? null;
 }
 
+/**
+ * Fetch a content row by its owner + original localStorage id (`source_id`),
+ * the same pair `upsertContentBySource` keys off. Used to read a quiz's live
+ * mirrored question set from a context that only has the quiz's local id
+ * (e.g. an exam participant reading the backing quiz via `exam.quizId`).
+ */
+export async function getContentBySource(
+  userId: string,
+  type: ContentType,
+  sourceId: string,
+): Promise<ContentRow | null> {
+  const { data, error } = await supabase
+    .from('content')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('type', type)
+    .eq('source_id', sourceId)
+    .maybeSingle();
+  if (error) throw error;
+  return data ?? null;
+}
+
 export async function createContent(
   userId: string,
   type: ContentType,

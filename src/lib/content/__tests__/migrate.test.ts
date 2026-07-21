@@ -12,6 +12,15 @@ vi.mock('../foldersRepo', () => ({
 vi.mock('../contentRepo', () => ({
   createContent: vi.fn(async () => ({ id: 'content-row' })),
 }));
+// migrateExamsAndAttempts writes straight to `exams`/`exam_attempts` via the
+// raw client (there's no repo layer for those yet) — stub it so a seeded
+// lms_exams row never fires a real network call against the live project.
+const { upsertMock, fromMock } = vi.hoisted(() => {
+  const upsertMock = vi.fn(() => Promise.resolve({ data: null, error: null }));
+  const fromMock = vi.fn(() => ({ upsert: upsertMock }));
+  return { upsertMock, fromMock };
+});
+vi.mock('../../supabase', () => ({ supabase: { from: fromMock } }));
 
 const createFolderMock = createFolder as unknown as ReturnType<typeof vi.fn>;
 const createContentMock = createContent as unknown as ReturnType<typeof vi.fn>;
@@ -36,6 +45,9 @@ beforeEach(() => {
   createFolderMock.mockReset();
   createContentMock.mockReset();
   createContentMock.mockResolvedValue({ id: 'content-row' });
+  fromMock.mockClear();
+  upsertMock.mockClear();
+  upsertMock.mockResolvedValue({ data: null, error: null });
   // createFolder returns a new id "new:<name>" so remapping is verifiable.
   createFolderMock.mockImplementation(async (_userId, _type, name) => ({
     id: `new:${name}`,
@@ -222,6 +234,52 @@ describe('migrateLocalToSupabase (executor)', () => {
     expect(store.get('content_migrated_v1')).toBeTruthy();
     expect(store.get('saved_quizzes')).toBeTruthy();
     expect(store.get('content_folders')).toBeTruthy();
+  });
+
+  it('also upserts the hosted exam and its attempts into the dedicated exam tables', async () => {
+    installLocalStorage({
+      lms_exams: JSON.stringify([
+        { id: 'e1', hostId: USER, quizId: 'q1', title: 'E', description: '', openAt: 't1', closeAt: 't2',
+          durationMinutes: null, maxAttempts: 1, shuffleQuestions: false, shuffleAnswers: false,
+          passingScore: 70, showResultsPolicy: 'immediately', showDetailPolicy: 'score-only',
+          scoreRetentionPolicy: 'best', status: 'draft', joinCode: 'ABC123', maxParticipants: 20 },
+        { id: 'e2', hostId: OTHER, quizId: 'q9', title: 'Not mine', openAt: 't1', closeAt: 't2',
+          maxAttempts: 1, passingScore: 70, showResultsPolicy: 'immediately', showDetailPolicy: 'score-only',
+          scoreRetentionPolicy: 'best', status: 'draft', joinCode: 'ZZZ999' },
+      ]),
+      lms_exam_attempts: JSON.stringify([
+        { id: 'a1', examId: 'e1', participantId: 'p1', participantName: 'P1', participantEmail: '',
+          startedAt: 't1', submittedAt: null, timeUsedSeconds: 0, questionOrder: [], answers: {},
+          score: null, percentage: null, passed: null, submissionMode: null, status: 'in-progress', logs: [] },
+        { id: 'a2', examId: 'e2', participantId: 'p2', participantName: 'P2', participantEmail: '',
+          startedAt: 't1', submittedAt: null, timeUsedSeconds: 0, questionOrder: [], answers: {},
+          score: null, percentage: null, passed: null, submissionMode: null, status: 'in-progress', logs: [] },
+      ]),
+    });
+
+    await migrateLocalToSupabase(USER);
+
+    expect(fromMock).toHaveBeenCalledWith('exams');
+    expect(upsertMock).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'e1', host_id: USER, quiz_id: 'q1', join_code: 'ABC123' }),
+      { onConflict: 'id' },
+    );
+    // e2 (another host's exam) is never touched.
+    expect(upsertMock).not.toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'e2' }),
+      expect.anything(),
+    );
+
+    expect(fromMock).toHaveBeenCalledWith('exam_attempts');
+    expect(upsertMock).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'a1', exam_id: 'e1', participant_id: 'p1' }),
+      { onConflict: 'id' },
+    );
+    // a2 belongs to e2 (not this user's exam) — never migrated either.
+    expect(upsertMock).not.toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'a2' }),
+      expect.anything(),
+    );
   });
 
   it('falls back to null when a content folderTempId has no mapped row', async () => {
