@@ -266,7 +266,7 @@ export default function ExamRoom() {
     </Screen>
   );
 
-  if (exam && !quiz && phase !== 'not-found' && phase !== 'not-open') return (
+  if (exam && !quiz) return (
     <Screen>
       <BigIcon>⚠️</BigIcon>
       <Title>Quiz introuvable</Title>

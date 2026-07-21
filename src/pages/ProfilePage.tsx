@@ -120,7 +120,7 @@ const ProfilePage = () => {
     setSiteTheme(normalizeSiteTheme(currentUser.siteTheme));
     setLanguage(currentUser.language || "en");
     setPlan(currentUser.plan || "starter");
-    setUsage(getContentUsage(currentUser.id, currentUser.plan || "starter"));
+    getContentUsage(currentUser.id, currentUser.plan || "starter").then(setUsage);
     const userQuizzes = getUserQuizzes(currentUser.id).filter((q) => q.type === "quiz");
     setStats({
       totalQuizzes: userQuizzes.length,
@@ -140,7 +140,7 @@ const ProfilePage = () => {
         if (refreshed) {
           setUser(refreshed);
           setPlan(refreshed.plan || "starter");
-          setUsage(getContentUsage(refreshed.id, refreshed.plan || "starter"));
+          setUsage(await getContentUsage(refreshed.id, refreshed.plan || "starter"));
         }
         toast.success("Abonnement Pro activé !");
       } else {
