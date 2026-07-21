@@ -10,8 +10,16 @@ import {
 import { getContentBySource } from '@/lib/content/contentRepo';
 import type { SavedQuiz } from '@/lib/quizStorage';
 import { AudienceCapError } from '@/lib/plans';
+import { Map as MapIcon, Flag, X } from 'lucide-react';
 
 const PART_KEY = 'exam_participant';
+
+function loadFlags(attemptId: string): Set<string> {
+  try {
+    const raw = sessionStorage.getItem(`exam_flags_${attemptId}`);
+    return raw ? new Set(JSON.parse(raw) as string[]) : new Set();
+  } catch { return new Set(); }
+}
 
 interface Participant { id: string; name: string; email: string; }
 
@@ -69,12 +77,16 @@ export default function ExamRoom() {
   const [submitting, setSubmitting] = useState(false);
   const [confirmSubmit, setConfirmSubmit] = useState(false);
   const [retainedAttempt, setRetainedAttempt] = useState<Attempt | null>(null);
+  const [flagged, setFlagged] = useState<Set<string>>(new Set());
+  const [showMap, setShowMap] = useState(false);
+  const [currentQId, setCurrentQId] = useState<string | null>(null);
 
   const autoSaveRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const elapsedRef = useRef(0);
   const answersRef = useRef(answers);
   answersRef.current = answers;
+  const questionRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   /* ── Load exam ────────────────────────────────────────────────── */
   useEffect(() => {
@@ -112,6 +124,7 @@ export default function ExamRoom() {
     if (active) {
       setAttempt(active);
       setAnswers(active.answers ?? {});
+      setFlagged(loadFlags(active.id));
       elapsedRef.current = active.timeUsedSeconds;
       setElapsed(active.timeUsedSeconds);
       setPhase('taking');
@@ -131,6 +144,7 @@ export default function ExamRoom() {
       const att = await startAttempt(exam, participant.id, participant.name, participant.email);
       setAttempt(att);
       setAnswers(att.answers ?? {});
+      setFlagged(loadFlags(att.id));
       elapsedRef.current = att.timeUsedSeconds;
       setElapsed(att.timeUsedSeconds);
       setPhase('taking');
@@ -206,6 +220,41 @@ export default function ExamRoom() {
   /* ── Answer change ────────────────────────────────────────────── */
   const setAnswer = (qId: string, val: number | string | null) => {
     setAnswers((prev) => ({ ...prev, [qId]: val }));
+  };
+
+  /* ── Flag toggle (mark a question to revisit later) ──────────────── */
+  const toggleFlag = (qId: string) => {
+    setFlagged((prev) => {
+      const next = new Set(prev);
+      if (next.has(qId)) next.delete(qId); else next.add(qId);
+      if (attempt) sessionStorage.setItem(`exam_flags_${attempt.id}`, JSON.stringify([...next]));
+      return next;
+    });
+  };
+
+  /* ── Track which question is currently in view, for the map's highlight ── */
+  useEffect(() => {
+    if (phase !== 'taking' || !attempt) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries.filter((e) => e.isIntersecting);
+        if (!visible.length) return;
+        const top = visible.reduce((a, b) => (a.boundingClientRect.top < b.boundingClientRect.top ? a : b));
+        const id = top.target.getAttribute('data-qid');
+        if (id) setCurrentQId(id);
+      },
+      { rootMargin: '-35% 0px -55% 0px', threshold: 0 },
+    );
+    attempt.questionOrder.forEach((id) => {
+      const el = questionRefs.current[id];
+      if (el) observer.observe(el);
+    });
+    return () => observer.disconnect();
+  }, [phase, attempt]);
+
+  const scrollToQuestion = (qId: string) => {
+    questionRefs.current[qId]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setShowMap(false);
   };
 
   /* ── Identity form ────────────────────────────────────────────── */
@@ -408,6 +457,28 @@ export default function ExamRoom() {
             </div>
           </div>
 
+          <button
+            onClick={() => setShowMap(true)}
+            aria-label="Plan des questions"
+            style={{
+              position: 'relative', flexShrink: 0, width: 36, height: 36, borderRadius: 10,
+              border: 'var(--ap-border-w) solid var(--ap-line)', background: 'var(--ap-paper-2)',
+              color: 'var(--ap-ink)', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >
+            <MapIcon size={17} />
+            {flagged.size > 0 && (
+              <span style={{
+                position: 'absolute', top: -5, right: -5, minWidth: 16, height: 16, borderRadius: 8,
+                background: '#f4970a', color: '#fff', fontSize: 9, fontWeight: 800,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 3px',
+              }}>
+                {flagged.size}
+              </span>
+            )}
+          </button>
+
           {secondsLeft !== null && (
             <div style={{
               fontFamily: 'var(--ap-font-mono)', fontWeight: 800, fontSize: 18,
@@ -442,12 +513,19 @@ export default function ExamRoom() {
 
             const currentAnswer = answers[q.id];
 
+            const isFlagged = flagged.has(q.id);
+
             return (
-              <div key={q.id} style={{
-                background: 'var(--ap-card)', border: 'var(--ap-border-w) solid var(--ap-line)',
-                borderRadius: 'var(--ap-r-lg)', padding: '22px', marginBottom: 16,
-              }}>
-                <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
+              <div
+                key={q.id}
+                ref={(el) => { questionRefs.current[q.id] = el; }}
+                data-qid={q.id}
+                style={{
+                  background: 'var(--ap-card)', border: 'var(--ap-border-w) solid var(--ap-line)',
+                  borderRadius: 'var(--ap-r-lg)', padding: '22px', marginBottom: 16,
+                }}
+              >
+                <div style={{ display: 'flex', gap: 10, marginBottom: 14, alignItems: 'flex-start' }}>
                   <span style={{
                     width: 26, height: 26, borderRadius: 8, background: 'var(--ap-brand-soft)',
                     color: 'var(--ap-brand)', fontWeight: 800, fontSize: 12,
@@ -455,7 +533,20 @@ export default function ExamRoom() {
                   }}>
                     {idx + 1}
                   </span>
-                  <p style={{ fontWeight: 800, fontSize: 15, lineHeight: 1.4, margin: 0 }}>{q.question}</p>
+                  <p style={{ flex: 1, fontWeight: 800, fontSize: 15, lineHeight: 1.4, margin: 0 }}>{q.question}</p>
+                  <button
+                    onClick={() => toggleFlag(q.id)}
+                    title={isFlagged ? 'Retirer le marquage' : 'Marquer pour y revenir plus tard'}
+                    style={{
+                      flexShrink: 0, width: 30, height: 30, borderRadius: 8,
+                      border: 'var(--ap-border-w) solid var(--ap-line)',
+                      background: isFlagged ? '#fff8ec' : 'var(--ap-paper)',
+                      color: isFlagged ? '#f4970a' : 'var(--ap-muted)', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}
+                  >
+                    <Flag size={15} fill={isFlagged ? '#f4970a' : 'none'} />
+                  </button>
                 </div>
 
                 {q.type === 'true-false' && (
@@ -549,6 +640,79 @@ export default function ExamRoom() {
             </div>
           )}
         </div>
+
+        {showMap && (
+          <div
+            onClick={() => setShowMap(false)}
+            style={{
+              position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', zIndex: 30,
+              display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+            }}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                background: 'var(--ap-card)', borderRadius: 'var(--ap-r-lg) var(--ap-r-lg) 0 0',
+                padding: 20, width: '100%', maxWidth: 680, maxHeight: '75vh', overflowY: 'auto',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <h3 style={{ fontFamily: 'var(--ap-font-display)', fontWeight: 700, fontSize: 17, margin: 0 }}>
+                  Plan des questions
+                </h3>
+                <button
+                  onClick={() => setShowMap(false)}
+                  aria-label="Fermer"
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ap-muted)', padding: 4 }}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div style={{
+                display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(44px, 1fr))',
+                gap: 8, marginBottom: 18,
+              }}>
+                {orderedQs.map((q: { id: string }, idx: number) => {
+                  const a = answers[q.id];
+                  const isAnswered = a !== null && a !== undefined && a !== '';
+                  const isFlagged = flagged.has(q.id);
+                  const isCurrent = currentQId === q.id;
+                  return (
+                    <button
+                      key={q.id}
+                      onClick={() => scrollToQuestion(q.id)}
+                      style={{
+                        position: 'relative', padding: '10px 0', borderRadius: 'var(--ap-r-sm)',
+                        border: isCurrent
+                          ? '2px solid #15c08a'
+                          : `var(--ap-border-w) solid ${isAnswered ? 'var(--ap-brand)' : 'var(--ap-line)'}`,
+                        background: isAnswered ? 'var(--ap-brand-soft)' : 'var(--ap-paper)',
+                        color: isAnswered ? 'var(--ap-brand)' : 'var(--ap-ink)',
+                        fontWeight: 800, fontSize: 13, cursor: 'pointer',
+                      }}
+                    >
+                      {idx + 1}
+                      {isFlagged && (
+                        <span style={{
+                          position: 'absolute', top: -4, right: -4, width: 10, height: 10, borderRadius: '50%',
+                          background: '#f4970a', border: '2px solid var(--ap-card)',
+                        }} />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: 12, fontWeight: 700, color: 'var(--ap-muted)' }}>
+                <LegendItem swatchBg="var(--ap-brand-soft)" swatchBorder="var(--ap-brand)" label="Répondu" />
+                <LegendItem swatchBg="var(--ap-paper)" swatchBorder="var(--ap-line)" label="Non répondu" />
+                <LegendItem dotColor="#f4970a" label="Marqué" />
+                <LegendItem swatchBorder="#15c08a" label="Question actuelle" />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -589,6 +753,25 @@ function Sub({ children, style }: { children: React.ReactNode; style?: React.CSS
     <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--ap-muted)', textAlign: 'center', ...style }}>
       {children}
     </p>
+  );
+}
+
+function LegendItem({ swatchBg, swatchBorder, dotColor, label }: {
+  swatchBg?: string; swatchBorder?: string; dotColor?: string; label: string;
+}) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      {dotColor ? (
+        <span style={{ width: 10, height: 10, borderRadius: '50%', background: dotColor, flexShrink: 0 }} />
+      ) : (
+        <span style={{
+          width: 14, height: 14, borderRadius: 4, flexShrink: 0,
+          background: swatchBg ?? 'transparent',
+          border: `2px solid ${swatchBorder ?? 'var(--ap-line)'}`,
+        }} />
+      )}
+      <span>{label}</span>
+    </div>
   );
 }
 
