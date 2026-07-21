@@ -41,10 +41,10 @@ beforeEach(() => {
 
 describe('fetchPlan', () => {
   it('returns the plan from the profiles row', async () => {
-    singleMock.mockResolvedValue({ data: { plan: 'pro' }, error: null });
+    singleMock.mockResolvedValue({ data: { plan: 'pro', role: 'user' }, error: null });
     expect(await fetchPlan('user-1')).toBe('pro');
     expect(fromMock).toHaveBeenCalledWith('profiles');
-    expect(selectMock).toHaveBeenCalledWith('plan');
+    expect(selectMock).toHaveBeenCalledWith('plan, role');
     expect(eqMock).toHaveBeenCalledWith('id', 'user-1');
   });
 
@@ -56,6 +56,16 @@ describe('fetchPlan', () => {
   it('defaults to starter when no row is found', async () => {
     singleMock.mockResolvedValue({ data: null, error: null });
     expect(await fetchPlan('user-1')).toBe('starter');
+  });
+
+  it('bumps admins on the starter row to pro', async () => {
+    singleMock.mockResolvedValue({ data: { plan: 'starter', role: 'admin' }, error: null });
+    expect(await fetchPlan('user-1')).toBe('pro');
+  });
+
+  it('keeps entreprise for an admin already on entreprise', async () => {
+    singleMock.mockResolvedValue({ data: { plan: 'entreprise', role: 'admin' }, error: null });
+    expect(await fetchPlan('user-1')).toBe('entreprise');
   });
 });
 
