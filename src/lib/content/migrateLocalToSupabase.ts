@@ -1,6 +1,6 @@
 import type { ContentType } from './types';
 import { createFolder } from './foldersRepo';
-import { createContent } from './contentRepo';
+import { createContent, upsertContentBySource } from './contentRepo';
 import { supabase } from '../supabase';
 
 /**
@@ -257,4 +257,29 @@ async function runMigration(userId: string): Promise<MigrationResult> {
     folders: plan.folders.length,
     content: plan.content.length,
   };
+}
+
+const QUIZ_BACKFILL_FLAG = 'quiz_mirror_backfill_v1';
+
+/**
+ * One-time, idempotent backfill: mirror every local quiz/poll/flashcard this
+ * user owns into the Supabase `content` table, for items that predate (or
+ * were never touched by) `QuizBuilder`'s save-time mirror. Needed so an exam
+ * created against an old, never-resaved quiz can still be read by a
+ * participant (ExamRoom's getContentBySource depends on that row existing).
+ * Upsert-based, so re-running is always safe even without the flag.
+ */
+export async function backfillQuizMirrors(userId: string): Promise<{ mirrored: number }> {
+  if (localStorage.getItem(QUIZ_BACKFILL_FLAG)) return { mirrored: 0 };
+
+  const quizzes = readArray<LocalRow>('saved_quizzes').filter(
+    (q) => q.userId === userId && !q.deletedAt && q.type !== 'slide' && typeof q.id === 'string',
+  );
+
+  for (const q of quizzes) {
+    await upsertContentBySource(userId, q.type as ContentType, q.id as string, q, !!q.isPublic);
+  }
+
+  localStorage.setItem(QUIZ_BACKFILL_FLAG, new Date().toISOString());
+  return { mirrored: quizzes.length };
 }
