@@ -145,6 +145,32 @@ export const archiveExam = (id: string): boolean => {
   return result !== null;
 };
 
+export const duplicateExam = (id: string): Exam | null => {
+  const user = getCurrentUser();
+  if (!user) return null;
+  const original = getExamById(id);
+  if (!original || original.hostId !== user.id) return null;
+
+  const plan = getPlan(user);
+  const cap = CONTENT_CAPS[plan].exam;
+  if (cap !== null && getHostExams(user.id).length >= cap) throw new PlanLimitError('exam', cap, plan);
+
+  const all = readExams();
+  const now = new Date().toISOString();
+  const copy: Exam = {
+    ...original,
+    id: genExamId(),
+    title: `Copie de ${original.title}`,
+    status: 'draft',
+    joinCode: uniqueJoinCode(all),
+    createdAt: now,
+    updatedAt: now,
+  };
+  all.push(copy);
+  writeExams(all);
+  return copy;
+};
+
 /* ══ Computed exam status ═══════════════════════════════════════ */
 
 export function computeExamStatus(exam: Exam): ExamStatus {
