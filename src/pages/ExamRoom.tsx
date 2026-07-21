@@ -10,7 +10,7 @@ import {
 import { getContentBySource } from '@/lib/content/contentRepo';
 import type { SavedQuiz } from '@/lib/quizStorage';
 import { AudienceCapError } from '@/lib/plans';
-import { Map as MapIcon, Flag, X } from 'lucide-react';
+import { Map as MapIcon, Flag } from 'lucide-react';
 
 const PART_KEY = 'exam_participant';
 
@@ -78,7 +78,6 @@ export default function ExamRoom() {
   const [confirmSubmit, setConfirmSubmit] = useState(false);
   const [retainedAttempt, setRetainedAttempt] = useState<Attempt | null>(null);
   const [flagged, setFlagged] = useState<Set<string>>(new Set());
-  const [showMap, setShowMap] = useState(false);
   const [currentQId, setCurrentQId] = useState<string | null>(null);
 
   const autoSaveRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -254,7 +253,6 @@ export default function ExamRoom() {
 
   const scrollToQuestion = (qId: string) => {
     questionRefs.current[qId]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    setShowMap(false);
   };
 
   /* ── Identity form ────────────────────────────────────────────── */
@@ -440,6 +438,12 @@ export default function ExamRoom() {
           .er-opt.sel { border-color: var(--ap-brand); background: var(--ap-brand-soft); }
           .er-dot { width: 18px; height: 18px; border-radius: 50%; border: var(--ap-border-w) solid var(--ap-line); flex-shrink: 0; transition: background .15s, border-color .15s; }
           .er-opt.sel .er-dot { background: var(--ap-brand); border-color: var(--ap-brand); }
+          .er-body { display: flex; align-items: flex-start; gap: 24px; max-width: 960px; margin: 0 auto; padding: 24px 16px; }
+          .er-sidebar { width: 240px; flex-shrink: 0; position: sticky; top: 72px; max-height: calc(100vh - 96px); overflow-y: auto; }
+          @media (max-width: 860px) {
+            .er-body { flex-direction: column; }
+            .er-sidebar { width: 100%; position: static; max-height: none; }
+          }
         `}</style>
 
         {/* Topbar */}
@@ -456,28 +460,6 @@ export default function ExamRoom() {
               {answered}/{orderedQs.length} répondu{answered > 1 ? 's' : ''}
             </div>
           </div>
-
-          <button
-            onClick={() => setShowMap(true)}
-            aria-label="Plan des questions"
-            style={{
-              position: 'relative', flexShrink: 0, width: 36, height: 36, borderRadius: 10,
-              border: 'var(--ap-border-w) solid var(--ap-line)', background: 'var(--ap-paper-2)',
-              color: 'var(--ap-ink)', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}
-          >
-            <MapIcon size={17} />
-            {flagged.size > 0 && (
-              <span style={{
-                position: 'absolute', top: -5, right: -5, minWidth: 16, height: 16, borderRadius: 8,
-                background: '#f4970a', color: '#fff', fontSize: 9, fontWeight: 800,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 3px',
-              }}>
-                {flagged.size}
-              </span>
-            )}
-          </button>
 
           {secondsLeft !== null && (
             <div style={{
@@ -504,8 +486,9 @@ export default function ExamRoom() {
           }} />
         </div>
 
+        <div className="er-body">
         {/* Questions */}
-        <div style={{ maxWidth: 680, margin: '0 auto', padding: '24px 16px' }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
           {orderedQs.map((q: { id: string; type: string; question: string; answers: string[]; correctAnswer: unknown }, idx: number) => {
             const displayAnswers = exam.shuffleAnswers
               ? getAnswerOrder(attempt.id, q.id, (q.answers ?? []).length).map((i: number) => ({ orig: i, text: q.answers[i] }))
@@ -641,78 +624,71 @@ export default function ExamRoom() {
           )}
         </div>
 
-        {showMap && (
-          <div
-            onClick={() => setShowMap(false)}
-            style={{
-              position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', zIndex: 30,
-              display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
-            }}
-          >
-            <div
-              onClick={(e) => e.stopPropagation()}
-              style={{
-                background: 'var(--ap-card)', borderRadius: 'var(--ap-r-lg) var(--ap-r-lg) 0 0',
-                padding: 20, width: '100%', maxWidth: 680, maxHeight: '75vh', overflowY: 'auto',
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                <h3 style={{ fontFamily: 'var(--ap-font-display)', fontWeight: 700, fontSize: 17, margin: 0 }}>
-                  Plan des questions
-                </h3>
-                <button
-                  onClick={() => setShowMap(false)}
-                  aria-label="Fermer"
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ap-muted)', padding: 4 }}
+        {/* Sidebar: always-visible question navigator, sticky on scroll */}
+        <aside className="er-sidebar" style={{
+          background: 'var(--ap-card)', border: 'var(--ap-border-w) solid var(--ap-line)',
+          borderRadius: 'var(--ap-r-lg)', padding: 16,
+        }}>
+          <h3 style={{
+            fontFamily: 'var(--ap-font-display)', fontWeight: 700, fontSize: 14, margin: '0 0 12px',
+            display: 'flex', alignItems: 'center', gap: 6, color: 'var(--ap-ink)',
+          }}>
+            <MapIcon size={15} /> Plan des questions
+          </h3>
+
+          <div style={{
+            display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(40px, 1fr))',
+            gap: 8, marginBottom: 16,
+          }}>
+            {orderedQs.map((q: { id: string }, idx: number) => {
+              const a = answers[q.id];
+              const isAnswered = a !== null && a !== undefined && a !== '';
+              const isFlagged = flagged.has(q.id);
+              const isCurrent = currentQId === q.id;
+              return (
+                <div
+                  key={q.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => scrollToQuestion(q.id)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); scrollToQuestion(q.id); } }}
+                  style={{
+                    position: 'relative', padding: '10px 0', borderRadius: 'var(--ap-r-sm)', textAlign: 'center',
+                    border: isCurrent
+                      ? '2px solid #15c08a'
+                      : `var(--ap-border-w) solid ${isAnswered ? 'var(--ap-brand)' : 'var(--ap-line)'}`,
+                    background: isAnswered ? 'var(--ap-brand-soft)' : 'var(--ap-paper)',
+                    color: isAnswered ? 'var(--ap-brand)' : 'var(--ap-ink)',
+                    fontWeight: 800, fontSize: 13, cursor: 'pointer',
+                  }}
                 >
-                  <X size={20} />
-                </button>
-              </div>
-
-              <div style={{
-                display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(44px, 1fr))',
-                gap: 8, marginBottom: 18,
-              }}>
-                {orderedQs.map((q: { id: string }, idx: number) => {
-                  const a = answers[q.id];
-                  const isAnswered = a !== null && a !== undefined && a !== '';
-                  const isFlagged = flagged.has(q.id);
-                  const isCurrent = currentQId === q.id;
-                  return (
-                    <button
-                      key={q.id}
-                      onClick={() => scrollToQuestion(q.id)}
-                      style={{
-                        position: 'relative', padding: '10px 0', borderRadius: 'var(--ap-r-sm)',
-                        border: isCurrent
-                          ? '2px solid #15c08a'
-                          : `var(--ap-border-w) solid ${isAnswered ? 'var(--ap-brand)' : 'var(--ap-line)'}`,
-                        background: isAnswered ? 'var(--ap-brand-soft)' : 'var(--ap-paper)',
-                        color: isAnswered ? 'var(--ap-brand)' : 'var(--ap-ink)',
-                        fontWeight: 800, fontSize: 13, cursor: 'pointer',
-                      }}
-                    >
-                      {idx + 1}
-                      {isFlagged && (
-                        <span style={{
-                          position: 'absolute', top: -4, right: -4, width: 10, height: 10, borderRadius: '50%',
-                          background: '#f4970a', border: '2px solid var(--ap-card)',
-                        }} />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: 12, fontWeight: 700, color: 'var(--ap-muted)' }}>
-                <LegendItem swatchBg="var(--ap-brand-soft)" swatchBorder="var(--ap-brand)" label="Répondu" />
-                <LegendItem swatchBg="var(--ap-paper)" swatchBorder="var(--ap-line)" label="Non répondu" />
-                <LegendItem dotColor="#f4970a" label="Marqué" />
-                <LegendItem swatchBorder="#15c08a" label="Question actuelle" />
-              </div>
-            </div>
+                  {idx + 1}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); toggleFlag(q.id); }}
+                    aria-label={isFlagged ? 'Retirer le marquage' : 'Marquer cette question'}
+                    style={{
+                      position: 'absolute', top: -7, right: -7, width: 18, height: 18, borderRadius: '50%',
+                      border: isFlagged ? 'none' : 'var(--ap-border-w) solid var(--ap-line)',
+                      background: isFlagged ? '#f4970a' : 'var(--ap-card)',
+                      color: isFlagged ? '#fff' : 'var(--ap-muted)', padding: 0, cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}
+                  >
+                    <Flag size={10} fill={isFlagged ? '#fff' : 'none'} />
+                  </button>
+                </div>
+              );
+            })}
           </div>
-        )}
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 11, fontWeight: 700, color: 'var(--ap-muted)' }}>
+            <LegendItem swatchBg="var(--ap-brand-soft)" swatchBorder="var(--ap-brand)" label="Répondu" />
+            <LegendItem swatchBg="var(--ap-paper)" swatchBorder="var(--ap-line)" label="Non répondu" />
+            <LegendItem dotColor="#f4970a" label="Marqué" />
+            <LegendItem swatchBorder="#15c08a" label="Question actuelle" />
+          </div>
+        </aside>
+        </div>
       </div>
     );
   }
