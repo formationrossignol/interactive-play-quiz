@@ -38,15 +38,20 @@ const mapUser = (u: SupabaseUser): User => ({
  * plan is server-controlled (see stripe-webhook, the sole writer).
  * Defaults to 'starter' on any error so a transient read failure never
  * silently grants elevated caps.
+ *
+ * Admins always get at least Pro caps, regardless of their billing plan
+ * row — they shouldn't hit Starter content limits while managing the site.
  */
 export const fetchPlan = async (userId: string): Promise<Plan> => {
   const { data, error } = await supabase
     .from('profiles')
-    .select('plan')
+    .select('plan, role')
     .eq('id', userId)
     .single();
   if (error || !data) return 'starter';
-  return data.plan as Plan;
+  const plan = data.plan as Plan;
+  if (data.role === 'admin' && plan !== 'entreprise') return 'pro';
+  return plan;
 };
 
 const mapUserWithPlan = async (u: SupabaseUser): Promise<User> => ({
