@@ -1,7 +1,7 @@
 import type { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 import { migrateLegacyLocalData } from './authMigration';
-import { migrateLocalToSupabase } from './content/migrateLocalToSupabase';
+import { migrateLocalToSupabase, backfillQuizMirrors } from './content/migrateLocalToSupabase';
 import type { SiteTheme } from './siteTheme';
 import type { Plan } from './plans';
 
@@ -100,6 +100,9 @@ const syncFromSession = async (session: Session | null) => {
   // Supabase (folders + content). No-op after the first successful run.
   void migrateLocalToSupabase(session.user.id).catch((err) => {
     console.error('[content-migration] failed:', err);
+  });
+  void backfillQuizMirrors(session.user.id).catch((err) => {
+    console.error('[quiz-mirror-backfill] failed:', err);
   });
 };
 
