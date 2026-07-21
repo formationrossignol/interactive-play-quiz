@@ -213,6 +213,10 @@ export interface ContentExplorerProps {
   categories?: string[];
   /** Receives the collection's reload fn so the page can refresh after external mutations. */
   reloadRef?: MutableRefObject<(() => void) | null>;
+  /** Extra predicate applied on top of the active (non-trashed) items — e.g. a status filter. */
+  extraFilter?: (d: ContentDisplay) => boolean;
+  /** Extra control(s) rendered in the toolbar, after the category select. */
+  extraToolbar?: ReactNode;
   renderCard: (d: ContentDisplay, ctx: ItemCtx) => ReactNode;
   renderRow: (d: ContentDisplay, ctx: ItemCtx) => ReactNode;
 }
@@ -249,6 +253,8 @@ export function ContentExplorer({
   headerExtras,
   categories: fixedCategories,
   reloadRef,
+  extraFilter,
+  extraToolbar,
   renderCard,
   renderRow,
 }: ContentExplorerProps) {
@@ -278,7 +284,10 @@ export function ContentExplorer({
   const opts = useMemo(() => ({ search, category, sort }), [search, category, sort]);
 
   const display = useMemo(() => c.items.map(toDisplay), [c.items]);
-  const active = useMemo(() => filterActive(display), [display]);
+  const active = useMemo(
+    () => filterActive(display).filter((d) => (extraFilter ? extraFilter(d) : true)),
+    [display, extraFilter],
+  );
   const trashed = useMemo(() => filterTrashed(display), [display]);
   const favorites = useMemo(() => applySearchSort(filterFavorites(display), opts), [display, opts]);
   const publicDisplay = useMemo(() => applySearchSort(c.publicItems.map(toDisplay), opts), [c.publicItems, opts]);
@@ -644,6 +653,7 @@ export function ContentExplorer({
                         ))}
                       </SelectContent>
                     </Select>
+                    {extraToolbar}
                     <Select value={sort} onValueChange={(v) => setSort(v as SortOption)}>
                       <SelectTrigger className="w-[150px]" style={triggerStyle}>
                         <SelectValue placeholder="Trier" />

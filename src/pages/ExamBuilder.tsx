@@ -5,6 +5,7 @@ import { getUserQuizzes } from '@/lib/quizStorage';
 import { getCurrentUser } from '@/lib/auth';
 import { CONTENT_CAPS, getPlan, PlanLimitError } from '@/lib/plans';
 import { PlanLimitBlocker } from '@/components/PlanLimitBlocker';
+import { upsertContentBySource } from '@/lib/content/contentRepo';
 import { toast } from 'sonner';
 
 const now = () => {
@@ -140,6 +141,11 @@ export default function ExamBuilder() {
 
       if (!exam) throw new Error('Échec de sauvegarde');
       setSaved(exam);
+      // Mirror into the Supabase `content` table so it shows up in "Mes examens"
+      // (which reads from there, not from the legacy `lms_exams` localStorage store).
+      try {
+        await upsertContentBySource(user.id, 'exam', exam.id, exam as unknown as Record<string, unknown>, false);
+      } catch (e) { console.error('[ExamBuilder] content mirror failed', e); }
       toast.success(publish ? 'Examen publié !' : 'Brouillon sauvegardé');
       if (publish) setTimeout(() => navigate(`/exam/${exam!.id}/admin`), 600);
     } catch (e) {
