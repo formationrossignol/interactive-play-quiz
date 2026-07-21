@@ -1,5 +1,6 @@
+import { supabase } from './supabase';
 import { getCurrentUser } from './auth';
-import { getQuizById } from './quizStorage';
+import { getContentBySource } from './content/contentRepo';
 import { CONTENT_CAPS, AUDIENCE_CAP, getPlan, PlanLimitError, AudienceCapError } from './plans';
 
 /* ══ Types ══════════════════════════════════════════════════════ */
@@ -61,10 +62,74 @@ export interface Attempt {
   logs: AttemptLog[];
 }
 
-/* ══ Storage keys ═══════════════════════════════════════════════ */
+/* ══ Row <-> object mapping ═══════════════════════════════════════
+   `exams`/`exam_attempts` are dedicated Supabase tables (source of truth
+   for the join/take/admin flow — see supabase/migrations/20260721120000_
+   exam_tables.sql), separate from the generic `content` mirror the host's
+   library view (MyExams.tsx) reads. */
 
-const EXAMS_KEY   = 'lms_exams';
-const ATTEMPTS_KEY = 'lms_exam_attempts';
+interface ExamRow {
+  id: string; host_id: string; quiz_id: string; title: string; description: string;
+  open_at: string; close_at: string; duration_minutes: number | null; max_attempts: number;
+  shuffle_questions: boolean; shuffle_answers: boolean; passing_score: number;
+  show_results_policy: string; show_detail_policy: string; score_retention_policy: string;
+  status: string; join_code: string; max_participants: number | null;
+  created_at: string; updated_at: string;
+}
+
+function examFromRow(r: ExamRow): Exam {
+  return {
+    id: r.id,
+    hostId: r.host_id,
+    quizId: r.quiz_id,
+    title: r.title,
+    description: r.description,
+    openAt: r.open_at,
+    closeAt: r.close_at,
+    durationMinutes: r.duration_minutes,
+    maxAttempts: r.max_attempts,
+    shuffleQuestions: r.shuffle_questions,
+    shuffleAnswers: r.shuffle_answers,
+    passingScore: r.passing_score,
+    showResultsPolicy: r.show_results_policy as ShowResultsPolicy,
+    showDetailPolicy: r.show_detail_policy as ShowDetailPolicy,
+    scoreRetentionPolicy: r.score_retention_policy as ScoreRetentionPolicy,
+    status: r.status as ExamStatus,
+    joinCode: r.join_code,
+    maxParticipants: r.max_participants,
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
+  };
+}
+
+interface AttemptRow {
+  id: string; exam_id: string; participant_id: string; participant_name: string; participant_email: string;
+  started_at: string; submitted_at: string | null; time_used_seconds: number;
+  question_order: string[]; answers: Record<string, number | string | null>;
+  score: number | null; percentage: number | null; passed: boolean | null;
+  submission_mode: string | null; status: string; logs: AttemptLog[];
+}
+
+function attemptFromRow(r: AttemptRow): Attempt {
+  return {
+    id: r.id,
+    examId: r.exam_id,
+    participantId: r.participant_id,
+    participantName: r.participant_name,
+    participantEmail: r.participant_email,
+    startedAt: r.started_at,
+    submittedAt: r.submitted_at,
+    timeUsedSeconds: r.time_used_seconds,
+    questionOrder: r.question_order ?? [],
+    answers: r.answers ?? {},
+    score: r.score,
+    percentage: r.percentage,
+    passed: r.passed,
+    submissionMode: r.submission_mode as SubmissionMode | null,
+    status: r.status as AttemptStatus,
+    logs: r.logs ?? [],
+  };
+}
 
 /* ══ Helpers ════════════════════════════════════════════════════ */
 
@@ -78,97 +143,154 @@ function genJoinCode(): string {
   return code;
 }
 
-function uniqueJoinCode(existing: Exam[]): string {
-  const used = new Set(existing.map((e) => e.joinCode));
-  let code: string;
-  do { code = genJoinCode(); } while (used.has(code));
-  return code;
+/**
+ * Insert a new exams row with a fresh random join_code, retrying on a unique
+ * constraint conflict (join_code is unique across ALL hosts, so a per-host
+ * check isn't enough — the DB constraint is the actual source of truth).
+ */
+async function insertExamWithUniqueJoinCode(
+  row: Omit<ExamRow, 'join_code' | 'created_at' | 'updated_at'>,
+  maxAttempts = 5,
+): Promise<ExamRow> {
+  for (let i = 0; i < maxAttempts; i++) {
+    const { data, error } = await supabase
+      .from('exams')
+      .insert({ ...row, join_code: genJoinCode() })
+      .select()
+      .single();
+    if (!error) return data;
+    if (error.code !== '23505') throw error; // not a unique-violation, real error
+  }
+  throw new Error('Impossible de générer un code unique, réessayez');
 }
 
 /* ══ Exam CRUD ═══════════════════════════════════════════════════ */
 
-const readExams = (): Exam[] => {
-  try { return JSON.parse(localStorage.getItem(EXAMS_KEY) ?? '[]') as Exam[]; } catch { return []; }
+export const getExamById = async (id: string): Promise<Exam | null> => {
+  const { data, error } = await supabase.from('exams').select('*').eq('id', id).maybeSingle();
+  if (error || !data) return null;
+  return examFromRow(data);
 };
 
-const writeExams = (exams: Exam[]) =>
-  localStorage.setItem(EXAMS_KEY, JSON.stringify(exams));
+export const getExamByJoinCode = async (code: string): Promise<Exam | null> => {
+  const { data, error } = await supabase.from('exams').select('*').eq('join_code', code.toUpperCase()).maybeSingle();
+  if (error || !data) return null;
+  return examFromRow(data);
+};
 
-export const getExamById = (id: string): Exam | null =>
-  readExams().find((e) => e.id === id) ?? null;
+export const getHostExams = async (hostId: string): Promise<Exam[]> => {
+  const { data, error } = await supabase.from('exams').select('*').eq('host_id', hostId).neq('status', 'archived');
+  if (error || !data) return [];
+  return data.map(examFromRow);
+};
 
-export const getExamByJoinCode = (code: string): Exam | null =>
-  readExams().find((e) => e.joinCode === code.toUpperCase()) ?? null;
-
-export const getHostExams = (hostId: string): Exam[] =>
-  readExams().filter((e) => e.hostId === hostId && e.status !== 'archived');
-
-export const createExam = (
+export const createExam = async (
   data: Omit<Exam, 'id' | 'hostId' | 'joinCode' | 'createdAt' | 'updatedAt' | 'maxParticipants'>,
-): Exam => {
+): Promise<Exam> => {
   const user = getCurrentUser();
   if (!user) throw new Error('Not authenticated');
 
   const plan = getPlan(user);
   const cap = CONTENT_CAPS[plan].exam;
-  if (cap !== null && getHostExams(user.id).length >= cap) throw new PlanLimitError('exam', cap, plan);
+  if (cap !== null) {
+    const existing = await getHostExams(user.id);
+    if (existing.length >= cap) throw new PlanLimitError('exam', cap, plan);
+  }
 
-  const all = readExams();
-  const now = new Date().toISOString();
-  const exam: Exam = {
-    ...data,
+  const row = await insertExamWithUniqueJoinCode({
     id: genExamId(),
-    hostId: user.id,
-    joinCode: uniqueJoinCode(all),
-    maxParticipants: AUDIENCE_CAP[plan],
-    createdAt: now,
-    updatedAt: now,
-  };
-  all.push(exam);
-  writeExams(all);
-  return exam;
+    host_id: user.id,
+    quiz_id: data.quizId,
+    title: data.title,
+    description: data.description,
+    open_at: data.openAt,
+    close_at: data.closeAt,
+    duration_minutes: data.durationMinutes,
+    max_attempts: data.maxAttempts,
+    shuffle_questions: data.shuffleQuestions,
+    shuffle_answers: data.shuffleAnswers,
+    passing_score: data.passingScore,
+    show_results_policy: data.showResultsPolicy,
+    show_detail_policy: data.showDetailPolicy,
+    score_retention_policy: data.scoreRetentionPolicy,
+    status: data.status,
+    max_participants: AUDIENCE_CAP[plan],
+  });
+  return examFromRow(row);
 };
 
-export const updateExam = (id: string, updates: Partial<Exam>): Exam | null => {
+const examUpdatesToRow = (updates: Partial<Exam>): Partial<ExamRow> => {
+  const patch: Partial<ExamRow> = {};
+  if (updates.title !== undefined) patch.title = updates.title;
+  if (updates.description !== undefined) patch.description = updates.description;
+  if (updates.quizId !== undefined) patch.quiz_id = updates.quizId;
+  if (updates.openAt !== undefined) patch.open_at = updates.openAt;
+  if (updates.closeAt !== undefined) patch.close_at = updates.closeAt;
+  if (updates.durationMinutes !== undefined) patch.duration_minutes = updates.durationMinutes;
+  if (updates.maxAttempts !== undefined) patch.max_attempts = updates.maxAttempts;
+  if (updates.shuffleQuestions !== undefined) patch.shuffle_questions = updates.shuffleQuestions;
+  if (updates.shuffleAnswers !== undefined) patch.shuffle_answers = updates.shuffleAnswers;
+  if (updates.passingScore !== undefined) patch.passing_score = updates.passingScore;
+  if (updates.showResultsPolicy !== undefined) patch.show_results_policy = updates.showResultsPolicy;
+  if (updates.showDetailPolicy !== undefined) patch.show_detail_policy = updates.showDetailPolicy;
+  if (updates.scoreRetentionPolicy !== undefined) patch.score_retention_policy = updates.scoreRetentionPolicy;
+  if (updates.status !== undefined) patch.status = updates.status;
+  if (updates.maxParticipants !== undefined) patch.max_participants = updates.maxParticipants;
+  return patch;
+};
+
+export const updateExam = async (id: string, updates: Partial<Exam>): Promise<Exam | null> => {
   const user = getCurrentUser();
   if (!user) return null;
-  const all = readExams();
-  const idx = all.findIndex((e) => e.id === id);
-  if (idx === -1 || all[idx].hostId !== user.id) return null;
-  all[idx] = { ...all[idx], ...updates, updatedAt: new Date().toISOString() };
-  writeExams(all);
-  return all[idx];
+  const { data, error } = await supabase
+    .from('exams')
+    .update(examUpdatesToRow(updates))
+    .eq('id', id)
+    .eq('host_id', user.id)
+    .select()
+    .maybeSingle();
+  if (error || !data) return null;
+  return examFromRow(data);
 };
 
-export const archiveExam = (id: string): boolean => {
-  const result = updateExam(id, { status: 'archived' });
+export const archiveExam = async (id: string): Promise<boolean> => {
+  const result = await updateExam(id, { status: 'archived' });
   return result !== null;
 };
 
-export const duplicateExam = (id: string): Exam | null => {
+export const duplicateExam = async (id: string): Promise<Exam | null> => {
   const user = getCurrentUser();
   if (!user) return null;
-  const original = getExamById(id);
+  const original = await getExamById(id);
   if (!original || original.hostId !== user.id) return null;
 
   const plan = getPlan(user);
   const cap = CONTENT_CAPS[plan].exam;
-  if (cap !== null && getHostExams(user.id).length >= cap) throw new PlanLimitError('exam', cap, plan);
+  if (cap !== null) {
+    const existing = await getHostExams(user.id);
+    if (existing.length >= cap) throw new PlanLimitError('exam', cap, plan);
+  }
 
-  const all = readExams();
-  const now = new Date().toISOString();
-  const copy: Exam = {
-    ...original,
+  const row = await insertExamWithUniqueJoinCode({
     id: genExamId(),
+    host_id: user.id,
+    quiz_id: original.quizId,
     title: `Copie de ${original.title}`,
+    description: original.description,
+    open_at: original.openAt,
+    close_at: original.closeAt,
+    duration_minutes: original.durationMinutes,
+    max_attempts: original.maxAttempts,
+    shuffle_questions: original.shuffleQuestions,
+    shuffle_answers: original.shuffleAnswers,
+    passing_score: original.passingScore,
+    show_results_policy: original.showResultsPolicy,
+    show_detail_policy: original.showDetailPolicy,
+    score_retention_policy: original.scoreRetentionPolicy,
     status: 'draft',
-    joinCode: uniqueJoinCode(all),
-    createdAt: now,
-    updatedAt: now,
-  };
-  all.push(copy);
-  writeExams(all);
-  return copy;
+    max_participants: original.maxParticipants,
+  });
+  return examFromRow(row);
 };
 
 /* ══ Computed exam status ═══════════════════════════════════════ */
@@ -189,142 +311,150 @@ export function isExamOpen(exam: Exam): boolean {
 
 /* ══ Attempt CRUD ═══════════════════════════════════════════════ */
 
-const readAttempts = (): Attempt[] => {
-  try { return JSON.parse(localStorage.getItem(ATTEMPTS_KEY) ?? '[]') as Attempt[]; } catch { return []; }
+export const getAttemptById = async (id: string): Promise<Attempt | null> => {
+  const { data, error } = await supabase.from('exam_attempts').select('*').eq('id', id).maybeSingle();
+  if (error || !data) return null;
+  return attemptFromRow(data);
 };
 
-const writeAttempts = (attempts: Attempt[]) =>
-  localStorage.setItem(ATTEMPTS_KEY, JSON.stringify(attempts));
+export const getAttemptsForExam = async (examId: string): Promise<Attempt[]> => {
+  const { data, error } = await supabase.from('exam_attempts').select('*').eq('exam_id', examId);
+  if (error || !data) return [];
+  return data.map(attemptFromRow);
+};
 
-export const getAttemptById = (id: string): Attempt | null =>
-  readAttempts().find((a) => a.id === id) ?? null;
+export const getAttemptsForParticipant = async (examId: string, participantId: string): Promise<Attempt[]> => {
+  const { data, error } = await supabase
+    .from('exam_attempts').select('*')
+    .eq('exam_id', examId).eq('participant_id', participantId);
+  if (error || !data) return [];
+  return data.map(attemptFromRow);
+};
 
-export const getAttemptsForExam = (examId: string): Attempt[] =>
-  readAttempts().filter((a) => a.examId === examId);
+export const getActiveAttempt = async (examId: string, participantId: string): Promise<Attempt | null> => {
+  const { data, error } = await supabase
+    .from('exam_attempts').select('*')
+    .eq('exam_id', examId).eq('participant_id', participantId).eq('status', 'in-progress')
+    .maybeSingle();
+  if (error || !data) return null;
+  return attemptFromRow(data);
+};
 
-export const getAttemptsForParticipant = (examId: string, participantId: string): Attempt[] =>
-  readAttempts().filter((a) => a.examId === examId && a.participantId === participantId);
-
-export const getActiveAttempt = (examId: string, participantId: string): Attempt | null =>
-  readAttempts().find(
-    (a) => a.examId === examId && a.participantId === participantId && a.status === 'in-progress'
-  ) ?? null;
-
-export const startAttempt = (
+export const startAttempt = async (
   exam: Exam,
   participantId: string,
   participantName: string,
   participantEmail: string,
-): Attempt => {
-  const quiz = getQuizById(exam.quizId);
-  if (!quiz) throw new Error('Quiz introuvable');
+): Promise<Attempt> => {
+  const quizRow = await getContentBySource(exam.hostId, 'quiz', exam.quizId);
+  if (!quizRow) throw new Error('Quiz introuvable');
+  const quiz = quizRow.data as unknown as { questions: Array<{ id: string }> };
 
-  const existing = getAttemptsForParticipant(exam.id, participantId);
+  const existing = await getAttemptsForParticipant(exam.id, participantId);
   const completed = existing.filter((a) => a.status !== 'in-progress');
   if (completed.length >= exam.maxAttempts) throw new Error('Nombre maximum de tentatives atteint');
 
-  const active = getActiveAttempt(exam.id, participantId);
+  const active = existing.find((a) => a.status === 'in-progress');
   if (active) return active; // resume existing
 
   if (exam.maxParticipants !== null && existing.length === 0) {
-    const distinctParticipants = new Set(getAttemptsForExam(exam.id).map((a) => a.participantId));
+    const all = await getAttemptsForExam(exam.id);
+    const distinctParticipants = new Set(all.map((a) => a.participantId));
     if (distinctParticipants.size >= exam.maxParticipants) throw new AudienceCapError();
   }
 
-  let qIds = quiz.questions.map((q: { id: string }) => q.id);
+  let qIds = quiz.questions.map((q) => q.id);
   if (exam.shuffleQuestions) qIds = shuffle(qIds);
 
   const now = new Date().toISOString();
-  const attempt: Attempt = {
-    id: genExamId(),
-    examId: exam.id,
-    participantId,
-    participantName,
-    participantEmail,
-    startedAt: now,
-    submittedAt: null,
-    timeUsedSeconds: 0,
-    questionOrder: qIds,
-    answers: {},
-    score: null,
-    percentage: null,
-    passed: null,
-    submissionMode: null,
-    status: 'in-progress',
-    logs: [{ event: 'started', timestamp: now }],
-  };
-
-  const all = readAttempts();
-  all.push(attempt);
-  writeAttempts(all);
-  return attempt;
+  const { data, error } = await supabase
+    .from('exam_attempts')
+    .insert({
+      exam_id: exam.id,
+      participant_id: participantId,
+      participant_name: participantName,
+      participant_email: participantEmail,
+      question_order: qIds,
+      answers: {},
+      status: 'in-progress',
+      logs: [{ event: 'started', timestamp: now }],
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  return attemptFromRow(data);
 };
 
-export const saveAnswers = (
+export const saveAnswers = async (
   attemptId: string,
   answers: Record<string, number | string | null>,
   timeUsedSeconds: number,
-): boolean => {
-  const all = readAttempts();
-  const idx = all.findIndex((a) => a.id === attemptId);
-  if (idx === -1 || all[idx].status !== 'in-progress') return false;
-  const now = new Date().toISOString();
-  all[idx] = {
-    ...all[idx],
-    answers,
-    timeUsedSeconds,
-    logs: [...all[idx].logs, { event: 'saved', timestamp: now }],
-  };
-  writeAttempts(all);
-  return true;
+): Promise<boolean> => {
+  const current = await getAttemptById(attemptId);
+  if (!current || current.status !== 'in-progress') return false;
+  const { error } = await supabase
+    .from('exam_attempts')
+    .update({
+      answers,
+      time_used_seconds: timeUsedSeconds,
+      logs: [...current.logs, { event: 'saved', timestamp: new Date().toISOString() }],
+    })
+    .eq('id', attemptId);
+  return !error;
 };
 
-export const submitAttempt = (
+export const submitAttempt = async (
   attemptId: string,
   answers: Record<string, number | string | null>,
   timeUsedSeconds: number,
   mode: SubmissionMode = 'manual',
-): Attempt | null => {
-  const all = readAttempts();
-  const idx = all.findIndex((a) => a.id === attemptId);
-  if (idx === -1) return null;
-  if (all[idx].status !== 'in-progress') return all[idx]; // already submitted
+): Promise<Attempt | null> => {
+  const current = await getAttemptById(attemptId);
+  if (!current) return null;
+  if (current.status !== 'in-progress') return current; // already submitted
 
-  const exam = getExamById(all[idx].examId);
-  const quiz = exam ? getQuizById(exam.quizId) : null;
+  const exam = await getExamById(current.examId);
+  const quizRow = exam ? await getContentBySource(exam.hostId, 'quiz', exam.quizId) : null;
+  const quiz = quizRow?.data as unknown as
+    | { questions: Array<{ id: string; type: string; correctAnswer: unknown; points?: number }> }
+    | undefined;
   const { score, percentage, passed } = quiz && exam
     ? calculateScore(answers, quiz.questions, exam.passingScore)
     : { score: null, percentage: null, passed: null };
 
   const now = new Date().toISOString();
-  all[idx] = {
-    ...all[idx],
-    answers,
-    timeUsedSeconds,
-    submittedAt: now,
-    score,
-    percentage,
-    passed,
-    submissionMode: mode,
-    status: mode === 'manual' ? 'submitted' : 'auto-submitted',
-    logs: [...all[idx].logs, { event: mode === 'manual' ? 'submitted' : 'auto-submitted', timestamp: now }],
-  };
-  writeAttempts(all);
-  return all[idx];
+  const status = mode === 'manual' ? 'submitted' : 'auto-submitted';
+  const { data, error } = await supabase
+    .from('exam_attempts')
+    .update({
+      answers,
+      time_used_seconds: timeUsedSeconds,
+      submitted_at: now,
+      score,
+      percentage,
+      passed,
+      submission_mode: mode,
+      status,
+      logs: [...current.logs, { event: status, timestamp: now }],
+    })
+    .eq('id', attemptId)
+    .select()
+    .single();
+  if (error) throw error;
+  return attemptFromRow(data);
 };
 
-export const cancelAttempt = (attemptId: string): boolean => {
-  const all = readAttempts();
-  const idx = all.findIndex((a) => a.id === attemptId);
-  if (idx === -1) return false;
-  const now = new Date().toISOString();
-  all[idx] = {
-    ...all[idx],
-    status: 'cancelled',
-    logs: [...all[idx].logs, { event: 'cancelled', timestamp: now }],
-  };
-  writeAttempts(all);
-  return true;
+export const cancelAttempt = async (attemptId: string): Promise<boolean> => {
+  const current = await getAttemptById(attemptId);
+  if (!current) return false;
+  const { error } = await supabase
+    .from('exam_attempts')
+    .update({
+      status: 'cancelled',
+      logs: [...current.logs, { event: 'cancelled', timestamp: new Date().toISOString() }],
+    })
+    .eq('id', attemptId);
+  return !error;
 };
 
 /* ══ Score calculation ═══════════════════════════════════════════ */
@@ -359,8 +489,8 @@ export function calculateScore(
 
 /* ══ Best score for participant ════════════════════════════════ */
 
-export function getRetainedAttempt(exam: Exam, participantId: string): Attempt | null {
-  const done = getAttemptsForParticipant(exam.id, participantId)
+export async function getRetainedAttempt(exam: Exam, participantId: string): Promise<Attempt | null> {
+  const done = (await getAttemptsForParticipant(exam.id, participantId))
     .filter((a) => a.status === 'submitted' || a.status === 'auto-submitted');
   if (!done.length) return null;
   if (exam.scoreRetentionPolicy === 'last') return done[done.length - 1];
@@ -380,8 +510,8 @@ export interface ExamStats {
   avgTimeMinutes: number | null;
 }
 
-export function computeExamStats(examId: string): ExamStats {
-  const attempts = getAttemptsForExam(examId);
+export async function computeExamStats(examId: string): Promise<ExamStats> {
+  const attempts = await getAttemptsForExam(examId);
   const completed = attempts.filter((a) => a.status === 'submitted' || a.status === 'auto-submitted');
   const passed = completed.filter((a) => a.passed === true).length;
   const avgPct = completed.length
@@ -401,8 +531,8 @@ export function computeExamStats(examId: string): ExamStats {
 
 /* ══ CSV export ════════════════════════════════════════════════ */
 
-export function exportCSV(exam: Exam): void {
-  const attempts = getAttemptsForExam(exam.id)
+export async function exportCSV(exam: Exam): Promise<void> {
+  const attempts = (await getAttemptsForExam(exam.id))
     .filter((a) => a.status !== 'in-progress' && a.status !== 'cancelled');
 
   const headers = ['Participant', 'Email', 'Début', 'Soumission', 'Temps (min)', 'Score (%)', 'Statut', 'Mode'];

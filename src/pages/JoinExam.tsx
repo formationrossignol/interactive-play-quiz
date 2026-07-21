@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { getExamByJoinCode, computeExamStatus } from '@/lib/examStorage';
 import { AlertTriangle, BookOpen } from 'lucide-react';
 
-type State = 'idle' | 'not-found' | 'not-open';
+type State = 'idle' | 'checking' | 'not-found' | 'not-open';
 
 export default function JoinExam() {
   const navigate = useNavigate();
@@ -12,11 +12,12 @@ export default function JoinExam() {
   const [state, setState] = useState<State>('idle');
   const [statusMsg, setStatusMsg] = useState('');
 
-  const handleJoin = () => {
+  const handleJoin = async () => {
     const trimmed = code.trim().toUpperCase();
     if (!trimmed) return;
 
-    const exam = getExamByJoinCode(trimmed);
+    setState('checking');
+    const exam = await getExamByJoinCode(trimmed);
     if (!exam) {
       setState('not-found');
       return;
@@ -91,10 +92,10 @@ export default function JoinExam() {
         <button
           className="ap-btn ap-btn--pill"
           onClick={handleJoin}
-          disabled={!code.trim()}
-          style={{ width: '100%', opacity: code.trim() ? 1 : 0.5 }}
+          disabled={!code.trim() || state === 'checking'}
+          style={{ width: '100%', opacity: code.trim() && state !== 'checking' ? 1 : 0.5 }}
         >
-          Accéder à l'examen
+          {state === 'checking' ? '…' : "Accéder à l'examen"}
         </button>
 
         <button

@@ -65,42 +65,45 @@ export default function ExamBuilder() {
   const [form, setForm] = useState<FormState>({ ...DEFAULTS, quizId: presetQuizId ?? '' });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState<Exam | null>(null);
+  const [used, setUsed] = useState(0);
   const user = getCurrentUser();
 
   const quizzes = user ? getUserQuizzes(user.id).filter((q) => q.type === 'quiz') : [];
 
   const cap = CONTENT_CAPS[getPlan(user)].exam;
-  const used = user ? getHostExams(user.id).length : 0;
   const atCap = !examId && cap !== null && used >= cap;
 
   useEffect(() => {
-    if (examId) {
-      const exam = getExamById(examId);
-      if (exam) {
-        const openLocal = new Date(exam.openAt);
-        openLocal.setMinutes(openLocal.getMinutes() - openLocal.getTimezoneOffset());
-        const closeLocal = new Date(exam.closeAt);
-        closeLocal.setMinutes(closeLocal.getMinutes() - closeLocal.getTimezoneOffset());
-        setForm({
-          title: exam.title,
-          description: exam.description,
-          quizId: exam.quizId,
-          openAt: openLocal.toISOString().slice(0, 16),
-          closeAt: closeLocal.toISOString().slice(0, 16),
-          hasDuration: exam.durationMinutes !== null,
-          durationMinutes: exam.durationMinutes ?? 60,
-          maxAttempts: exam.maxAttempts,
-          shuffleQuestions: exam.shuffleQuestions,
-          shuffleAnswers: exam.shuffleAnswers,
-          passingScore: exam.passingScore,
-          showResultsPolicy: exam.showResultsPolicy,
-          showDetailPolicy: exam.showDetailPolicy,
-          scoreRetentionPolicy: exam.scoreRetentionPolicy,
-          status: exam.status,
-        });
-        setSaved(exam);
-      }
-    }
+    if (user) getHostExams(user.id).then((exams) => setUsed(exams.length));
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!examId) return;
+    getExamById(examId).then((exam) => {
+      if (!exam) return;
+      const openLocal = new Date(exam.openAt);
+      openLocal.setMinutes(openLocal.getMinutes() - openLocal.getTimezoneOffset());
+      const closeLocal = new Date(exam.closeAt);
+      closeLocal.setMinutes(closeLocal.getMinutes() - closeLocal.getTimezoneOffset());
+      setForm({
+        title: exam.title,
+        description: exam.description,
+        quizId: exam.quizId,
+        openAt: openLocal.toISOString().slice(0, 16),
+        closeAt: closeLocal.toISOString().slice(0, 16),
+        hasDuration: exam.durationMinutes !== null,
+        durationMinutes: exam.durationMinutes ?? 60,
+        maxAttempts: exam.maxAttempts,
+        shuffleQuestions: exam.shuffleQuestions,
+        shuffleAnswers: exam.shuffleAnswers,
+        passingScore: exam.passingScore,
+        showResultsPolicy: exam.showResultsPolicy,
+        showDetailPolicy: exam.showDetailPolicy,
+        scoreRetentionPolicy: exam.scoreRetentionPolicy,
+        status: exam.status,
+      });
+      setSaved(exam);
+    });
   }, [examId]);
 
   const set = <K extends keyof FormState>(key: K, val: FormState[K]) =>
@@ -134,9 +137,9 @@ export default function ExamBuilder() {
 
       let exam: Exam | null;
       if (saved) {
-        exam = updateExam(saved.id, payload);
+        exam = await updateExam(saved.id, payload);
       } else {
-        exam = createExam(payload);
+        exam = await createExam(payload);
       }
 
       if (!exam) throw new Error('Échec de sauvegarde');

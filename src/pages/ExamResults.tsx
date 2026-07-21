@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getAttemptById, getExamById, type Attempt, type Exam } from '@/lib/examStorage';
-import { getQuizById } from '@/lib/quizStorage';
+import { getContentBySource } from '@/lib/content/contentRepo';
+import type { SavedQuiz } from '@/lib/quizStorage';
 
 export default function ExamResults() {
   const { attemptId } = useParams<{ attemptId: string }>();
@@ -9,25 +10,33 @@ export default function ExamResults() {
 
   const [attempt, setAttempt] = useState<Attempt | null>(null);
   const [exam, setExam] = useState<Exam | null>(null);
-  const [quiz, setQuiz] = useState<ReturnType<typeof getQuizById>>(null);
+  const [quiz, setQuiz] = useState<SavedQuiz | null>(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
     if (!attemptId) { setError('Tentative introuvable'); return; }
-    const att = getAttemptById(attemptId);
-    if (!att) { setError('Tentative introuvable'); return; }
-    const e = getExamById(att.examId);
-    if (!e) { setError('Examen introuvable'); return; }
+    let cancelled = false;
+    (async () => {
+      const att = await getAttemptById(attemptId);
+      if (cancelled) return;
+      if (!att) { setError('Tentative introuvable'); return; }
+      const e = await getExamById(att.examId);
+      if (cancelled) return;
+      if (!e) { setError('Examen introuvable'); return; }
 
-    if (e.showResultsPolicy === 'never') { setError('Les résultats ne sont pas disponibles pour cet examen.'); return; }
-    if (e.showResultsPolicy === 'after-close' && new Date(e.closeAt) > new Date()) {
-      setError(`Résultats disponibles après le ${new Date(e.closeAt).toLocaleString('fr')}`);
-      return;
-    }
+      if (e.showResultsPolicy === 'never') { setError('Les résultats ne sont pas disponibles pour cet examen.'); return; }
+      if (e.showResultsPolicy === 'after-close' && new Date(e.closeAt) > new Date()) {
+        setError(`Résultats disponibles après le ${new Date(e.closeAt).toLocaleString('fr')}`);
+        return;
+      }
 
-    setAttempt(att);
-    setExam(e);
-    setQuiz(getQuizById(e.quizId));
+      const quizRow = await getContentBySource(e.hostId, 'quiz', e.quizId);
+      if (cancelled) return;
+      setAttempt(att);
+      setExam(e);
+      setQuiz((quizRow?.data as unknown as SavedQuiz) ?? null);
+    })();
+    return () => { cancelled = true; };
   }, [attemptId]);
 
   if (error) return (

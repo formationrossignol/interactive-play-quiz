@@ -1,9 +1,9 @@
-import { useRef } from 'react';
+import { useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { toast } from 'sonner';
-import { computeExamStats, computeExamStatus, duplicateExam, type Exam, type ExamStatus } from '@/lib/examStorage';
+import { computeExamStats, computeExamStatus, duplicateExam, type Exam, type ExamStats, type ExamStatus } from '@/lib/examStorage';
 import { getCurrentUser } from '@/lib/auth';
 import { PlanLimitError } from '@/lib/plans';
 import { createContent } from '@/lib/content/contentRepo';
@@ -49,7 +49,7 @@ const statusBadge = (liveStatus: string) => {
   );
 };
 
-const renderMeta = (exam: Exam, stats: ReturnType<typeof computeExamStats>) => (
+const renderMeta = (exam: Exam, stats: ExamStats) => (
   <>
     <span>
       📅 {new Date(exam.openAt).toLocaleDateString('fr')} → {new Date(exam.closeAt).toLocaleDateString('fr')}
@@ -64,6 +64,18 @@ const renderMeta = (exam: Exam, stats: ReturnType<typeof computeExamStats>) => (
     )}
   </>
 );
+
+const EMPTY_STATS: ExamStats = { totalAttempts: 0, completedAttempts: 0, passRate: null, avgScore: null, avgTimeMinutes: null };
+
+function useExamStats(examId: string): ExamStats {
+  const [stats, setStats] = useState<ExamStats>(EMPTY_STATS);
+  useEffect(() => {
+    let cancelled = false;
+    computeExamStats(examId).then((s) => { if (!cancelled) setStats(s); });
+    return () => { cancelled = true; };
+  }, [examId]);
+  return stats;
+}
 
 interface ExamItemProps {
   d: ContentDisplay;
@@ -100,7 +112,7 @@ const actionButtons = (exam: Exam, navigate: ReturnType<typeof useNavigate>) => 
 function ExamCard({ d, ctx, navigate, onDuplicate }: ExamItemProps) {
   const exam = d.data as unknown as Exam;
   const liveStatus = computeExamStatus(exam);
-  const stats = computeExamStats(exam.id);
+  const stats = useExamStats(exam.id);
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: d.id });
   return (
     <div
@@ -149,7 +161,7 @@ function ExamCard({ d, ctx, navigate, onDuplicate }: ExamItemProps) {
 function ExamRow({ d, ctx, navigate, onDuplicate }: ExamItemProps) {
   const exam = d.data as unknown as Exam;
   const liveStatus = computeExamStatus(exam);
-  const stats = computeExamStats(exam.id);
+  const stats = useExamStats(exam.id);
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: d.id });
   return (
     <div
@@ -201,7 +213,7 @@ export default function MyExams() {
     if (!user) return;
     const exam = d.data as unknown as Exam;
     try {
-      const copy = duplicateExam(exam.id);
+      const copy = await duplicateExam(exam.id);
       if (!copy) throw new Error('Échec de duplication');
       await createContent(user.id, 'exam', copy as unknown as Record<string, unknown>, d.folderId, copy.id);
       toast.success('Examen dupliqué');

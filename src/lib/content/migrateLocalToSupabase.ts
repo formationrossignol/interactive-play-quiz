@@ -1,6 +1,7 @@
 import type { ContentType } from './types';
 import { createFolder } from './foldersRepo';
 import { createContent } from './contentRepo';
+import { supabase } from '../supabase';
 
 /**
  * One-time, idempotent, non-destructive import of the current user's
@@ -39,6 +40,10 @@ export interface LocalData {
   exams: LocalRow[]; // parsed lms_exams
   courses: LocalRow[]; // parsed lms_courses
 }
+
+/** Parsed lms_exam_attempts — migrated straight into the dedicated `exam_attempts`
+ *  table (see migrateExamsAndAttempts below), not part of the generic content plan. */
+export type LocalAttempt = LocalRow;
 
 export interface FolderInsert {
   tempId: string; // original localStorage folder id, used to remap content
@@ -131,6 +136,67 @@ function readArray<T = Record<string, unknown>>(key: string): T[] {
 }
 
 /**
+ * Import this user's `lms_exams`/`lms_exam_attempts` into the dedicated
+ * `exams`/`exam_attempts` tables (source of truth for the join/take/admin
+ * flow — see supabase/migrations/20260721120000_exam_tables.sql). Separate
+ * from the generic `content` mirror above (still done via planMigration,
+ * purely for the host's library view). Upserts on the original ids so a
+ * repeated run never duplicates rows. Already-computed scores are carried
+ * over as-is — they were fully client-trusted before this migration too.
+ */
+async function migrateExamsAndAttempts(userId: string): Promise<void> {
+  const localExams = readArray<LocalRow>('lms_exams').filter((e) => e.hostId === userId);
+  if (!localExams.length) return;
+  const attempts = readArray<LocalAttempt>('lms_exam_attempts');
+
+  for (const e of localExams) {
+    const { error } = await supabase.from('exams').upsert({
+      id: e.id as string,
+      host_id: userId,
+      quiz_id: e.quizId as string,
+      title: e.title as string,
+      description: (e.description as string) ?? '',
+      open_at: e.openAt as string,
+      close_at: e.closeAt as string,
+      duration_minutes: (e.durationMinutes as number | null) ?? null,
+      max_attempts: e.maxAttempts as number,
+      shuffle_questions: !!e.shuffleQuestions,
+      shuffle_answers: !!e.shuffleAnswers,
+      passing_score: e.passingScore as number,
+      show_results_policy: e.showResultsPolicy as string,
+      show_detail_policy: e.showDetailPolicy as string,
+      score_retention_policy: e.scoreRetentionPolicy as string,
+      status: e.status as string,
+      join_code: e.joinCode as string,
+      max_participants: (e.maxParticipants as number | null) ?? null,
+    }, { onConflict: 'id' });
+    if (error) { console.error('[content-migration] exam upsert failed:', error); continue; }
+
+    for (const a of attempts.filter((a) => a.examId === e.id)) {
+      const { error: attemptError } = await supabase.from('exam_attempts').upsert({
+        id: a.id as string,
+        exam_id: e.id as string,
+        participant_id: a.participantId as string,
+        participant_name: a.participantName as string,
+        participant_email: (a.participantEmail as string) ?? '',
+        started_at: a.startedAt as string,
+        submitted_at: (a.submittedAt as string | null) ?? null,
+        time_used_seconds: a.timeUsedSeconds as number,
+        question_order: a.questionOrder ?? [],
+        answers: a.answers ?? {},
+        score: (a.score as number | null) ?? null,
+        percentage: (a.percentage as number | null) ?? null,
+        passed: (a.passed as boolean | null) ?? null,
+        submission_mode: (a.submissionMode as string | null) ?? null,
+        status: a.status as string,
+        logs: a.logs ?? [],
+      }, { onConflict: 'id' });
+      if (attemptError) console.error('[content-migration] exam attempt upsert failed:', attemptError);
+    }
+  }
+}
+
+/**
  * Import this user's localStorage content into Supabase exactly once.
  * Idempotent: subsequent calls no-op via the `content_migrated_v1` flag.
  * Non-destructive: the source localStorage keys are never modified or removed.
@@ -181,6 +247,8 @@ async function runMigration(userId: string): Promise<MigrationResult> {
     const sourceId = typeof c.data.id === 'string' ? c.data.id : null;
     await createContent(userId, c.type, c.data, folderId, sourceId);
   }
+
+  await migrateExamsAndAttempts(userId);
 
   localStorage.setItem(MIGRATED_FLAG, new Date().toISOString());
 

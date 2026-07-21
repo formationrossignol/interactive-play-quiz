@@ -7,7 +7,8 @@ import {
   getRetainedAttempt,
   type Exam, type Attempt,
 } from '@/lib/examStorage';
-import { getQuizById } from '@/lib/quizStorage';
+import { getContentBySource } from '@/lib/content/contentRepo';
+import type { SavedQuiz } from '@/lib/quizStorage';
 import { AudienceCapError } from '@/lib/plans';
 
 const PART_KEY = 'exam_participant';
@@ -55,6 +56,7 @@ export default function ExamRoom() {
 
   const [phase, setPhase] = useState<Phase>('loading');
   const [exam, setExam] = useState<Exam | null>(null);
+  const [quiz, setQuiz] = useState<SavedQuiz | null>(null);
   const [attempt, setAttempt] = useState<Attempt | null>(null);
   const [participant, setParticipantState] = useState<Participant | null>(null);
   const [nameInput, setNameInput] = useState('');
@@ -66,6 +68,7 @@ export default function ExamRoom() {
   const [elapsed, setElapsed] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [confirmSubmit, setConfirmSubmit] = useState(false);
+  const [retainedAttempt, setRetainedAttempt] = useState<Attempt | null>(null);
 
   const autoSaveRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -73,32 +76,39 @@ export default function ExamRoom() {
   const answersRef = useRef(answers);
   answersRef.current = answers;
 
-  const quiz = exam ? getQuizById(exam.quizId) : null;
-
   /* ── Load exam ────────────────────────────────────────────────── */
   useEffect(() => {
     if (!joinCode) { setPhase('not-found'); return; }
-    const e = getExamByJoinCode(joinCode);
-    if (!e) { setPhase('not-found'); return; }
-    setExam(e);
+    let cancelled = false;
+    (async () => {
+      const e = await getExamByJoinCode(joinCode);
+      if (cancelled) return;
+      if (!e) { setPhase('not-found'); return; }
+      setExam(e);
 
-    const status = computeExamStatus(e);
-    if (status === 'draft' || status === 'scheduled' || status === 'closed' || status === 'archived') {
-      setPhase('not-open');
-      return;
-    }
+      const status = computeExamStatus(e);
+      if (status === 'draft' || status === 'scheduled' || status === 'closed' || status === 'archived') {
+        setPhase('not-open');
+        return;
+      }
 
-    const part = getParticipant();
-    if (part) {
-      setParticipantState(part);
-      checkExistingAttempt(e, part);
-    } else {
-      setPhase('identify');
-    }
+      const quizRow = await getContentBySource(e.hostId, 'quiz', e.quizId);
+      if (cancelled) return;
+      setQuiz((quizRow?.data as unknown as SavedQuiz) ?? null);
+
+      const part = getParticipant();
+      if (part) {
+        setParticipantState(part);
+        await checkExistingAttempt(e, part);
+      } else {
+        setPhase('identify');
+      }
+    })();
+    return () => { cancelled = true; };
   }, [joinCode]);
 
-  function checkExistingAttempt(e: Exam, part: Participant) {
-    const active = getActiveAttempt(e.id, part.id);
+  async function checkExistingAttempt(e: Exam, part: Participant) {
+    const active = await getActiveAttempt(e.id, part.id);
     if (active) {
       setAttempt(active);
       setAnswers(active.answers ?? {});
@@ -107,7 +117,7 @@ export default function ExamRoom() {
       setPhase('taking');
       return;
     }
-    const done = getAttemptsForParticipant(e.id, part.id).filter(
+    const done = (await getAttemptsForParticipant(e.id, part.id)).filter(
       (a) => a.status !== 'in-progress' && a.status !== 'cancelled'
     );
     if (done.length >= e.maxAttempts) { setPhase('exhausted'); return; }
@@ -115,10 +125,10 @@ export default function ExamRoom() {
   }
 
   /* ── Start exam ───────────────────────────────────────────────── */
-  const handleStart = () => {
+  const handleStart = async () => {
     if (!exam || !participant) return;
     try {
-      const att = startAttempt(exam, participant.id, participant.name, participant.email);
+      const att = await startAttempt(exam, participant.id, participant.name, participant.email);
       setAttempt(att);
       setAnswers(att.answers ?? {});
       elapsedRef.current = att.timeUsedSeconds;
@@ -162,7 +172,7 @@ export default function ExamRoom() {
   useEffect(() => {
     if (phase !== 'taking' || !attempt) return;
     autoSaveRef.current = setInterval(() => {
-      saveAnswers(attempt.id, answersRef.current, elapsedRef.current);
+      void saveAnswers(attempt.id, answersRef.current, elapsedRef.current);
     }, 30000);
     return () => { if (autoSaveRef.current) clearInterval(autoSaveRef.current); };
   }, [phase, attempt?.id]);
@@ -170,22 +180,28 @@ export default function ExamRoom() {
   /* ── Auto-submit ──────────────────────────────────────────────── */
   const handleAutoSubmit = useCallback(() => {
     if (!attempt) return;
-    submitAttempt(attempt.id, answersRef.current, elapsedRef.current, 'auto');
+    void submitAttempt(attempt.id, answersRef.current, elapsedRef.current, 'auto');
     setPhase('submitted');
   }, [attempt]);
 
   /* ── Manual submit ────────────────────────────────────────────── */
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!attempt) return;
     setSubmitting(true);
     if (timerRef.current) clearInterval(timerRef.current);
     if (autoSaveRef.current) clearInterval(autoSaveRef.current);
-    const result = submitAttempt(attempt.id, answersRef.current, elapsedRef.current, 'manual');
+    const result = await submitAttempt(attempt.id, answersRef.current, elapsedRef.current, 'manual');
     setAttempt(result);
     setPhase('submitted');
     setSubmitting(false);
     setConfirmSubmit(false);
   };
+
+  /* ── Retained attempt (for the exhausted/submitted screens) ──────── */
+  useEffect(() => {
+    if ((phase !== 'submitted' && phase !== 'exhausted') || !exam || !participant) return;
+    getRetainedAttempt(exam, participant.id).then(setRetainedAttempt);
+  }, [phase, exam, participant]);
 
   /* ── Answer change ────────────────────────────────────────────── */
   const setAnswer = (qId: string, val: number | string | null) => {
@@ -202,7 +218,7 @@ export default function ExamRoom() {
     };
     setParticipant(part);
     setParticipantState(part);
-    checkExistingAttempt(exam!, part);
+    void checkExistingAttempt(exam!, part);
   };
 
   /* ── Render helpers ───────────────────────────────────────────── */
@@ -236,8 +252,8 @@ export default function ExamRoom() {
       <BigIcon>✅</BigIcon>
       <Title>Tentatives épuisées</Title>
       <Sub>Vous avez atteint le nombre maximum de tentatives pour cet examen.</Sub>
-      {exam && participant && (
-        <ViewResultsBtn examId={exam.id} participantId={participant.id} exam={exam} navigate={navigate} />
+      {exam && retainedAttempt && (
+        <ViewResultsBtn retained={retainedAttempt} exam={exam} navigate={navigate} />
       )}
     </Screen>
   );
@@ -314,7 +330,7 @@ export default function ExamRoom() {
   );
 
   if (phase === 'submitted') {
-    const retained = exam && participant ? getRetainedAttempt(exam, participant.id) : null;
+    const retained = retainedAttempt;
     const showResults = exam?.showResultsPolicy === 'immediately';
     return (
       <Screen>
@@ -592,13 +608,12 @@ function Spinner() {
   );
 }
 
-function ViewResultsBtn({ examId, participantId, exam, navigate }: {
-  examId: string; participantId: string; exam: Exam; navigate: ReturnType<typeof useNavigate>;
+function ViewResultsBtn({ retained, exam, navigate }: {
+  retained: Attempt; exam: Exam; navigate: ReturnType<typeof useNavigate>;
 }) {
-  const att = getRetainedAttempt(exam, participantId);
-  if (!att || exam.showResultsPolicy === 'never') return null;
+  if (exam.showResultsPolicy === 'never') return null;
   return (
-    <button style={primaryBtnSt} onClick={() => navigate(`/exam/${att.id}/results`)}>
+    <button style={primaryBtnSt} onClick={() => navigate(`/exam/${retained.id}/results`)}>
       Voir mes résultats →
     </button>
   );

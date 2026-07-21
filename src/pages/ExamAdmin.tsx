@@ -2,10 +2,12 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   getExamById, getAttemptsForExam, computeExamStats, computeExamStatus,
-  updateExam, exportCSV, type Exam, type Attempt,
+  updateExam, exportCSV, type Exam, type Attempt, type ExamStats,
 } from '@/lib/examStorage';
 import { getCurrentUser } from '@/lib/auth';
-import { getQuizById } from '@/lib/quizStorage';
+import { getContentBySource } from '@/lib/content/contentRepo';
+import type { SavedQuiz } from '@/lib/quizStorage';
+import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
 const STATUS_LABEL: Record<string, { label: string; color: string; bg: string }> = {
@@ -33,37 +35,51 @@ export default function ExamAdmin() {
   const user = getCurrentUser();
 
   const [exam, setExam] = useState<Exam | null>(null);
+  const [quiz, setQuiz] = useState<SavedQuiz | null>(null);
   const [attempts, setAttempts] = useState<Attempt[]>([]);
+  const [stats, setStats] = useState<ExamStats>({ totalAttempts: 0, completedAttempts: 0, passRate: null, avgScore: null, avgTimeMinutes: null });
   const [expanded, setExpanded] = useState<string | null>(null);
   const [error, setError] = useState('');
 
-  const load = useCallback(() => {
+  const load = useCallback(async () => {
     if (!examId) return;
-    const e = getExamById(examId);
+    const e = await getExamById(examId);
     if (!e) { setError('Examen introuvable'); return; }
     if (!user || e.hostId !== user.id) { setError('Accès refusé'); return; }
     setExam(e);
+    const [fetchedAttempts, fetchedStats, quizRow] = await Promise.all([
+      getAttemptsForExam(examId),
+      computeExamStats(examId),
+      getContentBySource(e.hostId, 'quiz', e.quizId),
+    ]);
     setAttempts(
-      getAttemptsForExam(examId)
+      fetchedAttempts
         .filter((a) => a.status !== 'cancelled')
         .sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime())
     );
+    setStats(fetchedStats);
+    setQuiz((quizRow?.data as unknown as SavedQuiz) ?? null);
   }, [examId, user?.id]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { void load(); }, [load]);
 
-  // Refresh every 30s when exam is open
+  // Live results: subscribe to attempt changes for this exam instead of polling.
   useEffect(() => {
-    if (!exam) return;
-    const status = computeExamStatus(exam);
-    if (status !== 'open') return;
-    const t = setInterval(load, 30000);
-    return () => clearInterval(t);
-  }, [exam?.id, load]);
+    if (!examId) return;
+    const channel = supabase
+      .channel(`exam-attempts-${examId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'exam_attempts', filter: `exam_id=eq.${examId}` },
+        () => { void load(); },
+      )
+      .subscribe();
+    return () => { void supabase.removeChannel(channel); };
+  }, [examId, load]);
 
-  const handleStatusChange = (newStatus: Exam['status']) => {
+  const handleStatusChange = async (newStatus: Exam['status']) => {
     if (!exam) return;
-    const updated = updateExam(exam.id, { status: newStatus });
+    const updated = await updateExam(exam.id, { status: newStatus });
     if (updated) { setExam(updated); toast.success('Statut mis à jour'); }
   };
 
@@ -85,8 +101,6 @@ export default function ExamAdmin() {
     </div>
   );
 
-  const quiz = getQuizById(exam.quizId);
-  const stats = computeExamStats(exam.id);
   const liveStatus = computeExamStatus(exam);
   const badge = STATUS_LABEL[liveStatus];
   const completed = attempts.filter((a) => a.status === 'submitted' || a.status === 'auto-submitted');
@@ -219,7 +233,7 @@ export default function ExamAdmin() {
           </h2>
           {completed.length > 0 && (
             <button
-              onClick={() => { exportCSV(exam); toast.success('Export CSV lancé'); }}
+              onClick={() => { void exportCSV(exam); toast.success('Export CSV lancé'); }}
               style={{ ...outlineBtn, fontSize: 12 }}
             >
               ⬇️ Exporter CSV
@@ -298,7 +312,7 @@ export default function ExamAdmin() {
   );
 }
 
-function AttemptDetail({ att, exam, quiz }: { att: Attempt; exam: Exam; quiz: ReturnType<typeof getQuizById> }) {
+function AttemptDetail({ att, exam, quiz }: { att: Attempt; exam: Exam; quiz: SavedQuiz | null }) {
   const navigate = useNavigate();
 
   return (
