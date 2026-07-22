@@ -22,11 +22,16 @@ export function SlideCanvas() {
   const dragState = useRef<{ startX: number; startY: number } | null>(null);
   const nodesRef = useRef(new Map<string, HTMLElement>());
 
-  if (!presentation) return null;
-  const slide = presentation.slides.find((s) => s.id === activeSlideId) ?? presentation.slides[0];
-  if (!slide) return null;
+  const slide = presentation
+    ? (presentation.slides.find((s) => s.id === activeSlideId) ?? presentation.slides[0])
+    : null;
 
-  const { onPointerDown: onElementDragStart } = useElementDrag(slide.id, nodesRef);
+  // Hooks must run unconditionally on every render (Rules of Hooks) — call
+  // this before the early returns below, with a safe "" fallback when there's
+  // no slide yet (matches the same pattern used for useKeyboardShortcuts).
+  const { onPointerDown: onElementDragStart } = useElementDrag(slide?.id ?? "", nodesRef);
+
+  if (!presentation || !slide) return null;
 
   const lines = slide.elements.filter((e): e is LineElement => e.type === "line" || e.type === "arrow");
   const selectable = slide.elements.filter((e) => e.type !== "line" && e.type !== "arrow");

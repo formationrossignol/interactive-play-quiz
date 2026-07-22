@@ -10,6 +10,13 @@ export function SlideNavigator() {
   const activeSlideId = useEditorUIStore((s) => s.activeSlideId);
   const setActiveSlideId = useEditorUIStore((s) => s.setActiveSlideId);
 
+  // Hooks must run unconditionally on every render (Rules of Hooks) — call
+  // this before the early return below.
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
   if (!presentation) return null;
   const slides = presentation.slides.slice().sort((a, b) => a.order - b.order);
   const ids = slides.map((s) => s.id);
@@ -24,11 +31,6 @@ export function SlideNavigator() {
     useDocStore.getState().reorderSlides(String(active.id), to);
     void reordered; // ordering is recomputed by reorderSlides itself; kept for clarity
   }
-
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
-  );
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: 12, overflowY: "auto", width: 184 }}>

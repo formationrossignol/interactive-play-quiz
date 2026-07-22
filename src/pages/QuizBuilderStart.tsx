@@ -33,6 +33,9 @@ export const QuizBuilderStart = () => {
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
   const quizType = (searchParams.get("type") || "quiz") as "quiz" | "poll" | "flashcard" | "slide";
+  // Hooks must run unconditionally on every render (Rules of Hooks) — declare
+  // this before the early return below.
+  const [showAll, setShowAll] = useState(false);
 
   const user = getCurrentUser();
   const plan = getPlan(user);
@@ -42,7 +45,6 @@ export const QuizBuilderStart = () => {
 
   if (quizType === "slide" && !atCap) return <Navigate to="/presentation-editor" replace />;
 
-  const [showAll, setShowAll] = useState(false);
   const isPoll = quizType === "poll";
   const isFlashcard = quizType === "flashcard";
 
