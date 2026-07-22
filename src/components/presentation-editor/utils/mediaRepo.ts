@@ -23,6 +23,7 @@ export function validateMediaFile(file: File): MediaValidation {
  * `<userId>/<presentationId>/<elementId>.<ext>` and returns its public URL.
  * Throws MediaValidationError if `validateMediaFile` would reject the file
  * (call it first in the UI to show an error without attempting the upload).
+ * The bucket is public; returned URLs should be treated as shareable and non-secret.
  */
 export class MediaValidationError extends Error {}
 
