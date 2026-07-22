@@ -60,8 +60,17 @@ export interface Attempt {
   submissionMode: SubmissionMode | null;
   status: AttemptStatus;
   logs: AttemptLog[];
-  hostMessage: string | null;
-  hostMessageAt: string | null;
+}
+
+export type MessageSender = 'host' | 'participant';
+
+export interface ExamMessage {
+  id: string;
+  examId: string;
+  attemptId: string;
+  sender: MessageSender;
+  body: string;
+  createdAt: string;
 }
 
 /* ══ Row <-> object mapping ═══════════════════════════════════════
@@ -110,7 +119,21 @@ interface AttemptRow {
   question_order: string[]; answers: Record<string, number | string | null>;
   score: number | null; percentage: number | null; passed: boolean | null;
   submission_mode: string | null; status: string; logs: AttemptLog[];
-  host_message: string | null; host_message_at: string | null;
+}
+
+interface ExamMessageRow {
+  id: string; exam_id: string; attempt_id: string; sender: string; body: string; created_at: string;
+}
+
+function messageFromRow(r: ExamMessageRow): ExamMessage {
+  return {
+    id: r.id,
+    examId: r.exam_id,
+    attemptId: r.attempt_id,
+    sender: r.sender as MessageSender,
+    body: r.body,
+    createdAt: r.created_at,
+  };
 }
 
 function attemptFromRow(r: AttemptRow): Attempt {
@@ -131,8 +154,6 @@ function attemptFromRow(r: AttemptRow): Attempt {
     submissionMode: r.submission_mode as SubmissionMode | null,
     status: r.status as AttemptStatus,
     logs: r.logs ?? [],
-    hostMessage: r.host_message,
-    hostMessageAt: r.host_message_at,
   };
 }
 
@@ -466,16 +487,26 @@ export const cancelAttempt = async (attemptId: string): Promise<boolean> => {
   return (data?.length ?? 0) > 0;
 };
 
-/** Host → participant live message, surfaced as a toast in ExamRoom via
- *  its realtime subscription on host_message_at. */
-export const sendHostMessage = async (attemptId: string, text: string): Promise<boolean> => {
+/* ══ Host ↔ participant chat thread ═══════════════════════════════ */
+
+export const getMessagesForAttempt = async (attemptId: string): Promise<ExamMessage[]> => {
   const { data, error } = await supabase
-    .from('exam_attempts')
-    .update({ host_message: text, host_message_at: new Date().toISOString() })
-    .eq('id', attemptId)
-    .select('id');
+    .from('exam_messages').select('*')
+    .eq('attempt_id', attemptId).order('created_at', { ascending: true });
+  if (error || !data) return [];
+  return data.map(messageFromRow);
+};
+
+export const sendMessage = async (
+  examId: string, attemptId: string, sender: MessageSender, body: string,
+): Promise<ExamMessage> => {
+  const { data, error } = await supabase
+    .from('exam_messages')
+    .insert({ exam_id: examId, attempt_id: attemptId, sender, body })
+    .select()
+    .single();
   if (error) throw error;
-  return (data?.length ?? 0) > 0;
+  return messageFromRow(data);
 };
 
 /* ══ Score calculation ═══════════════════════════════════════════ */
