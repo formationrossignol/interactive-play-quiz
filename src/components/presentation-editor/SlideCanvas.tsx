@@ -106,6 +106,7 @@ export function SlideCanvas() {
         {selectable.map((element) => (
           <CanvasElement
             key={element.id}
+            slideId={slide.id}
             element={element}
             elementRef={(node) => {
               if (node) nodesRef.current.set(element.id, node); else nodesRef.current.delete(element.id);

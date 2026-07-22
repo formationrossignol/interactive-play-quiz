@@ -1,11 +1,14 @@
+import { useState } from "react";
 import type { SlideElement } from "../types/presentation";
 import { TextElementView } from "./TextElementView";
+import { TextElementEditing } from "./TextElementEditing";
 import { ImageElementView } from "./ImageElementView";
 import { ShapeElementView } from "./ShapeElementView";
 import { VideoElementView } from "./VideoElementView";
 import { GroupElementView } from "./GroupElementView";
 
 interface CanvasElementProps {
+  slideId: string;
   element: SlideElement;
   elementRef: (node: HTMLDivElement | null) => void;
   onPointerDown?: (e: React.PointerEvent<HTMLDivElement>) => void;
@@ -22,7 +25,8 @@ interface CanvasElementProps {
  *  itself, those writes would silently no-op (`left`/`top` only affect
  *  positioned elements). Never wrap this component in another div to attach
  *  handlers — extend these two props instead. */
-export function CanvasElement({ element, elementRef, onPointerDown }: CanvasElementProps) {
+export function CanvasElement({ slideId, element, elementRef, onPointerDown }: CanvasElementProps) {
+  const [editing, setEditing] = useState(false);
   if (element.type === "line" || element.type === "arrow") return null;
   if (!element.visible) return null;
 
@@ -31,6 +35,7 @@ export function CanvasElement({ element, elementRef, onPointerDown }: CanvasElem
       ref={elementRef}
       data-element-id={element.id}
       onPointerDown={onPointerDown}
+      onDoubleClick={() => { if (element.type === "text") setEditing(true); }}
       style={{
         position: "absolute",
         left: element.x, top: element.y,
@@ -41,7 +46,9 @@ export function CanvasElement({ element, elementRef, onPointerDown }: CanvasElem
         pointerEvents: element.locked ? "none" : "auto",
       }}
     >
-      {element.type === "text" && <TextElementView element={element} />}
+      {element.type === "text" && (editing
+        ? <TextElementEditing slideId={slideId} element={element} onDone={() => setEditing(false)} />
+        : <TextElementView element={element} />)}
       {element.type === "image" && <ImageElementView element={element} />}
       {(element.type === "rect" || element.type === "circle") && <ShapeElementView element={element} />}
       {element.type === "video" && <VideoElementView element={element} />}
