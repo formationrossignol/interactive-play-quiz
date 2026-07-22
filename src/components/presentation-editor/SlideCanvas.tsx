@@ -76,6 +76,8 @@ export function SlideCanvas() {
       if (marquee) marquee.style.display = "none";
     }
 
+    // SlideCanvas stays mounted for the whole editing session; unmounting mid-drag
+    // (before pointerup fires) is not a normal use case for this editor.
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
   }
