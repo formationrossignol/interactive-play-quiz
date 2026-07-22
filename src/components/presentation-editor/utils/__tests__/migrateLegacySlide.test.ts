@@ -12,6 +12,9 @@ describe("isLegacySlideShape", () => {
     expect(isLegacySlideShape({})).toBe(false);
     expect(isLegacySlideShape(null)).toBe(false);
   });
+  it("is false for a mixed shape with both questions and slides", () => {
+    expect(isLegacySlideShape({ questions: [{ title: "A" }], slides: [] })).toBe(false);
+  });
 });
 
 describe("migrateLegacySlideToPresentation", () => {
@@ -51,5 +54,11 @@ describe("migrateLegacySlideToPresentation", () => {
     const pres = migrateLegacySlideToPresentation(legacy);
     const ids = pres.slides.flatMap((s) => [s.id, ...s.elements.map((e) => e.id)]);
     expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it("creates a single blank slide when questions is empty or missing", () => {
+    const pres = migrateLegacySlideToPresentation({ id: "q", title: "T", questions: [] });
+    expect(pres.slides).toHaveLength(1);
+    expect(pres.slides[0].elements).toHaveLength(0);
   });
 });

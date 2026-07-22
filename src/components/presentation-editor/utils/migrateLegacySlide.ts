@@ -26,7 +26,7 @@ function textEl(id: string, x: number, y: number, width: number, height: number,
       type: "doc",
       content: [{
         type: "paragraph",
-        content: text ? [{ type: "text", marks: bold ? [{ type: "bold" }] : undefined, text }] : [],
+        content: text ? [{ type: "text", text, ...(bold ? { marks: [{ type: "bold" }] } : {}) }] : [],
       }],
     },
   };
