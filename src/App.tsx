@@ -44,6 +44,7 @@ const QuizBuilderStart = lazy(() => import("./pages/QuizBuilderStart"));
 const MyQuizzes = lazy(() => import("./pages/MyQuizzes"));
 const MyPolls = lazy(() => import("./pages/MyPolls"));
 const MyFlashcards = lazy(() => import("./pages/MyFlashcards"));
+const MySlides = lazy(() => import("./pages/MySlides"));
 const MyCourses = lazy(() => import("./pages/MyCourses"));
 const CourseBuilder = lazy(() => import("./pages/CourseBuilder"));
 const CourseViewer = lazy(() => import("./pages/CourseViewer"));
@@ -96,6 +97,7 @@ const App = () => (
               <Route path="/my-quizzes" element={<MyQuizzes />} />
               <Route path="/my-polls" element={<MyPolls />} />
               <Route path="/my-flashcards" element={<MyFlashcards />} />
+              <Route path="/my-slides" element={<MySlides />} />
               <Route path="/my-courses" element={<MyCourses />} />
               <Route path="/course-builder" element={<CourseBuilder />} />
               <Route path="/course/:courseId" element={<CourseViewer />} />

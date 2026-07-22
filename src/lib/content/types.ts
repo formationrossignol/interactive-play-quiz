@@ -1,4 +1,4 @@
-export const CONTENT_TYPES = ['quiz','poll','flashcard','exam','course'] as const;
+export const CONTENT_TYPES = ['quiz','poll','flashcard','exam','course','slide'] as const;
 export type ContentType = typeof CONTENT_TYPES[number];
 export const isContentType = (v: string): v is ContentType =>
   (CONTENT_TYPES as readonly string[]).includes(v);

@@ -71,7 +71,7 @@ describe('planMigration (pure)', () => {
     expect(plan.folders).toEqual([{ tempId: 'f1', type: 'quiz', name: 'Mine' }]);
   });
 
-  it('skips slides and soft-deleted quizzes, keeps the user\'s live ones', () => {
+  it('skips soft-deleted quizzes and other users\', keeps the user\'s live ones (including slides)', () => {
     const plan = planMigration(
       {
         folders: [],
@@ -87,7 +87,7 @@ describe('planMigration (pure)', () => {
       },
       USER,
     );
-    expect(plan.content.map((c) => (c.data as { id: string }).id)).toEqual(['q1', 'q5']);
+    expect(plan.content.map((c) => (c.data as { id: string }).id)).toEqual(['q1', 'q2', 'q5']);
     expect(plan.content[0]).toMatchObject({
       type: 'quiz',
       isPublic: true,
@@ -207,8 +207,8 @@ describe('migrateLocalToSupabase (executor)', () => {
 
     const result = await migrateLocalToSupabase(USER);
 
-    // one folder (the user's), and content: q1, q4, e1, c1
-    expect(result).toEqual({ migrated: true, folders: 1, content: 4 });
+    // one folder (the user's), and content: q1, q2 (slide), q4, e1, c1
+    expect(result).toEqual({ migrated: true, folders: 1, content: 5 });
 
     expect(createFolderMock).toHaveBeenCalledTimes(1);
     expect(createFolderMock).toHaveBeenCalledWith(USER, 'quiz', 'Mine', null, 'f1');
@@ -228,6 +228,14 @@ describe('migrateLocalToSupabase (executor)', () => {
       expect.objectContaining({ id: 'q4' }),
       null,
       'q4',
+    );
+    // q2 (slide) is no longer skipped
+    expect(createContentMock).toHaveBeenCalledWith(
+      USER,
+      'slide',
+      expect.objectContaining({ id: 'q2' }),
+      null,
+      'q2',
     );
 
     // flag written, source keys untouched
