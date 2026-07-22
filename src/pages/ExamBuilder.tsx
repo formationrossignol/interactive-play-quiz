@@ -149,6 +149,16 @@ export default function ExamBuilder() {
       try {
         await upsertContentBySource(user.id, 'exam', exam.id, exam as unknown as Record<string, unknown>, false);
       } catch (e) { console.error('[ExamBuilder] content mirror failed', e); }
+      // Also mirror the backing quiz: ExamRoom's participant-side read
+      // (getContentBySource) depends on this row existing, and a quiz saved
+      // before the content-mirroring code shipped (or never re-saved since)
+      // would otherwise have no Supabase row, breaking the join flow.
+      const quiz = quizzes.find((q) => q.id === form.quizId);
+      if (quiz) {
+        try {
+          await upsertContentBySource(user.id, 'quiz', quiz.id, quiz as unknown as Record<string, unknown>, !!quiz.isPublic);
+        } catch (e) { console.error('[ExamBuilder] quiz mirror failed', e); }
+      }
       toast.success(publish ? 'Examen publié !' : 'Brouillon sauvegardé');
       if (publish) setTimeout(() => navigate(`/exam/${exam!.id}/admin`), 600);
     } catch (e) {
