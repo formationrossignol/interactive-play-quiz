@@ -72,8 +72,8 @@ export interface MigrationPlan {
  *
  * Ownership/skip rules:
  * - folders: only the user's own folders.
- * - savedQuizzes: only the user's, not soft-deleted, and not slides (slides
- *   are out of scope).
+ * - savedQuizzes: only the user's, not soft-deleted (quiz/poll/flashcard/slide
+ *   all mirror the same way).
  * - exams: only those the user hosts (owner field is `hostId`); no folder.
  * - courses: only the user's, not soft-deleted; no folder.
  */
@@ -87,7 +87,6 @@ export function planMigration(local: LocalData, userId: string): MigrationPlan {
   for (const q of local.savedQuizzes) {
     if (q.userId !== userId) continue;
     if (q.deletedAt) continue;
-    if (q.type === 'slide') continue;
     content.push({
       type: q.type as ContentType,
       data: q,
