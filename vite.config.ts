@@ -27,5 +27,6 @@ export default defineConfig(() => ({
     // Node's stub (undefined without --localstorage-file). Disable the flag
     // for test worker processes so jsdom's own localStorage wins.
     execArgv: ["--no-experimental-webstorage"],
+    environment: "jsdom",
   },
 }));
