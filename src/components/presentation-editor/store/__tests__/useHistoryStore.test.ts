@@ -14,7 +14,6 @@ describe("commit/undo/redo", () => {
     useDocStore.getState().addSlide();
     expect(useDocStore.getState().presentation!.slides).toHaveLength(2);
 
-    useHistoryStore.getState().commit();
     useHistoryStore.getState().undo();
     expect(useDocStore.getState().presentation!.slides).toHaveLength(1);
   });
@@ -22,7 +21,6 @@ describe("commit/undo/redo", () => {
   it("redo re-applies an undone change", () => {
     useHistoryStore.getState().commit();
     useDocStore.getState().addSlide();
-    useHistoryStore.getState().commit();
 
     useHistoryStore.getState().undo();
     expect(useDocStore.getState().presentation!.slides).toHaveLength(1);
@@ -34,11 +32,10 @@ describe("commit/undo/redo", () => {
   it("a new commit after undo discards the redo branch", () => {
     useHistoryStore.getState().commit();
     useDocStore.getState().addSlide();
-    useHistoryStore.getState().commit();
     useHistoryStore.getState().undo();
 
-    useDocStore.getState().addSlide();
     useHistoryStore.getState().commit();
+    useDocStore.getState().addSlide();
 
     expect(useHistoryStore.getState().canRedo()).toBe(false);
   });

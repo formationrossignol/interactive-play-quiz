@@ -35,9 +35,9 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
 
   undo: () => {
     const { past } = get();
-    if (past.length < 2) return;
+    if (past.length === 0) return;
     const current = snapshot();
-    const previous = past[past.length - 2];
+    const previous = past[past.length - 1];
     set((state) => ({
       past: state.past.slice(0, -1),
       future: current ? [current, ...state.future] : state.future,
