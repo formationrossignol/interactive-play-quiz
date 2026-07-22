@@ -1,6 +1,7 @@
 import { useRef } from "react";
 import { useDocStore } from "./store/useDocStore";
 import { useEditorUIStore } from "./store/useEditorUIStore";
+import { useElementDrag } from "./hooks/useElementDrag";
 import { CanvasElement } from "./elements/CanvasElement";
 import { LineArrowLayer } from "./elements/LineArrowLayer";
 import { SelectionOverlay } from "./SelectionOverlay";
@@ -18,10 +19,13 @@ export function SlideCanvas() {
 
   const marqueeRef = useRef<HTMLDivElement | null>(null);
   const dragState = useRef<{ startX: number; startY: number } | null>(null);
+  const nodesRef = useRef(new Map<string, HTMLElement>());
 
   if (!presentation) return null;
   const slide = presentation.slides.find((s) => s.id === activeSlideId) ?? presentation.slides[0];
   if (!slide) return null;
+
+  const { onPointerDown: onElementDragStart } = useElementDrag(slide.id, nodesRef);
 
   const lines = slide.elements.filter((e): e is LineElement => e.type === "line" || e.type === "arrow");
   const selectable = slide.elements.filter((e) => e.type !== "line" && e.type !== "arrow");
@@ -102,10 +106,14 @@ export function SlideCanvas() {
           <CanvasElement
             key={element.id}
             element={element}
-            elementRef={() => {}}
+            elementRef={(node) => {
+              if (node) nodesRef.current.set(element.id, node); else nodesRef.current.delete(element.id);
+            }}
             onPointerDown={(e) => {
               e.stopPropagation();
-              if (e.shiftKey) toggleSelect(element.id); else select([element.id]);
+              if (e.shiftKey) { toggleSelect(element.id); return; }
+              if (!selectedIds.has(element.id)) select([element.id]);
+              onElementDragStart(e, element.id);
             }}
           />
         ))}
