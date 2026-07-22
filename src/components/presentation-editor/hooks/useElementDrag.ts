@@ -86,12 +86,14 @@ export function useElementDrag(slideId: string, nodesRef: React.MutableRefObject
         dy = snapped.dy;
       }
 
-      useHistoryStore.getState().commit();
-      useDocStore.getState().updateElements(
-        slideId,
-        targets.map((t) => ({ id: t.id, patch: { x: t.startX + dx, y: t.startY + dy } })),
-      );
-      // clear the imperative transform now that the store holds the real position
+      if (dx !== 0 || dy !== 0) {
+        useHistoryStore.getState().commit();
+        useDocStore.getState().updateElements(
+          slideId,
+          targets.map((t) => ({ id: t.id, patch: { x: t.startX + dx, y: t.startY + dy } })),
+        );
+      }
+      // clear the imperative transform now that the store holds the real position (or never changed)
       for (const t of targets) t.node.style.transform = "";
     }
 
