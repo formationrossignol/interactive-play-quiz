@@ -34,7 +34,7 @@ export async function uploadPresentationMedia(
   file: File,
 ): Promise<string> {
   const validation = validateMediaFile(file);
-  if (!validation.ok) throw new MediaValidationError(validation.error);
+  if (validation.ok === false) throw new MediaValidationError(validation.error);
 
   const ext = file.name.split(".").pop() ?? "bin";
   const path = `${userId}/${presentationId}/${elementId}.${ext}`;

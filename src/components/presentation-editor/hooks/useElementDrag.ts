@@ -39,7 +39,7 @@ export function useElementDrag(slideId: string, nodesRef: React.MutableRefObject
     draggingRef.current = targets;
     ui.setDragging(true);
 
-    const others = slide.elements.filter((el): el is BaseElement => !activeIds.includes(el.id));
+    const others = slide.elements.filter((el) => !activeIds.includes(el.id));
     const zoom = ui.zoom;
     const startClientX = e.clientX;
     const startClientY = e.clientY;

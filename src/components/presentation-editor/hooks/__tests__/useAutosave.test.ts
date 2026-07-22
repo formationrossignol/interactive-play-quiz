@@ -13,8 +13,8 @@ import { updateContent, createContent } from "@/lib/content/contentRepo";
 beforeEach(() => {
   vi.clearAllTimers();
   vi.useFakeTimers({ shouldAdvanceTime: true });
-  updateContent.mockClear();
-  createContent.mockClear();
+  vi.mocked(updateContent).mockClear();
+  vi.mocked(createContent).mockClear();
   useDocStore.getState().load(createBlankPresentation("existing-id"));
 });
 afterEach(() => {
