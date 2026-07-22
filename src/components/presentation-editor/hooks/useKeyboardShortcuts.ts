@@ -9,6 +9,7 @@ const NUDGE_LARGE = 10;
 
 export function useKeyboardShortcuts(slideId: string) {
   const clipboardRef = useRef<SlideElement[] | null>(null);
+  const lastNudgeAtRef = useRef(0);
 
   useEffect(() => {
     function isTypingTarget(target: EventTarget | null): boolean {
@@ -81,7 +82,9 @@ export function useKeyboardShortcuts(slideId: string) {
         e.preventDefault();
         const step = e.shiftKey ? NUDGE_LARGE : NUDGE;
         const [dx, dy] = arrowDeltas[e.key];
-        history.commit();
+        const now = Date.now();
+        if (now - lastNudgeAtRef.current > 400) history.commit();
+        lastNudgeAtRef.current = now;
         doc.updateElements(slideId, selected.map((el) => ({ id: el.id, patch: { x: el.x + dx * step, y: el.y + dy * step } })));
         return;
       }
