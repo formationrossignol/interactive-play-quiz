@@ -118,6 +118,18 @@ const LiveQuizPage = () => {
     };
   }, [loadedQuiz]);
 
+  const presentation = useMemo(() => {
+    if (!loadedQuiz || loadedQuiz.type !== "slide") return null;
+    const raw = loadedQuiz as unknown as Record<string, unknown>;
+    return isLegacySlideShape(raw)
+      ? migrateLegacySlideToPresentation(raw as Parameters<typeof migrateLegacySlideToPresentation>[0])
+      : (raw as unknown as Presentation);
+  }, [loadedQuiz]);
+
+  useEffect(() => {
+    if (presentation) useDocStore.getState().load(presentation);
+  }, [presentation]);
+
   if (!gameCode) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
@@ -163,14 +175,8 @@ const LiveQuizPage = () => {
       return <PollSession poll={loadedQuiz} />;
     case "flashcard":
       return <FlashcardSession deck={loadedQuiz} />;
-    case "slide": {
-      const raw = loadedQuiz as unknown as Record<string, unknown>;
-      const pres: Presentation = isLegacySlideShape(raw)
-        ? migrateLegacySlideToPresentation(raw as Parameters<typeof migrateLegacySlideToPresentation>[0])
-        : (raw as unknown as Presentation);
-      useDocStore.getState().load(pres);
+    case "slide":
       return <PresentationMode onExit={() => {}} />;
-    }
     default:
       if (!quizSession) {
         return (

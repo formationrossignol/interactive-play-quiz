@@ -34,7 +34,6 @@ export const QuizBuilderStart = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
-  if (searchParams.get("type") === "slide") return <Navigate to="/presentation-editor" replace />;
   const quizType = (searchParams.get("type") || "quiz") as "quiz" | "poll" | "flashcard" | "slide";
 
   const user = getCurrentUser();
@@ -42,6 +41,8 @@ export const QuizBuilderStart = () => {
   const cap = CONTENT_CAPS[plan][quizType as ContentKind];
   const used = user ? getUserQuizzes(user.id).filter((q) => q.type === quizType).length : 0;
   const atCap = cap !== null && used >= cap;
+
+  if (quizType === "slide" && !atCap) return <Navigate to="/presentation-editor" replace />;
 
   const [showAll, setShowAll] = useState(false);
   const isPoll = quizType === "poll";
