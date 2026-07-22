@@ -78,7 +78,7 @@ export const useDocStore = create<DocState>((set, get) => ({
   },
 
   deleteSlide: (slideId) => set((state) => {
-    if (!state.presentation) return state;
+    if (!state.presentation || state.presentation.slides.length <= 1) return state;
     const slides = reindex(state.presentation.slides.filter((s) => s.id !== slideId));
     return { presentation: { ...state.presentation, slides } };
   }),
@@ -87,7 +87,7 @@ export const useDocStore = create<DocState>((set, get) => ({
     if (!state.presentation) return state;
     const slides = state.presentation.slides.slice();
     const from = slides.findIndex((s) => s.id === slideId);
-    if (from === -1) return state;
+    if (from === -1 || toIndex < 0 || toIndex >= slides.length) return state;
     const [moved] = slides.splice(from, 1);
     slides.splice(toIndex, 0, moved);
     return { presentation: { ...state.presentation, slides: reindex(slides) } };
@@ -169,7 +169,7 @@ export const useDocStore = create<DocState>((set, get) => ({
           const group: SlideElement = {
             id: groupId, type: "group", x: minX, y: minY, width: maxX - minX, height: maxY - minY,
             rotation: 0, zIndex: Math.max(...children.map((e) => e.zIndex)) + 1, opacity: 1, locked: false, visible: true,
-            childIds: elementIds,
+            childIds: children.map((c) => c.id),
           };
           return {
             ...s,

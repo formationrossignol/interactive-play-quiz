@@ -41,6 +41,13 @@ describe("slide management", () => {
     expect(slides.map((s) => s.order)).toEqual([0, 1]);
   });
 
+  it("deleteSlide refuses to remove the last remaining slide", () => {
+    const store = useDocStore.getState();
+    const onlySlideId = store.presentation!.slides[0].id;
+    store.deleteSlide(onlySlideId);
+    expect(useDocStore.getState().presentation!.slides).toHaveLength(1);
+  });
+
   it("reorderSlides moves a slide to a new index and reindexes order", () => {
     const store = useDocStore.getState();
     store.addSlide();
@@ -112,6 +119,16 @@ describe("element management", () => {
     expect(group).toMatchObject({ type: "group", childIds: ["r1", "r2"] });
     expect(els.find((e) => e.id === "r1")!.groupId).toBe(groupId);
     expect(els.find((e) => e.id === "r2")!.groupId).toBe(groupId);
+  });
+
+  it("groupElements ignores non-existent ids and only records real children", () => {
+    const store = useDocStore.getState();
+    const slideId = store.presentation!.slides[0].id;
+    store.addElement(slideId, rect("r1"));
+    const groupId = store.groupElements(slideId, ["r1", "does-not-exist"]);
+    const els = useDocStore.getState().presentation!.slides[0].elements;
+    const group = els.find((e) => e.id === groupId);
+    expect(group).toMatchObject({ childIds: ["r1"] });
   });
 
   it("ungroupElements removes the group and clears children's groupId", () => {
