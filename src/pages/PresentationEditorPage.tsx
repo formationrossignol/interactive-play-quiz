@@ -8,7 +8,7 @@ const PresentationEditorPage = () => {
   const presentParam = searchParams.get("present") === "1";
   const user = getCurrentUser();
   if (!user) return null;
-  return <PresentationEditor contentId={contentId} userId={user.id} initialPresenting={presentParam} />;
+  return <PresentationEditor key={contentId ?? "new"} contentId={contentId} userId={user.id} initialPresenting={presentParam} />;
 };
 
 export default PresentationEditorPage;

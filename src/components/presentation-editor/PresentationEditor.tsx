@@ -30,7 +30,7 @@ export function PresentationEditor({ contentId, userId, initialPresenting = fals
   const zoom = useEditorUIStore((s) => s.zoom);
 
   const { status } = useAutosave(contentId, userId);
-  useKeyboardShortcuts(activeSlideId ?? "");
+  useKeyboardShortcuts(activeSlideId ?? "", presenting);
 
   useEffect(() => {
     let cancelled = false;

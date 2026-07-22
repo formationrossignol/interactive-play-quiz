@@ -7,7 +7,7 @@ import type { SlideElement } from "../types/presentation";
 const NUDGE = 1;
 const NUDGE_LARGE = 10;
 
-export function useKeyboardShortcuts(slideId: string) {
+export function useKeyboardShortcuts(slideId: string, disabled = false) {
   const clipboardRef = useRef<SlideElement[] | null>(null);
   const lastNudgeAtRef = useRef(0);
 
@@ -17,6 +17,7 @@ export function useKeyboardShortcuts(slideId: string) {
     }
 
     function onKeyDown(e: KeyboardEvent) {
+      if (disabled) return;
       if (isTypingTarget(e.target)) return;
       const doc = useDocStore.getState();
       const ui = useEditorUIStore.getState();
@@ -92,5 +93,5 @@ export function useKeyboardShortcuts(slideId: string) {
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [slideId]);
+  }, [slideId, disabled]);
 }
