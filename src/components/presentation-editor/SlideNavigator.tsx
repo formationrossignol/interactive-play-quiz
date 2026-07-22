@@ -1,5 +1,5 @@
-import { DndContext, closestCenter, type DragEndEvent } from "@dnd-kit/core";
-import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
+import { DndContext, closestCenter, useSensor, useSensors, PointerSensor, KeyboardSensor, type DragEndEvent } from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy, arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { useDocStore } from "./store/useDocStore";
 import { useEditorUIStore } from "./store/useEditorUIStore";
 import { useHistoryStore } from "./store/useHistoryStore";
@@ -25,6 +25,11 @@ export function SlideNavigator() {
     void reordered; // ordering is recomputed by reorderSlides itself; kept for clarity
   }
 
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: 12, overflowY: "auto", width: 184 }}>
       <button
@@ -37,7 +42,7 @@ export function SlideNavigator() {
       >
         + Diapositive
       </button>
-      <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={ids} strategy={verticalListSortingStrategy}>
           {slides.map((slide, i) => (
             <div key={slide.id} style={{ display: "flex", flexDirection: "column", gap: 4 }}>

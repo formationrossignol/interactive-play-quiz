@@ -42,9 +42,21 @@ export function SlideThumbnail({ slide, index, presentationWidth, presentationHe
     >
       <span style={{ position: "absolute", left: 4, top: 2, fontSize: 10, fontWeight: 800, color: "var(--ap-muted)" }}>{index + 1}</span>
       <div style={{ position: "absolute", inset: 0, transform: `scale(${scale})`, transformOrigin: "top left", width: presentationWidth, height: presentationHeight, pointerEvents: "none" }}>
-        {slide.elements.filter((e) => e.visible).map((e) => (
-          <div key={e.id} style={{ position: "absolute", left: e.x, top: e.y, width: e.width, height: e.height, background: e.type === "rect" || e.type === "circle" ? (e as { fill?: string }).fill : undefined }} />
-        ))}
+        {slide.elements.filter((e) => e.visible).map((e) => {
+          if (e.type === "line" || e.type === "arrow" || e.type === "group") return null;
+          const style: React.CSSProperties = { position: "absolute", left: e.x, top: e.y, width: e.width, height: e.height };
+          if (e.type === "rect" || e.type === "circle") {
+            style.background = (e as { fill?: string }).fill;
+          } else if (e.type === "text") {
+            style.background = "var(--ap-line)";
+          } else if (e.type === "video") {
+            style.background = "var(--ap-ink)";
+          }
+          if (e.type === "image") {
+            return <img key={e.id} src={(e as { src: string }).src} alt="" style={{ ...style, objectFit: "cover" }} />;
+          }
+          return <div key={e.id} style={style} />;
+        })}
       </div>
       {slide.hidden && <span style={{ position: "absolute", right: 4, top: 2, fontSize: 10 }}>🚫</span>}
     </div>
