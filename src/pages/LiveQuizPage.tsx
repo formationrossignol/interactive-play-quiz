@@ -6,7 +6,10 @@ import { ExitQuizDialog } from "@/components/ExitQuizDialog";
 import { PlayerView } from "@/components/PlayerView";
 import { PollSession } from "@/components/PollSession";
 import { FlashcardSession } from "@/components/FlashcardSession";
-import { SlidePresentationSession } from "@/components/SlidePresentationSession";
+import { PresentationMode } from "@/components/presentation-editor/PresentationMode";
+import { useDocStore } from "@/components/presentation-editor/store/useDocStore";
+import { isLegacySlideShape, migrateLegacySlideToPresentation } from "@/components/presentation-editor/utils/migrateLegacySlide";
+import type { Presentation } from "@/components/presentation-editor/types/presentation";
 import { getQuizById, type SavedQuiz } from "@/lib/quizStorage";
 
 const fallbackKeysForType = (id: string) => [
@@ -114,6 +117,18 @@ const LiveQuizPage = () => {
     };
   }, [loadedQuiz]);
 
+  const presentation = useMemo(() => {
+    if (!loadedQuiz || loadedQuiz.type !== "slide") return null;
+    const raw = loadedQuiz as unknown as Record<string, unknown>;
+    return isLegacySlideShape(raw)
+      ? migrateLegacySlideToPresentation(raw as Parameters<typeof migrateLegacySlideToPresentation>[0])
+      : (raw as unknown as Presentation);
+  }, [loadedQuiz]);
+
+  useEffect(() => {
+    if (presentation) useDocStore.getState().load(presentation);
+  }, [presentation]);
+
   if (!gameCode) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
@@ -160,7 +175,7 @@ const LiveQuizPage = () => {
     case "flashcard":
       return <FlashcardSession deck={loadedQuiz} />;
     case "slide":
-      return <SlidePresentationSession presentation={loadedQuiz} />;
+      return <PresentationMode onExit={() => {}} />;
     default:
       if (!quizSession) {
         return (

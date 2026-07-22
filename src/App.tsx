@@ -61,6 +61,7 @@ const QuizResults = lazy(() => import("./pages/QuizResults"));
 const PreviewPage = lazy(() => import("./pages/PreviewPage"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const Admin = lazy(() => import("./pages/admin/Admin"));
+const PresentationEditorPage = lazy(() => import("./pages/PresentationEditorPage"));
 
 const queryClient = new QueryClient();
 
@@ -129,6 +130,7 @@ const App = () => (
               <Route path="/take/:joinCode" element={<ExamRoom />} />
               <Route path="/exam/:attemptId/results" element={<ExamResults />} />
               <Route path="/exam/:examId/admin" element={<ExamAdmin />} />
+              <Route path="/presentation-editor" element={<PresentationEditorPage />} />
               <Route path="/admin" element={<Admin />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

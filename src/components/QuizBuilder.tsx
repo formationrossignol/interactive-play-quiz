@@ -28,7 +28,6 @@ import type { ContentType } from "@/lib/content/types";
 import { getPollTemplate } from "@/lib/pollTemplates";
 import { getQuizTemplate } from "@/lib/quizTemplates";
 import { getFlashcardTemplate } from "@/lib/flashcardTemplates";
-import { getSlideTemplate } from "@/lib/slideTemplates";
 import { DEFAULT_THEME_ID, THEMES, type Theme } from "@/lib/themes";
 import { AMBIANCE_OPTIONS, DEFAULT_AMBIANCE } from "@/lib/audioManifest";
 import { hexToRgba } from "@/lib/color";
@@ -41,8 +40,6 @@ import { PollTemplateSelectorEnhanced } from "./PollTemplateSelectorEnhanced";
 import { QuizTemplateSelectorEnhanced } from "./QuizTemplateSelectorEnhanced";
 import { FlashcardEditor } from "./FlashcardEditor";
 import { FlashcardPreview } from "./FlashcardPreview";
-import { SlideEditor } from "./SlideEditor";
-import { SlidePreview } from "./SlidePreview";
 import { cn } from "@/lib/utils";
 import { createDefaultQuizQuestion } from "@/lib/questionDefaults";
 import { getQuestionBankForUser, type QuestionBankItem, type QuestionDifficulty } from "@/lib/questionBank";
@@ -473,7 +470,6 @@ export const QuizBuilder = () => {
 
   const isPoll = quizType === "poll";
   const isFlashcard = quizType === "flashcard";
-  const isSlide = quizType === "slide";
 
   // ── State ────────────────────────────────────────────────────────────────
   const [title, setTitle] = useState("");
@@ -553,14 +549,7 @@ export const QuizBuilder = () => {
   // ── Load template ────────────────────────────────────────────────────────
   useEffect(() => {
     if (!templateId || quizId) return;
-    if (isSlide) {
-      const tpl = getSlideTemplate(templateId);
-      if (!tpl) return;
-      setTitle(tpl.name); setDescription(tpl.description); setCategory("Présentation");
-      const slides = tpl.slides.map((s, i) => ({ id: `${tpl.id}-${Date.now()}-${i}`, ...s }));
-      setQuestions(slides); setSelectedIdx(slides.length > 0 ? 0 : null);
-      setActiveTemplateId(tpl.id); toast.success("Modèle de présentation chargé");
-    } else if (isPoll) {
+    if (isPoll) {
       const tpl = getPollTemplate(templateId);
       if (tpl) applyTemplate(tpl);
     } else if (isFlashcard) {
@@ -574,7 +563,7 @@ export const QuizBuilder = () => {
       const tpl = getQuizTemplate(templateId);
       if (tpl) applyTemplate(tpl);
     }
-  }, [templateId, isPoll, isFlashcard, isSlide, quizId]);
+  }, [templateId, isPoll, isFlashcard, quizId]);
 
   // ── Question bank ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -592,7 +581,6 @@ export const QuizBuilder = () => {
 
   // ── Helpers ──────────────────────────────────────────────────────────────
   function getDefaultQuestion(type?: QuizQuestionType | PollQuestionType) {
-    if (isSlide) return { type: "slide", title: "", content: "", image: "" };
     if (isFlashcard) return { type: "flashcard", recto: "", verso: "", rectoImage: "", versoImage: "" };
     if (isPoll) {
       const pt = type || "single-choice";
@@ -704,7 +692,7 @@ export const QuizBuilder = () => {
       }
       toast.success(quizId ? (isPoll ? "Sondage mis à jour" : "Quiz mis à jour") : (isPoll ? t("pollSaved") : t("quizSaved")));
       setShouldBlockNavigation(false);
-      navigate(isFlashcard ? "/my-flashcards" : isPoll ? "/my-polls" : isSlide ? "/my-slides" : "/my-quizzes");
+      navigate(isFlashcard ? "/my-flashcards" : isPoll ? "/my-polls" : "/my-quizzes");
     } catch (e) {
       if (e instanceof PlanLimitError) {
         toast.error(e.message, { action: { label: "Passer Pro", onClick: () => navigate("/pricing") } });
@@ -743,11 +731,11 @@ export const QuizBuilder = () => {
       return (
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 16 }}>
           <p style={{ color: "var(--ap-muted)", fontSize: 15, fontWeight: 700, textAlign: "center" }}>
-            {isFlashcard ? "Sélectionnez une carte ou créez-en une" : isSlide ? "Sélectionnez une diapositive" : "Sélectionnez une question ou créez-en une"}
+            {isFlashcard ? "Sélectionnez une carte ou créez-en une" : "Sélectionnez une question ou créez-en une"}
           </p>
           <button className="ap-btn ap-btn--pill ap-btn--sm" onClick={() => handleAddQuestion()}>
             <Plus style={{ width: 14, height: 14 }} />
-            {isFlashcard ? "Nouvelle carte" : isSlide ? "Nouvelle diapositive" : "Nouvelle question"}
+            {isFlashcard ? "Nouvelle carte" : "Nouvelle question"}
           </button>
         </div>
       );
@@ -756,7 +744,6 @@ export const QuizBuilder = () => {
     const q = questions[selectedIdx];
     const upd = (u: Partial<EditableQuestion>) => updateQuestion(selectedIdx, u);
 
-    if (isSlide) return <div style={{ maxWidth: 660, margin: "0 auto" }}><SlideEditor slide={q as unknown as React.ComponentProps<typeof SlideEditor>["slide"]} onChange={upd as unknown as React.ComponentProps<typeof SlideEditor>["onChange"]} /></div>;
     if (isFlashcard) return <div style={{ maxWidth: 660, margin: "0 auto" }}><FlashcardEditor flashcard={q as unknown as React.ComponentProps<typeof FlashcardEditor>["flashcard"]} onChange={upd as unknown as React.ComponentProps<typeof FlashcardEditor>["onChange"]} /></div>;
 
     const meta = QTYPE_META[q.type] || { label: q.type, dot: "var(--ap-muted)" };
@@ -1074,15 +1061,6 @@ export const QuizBuilder = () => {
       );
     }
 
-    if (isSlide && selectedQ) {
-      return (
-        <>
-          <div style={labelStyle}><span style={{ ...liveDotStyle, background: "var(--ap-pres)" }} />Vue slide (miroir)<span style={{ flex: 1, height: 2, background: "var(--ap-line-2)", opacity: 0.5, borderRadius: 2 }} /></div>
-          <SlidePreview slide={selectedQ as unknown as React.ComponentProps<typeof SlidePreview>["slide"]} />
-        </>
-      );
-    }
-
     return (
       <>
         <div style={labelStyle}>
@@ -1105,8 +1083,8 @@ export const QuizBuilder = () => {
     );
   };
 
-  const backPath = isFlashcard ? "/my-flashcards" : isSlide ? "/my-slides" : isPoll ? "/my-polls" : "/my-quizzes";
-  const backLabel = isFlashcard ? "Mes Flashcards" : isSlide ? "Mes Slides" : isPoll ? "Mes Sondages" : "Mes Quiz";
+  const backPath = isFlashcard ? "/my-flashcards" : isPoll ? "/my-polls" : "/my-quizzes";
+  const backLabel = isFlashcard ? "Mes Flashcards" : isPoll ? "Mes Sondages" : "Mes Quiz";
   const difficultyTranslationKeyMap: Record<string, string> = { easy: "difficultyEasy", medium: "difficultyMedium", hard: "difficultyHard" };
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -1144,7 +1122,7 @@ export const QuizBuilder = () => {
           <input
             value={title}
             onChange={e => setTitle(e.target.value)}
-            placeholder={isPoll ? "Mon Sondage" : isFlashcard ? "Mes Flashcards" : isSlide ? "Ma Présentation" : "Mon Quiz"}
+            placeholder={isPoll ? "Mon Sondage" : isFlashcard ? "Mes Flashcards" : "Mon Quiz"}
             style={{
               fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 15.5, color: "var(--ap-ink)",
               border: "2px solid transparent", borderRadius: "var(--ap-r-sm)", background: "transparent",
@@ -1203,7 +1181,7 @@ export const QuizBuilder = () => {
         <aside style={{ borderRight: "var(--ap-border-w) solid var(--ap-line)", background: "var(--ap-card)", display: "flex", flexDirection: "column", minHeight: 0 }}>
           <div style={{ padding: "16px 16px 10px", display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
             <h2 style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".09em", textTransform: "uppercase", color: "var(--ap-muted)", margin: 0 }}>
-              {isFlashcard ? "Cartes" : isSlide ? "Diapositives" : "Questions"}
+              {isFlashcard ? "Cartes" : "Questions"}
             </h2>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <span style={{ fontFamily: "var(--ap-font-mono)", fontSize: 12, fontWeight: 700, color: "var(--ap-muted)" }}>
@@ -1275,7 +1253,7 @@ export const QuizBuilder = () => {
             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "var(--ap-brand-deep)"; (e.currentTarget as HTMLElement).style.borderColor = "var(--ap-brand)"; (e.currentTarget as HTMLElement).style.background = "var(--ap-brand-soft)"; }}
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--ap-muted)"; (e.currentTarget as HTMLElement).style.borderColor = "var(--ap-line-2)"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
           >
-            + {isFlashcard ? "Ajouter une carte" : isSlide ? "Ajouter une diapositive" : "Ajouter une question"}
+            + {isFlashcard ? "Ajouter une carte" : "Ajouter une question"}
           </button>
         </aside>
 
@@ -1389,7 +1367,7 @@ export const QuizBuilder = () => {
                 <div className="rounded-2xl border border-border/60 bg-muted/30 p-4"><ThemePreviewPanel theme={activeTheme} /></div>
               </div>
             </div>
-            {!isFlashcard && !isSlide && (
+            {!isFlashcard && (
               <div>
                 <Label>Ambiance musicale</Label>
                 <div className="mt-3">

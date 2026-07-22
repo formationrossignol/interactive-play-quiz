@@ -26,3 +26,5 @@ bun.lockb
 .worktrees/
 .vercel
 .claude 2/
+
+.superpowers/
