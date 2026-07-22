@@ -79,4 +79,17 @@ describe("useAutosave", () => {
     await vi.waitFor(() => expect(result.current.status).toBe("error"));
     unmount();
   });
+
+  it("syncs the document's own id to the real row id after the first save", async () => {
+    const { result, unmount } = renderHook(() => useAutosave(null, "user-1"));
+    act(() => {
+      useDocStore.getState().addSlide();
+    });
+    act(() => {
+      vi.advanceTimersByTime(1500);
+    });
+    await vi.waitFor(() => expect(createContent).toHaveBeenCalledTimes(1));
+    await vi.waitFor(() => expect(useDocStore.getState().presentation!.id).toBe("new-row-id"));
+    unmount();
+  });
 });

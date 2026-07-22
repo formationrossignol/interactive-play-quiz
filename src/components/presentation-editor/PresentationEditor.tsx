@@ -40,15 +40,23 @@ export function PresentationEditor({ contentId, userId, initialPresenting = fals
         if (!cancelled) { load(blank); setActiveSlideId(blank.slides[0].id); setLoading(false); }
         return;
       }
-      const row = await getContent(contentId);
-      if (cancelled) return;
-      const raw = row?.data ?? {};
-      const pres: Presentation = isLegacySlideShape(raw)
-        ? migrateLegacySlideToPresentation(raw as Parameters<typeof migrateLegacySlideToPresentation>[0])
-        : (raw as unknown as Presentation);
-      load(pres.slides?.length ? pres : createBlankPresentation(contentId));
-      setActiveSlideId(pres.slides?.[0]?.id ?? null);
-      setLoading(false);
+      try {
+        const row = await getContent(contentId);
+        if (cancelled) return;
+        const raw = row?.data ?? {};
+        const pres: Presentation = isLegacySlideShape(raw)
+          ? migrateLegacySlideToPresentation(raw as Parameters<typeof migrateLegacySlideToPresentation>[0])
+          : (raw as unknown as Presentation);
+        load(pres.slides?.length ? pres : createBlankPresentation(contentId));
+        setActiveSlideId(pres.slides?.[0]?.id ?? null);
+      } catch (err) {
+        if (cancelled) return;
+        toast.error("Impossible de charger cette présentation.");
+        load(createBlankPresentation(contentId));
+        setActiveSlideId(null);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     }
     init();
     return () => { cancelled = true; };

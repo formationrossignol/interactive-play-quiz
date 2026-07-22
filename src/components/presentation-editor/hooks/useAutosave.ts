@@ -43,6 +43,7 @@ export function useAutosave(initialContentId: string | null, userId: string) {
         } else {
           const row = await createContent(userId, "slide", presentation as unknown as Record<string, unknown>);
           setContentId(row.id);
+          useDocStore.getState().load({ ...presentation, id: row.id });
         }
         setStatus("saved");
       } catch {
