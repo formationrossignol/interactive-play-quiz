@@ -66,4 +66,17 @@ describe("useAutosave", () => {
     expect(result.current.contentId).toBe("new-row-id");
     unmount();
   });
+
+  it("sets status to error when the save rejects", async () => {
+    (updateContent as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error("network error"));
+    const { result, unmount } = renderHook(() => useAutosave("row-1", "user-1"));
+    act(() => {
+      useDocStore.getState().addSlide();
+    });
+    act(() => {
+      vi.advanceTimersByTime(1500);
+    });
+    await vi.waitFor(() => expect(result.current.status).toBe("error"));
+    unmount();
+  });
 });
