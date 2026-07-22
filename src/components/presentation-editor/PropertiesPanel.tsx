@@ -35,7 +35,7 @@ export function PropertiesPanel({ slideId }: { slideId: string }) {
 
   return (
     <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 12, width: 240 }}>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+      <div key={el.id} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
         <NumberField label="X" value={el.x} onCommit={(x) => commit({ x })} />
         <NumberField label="Y" value={el.y} onCommit={(y) => commit({ y })} />
         <NumberField label="Largeur" value={el.width} onCommit={(width) => commit({ width })} />
