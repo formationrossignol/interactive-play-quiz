@@ -102,15 +102,23 @@ export default function ExamAdmin() {
 
   const handleRemove = async (att: Attempt) => {
     if (!window.confirm(`Retirer ${att.participantName} ? Sa tentative sera exclue du suivi en direct et des statistiques.`)) return;
-    const ok = await cancelAttempt(att.id);
-    if (ok) { toast.success('Participant retiré'); void load(); } else { toast.error('Échec du retrait'); }
+    try {
+      const ok = await cancelAttempt(att.id);
+      if (ok) { toast.success('Participant retiré'); void load(); } else { toast.error('Échec du retrait (permissions ?)'); }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Échec du retrait');
+    }
   };
 
   const handleSendMessage = async (attemptId: string) => {
     const text = messageText.trim();
     if (!text) return;
-    const ok = await sendHostMessage(attemptId, text);
-    if (ok) { toast.success('Message envoyé'); setMessagingId(null); setMessageText(''); } else { toast.error("Échec de l'envoi"); }
+    try {
+      const ok = await sendHostMessage(attemptId, text);
+      if (ok) { toast.success('Message envoyé'); setMessagingId(null); setMessageText(''); } else { toast.error("Échec de l'envoi (permissions ?)"); }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Échec de l'envoi");
+    }
   };
 
   if (error) return (
