@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   getExamById, getAttemptsForExam, computeExamStats, computeExamStatus,
-  updateExam, exportCSV, type Exam, type Attempt, type ExamStats,
+  updateExam, exportCSV, cancelAttempt, sendHostMessage, type Exam, type Attempt, type ExamStats,
 } from '@/lib/examStorage';
 import { getCurrentUser } from '@/lib/auth';
 import { getContentBySource } from '@/lib/content/contentRepo';
@@ -29,6 +29,14 @@ function fmt(secs: number): string {
   return `${m}:${s}`;
 }
 
+/** Live countdown for an in-progress attempt, derived from startedAt + the
+ *  exam's duration — null when the exam has no time limit. */
+function remainingFor(att: Attempt, exam: Exam, now: number): number | null {
+  if (!exam.durationMinutes) return null;
+  const deadline = new Date(att.startedAt).getTime() + exam.durationMinutes * 60000;
+  return Math.max(0, Math.floor((deadline - now) / 1000));
+}
+
 export default function ExamAdmin() {
   const { examId } = useParams<{ examId: string }>();
   const navigate = useNavigate();
@@ -40,6 +48,9 @@ export default function ExamAdmin() {
   const [stats, setStats] = useState<ExamStats>({ totalAttempts: 0, completedAttempts: 0, passRate: null, avgScore: null, avgTimeMinutes: null });
   const [expanded, setExpanded] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [now, setNow] = useState(() => Date.now());
+  const [messagingId, setMessagingId] = useState<string | null>(null);
+  const [messageText, setMessageText] = useState('');
 
   const load = useCallback(async () => {
     if (!examId) return;
@@ -63,6 +74,12 @@ export default function ExamAdmin() {
 
   useEffect(() => { void load(); }, [load]);
 
+  // Live per-participant remaining-time countdown (client-derived, no extra reads).
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
+
   // Live results: subscribe to attempt changes for this exam instead of polling.
   useEffect(() => {
     if (!examId) return;
@@ -81,6 +98,19 @@ export default function ExamAdmin() {
     if (!exam) return;
     const updated = await updateExam(exam.id, { status: newStatus });
     if (updated) { setExam(updated); toast.success('Statut mis à jour'); }
+  };
+
+  const handleRemove = async (att: Attempt) => {
+    if (!window.confirm(`Retirer ${att.participantName} ? Sa tentative sera exclue du suivi en direct et des statistiques.`)) return;
+    const ok = await cancelAttempt(att.id);
+    if (ok) { toast.success('Participant retiré'); void load(); } else { toast.error('Échec du retrait'); }
+  };
+
+  const handleSendMessage = async (attemptId: string) => {
+    const text = messageText.trim();
+    if (!text) return;
+    const ok = await sendHostMessage(attemptId, text);
+    if (ok) { toast.success('Message envoyé'); setMessagingId(null); setMessageText(''); } else { toast.error("Échec de l'envoi"); }
   };
 
   if (error) return (
@@ -104,6 +134,8 @@ export default function ExamAdmin() {
   const liveStatus = computeExamStatus(exam);
   const badge = STATUS_LABEL[liveStatus];
   const completed = attempts.filter((a) => a.status === 'submitted' || a.status === 'auto-submitted');
+  const inProgress = attempts.filter((a) => a.status === 'in-progress');
+  const finished = attempts.filter((a) => a.status !== 'in-progress');
 
   return (
     <div style={{ minHeight: '100vh', paddingBottom: 80 }}>
@@ -226,7 +258,33 @@ export default function ExamAdmin() {
           {quiz && <span>❓ {quiz.questions.length} questions</span>}
         </div>
 
-        {/* Attempts list */}
+        {/* In-progress participants — kept visually separate from submissions */}
+        {inProgress.length > 0 && (
+          <>
+            <h2 style={{ fontFamily: 'var(--ap-font-display)', fontWeight: 600, fontSize: 18, marginBottom: 12 }}>
+              En cours ({inProgress.length})
+            </h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 24 }}>
+              {inProgress.map((att) => (
+                <AttemptRow
+                  key={att.id}
+                  att={att} exam={exam} quiz={quiz} now={now}
+                  isExpanded={expanded === att.id}
+                  onToggleExpand={() => setExpanded(expanded === att.id ? null : att.id)}
+                  onRemove={() => handleRemove(att)}
+                  isMessaging={messagingId === att.id}
+                  messageText={messageText}
+                  onMessageTextChange={setMessageText}
+                  onOpenMessage={() => { setMessagingId(att.id); setMessageText(''); }}
+                  onCloseMessage={() => setMessagingId(null)}
+                  onSendMessage={() => handleSendMessage(att.id)}
+                />
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* Submissions */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
           <h2 style={{ fontFamily: 'var(--ap-font-display)', fontWeight: 600, fontSize: 18 }}>
             Résultats ({completed.length} soumis{completed.length > 1 ? 's' : ''})
@@ -249,65 +307,148 @@ export default function ExamAdmin() {
           }}>
             Aucune tentative pour l'instant. Partagez le code <strong style={{ color: 'var(--ap-ink)', fontFamily: 'var(--ap-font-mono)' }}>{exam.joinCode}</strong> aux participants.
           </div>
+        ) : finished.length === 0 ? (
+          <div style={{
+            background: 'var(--ap-card)', border: 'var(--ap-border-w) solid var(--ap-line)',
+            borderRadius: 'var(--ap-r-lg)', padding: '36px 24px', textAlign: 'center',
+            color: 'var(--ap-muted)', fontWeight: 700, fontSize: 14,
+          }}>
+            Personne n'a encore soumis.
+          </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {attempts.map((att) => {
-              const ab = STATUS_LABEL[att.status];
-              const isExp = expanded === att.id;
-
-              return (
-                <div key={att.id} className="ea-attempt">
-                  <div
-                    className="ea-attempt-header"
-                    onClick={() => setExpanded(isExp ? null : att.id)}
-                    style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', cursor: 'pointer', transition: 'background .15s', background: isExp ? 'var(--ap-paper)' : 'transparent' }}
-                  >
-                    {/* Status dot */}
-                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: ab.color, flexShrink: 0 }} />
-
-                    {/* Name */}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontWeight: 800, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {att.participantName}
-                      </div>
-                      {att.participantEmail && (
-                        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--ap-muted)' }}>{att.participantEmail}</div>
-                      )}
-                    </div>
-
-                    {/* Score */}
-                    {att.percentage !== null && (
-                      <div style={{
-                        fontFamily: 'var(--ap-font-display)', fontWeight: 800, fontSize: 18,
-                        color: att.passed ? '#15c08a' : '#ff5a4d', flexShrink: 0,
-                      }}>
-                        {att.percentage}%
-                      </div>
-                    )}
-
-                    {/* Time */}
-                    <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ap-muted)', flexShrink: 0 }}>
-                      {fmt(att.timeUsedSeconds)}
-                    </div>
-
-                    {/* Status badge */}
-                    <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.05em', padding: '3px 8px', borderRadius: 999, color: ab.color, background: ab.bg, flexShrink: 0 }}>
-                      {ab.label}
-                    </span>
-
-                    <span style={{ color: 'var(--ap-muted)', fontSize: 12, transform: isExp ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}>▼</span>
-                  </div>
-
-                  {/* Expanded details */}
-                  {isExp && (
-                    <AttemptDetail att={att} exam={exam} quiz={quiz} />
-                  )}
-                </div>
-              );
-            })}
+            {finished.map((att) => (
+              <AttemptRow
+                key={att.id}
+                att={att} exam={exam} quiz={quiz} now={now}
+                isExpanded={expanded === att.id}
+                onToggleExpand={() => setExpanded(expanded === att.id ? null : att.id)}
+                onRemove={() => handleRemove(att)}
+                isMessaging={false}
+                messageText={messageText}
+                onMessageTextChange={setMessageText}
+                onOpenMessage={() => {}}
+                onCloseMessage={() => {}}
+                onSendMessage={() => {}}
+              />
+            ))}
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function AttemptRow({
+  att, exam, quiz, now, isExpanded, onToggleExpand, onRemove,
+  isMessaging, messageText, onMessageTextChange, onOpenMessage, onCloseMessage, onSendMessage,
+}: {
+  att: Attempt; exam: Exam; quiz: SavedQuiz | null; now: number;
+  isExpanded: boolean; onToggleExpand: () => void; onRemove: () => void;
+  isMessaging: boolean; messageText: string; onMessageTextChange: (v: string) => void;
+  onOpenMessage: () => void; onCloseMessage: () => void; onSendMessage: () => void;
+}) {
+  const ab = STATUS_LABEL[att.status];
+  const isLive = att.status === 'in-progress';
+  const remaining = isLive ? remainingFor(att, exam, now) : null;
+
+  return (
+    <div className="ea-attempt">
+      <div
+        className="ea-attempt-header"
+        onClick={onToggleExpand}
+        style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', cursor: 'pointer', transition: 'background .15s', background: isExpanded ? 'var(--ap-paper)' : 'transparent' }}
+      >
+        {/* Status dot */}
+        <div style={{ width: 8, height: 8, borderRadius: '50%', background: ab.color, flexShrink: 0 }} />
+
+        {/* Name */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontWeight: 800, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {att.participantName}
+          </div>
+          {att.participantEmail && (
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--ap-muted)' }}>{att.participantEmail}</div>
+          )}
+        </div>
+
+        {/* Score */}
+        {att.percentage !== null && (
+          <div style={{
+            fontFamily: 'var(--ap-font-display)', fontWeight: 800, fontSize: 18,
+            color: att.passed ? '#15c08a' : '#ff5a4d', flexShrink: 0,
+          }}>
+            {att.percentage}%
+          </div>
+        )}
+
+        {/* Remaining time (live attempts only, timed exams only) */}
+        {isLive && remaining !== null && (
+          <div style={{
+            fontFamily: 'var(--ap-font-mono)', fontSize: 12, fontWeight: 800, flexShrink: 0,
+            color: remaining < 120 ? '#ff5a4d' : 'var(--ap-muted)',
+          }}>
+            ⏳ {fmt(remaining)}
+          </div>
+        )}
+
+        {/* Time */}
+        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ap-muted)', flexShrink: 0 }}>
+          {fmt(att.timeUsedSeconds)}
+        </div>
+
+        {/* Status badge */}
+        <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.05em', padding: '3px 8px', borderRadius: 999, color: ab.color, background: ab.bg, flexShrink: 0 }}>
+          {ab.label}
+        </span>
+
+        {/* Host actions */}
+        {isLive && (
+          <button
+            onClick={(e) => { e.stopPropagation(); if (isMessaging) onCloseMessage(); else onOpenMessage(); }}
+            title="Envoyer un message"
+            style={{ ...rowIconBtn, color: isMessaging ? 'var(--ap-brand)' : 'var(--ap-muted)' }}
+          >
+            💬
+          </button>
+        )}
+        <button
+          onClick={(e) => { e.stopPropagation(); onRemove(); }}
+          title="Retirer ce participant"
+          style={{ ...rowIconBtn, color: '#ff5a4d' }}
+        >
+          🗑️
+        </button>
+
+        <span style={{ color: 'var(--ap-muted)', fontSize: 12, transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}>▼</span>
+      </div>
+
+      {/* Message composer */}
+      {isMessaging && (
+        <div
+          onClick={(e) => e.stopPropagation()}
+          style={{ padding: '0 18px 14px', borderTop: 'var(--ap-border-w) solid var(--ap-line)', display: 'flex', gap: 8, paddingTop: 14 }}
+        >
+          <input
+            autoFocus
+            value={messageText}
+            onChange={(e) => onMessageTextChange(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') onSendMessage(); if (e.key === 'Escape') onCloseMessage(); }}
+            placeholder={`Message à ${att.participantName}…`}
+            style={{
+              flex: 1, padding: '9px 12px', fontFamily: 'var(--ap-font-body)', fontWeight: 700, fontSize: 13,
+              color: 'var(--ap-ink)', background: 'var(--ap-paper-2)', border: 'var(--ap-border-w) solid var(--ap-line)',
+              borderRadius: 'var(--ap-r-sm)', outline: 'none',
+            }}
+          />
+          <button onClick={onSendMessage} style={{ ...outlineBtn, fontSize: 12 }}>Envoyer</button>
+        </div>
+      )}
+
+      {/* Expanded details */}
+      {isExpanded && (
+        <AttemptDetail att={att} exam={exam} quiz={quiz} />
+      )}
     </div>
   );
 }
@@ -396,6 +537,12 @@ function StatCard({ icon, label, value, highlight }: { icon: string; label: stri
     </div>
   );
 }
+
+const rowIconBtn: React.CSSProperties = {
+  flexShrink: 0, width: 28, height: 28, borderRadius: '50%', border: 'none',
+  background: 'transparent', fontSize: 14, cursor: 'pointer',
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+};
 
 const outlineBtn: React.CSSProperties = {
   padding: '8px 14px', borderRadius: 999,

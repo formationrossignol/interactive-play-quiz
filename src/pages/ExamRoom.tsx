@@ -10,6 +10,8 @@ import {
 import { getContentBySource } from '@/lib/content/contentRepo';
 import type { SavedQuiz } from '@/lib/quizStorage';
 import { AudienceCapError } from '@/lib/plans';
+import { supabase } from '@/lib/supabase';
+import { toast } from 'sonner';
 import { Map as MapIcon, Flag } from 'lucide-react';
 
 const PART_KEY = 'exam_participant';
@@ -56,7 +58,7 @@ function getAnswerOrder(attemptId: string, questionId: string, count: number): n
   return order;
 }
 
-type Phase = 'loading' | 'not-found' | 'not-open' | 'identify' | 'ready' | 'taking' | 'submitted' | 'exhausted' | 'full';
+type Phase = 'loading' | 'not-found' | 'not-open' | 'identify' | 'ready' | 'taking' | 'submitted' | 'exhausted' | 'full' | 'kicked';
 
 export default function ExamRoom() {
   const { joinCode } = useParams<{ joinCode: string }>();
@@ -86,6 +88,7 @@ export default function ExamRoom() {
   const answersRef = useRef(answers);
   answersRef.current = answers;
   const questionRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const lastSeenMessageAtRef = useRef<string | null>(null);
 
   /* ── Load exam ────────────────────────────────────────────────── */
   useEffect(() => {
@@ -126,6 +129,7 @@ export default function ExamRoom() {
       setFlagged(loadFlags(active.id));
       elapsedRef.current = active.timeUsedSeconds;
       setElapsed(active.timeUsedSeconds);
+      lastSeenMessageAtRef.current = active.hostMessageAt;
       setPhase('taking');
       return;
     }
@@ -146,6 +150,7 @@ export default function ExamRoom() {
       setFlagged(loadFlags(att.id));
       elapsedRef.current = att.timeUsedSeconds;
       setElapsed(att.timeUsedSeconds);
+      lastSeenMessageAtRef.current = att.hostMessageAt;
       setPhase('taking');
     } catch (e) {
       setPhase(e instanceof AudienceCapError ? 'full' : 'exhausted');
@@ -188,6 +193,32 @@ export default function ExamRoom() {
       void saveAnswers(attempt.id, answersRef.current, elapsedRef.current);
     }, 30000);
     return () => { if (autoSaveRef.current) clearInterval(autoSaveRef.current); };
+  }, [phase, attempt?.id]);
+
+  /* ── Live proctor controls: removal + messages ──────────────────── */
+  useEffect(() => {
+    if (phase !== 'taking' || !attempt) return;
+    const channel = supabase
+      .channel(`exam-attempt-${attempt.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'exam_attempts', filter: `id=eq.${attempt.id}` },
+        (payload) => {
+          const row = payload.new as { status: string; host_message: string | null; host_message_at: string | null };
+          if (row.status === 'cancelled') {
+            if (timerRef.current) clearInterval(timerRef.current);
+            if (autoSaveRef.current) clearInterval(autoSaveRef.current);
+            setPhase('kicked');
+            return;
+          }
+          if (row.host_message_at && row.host_message_at !== lastSeenMessageAtRef.current) {
+            lastSeenMessageAtRef.current = row.host_message_at;
+            if (row.host_message) toast.info(row.host_message, { duration: 15000 });
+          }
+        },
+      )
+      .subscribe();
+    return () => { void supabase.removeChannel(channel); };
   }, [phase, attempt?.id]);
 
   /* ── Auto-submit ──────────────────────────────────────────────── */
@@ -302,6 +333,14 @@ export default function ExamRoom() {
       {exam && retainedAttempt && (
         <ViewResultsBtn retained={retainedAttempt} exam={exam} navigate={navigate} />
       )}
+    </Screen>
+  );
+
+  if (phase === 'kicked') return (
+    <Screen>
+      <BigIcon>🚫</BigIcon>
+      <Title>Retiré de l'examen</Title>
+      <Sub>Le surveillant vous a retiré de cet examen. Contactez-le pour plus d'informations.</Sub>
     </Screen>
   );
 

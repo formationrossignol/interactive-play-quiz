@@ -60,6 +60,8 @@ export interface Attempt {
   submissionMode: SubmissionMode | null;
   status: AttemptStatus;
   logs: AttemptLog[];
+  hostMessage: string | null;
+  hostMessageAt: string | null;
 }
 
 /* ══ Row <-> object mapping ═══════════════════════════════════════
@@ -108,6 +110,7 @@ interface AttemptRow {
   question_order: string[]; answers: Record<string, number | string | null>;
   score: number | null; percentage: number | null; passed: boolean | null;
   submission_mode: string | null; status: string; logs: AttemptLog[];
+  host_message: string | null; host_message_at: string | null;
 }
 
 function attemptFromRow(r: AttemptRow): Attempt {
@@ -128,6 +131,8 @@ function attemptFromRow(r: AttemptRow): Attempt {
     submissionMode: r.submission_mode as SubmissionMode | null,
     status: r.status as AttemptStatus,
     logs: r.logs ?? [],
+    hostMessage: r.host_message,
+    hostMessageAt: r.host_message_at,
   };
 }
 
@@ -444,6 +449,8 @@ export const submitAttempt = async (
   return attemptFromRow(data);
 };
 
+/** Host-side removal: excludes an attempt from the live view and stats,
+ *  whatever its current status (in-progress or already submitted). */
 export const cancelAttempt = async (attemptId: string): Promise<boolean> => {
   const current = await getAttemptById(attemptId);
   if (!current) return false;
@@ -453,6 +460,16 @@ export const cancelAttempt = async (attemptId: string): Promise<boolean> => {
       status: 'cancelled',
       logs: [...current.logs, { event: 'cancelled', timestamp: new Date().toISOString() }],
     })
+    .eq('id', attemptId);
+  return !error;
+};
+
+/** Host → participant live message, surfaced as a toast in ExamRoom via
+ *  its realtime subscription on host_message_at. */
+export const sendHostMessage = async (attemptId: string, text: string): Promise<boolean> => {
+  const { error } = await supabase
+    .from('exam_attempts')
+    .update({ host_message: text, host_message_at: new Date().toISOString() })
     .eq('id', attemptId);
   return !error;
 };
