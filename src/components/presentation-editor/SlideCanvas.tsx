@@ -5,6 +5,7 @@ import { useElementDrag } from "./hooks/useElementDrag";
 import { CanvasElement } from "./elements/CanvasElement";
 import { LineArrowLayer } from "./elements/LineArrowLayer";
 import { SelectionOverlay } from "./SelectionOverlay";
+import { TransformControls } from "./TransformControls";
 import { rectsIntersect } from "./utils/geometry";
 import type { LineElement } from "./types/presentation";
 
@@ -119,6 +120,12 @@ export function SlideCanvas() {
         ))}
         <LineArrowLayer lines={lines} width={presentation.width} height={presentation.height} />
         <SelectionOverlay slideId={slide.id} elements={selectable} selectedIds={selectedIds} zoom={zoom} />
+        {selectedIds.size === 1 && (() => {
+          const onlyId = [...selectedIds][0];
+          const el = selectable.find((x) => x.id === onlyId);
+          if (!el || el.locked) return null;
+          return <TransformControls slideId={slide.id} element={el} zoom={zoom} node={nodesRef.current.get(onlyId) ?? null} />;
+        })()}
         <div ref={marqueeRef} style={{ position: "absolute", display: "none", border: "1px dashed var(--ap-brand)", background: "rgba(108,99,255,.08)", pointerEvents: "none" }} />
       </div>
     </div>
