@@ -27,7 +27,6 @@ export function useElementDrag(slideId: string, nodesRef: React.MutableRefObject
     const slide = doc.presentation!.slides.find((s) => s.id === slideId)!;
 
     const activeIds = ui.selectedIds.has(draggedId) ? [...ui.selectedIds] : [draggedId];
-    if (!ui.selectedIds.has(draggedId)) ui.select([draggedId]);
 
     const targets: DragTarget[] = activeIds
       .map((id) => {
@@ -75,7 +74,7 @@ export function useElementDrag(slideId: string, nodesRef: React.MutableRefObject
       const targets = draggingRef.current;
       draggingRef.current = null;
       useEditorUIStore.getState().setDragging(false);
-      if (!targets) return;
+      if (!targets || targets.length === 0) return;
 
       let dx = (upEvent.clientX - startClientX) / zoom;
       let dy = (upEvent.clientY - startClientY) / zoom;
