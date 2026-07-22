@@ -1,8 +1,16 @@
 import type { VideoElement } from "../types/presentation";
 
 function embedUrl(element: VideoElement): string | null {
-  if (element.provider === "youtube") return element.src.replace("watch?v=", "embed/");
-  if (element.provider === "vimeo") return element.src.replace("vimeo.com/", "player.vimeo.com/video/");
+  if (element.provider === "youtube") {
+    if (element.src.includes("/embed/")) return element.src;
+    const match = element.src.match(/(?:youtu\.be\/|v=)([a-zA-Z0-9_-]+)/);
+    return match ? `https://www.youtube.com/embed/${match[1]}` : null;
+  }
+  if (element.provider === "vimeo") {
+    if (element.src.includes("player.vimeo.com")) return element.src;
+    const match = element.src.match(/vimeo\.com\/(\d+)/);
+    return match ? `https://player.vimeo.com/video/${match[1]}` : null;
+  }
   return null;
 }
 
