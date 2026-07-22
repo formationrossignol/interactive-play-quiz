@@ -29,8 +29,16 @@ export function TransformControls({ slideId, element, zoom, node }: TransformCon
       let { x, y, width, height } = start;
       if (handle.includes("e")) width = Math.max(10, start.width + dx);
       if (handle.includes("s")) height = Math.max(10, start.height + dy);
-      if (handle.includes("w")) { width = Math.max(10, start.width - dx); x = start.x + dx; }
-      if (handle.includes("n")) { height = Math.max(10, start.height - dy); y = start.y + dy; }
+      if (handle.includes("w")) {
+        const newWidth = Math.max(10, start.width - dx);
+        x = start.x + (start.width - newWidth);
+        width = newWidth;
+      }
+      if (handle.includes("n")) {
+        const newHeight = Math.max(10, start.height - dy);
+        y = start.y + (start.height - newHeight);
+        height = newHeight;
+      }
 
       node.style.left = `${x}px`;
       node.style.top = `${y}px`;
