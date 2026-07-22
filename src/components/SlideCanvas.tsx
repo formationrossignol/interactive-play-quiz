@@ -1,5 +1,10 @@
-import { useState } from "react";
-import Draggable from "react-draggable";
+import { useState, type ComponentType } from "react";
+import Draggable, { type DraggableProps } from "react-draggable";
+
+// react-draggable's bundled type defs lag behind newer @types/react releases
+// (a known upstream incompatibility, unrelated to this component's own logic)
+// — cast once here rather than sprinkling @ts-expect-error at each usage.
+const DraggableAny = Draggable as unknown as ComponentType<Partial<DraggableProps>>;
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Trash2, Type, Image as ImageIcon, Square } from "lucide-react";
@@ -63,7 +68,7 @@ export const SlideCanvas = ({ elements, backgroundColor = '#ffffff', onChange, e
       onClick={() => setSelectedElementId(null)}
     >
       {elements.map((element) => (
-        <Draggable
+        <DraggableAny
           key={element.id}
           position={{ x: element.x, y: element.y }}
           onStop={(_, data) => handleDrag(element.id, { x: data.x, y: data.y })}
@@ -174,7 +179,7 @@ export const SlideCanvas = ({ elements, backgroundColor = '#ffffff', onChange, e
               />
             )}
           </div>
-        </Draggable>
+        </DraggableAny>
       ))}
     </div>
   );
