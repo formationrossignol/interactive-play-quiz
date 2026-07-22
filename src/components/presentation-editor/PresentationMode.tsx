@@ -66,5 +66,16 @@ export function exportPresentationAsFile() {
 }
 
 export function importPresentationFromFile(file: File): Promise<void> {
-  return file.text().then((json) => useDocStore.getState().importJSON(json));
+  return file.text().then((json) => {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(json);
+    } catch {
+      throw new Error("Fichier JSON invalide.");
+    }
+    if (!parsed || typeof parsed !== "object" || !Array.isArray((parsed as { slides?: unknown }).slides)) {
+      throw new Error("Ce fichier ne contient pas une présentation valide.");
+    }
+    useDocStore.getState().importJSON(json);
+  });
 }
