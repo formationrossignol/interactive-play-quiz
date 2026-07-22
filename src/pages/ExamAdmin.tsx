@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   getExamById, getAttemptsForExam, computeExamStats, computeExamStatus,
-  updateExam, exportCSV, cancelAttempt, sendHostMessage, type Exam, type Attempt, type ExamStats,
+  updateExam, exportCSV, cancelAttempt, getMessagesForAttempt, sendMessage,
+  type Exam, type Attempt, type ExamStats, type ExamMessage,
 } from '@/lib/examStorage';
 import { getCurrentUser } from '@/lib/auth';
 import { getContentBySource } from '@/lib/content/contentRepo';
@@ -49,8 +50,7 @@ export default function ExamAdmin() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [now, setNow] = useState(() => Date.now());
-  const [messagingId, setMessagingId] = useState<string | null>(null);
-  const [messageText, setMessageText] = useState('');
+  const [chatWithId, setChatWithId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!examId) return;
@@ -110,16 +110,6 @@ export default function ExamAdmin() {
     }
   };
 
-  const handleSendMessage = async (attemptId: string) => {
-    const text = messageText.trim();
-    if (!text) return;
-    try {
-      const ok = await sendHostMessage(attemptId, text);
-      if (ok) { toast.success('Message envoyé'); setMessagingId(null); setMessageText(''); } else { toast.error("Échec de l'envoi (permissions ?)"); }
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Échec de l'envoi");
-    }
-  };
 
   if (error) return (
     <div style={wrapSt}>
@@ -280,12 +270,8 @@ export default function ExamAdmin() {
                   isExpanded={expanded === att.id}
                   onToggleExpand={() => setExpanded(expanded === att.id ? null : att.id)}
                   onRemove={() => handleRemove(att)}
-                  isMessaging={messagingId === att.id}
-                  messageText={messageText}
-                  onMessageTextChange={setMessageText}
-                  onOpenMessage={() => { setMessagingId(att.id); setMessageText(''); }}
-                  onCloseMessage={() => setMessagingId(null)}
-                  onSendMessage={() => handleSendMessage(att.id)}
+                  isChatOpen={chatWithId === att.id}
+                  onToggleChat={() => setChatWithId(chatWithId === att.id ? null : att.id)}
                 />
               ))}
             </div>
@@ -332,12 +318,8 @@ export default function ExamAdmin() {
                 isExpanded={expanded === att.id}
                 onToggleExpand={() => setExpanded(expanded === att.id ? null : att.id)}
                 onRemove={() => handleRemove(att)}
-                isMessaging={false}
-                messageText={messageText}
-                onMessageTextChange={setMessageText}
-                onOpenMessage={() => {}}
-                onCloseMessage={() => {}}
-                onSendMessage={() => {}}
+                isChatOpen={chatWithId === att.id}
+                onToggleChat={() => setChatWithId(chatWithId === att.id ? null : att.id)}
               />
             ))}
           </div>
@@ -348,17 +330,18 @@ export default function ExamAdmin() {
 }
 
 function AttemptRow({
-  att, exam, quiz, now, isExpanded, onToggleExpand, onRemove,
-  isMessaging, messageText, onMessageTextChange, onOpenMessage, onCloseMessage, onSendMessage,
+  att, exam, quiz, now, isExpanded, onToggleExpand, onRemove, isChatOpen, onToggleChat,
 }: {
   att: Attempt; exam: Exam; quiz: SavedQuiz | null; now: number;
   isExpanded: boolean; onToggleExpand: () => void; onRemove: () => void;
-  isMessaging: boolean; messageText: string; onMessageTextChange: (v: string) => void;
-  onOpenMessage: () => void; onCloseMessage: () => void; onSendMessage: () => void;
+  isChatOpen: boolean; onToggleChat: () => void;
 }) {
   const ab = STATUS_LABEL[att.status];
   const isLive = att.status === 'in-progress';
   const remaining = isLive ? remainingFor(att, exam, now) : null;
+  const totalQ = quiz?.questions.length ?? att.questionOrder.length;
+  const answeredQ = Object.values(att.answers).filter((v) => v !== null && v !== undefined && v !== '').length;
+  const progressPct = totalQ > 0 ? Math.round((answeredQ / totalQ) * 100) : 0;
 
   return (
     <div className="ea-attempt">
@@ -379,6 +362,18 @@ function AttemptRow({
             <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--ap-muted)' }}>{att.participantEmail}</div>
           )}
         </div>
+
+        {/* Live progress bar */}
+        {isLive && (
+          <div style={{ width: 90, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <div style={{ height: 6, borderRadius: 999, background: 'var(--ap-line)', overflow: 'hidden' }}>
+              <div style={{ width: `${progressPct}%`, height: '100%', background: 'var(--ap-brand)', transition: 'width .3s' }} />
+            </div>
+            <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--ap-muted)', textAlign: 'center' }}>
+              {answeredQ}/{totalQ}
+            </span>
+          </div>
+        )}
 
         {/* Score */}
         {att.percentage !== null && (
@@ -411,15 +406,13 @@ function AttemptRow({
         </span>
 
         {/* Host actions */}
-        {isLive && (
-          <button
-            onClick={(e) => { e.stopPropagation(); if (isMessaging) onCloseMessage(); else onOpenMessage(); }}
-            title="Envoyer un message"
-            style={{ ...rowIconBtn, color: isMessaging ? 'var(--ap-brand)' : 'var(--ap-muted)' }}
-          >
-            💬
-          </button>
-        )}
+        <button
+          onClick={(e) => { e.stopPropagation(); onToggleChat(); }}
+          title="Discussion avec ce participant"
+          style={{ ...rowIconBtn, color: isChatOpen ? 'var(--ap-brand)' : 'var(--ap-muted)' }}
+        >
+          💬
+        </button>
         <button
           onClick={(e) => { e.stopPropagation(); onRemove(); }}
           title="Retirer ce participant"
@@ -431,25 +424,10 @@ function AttemptRow({
         <span style={{ color: 'var(--ap-muted)', fontSize: 12, transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}>▼</span>
       </div>
 
-      {/* Message composer */}
-      {isMessaging && (
-        <div
-          onClick={(e) => e.stopPropagation()}
-          style={{ padding: '0 18px 14px', borderTop: 'var(--ap-border-w) solid var(--ap-line)', display: 'flex', gap: 8, paddingTop: 14 }}
-        >
-          <input
-            autoFocus
-            value={messageText}
-            onChange={(e) => onMessageTextChange(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') onSendMessage(); if (e.key === 'Escape') onCloseMessage(); }}
-            placeholder={`Message à ${att.participantName}…`}
-            style={{
-              flex: 1, padding: '9px 12px', fontFamily: 'var(--ap-font-body)', fontWeight: 700, fontSize: 13,
-              color: 'var(--ap-ink)', background: 'var(--ap-paper-2)', border: 'var(--ap-border-w) solid var(--ap-line)',
-              borderRadius: 'var(--ap-r-sm)', outline: 'none',
-            }}
-          />
-          <button onClick={onSendMessage} style={{ ...outlineBtn, fontSize: 12 }}>Envoyer</button>
+      {/* Persistent chat thread */}
+      {isChatOpen && (
+        <div onClick={(e) => e.stopPropagation()} style={{ borderTop: 'var(--ap-border-w) solid var(--ap-line)' }}>
+          <AttemptChat examId={exam.id} attemptId={att.id} participantName={att.participantName} />
         </div>
       )}
 
@@ -457,6 +435,89 @@ function AttemptRow({
       {isExpanded && (
         <AttemptDetail att={att} exam={exam} quiz={quiz} />
       )}
+    </div>
+  );
+}
+
+function AttemptChat({ examId, attemptId, participantName }: { examId: string; attemptId: string; participantName: string }) {
+  const [messages, setMessages] = useState<ExamMessage[]>([]);
+  const [text, setText] = useState('');
+  const [sending, setSending] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    void getMessagesForAttempt(attemptId).then((m) => { if (!cancelled) setMessages(m); });
+    return () => { cancelled = true; };
+  }, [attemptId]);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel(`exam-messages-host-${attemptId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'exam_messages', filter: `attempt_id=eq.${attemptId}` },
+        (payload) => {
+          const row = payload.new as { id: string };
+          setMessages((prev) => (prev.some((m) => m.id === row.id) ? prev : [...prev, payload.new as unknown as ExamMessage]));
+        },
+      )
+      .subscribe();
+    return () => { void supabase.removeChannel(channel); };
+  }, [attemptId]);
+
+  const handleSend = async () => {
+    const body = text.trim();
+    if (!body || sending) return;
+    setSending(true);
+    try {
+      const sent = await sendMessage(examId, attemptId, 'host', body);
+      setMessages((prev) => (prev.some((m) => m.id === sent.id) ? prev : [...prev, sent]));
+      setText('');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Échec de l'envoi");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div style={{ padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 220, overflowY: 'auto' }}>
+        {messages.length === 0 ? (
+          <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--ap-muted)', margin: 0 }}>
+            Aucun message avec {participantName} pour l'instant.
+          </p>
+        ) : messages.map((m) => (
+          <div
+            key={m.id}
+            style={{
+              alignSelf: m.sender === 'host' ? 'flex-end' : 'flex-start',
+              maxWidth: '80%', padding: '8px 12px', borderRadius: 'var(--ap-r-sm)',
+              background: m.sender === 'host' ? 'var(--ap-brand-soft)' : 'var(--ap-paper-2)',
+              color: 'var(--ap-ink)', fontSize: 13, fontWeight: 700,
+            }}
+          >
+            {m.body}
+            <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--ap-muted)', marginTop: 2 }}>
+              {m.sender === 'host' ? 'Vous' : participantName} · {new Date(m.createdAt).toLocaleTimeString('fr', { hour: '2-digit', minute: '2-digit' })}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <input
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') void handleSend(); }}
+          placeholder={`Message à ${participantName}…`}
+          style={{
+            flex: 1, padding: '9px 12px', fontFamily: 'var(--ap-font-body)', fontWeight: 700, fontSize: 13,
+            color: 'var(--ap-ink)', background: 'var(--ap-paper-2)', border: 'var(--ap-border-w) solid var(--ap-line)',
+            borderRadius: 'var(--ap-r-sm)', outline: 'none',
+          }}
+        />
+        <button onClick={() => void handleSend()} disabled={sending} style={{ ...outlineBtn, fontSize: 12 }}>Envoyer</button>
+      </div>
     </div>
   );
 }

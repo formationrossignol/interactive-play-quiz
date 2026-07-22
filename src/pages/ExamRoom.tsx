@@ -4,15 +4,15 @@ import {
   getExamByJoinCode, computeExamStatus,
   startAttempt, saveAnswers, submitAttempt,
   getActiveAttempt, getAttemptsForParticipant,
-  getRetainedAttempt,
-  type Exam, type Attempt,
+  getRetainedAttempt, getMessagesForAttempt, sendMessage,
+  type Exam, type Attempt, type ExamMessage,
 } from '@/lib/examStorage';
 import { getContentBySource } from '@/lib/content/contentRepo';
 import type { SavedQuiz } from '@/lib/quizStorage';
 import { AudienceCapError } from '@/lib/plans';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { Map as MapIcon, Flag } from 'lucide-react';
+import { Map as MapIcon, Flag, MessageCircle } from 'lucide-react';
 
 const PART_KEY = 'exam_participant';
 
@@ -82,13 +82,18 @@ export default function ExamRoom() {
   const [flagged, setFlagged] = useState<Set<string>>(new Set());
   const [currentQId, setCurrentQId] = useState<string | null>(null);
 
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatMessages, setChatMessages] = useState<ExamMessage[]>([]);
+  const [chatText, setChatText] = useState('');
+  const [chatSending, setChatSending] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+
   const autoSaveRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const elapsedRef = useRef(0);
   const answersRef = useRef(answers);
   answersRef.current = answers;
   const questionRefs = useRef<Record<string, HTMLDivElement | null>>({});
-  const lastSeenMessageAtRef = useRef<string | null>(null);
 
   /* ── Load exam ────────────────────────────────────────────────── */
   useEffect(() => {
@@ -129,7 +134,6 @@ export default function ExamRoom() {
       setFlagged(loadFlags(active.id));
       elapsedRef.current = active.timeUsedSeconds;
       setElapsed(active.timeUsedSeconds);
-      lastSeenMessageAtRef.current = active.hostMessageAt;
       setPhase('taking');
       return;
     }
@@ -150,7 +154,6 @@ export default function ExamRoom() {
       setFlagged(loadFlags(att.id));
       elapsedRef.current = att.timeUsedSeconds;
       setElapsed(att.timeUsedSeconds);
-      lastSeenMessageAtRef.current = att.hostMessageAt;
       setPhase('taking');
     } catch (e) {
       setPhase(e instanceof AudienceCapError ? 'full' : 'exhausted');
@@ -195,7 +198,7 @@ export default function ExamRoom() {
     return () => { if (autoSaveRef.current) clearInterval(autoSaveRef.current); };
   }, [phase, attempt?.id]);
 
-  /* ── Live proctor controls: removal + messages ──────────────────── */
+  /* ── Live proctor removal ────────────────────────────────────────── */
   useEffect(() => {
     if (phase !== 'taking' || !attempt) return;
     const channel = supabase
@@ -204,22 +207,60 @@ export default function ExamRoom() {
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'exam_attempts', filter: `id=eq.${attempt.id}` },
         (payload) => {
-          const row = payload.new as { status: string; host_message: string | null; host_message_at: string | null };
+          const row = payload.new as { status: string };
           if (row.status === 'cancelled') {
             if (timerRef.current) clearInterval(timerRef.current);
             if (autoSaveRef.current) clearInterval(autoSaveRef.current);
             setPhase('kicked');
-            return;
-          }
-          if (row.host_message_at && row.host_message_at !== lastSeenMessageAtRef.current) {
-            lastSeenMessageAtRef.current = row.host_message_at;
-            if (row.host_message) toast.info(row.host_message, { duration: 15000 });
           }
         },
       )
       .subscribe();
     return () => { void supabase.removeChannel(channel); };
   }, [phase, attempt?.id]);
+
+  /* ── Host ↔ participant chat thread ──────────────────────────────── */
+  useEffect(() => {
+    if (phase !== 'taking' || !attempt) return;
+    let cancelled = false;
+    void getMessagesForAttempt(attempt.id).then((m) => { if (!cancelled) setChatMessages(m); });
+    return () => { cancelled = true; };
+  }, [phase, attempt?.id]);
+
+  useEffect(() => {
+    if (phase !== 'taking' || !attempt) return;
+    const channel = supabase
+      .channel(`exam-messages-${attempt.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'exam_messages', filter: `attempt_id=eq.${attempt.id}` },
+        (payload) => {
+          const row = payload.new as unknown as ExamMessage;
+          setChatMessages((prev) => (prev.some((m) => m.id === row.id) ? prev : [...prev, row]));
+          if (row.sender === 'host') {
+            toast.info(row.body, { duration: 15000 });
+            setChatOpen((open) => { if (!open) setUnreadCount((c) => c + 1); return open; });
+          }
+        },
+      )
+      .subscribe();
+    return () => { void supabase.removeChannel(channel); };
+  }, [phase, attempt?.id]);
+
+  const handleSendChat = async () => {
+    const body = chatText.trim();
+    if (!body || !attempt || !exam || chatSending) return;
+    setChatSending(true);
+    try {
+      const sent = await sendMessage(exam.id, attempt.id, 'participant', body);
+      setChatMessages((prev) => (prev.some((m) => m.id === sent.id) ? prev : [...prev, sent]));
+      setChatText('');
+    } catch {
+      toast.error("Échec de l'envoi du message");
+    } finally {
+      setChatSending(false);
+    }
+  };
 
   /* ── Auto-submit ──────────────────────────────────────────────── */
   const handleAutoSubmit = useCallback(() => {
@@ -477,11 +518,11 @@ export default function ExamRoom() {
           .er-opt.sel { border-color: var(--ap-brand); background: var(--ap-brand-soft); }
           .er-dot { width: 18px; height: 18px; border-radius: 50%; border: var(--ap-border-w) solid var(--ap-line); flex-shrink: 0; transition: background .15s, border-color .15s; }
           .er-opt.sel .er-dot { background: var(--ap-brand); border-color: var(--ap-brand); }
-          .er-body { display: flex; align-items: flex-start; gap: 24px; max-width: 960px; margin: 0 auto; padding: 24px 16px; }
-          .er-sidebar { width: 240px; flex-shrink: 0; position: sticky; top: 72px; max-height: calc(100vh - 96px); overflow-y: auto; }
-          @media (max-width: 860px) {
+          .er-body { display: flex; align-items: flex-start; gap: 24px; max-width: 1180px; margin: 0 auto; padding: 24px 16px; }
+          .er-sidebar { width: 340px; flex-shrink: 0; position: sticky; top: 72px; }
+          @media (max-width: 980px) {
             .er-body { flex-direction: column; }
-            .er-sidebar { width: 100%; position: static; max-height: none; }
+            .er-sidebar { width: 100%; position: static; }
           }
         `}</style>
 
@@ -512,6 +553,29 @@ export default function ExamRoom() {
             </div>
           )}
 
+          <button
+            onClick={() => { setChatOpen((o) => !o); setUnreadCount(0); }}
+            title="Discussion avec le surveillant"
+            style={{
+              position: 'relative', width: 36, height: 36, borderRadius: '50%',
+              border: 'var(--ap-border-w) solid var(--ap-line)',
+              background: chatOpen ? 'var(--ap-brand-soft)' : 'var(--ap-paper)',
+              color: chatOpen ? 'var(--ap-brand)' : 'var(--ap-muted)', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            }}
+          >
+            <MessageCircle size={17} />
+            {unreadCount > 0 && (
+              <span style={{
+                position: 'absolute', top: -4, right: -4, minWidth: 16, height: 16, borderRadius: 999,
+                background: '#ff5a4d', color: '#fff', fontSize: 10, fontWeight: 800,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 3px',
+              }}>
+                {unreadCount}
+              </span>
+            )}
+          </button>
+
           <style>{`
             @keyframes pulse-danger { 0%,100%{opacity:1} 50%{opacity:.6} }
           `}</style>
@@ -524,6 +588,62 @@ export default function ExamRoom() {
             transition: 'width .3s',
           }} />
         </div>
+
+        {/* Chat drawer: docked top-right, over the content */}
+        {chatOpen && (
+          <div style={{
+            position: 'fixed', top: 66, right: 16, zIndex: 20, width: 320, maxWidth: 'calc(100vw - 32px)',
+            background: 'var(--ap-card)', border: 'var(--ap-border-w) solid var(--ap-line)',
+            borderRadius: 'var(--ap-r-lg)', boxShadow: '0 8px 24px rgba(0,0,0,.12)',
+            display: 'flex', flexDirection: 'column', maxHeight: 420,
+          }}>
+            <div style={{ padding: '10px 14px', borderBottom: 'var(--ap-border-w) solid var(--ap-line)', fontWeight: 800, fontSize: 13 }}>
+              💬 Discussion avec le surveillant
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto', padding: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {chatMessages.length === 0 ? (
+                <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--ap-muted)', margin: 0 }}>
+                  Aucun message pour l'instant.
+                </p>
+              ) : chatMessages.map((m) => (
+                <div
+                  key={m.id}
+                  style={{
+                    alignSelf: m.sender === 'participant' ? 'flex-end' : 'flex-start',
+                    maxWidth: '85%', padding: '8px 12px', borderRadius: 'var(--ap-r-sm)',
+                    background: m.sender === 'participant' ? 'var(--ap-brand-soft)' : 'var(--ap-paper-2)',
+                    color: 'var(--ap-ink)', fontSize: 13, fontWeight: 700,
+                  }}
+                >
+                  {m.body}
+                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--ap-muted)', marginTop: 2 }}>
+                    {m.sender === 'participant' ? 'Vous' : 'Surveillant'} · {new Date(m.createdAt).toLocaleTimeString('fr', { hour: '2-digit', minute: '2-digit' })}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{ padding: 10, borderTop: 'var(--ap-border-w) solid var(--ap-line)', display: 'flex', gap: 8 }}>
+              <input
+                value={chatText}
+                onChange={(e) => setChatText(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') void handleSendChat(); }}
+                placeholder="Votre message…"
+                style={{
+                  flex: 1, padding: '8px 10px', fontFamily: 'var(--ap-font-body)', fontWeight: 700, fontSize: 13,
+                  color: 'var(--ap-ink)', background: 'var(--ap-paper-2)', border: 'var(--ap-border-w) solid var(--ap-line)',
+                  borderRadius: 'var(--ap-r-sm)', outline: 'none',
+                }}
+              />
+              <button
+                onClick={() => void handleSendChat()}
+                disabled={chatSending}
+                style={{ padding: '8px 12px', borderRadius: 999, border: 'none', background: 'var(--ap-brand)', color: '#fff', fontFamily: 'var(--ap-font-body)', fontWeight: 800, fontSize: 12, cursor: 'pointer' }}
+              >
+                Envoyer
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="er-body">
         {/* Questions */}
@@ -676,7 +796,7 @@ export default function ExamRoom() {
           </h3>
 
           <div style={{
-            display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(40px, 1fr))',
+            display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(48px, 1fr))',
             gap: 8, marginBottom: 16,
           }}>
             {orderedQs.map((q: { id: string }, idx: number) => {
