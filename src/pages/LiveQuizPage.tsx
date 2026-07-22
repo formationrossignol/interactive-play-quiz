@@ -7,6 +7,10 @@ import { PlayerView } from "@/components/PlayerView";
 import { PollSession } from "@/components/PollSession";
 import { FlashcardSession } from "@/components/FlashcardSession";
 import { SlidePresentationSession } from "@/components/SlidePresentationSession";
+import { PresentationMode } from "@/components/presentation-editor/PresentationMode";
+import { useDocStore } from "@/components/presentation-editor/store/useDocStore";
+import { isLegacySlideShape, migrateLegacySlideToPresentation } from "@/components/presentation-editor/utils/migrateLegacySlide";
+import type { Presentation } from "@/components/presentation-editor/types/presentation";
 import { getQuizById, type SavedQuiz } from "@/lib/quizStorage";
 
 const fallbackKeysForType = (id: string) => [
@@ -159,8 +163,14 @@ const LiveQuizPage = () => {
       return <PollSession poll={loadedQuiz} />;
     case "flashcard":
       return <FlashcardSession deck={loadedQuiz} />;
-    case "slide":
-      return <SlidePresentationSession presentation={loadedQuiz} />;
+    case "slide": {
+      const raw = loadedQuiz as unknown as Record<string, unknown>;
+      const pres: Presentation = isLegacySlideShape(raw)
+        ? migrateLegacySlideToPresentation(raw as Parameters<typeof migrateLegacySlideToPresentation>[0])
+        : (raw as unknown as Presentation);
+      useDocStore.getState().load(pres);
+      return <PresentationMode onExit={() => {}} />;
+    }
     default:
       if (!quizSession) {
         return (

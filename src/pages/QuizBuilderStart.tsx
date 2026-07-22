@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Navigate } from "react-router-dom";
 import { ArrowRight, Plus } from "lucide-react";
 import { Header } from "@/components/Header";
 import { PollTemplateSelectorEnhanced } from "@/components/PollTemplateSelectorEnhanced";
@@ -34,6 +34,7 @@ export const QuizBuilderStart = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
+  if (searchParams.get("type") === "slide") return <Navigate to="/presentation-editor" replace />;
   const quizType = (searchParams.get("type") || "quiz") as "quiz" | "poll" | "flashcard" | "slide";
 
   const user = getCurrentUser();
