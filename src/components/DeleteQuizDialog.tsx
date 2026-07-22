@@ -13,7 +13,7 @@ interface DeleteQuizDialogProps {
   onOpenChange: (open: boolean) => void;
   onConfirm: () => void;
   title: string;
-  type: 'quiz' | 'poll' | 'flashcard';
+  type: 'quiz' | 'poll' | 'flashcard' | 'slide';
 }
 
 export const DeleteQuizDialog = ({ open, onOpenChange, onConfirm, title, type }: DeleteQuizDialogProps) => {
@@ -25,7 +25,7 @@ export const DeleteQuizDialog = ({ open, onOpenChange, onConfirm, title, type }:
           <DialogDescription>
             Êtes-vous sûr de vouloir supprimer
             {" "}
-            {type === 'quiz' ? 'le quiz' : type === 'poll' ? 'le sondage' : 'le set de flashcards'} "{title}" ? Cette action est
+            {type === 'quiz' ? 'le quiz' : type === 'poll' ? 'le sondage' : type === 'slide' ? 'la présentation' : 'le set de flashcards'} "{title}" ? Cette action est
             irréversible.
           </DialogDescription>
         </DialogHeader>

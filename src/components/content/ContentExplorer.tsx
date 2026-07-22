@@ -59,16 +59,18 @@ const TYPE_TABS: TypeTab[] = [
   { type: "quiz", label: "Quiz", route: "/my-quizzes", dot: "--ap-quiz" },
   { type: "poll", label: "Sondages", route: "/my-polls", dot: "--ap-poll" },
   { type: "flashcard", label: "Flashcards", route: "/my-flashcards", dot: "--ap-flash" },
+  { type: "slide", label: "Slides", route: "/my-slides", dot: "--ap-pres" },
   { type: "course", label: "Cours", route: "/my-courses", dot: "--ap-pres" },
 ];
 
-const deleteTypeOf = (t: ContentType): "quiz" | "poll" | "flashcard" =>
-  t === "poll" ? "poll" : t === "flashcard" ? "flashcard" : "quiz";
+const deleteTypeOf = (t: ContentType): "quiz" | "poll" | "flashcard" | "slide" =>
+  t === "poll" ? "poll" : t === "flashcard" ? "flashcard" : t === "slide" ? "slide" : "quiz";
 
 const PUBLIC_LABELS: Record<ContentType, string> = {
   quiz: "Quiz publics",
   poll: "Sondages publics",
   flashcard: "Paquets publics",
+  slide: "Présentations publiques",
   course: "Cours publics",
   exam: "Examens publics",
 };
