@@ -6,7 +6,6 @@ import { ExitQuizDialog } from "@/components/ExitQuizDialog";
 import { PlayerView } from "@/components/PlayerView";
 import { PollSession } from "@/components/PollSession";
 import { FlashcardSession } from "@/components/FlashcardSession";
-import { SlidePresentationSession } from "@/components/SlidePresentationSession";
 import { PresentationMode } from "@/components/presentation-editor/PresentationMode";
 import { useDocStore } from "@/components/presentation-editor/store/useDocStore";
 import { isLegacySlideShape, migrateLegacySlideToPresentation } from "@/components/presentation-editor/utils/migrateLegacySlide";

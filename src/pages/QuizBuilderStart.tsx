@@ -5,7 +5,6 @@ import { Header } from "@/components/Header";
 import { PollTemplateSelectorEnhanced } from "@/components/PollTemplateSelectorEnhanced";
 import { QuizTemplateSelectorEnhanced } from "@/components/QuizTemplateSelectorEnhanced";
 import { FlashcardTemplateSelectorEnhanced } from "@/components/FlashcardTemplateSelectorEnhanced";
-import { SlideTemplateSelectorEnhanced } from "@/components/SlideTemplateSelectorEnhanced";
 import { QUIZ_TEMPLATES } from "@/lib/quizTemplates";
 import { POLL_TEMPLATES } from "@/lib/pollTemplates";
 import { t } from "@/lib/i18n";
@@ -16,7 +15,6 @@ import { PlanLimitBlocker } from "@/components/PlanLimitBlocker";
 import type { PollTemplate } from "@/lib/pollTemplates";
 import type { QuizTemplate } from "@/lib/quizTemplates";
 import type { FlashcardTemplate } from "@/lib/flashcardTemplates";
-import type { SlideTemplate } from "@/lib/slideTemplates";
 
 // Pastel gradient backgrounds for template cards — cycles by index
 const CARD_GRADIENTS = [
@@ -47,16 +45,13 @@ export const QuizBuilderStart = () => {
   const [showAll, setShowAll] = useState(false);
   const isPoll = quizType === "poll";
   const isFlashcard = quizType === "flashcard";
-  const isSlide = quizType === "slide";
 
   const handleFromScratch = () => navigate(`/builder?type=${quizType}`);
-  const handleSelectTemplate = (template: PollTemplate | QuizTemplate | FlashcardTemplate | SlideTemplate) => {
+  const handleSelectTemplate = (template: PollTemplate | QuizTemplate | FlashcardTemplate) => {
     navigate(`/builder?type=${quizType}&templateId=${template.id}`);
   };
 
-  const pageTitle = isSlide
-    ? "Créer une nouvelle présentation"
-    : isFlashcard
+  const pageTitle = isFlashcard
     ? t("createNewFlashcard")
     : isPoll
     ? t("createNewPoll")
@@ -82,9 +77,7 @@ export const QuizBuilderStart = () => {
     <div style={{ minHeight: "100vh" }}>
       <Header
         subtitle={
-          isSlide
-            ? "Créateur de Présentations"
-            : isFlashcard
+          isFlashcard
             ? t("flashcardBuilder")
             : isPoll
             ? t("pollBuilder")
@@ -96,7 +89,7 @@ export const QuizBuilderStart = () => {
         <div className="mb-10 text-center">
           <h1 className="ap-h2" style={{ fontSize: "28px", marginBottom: "8px" }}>{pageTitle}</h1>
           <p className="ap-muted">
-            {isPoll ? t("choosePollStart") : isFlashcard ? t("chooseFlashcardStart") : isSlide ? "Choisissez comment commencer" : t("chooseQuizStart")}
+            {isPoll ? t("choosePollStart") : isFlashcard ? t("chooseFlashcardStart") : t("chooseQuizStart")}
           </p>
         </div>
 
@@ -111,8 +104,6 @@ export const QuizBuilderStart = () => {
             </button>
             {isPoll ? (
               <PollTemplateSelectorEnhanced selectedTemplateId={null} onSelectTemplate={handleSelectTemplate} />
-            ) : isSlide ? (
-              <SlideTemplateSelectorEnhanced selectedTemplateId={null} onSelectTemplate={handleSelectTemplate} />
             ) : isFlashcard ? (
               <FlashcardTemplateSelectorEnhanced selectedTemplateId={null} onSelectTemplate={handleSelectTemplate} />
             ) : (
@@ -181,7 +172,7 @@ export const QuizBuilderStart = () => {
               </button>
 
               {/* Template cards */}
-              {(isFlashcard || isSlide ? [] : previewTemplates).map((tpl, idx) => (
+              {(isFlashcard ? [] : previewTemplates).map((tpl, idx) => (
                 <button
                   key={tpl.id}
                   onClick={() => handleSelectTemplate(tpl)}
