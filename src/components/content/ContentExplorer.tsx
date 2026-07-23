@@ -25,6 +25,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { Header } from "@/components/Header";
+import { PlanLimitError } from "@/lib/plans";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Pagination } from "@/components/Pagination";
 import { TrashView } from "@/components/TrashView";
@@ -353,7 +354,13 @@ export function ContentExplorer({
     c.trashItem(rowId).then(() => toast.success("Mis à la corbeille")).catch(() => toast.error("Erreur"));
 
   const handleDuplicate = (rowId: string) =>
-    c.duplicateItem(rowId).then(() => toast.success("Dupliqué")).catch(() => toast.error("Erreur lors de la duplication"));
+    c.duplicateItem(rowId).then(() => toast.success("Dupliqué")).catch((e) => {
+      if (e instanceof PlanLimitError) {
+        toast.error(e.message, { action: { label: "Passer Pro", onClick: () => navigate("/pricing") } });
+      } else {
+        toast.error("Erreur lors de la duplication");
+      }
+    });
 
   const handleRestore = (rowId: string) =>
     c.restoreItem(rowId).then(() => toast.success("Restauré")).catch(() => toast.error("Erreur"));
