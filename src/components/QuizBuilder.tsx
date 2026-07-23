@@ -22,8 +22,8 @@ import {
 import { ImportFileModal } from "./ImportFileModal";
 import { getCurrentUser } from "@/lib/auth";
 import { getPlan, isQuestionTypeLocked, PlanLimitError } from "@/lib/plans";
-import { saveQuiz, updateQuiz, getQuizById } from "@/lib/quizStorage";
-import { upsertContentBySource } from "@/lib/content/contentRepo";
+import { saveQuiz, updateQuiz, getQuizById, type SavedQuiz } from "@/lib/quizStorage";
+import { getContent, upsertContentBySource } from "@/lib/content/contentRepo";
 import type { ContentType } from "@/lib/content/types";
 import { getPollTemplate } from "@/lib/pollTemplates";
 import { getQuizTemplate } from "@/lib/quizTemplates";
@@ -535,10 +535,7 @@ export const QuizBuilder = () => {
   }, [shouldBlockNavigation]);
 
   // ── Load existing quiz ───────────────────────────────────────────────────
-  useEffect(() => {
-    if (!quizId) return;
-    const eq = getQuizById(quizId);
-    if (!eq) return;
+  const applyLoadedQuiz = (eq: SavedQuiz) => {
     setTitle(eq.title);
     setDescription(eq.description);
     setCategory(eq.category);
@@ -554,7 +551,45 @@ export const QuizBuilder = () => {
     setQuestions(qs);
     setSelectedIdx(qs.length > 0 ? 0 : null);
     setActiveTemplateId(null);
-    toast.success("Quiz chargé pour édition");
+  };
+
+  useEffect(() => {
+    if (!quizId) return;
+    const eq = getQuizById(quizId);
+    if (eq) {
+      applyLoadedQuiz(eq);
+      toast.success("Quiz chargé pour édition");
+      return;
+    }
+
+    // No legacy entry for this id: this happens for a `content` row that was
+    // never mirrored back into local storage (e.g. a duplicate made before
+    // the mirror-aware duplicate fix, or any orphaned mirror row). Recover
+    // it from the content table — adopt its data into local storage under a
+    // fresh id, then swap the URL to that id so this and future saves
+    // resolve normally.
+    let cancelled = false;
+    (async () => {
+      try {
+        const row = await getContent(quizId);
+        if (cancelled || !row?.data) return;
+        const recovered = saveQuiz(row.data as unknown as SavedQuiz);
+        if (cancelled) return;
+        const user = getCurrentUser();
+        if (user) {
+          await upsertContentBySource(user.id, recovered.type as ContentType, recovered.id, recovered as unknown as Record<string, unknown>, !!recovered.isPublic);
+        }
+        if (cancelled) return;
+        toast.success("Quiz récupéré depuis la sauvegarde cloud");
+        navigate(`/builder?type=${recovered.type}&quizId=${recovered.id}`, { replace: true });
+      } catch (e) {
+        if (cancelled) return;
+        if (e instanceof PlanLimitError) {
+          toast.error(e.message, { action: { label: "Passer Pro", onClick: () => navigate("/pricing") } });
+        }
+      }
+    })();
+    return () => { cancelled = true; };
   }, [quizId]);
 
   // ── Load template ────────────────────────────────────────────────────────
