@@ -38,6 +38,14 @@ function remainingFor(att: Attempt, exam: Exam, now: number): number | null {
   return Math.max(0, Math.floor((deadline - now) / 1000));
 }
 
+interface QuestionStat {
+  id: string;
+  question: string;
+  totalResponded: number;
+  correctCount: number;
+  pctCorrect: number;
+}
+
 export default function ExamAdmin() {
   const { examId } = useParams<{ examId: string }>();
   const navigate = useNavigate();
@@ -48,6 +56,7 @@ export default function ExamAdmin() {
   const [attempts, setAttempts] = useState<Attempt[]>([]);
   const [stats, setStats] = useState<ExamStats>({ totalAttempts: 0, completedAttempts: 0, passRate: null, avgScore: null, avgTimeMinutes: null });
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [showQuestionStats, setShowQuestionStats] = useState(false);
   const [error, setError] = useState('');
   const [now, setNow] = useState(() => Date.now());
   const [chatWithId, setChatWithId] = useState<string | null>(null);
@@ -134,6 +143,24 @@ export default function ExamAdmin() {
   const completed = attempts.filter((a) => a.status === 'submitted' || a.status === 'auto-submitted');
   const inProgress = attempts.filter((a) => a.status === 'in-progress');
   const finished = attempts.filter((a) => a.status !== 'in-progress');
+
+  const questionStats: QuestionStat[] = quiz
+    ? quiz.questions.map((q: { id: string; question: string; type: string; correctAnswer: unknown }) => {
+        const responded = completed.filter((a) => {
+          const given = a.answers[q.id];
+          return given !== null && given !== undefined && given !== '';
+        });
+        const correct = responded.filter((a) => checkCorrect(q, a.answers[q.id]));
+        const pct = responded.length > 0 ? Math.round((correct.length / responded.length) * 100) : 0;
+        return {
+          id: q.id,
+          question: q.question,
+          totalResponded: responded.length,
+          correctCount: correct.length,
+          pctCorrect: pct,
+        };
+      })
+    : [];
 
   return (
     <div style={{ minHeight: '100vh', paddingBottom: 80 }}>
@@ -322,6 +349,68 @@ export default function ExamAdmin() {
                 onToggleChat={() => setChatWithId(chatWithId === att.id ? null : att.id)}
               />
             ))}
+          </div>
+        )}
+
+        {/* Per-question analysis */}
+        {quiz && questionStats.length > 0 && completed.length > 0 && (
+          <div style={{ marginTop: 24 }}>
+            <button
+              onClick={() => setShowQuestionStats((s) => !s)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12,
+                background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                fontFamily: 'var(--ap-font-display)', fontWeight: 600, fontSize: 18,
+                color: 'var(--ap-ink)',
+              }}
+            >
+              <span>📊 Analyse par question</span>
+              <span style={{ fontSize: 14, color: 'var(--ap-muted)', transform: showQuestionStats ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}>▼</span>
+            </button>
+
+            {showQuestionStats && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {questionStats
+                  .slice()
+                  .sort((a, b) => a.pctCorrect - b.pctCorrect)
+                  .map((qs, idx) => (
+                    <div key={qs.id} style={{
+                      background: 'var(--ap-card)', border: '2px solid var(--ap-line)',
+                      borderRadius: 'var(--ap-r-lg)', padding: '14px 18px',
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                        <span style={{
+                          width: 22, height: 22, borderRadius: 6, fontSize: 10, fontWeight: 800,
+                          background: 'var(--ap-paper-2)', color: 'var(--ap-muted)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                        }}>
+                          {idx + 1}
+                        </span>
+                        <p style={{ fontSize: 13, fontWeight: 700, margin: 0, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {qs.question}
+                        </p>
+                        <span style={{
+                          fontSize: 14, fontWeight: 800, flexShrink: 0,
+                          color: qs.pctCorrect >= 70 ? '#15c08a' : qs.pctCorrect >= 40 ? '#f4970a' : '#ff5a4d',
+                        }}>
+                          {qs.pctCorrect}%
+                        </span>
+                      </div>
+                      <div style={{ height: 6, background: 'var(--ap-line)', borderRadius: 999, overflow: 'hidden' }}>
+                        <div style={{
+                          height: '100%', borderRadius: 999,
+                          width: `${qs.pctCorrect}%`,
+                          background: qs.pctCorrect >= 70 ? '#15c08a' : qs.pctCorrect >= 40 ? '#f4970a' : '#ff5a4d',
+                          transition: 'width .4s',
+                        }} />
+                      </div>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--ap-muted)', marginTop: 6 }}>
+                        {qs.correctCount}/{qs.totalResponded} bonne{qs.correctCount !== 1 ? 's' : ''} réponse{qs.correctCount !== 1 ? 's' : ''}
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            )}
           </div>
         )}
       </div>

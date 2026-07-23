@@ -37,12 +37,6 @@ function setParticipant(p: Participant) {
   sessionStorage.setItem(PART_KEY, JSON.stringify(p));
 }
 
-function fmt(secs: number): string {
-  const m = Math.floor(secs / 60).toString().padStart(2, '0');
-  const s = (secs % 60).toString().padStart(2, '0');
-  return `${m}:${s}`;
-}
-
 function getAnswerOrder(attemptId: string, questionId: string, count: number): number[] {
   let hash = 0;
   const str = attemptId + questionId;
@@ -507,8 +501,7 @@ export default function ExamRoom() {
       .map((id) => quiz.questions.find((q: { id: string }) => q.id === id))
       .filter(Boolean);
     const answered = orderedQs.filter((q: { id: string }) => answers[q.id] !== null && answers[q.id] !== undefined).length;
-    const timerDanger = secondsLeft !== null && secondsLeft < 120;
-    const timerWarn = secondsLeft !== null && secondsLeft < 300 && secondsLeft >= 120;
+    const minutesLeft = secondsLeft !== null ? Math.ceil(secondsLeft / 60) : null;
 
     return (
       <div style={{ minHeight: '100vh', paddingBottom: 100 }}>
@@ -541,15 +534,13 @@ export default function ExamRoom() {
             </div>
           </div>
 
-          {secondsLeft !== null && (
+          {minutesLeft !== null && (
             <div style={{
-              fontFamily: 'var(--ap-font-mono)', fontWeight: 800, fontSize: 18,
-              color: timerDanger ? '#ff5a4d' : timerWarn ? '#f4970a' : 'var(--ap-ink)',
-              background: timerDanger ? '#fff3f0' : timerWarn ? '#fff8ec' : 'var(--ap-paper-2)',
-              padding: '4px 12px', borderRadius: 999,
-              animation: timerDanger ? 'pulse-danger 1s ease infinite' : 'none',
+              fontSize: 13, fontWeight: 800, color: 'var(--ap-muted)',
+              background: 'var(--ap-paper-2)',
+              padding: '4px 12px', borderRadius: 999, whiteSpace: 'nowrap',
             }}>
-              ⏱ {fmt(secondsLeft)}
+              {minutesLeft} min
             </div>
           )}
 
@@ -737,6 +728,16 @@ export default function ExamRoom() {
               </div>
             );
           })}
+
+          {/* Gentle time nudge when < 5 min remaining */}
+          {minutesLeft !== null && minutesLeft <= 5 && minutesLeft > 0 && (
+            <div style={{
+              textAlign: 'center', fontSize: 12, fontWeight: 700,
+              color: 'var(--ap-muted)', padding: '8px 0', marginBottom: 8,
+            }}>
+              ⏳ Pensez à soumettre bientôt
+            </div>
+          )}
 
           {/* Submit button */}
           {!confirmSubmit ? (
