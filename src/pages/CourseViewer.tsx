@@ -1,21 +1,32 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { Star } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import {
   getCourseById,
   getCourseProgress,
+  getCourseRatingSummary,
+  getCourseReviews,
+  getSubmission,
+  getUserCourseReview,
   markLessonComplete,
+  submitCourseReview,
+  submitLessonFile,
   unmarkLessonComplete,
+  type CourseReview,
+  type CourseSubmission,
   type Lesson,
   type Module,
 } from "@/lib/courseStorage";
 import { getQuizById } from "@/lib/quizStorage";
+import { assertSafeImportFile } from "@/lib/fileValidation";
 import { sanitizeHtml } from "@/lib/sanitizeHtml";
 import { toast } from "sonner";
 
 /* ─── Type system ──────────────────────────────────────────────── */
 const TYPE_LABEL: Record<string, string> = {
-  text: "Leçon", video: "Vidéo", quiz: "Quiz", flashcard: "Flashcards", document: "Document",
+  text: "Leçon", video: "Vidéo", quiz: "Quiz", poll: "Sondage", flashcard: "Flashcards",
+  document: "Document", iframe: "Iframe", "file-upload": "Dépôt de fichier",
 };
 
 // Background color for the small square icon chip
@@ -23,8 +34,11 @@ const TYPE_IC_BG: Record<string, string> = {
   text:      "#2f7bff",
   video:     "var(--ap-brand)",
   quiz:      "var(--ap-quiz)",
+  poll:      "var(--ap-poll)",
   flashcard: "var(--ap-flash)",
   document:  "var(--ap-pres)",
+  iframe:    "var(--ap-pres)",
+  "file-upload": "var(--ap-brand)",
 };
 
 // Kicker pill: [text color, bg, border]
@@ -32,22 +46,19 @@ const TYPE_KICKER: Record<string, [string, string, string]> = {
   text:      ["#1d55c0", "#eef4ff", "rgba(47,123,255,.4)"],
   video:     ["var(--ap-brand-deep)", "var(--ap-brand-soft)", "rgba(112,72,255,.4)"],
   quiz:      ["var(--ap-quiz-deep)", "var(--ap-quiz-soft)", "rgba(255,90,77,.4)"],
+  poll:      ["var(--ap-poll-deep)", "var(--ap-poll-soft)", "rgba(47,123,255,.4)"],
   flashcard: ["var(--ap-flash-deep)", "var(--ap-flash-soft)", "rgba(255,176,32,.5)"],
   document:  ["var(--ap-pres-deep)", "var(--ap-pres-soft)", "rgba(21,192,138,.4)"],
+  iframe:    ["var(--ap-pres-deep)", "var(--ap-pres-soft)", "rgba(21,192,138,.4)"],
+  "file-upload": ["var(--ap-brand-deep)", "var(--ap-brand-soft)", "rgba(112,72,255,.4)"],
 };
 
 // Big icon background for launch cards
 const TYPE_LAUNCH_BG: Record<string, string> = {
   quiz:      "var(--ap-quiz-soft)",
+  poll:      "var(--ap-poll-soft)",
   flashcard: "var(--ap-flash-soft)",
   document:  "var(--ap-pres-soft)",
-};
-
-// Emoji for launch cards
-const TYPE_LAUNCH_EM: Record<string, string> = {
-  quiz:      "🎯",
-  flashcard: "🃏",
-  document:  "🧪",
 };
 
 /* ─── SVG icons (type chips) ───────────────────────────────────── */
@@ -56,7 +67,10 @@ const TypeIcon = ({ type }: { type: string }) => {
   if (type === "text")      return <svg viewBox="0 0 24 24" style={s}><path d="M4 4h16v3H4zM4 10h16v3H4zM4 16h10v3H4z"/></svg>;
   if (type === "video")     return <svg viewBox="0 0 24 24" style={s}><path d="M6 4l14 8-14 8z"/></svg>;
   if (type === "quiz")      return <svg viewBox="0 0 24 24" style={s}><path d="M12 3 22 21H2z"/></svg>;
+  if (type === "poll")      return <svg viewBox="0 0 24 24" style={s}><path d="M4 20h3V10H4v10zm6.5 0h3V4h-3v16zM17 20h3v-7h-3v7z"/></svg>;
   if (type === "flashcard") return <svg viewBox="0 0 24 24" style={s}><rect x="3" y="5" width="13" height="15" rx="2"/><rect x="9" y="3" width="12" height="15" rx="2"/></svg>;
+  if (type === "iframe")    return <svg viewBox="0 0 24 24" style={s}><path d="M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zm0 5h16M8 14v3M12 14v3M16 14v3"/></svg>;
+  if (type === "file-upload") return <svg viewBox="0 0 24 24" style={s}><path d="M12 3v12M7 9l5-5 5 5M4 19h16"/></svg>;
   return <svg viewBox="0 0 24 24" style={s}><path d="M9 2h6v4l4 12a2 2 0 0 1-2 3H7a2 2 0 0 1-2-3L9 6z"/></svg>;
 };
 
@@ -203,7 +217,54 @@ const CourseViewer = () => {
   const lesson = currentEntry?.lesson;
   const lessonModule = currentEntry?.module;
   const linkedQuiz = lesson?.type === "quiz" && lesson.linkedItemId ? getQuizById(lesson.linkedItemId) : null;
+  const linkedPoll = lesson?.type === "poll" && lesson.linkedItemId ? getQuizById(lesson.linkedItemId) : null;
   const linkedFlashcard = lesson?.type === "flashcard" && lesson.linkedItemId ? getQuizById(lesson.linkedItemId) : null;
+
+  const [submission, setSubmission] = useState<CourseSubmission | null>(null);
+  useEffect(() => {
+    if (!user || !course || !currentLessonId) { setSubmission(null); return; }
+    setSubmission(getSubmission(course.id, currentLessonId, user.id));
+  }, [user, course, currentLessonId]);
+
+  const handleLessonFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user || !course || !currentLessonId) return;
+    try {
+      assertSafeImportFile(file, 8 * 1024 * 1024);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Fichier invalide");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setSubmission(submitLessonFile(course.id, currentLessonId, file.name, reader.result as string));
+      toast.success("Fichier déposé");
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // ── Ratings & reviews (shown on the course landing state, when no lesson is selected) ──
+  const [reviews, setReviews] = useState<CourseReview[]>([]);
+  const [myReview, setMyReview] = useState<CourseReview | null>(null);
+  const [reviewRatingDraft, setReviewRatingDraft] = useState(0);
+  const [reviewCommentDraft, setReviewCommentDraft] = useState("");
+  useEffect(() => {
+    if (!course) return;
+    setReviews(getCourseReviews(course.id));
+    const mine = user ? getUserCourseReview(course.id, user.id) : null;
+    setMyReview(mine);
+    setReviewRatingDraft(mine?.rating ?? 0);
+    setReviewCommentDraft(mine?.comment ?? "");
+  }, [course, user]);
+  const ratingSummary = course ? getCourseRatingSummary(course.id) : { average: 0, count: 0 };
+
+  const handleSubmitReview = () => {
+    if (!course || reviewRatingDraft === 0) { toast.error("Choisissez une note"); return; }
+    const review = submitCourseReview(course.id, reviewRatingDraft, reviewCommentDraft);
+    setMyReview(review);
+    setReviews(getCourseReviews(course.id));
+    toast.success("Avis enregistré, merci !");
+  };
 
   const toggleComplete = () => {
     if (!user || !course || !currentLessonId) return;
@@ -452,8 +513,95 @@ const CourseViewer = () => {
 
           {/* Lesson content */}
           {!lesson ? (
-            <div style={{ textAlign: "center", marginTop: 80, color: "var(--ap-muted)" }}>
-              Sélectionnez une leçon dans le panneau gauche.
+            <div style={{ maxWidth: 720, margin: "0 auto", padding: "34px 32px 60px" }}>
+              {course.overview && (
+                <div className="cv-prose" style={{ marginBottom: 28 }} dangerouslySetInnerHTML={{ __html: sanitizeHtml(course.overview) }} />
+              )}
+
+              {course.objectives && course.objectives.length > 0 && (
+                <div style={{ marginBottom: 28 }}>
+                  <h3 style={{ fontFamily: "var(--ap-font-display)", fontWeight: 600, fontSize: 18, marginBottom: 12 }}>Objectifs pédagogiques</h3>
+                  <ul style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {course.objectives.map((obj, i) => (
+                      <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 15, lineHeight: 1.5 }}>
+                        <span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: "50%", background: "var(--ap-brand-soft)", color: "var(--ap-brand)", display: "grid", placeItems: "center", fontSize: 12, fontWeight: 800, marginTop: 1 }}>✓</span>
+                        {obj}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {!course.overview && (!course.objectives || course.objectives.length === 0) && (
+                <p style={{ textAlign: "center", marginTop: 40, marginBottom: 28, color: "var(--ap-muted)" }}>
+                  Sélectionnez une leçon dans le panneau gauche.
+                </p>
+              )}
+
+              {/* Ratings & reviews */}
+              <div style={{ marginTop: 40, paddingTop: 28, borderTop: "var(--ap-border-w) solid var(--ap-line)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
+                  <h3 style={{ fontFamily: "var(--ap-font-display)", fontWeight: 600, fontSize: 18 }}>Avis</h3>
+                  {ratingSummary.count > 0 && (
+                    <span style={{ fontSize: 13, fontWeight: 700, color: "var(--ap-muted)" }}>
+                      ★ {ratingSummary.average} · {ratingSummary.count} avis
+                    </span>
+                  )}
+                </div>
+
+                <div style={{ background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-lg)", padding: 20, marginBottom: 20 }}>
+                  <p style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>{myReview ? "Modifier mon avis" : "Noter ce cours"}</p>
+                  <div style={{ display: "flex", gap: 4, marginBottom: 12 }}>
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <button
+                        key={n}
+                        onClick={() => setReviewRatingDraft(n)}
+                        style={{ background: "none", border: "none", cursor: "pointer", padding: 2 }}
+                        aria-label={`${n} étoiles`}
+                      >
+                        <Star style={{ width: 22, height: 22, color: n <= reviewRatingDraft ? "#f4970a" : "var(--ap-line-2)" }} fill={n <= reviewRatingDraft ? "#f4970a" : "none"} />
+                      </button>
+                    ))}
+                  </div>
+                  <textarea
+                    value={reviewCommentDraft}
+                    onChange={(e) => setReviewCommentDraft(e.target.value)}
+                    placeholder="Votre avis (optionnel)..."
+                    rows={3}
+                    style={{ width: "100%", padding: "10px 14px", fontFamily: "var(--ap-font-body)", fontSize: 14, color: "var(--ap-ink)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-sm)", resize: "vertical", marginBottom: 12, boxSizing: "border-box" }}
+                  />
+                  <button
+                    onClick={handleSubmitReview}
+                    className="cv-btn"
+                    style={{
+                      display: "inline-flex", alignItems: "center", gap: 8,
+                      fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 13.5,
+                      padding: "10px 18px", borderRadius: 999, border: "none", cursor: "pointer",
+                      color: "#fff", background: "var(--ap-brand)", boxShadow: "0 4px 0 var(--ap-brand-deep)",
+                    }}
+                  >
+                    {myReview ? "Mettre à jour mon avis" : "Publier mon avis"}
+                  </button>
+                </div>
+
+                {reviews.filter((r) => r.comment).length > 0 && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                    {reviews.filter((r) => r.comment).map((r) => (
+                      <div key={r.id} style={{ paddingBottom: 14, borderBottom: "var(--ap-border-w) solid var(--ap-line)" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                          <span style={{ fontWeight: 700, fontSize: 13.5 }}>{r.userName}</span>
+                          <span style={{ display: "flex", gap: 1 }}>
+                            {[1, 2, 3, 4, 5].map((n) => (
+                              <Star key={n} style={{ width: 13, height: 13, color: n <= r.rating ? "#f4970a" : "var(--ap-line-2)" }} fill={n <= r.rating ? "#f4970a" : "none"} />
+                            ))}
+                          </span>
+                        </div>
+                        <p style={{ fontSize: 14, color: "var(--ap-ink)" }}>{r.comment}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           ) : (
             <div style={{ maxWidth: 720, margin: "0 auto", padding: "34px 32px 60px" }}>
@@ -552,6 +700,44 @@ const CourseViewer = () => {
                 </div>
               )}
 
+              {/* ── Poll launch card ── */}
+              {lesson.type === "poll" && (
+                <div style={{
+                  background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-lg)",
+                  boxShadow: "0 5px 0 var(--ap-line)", padding: 24,
+                  display: "flex", alignItems: "center", gap: 20,
+                }}>
+                  <span style={{
+                    flexShrink: 0, width: 64, height: 64, borderRadius: 18,
+                    display: "grid", placeItems: "center", fontSize: 30,
+                    background: TYPE_LAUNCH_BG.poll,
+                  }} aria-hidden="true">📊</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <h3 style={{ fontFamily: "var(--ap-font-display)", fontWeight: 600, fontSize: 18 }}>
+                      {linkedPoll ? linkedPoll.title : lesson.title}
+                    </h3>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: "var(--ap-muted)", marginTop: 3 }}>
+                      {linkedPoll ? `${linkedPoll.questions?.length ?? 0} questions` : "Sondage non lié"}
+                    </p>
+                  </div>
+                  {linkedPoll && (
+                    <button
+                      className="cv-btn"
+                      onClick={() => navigate(`/quiz/${linkedPoll.id}`)}
+                      style={{
+                        display: "inline-flex", alignItems: "center", gap: 9,
+                        fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 14.5,
+                        padding: "12px 22px", borderRadius: 999, border: "none", cursor: "pointer",
+                        color: "#fff", background: "var(--ap-poll)", boxShadow: "0 4px 0 var(--ap-poll-deep)",
+                      }}
+                    >
+                      Lancer
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                    </button>
+                  )}
+                </div>
+              )}
+
               {/* ── Flashcard launch card ── */}
               {lesson.type === "flashcard" && (
                 <div style={{
@@ -641,6 +827,68 @@ const CourseViewer = () => {
                     </a>
                   </div>
                 )
+              )}
+
+              {/* ── Iframe ── */}
+              {lesson.type === "iframe" && (
+                !lesson.iframeUrl ? (
+                  <div style={{
+                    background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-lg)",
+                    boxShadow: "0 5px 0 var(--ap-line)", padding: 24,
+                    display: "flex", alignItems: "center", gap: 20,
+                  }}>
+                    <span style={{ flexShrink: 0, width: 64, height: 64, borderRadius: 18, display: "grid", placeItems: "center", fontSize: 30, background: TYPE_LAUNCH_BG.document }}>🌐</span>
+                    <p style={{ color: "var(--ap-muted)", fontWeight: 700, fontSize: 14 }}>Aucune page intégrée configurée.</p>
+                  </div>
+                ) : (
+                  <div style={{ borderRadius: "var(--ap-r-lg)", overflow: "hidden", border: "var(--ap-border-w) solid var(--ap-line)", boxShadow: "0 5px 0 var(--ap-line)" }}>
+                    <iframe
+                      src={lesson.iframeUrl}
+                      title={lesson.title}
+                      style={{ width: "100%", height: "70vh", border: "none", display: "block" }}
+                    />
+                  </div>
+                )
+              )}
+
+              {/* ── File upload ── */}
+              {lesson.type === "file-upload" && (
+                <div>
+                  {lesson.content && (
+                    <div className="cv-prose" style={{ marginBottom: 20 }} dangerouslySetInnerHTML={{ __html: sanitizeHtml(lesson.content) }} />
+                  )}
+                  <div style={{
+                    background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-lg)",
+                    boxShadow: "0 5px 0 var(--ap-line)", padding: 24,
+                  }}>
+                    {submission ? (
+                      <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                        <span style={{ flexShrink: 0, width: 48, height: 48, borderRadius: 14, display: "grid", placeItems: "center", fontSize: 22, background: TYPE_LAUNCH_BG.document }}>✅</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ fontWeight: 700, fontSize: 14.5 }}>{submission.fileName}</p>
+                          <p style={{ fontSize: 12.5, color: "var(--ap-muted)", fontWeight: 700, marginTop: 2 }}>
+                            Déposé le {new Date(submission.submittedAt).toLocaleString("fr")}
+                          </p>
+                        </div>
+                        <label className="cv-btn" style={{ display: "inline-flex", alignItems: "center", gap: 8, fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 13.5, padding: "10px 16px", borderRadius: 999, cursor: "pointer", color: "var(--ap-ink)", background: "var(--ap-card)", boxShadow: "0 4px 0 var(--ap-line), inset 0 0 0 2px var(--ap-line)" }}>
+                          Remplacer
+                          <input type="file" style={{ display: "none" }} onChange={handleLessonFileUpload} />
+                        </label>
+                      </div>
+                    ) : (
+                      <label style={{
+                        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                        gap: 8, padding: 32, border: "var(--ap-border-w) dashed var(--ap-line-2)", borderRadius: "var(--ap-r-sm)",
+                        cursor: "pointer", background: "var(--ap-paper-2)",
+                      }}>
+                        <span style={{ fontSize: 28 }} aria-hidden="true">📤</span>
+                        <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--ap-muted)" }}>Déposer un fichier</span>
+                        <span style={{ fontSize: 11.5, color: "var(--ap-muted)" }}>Max 8 Mo</span>
+                        <input type="file" style={{ display: "none" }} onChange={handleLessonFileUpload} />
+                      </label>
+                    )}
+                  </div>
+                </div>
               )}
 
             </div>
