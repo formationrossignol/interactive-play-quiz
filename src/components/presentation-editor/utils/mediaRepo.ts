@@ -1,8 +1,8 @@
 // src/components/presentation-editor/utils/mediaRepo.ts
 import { supabase } from "@/lib/supabase";
 
-const IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
-const VIDEO_TYPES = ["video/mp4", "video/webm"];
+export const IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
+export const VIDEO_TYPES = ["video/mp4", "video/webm"];
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
 

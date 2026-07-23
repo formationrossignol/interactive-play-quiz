@@ -1,3 +1,4 @@
+import { Loader2 } from "lucide-react";
 import type { VideoElement } from "../types/presentation";
 
 function embedUrl(element: VideoElement): string | null {
@@ -15,6 +16,13 @@ function embedUrl(element: VideoElement): string | null {
 }
 
 export function VideoElementView({ element }: { element: VideoElement }) {
+  if (element.provider === "upload" && !element.src) {
+    return (
+      <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--ap-paper-2)", border: "1px dashed var(--ap-line)", color: "var(--ap-muted)" }}>
+        <Loader2 size={20} className="animate-spin" />
+      </div>
+    );
+  }
   if (element.provider === "upload") {
     return <video src={element.src} style={{ width: "100%", height: "100%", objectFit: "cover" }} controls />;
   }

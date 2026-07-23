@@ -9,6 +9,7 @@ interface EditorUIState {
   zoom: number;
   isDragging: boolean;
   activePanel: "properties" | null;
+  editingElementId: string | null;
 
   select: (ids: string[]) => void;
   toggleSelect: (id: string) => void;
@@ -18,6 +19,7 @@ interface EditorUIState {
   setZoom: (zoom: number) => void;
   setDragging: (dragging: boolean) => void;
   setActivePanel: (panel: "properties" | null) => void;
+  setEditingElementId: (id: string | null) => void;
   reset: () => void;
 }
 
@@ -31,6 +33,7 @@ const initial = {
   zoom: 1,
   isDragging: false,
   activePanel: null as "properties" | null,
+  editingElementId: null as string | null,
 };
 
 export const useEditorUIStore = create<EditorUIState>((set) => ({
@@ -48,5 +51,6 @@ export const useEditorUIStore = create<EditorUIState>((set) => ({
   setZoom: (zoom) => set({ zoom: Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, zoom)) }),
   setDragging: (dragging) => set({ isDragging: dragging }),
   setActivePanel: (panel) => set({ activePanel: panel }),
+  setEditingElementId: (id) => set({ editingElementId: id }),
   reset: () => set({ ...initial, selectedIds: new Set() }),
 }));
