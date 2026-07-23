@@ -1,0 +1,338 @@
+/* ============================================================
+   Brivia · Thème « Studio » — sobre, produit, anti-Kahoot
+   ------------------------------------------------------------
+   Activé par data-theme="studio" sur <html> (réglage du profil).
+   Même grammaire de tokens et de classes que Arcade Pop, mais
+   positionne Brivia comme un studio d'activités pédagogiques
+   (Notion / Linear / Slido) plutôt qu'un jeu télévisé :
+
+     · encre #172033, fond #F7F8FB, surfaces blanches, un seul
+       accent de marque (indigo #5B4FE9) + un accent vivant rare
+       (corail #FF7657) — jamais de rouge/vert/bleu/orange francs
+       ensemble sur un même écran
+     · Plus Jakarta Sans partout (display + corps) — remplace
+       Fredoka/Nunito, aucune police enfantine
+     · boutons plats : ombre fine 1-2px, jamais d'ombre 3D colorée,
+       aucun rebond ni écrasement au clic (transform: none)
+     · rayons 8-14px (pas 24-30px), bordures fines 1px
+     · couleurs de contenu comme SIGNAL secondaire seulement
+       (badges, filets) — désaturées, jamais en aplat plein écran
+
+   Importé APRÈS arcade-pop.css : à spécificité égale ou
+   supérieure, ces règles gagnent la cascade. Se combine avec .dark.
+   ============================================================ */
+
+@import '@fontsource-variable/plus-jakarta-sans';
+
+/* ============================================================
+   1. TOKENS
+   ============================================================ */
+:root[data-theme="studio"] {
+  /* Couleurs par TYPE de contenu — signal discret, jamais un aplat plein écran */
+  --ap-quiz:        #d3654f;  --ap-quiz-deep:   #a8493a;  --ap-quiz-soft:  #fbeeec;
+  --ap-pres:        #7c6ae8;  --ap-pres-deep:   #5b4fe9;  --ap-pres-soft:  #efedfc;
+  --ap-poll:        #3b7dd8;  --ap-poll-deep:   #2b5ea8;  --ap-poll-soft:  #eaf2fb;
+  --ap-flash:       #c98a2e;  --ap-flash-deep:  #97661c;  --ap-flash-soft: #f8f0e2;
+
+  /* Marque : indigo unique, accent vivant réservé aux moments rares */
+  --ap-brand:       #5b4fe9;  --ap-brand-deep:  #4438c2;  --ap-brand-soft: #ecebfc;
+  --ap-logo-diamond: #5b4fe9;
+  --ap-accent-live: #ff7657;  /* accent vivant — célébrations, jamais les CTA courants */
+  --ap-success:     #21a179;
+
+  --ap-ink:         #172033;  /* texte principal */
+  --ap-muted:       #5b6478;  /* texte secondaire */
+  --ap-paper:       #f7f8fb;  /* fond app */
+  --ap-paper-2:     #eef0f5;  /* zones */
+  --ap-card:        #ffffff;  /* surfaces */
+  --ap-line:        #e5e7ef;  /* bordures / séparateurs */
+  --ap-line-2:      #d3d7e2;  /* bordures pointillées / dropzones */
+
+  /* Rayons — modernes, pas ludiques */
+  --ap-r-sm: 8px;
+  --ap-r-md: 10px;
+  --ap-r-lg: 14px;
+  --ap-r-xl: 16px;
+  --ap-r-pill: 999px;
+
+  /* Ombres plates — jamais d'offset 3D coloré */
+  --ap-shadow-soft:  0 1px 2px rgba(23, 32, 51, .08);
+  --ap-shadow-card:  0 4px 12px rgba(23, 32, 51, .08);
+  --ap-shadow-float: 0 12px 28px rgba(23, 32, 51, .12);
+
+  /* Typo — Plus Jakarta Sans partout, aucune police enfantine */
+  --ap-font-display: 'Plus Jakarta Sans Variable', 'Plus Jakarta Sans', system-ui, sans-serif;
+  --ap-font-body:    'Plus Jakarta Sans Variable', 'Plus Jakarta Sans', system-ui, sans-serif;
+
+  /* Transitions nettes, aucun dépassement ressort */
+  --ap-ease:   cubic-bezier(.25, .1, .25, 1);
+  --ap-spring: cubic-bezier(.25, .1, .25, 1);
+
+  /* Pas de trame de points — surface unie */
+  --ap-texture: none;
+  --ap-border-w: 1px;
+}
+
+/* ── Variante sombre — encre profonde, indigo inchangé ── */
+.dark[data-theme="studio"] {
+  --ap-paper:       #0e1420;
+  --ap-paper-2:     #141b2b;
+  --ap-card:        #17202f;
+  --ap-line:        #263145;
+  --ap-line-2:      #384258;
+  --ap-ink:         #f2f4f8;
+  --ap-muted:       #97a1b8;
+
+  --ap-brand:       #7b70f0;
+  --ap-brand-deep:  #5b4fe9;
+  --ap-brand-soft:  #241f47;
+
+  --ap-quiz-soft:   #3a1f1a;
+  --ap-pres-soft:   #201c47;
+  --ap-poll-soft:   #172538;
+  --ap-flash-soft:  #332608;
+
+  --ap-shadow-soft:  0 1px 2px rgba(0, 0, 0, .35);
+  --ap-shadow-card:  0 4px 12px rgba(0, 0, 0, .4);
+  --ap-shadow-float: 0 12px 28px rgba(0, 0, 0, .5);
+}
+
+/* Textes « deep » sur fonds soft, version sombre */
+.dark[data-theme="studio"] .ap-badge--quiz  { color: #e8a396; }
+.dark[data-theme="studio"] .ap-badge--pres  { color: #b3a9f5; }
+.dark[data-theme="studio"] .ap-badge--poll  { color: #93bdec; }
+.dark[data-theme="studio"] .ap-badge--flash { color: #e0b567; }
+.dark[data-theme="studio"] .ap-badge--brand { color: #b3a9f5; }
+.dark[data-theme="studio"] .ap-lead { color: var(--ap-muted); }
+
+/* ============================================================
+   2. FOND & SIGNALÉTIQUE GLOBALE
+   ============================================================ */
+
+/* Fond uni — pas de trame de points */
+[data-theme="studio"] .ap-app { background-image: none; }
+
+[data-theme="studio"] .ap-app :focus-visible {
+  outline: 2px solid var(--ap-brand);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+[data-theme="studio"] .ap-app ::selection {
+  background: var(--ap-brand-soft);
+  color: var(--ap-brand-deep);
+}
+
+[data-theme="studio"] a:not([class]) {
+  color: var(--ap-brand);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+[data-theme="studio"] a:not([class]):hover { color: var(--ap-brand-deep); }
+
+/* ============================================================
+   3. TYPOGRAPHIE — éditoriale, dense sans excès
+   ============================================================ */
+[data-theme="studio"] .ap-display,
+[data-theme="studio"] .ap-h1 { font-weight: 700; letter-spacing: -.02em; }
+[data-theme="studio"] .ap-h2 { font-weight: 700; letter-spacing: -.01em; }
+[data-theme="studio"] .ap-h3 { font-weight: 600; }
+[data-theme="studio"] .ap-lead { color: var(--ap-muted); font-weight: 400; }
+
+/* ============================================================
+   4. BOUTONS — plats, aucune ombre 3D, aucun rebond
+   ============================================================ */
+[data-theme="studio"] .ap-btn {
+  font-weight: 600;
+  box-shadow: var(--ap-shadow-soft);
+  transition: background-color .16s var(--ap-ease), box-shadow .16s var(--ap-ease), border-color .16s var(--ap-ease);
+}
+[data-theme="studio"] .ap-btn:hover {
+  transform: none;
+  background: var(--ap-brand-deep);
+  box-shadow: var(--ap-shadow-card);
+}
+[data-theme="studio"] .ap-btn:active {
+  transform: none;
+  background: var(--ap-brand-deep);
+  box-shadow: var(--ap-shadow-soft);
+}
+
+[data-theme="studio"] .ap-btn--quiz  { background: var(--ap-quiz);  box-shadow: var(--ap-shadow-soft); }
+[data-theme="studio"] .ap-btn--quiz:hover  { background: var(--ap-quiz-deep);  box-shadow: var(--ap-shadow-card); transform: none; }
+[data-theme="studio"] .ap-btn--quiz:active { background: var(--ap-quiz-deep);  box-shadow: var(--ap-shadow-soft); transform: none; }
+[data-theme="studio"] .ap-btn--pres  { background: var(--ap-pres);  box-shadow: var(--ap-shadow-soft); }
+[data-theme="studio"] .ap-btn--pres:hover  { background: var(--ap-pres-deep);  box-shadow: var(--ap-shadow-card); transform: none; }
+[data-theme="studio"] .ap-btn--pres:active { background: var(--ap-pres-deep);  box-shadow: var(--ap-shadow-soft); transform: none; }
+[data-theme="studio"] .ap-btn--poll  { background: var(--ap-poll);  box-shadow: var(--ap-shadow-soft); }
+[data-theme="studio"] .ap-btn--poll:hover  { background: var(--ap-poll-deep);  box-shadow: var(--ap-shadow-card); transform: none; }
+[data-theme="studio"] .ap-btn--poll:active { background: var(--ap-poll-deep);  box-shadow: var(--ap-shadow-soft); transform: none; }
+[data-theme="studio"] .ap-btn--flash { background: var(--ap-flash); box-shadow: var(--ap-shadow-soft); color: #fff; }
+[data-theme="studio"] .ap-btn--flash:hover  { background: var(--ap-flash-deep); box-shadow: var(--ap-shadow-card); transform: none; }
+[data-theme="studio"] .ap-btn--flash:active { background: var(--ap-flash-deep); box-shadow: var(--ap-shadow-soft); transform: none; }
+
+[data-theme="studio"] .ap-btn--ghost {
+  background: var(--ap-card); color: var(--ap-ink);
+  box-shadow: inset 0 0 0 1px var(--ap-line);
+}
+[data-theme="studio"] .ap-btn--ghost:hover {
+  transform: none;
+  background: var(--ap-paper-2);
+  box-shadow: inset 0 0 0 1px var(--ap-line-2);
+}
+[data-theme="studio"] .ap-btn--ghost:active {
+  transform: none;
+  background: var(--ap-paper-2);
+  box-shadow: inset 0 0 0 1px var(--ap-line-2);
+}
+
+/* ============================================================
+   5. CARTES — filet fin, ombre plate, léger lift au survol
+   ============================================================ */
+[data-theme="studio"] .ap-card {
+  border-width: 1px;
+  box-shadow: var(--ap-shadow-soft);
+}
+[data-theme="studio"] .ap-card--floaty { box-shadow: var(--ap-shadow-card); border-radius: var(--ap-r-lg); }
+[data-theme="studio"] .ap-card--hover:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--ap-shadow-card);
+  border-color: var(--ap-line-2);
+}
+
+/* ============================================================
+   6. RÉPONSES DE QUIZ — lignes sélectionnables, pas des tuiles de jeu
+   ============================================================ */
+[data-theme="studio"] .ap-answer {
+  font-weight: 600;
+  box-shadow: var(--ap-shadow-soft);
+  transition: background .12s var(--ap-ease), border-color .12s var(--ap-ease), box-shadow .12s var(--ap-ease);
+}
+[data-theme="studio"] .ap-answer:hover {
+  background: var(--ap-paper-2);
+  border-color: var(--ap-line-2);
+  transform: none;
+  box-shadow: var(--ap-shadow-card);
+}
+[data-theme="studio"] .ap-answer:active { transform: none; box-shadow: var(--ap-shadow-soft); }
+
+/* Forme géométrique désaturée — signal discret, pas une identité par couleur vive */
+[data-theme="studio"] .ap-answer__shape { border-radius: var(--ap-r-sm); }
+
+[data-theme="studio"] .ap-answer--1.ap-answer--selected, [data-theme="studio"] .ap-answer--1.ap-answer--selected:hover {
+  box-shadow: inset 0 0 0 1px var(--ap-quiz); transform: none;
+}
+[data-theme="studio"] .ap-answer--2.ap-answer--selected, [data-theme="studio"] .ap-answer--2.ap-answer--selected:hover {
+  box-shadow: inset 0 0 0 1px var(--ap-poll); transform: none;
+}
+[data-theme="studio"] .ap-answer--3.ap-answer--selected, [data-theme="studio"] .ap-answer--3.ap-answer--selected:hover {
+  box-shadow: inset 0 0 0 1px var(--ap-pres); transform: none;
+}
+[data-theme="studio"] .ap-answer--4.ap-answer--selected, [data-theme="studio"] .ap-answer--4.ap-answer--selected:hover {
+  box-shadow: inset 0 0 0 1px var(--ap-flash); transform: none;
+}
+
+[data-theme="studio"] .ap-answer--solid { box-shadow: var(--ap-shadow-soft); }
+[data-theme="studio"] .ap-answer--solid:hover { transform: none; }
+[data-theme="studio"] .ap-answer--solid:active { transform: none; }
+
+[data-theme="studio"] .ap-answer--correct,
+[data-theme="studio"] .ap-answer--correct:hover,
+[data-theme="studio"] .ap-answer--correct:active {
+  background: var(--ap-success);
+  box-shadow: var(--ap-shadow-soft);
+  animation: none;
+}
+[data-theme="studio"] .ap-answer--wrong { animation: none; }
+
+/* ============================================================
+   7. FORMULAIRES — filets fins, focus indigo
+   ============================================================ */
+[data-theme="studio"] .ap-input,
+[data-theme="studio"] .ap-textarea,
+[data-theme="studio"] .ap-code {
+  border-width: 1px;
+  font-weight: 500;
+}
+[data-theme="studio"] .ap-input::placeholder,
+[data-theme="studio"] .ap-textarea::placeholder { color: var(--ap-line-2); }
+[data-theme="studio"] .ap-input:focus,
+[data-theme="studio"] .ap-textarea:focus,
+[data-theme="studio"] .ap-code:focus {
+  border-color: var(--ap-brand);
+  box-shadow: 0 0 0 3px var(--ap-brand-soft);
+}
+[data-theme="studio"] .ap-dropzone {
+  border: 1px dashed var(--ap-line-2);
+  background: var(--ap-paper-2);
+}
+[data-theme="studio"] .ap-dropzone:hover {
+  border-color: var(--ap-brand);
+  background: var(--ap-card);
+}
+
+/* Segmented control */
+[data-theme="studio"] .ap-seg button {
+  border-width: 1px;
+  background: var(--ap-card);
+}
+[data-theme="studio"] .ap-seg button.is-on {
+  background: var(--ap-brand);
+  border-color: var(--ap-brand);
+}
+
+/* Interrupteur */
+[data-theme="studio"] .ap-switch { background: var(--ap-line-2); box-shadow: none; }
+[data-theme="studio"] .ap-switch[aria-checked="true"],
+[data-theme="studio"] .ap-switch.is-on { background: var(--ap-brand); }
+
+/* ============================================================
+   8. PILLS, BADGES, EYEBROW — compacts, désaturés
+   ============================================================ */
+[data-theme="studio"] .ap-pill,
+[data-theme="studio"] .ap-badge {
+  border-radius: var(--ap-r-sm);
+  font-weight: 700;
+}
+[data-theme="studio"] .ap-eyebrow {
+  border-radius: var(--ap-r-sm);
+  border: 1px solid var(--ap-line);
+}
+[data-theme="studio"] .ap-eyebrow__dot { background: var(--ap-success); animation: none; }
+
+/* Type badges — contour discret, aucune rotation ludique au survol */
+[data-theme="studio"] .ap-type-badge:hover { transform: none; }
+
+/* ============================================================
+   9. MARQUE & NAVIGATION
+   ============================================================ */
+[data-theme="studio"] .ap-logo {
+  box-shadow: none;
+  transform: none;
+}
+[data-theme="studio"] .ap-logo:hover { transform: none; }
+
+[data-theme="studio"] .ap-nav-pill {
+  border-width: 1px;
+  box-shadow: none;
+}
+[data-theme="studio"] .ap-nav-pill__item:hover,
+[data-theme="studio"] .ap-nav-pill__item[aria-current="page"] {
+  color: var(--ap-brand);
+  background: var(--ap-brand-soft);
+}
+
+/* ============================================================
+   10. MOUVEMENT — pas de rebond, pas de confettis exubérants
+   ============================================================ */
+[data-theme="studio"] .ap-float-pill { animation: none; }
+[data-theme="studio"] .ap-score-pill { animation: none; }
+
+/* ============================================================
+   11. CONSOLE ADMIN
+   ============================================================ */
+[data-theme="studio"] .adm-btn {
+  border-radius: var(--ap-r-md);
+  box-shadow: none;
+}
+[data-theme="studio"] .adm-btn:hover { transform: none; box-shadow: none; filter: brightness(.96); }
+[data-theme="studio"] .adm-btn:active { transform: none; box-shadow: none; filter: brightness(.92); }
