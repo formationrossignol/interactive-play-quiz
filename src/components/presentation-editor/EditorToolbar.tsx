@@ -1,20 +1,71 @@
 // src/components/presentation-editor/EditorToolbar.tsx
+import { useEffect, useRef, useState } from "react";
+import {
+  AlignHorizontalDistributeCenter,
+  AlignHorizontalJustifyCenter,
+  AlignHorizontalJustifyEnd,
+  AlignHorizontalJustifyStart,
+  AlignVerticalDistributeCenter,
+  AlignVerticalJustifyCenter,
+  AlignVerticalJustifyEnd,
+  AlignVerticalJustifyStart,
+  ArrowUpRight,
+  ChevronDown,
+  Circle,
+  Group,
+  Image as ImageIcon,
+  Minus,
+  MousePointer2,
+  Square,
+  Type,
+  Ungroup,
+  Video as VideoIcon,
+} from "lucide-react";
 import { useDocStore } from "./store/useDocStore";
 import { useEditorUIStore, type EditorTool } from "./store/useEditorUIStore";
 import { useHistoryStore } from "./store/useHistoryStore";
 import { alignLeft, alignCenterH, alignRight, alignTop, alignMiddleV, alignBottom, distributeHorizontal, distributeVertical } from "./utils/geometry";
 import type { SlideElement } from "./types/presentation";
 
-const TOOLS: { id: EditorTool; label: string }[] = [
-  { id: "select", label: "Sélection" },
-  { id: "text", label: "Texte" },
-  { id: "image", label: "Image" },
-  { id: "rect", label: "Rectangle" },
-  { id: "circle", label: "Cercle" },
-  { id: "line", label: "Ligne" },
-  { id: "arrow", label: "Flèche" },
-  { id: "video", label: "Vidéo" },
+const SHAPE_TOOLS: { id: EditorTool; label: string; Icon: typeof Square }[] = [
+  { id: "rect", label: "Rectangle", Icon: Square },
+  { id: "circle", label: "Cercle", Icon: Circle },
+  { id: "line", label: "Ligne", Icon: Minus },
+  { id: "arrow", label: "Flèche", Icon: ArrowUpRight },
 ];
+
+function ToolButton({
+  active, label, onClick, children,
+}: { active: boolean; label: string; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      title={label}
+      aria-label={label}
+      aria-pressed={active}
+      onClick={onClick}
+      style={{
+        width: 34,
+        height: 34,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        border: "none",
+        borderRadius: "var(--ap-r-sm)",
+        cursor: "pointer",
+        background: active ? "var(--ap-brand)" : "transparent",
+        color: active ? "#fff" : "var(--ap-ink)",
+        flexShrink: 0,
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+function Separator() {
+  return <span style={{ width: 1, height: 22, background: "var(--ap-line)", margin: "0 4px", flexShrink: 0 }} />;
+}
 
 export function EditorToolbar({ slideId }: { slideId: string }) {
   const activeTool = useEditorUIStore((s) => s.activeTool);
@@ -22,8 +73,23 @@ export function EditorToolbar({ slideId }: { slideId: string }) {
   const selectedIds = useEditorUIStore((s) => s.selectedIds);
   const presentation = useDocStore((s) => s.presentation);
 
+  const [shapesOpen, setShapesOpen] = useState(false);
+  const [lastShape, setLastShape] = useState<EditorTool>("rect");
+  const shapesRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!shapesOpen) return;
+    function onDocPointerDown(e: PointerEvent) {
+      if (shapesRef.current && !shapesRef.current.contains(e.target as Node)) setShapesOpen(false);
+    }
+    document.addEventListener("pointerdown", onDocPointerDown);
+    return () => document.removeEventListener("pointerdown", onDocPointerDown);
+  }, [shapesOpen]);
+
   const slide = presentation?.slides.find((s) => s.id === slideId);
   const selected = slide ? slide.elements.filter((el) => selectedIds.has(el.id)) : [];
+  const isShapeToolActive = SHAPE_TOOLS.some((t) => t.id === activeTool);
+  const ActiveShapeIcon = SHAPE_TOOLS.find((t) => t.id === lastShape)?.Icon ?? Square;
 
   function applyAlign(fn: (els: SlideElement[]) => SlideElement[]) {
     if (selected.length < 2) return;
@@ -33,55 +99,90 @@ export function EditorToolbar({ slideId }: { slideId: string }) {
   }
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderBottom: "var(--ap-border-w) solid var(--ap-line)", flexWrap: "wrap" }}>
-      {TOOLS.map((tool) => (
+    <div style={{ display: "flex", alignItems: "center", gap: 2, padding: "6px 12px", borderBottom: "var(--ap-border-w) solid var(--ap-line)", flexWrap: "wrap" }}>
+      <ToolButton active={activeTool === "select"} label="Sélection" onClick={() => setActiveTool("select")}>
+        <MousePointer2 size={18} />
+      </ToolButton>
+      <ToolButton active={activeTool === "text"} label="Texte" onClick={() => setActiveTool("text")}>
+        <Type size={18} />
+      </ToolButton>
+      <ToolButton active={activeTool === "image"} label="Image" onClick={() => setActiveTool("image")}>
+        <ImageIcon size={18} />
+      </ToolButton>
+      <ToolButton active={activeTool === "video"} label="Vidéo" onClick={() => setActiveTool("video")}>
+        <VideoIcon size={18} />
+      </ToolButton>
+
+      <div ref={shapesRef} style={{ position: "relative", display: "flex", alignItems: "center" }}>
+        <ToolButton active={isShapeToolActive} label="Formes" onClick={() => setActiveTool(lastShape)}>
+          <ActiveShapeIcon size={18} />
+        </ToolButton>
         <button
-          key={tool.id}
-          onClick={() => setActiveTool(tool.id)}
-          className="ap-btn ap-btn--sm ap-btn--pill"
-          aria-pressed={activeTool === tool.id}
-          style={{ background: activeTool === tool.id ? "var(--ap-brand)" : "var(--ap-card)", color: activeTool === tool.id ? "#fff" : "var(--ap-ink)" }}
+          type="button"
+          aria-label="Choisir une forme"
+          aria-expanded={shapesOpen}
+          onClick={() => setShapesOpen((v) => !v)}
+          style={{ width: 16, height: 34, display: "flex", alignItems: "center", justifyContent: "center", border: "none", background: "transparent", cursor: "pointer", color: "var(--ap-muted)" }}
         >
-          {tool.label}
+          <ChevronDown size={12} />
         </button>
-      ))}
+        {shapesOpen && (
+          <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, display: "flex", gap: 2, padding: 4, background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-sm)", boxShadow: "0 4px 12px rgba(0,0,0,.12)", zIndex: 10 }}>
+            {SHAPE_TOOLS.map(({ id, label, Icon }) => (
+              <ToolButton
+                key={id}
+                active={activeTool === id}
+                label={label}
+                onClick={() => { setActiveTool(id); setLastShape(id); setShapesOpen(false); }}
+              >
+                <Icon size={18} />
+              </ToolButton>
+            ))}
+          </div>
+        )}
+      </div>
 
       {selected.length >= 2 && (
         <>
-          <span style={{ width: 1, height: 20, background: "var(--ap-line)", margin: "0 4px" }} />
-          <button className="ap-btn ap-btn--sm ap-btn--ghost" aria-label="Aligner à gauche" onClick={() => applyAlign(alignLeft)}>⟸</button>
-          <button className="ap-btn ap-btn--sm ap-btn--ghost" aria-label="Centrer horizontalement" onClick={() => applyAlign(alignCenterH)}>⇹</button>
-          <button className="ap-btn ap-btn--sm ap-btn--ghost" aria-label="Aligner à droite" onClick={() => applyAlign(alignRight)}>⟹</button>
-          <button className="ap-btn ap-btn--sm ap-btn--ghost" aria-label="Aligner en haut" onClick={() => applyAlign(alignTop)}>⟰</button>
-          <button className="ap-btn ap-btn--sm ap-btn--ghost" aria-label="Centrer verticalement" onClick={() => applyAlign(alignMiddleV)}>⇳</button>
-          <button className="ap-btn ap-btn--sm ap-btn--ghost" aria-label="Aligner en bas" onClick={() => applyAlign(alignBottom)}>⟱</button>
+          <Separator />
+          <ToolButton active={false} label="Aligner à gauche" onClick={() => applyAlign(alignLeft)}><AlignHorizontalJustifyStart size={18} /></ToolButton>
+          <ToolButton active={false} label="Centrer horizontalement" onClick={() => applyAlign(alignCenterH)}><AlignHorizontalJustifyCenter size={18} /></ToolButton>
+          <ToolButton active={false} label="Aligner à droite" onClick={() => applyAlign(alignRight)}><AlignHorizontalJustifyEnd size={18} /></ToolButton>
+          <ToolButton active={false} label="Aligner en haut" onClick={() => applyAlign(alignTop)}><AlignVerticalJustifyStart size={18} /></ToolButton>
+          <ToolButton active={false} label="Centrer verticalement" onClick={() => applyAlign(alignMiddleV)}><AlignVerticalJustifyCenter size={18} /></ToolButton>
+          <ToolButton active={false} label="Aligner en bas" onClick={() => applyAlign(alignBottom)}><AlignVerticalJustifyEnd size={18} /></ToolButton>
           {selected.length >= 3 && (
             <>
-              <button className="ap-btn ap-btn--sm ap-btn--ghost" aria-label="Distribuer horizontalement" onClick={() => applyAlign(distributeHorizontal)}>⇔</button>
-              <button className="ap-btn ap-btn--sm ap-btn--ghost" aria-label="Distribuer verticalement" onClick={() => applyAlign(distributeVertical)}>⇕</button>
+              <ToolButton active={false} label="Distribuer horizontalement" onClick={() => applyAlign(distributeHorizontal)}><AlignHorizontalDistributeCenter size={18} /></ToolButton>
+              <ToolButton active={false} label="Distribuer verticalement" onClick={() => applyAlign(distributeVertical)}><AlignVerticalDistributeCenter size={18} /></ToolButton>
             </>
           )}
-          <button
-            className="ap-btn ap-btn--sm ap-btn--ghost"
+          <ToolButton
+            active={false}
+            label="Grouper"
             onClick={() => {
               useHistoryStore.getState().commit();
               useDocStore.getState().groupElements(slideId, [...selectedIds]);
             }}
           >
-            Grouper
-          </button>
+            <Group size={18} />
+          </ToolButton>
         </>
       )}
       {selected.length === 1 && selected[0].type === "group" && (
-        <button
-          className="ap-btn ap-btn--sm ap-btn--ghost"
-          onClick={() => {
-            useHistoryStore.getState().commit();
-            useDocStore.getState().ungroupElements(slideId, selected[0].id);
-          }}
-        >
-          Dégrouper
-        </button>
+        <>
+          <Separator />
+          <ToolButton
+            active={false}
+            label="Dégrouper"
+            onClick={() => {
+              useHistoryStore.getState().commit();
+              useDocStore.getState().ungroupElements(slideId, selected[0].id);
+            }}
+          >
+            <Ungroup size={18} />
+          </ToolButton>
+        </>
       )}
     </div>
   );

@@ -1,5 +1,5 @@
-import { useState } from "react";
 import type { SlideElement } from "../types/presentation";
+import { useEditorUIStore } from "../store/useEditorUIStore";
 import { TextElementView } from "./TextElementView";
 import { TextElementEditing } from "./TextElementEditing";
 import { ImageElementView } from "./ImageElementView";
@@ -26,7 +26,9 @@ interface CanvasElementProps {
  *  positioned elements). Never wrap this component in another div to attach
  *  handlers — extend these two props instead. */
 export function CanvasElement({ slideId, element, elementRef, onPointerDown }: CanvasElementProps) {
-  const [editing, setEditing] = useState(false);
+  const editingElementId = useEditorUIStore((s) => s.editingElementId);
+  const setEditingElementId = useEditorUIStore((s) => s.setEditingElementId);
+  const editing = editingElementId === element.id;
   if (element.type === "line" || element.type === "arrow") return null;
   if (!element.visible) return null;
 
@@ -35,7 +37,7 @@ export function CanvasElement({ slideId, element, elementRef, onPointerDown }: C
       ref={elementRef}
       data-element-id={element.id}
       onPointerDown={onPointerDown}
-      onDoubleClick={() => { if (element.type === "text") setEditing(true); }}
+      onDoubleClick={() => { if (element.type === "text") setEditingElementId(element.id); }}
       style={{
         position: "absolute",
         left: element.x, top: element.y,
@@ -47,7 +49,7 @@ export function CanvasElement({ slideId, element, elementRef, onPointerDown }: C
       }}
     >
       {element.type === "text" && (editing
-        ? <TextElementEditing slideId={slideId} element={element} onDone={() => setEditing(false)} />
+        ? <TextElementEditing slideId={slideId} element={element} onDone={() => setEditingElementId(null)} />
         : <TextElementView element={element} />)}
       {element.type === "image" && <ImageElementView element={element} />}
       {(element.type === "rect" || element.type === "circle") && <ShapeElementView element={element} />}
