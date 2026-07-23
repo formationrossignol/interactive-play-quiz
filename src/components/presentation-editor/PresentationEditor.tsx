@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { ChevronRight, Home } from "lucide-react";
 import { toast } from "sonner";
 import { useDocStore } from "./store/useDocStore";
 import { useEditorUIStore } from "./store/useEditorUIStore";
@@ -20,6 +22,7 @@ interface PresentationEditorProps {
 }
 
 export function PresentationEditor({ contentId, userId, initialPresenting = false }: PresentationEditorProps) {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(!!contentId);
   const [presenting, setPresenting] = useState(initialPresenting);
   const presentation = useDocStore((s) => s.presentation);
@@ -76,7 +79,31 @@ export function PresentationEditor({ contentId, userId, initialPresenting = fals
   return (
     <div style={{ height: "100vh", display: "flex", flexDirection: "column" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 16px", borderBottom: "var(--ap-border-w) solid var(--ap-line)" }}>
-        {editingTitle ? (
+        <nav aria-label="Fil d'ariane" style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+          <button
+            onClick={() => navigate("/")}
+            aria-label="Accueil"
+            style={{
+              display: "grid", placeItems: "center", width: 32, height: 32,
+              borderRadius: "50%", border: "var(--ap-border-w) solid var(--ap-line)",
+              background: "var(--ap-card)", cursor: "pointer", flexShrink: 0,
+            }}
+          >
+            <Home style={{ width: 15, height: 15, color: "var(--ap-ink)" }} />
+          </button>
+          <ChevronRight style={{ width: 14, height: 14, color: "var(--ap-line-2)", flexShrink: 0 }} />
+          <button
+            onClick={() => navigate("/my-slides")}
+            style={{
+              background: "none", border: "none", cursor: "pointer", padding: 0,
+              fontFamily: "var(--ap-font-body)", fontSize: 14, fontWeight: 700,
+              color: "var(--ap-muted)", whiteSpace: "nowrap",
+            }}
+          >
+            Mes Slides
+          </button>
+          <ChevronRight style={{ width: 14, height: 14, color: "var(--ap-line-2)", flexShrink: 0 }} />
+          {editingTitle ? (
           <input
             autoFocus
             value={titleDraft}
@@ -101,6 +128,7 @@ export function PresentationEditor({ contentId, userId, initialPresenting = fals
             {presentation.title}
           </span>
         )}
+        </nav>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <span style={{ fontSize: 12, color: "var(--ap-muted)" }}>
             {status === "saving" ? "Enregistrement…" : status === "saved" ? "Enregistré" : status === "error" ? "Erreur d'enregistrement" : ""}

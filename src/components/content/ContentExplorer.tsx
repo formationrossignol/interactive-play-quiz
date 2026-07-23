@@ -17,6 +17,7 @@ import {
   ChevronRight,
   Folder as FolderIcon,
   Globe,
+  Home,
   LayoutGrid,
   List,
   Search,
@@ -610,6 +611,18 @@ export function ContentExplorer({
                 {view === "all" ? (
                   <div className="flex items-center gap-1 flex-wrap mb-4" style={{ fontSize: 14, minHeight: 28 }}>
                     <button
+                      onClick={() => navigate("/")}
+                      aria-label="Accueil"
+                      style={{
+                        display: "grid", placeItems: "center", width: 28, height: 28,
+                        borderRadius: "50%", border: "var(--ap-border-w) solid var(--ap-line)",
+                        background: "var(--ap-card)", cursor: "pointer", flexShrink: 0, marginRight: 2,
+                      }}
+                    >
+                      <Home style={{ width: 13, height: 13, color: "var(--ap-ink)" }} />
+                    </button>
+                    <ChevronRight className="h-4 w-4" style={{ color: "var(--ap-muted)" }} />
+                    <button
                       className="ap-btn ap-btn--ghost ap-btn--sm"
                       style={{ padding: "2px 8px", fontWeight: 700 }}
                       onClick={() => goFolder(null)}
@@ -631,6 +644,18 @@ export function ContentExplorer({
                   </div>
                 ) : (
                   <div className="flex items-center gap-1 flex-wrap mb-4" style={{ fontSize: 14, minHeight: 28 }}>
+                    <button
+                      onClick={() => navigate("/")}
+                      aria-label="Accueil"
+                      style={{
+                        display: "grid", placeItems: "center", width: 28, height: 28,
+                        borderRadius: "50%", border: "var(--ap-border-w) solid var(--ap-line)",
+                        background: "var(--ap-card)", cursor: "pointer", flexShrink: 0, marginRight: 2,
+                      }}
+                    >
+                      <Home style={{ width: 13, height: 13, color: "var(--ap-ink)" }} />
+                    </button>
+                    <ChevronRight className="h-4 w-4" style={{ color: "var(--ap-muted)" }} />
                     <span className="ap-h3" style={{ fontSize: 15 }}>
                       {view === "favorites" ? "Favoris" : view === "public" ? "Contenus publics" : "Corbeille"}
                     </span>

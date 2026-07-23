@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Header } from "@/components/Header";
+import { Breadcrumb } from "@/components/Breadcrumb";
 import RichTextEditor from "@/components/RichTextEditor";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getCurrentUser } from "@/lib/auth";
@@ -27,7 +28,6 @@ import {
   FileText,
   Globe,
   GraduationCap,
-  Home,
   Layers,
   Plus,
   Save,
@@ -316,35 +316,13 @@ const CourseBuilder = () => {
         borderBottom: "var(--ap-border-w) solid var(--ap-line)",
         display: "flex", alignItems: "center", gap: 16, padding: "0 18px",
       }}>
-        {/* Breadcrumb: Accueil > Mes cours > current page */}
-        <nav aria-label="Fil d'ariane" style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-          <button
-            onClick={() => navigate("/")}
-            aria-label="Accueil"
-            style={{
-              display: "grid", placeItems: "center", width: 36, height: 36,
-              borderRadius: "50%", border: "var(--ap-border-w) solid var(--ap-line)",
-              background: "var(--ap-card)", cursor: "pointer", flexShrink: 0,
-            }}
-          >
-            <Home style={{ width: 16, height: 16, color: "var(--ap-ink)" }} />
-          </button>
-          <ChevronRight style={{ width: 15, height: 15, color: "var(--ap-line-2)", flexShrink: 0 }} />
-          <button
-            onClick={() => navigate("/my-courses")}
-            style={{
-              background: "none", border: "none", cursor: "pointer", padding: 0,
-              fontFamily: "var(--ap-font-body)", fontSize: 15, fontWeight: 700,
-              color: "var(--ap-muted)", whiteSpace: "nowrap",
-            }}
-          >
-            Mes cours
-          </button>
-          <ChevronRight style={{ width: 15, height: 15, color: "var(--ap-line-2)", flexShrink: 0 }} />
-          <span style={{ fontFamily: "var(--ap-font-display)", fontWeight: 700, fontSize: 16, color: "var(--ap-ink)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-            {courseId ? "Modifier le cours" : "Nouveau cours"}
-          </span>
-        </nav>
+        <Breadcrumb
+          onHome={() => navigate("/")}
+          items={[
+            { label: "Mes cours", onClick: () => navigate("/my-courses") },
+            { label: courseId ? "Modifier le cours" : "Nouveau cours" },
+          ]}
+        />
 
         <div style={{ flex: 1 }} />
 

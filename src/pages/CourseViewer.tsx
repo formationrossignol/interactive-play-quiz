@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Star } from "lucide-react";
+import { Breadcrumb } from "@/components/Breadcrumb";
 import { getCurrentUser } from "@/lib/auth";
 import {
   getCourseById,
@@ -137,6 +138,225 @@ const Ring = ({ pct, done, count, total }: { pct: number; done: boolean; count: 
   </div>
 );
 
+/* ─── Course overview (Udemy/Coursera/edX-style landing) ──────────── */
+type CourseData = NonNullable<ReturnType<typeof getCourseById>>;
+
+interface CourseOverviewScreenProps {
+  course: CourseData;
+  totalLessons: number;
+  completedCount: number;
+  progressPct: number;
+  allDone: boolean;
+  allLessons: Array<{ lesson: Lesson; module: Module }>;
+  completedIds: string[];
+  ratingSummary: { average: number; count: number };
+  reviews: CourseReview[];
+  myReview: CourseReview | null;
+  reviewRatingDraft: number;
+  reviewCommentDraft: string;
+  onSetReviewRatingDraft: (n: number) => void;
+  onSetReviewCommentDraft: (s: string) => void;
+  onSubmitReview: () => void;
+  onStart: () => void;
+}
+
+const totalMinutes = (lessons: Array<{ lesson: Lesson }>) =>
+  lessons.reduce((s, x) => s + (x.lesson.estimatedMinutes ?? 0), 0);
+
+function CourseOverviewScreen({
+  course, totalLessons, completedCount, progressPct, allDone, allLessons, completedIds,
+  ratingSummary, reviews, myReview, reviewRatingDraft, reviewCommentDraft,
+  onSetReviewRatingDraft, onSetReviewCommentDraft, onSubmitReview, onStart,
+}: CourseOverviewScreenProps) {
+  const started = completedCount > 0;
+  const minutes = totalMinutes(allLessons);
+  const ctaLabel = allDone ? "Revoir le cours" : started ? "Continuer le cours" : "Commencer le cours";
+
+  return (
+    <div style={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
+      {/* Hero */}
+      <div style={{ position: "relative", height: 300, flexShrink: 0, overflow: "hidden" }}>
+        {course.coverImage ? (
+          <img src={course.coverImage} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        ) : (
+          <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg, var(--ap-pres-soft), var(--ap-brand-soft))" }} />
+        )}
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(0deg, rgba(10,8,30,.82), rgba(10,8,30,.15) 60%)" }} />
+        <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: "28px 40px", maxWidth: 900 }}>
+          {course.category && (
+            <span style={{
+              display: "inline-block", fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase",
+              padding: "5px 12px", borderRadius: 999, background: "rgba(255,255,255,.15)", color: "#fff", marginBottom: 10,
+            }}>
+              {course.category}
+            </span>
+          )}
+          <h1 style={{ fontFamily: "var(--ap-font-display)", fontWeight: 600, fontSize: "clamp(24px, 3.2vw, 34px)", color: "#fff", lineHeight: 1.15, marginBottom: 10 }}>
+            {course.title}
+          </h1>
+          {course.description && (
+            <p style={{ fontSize: 15, color: "rgba(255,255,255,.85)", maxWidth: 640, marginBottom: 12 }}>{course.description}</p>
+          )}
+          <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap", fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,.9)" }}>
+            {ratingSummary.count > 0 && (
+              <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <Star style={{ width: 14, height: 14, color: "#f4970a" }} fill="#f4970a" /> {ratingSummary.average} ({ratingSummary.count} avis)
+              </span>
+            )}
+            <span>{course.modules.length} module{course.modules.length > 1 ? "s" : ""}</span>
+            <span>{totalLessons} leçon{totalLessons > 1 ? "s" : ""}</span>
+            {minutes > 0 && <span>{minutes} min</span>}
+          </div>
+        </div>
+      </div>
+
+      {/* Body: 2-column layout */}
+      <div style={{ display: "flex", gap: 40, maxWidth: 1100, margin: "0 auto", padding: "32px 40px 60px", alignItems: "flex-start" }}>
+        <div style={{ flex: "1 1 auto", minWidth: 0 }}>
+          {course.overview && (
+            <div className="cv-prose" style={{ marginBottom: 32 }} dangerouslySetInnerHTML={{ __html: sanitizeHtml(course.overview) }} />
+          )}
+
+          {course.objectives && course.objectives.length > 0 && (
+            <div style={{ marginBottom: 32 }}>
+              <h3 style={{ fontFamily: "var(--ap-font-display)", fontWeight: 600, fontSize: 18, marginBottom: 12 }}>Ce que vous allez apprendre</h3>
+              <ul style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                {course.objectives.map((obj, i) => (
+                  <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 14.5, lineHeight: 1.5 }}>
+                    <span style={{ flexShrink: 0, width: 20, height: 20, borderRadius: "50%", background: "var(--ap-brand-soft)", color: "var(--ap-brand)", display: "grid", placeItems: "center", fontSize: 11, fontWeight: 800, marginTop: 1 }}>✓</span>
+                    {obj}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Programme */}
+          <div style={{ marginBottom: 32 }}>
+            <h3 style={{ fontFamily: "var(--ap-font-display)", fontWeight: 600, fontSize: 18, marginBottom: 12 }}>Programme du cours</h3>
+            <div style={{ border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-lg)", overflow: "hidden" }}>
+              {course.modules.map((mod, mi) => (
+                <div key={mod.id} style={{ borderBottom: mi < course.modules.length - 1 ? "var(--ap-border-w) solid var(--ap-line)" : "none" }}>
+                  <div style={{ padding: "12px 16px", background: "var(--ap-paper-2)", fontWeight: 800, fontSize: 13.5 }}>
+                    {mod.title} <span style={{ fontWeight: 700, color: "var(--ap-muted)", fontSize: 12 }}>· {mod.lessons.length} leçon{mod.lessons.length > 1 ? "s" : ""}</span>
+                  </div>
+                  {mod.lessons.map((l) => (
+                    <div key={l.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", borderTop: "var(--ap-border-w) solid var(--ap-line)" }}>
+                      <span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: 6, display: "grid", placeItems: "center", background: TYPE_IC_BG[l.type] ?? "var(--ap-muted)" }}>
+                        <TypeIcon type={l.type} />
+                      </span>
+                      <span style={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{l.title}</span>
+                      {completedIds.includes(l.id) && <span style={{ color: "var(--ap-pres-deep)", fontSize: 12, fontWeight: 800 }}>✓</span>}
+                      {l.estimatedMinutes && (
+                        <span style={{ flexShrink: 0, fontFamily: "var(--ap-font-mono)", fontSize: 11, fontWeight: 700, color: "var(--ap-muted)" }}>{l.estimatedMinutes} min</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Ratings & reviews */}
+          <div style={{ paddingTop: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
+              <h3 style={{ fontFamily: "var(--ap-font-display)", fontWeight: 600, fontSize: 18 }}>Avis</h3>
+              {ratingSummary.count > 0 && (
+                <span style={{ fontSize: 13, fontWeight: 700, color: "var(--ap-muted)" }}>
+                  ★ {ratingSummary.average} · {ratingSummary.count} avis
+                </span>
+              )}
+            </div>
+
+            <div style={{ background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-lg)", padding: 20, marginBottom: 20 }}>
+              <p style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>{myReview ? "Modifier mon avis" : "Noter ce cours"}</p>
+              <div style={{ display: "flex", gap: 4, marginBottom: 12 }}>
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <button
+                    key={n}
+                    onClick={() => onSetReviewRatingDraft(n)}
+                    style={{ background: "none", border: "none", cursor: "pointer", padding: 2 }}
+                    aria-label={`${n} étoiles`}
+                  >
+                    <Star style={{ width: 22, height: 22, color: n <= reviewRatingDraft ? "#f4970a" : "var(--ap-line-2)" }} fill={n <= reviewRatingDraft ? "#f4970a" : "none"} />
+                  </button>
+                ))}
+              </div>
+              <textarea
+                value={reviewCommentDraft}
+                onChange={(e) => onSetReviewCommentDraft(e.target.value)}
+                placeholder="Votre avis (optionnel)..."
+                rows={3}
+                style={{ width: "100%", padding: "10px 14px", fontFamily: "var(--ap-font-body)", fontSize: 14, color: "var(--ap-ink)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-sm)", resize: "vertical", marginBottom: 12, boxSizing: "border-box" }}
+              />
+              <button
+                onClick={onSubmitReview}
+                className="cv-btn"
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 8,
+                  fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 13.5,
+                  padding: "10px 18px", borderRadius: 999, border: "none", cursor: "pointer",
+                  color: "#fff", background: "var(--ap-brand)", boxShadow: "0 4px 0 var(--ap-brand-deep)",
+                }}
+              >
+                {myReview ? "Mettre à jour mon avis" : "Publier mon avis"}
+              </button>
+            </div>
+
+            {reviews.filter((r) => r.comment).length > 0 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                {reviews.filter((r) => r.comment).map((r) => (
+                  <div key={r.id} style={{ paddingBottom: 14, borderBottom: "var(--ap-border-w) solid var(--ap-line)" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                      <span style={{ fontWeight: 700, fontSize: 13.5 }}>{r.userName}</span>
+                      <span style={{ display: "flex", gap: 1 }}>
+                        {[1, 2, 3, 4, 5].map((n) => (
+                          <Star key={n} style={{ width: 13, height: 13, color: n <= r.rating ? "#f4970a" : "var(--ap-line-2)" }} fill={n <= r.rating ? "#f4970a" : "none"} />
+                        ))}
+                      </span>
+                    </div>
+                    <p style={{ fontSize: 14, color: "var(--ap-ink)" }}>{r.comment}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Sticky CTA sidebar */}
+        <div style={{ flex: "0 0 300px", position: "sticky", top: 24 }}>
+          <div style={{ background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-lg)", boxShadow: "0 5px 0 var(--ap-line)", padding: 24 }}>
+            {started && (
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 12.5, fontWeight: 700, color: "var(--ap-muted)" }}>
+                  <span>{progressPct}% terminé</span>
+                  <span>{completedCount}/{totalLessons}</span>
+                </div>
+                <div style={{ height: 6, background: "var(--ap-line)", borderRadius: 999 }}>
+                  <div style={{ height: "100%", width: `${progressPct}%`, background: allDone ? "var(--ap-flash)" : "var(--ap-brand)", borderRadius: 999, transition: "width .3s" }} />
+                </div>
+              </div>
+            )}
+            <button
+              className="cv-btn"
+              onClick={onStart}
+              style={{
+                width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 15,
+                padding: "14px 20px", borderRadius: 999, border: "none", cursor: "pointer",
+                color: "#fff", background: "var(--ap-brand)", boxShadow: "0 4px 0 var(--ap-brand-deep)",
+              }}
+            >
+              {ctaLabel}
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ═══════════════════════════════════════════════════════════════ */
 const CourseViewer = () => {
   const navigate = useNavigate();
@@ -159,9 +379,8 @@ const CourseViewer = () => {
     if (!c) { toast.error("Cours introuvable"); navigate("/my-courses"); return; }
     setCourse(c);
     setProgress(getCourseProgress(courseId, user.id));
-    if (c.modules.length > 0 && c.modules[0].lessons.length > 0) {
-      setCurrentLessonId(c.modules[0].lessons[0].id);
-    }
+    // No auto-select: land on the course overview first (like Udemy/Coursera/edX),
+    // "Commencer"/"Continuer" is what takes the learner into a lesson.
   }, [courseId]);
 
   const allLessons = useMemo<Array<{ lesson: Lesson; module: Module }>>(() => {
@@ -195,6 +414,8 @@ const CourseViewer = () => {
   }, [currentLessonId, allLessons]);
 
   const completedIds = progress?.completedLessonIds ?? [];
+  /** First not-yet-completed lesson, or the very first lesson if none are done. Used by the overview's start/resume CTA. */
+  const nextUpLesson = () => allLessons.find((x) => !completedIds.includes(x.lesson.id)) ?? allLessons[0];
   const totalLessons = allLessons.length;
   const completedCount = allLessons.filter((x) => completedIds.includes(x.lesson.id)).length;
   const progressPct = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
@@ -343,33 +564,48 @@ const CourseViewer = () => {
         background: "var(--ap-card)", borderBottom: "var(--ap-border-w) solid var(--ap-line)",
         display: "flex", alignItems: "center", gap: 14, padding: "0 18px",
       }}>
-        <button
-          className="cv-back"
-          aria-label="Retour à mes cours"
-          onClick={() => navigate("/my-courses")}
-          style={{
-            display: "grid", placeItems: "center", width: 36, height: 36,
-            borderRadius: "var(--ap-r-sm)", border: "var(--ap-border-w) solid var(--ap-line)",
-            background: "var(--ap-card)", cursor: "pointer",
-            boxShadow: "0 3px 0 var(--ap-line)",
-          }}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ap-ink)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M15 6l-6 6 6 6"/>
-          </svg>
-        </button>
-
-        <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--ap-muted)" }}>Cours</div>
-          <div style={{ fontSize: 15.5, fontWeight: 800, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{course.title}</div>
-        </div>
+        <Breadcrumb
+          onHome={() => navigate("/")}
+          items={[
+            { label: "Mes cours", onClick: () => navigate("/my-courses") },
+            { label: course.title },
+          ]}
+        />
 
         <div style={{ flex: 1 }} />
 
+        {currentLessonId && (
+          <button
+            className="ap-btn ap-btn--ghost ap-btn--sm"
+            onClick={() => setCurrentLessonId(null)}
+          >
+            Aperçu du cours
+          </button>
+        )}
         <Ring pct={progressPct} done={allDone} count={completedCount} total={totalLessons} />
       </div>
 
       {/* ── Body ────────────────────────────────────────────── */}
+      {!currentLessonId ? (
+        <CourseOverviewScreen
+          course={course}
+          totalLessons={totalLessons}
+          completedCount={completedCount}
+          progressPct={progressPct}
+          allDone={allDone}
+          allLessons={allLessons}
+          completedIds={completedIds}
+          ratingSummary={ratingSummary}
+          reviews={reviews}
+          myReview={myReview}
+          reviewRatingDraft={reviewRatingDraft}
+          reviewCommentDraft={reviewCommentDraft}
+          onSetReviewRatingDraft={setReviewRatingDraft}
+          onSetReviewCommentDraft={setReviewCommentDraft}
+          onSubmitReview={handleSubmitReview}
+          onStart={() => setCurrentLessonId(nextUpLesson()?.lesson.id ?? null)}
+        />
+      ) : (
       <div style={{ flex: 1, minHeight: 0, display: "grid", gridTemplateColumns: "320px 1fr" }}>
 
         {/* Sidebar */}
@@ -512,98 +748,7 @@ const CourseViewer = () => {
           </div>
 
           {/* Lesson content */}
-          {!lesson ? (
-            <div style={{ maxWidth: 720, margin: "0 auto", padding: "34px 32px 60px" }}>
-              {course.overview && (
-                <div className="cv-prose" style={{ marginBottom: 28 }} dangerouslySetInnerHTML={{ __html: sanitizeHtml(course.overview) }} />
-              )}
-
-              {course.objectives && course.objectives.length > 0 && (
-                <div style={{ marginBottom: 28 }}>
-                  <h3 style={{ fontFamily: "var(--ap-font-display)", fontWeight: 600, fontSize: 18, marginBottom: 12 }}>Objectifs pédagogiques</h3>
-                  <ul style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    {course.objectives.map((obj, i) => (
-                      <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 15, lineHeight: 1.5 }}>
-                        <span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: "50%", background: "var(--ap-brand-soft)", color: "var(--ap-brand)", display: "grid", placeItems: "center", fontSize: 12, fontWeight: 800, marginTop: 1 }}>✓</span>
-                        {obj}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {!course.overview && (!course.objectives || course.objectives.length === 0) && (
-                <p style={{ textAlign: "center", marginTop: 40, marginBottom: 28, color: "var(--ap-muted)" }}>
-                  Sélectionnez une leçon dans le panneau gauche.
-                </p>
-              )}
-
-              {/* Ratings & reviews */}
-              <div style={{ marginTop: 40, paddingTop: 28, borderTop: "var(--ap-border-w) solid var(--ap-line)" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
-                  <h3 style={{ fontFamily: "var(--ap-font-display)", fontWeight: 600, fontSize: 18 }}>Avis</h3>
-                  {ratingSummary.count > 0 && (
-                    <span style={{ fontSize: 13, fontWeight: 700, color: "var(--ap-muted)" }}>
-                      ★ {ratingSummary.average} · {ratingSummary.count} avis
-                    </span>
-                  )}
-                </div>
-
-                <div style={{ background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-lg)", padding: 20, marginBottom: 20 }}>
-                  <p style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>{myReview ? "Modifier mon avis" : "Noter ce cours"}</p>
-                  <div style={{ display: "flex", gap: 4, marginBottom: 12 }}>
-                    {[1, 2, 3, 4, 5].map((n) => (
-                      <button
-                        key={n}
-                        onClick={() => setReviewRatingDraft(n)}
-                        style={{ background: "none", border: "none", cursor: "pointer", padding: 2 }}
-                        aria-label={`${n} étoiles`}
-                      >
-                        <Star style={{ width: 22, height: 22, color: n <= reviewRatingDraft ? "#f4970a" : "var(--ap-line-2)" }} fill={n <= reviewRatingDraft ? "#f4970a" : "none"} />
-                      </button>
-                    ))}
-                  </div>
-                  <textarea
-                    value={reviewCommentDraft}
-                    onChange={(e) => setReviewCommentDraft(e.target.value)}
-                    placeholder="Votre avis (optionnel)..."
-                    rows={3}
-                    style={{ width: "100%", padding: "10px 14px", fontFamily: "var(--ap-font-body)", fontSize: 14, color: "var(--ap-ink)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-sm)", resize: "vertical", marginBottom: 12, boxSizing: "border-box" }}
-                  />
-                  <button
-                    onClick={handleSubmitReview}
-                    className="cv-btn"
-                    style={{
-                      display: "inline-flex", alignItems: "center", gap: 8,
-                      fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 13.5,
-                      padding: "10px 18px", borderRadius: 999, border: "none", cursor: "pointer",
-                      color: "#fff", background: "var(--ap-brand)", boxShadow: "0 4px 0 var(--ap-brand-deep)",
-                    }}
-                  >
-                    {myReview ? "Mettre à jour mon avis" : "Publier mon avis"}
-                  </button>
-                </div>
-
-                {reviews.filter((r) => r.comment).length > 0 && (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                    {reviews.filter((r) => r.comment).map((r) => (
-                      <div key={r.id} style={{ paddingBottom: 14, borderBottom: "var(--ap-border-w) solid var(--ap-line)" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                          <span style={{ fontWeight: 700, fontSize: 13.5 }}>{r.userName}</span>
-                          <span style={{ display: "flex", gap: 1 }}>
-                            {[1, 2, 3, 4, 5].map((n) => (
-                              <Star key={n} style={{ width: 13, height: 13, color: n <= r.rating ? "#f4970a" : "var(--ap-line-2)" }} fill={n <= r.rating ? "#f4970a" : "none"} />
-                            ))}
-                          </span>
-                        </div>
-                        <p style={{ fontSize: 14, color: "var(--ap-ink)" }}>{r.comment}</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          ) : (
+          {lesson && (
             <div style={{ maxWidth: 720, margin: "0 auto", padding: "34px 32px 60px" }}>
 
               {/* Lesson header */}
@@ -959,6 +1104,7 @@ const CourseViewer = () => {
         )}
         </div>
       </div>
+      )}
     </div>
   );
 };

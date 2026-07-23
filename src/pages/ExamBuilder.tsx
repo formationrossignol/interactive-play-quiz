@@ -5,6 +5,7 @@ import { getUserQuizzes } from '@/lib/quizStorage';
 import { getCurrentUser } from '@/lib/auth';
 import { CONTENT_CAPS, getPlan, PlanLimitError } from '@/lib/plans';
 import { PlanLimitBlocker } from '@/components/PlanLimitBlocker';
+import { Breadcrumb } from '@/components/Breadcrumb';
 import { upsertContentBySource } from '@/lib/content/contentRepo';
 import { toast } from 'sonner';
 
@@ -216,13 +217,14 @@ export default function ExamBuilder() {
         padding: '0 24px', height: 60, display: 'flex', alignItems: 'center', gap: 16,
         position: 'sticky', top: 0, zIndex: 10,
       }}>
-        <button
-          onClick={() => navigate('/my-exams')}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ap-muted)', fontSize: 20, padding: 4 }}
-        >←</button>
-        <span style={{ fontFamily: 'var(--ap-font-display)', fontWeight: 600, fontSize: 18, flex: 1 }}>
-          {saved ? 'Modifier l\'examen' : 'Nouvel examen'}
-        </span>
+        <Breadcrumb
+          onHome={() => navigate('/')}
+          items={[
+            { label: 'Mes examens', onClick: () => navigate('/my-exams') },
+            { label: saved ? "Modifier l'examen" : 'Nouvel examen' },
+          ]}
+        />
+        <div style={{ flex: 1 }} />
         {saved && (
           <span style={{
             fontSize: 11, fontWeight: 800, letterSpacing: '.06em', padding: '4px 10px', borderRadius: 999,
