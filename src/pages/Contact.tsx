@@ -169,9 +169,6 @@ const Contact = () => {
 
           {/* Hero */}
           <div style={{ textAlign: "center", marginBottom: "48px" }}>
-            <span className="ap-badge ap-badge--brand" style={{ marginBottom: "20px", display: "inline-flex" }}>
-              Contact
-            </span>
             <h1 className="ap-h1" style={{ fontSize: "clamp(32px,5vw,48px)", marginBottom: "16px" }}>
               Contactez-nous
             </h1>

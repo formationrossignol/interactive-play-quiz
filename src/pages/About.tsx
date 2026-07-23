@@ -33,9 +33,6 @@ const About = () => {
         <div className="mx-auto max-w-5xl px-6 py-16">
           {/* Hero */}
           <div style={{ textAlign: "center", marginBottom: "64px" }}>
-            <span className="ap-badge ap-badge--brand" style={{ marginBottom: "20px", display: "inline-flex" }}>
-              À propos
-            </span>
             <h1 className="ap-h1" style={{ fontSize: "clamp(36px,5vw,52px)", marginBottom: "20px" }}>
               À propos de <span style={{ color: "var(--ap-brand)" }}>{page.title}</span>
             </h1>

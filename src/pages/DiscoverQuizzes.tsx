@@ -78,9 +78,6 @@ const DiscoverQuizzes = () => {
 
         {/* Page header */}
         <div style={{ textAlign: "center", marginBottom: "36px" }}>
-          <span className="ap-badge ap-badge--brand" style={{ marginBottom: "16px", display: "inline-flex" }}>
-            {t("discoverPublic")}
-          </span>
           <h1 className="ap-h1" style={{ fontSize: "clamp(32px,5vw,48px)", marginBottom: "12px" }}>
             {t("discoverPublic")}
           </h1>

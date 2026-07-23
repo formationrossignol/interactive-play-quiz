@@ -27,9 +27,6 @@ const Features = () => {
       <main style={{ flex: 1 }}>
         {/* Hero */}
         <section style={{ maxWidth: 800, margin: "0 auto", padding: "72px 24px 56px", textAlign: "center" }}>
-          <span className="ap-badge ap-badge--brand" style={{ marginBottom: "20px", display: "inline-flex" }}>
-            Fonctionnalités
-          </span>
           <h1 className="ap-h1" style={{ fontSize: "clamp(36px,5vw,56px)", marginBottom: "20px" }}>
             {page.title}
           </h1>
