@@ -4,6 +4,12 @@
     "build": {
       "outputs": ["dist/**"]
     },
+    "app#build": {
+      "outputs": ["dist/**"]
+    },
+    "marketing#build": {
+      "outputs": [".next/**", "!.next/cache/**"]
+    },
     "dev": {
       "cache": false,
       "persistent": true
