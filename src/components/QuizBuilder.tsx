@@ -16,8 +16,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   Plus, Trash2, Upload, GripVertical, Settings,
-  ChevronLeft, ChevronDown, Eye, ImageIcon, MoreHorizontal,
-  Copy, Library, HelpCircle,
+  ChevronRight, ChevronDown, Eye, ImageIcon, MoreHorizontal,
+  Copy, Library, HelpCircle, Home,
 } from "lucide-react";
 import { ImportFileModal } from "./ImportFileModal";
 import { getCurrentUser } from "@/lib/auth";
@@ -1145,27 +1145,31 @@ export const QuizBuilder = () => {
         display: "flex", alignItems: "center", gap: 16, padding: "0 18px",
         position: "relative", zIndex: 20,
       }}>
-        {/* Back */}
-        <button
-          onClick={() => handleNavigateAway(backPath)}
-          aria-label={`Retour : ${backLabel}`}
-          style={{
-            display: "grid", placeItems: "center", width: 36, height: 36,
-            borderRadius: "var(--ap-r-sm)", border: "var(--ap-border-w) solid var(--ap-line)",
-            background: "var(--ap-card)", cursor: "pointer", boxShadow: "0 3px 0 var(--ap-line)",
-            transition: "transform .15s var(--ap-spring), box-shadow .15s var(--ap-spring)",
-            flexShrink: 0,
-          }}
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(-1px)"; (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 0 var(--ap-line-2)"; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = ""; (e.currentTarget as HTMLElement).style.boxShadow = "0 3px 0 var(--ap-line)"; }}
-        >
-          <ChevronLeft style={{ width: 16, height: 16, color: "var(--ap-ink)" }} />
-        </button>
-
-        {/* Breadcrumb */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-          <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--ap-muted)", whiteSpace: "nowrap" }}>{backLabel}</span>
-          <span style={{ color: "var(--ap-line-2)", fontWeight: 800 }}>/</span>
+        {/* Breadcrumb: Accueil > Mes quiz/sondages/flashcards > titre (éditable) */}
+        <nav aria-label="Fil d'ariane" style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+          <button
+            onClick={() => handleNavigateAway("/")}
+            aria-label="Accueil"
+            style={{
+              display: "grid", placeItems: "center", width: 36, height: 36,
+              borderRadius: "50%", border: "var(--ap-border-w) solid var(--ap-line)",
+              background: "var(--ap-card)", cursor: "pointer", flexShrink: 0,
+            }}
+          >
+            <Home style={{ width: 16, height: 16, color: "var(--ap-ink)" }} />
+          </button>
+          <ChevronRight style={{ width: 15, height: 15, color: "var(--ap-line-2)", flexShrink: 0 }} />
+          <button
+            onClick={() => handleNavigateAway(backPath)}
+            style={{
+              background: "none", border: "none", cursor: "pointer", padding: 0,
+              fontFamily: "var(--ap-font-body)", fontSize: 15, fontWeight: 700,
+              color: "var(--ap-muted)", whiteSpace: "nowrap",
+            }}
+          >
+            {backLabel}
+          </button>
+          <ChevronRight style={{ width: 15, height: 15, color: "var(--ap-line-2)", flexShrink: 0 }} />
           <input
             value={title}
             onChange={e => setTitle(e.target.value)}
@@ -1179,7 +1183,7 @@ export const QuizBuilder = () => {
             onFocus={e => { e.target.style.borderColor = "var(--ap-brand)"; e.target.style.background = "white"; }}
             onBlur={e => { e.target.style.borderColor = "transparent"; e.target.style.background = "transparent"; }}
           />
-        </div>
+        </nav>
 
         <SaveStateIndicator state={saveState} />
 
