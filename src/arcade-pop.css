@@ -505,7 +505,7 @@ body { transition: background-color .25s ease, color .25s ease; }
   box-shadow: 0 6px 0 var(--ap-brand-deep), 0 10px 18px rgba(67,56,202,.35);
   flex: 0 0 auto;
 }
-.ap-logo svg { width: 24px; height: 24px; fill: #fff; }
+/* BrandMonogram sizes/colors its own "b"+diamond inline — nothing to force here. */
 /* Wordmark "brivia" — Sora 600, interlettrage resserré -3.5% (densifie le
    mot, le rend "objet"). Le diamant qui suit le "a" vit dans BrandWordmark. */
 .ap-brandname {
