@@ -15,8 +15,11 @@ import {
   FolderInput,
   FolderOpen,
   GripVertical,
+  Layers,
+  ListChecks,
   MoreHorizontal,
   Play,
+  Presentation,
   Star,
   Trash2,
 } from "lucide-react";
@@ -195,6 +198,14 @@ function primaryButton(
 /** Accent CSS var derived from the config accentBtn suffix (ap-btn--quiz → --ap-quiz). */
 const accentVarOf = (accentBtn: string) => `--ap-${accentBtn.replace("ap-btn--", "")}`;
 
+/** Default header icon per content type, keyed by the config accentBtn suffix. */
+const defaultHeaderIcon: Record<string, typeof ListChecks> = {
+  "ap-btn--quiz": ListChecks,
+  "ap-btn--poll": BarChart2,
+  "ap-btn--flash": Layers,
+  "ap-btn--pres": Presentation,
+};
+
 export function GenericCard(props: GenericItemProps) {
   const { d, ctx, config, navigate } = props;
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: d.id });
@@ -203,6 +214,7 @@ export function GenericCard(props: GenericItemProps) {
   const id = itemId(d);
   const hasHistory = !!config.results && id ? readSessionHistory(id).length > 0 : false;
   const accentVar = accentVarOf(config.accentBtn);
+  const DefaultHeaderIcon = defaultHeaderIcon[config.accentBtn] ?? ListChecks;
 
   return (
     <div
@@ -211,11 +223,16 @@ export function GenericCard(props: GenericItemProps) {
       style={{ opacity: isDragging ? 0.4 : 1 }}
       onClick={() => navigate(config.editRoute(id))}
     >
-      {/* Accent cover strip — gives each type a consistent identity band */}
-      <div style={{ height: 6, background: `var(${accentVar})`, flexShrink: 0 }} />
-      {img && (
-        <div className="relative h-40 w-full overflow-hidden">
+      {img ? (
+        <div className="relative h-40 w-full overflow-hidden flex-shrink-0">
           <img src={img} alt={d.title} className="h-full w-full object-cover" />
+        </div>
+      ) : (
+        <div
+          className="relative h-40 w-full overflow-hidden flex-shrink-0 flex items-center justify-center"
+          style={{ background: `color-mix(in srgb, var(${accentVar}) 14%, var(--ap-paper-2))` }}
+        >
+          <DefaultHeaderIcon style={{ width: 40, height: 40, color: `var(${accentVar})`, opacity: 0.8 }} />
         </div>
       )}
       <div className="flex flex-1 flex-col gap-2.5" style={{ padding: "14px 16px 12px" }}>
@@ -254,10 +271,9 @@ export function GenericCard(props: GenericItemProps) {
             <span key={tag} className="ap-pill" style={{ fontSize: "11px", padding: "3px 9px" }}>#{tag}</span>
           ))}
         </div>
-        <div className="mt-auto flex items-center gap-1.5 pt-3" style={{ borderTop: "var(--ap-border-w) solid var(--ap-line)" }}>
+        <div className="mt-auto flex flex-wrap items-center justify-between gap-1.5 pt-3" style={{ borderTop: "var(--ap-border-w) solid var(--ap-line)" }}>
           <ItemMenu d={d} ctx={ctx} config={config} navigate={navigate} />
-          <div style={{ flex: 1 }} />
-          <div style={{ display: "flex", gap: "6px", alignItems: "center", minWidth: 0 }} onClick={(e) => e.stopPropagation()}>
+          <div style={{ display: "flex", gap: "6px", alignItems: "center", flexWrap: "wrap", justifyContent: "flex-end" }} onClick={(e) => e.stopPropagation()}>
             {hasHistory && config.results && (
               <button
                 onClick={() => navigate(config.results!(id))}
