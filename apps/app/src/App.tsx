@@ -33,10 +33,8 @@ const Report = lazy(() => import("./pages/Report"));
 const Changelog = lazy(() => import("./pages/Changelog"));
 const DiscoverQuizzes = lazy(() => import("./pages/DiscoverQuizzes"));
 
-// Legal pages
-const MentionsLegales = lazy(() => import("./pages/MentionsLegales"));
-const Confidentialite = lazy(() => import("./pages/Confidentialite"));
-const CGU = lazy(() => import("./pages/CGU"));
+// Legal pages: mentions-legales/confidentialite/cgu now live in apps/marketing
+// (see docs/marketing-app-decoupling.md) — no longer routed here.
 
 // Authenticated / builder pages — heavy deps (TipTap, xlsx, dnd-kit)
 const QuizBuilder = lazy(() => import("./pages/QuizBuilder"));
@@ -118,9 +116,6 @@ const App = () => (
               <Route path="/report" element={<Report />} />
               <Route path="/changelog" element={<Changelog />} />
               <Route path="/preview/:quizId" element={<PreviewPage />} />
-              <Route path="/mentions-legales" element={<MentionsLegales />} />
-              <Route path="/confidentialite" element={<Confidentialite />} />
-              <Route path="/cgu" element={<CGU />} />
               <Route path="/quiz/:gameCode" element={<LiveQuizPage />} />
               <Route path="/join/:gameCode" element={<JoinQuiz />} />
               <Route path="/join-exam" element={<JoinExam />} />
