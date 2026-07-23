@@ -67,6 +67,22 @@ describe("slide management", () => {
     store.toggleSlideHidden(id);
     expect(useDocStore.getState().presentation!.slides[0].hidden).toBe(false);
   });
+
+  it("setSlideBackground sets, replaces, and clears only the matching slide's background", () => {
+    const store = useDocStore.getState();
+    store.addSlide();
+    const [id0] = useDocStore.getState().presentation!.slides.map((s) => s.id);
+
+    store.setSlideBackground(id0, { type: "color", value: "#ff0000" });
+    expect(useDocStore.getState().presentation!.slides[0].background).toEqual({ type: "color", value: "#ff0000" });
+    expect(useDocStore.getState().presentation!.slides[1].background).toBeUndefined();
+
+    store.setSlideBackground(id0, { type: "image", value: "https://example.com/bg.png" });
+    expect(useDocStore.getState().presentation!.slides[0].background).toEqual({ type: "image", value: "https://example.com/bg.png" });
+
+    store.setSlideBackground(id0, undefined);
+    expect(useDocStore.getState().presentation!.slides[0].background).toBeUndefined();
+  });
 });
 
 describe("element management", () => {

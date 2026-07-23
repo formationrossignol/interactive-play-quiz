@@ -1,23 +1,30 @@
 // src/components/presentation-editor/EditorToolbar.tsx
 import { useEffect, useRef, useState } from "react";
 import {
+  AlignCenter,
   AlignHorizontalDistributeCenter,
   AlignHorizontalJustifyCenter,
   AlignHorizontalJustifyEnd,
   AlignHorizontalJustifyStart,
+  AlignJustify,
+  AlignLeft,
+  AlignRight,
   AlignVerticalDistributeCenter,
   AlignVerticalJustifyCenter,
   AlignVerticalJustifyEnd,
   AlignVerticalJustifyStart,
   ArrowUpRight,
+  Bold,
   ChevronDown,
   Circle,
   Group,
   Image as ImageIcon,
+  Italic,
   Minus,
   MousePointer2,
   Square,
   Type,
+  Underline as UnderlineIcon,
   Ungroup,
   Video as VideoIcon,
 } from "lucide-react";
@@ -26,6 +33,14 @@ import { useEditorUIStore, type EditorTool } from "./store/useEditorUIStore";
 import { useHistoryStore } from "./store/useHistoryStore";
 import { alignLeft, alignCenterH, alignRight, alignTop, alignMiddleV, alignBottom, distributeHorizontal, distributeVertical } from "./utils/geometry";
 import type { SlideElement } from "./types/presentation";
+
+const FONT_FAMILIES = [
+  { label: "Défaut", value: "" },
+  { label: "Sora", value: "'Sora Variable', 'Sora', sans-serif" },
+  { label: "Manrope", value: "'Manrope', sans-serif" },
+  { label: "Georgia", value: "Georgia, serif" },
+  { label: "Courier New", value: "'Courier New', monospace" },
+];
 
 const SHAPE_TOOLS: { id: EditorTool; label: string; Icon: typeof Square }[] = [
   { id: "rect", label: "Rectangle", Icon: Square },
@@ -65,6 +80,68 @@ function ToolButton({
 
 function Separator() {
   return <span style={{ width: 1, height: 22, background: "var(--ap-line)", margin: "0 4px", flexShrink: 0 }} />;
+}
+
+/** Shown only while a text element is being edited (double-click to enter —
+ *  see CanvasElement / TextElementEditing). Drives the live Tiptap instance
+ *  registered in useEditorUIStore, matching Google Slides' contextual text
+ *  toolbar rather than a floating bubble menu. */
+function TextFormatToolbar() {
+  const editor = useEditorUIStore((s) => s.activeTextEditor);
+  useEditorUIStore((s) => s.textEditorTick); // re-render on selection/mark changes
+
+  if (!editor) return null;
+
+  return (
+    <>
+      <Separator />
+      <select
+        aria-label="Police"
+        value={editor.getAttributes("textStyle").fontFamily ?? ""}
+        onChange={(e) => {
+          if (e.target.value) editor.chain().focus().setFontFamily(e.target.value).run();
+          else editor.chain().focus().unsetFontFamily().run();
+        }}
+        style={{ height: 34, border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-sm)", fontSize: 13, color: "var(--ap-ink)", background: "var(--ap-card)", padding: "0 6px", flexShrink: 0 }}
+      >
+        {FONT_FAMILIES.map(({ label, value }) => (
+          <option key={label} value={value}>{label}</option>
+        ))}
+      </select>
+
+      <ToolButton active={editor.isActive("bold")} label="Gras" onClick={() => editor.chain().focus().toggleBold().run()}>
+        <Bold size={16} />
+      </ToolButton>
+      <ToolButton active={editor.isActive("italic")} label="Italique" onClick={() => editor.chain().focus().toggleItalic().run()}>
+        <Italic size={16} />
+      </ToolButton>
+      <ToolButton active={editor.isActive("underline")} label="Souligné" onClick={() => editor.chain().focus().toggleUnderline().run()}>
+        <UnderlineIcon size={16} />
+      </ToolButton>
+
+      <input
+        type="color"
+        aria-label="Couleur du texte"
+        title="Couleur du texte"
+        value={editor.getAttributes("textStyle").color ?? "#000000"}
+        onChange={(e) => editor.chain().focus().setColor(e.target.value).run()}
+        style={{ width: 28, height: 28, border: "none", borderRadius: "var(--ap-r-sm)", cursor: "pointer", flexShrink: 0, background: "transparent" }}
+      />
+
+      <ToolButton active={editor.isActive({ textAlign: "left" })} label="Aligner le texte à gauche" onClick={() => editor.chain().focus().setTextAlign("left").run()}>
+        <AlignLeft size={16} />
+      </ToolButton>
+      <ToolButton active={editor.isActive({ textAlign: "center" })} label="Centrer le texte" onClick={() => editor.chain().focus().setTextAlign("center").run()}>
+        <AlignCenter size={16} />
+      </ToolButton>
+      <ToolButton active={editor.isActive({ textAlign: "right" })} label="Aligner le texte à droite" onClick={() => editor.chain().focus().setTextAlign("right").run()}>
+        <AlignRight size={16} />
+      </ToolButton>
+      <ToolButton active={editor.isActive({ textAlign: "justify" })} label="Justifier le texte" onClick={() => editor.chain().focus().setTextAlign("justify").run()}>
+        <AlignJustify size={16} />
+      </ToolButton>
+    </>
+  );
 }
 
 export function EditorToolbar({ slideId }: { slideId: string }) {
@@ -141,6 +218,8 @@ export function EditorToolbar({ slideId }: { slideId: string }) {
           </div>
         )}
       </div>
+
+      <TextFormatToolbar />
 
       {selected.length >= 2 && (
         <>

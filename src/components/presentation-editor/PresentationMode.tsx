@@ -7,8 +7,24 @@ import type { LineElement } from "./types/presentation";
 export function PresentationMode({ onExit }: { onExit: () => void }) {
   const presentation = useDocStore((s) => s.presentation);
   const [index, setIndex] = useState(0);
+  const [scale, setScale] = useState(1);
   const visibleSlides = (presentation?.slides ?? []).filter((s) => !s.hidden).sort((a, b) => a.order - b.order);
   const slide = visibleSlides[index];
+
+  // Fit the slide to the viewport like Google Slides' present mode: scale
+  // down (or up) to the largest size that still fits, recomputed on resize
+  // (e.g. rotating a tablet, or the window changing on desktop).
+  useEffect(() => {
+    if (!presentation) return;
+    function fit() {
+      const scaleX = window.innerWidth / presentation!.width;
+      const scaleY = window.innerHeight / presentation!.height;
+      setScale(Math.min(scaleX, scaleY));
+    }
+    fit();
+    window.addEventListener("resize", fit);
+    return () => window.removeEventListener("resize", fit);
+  }, [presentation]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -37,7 +53,17 @@ export function PresentationMode({ onExit }: { onExit: () => void }) {
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
-      <div style={{ position: "relative", width: presentation.width, height: presentation.height, background: slide.background?.value ?? "#fff" }}>
+      <div
+        style={{
+          position: "relative",
+          width: presentation.width,
+          height: presentation.height,
+          transform: `scale(${scale})`,
+          transformOrigin: "center center",
+          background: slide.background?.value ?? "#fff",
+          flexShrink: 0,
+        }}
+      >
         {slide.elements.filter((e) => e.type !== "line" && e.type !== "arrow").map((element) => (
           <CanvasElement key={element.id} slideId={slide.id} element={element} elementRef={() => {}} />
         ))}
