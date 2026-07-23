@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { Presentation, Slide, SlideElement } from "../types/presentation";
+import type { Presentation, Slide, SlideBackground, SlideElement } from "../types/presentation";
 
 interface DocState {
   presentation: Presentation | null;
@@ -13,6 +13,7 @@ interface DocState {
   deleteSlide: (slideId: string) => void;
   reorderSlides: (slideId: string, toIndex: number) => void;
   toggleSlideHidden: (slideId: string) => void;
+  setSlideBackground: (slideId: string, background: SlideBackground | undefined) => void;
 
   addElement: (slideId: string, element: SlideElement) => void;
   updateElement: (slideId: string, elementId: string, patch: Partial<SlideElement>) => void;
@@ -96,6 +97,11 @@ export const useDocStore = create<DocState>((set, get) => ({
   toggleSlideHidden: (slideId) => set((state) => {
     if (!state.presentation) return state;
     return { presentation: mapSlide(state.presentation, slideId, (s) => ({ ...s, hidden: !s.hidden })) };
+  }),
+
+  setSlideBackground: (slideId, background) => set((state) => {
+    if (!state.presentation) return state;
+    return { presentation: mapSlide(state.presentation, slideId, (s) => ({ ...s, background })) };
   }),
 
   addElement: (slideId, element) => set((state) => {

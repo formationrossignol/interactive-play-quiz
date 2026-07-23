@@ -1,7 +1,7 @@
 import { useDocStore } from "./store/useDocStore";
 import { useEditorUIStore } from "./store/useEditorUIStore";
 import { useHistoryStore } from "./store/useHistoryStore";
-import type { ImageElement, ShapeElement, SlideElement } from "./types/presentation";
+import type { ImageElement, ShapeElement, SlideBackground, SlideElement } from "./types/presentation";
 
 function NumberField({ label, value, onCommit }: { label: string; value: number; onCommit: (n: number) => void }) {
   return (
@@ -17,14 +17,68 @@ function NumberField({ label, value, onCommit }: { label: string; value: number;
   );
 }
 
+function SlideBackgroundPanel({ slideId }: { slideId: string }) {
+  const presentation = useDocStore((s) => s.presentation);
+  const slide = presentation?.slides.find((s) => s.id === slideId);
+  const background = slide?.background;
+
+  function commit(background: SlideBackground | undefined) {
+    useHistoryStore.getState().commit();
+    useDocStore.getState().setSlideBackground(slideId, background);
+  }
+
+  return (
+    <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 12, width: 240 }}>
+      <div style={{ fontSize: 13, fontWeight: 700, color: "var(--ap-muted)" }}>Aucune sélection</div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 4, borderTop: "var(--ap-border-w) solid var(--ap-line)" }}>
+        <span style={{ fontSize: 12, fontWeight: 700, color: "var(--ap-muted)" }}>Fond de la diapositive</span>
+
+        <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 13 }}>
+          Couleur
+          <input
+            type="color"
+            value={background?.type === "color" ? background.value : "#ffffff"}
+            onChange={(e) => commit({ type: "color", value: e.target.value })}
+            style={{ width: 32, height: 28, border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-sm)", cursor: "pointer", background: "transparent" }}
+          />
+        </label>
+
+        <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12, fontWeight: 700, color: "var(--ap-muted)" }}>
+          Image (URL)
+          <input
+            type="text"
+            placeholder="https://…"
+            defaultValue={background?.type === "image" ? background.value : ""}
+            onBlur={(e) => {
+              const url = e.target.value.trim();
+              if (url) commit({ type: "image", value: url });
+            }}
+            style={{ border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-sm)", padding: "6px 8px", fontSize: 13 }}
+          />
+        </label>
+
+        {background && (
+          <button className="ap-btn ap-btn--ghost ap-btn--sm" onClick={() => commit(undefined)}>
+            Réinitialiser le fond
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function PropertiesPanel({ slideId }: { slideId: string }) {
   const presentation = useDocStore((s) => s.presentation);
   const selectedIds = useEditorUIStore((s) => s.selectedIds);
   const slide = presentation?.slides.find((s) => s.id === slideId);
   const selected: SlideElement[] = slide ? slide.elements.filter((el) => selectedIds.has(el.id)) : [];
 
+  if (selected.length === 0) {
+    return <SlideBackgroundPanel slideId={slideId} />;
+  }
   if (selected.length !== 1) {
-    return <div style={{ padding: 16, fontSize: 13, color: "var(--ap-muted)" }}>{selected.length === 0 ? "Aucune sélection" : `${selected.length} éléments sélectionnés`}</div>;
+    return <div style={{ padding: 16, fontSize: 13, color: "var(--ap-muted)" }}>{`${selected.length} éléments sélectionnés`}</div>;
   }
   const el = selected[0];
 
