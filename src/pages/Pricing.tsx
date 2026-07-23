@@ -182,7 +182,7 @@ const Pricing = () => {
         </section>
 
         {/* FAQ paiement */}
-        <section style={{ maxWidth: 720, margin: "0 auto", padding: "0 24px 96px" }}>
+        <section style={{ maxWidth: 1100, margin: "0 auto", padding: "0 24px 96px" }}>
           <div style={{ textAlign: "center", marginBottom: "32px" }}>
             <h2 className="ap-h2" style={{ marginBottom: "8px" }}>Questions sur le paiement</h2>
             <p className="ap-muted">Tout ce qu'il faut savoir avant de passer au plan Pro.</p>
