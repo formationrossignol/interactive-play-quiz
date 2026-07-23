@@ -1,6 +1,7 @@
 @import "./arcade-pop.css";
 @import "./theme-thales.css";
 @import "./theme-innov.css";
+@import "./theme-studio.css";
 
 @tailwind base;
 @tailwind components;
@@ -258,6 +259,93 @@
     --sidebar-accent: 0 0% 8%;
     --sidebar-accent-foreground: 0 0% 100%;
     --sidebar-border: 0 0% 16%;
+  }
+
+  /* Thème « Studio » — miroir des tokens --ap-* de theme-studio.css
+     pour les composants shadcn. Se combine avec .dark ci-dessous. */
+  :root[data-theme="studio"] {
+    --background: 220 33% 98%;       /* --ap-paper   #f7f8fb */
+    --foreground: 216 36% 15%;       /* --ap-ink     #172033 */
+
+    --card: 0 0% 100%;
+    --card-foreground: 216 36% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 216 36% 15%;
+
+    --primary: 244 76% 62%;          /* --ap-brand   #5b4fe9 */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 24% 94%;        /* --ap-paper-2 #eef0f5 */
+    --secondary-foreground: 216 36% 15%;
+
+    --muted: 220 24% 94%;
+    --muted-foreground: 220 15% 38%; /* --ap-muted   #5b6478 */
+
+    --accent: 243 65% 95%;           /* --ap-brand-soft #ecebfc */
+    --accent-foreground: 244 76% 46%;
+
+    --destructive: 11 53% 52%;       /* --ap-quiz    #d3654f */
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 226 30% 92%;           /* --ap-line    #e5e7ef */
+    --input: 226 30% 92%;
+    --ring: 244 76% 62%;
+
+    --radius: 0.625rem;
+
+    --success: 156 65% 38%;          /* --ap-success #21a179 */
+    --success-foreground: 0 0% 100%;
+
+    --warning: 33 55% 46%;           /* --ap-flash   #c98a2e */
+    --warning-foreground: 0 0% 100%;
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 216 36% 15%;
+    --sidebar-primary: 244 76% 62%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 24% 94%;
+    --sidebar-accent-foreground: 216 36% 15%;
+    --sidebar-border: 226 30% 92%;
+    --sidebar-ring: 244 76% 62%;
+
+    --quiz-accent:      11 53% 52%;  /* #d3654f */
+    --poll-accent:      213 63% 51%; /* #3b7dd8 */
+    --flashcard-accent: 33 55% 46%;  /* #c98a2e */
+    --slide-accent:     248 66% 68%; /* #7c6ae8 */
+  }
+
+  .dark[data-theme="studio"] {
+    --background: 220 35% 9%;        /* --ap-paper   #0e1420 */
+    --foreground: 220 32% 96%;       /* --ap-ink     #f2f4f8 */
+
+    --card: 217 30% 14%;             /* --ap-card    #17202f */
+    --card-foreground: 220 32% 96%;
+
+    --popover: 217 30% 14%;
+    --popover-foreground: 220 32% 96%;
+
+    --primary: 244 78% 72%;          /* --ap-brand   #7b70f0 */
+    --primary-foreground: 220 35% 9%;
+
+    --secondary: 218 29% 13%;        /* --ap-paper-2 #141b2b */
+    --secondary-foreground: 220 32% 96%;
+
+    --muted: 218 29% 13%;
+    --muted-foreground: 218 18% 65%; /* --ap-muted   #97a1b8 */
+
+    --accent: 245 39% 20%;           /* --ap-brand-soft #241f47 */
+    --accent-foreground: 244 78% 82%;
+
+    --border: 217 26% 20%;           /* --ap-line    #263145 */
+    --input: 217 26% 20%;
+    --ring: 244 78% 72%;
+
+    --sidebar-background: 217 30% 14%;
+    --sidebar-foreground: 220 32% 96%;
+    --sidebar-accent: 218 29% 13%;
+    --sidebar-accent-foreground: 220 32% 96%;
+    --sidebar-border: 217 26% 20%;
   }
 
   * {
