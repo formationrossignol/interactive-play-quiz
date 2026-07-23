@@ -8,7 +8,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { PlanLimitError } from '@/lib/plans';
 import { createContent } from '@/lib/content/contentRepo';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { GripVertical } from 'lucide-react';
+import { ClipboardCheck, GripVertical, Star } from 'lucide-react';
 import { ContentExplorer } from '@/components/content/ContentExplorer';
 import type { ItemCtx } from '@/components/content/GenericItem';
 import { ExamContextMenu } from '@/components/ExamContextMenu';
@@ -84,25 +84,19 @@ interface ExamItemProps {
   onDuplicate: (d: ContentDisplay) => void;
 }
 
-const actionButtons = (exam: Exam, navigate: ReturnType<typeof useNavigate>) => (
+const actionButtons = (exam: Exam, navigate: ReturnType<typeof useNavigate>, size: { text: string; pad: string }) => (
   <>
     <button
       onClick={(e) => { e.stopPropagation(); navigate(`/exam-builder?examId=${exam.id}`); }}
-      style={{
-        padding: '6px 14px', borderRadius: 999, border: 'var(--ap-border-w) solid var(--ap-line)',
-        background: 'var(--ap-paper-2)', fontFamily: 'var(--ap-font-body)',
-        fontWeight: 800, fontSize: 12, color: 'var(--ap-ink)', cursor: 'pointer',
-      }}
+      className="ap-btn ap-btn--ghost ap-btn--sm ap-btn--pill"
+      style={{ fontSize: size.text, padding: size.pad }}
     >
       Modifier
     </button>
     <button
       onClick={(e) => { e.stopPropagation(); navigate(`/exam/${exam.id}/admin`); }}
-      style={{
-        padding: '6px 14px', borderRadius: 999, border: 'none',
-        background: 'var(--ap-brand)', color: '#fff', fontFamily: 'var(--ap-font-body)',
-        fontWeight: 800, fontSize: 12, cursor: 'pointer',
-      }}
+      className="ap-btn ap-btn--sm ap-btn--pill"
+      style={{ fontSize: size.text, padding: size.pad }}
     >
       Résultats →
     </button>
@@ -117,42 +111,64 @@ function ExamCard({ d, ctx, navigate, onDuplicate }: ExamItemProps) {
   return (
     <div
       ref={setNodeRef}
-      className="ap-card ap-card--hover"
-      style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 12, cursor: 'pointer', height: '100%', opacity: isDragging ? 0.4 : 1 }}
+      className="ap-card ap-card--hover flex h-full cursor-pointer flex-col overflow-hidden"
+      style={{ opacity: isDragging ? 0.4 : 1 }}
       onClick={() => navigate(`/exam/${exam.id}/admin`)}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-        <button type="button" {...attributes} {...listeners} style={gripStyle} onClick={(e) => e.stopPropagation()} aria-label={`Déplacer ${exam.title}`}>
-          <GripVertical className="h-4 w-4" />
-        </button>
-        {statusBadge(liveStatus)}
-        {liveStatus !== 'draft' && (
-          <span style={{ fontFamily: 'var(--ap-font-mono)', fontSize: 12, fontWeight: 800, color: 'var(--ap-muted)', letterSpacing: '.08em' }}>
-            {exam.joinCode}
-          </span>
-        )}
+      <div
+        className="relative h-40 w-full overflow-hidden flex-shrink-0 flex items-center justify-center"
+        style={{ background: `color-mix(in srgb, var(--ap-brand) 14%, var(--ap-paper-2))` }}
+      >
+        <ClipboardCheck style={{ width: 40, height: 40, color: 'var(--ap-brand)', opacity: 0.8 }} />
       </div>
-      <div>
-        <div style={{ fontFamily: 'var(--ap-font-display)', fontWeight: 600, fontSize: 16, marginBottom: 4 }}>
-          {exam.title}
+      <div className="flex flex-1 flex-col gap-2.5" style={{ padding: '14px 16px 12px' }}>
+        <div className="flex items-start gap-2">
+          <button
+            type="button"
+            {...attributes}
+            {...listeners}
+            onClick={(e) => e.stopPropagation()}
+            style={gripStyle}
+            className="ap-grip"
+            title="Déplacer"
+            aria-label={`Déplacer ${exam.title}`}
+          >
+            <GripVertical style={{ width: 14, height: 14 }} />
+          </button>
+          <div className="flex-1 min-w-0">
+            <h3 className="ap-h3 line-clamp-2" style={{ fontSize: '15.5px', lineHeight: 1.25 }}>{exam.title}</h3>
+            {exam.description && <p className="ap-muted mt-1 text-sm line-clamp-2">{exam.description}</p>}
+          </div>
+          <button
+            onClick={(e) => { e.stopPropagation(); ctx.onFavorite(); }}
+            className="text-amber-400 hover:text-amber-500 transition-colors cursor-pointer p-1 -mr-1 flex-shrink-0"
+          >
+            <Star className={`h-4 w-4 ${d.isFavorite ? 'fill-amber-400' : ''}`} />
+          </button>
         </div>
-        {exam.description && (
-          <p className="ap-muted" style={{ fontSize: 12, fontWeight: 700 }}>{exam.description}</p>
-        )}
-      </div>
-      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ap-muted)', display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-        {renderMeta(exam, stats)}
-      </div>
-      <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', gap: 8, paddingTop: 4 }} onClick={(e) => e.stopPropagation()}>
-        <ExamContextMenu
-          isFavorite={d.isFavorite}
-          onEdit={() => navigate(`/exam-builder?examId=${exam.id}`)}
-          onDuplicate={() => onDuplicate(d)}
-          onToggleFavorite={ctx.onFavorite}
-          onTrash={ctx.onTrash}
-        />
-        <div style={{ flex: 1 }} />
-        {actionButtons(exam, navigate)}
+        <div className="flex flex-wrap items-center gap-1.5">
+          {statusBadge(liveStatus)}
+          {liveStatus !== 'draft' && (
+            <span className="ap-pill" style={{ fontFamily: 'var(--ap-font-mono)', fontSize: '11px', padding: '3px 9px', letterSpacing: '.06em' }}>
+              {exam.joinCode}
+            </span>
+          )}
+        </div>
+        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ap-muted)', display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          {renderMeta(exam, stats)}
+        </div>
+        <div className="mt-auto flex flex-wrap items-center justify-between gap-1.5 pt-3" style={{ borderTop: 'var(--ap-border-w) solid var(--ap-line)' }}>
+          <ExamContextMenu
+            isFavorite={d.isFavorite}
+            onEdit={() => navigate(`/exam-builder?examId=${exam.id}`)}
+            onDuplicate={() => onDuplicate(d)}
+            onToggleFavorite={ctx.onFavorite}
+            onTrash={ctx.onTrash}
+          />
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }} onClick={(e) => e.stopPropagation()}>
+            {actionButtons(exam, navigate, { text: '13px', pad: '8px 15px' })}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -197,7 +213,7 @@ function ExamRow({ d, ctx, navigate, onDuplicate }: ExamItemProps) {
           onToggleFavorite={ctx.onFavorite}
           onTrash={ctx.onTrash}
         />
-        {actionButtons(exam, navigate)}
+        {actionButtons(exam, navigate, { text: '12px', pad: '6px 12px' })}
       </div>
     </div>
   );
