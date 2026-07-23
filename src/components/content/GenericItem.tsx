@@ -76,6 +76,24 @@ const gripStyle: React.CSSProperties = {
   flexShrink: 0,
 };
 
+/** Drag handle overlaid on the header block (top-left) so the title row keeps the full card width. */
+const gripOverlayStyle: React.CSSProperties = {
+  position: "absolute",
+  top: 8,
+  left: 8,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  background: "var(--ap-card)",
+  border: "var(--ap-border-w) solid var(--ap-line)",
+  color: "var(--ap-muted)",
+  cursor: "grab",
+  touchAction: "none",
+  padding: "4px",
+  borderRadius: "6px",
+  zIndex: 1,
+};
+
 const menuStyle = {
   minWidth: 200,
   border: "var(--ap-border-w) solid var(--ap-line)",
@@ -226,6 +244,18 @@ export function GenericCard(props: GenericItemProps) {
       {img ? (
         <div className="relative h-40 w-full overflow-hidden flex-shrink-0">
           <img src={img} alt={d.title} className="h-full w-full object-cover" />
+          <button
+            type="button"
+            {...attributes}
+            {...listeners}
+            onClick={(e) => e.stopPropagation()}
+            style={gripOverlayStyle}
+            className="ap-grip"
+            title="Déplacer"
+            aria-label={`Déplacer ${d.title}`}
+          >
+            <GripVertical style={{ width: 14, height: 14 }} />
+          </button>
         </div>
       ) : (
         <div
@@ -233,22 +263,22 @@ export function GenericCard(props: GenericItemProps) {
           style={{ background: `color-mix(in srgb, var(${accentVar}) 14%, var(--ap-paper-2))` }}
         >
           <DefaultHeaderIcon style={{ width: 40, height: 40, color: `var(${accentVar})`, opacity: 0.8 }} />
-        </div>
-      )}
-      <div className="flex flex-1 flex-col gap-2.5" style={{ padding: "14px 16px 12px" }}>
-        <div className="flex items-start gap-2">
           <button
             type="button"
             {...attributes}
             {...listeners}
             onClick={(e) => e.stopPropagation()}
-            style={gripStyle}
+            style={gripOverlayStyle}
             className="ap-grip"
             title="Déplacer"
             aria-label={`Déplacer ${d.title}`}
           >
             <GripVertical style={{ width: 14, height: 14 }} />
           </button>
+        </div>
+      )}
+      <div className="flex flex-1 flex-col gap-2.5" style={{ padding: "14px 16px 12px" }}>
+        <div className="flex items-start gap-2">
           <div className="flex-1 min-w-0">
             <h3 className="ap-h3 line-clamp-2" style={{ fontSize: "15.5px", lineHeight: 1.25 }}>{d.title}</h3>
             <p className="ap-muted mt-1 text-sm line-clamp-2">{d.description}</p>
@@ -273,7 +303,7 @@ export function GenericCard(props: GenericItemProps) {
         </div>
         <div className="mt-auto flex flex-wrap items-center justify-between gap-1.5 pt-3" style={{ borderTop: "var(--ap-border-w) solid var(--ap-line)" }}>
           <ItemMenu d={d} ctx={ctx} config={config} navigate={navigate} />
-          <div style={{ display: "flex", gap: "6px", alignItems: "center", flexWrap: "wrap", justifyContent: "flex-end" }} onClick={(e) => e.stopPropagation()}>
+          <div style={{ display: "flex", gap: "6px", alignItems: "center", flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
             {hasHistory && config.results && (
               <button
                 onClick={() => navigate(config.results!(id))}
