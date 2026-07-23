@@ -1,4 +1,6 @@
 import { supabase } from '@/lib/supabase';
+import { duplicateQuiz } from '@/lib/quizStorage';
+import { duplicateCourse } from '@/lib/courseStorage';
 import type { ContentRow, ContentType } from './types';
 
 // --- Async CRUD (Supabase-backed), polymorphic `content` table ---
@@ -150,14 +152,41 @@ export async function updateContent(
 }
 
 /**
- * Duplicate a content row for its owner: copies `data` under a fresh `data.id`
- * (so routes/localStorage keyed off it don't collide with the original),
- * appends " (copie)" to the title, resets favorite, and drops it in the same
- * folder as the original. Returns the newly created row.
+ * Duplicate a content row for its owner.
+ *
+ * quiz/poll/flashcard/course are still edited through their legacy
+ * localStorage stores (QuizBuilder/CourseBuilder read from there, not this
+ * table) — a `content` row for them is just a mirror keyed by `source_id`.
+ * Cloning only the mirror would leave the copy with no legacy backing, so
+ * "Modifier" on it silently loads nothing and any save is dropped. Duplicate
+ * the legacy item first (via its own duplicate*, which also enforces plan
+ * caps) and mirror the result.
+ *
+ * Other types (slide, exam, …) live natively in this table: clone `data`
+ * under a fresh `data.id` (so routes/localStorage keyed off it don't collide
+ * with the original) directly.
+ *
+ * Either way: appends " (copie)"/"Copie de " to the title, resets favorite,
+ * and drops the copy in the same folder as the original.
  */
 export async function duplicateContent(userId: string, id: string): Promise<ContentRow> {
   const original = await getContent(id);
   if (!original) throw new Error('Contenu introuvable');
+
+  if (original.type === 'quiz' || original.type === 'poll' || original.type === 'flashcard') {
+    if (!original.source_id) throw new Error('Impossible de dupliquer : source introuvable');
+    const copy = duplicateQuiz(original.source_id);
+    if (!copy) throw new Error('Impossible de dupliquer ce contenu');
+    return createContent(userId, original.type, copy as unknown as Record<string, unknown>, original.folder_id, copy.id);
+  }
+
+  if (original.type === 'course') {
+    if (!original.source_id) throw new Error('Impossible de dupliquer : source introuvable');
+    const copy = duplicateCourse(original.source_id);
+    if (!copy) throw new Error('Impossible de dupliquer ce contenu');
+    return createContent(userId, 'course', copy as unknown as Record<string, unknown>, original.folder_id, copy.id);
+  }
+
   const originalData = original.data ?? {};
   const title = typeof originalData.title === 'string' ? originalData.title : '';
   const data = {

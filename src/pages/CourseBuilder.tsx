@@ -20,9 +20,9 @@ import { CONTENT_CAPS, getPlan, PlanLimitError } from "@/lib/plans";
 import { PlanLimitBlocker } from "@/components/PlanLimitBlocker";
 import { toast } from "sonner";
 import {
-  ArrowLeft,
   BookOpen,
   ChevronDown,
+  ChevronLeft,
   ChevronRight,
   FileText,
   GraduationCap,
@@ -294,32 +294,47 @@ const CourseBuilder = () => {
 
   return (
     <div className="min-h-screen" style={{ display: "flex", flexDirection: "column" }}>
-      <Header
-        subtitle={courseId ? "Modifier le cours" : "Nouveau cours"}
-        toolbar={
-          <div className="flex items-center gap-2">
-            <button
-              className="ap-btn ap-btn--ghost ap-btn--sm"
-              style={{ display: "flex", alignItems: "center", gap: "6px" }}
-              onClick={() => navigate("/my-courses")}
-            >
-              <ArrowLeft className="h-4 w-4" /> Mes cours
-            </button>
-            <button
-              className="ap-btn ap-btn--sm ap-btn--pill"
-              style={{ background: "var(--ap-brand)", color: "#fff", border: "none", gap: "6px", display: "flex", alignItems: "center" }}
-              onClick={handleSave}
-              disabled={saving}
-            >
-              <Save className="h-3.5 w-3.5" />
-              {saving ? "Enregistrement..." : "Enregistrer"}
-            </button>
-          </div>
-        }
-        toolbarPlacement="main"
-      />
+      {/* ── Topbar — matches the minimal QuizBuilder/PresentationEditor chrome (no public nav/account icons) ── */}
+      <div style={{
+        height: 62, flexShrink: 0, background: "var(--ap-card)",
+        borderBottom: "var(--ap-border-w) solid var(--ap-line)",
+        display: "flex", alignItems: "center", gap: 16, padding: "0 18px",
+      }}>
+        <button
+          onClick={() => navigate("/my-courses")}
+          aria-label="Retour : Mes cours"
+          style={{
+            display: "grid", placeItems: "center", width: 36, height: 36,
+            borderRadius: "var(--ap-r-sm)", border: "var(--ap-border-w) solid var(--ap-line)",
+            background: "var(--ap-card)", cursor: "pointer", boxShadow: "0 3px 0 var(--ap-line)",
+            flexShrink: 0,
+          }}
+        >
+          <ChevronLeft style={{ width: 16, height: 16, color: "var(--ap-ink)" }} />
+        </button>
 
-      <div style={{ display: "flex", flex: 1, height: "calc(100vh - 64px)", overflow: "hidden" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+          <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--ap-muted)", whiteSpace: "nowrap" }}>Mes cours</span>
+          <span style={{ color: "var(--ap-line-2)", fontWeight: 800 }}>/</span>
+          <span style={{ fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 15.5, color: "var(--ap-ink)", whiteSpace: "nowrap" }}>
+            {courseId ? "Modifier le cours" : "Nouveau cours"}
+          </span>
+        </div>
+
+        <div style={{ flex: 1 }} />
+
+        <button
+          className="ap-btn ap-btn--pill"
+          style={{ padding: "10px 18px", fontSize: 14, display: "flex", alignItems: "center", gap: 6 }}
+          onClick={handleSave}
+          disabled={saving}
+        >
+          <Save className="h-3.5 w-3.5" />
+          {saving ? "Enregistrement..." : "Enregistrer"}
+        </button>
+      </div>
+
+      <div style={{ display: "flex", flex: 1, height: "calc(100vh - 62px)", overflow: "hidden" }}>
         {/* ── LEFT SIDEBAR ── */}
         <aside style={{
           width: 272,
@@ -344,8 +359,8 @@ const CourseBuilder = () => {
               <Plus className="h-3.5 w-3.5" /> Leçon
             </button>
             <button
-              className="ap-btn ap-btn--sm"
-              style={{ flex: 1, border: "var(--ap-border-w) solid var(--ap-line)", background: "var(--ap-card)", gap: "6px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "13px", borderRadius: "var(--ap-r-pill)", fontWeight: 700 }}
+              className="ap-btn ap-btn--ghost ap-btn--sm"
+              style={{ flex: 1, gap: "6px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "13px", borderRadius: "var(--ap-r-pill)", fontWeight: 700 }}
               onClick={addModule}
             >
               <Plus className="h-3.5 w-3.5" /> Module
