@@ -88,6 +88,7 @@ const CourseBuilder = () => {
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("Autre");
   const [isPublic, setIsPublic] = useState(false);
+  const [coverImage, setCoverImage] = useState("");
   const [modules, setModules] = useState<Module[]>([]);
   const [collapsedModules, setCollapsedModules] = useState<Set<string>>(new Set());
   const [selected, setSelected] = useState<SelectedItem>({ type: "info" });
@@ -109,6 +110,7 @@ const CourseBuilder = () => {
         setDescription(course.description);
         setCategory(course.category || "Autre");
         setIsPublic(course.isPublic);
+        setCoverImage(course.coverImage || "");
         setModules(course.modules);
       } else {
         toast.error("Cours introuvable");
@@ -126,6 +128,7 @@ const CourseBuilder = () => {
         description: description.trim(),
         category,
         isPublic,
+        coverImage: coverImage || undefined,
         isFavorite: false,
         modules,
         tags: [],
@@ -251,6 +254,21 @@ const CourseBuilder = () => {
       };
       reader.readAsDataURL(file);
     }
+    e.target.value = "";
+  };
+
+  const handleCoverImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      assertSafeImportFile(file, 4 * 1024 * 1024);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Fichier invalide");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => setCoverImage(reader.result as string);
+    reader.readAsDataURL(file);
     e.target.value = "";
   };
 
@@ -474,6 +492,32 @@ const CourseBuilder = () => {
               <h2 className="ap-h3 mb-6" style={{ fontSize: "18px" }}>Informations du cours</h2>
               <div className="ap-card">
                 <div className="flex flex-col gap-4">
+                  <div>
+                    {fieldLabel("Image d'en-tête")}
+                    {coverImage ? (
+                      <div className="relative h-36 w-full overflow-hidden" style={{ borderRadius: "var(--ap-r-sm)" }}>
+                        <img src={coverImage} alt="Aperçu de l'image d'en-tête" className="h-full w-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => setCoverImage("")}
+                          className="absolute top-2 right-2"
+                          style={{ background: "rgba(0,0,0,0.55)", border: "none", borderRadius: "var(--ap-r-sm)", padding: 6, cursor: "pointer" }}
+                          aria-label="Supprimer l'image d'en-tête"
+                        >
+                          <Trash2 className="h-4 w-4" style={{ color: "#fff" }} />
+                        </button>
+                      </div>
+                    ) : (
+                      <label
+                        htmlFor="course-cover-image"
+                        className="flex items-center justify-center gap-2 cursor-pointer"
+                        style={{ height: 96, border: "var(--ap-border-w) dashed var(--ap-line-2)", borderRadius: "var(--ap-r-sm)", color: "var(--ap-muted)", fontSize: "13px", fontWeight: 600 }}
+                      >
+                        <Upload className="h-4 w-4" /> Ajouter une image d'en-tête
+                      </label>
+                    )}
+                    <input id="course-cover-image" type="file" accept="image/*" className="hidden" onChange={handleCoverImageUpload} />
+                  </div>
                   <div>
                     {fieldLabel("Titre")}
                     <input
