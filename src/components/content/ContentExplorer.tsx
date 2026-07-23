@@ -352,6 +352,9 @@ export function ContentExplorer({
   const handleTrash = (rowId: string) =>
     c.trashItem(rowId).then(() => toast.success("Mis à la corbeille")).catch(() => toast.error("Erreur"));
 
+  const handleDuplicate = (rowId: string) =>
+    c.duplicateItem(rowId).then(() => toast.success("Dupliqué")).catch(() => toast.error("Erreur lors de la duplication"));
+
   const handleRestore = (rowId: string) =>
     c.restoreItem(rowId).then(() => toast.success("Restauré")).catch(() => toast.error("Erreur"));
 
@@ -390,6 +393,7 @@ export function ContentExplorer({
     onMove: (folderId) => handleMove(d.id, folderId),
     onFavorite: () => handleFavorite(d),
     onTrash: () => handleTrash(d.id),
+    onDuplicate: () => handleDuplicate(d.id),
   });
 
   // ---- item grid / list ----

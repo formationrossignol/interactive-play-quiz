@@ -91,23 +91,15 @@ interface ExamItemProps {
   onDuplicate: (d: ContentDisplay) => void;
 }
 
-const actionButtons = (exam: Exam, navigate: ReturnType<typeof useNavigate>, size: { text: string; pad: string }) => (
-  <>
-    <button
-      onClick={(e) => { e.stopPropagation(); navigate(`/exam-builder?examId=${exam.id}`); }}
-      className="ap-btn ap-btn--ghost ap-btn--sm ap-btn--pill"
-      style={{ fontSize: size.text, padding: size.pad }}
-    >
-      Modifier
-    </button>
-    <button
-      onClick={(e) => { e.stopPropagation(); navigate(`/exam/${exam.id}/admin`); }}
-      className="ap-btn ap-btn--sm ap-btn--pill"
-      style={{ fontSize: size.text, padding: size.pad }}
-    >
-      Résultats →
-    </button>
-  </>
+// "Modifier" already lives in ExamContextMenu — this is the card's one primary action.
+const primaryButton = (exam: Exam, navigate: ReturnType<typeof useNavigate>, size: { text: string; pad: string }) => (
+  <button
+    onClick={(e) => { e.stopPropagation(); navigate(`/exam/${exam.id}/admin`); }}
+    className="ap-btn ap-btn--sm ap-btn--pill"
+    style={{ fontSize: size.text, padding: size.pad }}
+  >
+    Résultats →
+  </button>
 );
 
 function ExamCard({ d, ctx, navigate, onDuplicate }: ExamItemProps) {
@@ -164,7 +156,7 @@ function ExamCard({ d, ctx, navigate, onDuplicate }: ExamItemProps) {
         <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ap-muted)', display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           {renderMeta(exam, stats)}
         </div>
-        <div className="mt-auto flex flex-wrap items-center justify-between gap-1.5 pt-3" style={{ borderTop: 'var(--ap-border-w) solid var(--ap-line)' }}>
+        <div className="mt-auto flex items-center justify-between gap-1.5 pt-3" style={{ borderTop: 'var(--ap-border-w) solid var(--ap-line)' }}>
           <ExamContextMenu
             isFavorite={d.isFavorite}
             onEdit={() => navigate(`/exam-builder?examId=${exam.id}`)}
@@ -172,9 +164,7 @@ function ExamCard({ d, ctx, navigate, onDuplicate }: ExamItemProps) {
             onToggleFavorite={ctx.onFavorite}
             onTrash={ctx.onTrash}
           />
-          <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
-            {actionButtons(exam, navigate, { text: '13px', pad: '8px 15px' })}
-          </div>
+          <div onClick={(e) => e.stopPropagation()}>{primaryButton(exam, navigate, { text: '13px', pad: '8px 15px' })}</div>
         </div>
       </div>
     </div>
@@ -220,7 +210,7 @@ function ExamRow({ d, ctx, navigate, onDuplicate }: ExamItemProps) {
           onToggleFavorite={ctx.onFavorite}
           onTrash={ctx.onTrash}
         />
-        {actionButtons(exam, navigate, { text: '12px', pad: '6px 12px' })}
+        {primaryButton(exam, navigate, { text: '12px', pad: '6px 12px' })}
       </div>
     </div>
   );

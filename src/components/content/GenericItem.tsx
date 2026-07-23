@@ -12,6 +12,7 @@ import { useDraggable } from "@dnd-kit/core";
 import {
   BarChart2,
   ClipboardCheck,
+  Copy,
   FolderInput,
   FolderOpen,
   GripVertical,
@@ -47,6 +48,7 @@ export interface ItemCtx {
   onMove: (folderId: string | null) => void;
   onFavorite: () => void;
   onTrash: () => void;
+  onDuplicate: () => void;
 }
 
 /** Static per-type behaviour for the generic renderers. */
@@ -104,7 +106,7 @@ const menuStyle = {
 const itemId = (d: ContentDisplay) => String((d.data.id as string | undefined) ?? "");
 const headerImage = (d: ContentDisplay) => d.data.headerImage as string | undefined;
 
-/** ⋯ menu: Examen (quiz), Move-to-folder submenu, Favorite toggle, Trash. */
+/** ⋯ menu: Examen (quiz), Résultats, Dupliquer, Move-to-folder submenu, Favorite toggle, Trash. */
 function ItemMenu({
   d,
   ctx,
@@ -117,6 +119,7 @@ function ItemMenu({
   navigate: NavigateFn;
 }) {
   const id = itemId(d);
+  const hasHistory = !!config.results && id ? readSessionHistory(id).length > 0 : false;
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
@@ -133,6 +136,17 @@ function ItemMenu({
             <ClipboardCheck className="h-3.5 w-3.5" /> Créer un examen
           </DropdownMenuItem>
         )}
+        {hasHistory && config.results && (
+          <DropdownMenuItem
+            onSelect={() => navigate(config.results!(id))}
+            className="flex items-center gap-2 cursor-pointer text-sm"
+          >
+            <BarChart2 className="h-3.5 w-3.5" /> Résultats
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuItem onSelect={ctx.onDuplicate} className="flex items-center gap-2 cursor-pointer text-sm">
+          <Copy className="h-3.5 w-3.5" /> Dupliquer
+        </DropdownMenuItem>
         {ctx.folders.length > 0 && (
           <DropdownMenuSub>
             <DropdownMenuSubTrigger className="flex items-center gap-2 cursor-pointer text-sm">
@@ -230,7 +244,6 @@ export function GenericCard(props: GenericItemProps) {
   const img = headerImage(d);
   const n = config.countOf(d);
   const id = itemId(d);
-  const hasHistory = !!config.results && id ? readSessionHistory(id).length > 0 : false;
   const accentVar = accentVarOf(config.accentBtn);
   const DefaultHeaderIcon = defaultHeaderIcon[config.accentBtn] ?? ListChecks;
 
@@ -301,20 +314,9 @@ export function GenericCard(props: GenericItemProps) {
             <span key={tag} className="ap-pill" style={{ fontSize: "11px", padding: "3px 9px" }}>#{tag}</span>
           ))}
         </div>
-        <div className="mt-auto flex flex-wrap items-center justify-between gap-1.5 pt-3" style={{ borderTop: "var(--ap-border-w) solid var(--ap-line)" }}>
+        <div className="mt-auto flex items-center justify-between gap-1.5 pt-3" style={{ borderTop: "var(--ap-border-w) solid var(--ap-line)" }}>
           <ItemMenu d={d} ctx={ctx} config={config} navigate={navigate} />
-          <div style={{ display: "flex", gap: "6px", alignItems: "center", flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
-            {hasHistory && config.results && (
-              <button
-                onClick={() => navigate(config.results!(id))}
-                className="ap-btn ap-btn--ghost ap-btn--sm"
-                style={{ padding: "6px 10px", display: "flex", alignItems: "center", gap: "4px", flexShrink: 0 }}
-              >
-                <BarChart2 style={{ width: 13, height: 13 }} /> Résultats
-              </button>
-            )}
-            {primaryButton(props, { text: "13px", pad: "8px 15px" })}
-          </div>
+          <div onClick={(e) => e.stopPropagation()}>{primaryButton(props, { text: "13px", pad: "8px 15px" })}</div>
         </div>
       </div>
     </div>
@@ -327,7 +329,6 @@ export function GenericRow(props: GenericItemProps) {
   const img = headerImage(d);
   const n = config.countOf(d);
   const id = itemId(d);
-  const hasHistory = !!config.results && id ? readSessionHistory(id).length > 0 : false;
 
   return (
     <div
@@ -365,16 +366,6 @@ export function GenericRow(props: GenericItemProps) {
       </div>
       <div className="flex items-center gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
         <ItemMenu d={d} ctx={ctx} config={config} navigate={navigate} />
-        {hasHistory && config.results && (
-          <button
-            onClick={() => navigate(config.results!(id))}
-            className="ap-btn ap-btn--ghost ap-btn--sm"
-            style={{ padding: "5px 8px", display: "flex", alignItems: "center", gap: "3px", fontSize: "12px" }}
-          >
-            <BarChart2 style={{ width: 13, height: 13 }} />
-            <span className="hidden sm:inline">Résultats</span>
-          </button>
-        )}
         {primaryButton(props, { text: "12px", pad: "6px 12px" })}
       </div>
     </div>

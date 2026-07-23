@@ -149,6 +149,26 @@ export async function updateContent(
   if (error) throw error;
 }
 
+/**
+ * Duplicate a content row for its owner: copies `data` under a fresh `data.id`
+ * (so routes/localStorage keyed off it don't collide with the original),
+ * appends " (copie)" to the title, resets favorite, and drops it in the same
+ * folder as the original. Returns the newly created row.
+ */
+export async function duplicateContent(userId: string, id: string): Promise<ContentRow> {
+  const original = await getContent(id);
+  if (!original) throw new Error('Contenu introuvable');
+  const originalData = original.data ?? {};
+  const title = typeof originalData.title === 'string' ? originalData.title : '';
+  const data = {
+    ...originalData,
+    id: crypto.randomUUID(),
+    title: `${title} (copie)`,
+    isFavorite: false,
+  };
+  return createContent(userId, original.type, data, original.folder_id);
+}
+
 export async function removeContent(id: string): Promise<void> {
   const { error } = await supabase
     .from('content')
