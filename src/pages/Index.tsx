@@ -371,7 +371,6 @@ const Index = () => {
         {/* ═══ COMMENT ÇA MARCHE ═══ */}
         <section style={{ padding: "24px 0 80px" }}>
           <div style={{ textAlign: "center", maxWidth: 560, margin: "0 auto 40px" }}>
-            <span className="ap-badge ap-badge--brand" style={{ marginBottom: 16, display: "inline-flex" }}>Comment ça marche</span>
             <h2 className="ap-h2" style={{ marginBottom: 8 }}>Trois étapes, zéro friction.</h2>
             <p className="ap-muted">De la création à la partie en direct, sans détour.</p>
           </div>
@@ -398,7 +397,6 @@ const Index = () => {
         {/* ═══ CAS D'USAGE ═══ */}
         <section style={{ padding: "0 0 80px", maxWidth: 720, margin: "0 auto" }}>
           <div style={{ textAlign: "center", maxWidth: 560, margin: "0 auto 32px" }}>
-            <span className="ap-badge ap-badge--brand" style={{ marginBottom: 16, display: "inline-flex" }}>Cas d'usage</span>
             <h2 className="ap-h2" style={{ marginBottom: 8 }}>Fait pour votre contexte.</h2>
             <p className="ap-muted">Même outil, deux façons de l'utiliser.</p>
           </div>
@@ -414,7 +412,6 @@ const Index = () => {
         {/* ═══ DÉMO ═══ */}
         <section style={{ padding: "0 0 80px", maxWidth: 900, margin: "0 auto" }}>
           <div style={{ textAlign: "center", maxWidth: 560, margin: "0 auto 28px" }}>
-            <span className="ap-badge ap-badge--brand" style={{ marginBottom: 16, display: "inline-flex" }}>Démo</span>
             <h2 className="ap-h2" style={{ marginBottom: 8 }}>Voir une session en direct.</h2>
           </div>
           <DemoShowcase />
@@ -423,7 +420,6 @@ const Index = () => {
         {/* ═══ TÉMOIGNAGES ═══ */}
         <section style={{ padding: "0 0 80px" }}>
           <div style={{ textAlign: "center", maxWidth: 560, margin: "0 auto 32px" }}>
-            <span className="ap-badge ap-badge--brand" style={{ marginBottom: 16, display: "inline-flex" }}>Avis</span>
             <h2 className="ap-h2" style={{ marginBottom: 8 }}>Ce qu'ils en disent.</h2>
           </div>
           <LandingTestimonials />
@@ -432,7 +428,6 @@ const Index = () => {
         {/* ═══ CONFIANCE ═══ */}
         <section style={{ padding: "0 0 80px" }}>
           <div style={{ textAlign: "center", maxWidth: 560, margin: "0 auto 32px" }}>
-            <span className="ap-badge ap-badge--brand" style={{ marginBottom: 16, display: "inline-flex" }}>Confiance</span>
             <h2 className="ap-h2" style={{ marginBottom: 8 }}>Vos données, respectées.</h2>
           </div>
           <TrustSection />
@@ -441,7 +436,6 @@ const Index = () => {
         {/* ═══ FAQ ═══ */}
         <section style={{ padding: "0 0 80px", maxWidth: 720, margin: "0 auto" }}>
           <div style={{ textAlign: "center", maxWidth: 560, margin: "0 auto 32px" }}>
-            <span className="ap-badge ap-badge--brand" style={{ marginBottom: 16, display: "inline-flex" }}>Questions fréquentes</span>
             <h2 className="ap-h2" style={{ marginBottom: 8 }}>Tout ce qu'il faut savoir.</h2>
           </div>
           <LandingFaq />

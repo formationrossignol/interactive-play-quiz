@@ -73,9 +73,6 @@ const Pricing = () => {
       <main style={{ flex: 1 }}>
         {/* Hero */}
         <section style={{ maxWidth: 640, margin: "0 auto", padding: "72px 24px 56px", textAlign: "center" }}>
-          <span className="ap-badge ap-badge--brand" style={{ marginBottom: "20px", display: "inline-flex" }}>
-            Tarifs
-          </span>
           <h1 className="ap-h1" style={{ fontSize: "clamp(36px,5vw,56px)", marginBottom: "16px" }}>
             {t('pricingTitle')}
           </h1>
@@ -185,11 +182,8 @@ const Pricing = () => {
         </section>
 
         {/* FAQ paiement */}
-        <section style={{ maxWidth: 720, margin: "0 auto", padding: "0 24px 96px" }}>
+        <section style={{ maxWidth: 1100, margin: "0 auto", padding: "0 24px 96px" }}>
           <div style={{ textAlign: "center", marginBottom: "32px" }}>
-            <span className="ap-badge ap-badge--brand" style={{ marginBottom: "20px", display: "inline-flex" }}>
-              FAQ
-            </span>
             <h2 className="ap-h2" style={{ marginBottom: "8px" }}>Questions sur le paiement</h2>
             <p className="ap-muted">Tout ce qu'il faut savoir avant de passer au plan Pro.</p>
           </div>

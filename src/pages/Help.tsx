@@ -54,9 +54,6 @@ const Help = () => {
 
           {/* Hero */}
           <div style={{ textAlign: "center", marginBottom: "48px" }}>
-            <span className="ap-badge ap-badge--brand" style={{ marginBottom: "20px", display: "inline-flex" }}>
-              Centre d'aide
-            </span>
             <h1 className="ap-h1" style={{ fontSize: "clamp(32px,5vw,48px)", marginBottom: "16px" }}>
               Comment pouvons-nous vous aider ?
             </h1>
