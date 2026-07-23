@@ -555,23 +555,6 @@ export function ContentExplorer({
               {/* ===== Unified sidebar ===== */}
               <aside className="md:w-64 md:flex-shrink-0 w-full">
                 <div className="ap-card" style={{ padding: 12, position: "sticky", top: 84 }}>
-                  <div style={SIDE_LABEL}>Bibliothèque</div>
-                  <FolderExplorer
-                    tree={c.tree}
-                    currentFolderId={c.currentFolderId}
-                    storageKey={`explorer-expanded-${type}`}
-                    counts={folderCounts}
-                    rootLabel={rootLabel}
-                    rootCount={active.length}
-                    rootActive={view === "all" && c.currentFolderId === null}
-                    onNavigate={goFolder}
-                    onCreate={(pid, name) => c.createFolder(pid, name)}
-                    onRename={c.renameFolder}
-                    onDelete={c.deleteFolder}
-                    onMoveFolder={c.moveFolder}
-                  />
-
-                  <div style={{ borderTop: "var(--ap-border-w) solid var(--ap-line)", margin: "10px 0 8px" }} />
                   <div style={SIDE_LABEL}>Raccourcis</div>
                   <ShortcutRow
                     icon={<Star style={{ width: 16, height: 16 }} />}
@@ -593,6 +576,23 @@ export function ContentExplorer({
                     count={trashed.length}
                     active={view === "trash"}
                     onClick={() => goShortcut("trash")}
+                  />
+
+                  <div style={{ borderTop: "var(--ap-border-w) solid var(--ap-line)", margin: "10px 0 8px" }} />
+                  <div style={SIDE_LABEL}>Bibliothèque</div>
+                  <FolderExplorer
+                    tree={c.tree}
+                    currentFolderId={c.currentFolderId}
+                    storageKey={`explorer-expanded-${type}`}
+                    counts={folderCounts}
+                    rootLabel={rootLabel}
+                    rootCount={active.length}
+                    rootActive={view === "all" && c.currentFolderId === null}
+                    onNavigate={goFolder}
+                    onCreate={(pid, name) => c.createFolder(pid, name)}
+                    onRename={c.renameFolder}
+                    onDelete={c.deleteFolder}
+                    onMoveFolder={c.moveFolder}
                   />
                 </div>
               </aside>

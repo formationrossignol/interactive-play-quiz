@@ -24,6 +24,9 @@ export function PresentationEditor({ contentId, userId, initialPresenting = fals
   const [presenting, setPresenting] = useState(initialPresenting);
   const presentation = useDocStore((s) => s.presentation);
   const load = useDocStore((s) => s.load);
+  const setTitle = useDocStore((s) => s.setTitle);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState("");
   const activeSlideId = useEditorUIStore((s) => s.activeSlideId);
   const setActiveSlideId = useEditorUIStore((s) => s.setActiveSlideId);
   const setZoom = useEditorUIStore((s) => s.setZoom);
@@ -73,7 +76,31 @@ export function PresentationEditor({ contentId, userId, initialPresenting = fals
   return (
     <div style={{ height: "100vh", display: "flex", flexDirection: "column" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 16px", borderBottom: "var(--ap-border-w) solid var(--ap-line)" }}>
-        <span style={{ fontFamily: "var(--ap-font-display)", fontWeight: 700 }}>{presentation.title}</span>
+        {editingTitle ? (
+          <input
+            autoFocus
+            value={titleDraft}
+            onChange={(e) => setTitleDraft(e.target.value)}
+            onBlur={() => { setTitle(titleDraft.trim() || "Sans titre"); setEditingTitle(false); }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") e.currentTarget.blur();
+              if (e.key === "Escape") { setEditingTitle(false); }
+            }}
+            style={{
+              fontFamily: "var(--ap-font-display)", fontWeight: 700, fontSize: "inherit",
+              border: "var(--ap-border-w) solid var(--ap-brand)", borderRadius: "var(--ap-r-sm)",
+              padding: "2px 6px", background: "var(--ap-card)", color: "var(--ap-ink)",
+            }}
+          />
+        ) : (
+          <span
+            style={{ fontFamily: "var(--ap-font-display)", fontWeight: 700, cursor: "text", padding: "2px 6px", borderRadius: "var(--ap-r-sm)" }}
+            title="Cliquer pour renommer"
+            onClick={() => { setTitleDraft(presentation.title); setEditingTitle(true); }}
+          >
+            {presentation.title}
+          </span>
+        )}
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <span style={{ fontSize: 12, color: "var(--ap-muted)" }}>
             {status === "saving" ? "Enregistrement…" : status === "saved" ? "Enregistré" : status === "error" ? "Erreur d'enregistrement" : ""}

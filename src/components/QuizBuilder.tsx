@@ -497,10 +497,21 @@ export const QuizBuilder = () => {
 
   const saveTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const firstRender = useRef(true);
+  const questionTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   const activeTheme = THEMES.find(t => t.id === theme) ?? THEMES[0];
   const activeFont = FONT_OPTIONS.find(f => f.value === previewFont) ?? FONT_OPTIONS[0];
   const selectedQ = selectedIdx !== null ? questions[selectedIdx] : null;
+
+  // Auto-grow the question textarea to fit its content — needed both on typing
+  // (handled inline by the textarea's onChange) and when the loaded/selected
+  // question already has long text, which the onChange path never sees.
+  useEffect(() => {
+    const el = questionTextareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }, [selectedQ?.id, selectedQ?.question]);
 
   // ── Auto-save indicator ──────────────────────────────────────────────────
   useEffect(() => {
@@ -818,6 +829,7 @@ export const QuizBuilder = () => {
             </span>
           </div>
           <textarea
+            ref={questionTextareaRef}
             value={q.question || ""}
             onChange={e => { upd({ question: e.target.value }); e.target.style.height = "auto"; e.target.style.height = e.target.scrollHeight + "px"; }}
             placeholder="Posez votre question…"
