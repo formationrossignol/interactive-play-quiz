@@ -37,6 +37,13 @@ const gripStyle: React.CSSProperties = {
   touchAction: 'none', flexShrink: 0, background: 'none', border: 'none', padding: 2,
 };
 
+/** Drag handle overlaid on the header block (top-left) so the title row keeps the full card width. */
+const gripOverlayStyle: React.CSSProperties = {
+  position: 'absolute', top: 8, left: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
+  background: 'var(--ap-card)', border: 'var(--ap-border-w) solid var(--ap-line)', color: 'var(--ap-muted)',
+  cursor: 'grab', touchAction: 'none', padding: 4, borderRadius: 6, zIndex: 1,
+};
+
 const statusBadge = (liveStatus: string) => {
   const badge = STATUS_LABEL[liveStatus];
   return (
@@ -120,21 +127,21 @@ function ExamCard({ d, ctx, navigate, onDuplicate }: ExamItemProps) {
         style={{ background: `color-mix(in srgb, var(--ap-brand) 14%, var(--ap-paper-2))` }}
       >
         <ClipboardCheck style={{ width: 40, height: 40, color: 'var(--ap-brand)', opacity: 0.8 }} />
+        <button
+          type="button"
+          {...attributes}
+          {...listeners}
+          onClick={(e) => e.stopPropagation()}
+          style={gripOverlayStyle}
+          className="ap-grip"
+          title="Déplacer"
+          aria-label={`Déplacer ${exam.title}`}
+        >
+          <GripVertical style={{ width: 14, height: 14 }} />
+        </button>
       </div>
       <div className="flex flex-1 flex-col gap-2.5" style={{ padding: '14px 16px 12px' }}>
         <div className="flex items-start gap-2">
-          <button
-            type="button"
-            {...attributes}
-            {...listeners}
-            onClick={(e) => e.stopPropagation()}
-            style={gripStyle}
-            className="ap-grip"
-            title="Déplacer"
-            aria-label={`Déplacer ${exam.title}`}
-          >
-            <GripVertical style={{ width: 14, height: 14 }} />
-          </button>
           <div className="flex-1 min-w-0">
             <h3 className="ap-h3 line-clamp-2" style={{ fontSize: '15.5px', lineHeight: 1.25 }}>{exam.title}</h3>
             {exam.description && <p className="ap-muted mt-1 text-sm line-clamp-2">{exam.description}</p>}
@@ -165,7 +172,7 @@ function ExamCard({ d, ctx, navigate, onDuplicate }: ExamItemProps) {
             onToggleFavorite={ctx.onFavorite}
             onTrash={ctx.onTrash}
           />
-          <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }} onClick={(e) => e.stopPropagation()}>
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
             {actionButtons(exam, navigate, { text: '13px', pad: '8px 15px' })}
           </div>
         </div>
