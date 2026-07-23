@@ -415,7 +415,8 @@ const CourseViewer = () => {
         </nav>
 
         {/* Content */}
-        <div ref={mainRef} className="cv-content" style={{ overflowY: "auto", minHeight: 0 }}>
+        <div style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
+        <div ref={mainRef} className="cv-content" style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
 
           {/* Completion banner */}
           <div
@@ -642,66 +643,72 @@ const CourseViewer = () => {
                 )
               )}
 
-              {/* ── Lesson footer ── */}
-              <div style={{
-                marginTop: 34, paddingTop: 22, borderTop: "var(--ap-border-w) solid var(--ap-line)",
-                display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap",
-              }}>
+            </div>
+          )}
+        </div>
+
+        {/* ── Lesson footer banner — pinned to the bottom, doesn't scroll away ── */}
+        {lesson && (
+          <div style={{
+            flexShrink: 0, borderTop: "var(--ap-border-w) solid var(--ap-line)",
+            background: "var(--ap-card)", padding: "18px 32px",
+          }}>
+            <div style={{ maxWidth: 720, margin: "0 auto", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+              <button
+                className={`cv-done-btn cv-btn${doneBtnPop ? " pop" : ""}`}
+                onClick={toggleComplete}
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 9,
+                  fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 14.5,
+                  padding: "12px 22px", borderRadius: 999, border: "none", cursor: "pointer",
+                  color: isCompleted ? "var(--ap-pres-deep)" : "#fff",
+                  background: isCompleted ? "var(--ap-card)" : "var(--ap-pres-deep)",
+                  boxShadow: isCompleted
+                    ? "0 4px 0 var(--ap-line), inset 0 0 0 2px color-mix(in srgb, var(--ap-pres) 45%, transparent)"
+                    : "0 4px 0 #076346",
+                  transition: "background .25s, color .25s, box-shadow .25s",
+                }}
+              >
+                {isCompleted ? "✓ Leçon terminée" : "Marquer comme terminée"}
+              </button>
+
+              <div style={{ flex: 1 }} />
+
+              {prevLesson && (
                 <button
-                  className={`cv-done-btn cv-btn${doneBtnPop ? " pop" : ""}`}
-                  onClick={toggleComplete}
+                  className="cv-btn"
+                  onClick={() => setCurrentLessonId(prevLesson.lesson.id)}
+                  style={{
+                    display: "inline-flex", alignItems: "center", gap: 9,
+                    fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 14.5,
+                    padding: "12px 22px", borderRadius: 999, cursor: "pointer",
+                    color: "var(--ap-ink)", background: "var(--ap-card)", border: "none",
+                    boxShadow: "0 4px 0 var(--ap-line), inset 0 0 0 2px var(--ap-line)",
+                  }}
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+                  Précédente
+                </button>
+              )}
+
+              {nextLesson && (
+                <button
+                  className="cv-btn"
+                  onClick={() => { if (!isCompleted) toggleComplete(); else setCurrentLessonId(nextLesson.lesson.id); }}
                   style={{
                     display: "inline-flex", alignItems: "center", gap: 9,
                     fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 14.5,
                     padding: "12px 22px", borderRadius: 999, border: "none", cursor: "pointer",
-                    color: isCompleted ? "var(--ap-pres-deep)" : "#fff",
-                    background: isCompleted ? "var(--ap-card)" : "var(--ap-pres-deep)",
-                    boxShadow: isCompleted
-                      ? "0 4px 0 var(--ap-line), inset 0 0 0 2px color-mix(in srgb, var(--ap-pres) 45%, transparent)"
-                      : "0 4px 0 #076346",
-                    transition: "background .25s, color .25s, box-shadow .25s",
+                    color: "#fff", background: "var(--ap-brand)", boxShadow: "0 4px 0 var(--ap-brand-deep)",
                   }}
                 >
-                  {isCompleted ? "✓ Leçon terminée" : "Marquer comme terminée"}
+                  Suivante
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
                 </button>
-
-                <div style={{ flex: 1 }} />
-
-                {prevLesson && (
-                  <button
-                    className="cv-btn"
-                    onClick={() => setCurrentLessonId(prevLesson.lesson.id)}
-                    style={{
-                      display: "inline-flex", alignItems: "center", gap: 9,
-                      fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 14.5,
-                      padding: "12px 22px", borderRadius: 999, cursor: "pointer",
-                      color: "var(--ap-ink)", background: "var(--ap-card)", border: "none",
-                      boxShadow: "0 4px 0 var(--ap-line), inset 0 0 0 2px var(--ap-line)",
-                    }}
-                  >
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
-                    Précédente
-                  </button>
-                )}
-
-                {nextLesson && (
-                  <button
-                    className="cv-btn"
-                    onClick={() => { if (!isCompleted) toggleComplete(); else setCurrentLessonId(nextLesson.lesson.id); }}
-                    style={{
-                      display: "inline-flex", alignItems: "center", gap: 9,
-                      fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 14.5,
-                      padding: "12px 22px", borderRadius: 999, border: "none", cursor: "pointer",
-                      color: "#fff", background: "var(--ap-brand)", boxShadow: "0 4px 0 var(--ap-brand-deep)",
-                    }}
-                  >
-                    Suivante
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-                  </button>
-                )}
-              </div>
+              )}
             </div>
-          )}
+          </div>
+        )}
         </div>
       </div>
     </div>

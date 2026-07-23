@@ -7,6 +7,7 @@ interface DocState {
   load: (presentation: Presentation) => void;
   exportJSON: () => string;
   importJSON: (json: string) => void;
+  setTitle: (title: string) => void;
 
   addSlide: () => string;
   duplicateSlide: (slideId: string) => string;
@@ -45,6 +46,11 @@ export const useDocStore = create<DocState>((set, get) => ({
   load: (presentation) => set({ presentation }),
   exportJSON: () => JSON.stringify(get().presentation),
   importJSON: (json) => set({ presentation: JSON.parse(json) as Presentation }),
+
+  setTitle: (title) => set((state) => {
+    if (!state.presentation) return state;
+    return { presentation: { ...state.presentation, title } };
+  }),
 
   addSlide: () => {
     const id = nextId("slide");
