@@ -96,7 +96,7 @@ export function PresentationEditor({ contentId, userId, initialPresenting = fals
       <EditorToolbar slideId={activeSlideId} />
       <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
         <SlideNavigator />
-        <SlideCanvas />
+        <SlideCanvas userId={userId} />
         <PropertiesPanel slideId={activeSlideId} />
       </div>
     </div>
