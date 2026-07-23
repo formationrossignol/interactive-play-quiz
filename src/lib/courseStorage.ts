@@ -5,13 +5,14 @@ export interface Lesson {
   id: string;
   title: string;
   content: string;
-  type: 'text' | 'quiz' | 'flashcard' | 'document' | 'video';
-  linkedItemId?: string;
+  type: 'text' | 'quiz' | 'poll' | 'flashcard' | 'document' | 'video' | 'iframe' | 'file-upload';
+  linkedItemId?: string; // quiz/poll/flashcard: id of the linked saved_quizzes item
   estimatedMinutes?: number;
   documentName?: string;
   documentMimeType?: string;
   videoUrl?: string;
   videoType?: 'youtube' | 'url';
+  iframeUrl?: string; // iframe: embedded page URL
 }
 
 export interface Module {
@@ -34,6 +35,8 @@ export interface Course {
   category: string;
   tags: string[];
   deletedAt?: string;
+  overview?: string; // longer intro shown at the top of the course viewer
+  objectives?: string[]; // bullet list of learning objectives
 }
 
 export interface CourseProgress {
@@ -44,8 +47,32 @@ export interface CourseProgress {
   lastAccessedAt: string;
 }
 
+/** A learner's file submission for a 'file-upload' lesson (one per learner per lesson; resubmitting replaces it). */
+export interface CourseSubmission {
+  id: string;
+  courseId: string;
+  lessonId: string;
+  userId: string;
+  fileName: string;
+  fileUrl: string; // data URL, same storage approach as course cover images
+  submittedAt: string;
+}
+
+/** A learner's rating + written review of a course (one per learner per course). */
+export interface CourseReview {
+  id: string;
+  courseId: string;
+  userId: string;
+  userName: string;
+  rating: number; // 1-5
+  comment: string;
+  createdAt: string;
+}
+
 const COURSES_KEY = 'lms_courses';
 const PROGRESS_KEY = 'lms_progress';
+const SUBMISSIONS_KEY = 'lms_submissions';
+const REVIEWS_KEY = 'lms_course_reviews';
 
 export const genId = (): string => {
   const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
@@ -236,4 +263,97 @@ export const unmarkLessonComplete = (
 
 export const resetCourseProgress = (courseId: string, userId: string): void => {
   writeAllProgress(getAllProgress().filter((p) => !(p.courseId === courseId && p.userId === userId)));
+};
+
+// File-upload submissions
+
+const getAllSubmissions = (): CourseSubmission[] => {
+  try {
+    const raw = localStorage.getItem(SUBMISSIONS_KEY);
+    return raw ? (JSON.parse(raw) as CourseSubmission[]) : [];
+  } catch { return []; }
+};
+
+const writeAllSubmissions = (submissions: CourseSubmission[]): void => {
+  localStorage.setItem(SUBMISSIONS_KEY, JSON.stringify(submissions));
+};
+
+export const getSubmission = (courseId: string, lessonId: string, userId: string): CourseSubmission | null =>
+  getAllSubmissions().find((s) => s.courseId === courseId && s.lessonId === lessonId && s.userId === userId) ?? null;
+
+/** Submits (or replaces) the learner's file for a file-upload lesson. */
+export const submitLessonFile = (
+  courseId: string,
+  lessonId: string,
+  fileName: string,
+  fileUrl: string,
+): CourseSubmission => {
+  const user = getCurrentUser();
+  if (!user) throw new Error('Not authenticated');
+  const all = getAllSubmissions();
+  const idx = all.findIndex((s) => s.courseId === courseId && s.lessonId === lessonId && s.userId === user.id);
+  const submission: CourseSubmission = {
+    id: idx >= 0 ? all[idx].id : genId(),
+    courseId,
+    lessonId,
+    userId: user.id,
+    fileName,
+    fileUrl,
+    submittedAt: new Date().toISOString(),
+  };
+  if (idx >= 0) all[idx] = submission; else all.push(submission);
+  writeAllSubmissions(all);
+  return submission;
+};
+
+export const removeSubmission = (courseId: string, lessonId: string, userId: string): void => {
+  writeAllSubmissions(getAllSubmissions().filter((s) => !(s.courseId === courseId && s.lessonId === lessonId && s.userId === userId)));
+};
+
+// Ratings & reviews
+
+const getAllReviews = (): CourseReview[] => {
+  try {
+    const raw = localStorage.getItem(REVIEWS_KEY);
+    return raw ? (JSON.parse(raw) as CourseReview[]) : [];
+  } catch { return []; }
+};
+
+const writeAllReviews = (reviews: CourseReview[]): void => {
+  localStorage.setItem(REVIEWS_KEY, JSON.stringify(reviews));
+};
+
+export const getCourseReviews = (courseId: string): CourseReview[] =>
+  getAllReviews()
+    .filter((r) => r.courseId === courseId)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+
+export const getUserCourseReview = (courseId: string, userId: string): CourseReview | null =>
+  getAllReviews().find((r) => r.courseId === courseId && r.userId === userId) ?? null;
+
+export const getCourseRatingSummary = (courseId: string): { average: number; count: number } => {
+  const reviews = getCourseReviews(courseId);
+  if (reviews.length === 0) return { average: 0, count: 0 };
+  const sum = reviews.reduce((s, r) => s + r.rating, 0);
+  return { average: Math.round((sum / reviews.length) * 10) / 10, count: reviews.length };
+};
+
+/** Submits (or replaces) the learner's rating + review for a course. */
+export const submitCourseReview = (courseId: string, rating: number, comment: string): CourseReview => {
+  const user = getCurrentUser();
+  if (!user) throw new Error('Not authenticated');
+  const all = getAllReviews();
+  const idx = all.findIndex((r) => r.courseId === courseId && r.userId === user.id);
+  const review: CourseReview = {
+    id: idx >= 0 ? all[idx].id : genId(),
+    courseId,
+    userId: user.id,
+    userName: user.username,
+    rating: Math.min(5, Math.max(1, Math.round(rating))),
+    comment: comment.trim(),
+    createdAt: new Date().toISOString(),
+  };
+  if (idx >= 0) all[idx] = review; else all.push(review);
+  writeAllReviews(all);
+  return review;
 };

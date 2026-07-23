@@ -20,12 +20,14 @@ import { CONTENT_CAPS, getPlan, PlanLimitError } from "@/lib/plans";
 import { PlanLimitBlocker } from "@/components/PlanLimitBlocker";
 import { toast } from "sonner";
 import {
+  BarChart2,
   BookOpen,
   ChevronDown,
-  ChevronLeft,
   ChevronRight,
   FileText,
+  Globe,
   GraduationCap,
+  Home,
   Layers,
   Plus,
   Save,
@@ -86,6 +88,9 @@ const CourseBuilder = () => {
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [overview, setOverview] = useState("");
+  const [objectives, setObjectives] = useState<string[]>([]);
+  const [newObjective, setNewObjective] = useState("");
   const [category, setCategory] = useState("Autre");
   const [isPublic, setIsPublic] = useState(false);
   const [coverImage, setCoverImage] = useState("");
@@ -95,6 +100,7 @@ const CourseBuilder = () => {
   const [saving, setSaving] = useState(false);
 
   const userQuizzes = user ? getUserQuizzes(user.id).filter((q) => q.type === "quiz") : [];
+  const userPolls = user ? getUserQuizzes(user.id).filter((q) => q.type === "poll") : [];
   const userFlashcards = user ? getUserFlashcardSets(user.id) : [];
 
   const cap = CONTENT_CAPS[getPlan(user)].course;
@@ -108,6 +114,8 @@ const CourseBuilder = () => {
       if (course && course.userId === user.id) {
         setTitle(course.title);
         setDescription(course.description);
+        setOverview(course.overview || "");
+        setObjectives(course.objectives || []);
         setCategory(course.category || "Autre");
         setIsPublic(course.isPublic);
         setCoverImage(course.coverImage || "");
@@ -126,6 +134,8 @@ const CourseBuilder = () => {
       const data: Omit<Course, "id" | "userId" | "createdAt" | "updatedAt"> = {
         title: title.trim(),
         description: description.trim(),
+        overview: overview.trim() || undefined,
+        objectives,
         category,
         isPublic,
         coverImage: coverImage || undefined,
@@ -205,17 +215,23 @@ const CourseBuilder = () => {
 
   const lessonTypeIcon = (type: Lesson["type"]) => {
     if (type === "quiz") return <BookOpen className="h-3.5 w-3.5" />;
+    if (type === "poll") return <BarChart2 className="h-3.5 w-3.5" />;
     if (type === "flashcard") return <Layers className="h-3.5 w-3.5" />;
     if (type === "document") return <FileText className="h-3.5 w-3.5" />;
     if (type === "video") return <Video className="h-3.5 w-3.5" />;
+    if (type === "iframe") return <Globe className="h-3.5 w-3.5" />;
+    if (type === "file-upload") return <Upload className="h-3.5 w-3.5" />;
     return <GraduationCap className="h-3.5 w-3.5" />;
   };
 
   const lessonTypeLabel = (type: Lesson["type"]) => {
     if (type === "quiz") return "Quiz";
+    if (type === "poll") return "Sondage";
     if (type === "flashcard") return "Flashcards";
     if (type === "document") return "Document";
     if (type === "video") return "Vidéo";
+    if (type === "iframe") return "Iframe";
+    if (type === "file-upload") return "Dépôt de fichier";
     return "Texte";
   };
 
@@ -300,26 +316,35 @@ const CourseBuilder = () => {
         borderBottom: "var(--ap-border-w) solid var(--ap-line)",
         display: "flex", alignItems: "center", gap: 16, padding: "0 18px",
       }}>
-        <button
-          onClick={() => navigate("/my-courses")}
-          aria-label="Retour : Mes cours"
-          style={{
-            display: "grid", placeItems: "center", width: 36, height: 36,
-            borderRadius: "var(--ap-r-sm)", border: "var(--ap-border-w) solid var(--ap-line)",
-            background: "var(--ap-card)", cursor: "pointer", boxShadow: "0 3px 0 var(--ap-line)",
-            flexShrink: 0,
-          }}
-        >
-          <ChevronLeft style={{ width: 16, height: 16, color: "var(--ap-ink)" }} />
-        </button>
-
-        <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-          <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--ap-muted)", whiteSpace: "nowrap" }}>Mes cours</span>
-          <span style={{ color: "var(--ap-line-2)", fontWeight: 800 }}>/</span>
-          <span style={{ fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 15.5, color: "var(--ap-ink)", whiteSpace: "nowrap" }}>
+        {/* Breadcrumb: Accueil > Mes cours > current page */}
+        <nav aria-label="Fil d'ariane" style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+          <button
+            onClick={() => navigate("/")}
+            aria-label="Accueil"
+            style={{
+              display: "grid", placeItems: "center", width: 36, height: 36,
+              borderRadius: "50%", border: "var(--ap-border-w) solid var(--ap-line)",
+              background: "var(--ap-card)", cursor: "pointer", flexShrink: 0,
+            }}
+          >
+            <Home style={{ width: 16, height: 16, color: "var(--ap-ink)" }} />
+          </button>
+          <ChevronRight style={{ width: 15, height: 15, color: "var(--ap-line-2)", flexShrink: 0 }} />
+          <button
+            onClick={() => navigate("/my-courses")}
+            style={{
+              background: "none", border: "none", cursor: "pointer", padding: 0,
+              fontFamily: "var(--ap-font-body)", fontSize: 15, fontWeight: 700,
+              color: "var(--ap-muted)", whiteSpace: "nowrap",
+            }}
+          >
+            Mes cours
+          </button>
+          <ChevronRight style={{ width: 15, height: 15, color: "var(--ap-line-2)", flexShrink: 0 }} />
+          <span style={{ fontFamily: "var(--ap-font-display)", fontWeight: 700, fontSize: 16, color: "var(--ap-ink)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
             {courseId ? "Modifier le cours" : "Nouveau cours"}
           </span>
-        </div>
+        </nav>
 
         <div style={{ flex: 1 }} />
 
@@ -556,6 +581,67 @@ const CourseBuilder = () => {
                       onBlur={(e) => { e.currentTarget.style.borderColor = "var(--ap-line)"; }}
                     />
                   </div>
+                  <div>
+                    {fieldLabel("Overview")}
+                    <RichTextEditor value={overview} onChange={setOverview} />
+                    <p className="ap-muted" style={{ fontSize: "12px", marginTop: "6px" }}>
+                      Présentation détaillée affichée en haut du cours pour les apprenants.
+                    </p>
+                  </div>
+                  <div>
+                    {fieldLabel("Objectifs pédagogiques")}
+                    <div className="flex gap-2">
+                      <input
+                        value={newObjective}
+                        onChange={(e) => setNewObjective(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key !== "Enter" || !newObjective.trim()) return;
+                          e.preventDefault();
+                          setObjectives([...objectives, newObjective.trim()]);
+                          setNewObjective("");
+                        }}
+                        placeholder="Ex : Comprendre les bases du cloud computing"
+                        style={{ ...inputStyle, flex: 1 }}
+                        onFocus={(e) => { e.currentTarget.style.borderColor = "var(--ap-brand)"; }}
+                        onBlur={(e) => { e.currentTarget.style.borderColor = "var(--ap-line)"; }}
+                      />
+                      <button
+                        onClick={() => {
+                          if (!newObjective.trim()) return;
+                          setObjectives([...objectives, newObjective.trim()]);
+                          setNewObjective("");
+                        }}
+                        className="ap-btn ap-btn--ghost ap-btn--sm"
+                        style={{ flexShrink: 0 }}
+                      >
+                        <Plus className="h-3.5 w-3.5" /> Ajouter
+                      </button>
+                    </div>
+                    {objectives.length > 0 && (
+                      <ul style={{ marginTop: "10px", display: "flex", flexDirection: "column", gap: "6px" }}>
+                        {objectives.map((obj, i) => (
+                          <li
+                            key={i}
+                            style={{
+                              display: "flex", alignItems: "center", gap: "8px",
+                              padding: "8px 12px", background: "var(--ap-paper-2)",
+                              border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-sm)",
+                              fontSize: "13px", fontWeight: 600,
+                            }}
+                          >
+                            <span style={{ flex: 1 }}>{obj}</span>
+                            <button
+                              onClick={() => setObjectives(objectives.filter((_, j) => j !== i))}
+                              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ap-quiz)", display: "flex", padding: "2px" }}
+                              aria-label="Supprimer cet objectif"
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
                   <div className="flex gap-4 flex-wrap">
                     <div style={{ flex: "1 1 160px" }}>
                       {fieldLabel("Catégorie")}
@@ -634,9 +720,12 @@ const CourseBuilder = () => {
                         <SelectContent style={{ background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-md)" }}>
                           <SelectItem value="text">Texte</SelectItem>
                           <SelectItem value="quiz">Quiz</SelectItem>
+                          <SelectItem value="poll">Sondage</SelectItem>
                           <SelectItem value="flashcard">Flashcards</SelectItem>
                           <SelectItem value="document">Document</SelectItem>
                           <SelectItem value="video">Vidéo</SelectItem>
+                          <SelectItem value="iframe">Iframe</SelectItem>
+                          <SelectItem value="file-upload">Dépôt de fichier</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -701,6 +790,28 @@ const CourseBuilder = () => {
                             ? <SelectItem value="" disabled>Aucun set disponible</SelectItem>
                             : userFlashcards.map((f) => (
                               <SelectItem key={f.id} value={f.id}>{f.title}</SelectItem>
+                            ))
+                          }
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {lesson.type === "poll" && (
+                    <div>
+                      {fieldLabel("Sondage lié")}
+                      <Select
+                        value={lesson.linkedItemId ?? ""}
+                        onValueChange={(v) => updateLesson(moduleId, lessonId, { linkedItemId: v || undefined })}
+                      >
+                        <SelectTrigger style={{ ...selectStyle, height: "40px", width: "100%" }}>
+                          <SelectValue placeholder="Choisir un sondage..." />
+                        </SelectTrigger>
+                        <SelectContent style={{ background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-md)" }}>
+                          {userPolls.length === 0
+                            ? <SelectItem value="" disabled>Aucun sondage disponible</SelectItem>
+                            : userPolls.map((p) => (
+                              <SelectItem key={p.id} value={p.id}>{p.title}</SelectItem>
                             ))
                           }
                         </SelectContent>
@@ -832,6 +943,42 @@ const CourseBuilder = () => {
                           </div>
                         </div>
                       )}
+                    </div>
+                  )}
+
+                  {lesson.type === "iframe" && (
+                    <div className="flex flex-col gap-3">
+                      {fieldLabel("URL à intégrer")}
+                      <input
+                        value={lesson.iframeUrl ?? ""}
+                        onChange={(e) => updateLesson(moduleId, lessonId, { iframeUrl: e.target.value })}
+                        placeholder="https://exemple.com/page-a-integrer"
+                        style={inputStyle}
+                        onFocus={(e) => { e.currentTarget.style.borderColor = "var(--ap-brand)"; }}
+                        onBlur={(e) => { e.currentTarget.style.borderColor = "var(--ap-line)"; }}
+                      />
+                      {lesson.iframeUrl && (
+                        <div style={{ borderRadius: "var(--ap-r-sm)", overflow: "hidden", aspectRatio: "16/9", border: "var(--ap-border-w) solid var(--ap-line)" }}>
+                          <iframe
+                            src={lesson.iframeUrl}
+                            style={{ width: "100%", height: "100%", border: "none", display: "block" }}
+                            title={lesson.title}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {lesson.type === "file-upload" && (
+                    <div>
+                      {fieldLabel("Instructions pour le dépôt")}
+                      <RichTextEditor
+                        value={lesson.content}
+                        onChange={(html) => updateLesson(moduleId, lessonId, { content: html })}
+                      />
+                      <p className="ap-muted" style={{ fontSize: "12px", marginTop: "8px" }}>
+                        Les apprenants pourront déposer un fichier depuis cette leçon dans le lecteur de cours.
+                      </p>
                     </div>
                   )}
                 </div>
