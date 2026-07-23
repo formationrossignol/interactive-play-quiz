@@ -1,0 +1,131 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-18T00:00:00Z",
+  "title": "Design System: Brivia",
+  "extensions": {
+    "colorMeta": {
+      "brivia-indigo": { "role": "primary", "displayName": "Brivia Indigo", "canonical": "oklch(45% 0.19 280)", "tonalRamp": ["#1a1547", "#241b6e", "#312e81", "#3d34a8", "#4338ca", "#5a4fe0", "#8b82ec", "#c4bef6"] },
+      "quiz-red": { "role": "secondary", "displayName": "Quiz Red", "canonical": "oklch(64% 0.19 25)", "tonalRamp": ["#4a130f", "#7c2115", "#c93325", "#e6473a", "#ff5a4d", "#ff8177", "#ffb3ab", "#fff3f0"] },
+      "poll-blue": { "role": "secondary", "displayName": "Poll Blue", "canonical": "oklch(60% 0.19 255)", "tonalRamp": ["#0e2452", "#153a80", "#1d55c0", "#256be0", "#2f7bff", "#649bff", "#a3c4ff", "#eef4ff"] },
+      "presentation-green": { "role": "secondary", "displayName": "Presentation Green", "canonical": "oklch(68% 0.15 165)", "tonalRamp": ["#063d2c", "#0b8a63", "#0da076", "#11b384", "#15c08a", "#4fd6ab", "#8fe8c9", "#e8faf3"] },
+      "flashcard-amber": { "role": "secondary", "displayName": "Flashcard Amber", "canonical": "oklch(75% 0.16 75)", "tonalRamp": ["#3d2400", "#6b3f00", "#a86e00", "#d38f00", "#ffb020", "#ffc45c", "#ffd98f", "#fff7e6"] },
+      "ink": { "role": "neutral", "displayName": "Ink", "canonical": "oklch(24% 0.06 300)" },
+      "muted": { "role": "neutral", "displayName": "Muted", "canonical": "oklch(52% 0.05 295)" },
+      "paper": { "role": "neutral", "displayName": "Paper", "canonical": "oklch(97% 0.02 80)" },
+      "paper-2": { "role": "neutral", "displayName": "Paper Deep", "canonical": "oklch(93% 0.02 75)" },
+      "card": { "role": "neutral", "displayName": "Card White", "canonical": "oklch(100% 0 0)" },
+      "line": { "role": "neutral", "displayName": "Line", "canonical": "oklch(91% 0.02 75)" }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Hero headlines, live-session score reveals." },
+      "headline": { "displayName": "Headline", "purpose": "Page titles." },
+      "subhead": { "displayName": "Subhead", "purpose": "Standalone promotional banner headlines (e.g. join-session CTA banner) — between Title and Headline weight." },
+      "title": { "displayName": "Title", "purpose": "Section headers, strong sub-section labels." },
+      "body": { "displayName": "Body", "purpose": "Running copy, question text, help content." },
+      "caption": { "displayName": "Caption", "purpose": "Short descriptive text under a card or tile title." },
+      "label": { "displayName": "Label", "purpose": "Form labels, metadata, dense UI captions." },
+      "wordmark": { "displayName": "Wordmark", "purpose": "The 'brivia' logotype exclusively — never UI copy." },
+      "mono": { "displayName": "Mono", "purpose": "Game codes, PINs, timers, scores — always tabular." },
+      "code-field-compact": { "displayName": "Code Field — Compact", "purpose": "Width-constrained inline game-code entry (e.g. join-session banner) — smaller size, wider tracking than the standard 25-32px code field." }
+    },
+    "shadows": [
+      { "name": "soft", "value": "0 4px 0 var(--ap-line)", "purpose": "Resting-state structural offset for standard cards." },
+      { "name": "card", "value": "0 30px 60px rgba(60,40,120,.12), 0 4px 0 var(--ap-line)", "purpose": "Elevated/floaty cards and modals." },
+      { "name": "float", "value": "0 14px 30px rgba(60,40,120,.16)", "purpose": "Decorative floating stage pills, no structural offset." },
+      { "name": "button-press-rest", "value": "0 5px 0 var(--ap-brand-deep)", "purpose": "Primary button resting pressed-shadow." },
+      { "name": "button-press-hover", "value": "0 7px 0 var(--ap-brand-deep)", "purpose": "Primary button hover — shadow grows, element lifts 2px." },
+      { "name": "button-press-active", "value": "0 0px 0 var(--ap-brand-deep)", "purpose": "Primary button active — shadow collapses, element sinks." }
+    ],
+    "motion": [
+      { "name": "ease-standard", "value": "cubic-bezier(.2,.7,.3,1)", "purpose": "Default easing for hover/transition state changes." },
+      { "name": "ease-spring", "value": "cubic-bezier(.2,.7,.3,1.3)", "purpose": "Slight overshoot for answer-tile selection and playful pop-ins — signals 'alive'." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "480px" },
+      { "name": "md", "value": "720px" },
+      { "name": "lg", "value": "900px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Main CTA — indigo fill, pressed-shadow that compresses on click.",
+      "html": "<button class=\"ds-btn-primary\">Créer un quiz</button>",
+      "css": ".ds-btn-primary { font-family: 'Fredoka Variable', Fredoka, system-ui, sans-serif; font-weight: 600; font-size: 15.5px; border: none; cursor: pointer; border-radius: 16px; padding: 13px 24px; display: inline-flex; align-items: center; justify-content: center; gap: 9px; color: #fff; background: #4338ca; box-shadow: 0 5px 0 #312e81; transition: transform .08s cubic-bezier(.2,.7,.3,1), box-shadow .08s cubic-bezier(.2,.7,.3,1); } .ds-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 7px 0 #312e81; } .ds-btn-primary:active { transform: translateY(5px); box-shadow: 0 0px 0 #312e81; } .ds-btn-primary:focus-visible { outline: 3px solid #4338ca; outline-offset: 3px; border-radius: 6px; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Secondary action — white card surface, neutral pressed-shadow.",
+      "html": "<button class=\"ds-btn-ghost\">Annuler</button>",
+      "css": ".ds-btn-ghost { font-family: 'Fredoka Variable', Fredoka, system-ui, sans-serif; font-weight: 600; font-size: 15.5px; border: none; cursor: pointer; border-radius: 16px; padding: 13px 24px; display: inline-flex; align-items: center; justify-content: center; gap: 9px; color: #241b3a; background: #ffffff; box-shadow: 0 5px 0 #d8ccb5, inset 0 0 0 2px #efe6d3; transition: transform .08s cubic-bezier(.2,.7,.3,1), box-shadow .08s cubic-bezier(.2,.7,.3,1); } .ds-btn-ghost:hover { box-shadow: 0 7px 0 #d8ccb5, inset 0 0 0 2px #d8ccb5; } .ds-btn-ghost:active { transform: translateY(5px); box-shadow: 0 1px 0 #d8ccb5, inset 0 0 0 2px #d8ccb5; }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card-default",
+      "description": "Standard content surface on the cream paper background.",
+      "html": "<div class=\"ds-card\"><h3 class=\"ds-card-title\">Titre</h3><p class=\"ds-card-body\">Contenu de la carte.</p></div>",
+      "css": ".ds-card { background: #ffffff; border: 2px solid #efe6d3; border-radius: 24px; box-shadow: 0 4px 0 #efe6d3; padding: 24px; } .ds-card-title { font-family: 'Fredoka Variable', Fredoka, system-ui, sans-serif; font-weight: 600; font-size: 20px; color: #241b3a; margin: 0 0 8px; } .ds-card-body { font-family: 'Nunito Variable', Nunito, system-ui, sans-serif; font-size: 15px; line-height: 1.5; color: #6d6288; margin: 0; }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input-default",
+      "description": "Bold-text form field with assumed focus glow.",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"Nom du quiz\" />",
+      "css": ".ds-input { width: 100%; font-family: 'Nunito Variable', Nunito, system-ui, sans-serif; font-weight: 700; font-size: 15px; color: #241b3a; background: #ffffff; border: 2px solid #efe6d3; border-radius: 12px; padding: 12px 15px; outline: none; transition: border-color .12s, box-shadow .12s; } .ds-input::placeholder { color: #bcb09a; } .ds-input:focus { border-color: #4338ca; box-shadow: 0 0 0 4px #ecebfe; }"
+    },
+    {
+      "name": "Content Type Badge",
+      "kind": "chip",
+      "refersTo": "badge-quiz",
+      "description": "Uppercase pill badge tying UI to a content type (quiz shown; swap colors per type).",
+      "html": "<span class=\"ds-badge\">Quiz</span>",
+      "css": ".ds-badge { display: inline-flex; align-items: center; gap: 6px; font-family: 'Nunito Variable', Nunito, system-ui, sans-serif; font-weight: 800; font-size: 11px; letter-spacing: .5px; text-transform: uppercase; padding: 4px 11px; border-radius: 999px; background: #fff3f0; color: #c93325; }"
+    },
+    {
+      "name": "Answer Tile",
+      "kind": "custom",
+      "refersTo": null,
+      "description": "Signature live-session answer option — colored geometric shape, spring-eased selection.",
+      "html": "<button class=\"ds-answer\"><span class=\"ds-answer-shape\">A</span><span class=\"ds-answer-text\">Réponse possible</span></button>",
+      "css": ".ds-answer { display: flex; align-items: center; gap: 12px; padding: 16px 18px; border-radius: 16px; color: #241b3a; font-weight: 700; font-size: 15px; background: #ffffff; border: 2px solid #efe6d3; cursor: pointer; text-align: left; box-shadow: 0 4px 0 #efe6d3; transition: background .12s, border-color .12s, transform .1s cubic-bezier(.2,.7,.3,1.3), box-shadow .1s cubic-bezier(.2,.7,.3,1.3); width: 100%; } .ds-answer:hover { background: #fff8ee; border-color: #d8ccb5; transform: translateY(-2px); box-shadow: 0 6px 0 #d8ccb5; } .ds-answer-shape { width: 36px; height: 36px; flex: 0 0 auto; display: flex; align-items: center; justify-content: center; border-radius: 12px; color: #fff; background: #ff5a4d; font-weight: 700; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Arcade Cabinet",
+    "overview": "Brivia's default skin, Arcade Pop, is a physical arcade machine translated to screen: a warm cream \"paper\" backdrop with a faint dotted-grid texture, an indigo brand color that lights up every CTA, and buttons that behave like real 3D switches — a solid color offset shadow that visibly compresses when pressed. Nothing here is flat-SaaS-cream trying to look neutral; the cream is a deliberate game-board surface, and the indigo, red, green, blue and amber accents are a functional color language, not decoration — each content type (quiz, presentation, poll, flashcard) owns its hue everywhere in the product, from tiny badges to full-bleed live-session answer tiles.\n\nThe system explicitly rejects the corporate SaaS-cream trap: no flat gray-on-beige cards, no generic icon-grid dashboards, no soulless enterprise-tool blandness. Energy is the differentiator. At the same time it is not a toy — typography is confident and legible, spacing is generous, and the same token system scales down to a dense in-session leaderboard or up to a hero headline without losing coherence.\n\nBrivia also ships two alternate skins on the same token grammar — Thales (angular, no radius, cyan-on-navy, institutional) and Innov Campus (black/white/turquoise, light rounding) — proving the system out as genuinely themable rather than hardcoded. This document describes the default Arcade Pop skin; treat the tokens as the ones any new UI should reach for first.",
+    "keyCharacteristics": [
+      "Warm cream paper background with a dotted-grid \"game board\" texture",
+      "Indigo brand color (#4338ca) carrying every primary CTA and focus ring",
+      "Buttons and cards use a solid pressed-shadow offset, not a diffuse blur",
+      "Four content-type accent colors (quiz red, poll blue, flashcard amber, presentation green) used consistently as a functional system, not a decorative palette",
+      "Fredoka for display/headline weight, Nunito for body — a rounded, friendly display face paired with a warm, legible workhorse sans",
+      "Fully theme-able: every rule lives on a CSS custom property, never a hardcoded hex, so Thales and Innov Campus reskin the whole app for free"
+    ],
+    "rules": [
+      { "name": "The Functional Color Rule", "body": "The four content-type colors (quiz/poll/flashcard/presentation) are never used decoratively or interchangeably — each one is tied to its content type across the entire product, from a tiny type badge to a full-bleed answer tile in a live session. Don't reach for \"poll blue\" because it looks nice on a marketing section; reach for it because the content is a poll.", "section": "colors" },
+      { "name": "The Pressed-Button Rule", "body": "Every primary action surface (buttons, code inputs, answer tiles) carries a solid -deep offset shadow that compresses to 0 on :active. This is the system's signature tactility — don't replace it with a generic diffuse box-shadow blur.", "section": "colors" },
+      { "name": "The Tabular Score Rule", "body": "Any number that changes in real time — scores, timers, leaderboard points, game codes — uses font-variant-numeric: tabular-nums so digits don't visually jump width as they update. Display/Headline sizes get this by default.", "section": "typography" },
+      { "name": "The Compress-on-Click Rule", "body": "Interactive elements don't just darken or scale on press — their shadow visibly collapses (translateY matches the shadow's vertical offset) so the element looks like it physically sinks into the surface. This is what makes buttons feel \"arcade,\" not generic.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do use the pressed-shadow-and-compress pattern (0 5px 0 [deep-color] → 0 0px 0 on :active) for every primary interactive control — it's the system's signature tactility.",
+      "Do tie each of the four content-type colors (quiz red, poll blue, flashcard amber, presentation green) strictly to its content type across badges, buttons, and answer tiles.",
+      "Do use tabular numerals (font-variant-numeric: tabular-nums) on any live-updating number: scores, timers, leaderboard points.",
+      "Do keep the wordmark in Sora at -3.5% tracking; never set the \"brivia\" logotype in Fredoka or Nunito.",
+      "Do respect prefers-reduced-motion: every bounce, shake, confetti burst, and cascade entrance has a defined reduced-motion fallback (already implemented in arcade-pop.css §\"Réduction des animations\")."
+    ],
+    "donts": [
+      "Don't default to corporate SaaS-cream: flat gray-on-beige cards, generic icon-grid dashboards, or soulless enterprise-tool blandness. The cream paper background is a deliberate warm \"game board,\" not a safe neutral.",
+      "Don't use a generic diffuse box-shadow blur as the primary depth cue on buttons or answer tiles — that's the shadcn/app-shell language, not the Arcade Pop marketing/live-session language; don't mix them on the same screen.",
+      "Don't use border-left/border-right colored stripes as an accent anywhere; the system already has badges, dots, and pill borders for that job.",
+      "Don't hardcode hex values in new components — every color, radius, and shadow in this system exists as a --ap-* custom property specifically so Thales and Innov Campus can reskin it. A hardcoded hex breaks all three themes at once.",
+      "Don't make the interface feel childish or toy-like despite the playful shape language — type stays confident and legible, copy stays sharp, and the exam/grading surfaces stay visually rigorous even inside the same system."
+    ]
+  }
+}

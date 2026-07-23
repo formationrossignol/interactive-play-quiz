@@ -1,38 +1,17 @@
 /** Only the visitor count is real (Supabase presence channel, same source
  *  as the hero pill — passed down as a prop so both consumers share one
  *  channel subscription instead of opening a second one with the same
- *  topic name). The other two tiles are explicit placeholders — do not
- *  replace them with an invented number. */
-const PlaceholderTile = ({ label }: { label: string }) => (
-  <div
-    className="ap-card"
-    style={{
-      textAlign: "center", padding: "22px 18px",
-      border: "2px dashed var(--ap-line)", background: "transparent", boxShadow: "none",
-    }}
-  >
-    <div style={{ fontFamily: "var(--ap-font-display)", fontWeight: 700, fontSize: 32, color: "var(--ap-line-2)" }}>—</div>
-    <div style={{ fontSize: 13, fontWeight: 700, color: "var(--ap-muted)", marginTop: 4 }}>{label}</div>
+ *  topic name). A single live badge, not padded with invented stats — but
+ *  given the same card weight as its neighbors (UseCaseTabs, testimonials)
+ *  so the restraint reads as deliberate, not like missing content. */
+export const StatsBand = ({ liveVisitors }: { liveVisitors: number | null }) => (
+  <div style={{ display: "flex", justifyContent: "center" }}>
+    <div className="ap-card" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, maxWidth: 380, padding: "28px 32px", textAlign: "center" }}>
+      <div className="ap-eyebrow" style={{ fontSize: 15 }}>
+        <span className="ap-eyebrow__dot" aria-hidden="true" />
+        {liveVisitors != null ? liveVisitors : "…"} visiteur{liveVisitors !== 1 ? "s" : ""} en direct sur le site
+      </div>
+      <p className="ap-muted" style={{ fontSize: 13, margin: 0 }}>Rejoignez-les et lancez votre première session.</p>
+    </div>
   </div>
 );
-
-export const StatsBand = ({ liveVisitors }: { liveVisitors: number | null }) => {
-  return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 18 }} className="strip-grid">
-      <div className="ap-card ap-card--hover" style={{ textAlign: "center", padding: "22px 18px" }}>
-        <div style={{ fontFamily: "var(--ap-font-display)", fontWeight: 700, fontSize: 32, color: "var(--ap-brand)" }}>
-          {liveVisitors != null ? liveVisitors : "…"}
-        </div>
-        <div style={{ fontSize: 13, fontWeight: 700, color: "var(--ap-muted)", marginTop: 4 }}>
-          🔴 visiteur{liveVisitors !== 1 ? "s" : ""} en direct sur le site
-        </div>
-      </div>
-
-      {/* TODO: brancher une vraie requête Supabase (ex. nombre de quiz créés,
-          nombre de sessions jouées) une fois qu'une requête d'agrégation
-          existe côté backend — ne pas inventer de chiffre en attendant. */}
-      <PlaceholderTile label="Bientôt disponible" />
-      <PlaceholderTile label="Bientôt disponible" />
-    </div>
-  );
-};

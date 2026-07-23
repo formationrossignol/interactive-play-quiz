@@ -53,10 +53,10 @@ export const CookieConsent = () => {
             <a href="/confidentialite">En savoir plus</a>
           </p>
           <div className="ap-cookie-banner__actions">
-            <button type="button" className="ap-btn ap-btn--ghost ap-btn--sm" onClick={rejectAll}>
+            <button type="button" className="ap-btn ap-btn--ghost ap-btn--sm ap-cookie-banner__decline" onClick={rejectAll}>
               Tout refuser
             </button>
-            <button type="button" className="ap-btn ap-btn--ghost ap-btn--sm" onClick={openPreferences}>
+            <button type="button" className="ap-btn ap-btn--ghost ap-btn--sm ap-cookie-banner__customize" onClick={openPreferences}>
               Personnaliser
             </button>
             <button type="button" className="ap-btn ap-btn--sm" onClick={acceptAll}>
