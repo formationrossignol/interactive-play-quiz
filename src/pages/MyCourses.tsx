@@ -19,6 +19,13 @@ const gripStyle: React.CSSProperties = {
   touchAction: "none", flexShrink: 0, background: "none", border: "none", padding: 2,
 };
 
+/** Drag handle overlaid on the header block (top-left) so the title row keeps the full card width. */
+const gripOverlayStyle: React.CSSProperties = {
+  position: "absolute", top: 8, left: 8, display: "flex", alignItems: "center", justifyContent: "center",
+  background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", color: "var(--ap-muted)",
+  cursor: "grab", touchAction: "none", padding: 4, borderRadius: 6, zIndex: 1,
+};
+
 const totalLessons = (course: Course) => course.modules.reduce((s, m) => s + m.lessons.length, 0);
 
 interface CourseItemProps {
@@ -43,21 +50,29 @@ function CourseCard({ d, ctx, navigate, userId }: CourseItemProps) {
       style={{ opacity: isDragging ? 0.4 : 1 }}
       onClick={() => navigate(`/course/${course.id}`)}
     >
-      {course.coverImage && (
-        <div className="relative h-36 w-full overflow-hidden">
+      {course.coverImage ? (
+        <div className="relative h-40 w-full overflow-hidden flex-shrink-0">
           <img src={course.coverImage} alt={course.title} className="h-full w-full object-cover" />
+          <button type="button" {...attributes} {...listeners} style={gripOverlayStyle} className="ap-grip" onClick={(e) => e.stopPropagation()} aria-label={`Déplacer ${course.title}`}>
+            <GripVertical style={{ width: 14, height: 14 }} />
+          </button>
+        </div>
+      ) : (
+        <div
+          className="relative h-40 w-full overflow-hidden flex-shrink-0 flex items-center justify-center"
+          style={{ background: "color-mix(in srgb, var(--ap-pres) 14%, var(--ap-paper-2))" }}
+        >
+          <GraduationCap style={{ width: 40, height: 40, color: "var(--ap-pres)", opacity: 0.8 }} />
+          <button type="button" {...attributes} {...listeners} style={gripOverlayStyle} className="ap-grip" onClick={(e) => e.stopPropagation()} aria-label={`Déplacer ${course.title}`}>
+            <GripVertical style={{ width: 14, height: 14 }} />
+          </button>
         </div>
       )}
       <div className="flex flex-1 flex-col p-5">
         <div className="mb-3 flex items-start justify-between gap-3">
-          <div className="flex items-start gap-2 flex-1 min-w-0">
-            <button type="button" {...attributes} {...listeners} style={gripStyle} className="ap-grip" onClick={(e) => e.stopPropagation()} aria-label={`Déplacer ${course.title}`}>
-              <GripVertical className="h-4 w-4" />
-            </button>
-            <div className="flex-1 min-w-0">
-              <h3 className="ap-h3 line-clamp-2" style={{ fontSize: "15px" }}>{course.title}</h3>
-              {course.description && <p className="ap-muted mt-0.5 text-sm line-clamp-2">{course.description}</p>}
-            </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="ap-h3 line-clamp-2" style={{ fontSize: "15px" }}>{course.title}</h3>
+            {course.description && <p className="ap-muted mt-0.5 text-sm line-clamp-2">{course.description}</p>}
           </div>
           <button onClick={(e) => { e.stopPropagation(); ctx.onFavorite(); }} className="text-amber-400 hover:text-amber-500 transition-colors p-1 flex-shrink-0">
             <Star className={`h-4 w-4 ${d.isFavorite ? "fill-amber-400" : ""}`} />
@@ -87,16 +102,20 @@ function CourseCard({ d, ctx, navigate, userId }: CourseItemProps) {
           </div>
         )}
 
-        <div className="mt-auto flex items-center justify-between gap-2 pt-3" style={{ borderTop: "var(--ap-border-w) solid var(--ap-line)" }} onClick={(e) => e.stopPropagation()}>
+        <div className="mt-auto flex items-center gap-2 pt-3" style={{ borderTop: "var(--ap-border-w) solid var(--ap-line)" }} onClick={(e) => e.stopPropagation()}>
           <CourseContextMenu
             course={course}
             onEdit={() => navigate(`/course-builder?courseId=${course.id}`)}
-            onDuplicate={() => toast.info("Duplication bientôt disponible")}
+            onDuplicate={ctx.onDuplicate}
             onToggleFavorite={ctx.onFavorite}
             onShare={() => shareCourse(course)}
             onTrash={ctx.onTrash}
           />
-          <button className="ap-btn ap-btn--sm ap-btn--pill ap-btn--pres" style={{ gap: "6px", display: "flex", alignItems: "center" }} onClick={(e) => { e.stopPropagation(); navigate(`/course/${course.id}`); }}>
+          <button
+            className="ap-btn ap-btn--sm ap-btn--pill ap-btn--pres"
+            style={{ flex: 1, gap: "6px", display: "flex", alignItems: "center", justifyContent: "center" }}
+            onClick={(e) => { e.stopPropagation(); navigate(`/course/${course.id}`); }}
+          >
             <BookOpen className="h-3.5 w-3.5" />
             {progress && completed > 0 ? "Continuer" : "Commencer"}
           </button>
@@ -144,7 +163,7 @@ function CourseRow({ d, ctx, navigate, userId }: CourseItemProps) {
         <CourseContextMenu
           course={course}
           onEdit={() => navigate(`/course-builder?courseId=${course.id}`)}
-          onDuplicate={() => toast.info("Duplication bientôt disponible")}
+          onDuplicate={ctx.onDuplicate}
           onToggleFavorite={ctx.onFavorite}
           onShare={() => shareCourse(course)}
           onTrash={ctx.onTrash}

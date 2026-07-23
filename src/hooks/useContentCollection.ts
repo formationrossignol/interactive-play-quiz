@@ -12,6 +12,7 @@ import {
   type FolderNode,
 } from '@/lib/content/foldersRepo';
 import {
+  duplicateContent as repoDuplicateContent,
   listContent,
   listPublicContent,
   moveContent as repoMoveContent,
@@ -41,6 +42,7 @@ export interface UseContentCollection {
   trashItem: (id: string) => Promise<void>;
   restoreItem: (id: string) => Promise<void>;
   removeItem: (id: string) => Promise<void>;
+  duplicateItem: (id: string) => Promise<void>;
   setItemPublic: (id: string, isPublic: boolean) => Promise<void>;
 }
 
@@ -184,6 +186,16 @@ export function useContentCollection(type: ContentType): UseContentCollection {
     [reload],
   );
 
+  const duplicateItem = useCallback(
+    async (id: string) => {
+      const userId = getCurrentUser()?.id;
+      if (!userId) return;
+      await repoDuplicateContent(userId, id);
+      await reload();
+    },
+    [reload],
+  );
+
   const setItemPublic = useCallback(
     async (id: string, isPublic: boolean) => {
       if (!getCurrentUser()) return;
@@ -212,6 +224,7 @@ export function useContentCollection(type: ContentType): UseContentCollection {
     trashItem,
     restoreItem,
     removeItem,
+    duplicateItem,
     setItemPublic,
   };
 }
