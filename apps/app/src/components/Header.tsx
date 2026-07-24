@@ -70,8 +70,8 @@ export const Header = ({
   // "+ Créer" jumps straight into a builder's start flow, unlike the old
   // "Mes créations" dropdown which linked to the content list pages.
   const createMenuItems = [
-    { label: t("createQuiz"), icon: BookOpen, onClick: () => navigate("/builder-start?type=quiz") },
-    { label: t("createPoll"), icon: BarChart3, onClick: () => navigate("/builder-start?type=poll") },
+    { label: t("navCreateQuiz"), icon: BookOpen, onClick: () => navigate("/builder-start?type=quiz") },
+    { label: t("navCreatePoll"), icon: BarChart3, onClick: () => navigate("/builder-start?type=poll") },
     { label: t("createFlashcards"), icon: Layers, onClick: () => navigate("/builder-start?type=flashcard") },
     { label: t("createSlides"), icon: Presentation, onClick: () => navigate("/builder-start?type=slide") },
     { label: t("createCourse"), icon: GraduationCap, onClick: () => navigate("/course-builder") },
