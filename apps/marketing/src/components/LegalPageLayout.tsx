@@ -1,19 +1,13 @@
-import { Header } from "@/components/Header";
-import { Footer } from "@/components/Footer";
-import { useSEO } from "@/hooks/useSEO";
-import { useStaticPage } from "@/lib/pages/hooks";
-import { STATIC_PAGE_DEFAULTS, mergeStaticPage } from "@/lib/pages/staticPageDefaults";
+import { Header } from "./Header";
+import { Footer } from "./Footer";
 import { sanitizeHtml } from "@/lib/sanitizeHtml";
-import "./static-pages.css";
+import type { StaticPage } from "@/lib/types";
 
-const MentionsLegales = () => {
-  useSEO({ title: "Mentions légales", path: "/mentions-legales" });
-  const { data } = useStaticPage("mentions-legales");
-  const page = mergeStaticPage(STATIC_PAGE_DEFAULTS["mentions-legales"], data);
+export function LegalPageLayout({ page }: { page: StaticPage }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
       <Header />
-      <main style={{ flex: 1, maxWidth: "760px", margin: "0 auto", padding: "60px 24px" }}>
+      <main style={{ flex: 1, maxWidth: "760px", margin: "0 auto", padding: "60px 24px", width: "100%" }}>
         <h1 style={{ fontFamily: "var(--ap-font-display)", fontSize: "36px", fontWeight: 600, marginBottom: "8px", color: "var(--ap-ink)" }}>
           {page.title}
         </h1>
@@ -26,6 +20,4 @@ const MentionsLegales = () => {
       <Footer />
     </div>
   );
-};
-
-export default MentionsLegales;
+}

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useSEO } from "@/hooks/useSEO";
 import { login, register, requestPasswordReset, verifyMfaLogin, getCurrentUser } from "@/lib/auth";
 import { toast } from "sonner";
@@ -433,9 +433,9 @@ const AuthPage = () => {
           Données hébergées en Europe · conforme RGPD.
           <br />
           En continuant, vous acceptez les{" "}
-          <Link to="/cgu" style={{ color: "var(--ap-brand)", fontWeight: 800 }}>CGU</Link>{" "}
+          <a href="/cgu" style={{ color: "var(--ap-brand)", fontWeight: 800 }}>CGU</a>{" "}
           et la{" "}
-          <Link to="/confidentialite" style={{ color: "var(--ap-brand)", fontWeight: 800 }}>politique de confidentialité</Link>.
+          <a href="/confidentialite" style={{ color: "var(--ap-brand)", fontWeight: 800 }}>politique de confidentialité</a>.
         </p>
       )}
     </div>

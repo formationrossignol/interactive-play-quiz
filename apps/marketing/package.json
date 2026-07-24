@@ -10,9 +10,12 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.106.2",
+    "isomorphic-dompurify": "^2.20.0",
     "next": "16.2.11",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "ui": "*"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

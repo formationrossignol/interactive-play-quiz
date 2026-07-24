@@ -1,0 +1,89 @@
+/* ============================================================
+   Brivia · « Arcade Pop » — Design tokens (shared)
+   ------------------------------------------------------------
+   Extracted from apps/app/src/arcade-pop.css — fonts + :root
+   tokens only, framework-agnostic. Component classes (.ap-btn,
+   .ap-card, etc.) stay in the app; this package only ships what
+   more than one app needs (currently: app + marketing).
+   ============================================================ */
+
+/* --- Polices (auto-hébergées via Fontsource) -------------- */
+@import '@fontsource-variable/fredoka';
+@import '@fontsource-variable/nunito';
+/* Sora — réservée au wordmark "brivia" (voir BrandWordmark). */
+@import '@fontsource-variable/sora';
+
+:root {
+  /* Couleurs par TYPE de contenu — le fil conducteur du produit */
+  --ap-quiz:        #ff5a4d;  --ap-quiz-deep:   #c93325;  --ap-quiz-soft:  #fff3f0;
+  --ap-pres:        #15c08a;  --ap-pres-deep:   #0b8a63;  --ap-pres-soft:  #e8faf3;
+  --ap-poll:        #2f7bff;  --ap-poll-deep:   #1d55c0;  --ap-poll-soft:  #eef4ff;
+  --ap-flash:       #ffb020;  --ap-flash-deep:  #a86e00;  --ap-flash-soft: #fff7e6;
+
+  /* Marque + neutres chauds — indigo Brivia (CTA plein) */
+  --ap-brand:       #4338ca;  --ap-brand-deep:  #312e81;  --ap-brand-soft: #ecebfe;
+  /* Diamant du logo : indigo sur fond clair, lavande sur fond encre (.dark). */
+  --ap-logo-diamond: #4f46e5;
+  --ap-ink:         #241b3a;  /* texte principal */
+  --ap-muted:       #6d6288;  /* texte secondaire — 4.6:1 sur fond crème */
+  --ap-paper:       #fff8ee;  /* fond crème de l'app */
+  --ap-paper-2:     #f3ecdd;  /* fond crème plus soutenu (zones) */
+  --ap-card:        #ffffff;  /* surfaces */
+  --ap-line:        #efe6d3;  /* bordures / séparateurs */
+  --ap-line-2:      #d8ccb5;  /* bordures pointillées / dropzones */
+
+  /* Rayons — tout est rond */
+  --ap-r-sm: 12px;
+  --ap-r-md: 16px;
+  --ap-r-lg: 24px;
+  --ap-r-xl: 30px;
+  --ap-r-pill: 999px;
+
+  /* Ombres « 3D douce » : un offset plein (la couleur) + une diffuse */
+  --ap-shadow-soft:  0 4px 0 var(--ap-line);
+  --ap-shadow-card:  0 30px 60px rgba(60,40,120,.12), 0 4px 0 var(--ap-line);
+  --ap-shadow-float: 0 14px 30px rgba(60,40,120,.16);
+
+  /* Typo */
+  --ap-font-display: 'Fredoka Variable', 'Fredoka', system-ui, sans-serif;
+  --ap-font-body:    'Nunito Variable', 'Nunito', system-ui, sans-serif;
+
+  /* Transitions */
+  --ap-ease:   cubic-bezier(.2,.7,.3,1);
+  --ap-spring: cubic-bezier(.2,.7,.3,1.3);  /* léger dépassement = vivant */
+
+  /* Typographie mono — chiffres tabulaires pour codes et compteurs */
+  --ap-font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', ui-monospace, monospace;
+
+  /* Texture de fond (trame de points) — les thèmes sobres la neutralisent */
+  --ap-texture: radial-gradient(var(--ap-line-2) 1px, transparent 1px);
+
+  /* Épaisseur de bordure structurelle (cartes, menus, filets) */
+  --ap-border-w: 2px;
+}
+
+/* Mode sombre — mêmes tokens, palette aubergine profonde. Activé par la
+   classe .dark sur <html>. */
+.dark {
+  --ap-paper:       #161022;
+  --ap-paper-2:     #1e1730;
+  --ap-card:        #251c3b;
+  --ap-line:        #352a55;
+  --ap-line-2:      #4a3d72;
+  --ap-ink:         #f2edff;
+  --ap-muted:       #a89cc8;
+
+  --ap-brand-soft:  #2d2158;
+  --ap-logo-diamond: #b4a9ff;
+  --ap-quiz-soft:   #3b201d;
+  --ap-pres-soft:   #10322a;
+  --ap-poll-soft:   #182a4d;
+  --ap-flash-soft:  #3a2c10;
+
+  --ap-shadow-soft:  0 4px 0 rgba(0,0,0,.35);
+  --ap-shadow-card:  0 30px 60px rgba(0,0,0,.45), 0 4px 0 rgba(0,0,0,.35);
+  --ap-shadow-float: 0 14px 30px rgba(0,0,0,.5);
+}
+
+:root { color-scheme: light; }
+.dark { color-scheme: dark; }

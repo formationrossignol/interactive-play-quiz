@@ -1,0 +1,19 @@
+{
+  "name": "ui",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./tokens.css": "./tokens.css",
+    "./BrandMonogram": "./src/BrandMonogram.tsx",
+    "./BrandWordmark": "./src/BrandWordmark.tsx"
+  },
+  "dependencies": {
+    "@fontsource-variable/fredoka": "^5.2.10",
+    "@fontsource-variable/nunito": "^5.2.7",
+    "@fontsource-variable/sora": "^5.2.8"
+  },
+  "peerDependencies": {
+    "react": "*"
+  }
+}

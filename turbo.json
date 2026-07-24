@@ -8,7 +8,8 @@
       "outputs": ["dist/**"]
     },
     "marketing#build": {
-      "outputs": [".next/**", "!.next/cache/**"]
+      "outputs": [".next/**", "!.next/cache/**"],
+      "env": ["SUPABASE_URL", "SUPABASE_ANON_KEY", "APP_ORIGIN", "NEXT_PUBLIC_APP_ORIGIN"]
     },
     "dev": {
       "cache": false,

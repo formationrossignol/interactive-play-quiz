@@ -107,14 +107,17 @@ export const Footer = () => {
               { label: t('footerPrivacy'), href: "/confidentialite" },
               { label: t('footerCGU'), href: "/cgu" },
             ].map(({ label, href }) => (
-              <button
+              // Real anchor, not react-router navigate(): these routes now
+              // live in apps/marketing, need a full browser navigation for
+              // the domain-level rewrite to route there (see
+              // docs/marketing-app-decoupling.md).
+              <a
                 key={href}
-                type="button"
-                onClick={() => navigate(href)}
+                href={href}
                 className="text-xs font-bold text-ap-muted hover:text-ap-brand focus-visible:text-ap-brand font-body transition-colors"
               >
                 {label}
-              </button>
+              </a>
             ))}
             <button
               type="button"
