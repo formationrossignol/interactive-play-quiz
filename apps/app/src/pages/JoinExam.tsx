@@ -100,7 +100,7 @@ export default function JoinExam() {
 
         <button
           className="ap-btn ap-btn--sm"
-          onClick={() => navigate('/')}
+          onClick={() => { window.location.href = '/'; }}
           style={{ marginTop: 16, background: 'transparent', color: 'var(--ap-muted)' }}
         >
           Retour

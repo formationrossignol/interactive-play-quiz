@@ -14,14 +14,12 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 const JoinQuiz = lazy(() => import("./pages/JoinQuiz"));
 const LiveQuizPage = lazy(() => import("./pages/LiveQuizPage"));
 
-// Landing + auth — loaded on first visit
-const Index = lazy(() => import("./pages/Index"));
+// Auth — loaded on first visit
 const AuthPage = lazy(() => import("./pages/AuthPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
-// Marketing pages: features/about/contact/help/guides now live in
+// Marketing pages: /, features/about/contact/help/guides/pricing now live in
 // apps/marketing (see docs/marketing-app-decoupling.md) — no longer routed here.
-const Pricing = lazy(() => import("./pages/Pricing"));
 const Communaute = lazy(() => import("./pages/Communaute"));
 const Temoignages = lazy(() => import("./pages/Temoignages"));
 const Roadmap = lazy(() => import("./pages/Roadmap"));
@@ -83,7 +81,6 @@ const App = () => (
           <Suspense fallback={<RouteFallback />}>
             <RouteTransition>
             <Routes>
-              <Route path="/" element={<Index />} />
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/builder-start" element={<QuizBuilderStart />} />
@@ -98,7 +95,6 @@ const App = () => (
               <Route path="/discover" element={<DiscoverQuizzes />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/question-bank" element={<QuestionBank />} />
-              <Route path="/pricing" element={<Pricing />} />
               <Route path="/poll-results/:pollId" element={<PollResults />} />
               <Route path="/quiz-results/:quizId" element={<QuizResults />} />
               <Route path="/community" element={<Communaute />} />

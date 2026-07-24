@@ -178,7 +178,7 @@ const JoinQuiz = () => {
           <AlertTriangle className="w-16 h-16 mx-auto mb-4 animate-pulse" style={{ color: "var(--ap-flash)" }} />
           <h2 className="ap-h2" style={{ fontSize: "24px", marginBottom: "12px" }}>Code invalide</h2>
           <p className="ap-muted" style={{ fontSize: "15px", marginBottom: "24px" }}>Ce code de quiz ou sondage n'existe pas.</p>
-          <button className="ap-btn ap-btn--pill" onClick={() => navigate("/")}>
+          <button className="ap-btn ap-btn--pill" onClick={() => { window.location.href = "/"; }}>
             Retour
           </button>
         </div>
@@ -197,7 +197,7 @@ const JoinQuiz = () => {
           <p className="ap-muted" style={{ fontSize: "15px", marginBottom: "24px" }}>
             L'hôte a fermé l'accès à cette partie. Vous ne pouvez pas la rejoindre pour le moment.
           </p>
-          <button className="ap-btn ap-btn--pill" onClick={() => navigate("/")}>
+          <button className="ap-btn ap-btn--pill" onClick={() => { window.location.href = "/"; }}>
             Retour
           </button>
         </div>
@@ -216,7 +216,7 @@ const JoinQuiz = () => {
           <p className="ap-muted" style={{ fontSize: "15px", marginBottom: "24px" }}>
             Le nombre maximum de participants pour cette session est atteint.
           </p>
-          <button className="ap-btn ap-btn--pill" onClick={() => navigate("/")}>
+          <button className="ap-btn ap-btn--pill" onClick={() => { window.location.href = "/"; }}>
             Retour
           </button>
         </div>

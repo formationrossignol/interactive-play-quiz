@@ -16,7 +16,7 @@ export const Footer = () => {
         // features/about/contact now live in apps/marketing — full navigation
         // (not react-router navigate()) so the domain-level rewrite reaches it.
         { label: t('features'), onClick: () => { window.location.href = '/features'; } },
-        { label: t('pricing'), onClick: () => navigate('/pricing') },
+        { label: t('pricing'), onClick: () => { window.location.href = '/pricing'; } },
         { label: t('footerBuilder'), onClick: () => navigate('/builder-start?type=quiz') },
         { label: t('discoverPublic'), onClick: () => navigate('/discover') },
       ],

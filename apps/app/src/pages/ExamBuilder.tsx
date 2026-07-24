@@ -164,7 +164,7 @@ export default function ExamBuilder() {
       if (publish) setTimeout(() => navigate(`/exam/${exam!.id}/admin`), 600);
     } catch (e) {
       if (e instanceof PlanLimitError) {
-        toast.error(e.message, { action: { label: 'Passer Pro', onClick: () => navigate('/pricing') } });
+        toast.error(e.message, { action: { label: 'Passer Pro', onClick: () => { window.location.href = '/pricing'; } } });
       } else {
         toast.error((e as Error).message);
       }
@@ -218,7 +218,7 @@ export default function ExamBuilder() {
         position: 'sticky', top: 0, zIndex: 10,
       }}>
         <Breadcrumb
-          onHome={() => navigate('/')}
+          onHome={() => { window.location.href = '/'; }}
           items={[
             { label: 'Mes examens', onClick: () => navigate('/my-exams') },
             { label: saved ? "Modifier l'examen" : 'Nouvel examen' },

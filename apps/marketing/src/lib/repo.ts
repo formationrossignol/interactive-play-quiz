@@ -1,7 +1,7 @@
 import { cache } from "react";
 import { supabase } from "./supabase";
-import { mapGuide, groupFaq } from "./mappers";
-import type { StaticPage, GuideRow, Guide, FaqRow, FaqGroup } from "./types";
+import { mapGuide, groupFaq, mapReview } from "./mappers";
+import type { StaticPage, GuideRow, Guide, FaqRow, FaqGroup, ReviewRow, Review } from "./types";
 
 // Mirrors apps/app/src/lib/pages/repo.ts#fetchStaticPage. Wrapped in React's
 // cache() so generateMetadata and the page component share one query per
@@ -45,6 +45,20 @@ export const fetchFaq = cache(async (): Promise<FaqGroup[]> => {
       .order("sort", { ascending: true });
     if (error) throw error;
     return groupFaq((data ?? []) as FaqRow[]);
+  } catch {
+    return [];
+  }
+});
+
+export const fetchReviews = cache(async (): Promise<Review[]> => {
+  try {
+    const { data, error } = await supabase
+      .from("reviews")
+      .select("id,persona,stars,text,author_name,author_role,avatar_emoji,sort")
+      .eq("status", "published")
+      .order("sort", { ascending: true });
+    if (error) throw error;
+    return ((data ?? []) as ReviewRow[]).map(mapReview);
   } catch {
     return [];
   }

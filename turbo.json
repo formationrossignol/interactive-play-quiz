@@ -9,7 +9,7 @@
     },
     "marketing#build": {
       "outputs": [".next/**", "!.next/cache/**"],
-      "env": ["SUPABASE_URL", "SUPABASE_ANON_KEY", "APP_ORIGIN", "NEXT_PUBLIC_APP_ORIGIN"]
+      "env": ["SUPABASE_URL", "SUPABASE_ANON_KEY", "NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY", "APP_ORIGIN", "NEXT_PUBLIC_APP_ORIGIN"]
     },
     "dev": {
       "cache": false,

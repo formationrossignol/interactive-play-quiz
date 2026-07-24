@@ -72,7 +72,6 @@ export function ContactForm() {
     if (remaining > 0) setCooldown(remaining);
 
     const recentSubmits = flood.submits.filter((t) => now - t < 3600_000);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (recentSubmits.length >= MAX_PER_HOUR) setHourlyBlocked(true);
 
     return () => { if (timerRef.current) clearInterval(timerRef.current); };

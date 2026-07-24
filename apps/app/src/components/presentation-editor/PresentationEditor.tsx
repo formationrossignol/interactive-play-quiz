@@ -81,7 +81,7 @@ export function PresentationEditor({ contentId, userId, initialPresenting = fals
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 16px", borderBottom: "var(--ap-border-w) solid var(--ap-line)" }}>
         <nav aria-label="Fil d'ariane" style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
           <button
-            onClick={() => navigate("/")}
+            onClick={() => { window.location.href = "/"; }}
             aria-label="Accueil"
             style={{
               display: "grid", placeItems: "center", width: 32, height: 32,

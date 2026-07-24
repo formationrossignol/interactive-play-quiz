@@ -559,7 +559,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
   }, [gameState, currentQuestion, gameCode]);
 
   const handleExitQuiz = () => {
-    navigate("/");
+    window.location.href = "/";
   };
 
   const REACTION_EMOJIS = ['🎉', '🔥', '💯', '👏', '😍', '🤩', '😂', '🎊', '💪', '🤯', '😎', '❤️'];
@@ -718,7 +718,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
           <p style={{ opacity: 0.75, marginBottom: 28, fontFamily: 'var(--ap-font-body)', fontSize: 16 }}>
             L'hôte vous a retiré de la partie.
           </p>
-          <button className="ap-btn ap-btn--pill" style={{ background: 'rgba(255,255,255,0.2)', color: '#fff', border: '2px solid rgba(255,255,255,0.4)' }} onClick={() => navigate('/')}>
+          <button className="ap-btn ap-btn--pill" style={{ background: 'rgba(255,255,255,0.2)', color: '#fff', border: '2px solid rgba(255,255,255,0.4)' }} onClick={() => (window.location.href = '/')}>
             Retour à l'accueil
           </button>
         </div>
@@ -742,7 +742,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
           <p style={{ opacity: 0.75, marginBottom: 28, fontFamily: 'var(--ap-font-body)', fontSize: 16 }}>
             L'hôte a mis fin à la session.
           </p>
-          <button className="ap-btn ap-btn--pill" style={{ background: 'rgba(255,255,255,0.2)', color: '#fff', border: '2px solid rgba(255,255,255,0.4)' }} onClick={() => navigate('/')}>
+          <button className="ap-btn ap-btn--pill" style={{ background: 'rgba(255,255,255,0.2)', color: '#fff', border: '2px solid rgba(255,255,255,0.4)' }} onClick={() => (window.location.href = '/')}>
             Retour à l'accueil
           </button>
         </div>
@@ -1548,7 +1548,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
           <button
             className="ap-btn ap-btn--lg ap-btn--pill"
             style={{ background: 'var(--ap-ink)', boxShadow: '0 5px 0 rgba(0,0,0,0.3)' }}
-            onClick={() => navigate('/')}
+            onClick={() => (window.location.href = '/')}
           >
             Retour à l'accueil
           </button>
@@ -1817,7 +1817,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
         <button
           className="ap-btn ap-btn--lg ap-btn--pill"
           style={{ background: 'var(--ap-ink)', boxShadow: '0 5px 0 rgba(0,0,0,0.3)' }}
-          onClick={() => navigate('/')}
+          onClick={() => (window.location.href = '/')}
         >
           Retour à l&apos;accueil
         </button>

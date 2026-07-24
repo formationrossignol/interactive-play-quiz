@@ -1,8 +1,6 @@
 import { ShieldCheck, UserX, CreditCard } from "lucide-react";
 
-/** Each line is copy already live elsewhere in the app — RGPD line from
- *  AuthPage.tsx, "sans compte" from the hero, Stripe from PaymentFaq.tsx.
- *  No analyst badges (Gartner/G2/…) — none exist, don't invent any. */
+/** Mirrors apps/app/src/components/landing/TrustSection.tsx. */
 const ITEMS = [
   { icon: ShieldCheck, text: "Données hébergées en Europe · conforme RGPD" },
   { icon: UserX, text: "Aucun compte requis pour les participants" },

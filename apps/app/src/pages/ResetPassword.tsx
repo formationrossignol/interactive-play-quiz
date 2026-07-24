@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { updatePassword } from "@/lib/auth";
 import { toast } from "sonner";
 import { t } from "@/lib/i18n";
@@ -34,7 +33,6 @@ const labelStyle: React.CSSProperties = {
 // the Supabase error surfaced and can change their password from Settings
 // after a normal sign-in instead.
 const ResetPassword = () => {
-  const navigate = useNavigate();
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
@@ -48,7 +46,7 @@ const ResetPassword = () => {
     setBusy(false);
     if (result.ok) {
       toast.success(t("passwordUpdated"));
-      navigate("/");
+      window.location.href = "/";
     } else {
       toast.error(result.message ?? t("loginError"));
     }

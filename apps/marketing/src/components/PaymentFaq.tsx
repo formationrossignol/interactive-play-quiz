@@ -1,8 +1,8 @@
-import { FaqAccordion } from "@/components/FaqAccordion";
+import { FaqAccordionItem } from "@/components/FaqAccordion";
 
-/** Grounded in the current Stripe integration (Checkout + Billing Portal,
- *  no trial, no annual tier, monthly $19 Pro plan — see
- *  docs/superpowers/specs/2026-07-18-stripe-billing-design.md). */
+/** Mirrors apps/app/src/components/PaymentFaq.tsx — grounded in the current
+ *  Stripe integration (Checkout + Billing Portal, no trial, no annual tier,
+ *  monthly 19€ Pro plan). */
 const PAYMENT_FAQ = [
   {
     q: "Quels moyens de paiement acceptez-vous ?",
@@ -34,4 +34,10 @@ const PAYMENT_FAQ = [
   },
 ];
 
-export const PaymentFaq = () => <FaqAccordion items={PAYMENT_FAQ} />;
+export const PaymentFaq = () => (
+  <div className="ap-card" style={{ padding: "8px 28px" }}>
+    {PAYMENT_FAQ.map((item) => (
+      <FaqAccordionItem key={item.q} q={item.q} a={item.a} />
+    ))}
+  </div>
+);

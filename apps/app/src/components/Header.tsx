@@ -60,11 +60,11 @@ export const Header = ({
   const [creationsOpen, setCreationsOpen] = useState(false);
 
   const primaryNavigationItems = [
-    { label: t("home"), onClick: () => navigate("/"), requiresAuth: false },
+    { label: t("home"), onClick: () => (window.location.href = "/"), requiresAuth: false },
     // features/about/contact now live in apps/marketing — full navigation
     // (not react-router navigate()) so the domain-level rewrite reaches it.
     { label: t("features"), onClick: () => { window.location.href = "/features"; }, requiresAuth: false },
-    { label: t("pricing"), onClick: () => navigate("/pricing"), requiresAuth: false },
+    { label: t("pricing"), onClick: () => { window.location.href = "/pricing"; }, requiresAuth: false },
     { label: t("footerAbout"), onClick: () => { window.location.href = "/about"; }, requiresAuth: false },
     { label: t("footerContact"), onClick: () => { window.location.href = "/contact"; }, requiresAuth: false },
   ];
@@ -93,7 +93,7 @@ export const Header = ({
   const handleLogout = () => {
     logout();
     setUser(null);
-    navigate("/");
+    (window.location.href = "/");
   };
 
   const handleLanguageChange = (lang: Language) => {
@@ -134,7 +134,7 @@ export const Header = ({
         {/* Logo */}
         <div
           className="flex cursor-pointer items-center gap-3 transition-opacity hover:opacity-80"
-          onClick={() => navigate("/")}
+          onClick={() => (window.location.href = "/")}
         >
           <span className="ap-logo">
             <BrandMonogram size={22} />
