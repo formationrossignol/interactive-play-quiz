@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { useSEO } from "@/hooks/useSEO";
@@ -34,7 +33,6 @@ const TOP = [
 ];
 
 const Communaute = () => {
-  const navigate = useNavigate();
   const [voted, setVoted] = useState<Record<number, boolean>>({});
   useSEO({
     title: "Communauté",
@@ -70,7 +68,8 @@ const Communaute = () => {
               <div style={{ padding: "16px 18px 8px", display: "flex", alignItems: "center", gap: "10px" }}>
                 <h3 style={{ fontSize: "16px" }}>Discussions récentes</h3>
                 <span style={{ flex: 1 }} />
-                <button className="btn btn--sm" onClick={() => navigate("/contact")}>Nouveau sujet</button>
+                {/* /contact now lives in apps/marketing — full navigation. */}
+                <button className="btn btn--sm" onClick={() => { window.location.href = "/contact"; }}>Nouveau sujet</button>
               </div>
               {THREADS.map((th, i) => (
                 <div className="threadrow" key={i}>
@@ -113,7 +112,6 @@ const Communaute = () => {
                 })}
                 <a
                   href="/contact"
-                  onClick={(e) => { e.preventDefault(); navigate("/contact"); }}
                   style={{ display: "block", textAlign: "center", fontSize: "13px", marginTop: "10px" }}
                 >
                   Proposer une idée →

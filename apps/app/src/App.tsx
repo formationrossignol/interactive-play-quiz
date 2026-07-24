@@ -19,11 +19,9 @@ const Index = lazy(() => import("./pages/Index"));
 const AuthPage = lazy(() => import("./pages/AuthPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
-// Marketing pages
-const Features = lazy(() => import("./pages/Features"));
+// Marketing pages: features/about/contact now live in apps/marketing (see
+// docs/marketing-app-decoupling.md) — no longer routed here.
 const Pricing = lazy(() => import("./pages/Pricing"));
-const Contact = lazy(() => import("./pages/Contact"));
-const About = lazy(() => import("./pages/About"));
 const Help = lazy(() => import("./pages/Help"));
 const Guides = lazy(() => import("./pages/Guides"));
 const Communaute = lazy(() => import("./pages/Communaute"));
@@ -102,10 +100,7 @@ const App = () => (
               <Route path="/discover" element={<DiscoverQuizzes />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/question-bank" element={<QuestionBank />} />
-              <Route path="/features" element={<Features />} />
               <Route path="/pricing" element={<Pricing />} />
-              <Route path="/contact" element={<Contact />} />
-              <Route path="/about" element={<About />} />
               <Route path="/poll-results/:pollId" element={<PollResults />} />
               <Route path="/quiz-results/:quizId" element={<QuizResults />} />
               <Route path="/help" element={<Help />} />

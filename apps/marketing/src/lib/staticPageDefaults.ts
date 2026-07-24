@@ -1,12 +1,38 @@
 import type { StaticPage } from "./types";
 
-// Mirrors apps/app/src/lib/pages/staticPageDefaults.ts — legal pages only for
-// now. features/about join here when those pages get ported (see
-// docs/marketing-app-decoupling.md).
-export type StaticSlug = "mentions-legales" | "confidentialite" | "cgu";
+// Mirrors apps/app/src/lib/pages/staticPageDefaults.ts.
+export type StaticSlug = "mentions-legales" | "confidentialite" | "cgu" | "features" | "about";
 
 /** Source-of-truth content. DB rows (admin edits) overlay these when present. */
 export const STATIC_PAGE_DEFAULTS: Record<StaticSlug, StaticPage> = {
+  features: {
+    slug: "features",
+    title: "Un seul outil pour engager, mesurer et faire progresser.",
+    subtitle: "Quiz multijoueurs, sondages live, flashcards et présentations interactives — dans une expérience unique, du premier clic au débrief analytics.",
+    body: "",
+    status: "published",
+    blocks: [
+      { title: "Collaboratif", desc: "Faites participer toute la salle en temps réel : chacun rejoint depuis son téléphone, sans installation." },
+      { title: "Interactif", desc: "Quiz, sondages, nuages de mots, flashcards — variez les formats pour garder l’attention." },
+      { title: "Personnalisable", desc: "Adaptez couleurs, rythme et règles du jeu à votre marque et à votre public." },
+      { title: "Analytics", desc: "Mesurez la compréhension question par question et repérez ce qu’il faut réexpliquer." },
+      { title: "Modèles", desc: "Partez d’un modèle prêt à l’emploi et lancez votre première session en quelques minutes." },
+      { title: "Évaluation", desc: "Créez des examens notés avec barème, fenêtres de passage et surveillance renforcée." },
+    ],
+  },
+  about: {
+    slug: "about",
+    title: "Brivia",
+    subtitle: "Brivia est né de la volonté de transformer l’apprentissage et l’engagement en expériences interactives et mémorables.",
+    body: "<p>Nous croyons que l’apprentissage et l’engagement doivent être dynamiques, collaboratifs et amusants. C’est pourquoi nous avons créé Brivia, une plateforme tout-en-un qui permet aux éducateurs, formateurs et animateurs de concevoir des expériences interactives captivantes.</p><p>Que vous organisiez un quiz en classe, un sondage en entreprise ou des flashcards pour réviser, Brivia vous offre tous les outils nécessaires pour captiver votre audience et mesurer l’impact en temps réel.</p>",
+    status: "published",
+    blocks: [
+      { title: "Innovation", desc: "Nous innovons constamment pour offrir des expériences toujours plus engageantes et intuitives." },
+      { title: "Collaboration", desc: "Nous facilitons le travail d’équipe et encourageons le partage de connaissances." },
+      { title: "Simplicité", desc: "Des outils puissants mais simples d’utilisation, accessibles à tous." },
+      { title: "Passion", desc: "Nous aimons ce que nous faisons et nous nous investissons pleinement pour votre succès." },
+    ],
+  },
   "mentions-legales": {
     slug: "mentions-legales",
     title: "Mentions légales",
