@@ -1,9 +1,8 @@
-import { Header } from "@/components/Header";
+import { AppLayout } from "@/components/AppLayout";
 
 const NotFound = () => {
   return (
-    <div style={{ minHeight: "100vh" }}>
-      <Header />
+    <AppLayout>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "128px 24px", textAlign: "center" }}>
         <p
           style={{
@@ -22,7 +21,7 @@ const NotFound = () => {
           Retour à l'accueil
         </a>
       </div>
-    </div>
+    </AppLayout>
   );
 };
 

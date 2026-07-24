@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Header } from "@/components/Header";
+import { AppLayout } from "@/components/AppLayout";
 import { Breadcrumb } from "@/components/Breadcrumb";
 import RichTextEditor from "@/components/RichTextEditor";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -298,13 +298,12 @@ const CourseBuilder = () => {
 
   if (atCap) {
     return (
-      <div style={{ minHeight: "100vh" }}>
-        <Header subtitle="Créateur de cours" />
+      <AppLayout subtitle="Créateur de cours">
         <PlanLimitBlocker
           title="Limite du plan Starter atteinte"
           description={`Le plan Starter est limité à ${cap} cours. Passez au plan Pro pour en créer davantage.`}
         />
-      </div>
+      </AppLayout>
     );
   }
 

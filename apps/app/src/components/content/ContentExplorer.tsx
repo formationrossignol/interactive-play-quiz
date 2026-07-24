@@ -25,7 +25,7 @@ import {
   Star,
   Trash2,
 } from "lucide-react";
-import { Header } from "@/components/Header";
+import { AppLayout } from "@/components/AppLayout";
 import { PlanLimitError } from "@/lib/plans";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Pagination } from "@/components/Pagination";
@@ -499,8 +499,7 @@ export function ContentExplorer({
   const showToolbar = view !== "trash";
 
   return (
-    <div className="min-h-screen">
-      <Header subtitle={headerTitle} />
+    <AppLayout subtitle={headerTitle}>
       <div className="mx-auto max-w-6xl px-6 py-10">
         {/* Page head */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
@@ -723,6 +722,6 @@ export function ContentExplorer({
         title={permDeleteTarget?.title || ""}
         type={deleteTypeOf(type)}
       />
-    </div>
+    </AppLayout>
   );
 }

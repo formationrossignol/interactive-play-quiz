@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Header } from "@/components/Header";
+import { AppLayout } from "@/components/AppLayout";
 import { Pagination } from "@/components/Pagination";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -332,9 +332,7 @@ const QuestionBank = () => {
   );
 
   return (
-    <div style={{ minHeight: "100vh" }}>
-      <Header subtitle={t("questionBank")} />
-
+    <AppLayout subtitle={t("questionBank")}>
       <div className="mx-auto max-w-6xl px-6 py-10">
 
         {/* ── Page header ── */}
@@ -703,7 +701,7 @@ const QuestionBank = () => {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </AppLayout>
   );
 };
 

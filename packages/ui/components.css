@@ -384,3 +384,37 @@
   .ap-type-badge:hover { transform: none; }
   .ap-partners__track { animation: none; }
 }
+
+/* ── Nav pill — ported from apps/app/src/arcade-pop.css (11. NAV PILL) ── */
+.ap-nav-pill {
+  display: flex; gap: 2px;
+  background: var(--ap-card); border: 2px solid var(--ap-line);
+  border-radius: var(--ap-r-pill); padding: 4px;
+  box-shadow: 0 3px 0 var(--ap-line);
+}
+.ap-nav-pill__item {
+  font-family: var(--ap-font-display); font-weight: 600; font-size: 14px;
+  color: var(--ap-muted); padding: 8px 16px; border-radius: var(--ap-r-pill);
+  border: none; background: transparent; cursor: pointer;
+  transition: color .15s, background .15s;
+}
+.ap-nav-pill__item:hover,
+.ap-nav-pill__item[aria-current="page"] {
+  color: var(--ap-ink); background: var(--ap-paper-2);
+}
+
+/* ── Icônes réseaux sociaux (footer) — ported from apps/app's arcade-pop.css ── */
+.ap-social {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; flex: 0 0 auto;
+  color: var(--ap-muted); background: var(--ap-card);
+  border: var(--ap-border-w) solid var(--ap-line);
+  border-radius: var(--ap-r-sm);
+  transition: color .15s var(--ap-ease), border-color .15s var(--ap-ease),
+              background .15s var(--ap-ease), transform .12s var(--ap-ease);
+}
+.ap-social:hover {
+  color: var(--ap-brand);
+  border-color: var(--ap-brand);
+  transform: translateY(-2px);
+}

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Rocket, PenLine, ShieldCheck, Mail, FileText, Users, Link2 } from "lucide-react";
-import { Header } from "@/components/Header";
+import { AppLayout } from "@/components/AppLayout";
 import { Footer } from "@/components/Footer";
 import { useSEO } from "@/hooks/useSEO";
 import { useIsAdmin } from "@/lib/pages/useIsAdmin";
@@ -12,9 +12,10 @@ import { ContentTab } from "./ContentTab";
 import { ModerationTab } from "./ModerationTab";
 import { SubscribersTab } from "./SubscribersTab";
 import { SettingsTab } from "./SettingsTab";
+import { AdminSidebarGroup, type AdminSection } from "./AdminSidebarGroup";
 import "./admin.css";
 
-type Section = "content" | "moderation" | "subscribers" | "settings";
+type Section = AdminSection;
 
 const Admin = () => {
   const { isAdmin, isLoading } = useIsAdmin();
@@ -39,13 +40,12 @@ const Admin = () => {
 
   if (isLoading || !isAdmin) {
     return (
-      <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-        <Header />
-        <main className="adm" style={{ flex: 1 }}>
+      <AppLayout>
+        <main className="adm">
           <div className="adm-loading"><span className="adm-spinner" /></div>
         </main>
         <Footer />
-      </div>
+      </AppLayout>
     );
   }
 
@@ -68,9 +68,8 @@ const Admin = () => {
   ];
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-      <Header />
-      <main className="adm" style={{ flex: 1 }}>
+    <AppLayout subtitle="Administration" extraSection={<AdminSidebarGroup section={section} setSection={setSection} nav={nav} />}>
+      <main className="adm">
         <div className="wrap">
           <div className="adm-top">
             <div>
@@ -102,39 +101,16 @@ const Admin = () => {
             </div>
           </div>
 
-          <div className="adm-shell">
-            <nav className="adm-rail">
-              <div className="adm-rail-label">Sections</div>
-              {nav.map((n) => {
-                const Icon = n.icon;
-                return (
-                <button
-                  key={n.key}
-                  className={`adm-navitem${section === n.key ? " on" : ""}`}
-                  onClick={() => setSection(n.key)}
-                  aria-current={section === n.key ? "page" : undefined}
-                >
-                  <span className="ico"><Icon /></span>
-                  {n.label}
-                  {n.key !== "settings" && (
-                    <span className={`count${n.alert && section !== n.key ? " alert" : ""}`}>{n.count}</span>
-                  )}
-                </button>
-                );
-              })}
-            </nav>
-
-            <div>
-              {section === "content" && <ContentTab />}
-              {section === "moderation" && <ModerationTab />}
-              {section === "subscribers" && <SubscribersTab />}
-              {section === "settings" && <SettingsTab />}
-            </div>
+          <div>
+            {section === "content" && <ContentTab />}
+            {section === "moderation" && <ModerationTab />}
+            {section === "subscribers" && <SubscribersTab />}
+            {section === "settings" && <SettingsTab />}
           </div>
         </div>
       </main>
       <Footer />
-    </div>
+    </AppLayout>
   );
 };
 
