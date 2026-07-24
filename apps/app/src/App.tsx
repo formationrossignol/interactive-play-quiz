@@ -18,13 +18,10 @@ const LiveQuizPage = lazy(() => import("./pages/LiveQuizPage"));
 const AuthPage = lazy(() => import("./pages/AuthPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
-// Marketing pages: /, features/about/contact/help/guides/pricing now live in
-// apps/marketing (see docs/marketing-app-decoupling.md) — no longer routed here.
+// Marketing pages: /, features/about/contact/help/guides/pricing/reviews/
+// roadmap/report/changelog now live in apps/marketing (see
+// docs/marketing-app-decoupling.md) — no longer routed here.
 const Communaute = lazy(() => import("./pages/Communaute"));
-const Temoignages = lazy(() => import("./pages/Temoignages"));
-const Roadmap = lazy(() => import("./pages/Roadmap"));
-const Report = lazy(() => import("./pages/Report"));
-const Changelog = lazy(() => import("./pages/Changelog"));
 const DiscoverQuizzes = lazy(() => import("./pages/DiscoverQuizzes"));
 
 // Legal pages: mentions-legales/confidentialite/cgu now live in apps/marketing
@@ -98,10 +95,6 @@ const App = () => (
               <Route path="/poll-results/:pollId" element={<PollResults />} />
               <Route path="/quiz-results/:quizId" element={<QuizResults />} />
               <Route path="/community" element={<Communaute />} />
-              <Route path="/reviews" element={<Temoignages />} />
-              <Route path="/roadmap" element={<Roadmap />} />
-              <Route path="/report" element={<Report />} />
-              <Route path="/changelog" element={<Changelog />} />
               <Route path="/preview/:quizId" element={<PreviewPage />} />
               <Route path="/quiz/:gameCode" element={<LiveQuizPage />} />
               <Route path="/join/:gameCode" element={<JoinQuiz />} />

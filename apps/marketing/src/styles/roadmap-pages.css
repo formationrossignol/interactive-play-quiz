@@ -1,8 +1,6 @@
-/* =========================================================
-   Shared styles for Roadmap / Report / Changelog pages.
-   Self-contained, scoped under `.lq`. Local var names aliased
-   onto the project's arcade-pop tokens.
-========================================================= */
+/* Mirrors apps/app/src/pages/roadmap-pages.css verbatim — shared by the
+   /roadmap, /report, /changelog marketing pages. Self-contained, scoped
+   under .lq. */
 .lq{
   --r-sm:var(--ap-r-sm); --r-md:var(--ap-r-md); --r-lg:var(--ap-r-lg); --r-xl:var(--ap-r-xl);
   --sh-soft:var(--ap-shadow-soft); --sh-card:var(--ap-shadow-card);
@@ -51,9 +49,7 @@
 .lq .vote svg{transition:transform .15s var(--spring)}
 .lq .vote.on svg{transform:translateY(-2px)}
 
-/* =========================================================
-   ROADMAP
-========================================================= */
+/* ROADMAP */
 .lq .quota{
   display:inline-flex;align-items:center;gap:10px;background:var(--ap-card);border:2px solid var(--ap-line);
   border-radius:999px;padding:8px 18px;box-shadow:var(--sh-soft);font-weight:800;font-size:13.5px;margin-top:14px;
@@ -92,9 +88,7 @@
 .lq .betapill{font-size:10.5px;font-weight:900;padding:3px 10px;border-radius:999px;background:var(--ap-quiz-soft);color:var(--ap-quiz-deep)}
 @keyframes lq-shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
 
-/* =========================================================
-   SIGNALER UN PROBLÈME / TICKETS
-========================================================= */
+/* SIGNALER UN PROBLÈME / TICKETS */
 .lq .bug-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:22px;margin-bottom:60px;align-items:start}
 @media(max-width:880px){.lq .bug-grid{grid-template-columns:1fr}}
 .lq .bugform{padding:26px 28px;position:relative}
@@ -153,9 +147,7 @@
 .lq .slabox .srow + .srow{border-top:2px solid var(--ap-line)}
 .lq .slabox .srow b{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--ap-pres-deep)}
 
-/* =========================================================
-   NOUVEAUTÉS PRODUIT / CHANGELOG
-========================================================= */
+/* NOUVEAUTÉS PRODUIT / CHANGELOG */
 .lq .subscribe{
   display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:0 auto 34px;max-width:520px;position:relative;
 }

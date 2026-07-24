@@ -36,10 +36,12 @@ export const Footer = () => {
         { label: t('footerHelpCenter'), onClick: () => { window.location.href = '/help'; } },
         { label: t('footerGuides'), onClick: () => { window.location.href = '/guides'; } },
         { label: t('footerCommunity'), onClick: () => navigate('/community') },
-        { label: t('footerTestimonials'), onClick: () => navigate('/reviews') },
-        { label: t('footerRoadmap'), onClick: () => navigate('/roadmap') },
-        { label: t('footerChangelog'), onClick: () => navigate('/changelog') },
-        { label: t('footerReport'), onClick: () => navigate('/report') },
+        // reviews/roadmap/changelog/report now live in apps/marketing —
+        // full navigation so the domain-level rewrite reaches it.
+        { label: t('footerTestimonials'), onClick: () => { window.location.href = '/reviews'; } },
+        { label: t('footerRoadmap'), onClick: () => { window.location.href = '/roadmap'; } },
+        { label: t('footerChangelog'), onClick: () => { window.location.href = '/changelog'; } },
+        { label: t('footerReport'), onClick: () => { window.location.href = '/report'; } },
       ],
     },
   ];
