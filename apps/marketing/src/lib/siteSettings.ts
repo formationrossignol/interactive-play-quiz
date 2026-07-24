@@ -1,6 +1,5 @@
 import { cache } from "react";
 import { supabase } from "./supabase";
-import { supabaseBrowser } from "./supabaseBrowser";
 import type { Partner } from "./types";
 
 // Mirrors apps/app/src/lib/siteSettings.ts#fetchPartners (partners_logos
@@ -38,48 +37,3 @@ export const fetchPartners = cache(async (): Promise<Partner[]> => {
     return [];
   }
 });
-
-// ── Social links — mirrors apps/app/src/lib/siteSettings.ts#fetchSocialLinks.
-// Footer's SocialLinksRow is a client component (fetches on mount from the
-// browser), so this uses supabaseBrowser rather than the cache()-wrapped
-// server client above.
-
-export const SOCIAL_NETWORKS = [
-  { id: "linkedin", label: "LinkedIn" },
-  { id: "instagram", label: "Instagram" },
-  { id: "facebook", label: "Facebook" },
-  { id: "youtube", label: "YouTube" },
-  { id: "x", label: "X (Twitter)" },
-  { id: "tiktok", label: "TikTok" },
-] as const;
-
-export type SocialNetworkId = (typeof SOCIAL_NETWORKS)[number]["id"];
-
-/** network id → absolute URL; missing/empty = not displayed. */
-export type SocialLinks = Partial<Record<SocialNetworkId, string>>;
-
-const SOCIAL_LINKS_KEY = "social_links";
-
-const sanitizeSocialLinks = (raw: unknown): SocialLinks => {
-  if (!raw || typeof raw !== "object") return {};
-  const out: SocialLinks = {};
-  for (const { id } of SOCIAL_NETWORKS) {
-    const v = (raw as Record<string, unknown>)[id];
-    if (typeof v === "string" && /^https?:\/\//i.test(v.trim())) out[id] = v.trim();
-  }
-  return out;
-};
-
-export const fetchSocialLinks = async (): Promise<SocialLinks> => {
-  try {
-    const { data, error } = await supabaseBrowser
-      .from("site_settings")
-      .select("value")
-      .eq("key", SOCIAL_LINKS_KEY)
-      .maybeSingle();
-    if (error || !data) return {};
-    return sanitizeSocialLinks(data.value);
-  } catch {
-    return {};
-  }
-};

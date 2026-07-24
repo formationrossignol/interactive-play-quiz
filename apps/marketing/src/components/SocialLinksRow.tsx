@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import type { ComponentType, SVGProps } from "react";
 import { Facebook, Instagram, Linkedin, Youtube } from "lucide-react";
-import { fetchSocialLinks, SOCIAL_NETWORKS, type SocialLinks, type SocialNetworkId } from "@/lib/siteSettings";
+import { fetchSocialLinks, SOCIAL_NETWORKS, type SocialLinks, type SocialNetworkId } from "@/lib/socialLinks";
 
 // Mirrors apps/app/src/components/SocialLinksRow.tsx.
 /* lucide n'a pas de glyphes X / TikTok — tracés inline, mêmes proportions 24px */

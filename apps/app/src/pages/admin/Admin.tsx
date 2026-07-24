@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Rocket, PenLine, ShieldCheck, Mail, FileText, Users, Link2 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
-import { Footer } from "@/components/Footer";
 import { useSEO } from "@/hooks/useSEO";
 import { useIsAdmin } from "@/lib/pages/useIsAdmin";
 import {
@@ -44,7 +43,6 @@ const Admin = () => {
         <main className="adm">
           <div className="adm-loading"><span className="adm-spinner" /></div>
         </main>
-        <Footer />
       </AppLayout>
     );
   }
@@ -109,7 +107,6 @@ const Admin = () => {
           </div>
         </div>
       </main>
-      <Footer />
     </AppLayout>
   );
 };

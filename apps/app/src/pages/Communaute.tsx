@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
-import { Footer } from "@/components/Footer";
 import { useSEO } from "@/hooks/useSEO";
 import { ChevronUp, MessageCircle } from "lucide-react";
 import "./community-pages.css";
@@ -130,7 +129,6 @@ const Communaute = () => {
           </div>
         </div>
       </main>
-      <Footer />
     </AppLayout>
   );
 };
