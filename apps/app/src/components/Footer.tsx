@@ -32,8 +32,9 @@ export const Footer = () => {
     {
       title: t('footerSupport'),
       links: [
-        { label: t('footerHelpCenter'), onClick: () => navigate('/help') },
-        { label: t('footerGuides'), onClick: () => navigate('/guides') },
+        // /help and /guides now live in apps/marketing — full navigation.
+        { label: t('footerHelpCenter'), onClick: () => { window.location.href = '/help'; } },
+        { label: t('footerGuides'), onClick: () => { window.location.href = '/guides'; } },
         { label: t('footerCommunity'), onClick: () => navigate('/community') },
         { label: t('footerTestimonials'), onClick: () => navigate('/reviews') },
         { label: t('footerRoadmap'), onClick: () => navigate('/roadmap') },
