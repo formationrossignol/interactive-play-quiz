@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Header } from "@/components/Header";
+import { AppLayout } from "@/components/AppLayout";
 import { Footer } from "@/components/Footer";
 import { useSEO } from "@/hooks/useSEO";
 import { ChevronUp, MessageCircle } from "lucide-react";
@@ -41,8 +41,7 @@ const Communaute = () => {
   });
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-      <Header />
+    <AppLayout>
       <main className="lq" style={{ flex: 1 }}>
         <div className="wrap">
           <div className="page-hero">
@@ -132,7 +131,7 @@ const Communaute = () => {
         </div>
       </main>
       <Footer />
-    </div>
+    </AppLayout>
   );
 };
 

@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSEO } from "@/hooks/useSEO";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Header } from "@/components/Header";
+import { AppLayout } from "@/components/AppLayout";
 import { Pagination } from "@/components/Pagination";
 import { RatingStars } from "@/components/RatingStars";
 import { getPublicQuizzes, rateQuiz } from "@/lib/quizStorage";
@@ -71,9 +71,7 @@ const DiscoverQuizzes = () => {
   };
 
   return (
-    <div style={{ minHeight: "100vh" }}>
-      <Header subtitle={t("discoverPublic")} />
-
+    <AppLayout subtitle={t("discoverPublic")}>
       <div className="mx-auto max-w-7xl px-6 py-10">
 
         {/* Page header */}
@@ -261,7 +259,7 @@ const DiscoverQuizzes = () => {
 
         <Pagination page={page} totalPages={totalPages} onPageChange={setPage} className="mt-10" />
       </div>
-    </div>
+    </AppLayout>
   );
 };
 

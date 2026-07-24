@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Header } from "@/components/Header";
+import { AppLayout } from "@/components/AppLayout";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { ArrowLeft, BarChart2, Users, Calendar, ChevronDown, ChevronUp } from "lucide-react";
 import { getPollResults, type PollResultsStore, type PollResultSession, type PollQuestionResult } from "@/lib/pollResults";
@@ -156,8 +156,7 @@ const PollResults = () => {
   const totalSessions = store?.sessions.length ?? 0;
 
   return (
-    <div style={{ minHeight: "100vh" }}>
-      <Header subtitle="Résultats du sondage" />
+    <AppLayout subtitle="Résultats du sondage">
       <div className="mx-auto max-w-4xl px-6 py-10">
         <button
           className="ap-btn ap-btn--ghost ap-btn--sm"
@@ -206,7 +205,7 @@ const PollResults = () => {
           </div>
         )}
       </div>
-    </div>
+    </AppLayout>
   );
 };
 

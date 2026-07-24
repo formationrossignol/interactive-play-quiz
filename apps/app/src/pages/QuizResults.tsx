@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Header } from "@/components/Header";
+import { AppLayout } from "@/components/AppLayout";
 import { ArrowLeft, BarChart2, Calendar, ChevronDown, ChevronUp, Target, Trophy, Users } from "lucide-react";
 import { readSessionHistory, type SessionRun } from "@/lib/sessionState";
 import { getQuizById } from "@/lib/quizStorage";
@@ -122,8 +122,7 @@ const QuizResults = () => {
   ];
 
   return (
-    <div style={{ minHeight: "100vh" }}>
-      <Header subtitle="Résultats du quiz" />
+    <AppLayout subtitle="Résultats du quiz">
       <div className="mx-auto max-w-4xl px-6 py-10">
         <button
           className="ap-btn ap-btn--ghost ap-btn--sm"
@@ -172,7 +171,7 @@ const QuizResults = () => {
           </div>
         )}
       </div>
-    </div>
+    </AppLayout>
   );
 };
 

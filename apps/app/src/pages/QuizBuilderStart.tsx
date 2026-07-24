@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useLocation, Navigate } from "react-router-dom";
 import { ArrowRight, Plus } from "lucide-react";
-import { Header } from "@/components/Header";
+import { AppLayout } from "@/components/AppLayout";
 import { PollTemplateSelectorEnhanced } from "@/components/PollTemplateSelectorEnhanced";
 import { QuizTemplateSelectorEnhanced } from "@/components/QuizTemplateSelectorEnhanced";
 import { FlashcardTemplateSelectorEnhanced } from "@/components/FlashcardTemplateSelectorEnhanced";
@@ -65,27 +65,25 @@ export const QuizBuilderStart = () => {
 
   if (atCap) {
     return (
-      <div style={{ minHeight: "100vh" }}>
-        <Header subtitle={pageTitle} />
+      <AppLayout subtitle={pageTitle}>
         <PlanLimitBlocker
           title="Limite du plan Starter atteinte"
           description={`Le plan Starter est limité à ${cap} ${CONTENT_KIND_LABELS[quizType as ContentKind]}. Passez au plan Pro pour créer sans limite.`}
         />
-      </div>
+      </AppLayout>
     );
   }
 
   return (
-    <div style={{ minHeight: "100vh" }}>
-      <Header
-        subtitle={
-          isFlashcard
-            ? t("flashcardBuilder")
-            : isPoll
-            ? t("pollBuilder")
-            : t("quizBuilder")
-        }
-      />
+    <AppLayout
+      subtitle={
+        isFlashcard
+          ? t("flashcardBuilder")
+          : isPoll
+          ? t("pollBuilder")
+          : t("quizBuilder")
+      }
+    >
 
       <div className="mx-auto max-w-5xl px-6 py-12">
         <div className="mb-10 text-center">
@@ -283,7 +281,7 @@ export const QuizBuilderStart = () => {
           </div>
         )}
       </div>
-    </div>
+    </AppLayout>
   );
 };
 

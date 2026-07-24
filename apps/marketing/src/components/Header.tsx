@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { BrandMonogram } from "ui/BrandMonogram";
 import { BrandWordmark } from "ui/BrandWordmark";
 
@@ -10,9 +13,12 @@ const NAV_LINKS = [
   { label: "Fonctionnalités", href: "/features" },
   { label: "Tarifs", href: "/pricing" },
   { label: "Aide", href: "/help" },
+  { label: "À propos", href: "/about" },
+  { label: "Contact", href: "/contact" },
 ];
 
 export function Header() {
+  const pathname = usePathname();
   return (
     <header
       style={{
@@ -37,13 +43,13 @@ export function Header() {
           <BrandWordmark size={18} style={{ color: "var(--ap-ink)" }} />
         </Link>
 
-        <nav className="hidden items-center gap-6 sm:flex">
+        <nav className="ap-nav-pill hidden sm:flex">
           {NAV_LINKS.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className="text-sm font-semibold transition-colors hover:opacity-80"
-              style={{ color: "var(--ap-ink)", fontFamily: "var(--ap-font-body)" }}
+              className="ap-nav-pill__item"
+              aria-current={pathname === link.href ? "page" : undefined}
             >
               {link.label}
             </Link>

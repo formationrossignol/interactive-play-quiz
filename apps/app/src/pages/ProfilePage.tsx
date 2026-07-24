@@ -8,7 +8,7 @@ import { openBillingPortal, pollForPlanUpgrade } from "@/lib/billing";
 import { getUserQuizzes } from "@/lib/quizStorage";
 import { setLanguage as setI18nLanguage, getLanguage, t } from "@/lib/i18n";
 import { SITE_THEMES, applySiteTheme, normalizeSiteTheme, type SiteTheme } from "@/lib/siteTheme";
-import { Header } from "@/components/Header";
+import { AppLayout } from "@/components/AppLayout";
 import { SecuritySection } from "@/components/SecuritySection";
 import { Save, Trophy, BookOpen, Clock, Sun, Moon, Zap, Building2, User } from "lucide-react";
 import { toast } from "sonner";
@@ -185,9 +185,7 @@ const ProfilePage = () => {
   if (!user) return null;
 
   return (
-    <div style={{ minHeight: "100vh" }}>
-      <Header subtitle={t("myProfile")} />
-
+    <AppLayout subtitle={t("myProfile")}>
       <div className="mx-auto max-w-4xl px-6 py-10">
 
         {/* Page header */}
@@ -470,7 +468,7 @@ const ProfilePage = () => {
 
         </div>
       </div>
-    </div>
+    </AppLayout>
   );
 };
 
