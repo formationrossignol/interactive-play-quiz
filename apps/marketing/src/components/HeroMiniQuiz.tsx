@@ -67,12 +67,13 @@ const ALL_QUESTIONS = [
   },
 ];
 
-function pickQuestions(n = 3): typeof ALL_QUESTIONS {
-  const shuffled = [...ALL_QUESTIONS].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, n);
-}
-
-const QUESTIONS = pickQuestions(3);
+// Fixed order, not shuffled: this module evaluates independently on the
+// server (SSR) and again on the client (hydration) — a Math.random() shuffle
+// here picks a different order each time, so the rendered question text
+// wouldn't match between the two passes and React throws a hydration
+// mismatch (#418). Deterministic content is required for anything rendered
+// on first paint.
+const QUESTIONS = ALL_QUESTIONS.slice(0, 3);
 
 const SHAPES = [
   <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" key="tri"><path d="M12 3 22 21H2z"/></svg>,
