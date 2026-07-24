@@ -2,7 +2,6 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { getCurrentUser, logout } from "@/lib/auth";
 import {
-  Zap,
   LogOut,
   User,
   BookOpen,
@@ -10,13 +9,13 @@ import {
   Globe,
   Menu,
   Layers,
-  Library,
   GraduationCap,
   Presentation,
   ChevronDown,
   ClipboardList,
   Shield,
   X,
+  Plus,
 } from "lucide-react";
 import { useState, useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
 import { getLanguage, setLanguage, t, type Language } from "@/lib/i18n";
@@ -58,30 +57,28 @@ export const Header = ({
   // Controlled so the mega-menu can carry a themed scrim + close button
   // (Innov dims the page behind the open menu; other themes just ignore it).
   const [creationsOpen, setCreationsOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
 
+  // App-only nav: features/pricing/about/contact now live in apps/marketing.
   const primaryNavigationItems = [
-    { label: t("home"), onClick: () => (window.location.href = "/"), requiresAuth: false },
-    // features/about/contact now live in apps/marketing — full navigation
-    // (not react-router navigate()) so the domain-level rewrite reaches it.
-    { label: t("features"), onClick: () => { window.location.href = "/features"; }, requiresAuth: false },
-    { label: t("pricing"), onClick: () => { window.location.href = "/pricing"; }, requiresAuth: false },
-    { label: t("footerAbout"), onClick: () => { window.location.href = "/about"; }, requiresAuth: false },
-    { label: t("footerContact"), onClick: () => { window.location.href = "/contact"; }, requiresAuth: false },
+    { label: t("dashboard"), onClick: () => navigate("/my-quizzes"), requiresAuth: true },
+    { label: t("questionBank"), onClick: () => navigate("/question-bank"), requiresAuth: true },
+    { label: t("discoverPublic"), onClick: () => navigate("/discover"), requiresAuth: false },
+    { label: t("footerCommunity"), onClick: () => navigate("/community"), requiresAuth: false },
   ];
 
-  const creationMenuItems = [
-    { label: t("myQuizzes"), icon: BookOpen, onClick: () => navigate("/my-quizzes"), requiresAuth: true },
-    { label: t("myPolls"), icon: BarChart3, onClick: () => navigate("/my-polls"), requiresAuth: true },
-    { label: t("myFlashcards"), icon: Layers, onClick: () => navigate("/my-flashcards"), requiresAuth: true },
-    { label: t("mySlides"), icon: Presentation, onClick: () => navigate("/my-slides"), requiresAuth: true },
-    { label: t("myCourses"), icon: GraduationCap, onClick: () => navigate("/my-courses"), requiresAuth: true },
-    { label: "Mes examens", icon: ClipboardList, onClick: () => navigate("/my-exams"), requiresAuth: true },
-    { label: t("questionBank"), icon: Library, onClick: () => navigate("/question-bank"), requiresAuth: true },
+  // "+ Créer" jumps straight into a builder's start flow, unlike the old
+  // "Mes créations" dropdown which linked to the content list pages.
+  const createMenuItems = [
+    { label: t("navCreateQuiz"), icon: BookOpen, onClick: () => navigate("/builder-start?type=quiz") },
+    { label: t("navCreatePoll"), icon: BarChart3, onClick: () => navigate("/builder-start?type=poll") },
+    { label: t("createFlashcards"), icon: Layers, onClick: () => navigate("/builder-start?type=flashcard") },
+    { label: t("createSlides"), icon: Presentation, onClick: () => navigate("/builder-start?type=slide") },
+    { label: t("createCourse"), icon: GraduationCap, onClick: () => navigate("/course-builder") },
+    { label: t("createExam"), icon: ClipboardList, onClick: () => navigate("/exam-builder") },
   ];
 
-  const availableCreationItems = creationMenuItems.filter((item) =>
-    item.requiresAuth ? Boolean(user) : true
-  );
+  const avatarInitial = (user?.username || "?").trim().charAt(0).toUpperCase();
 
   useEffect(() => {
     const currentUser = getCurrentUser();
@@ -134,7 +131,7 @@ export const Header = ({
         {/* Logo */}
         <div
           className="flex cursor-pointer items-center gap-3 transition-opacity hover:opacity-80"
-          onClick={() => (window.location.href = "/")}
+          onClick={() => (user ? navigate("/my-quizzes") : (window.location.href = "/"))}
         >
           <span className="ap-logo">
             <BrandMonogram size={22} />
@@ -170,12 +167,12 @@ export const Header = ({
                 </button>
               ))}
 
-            {availableCreationItems.length > 0 && (
+            {user && (
               <DropdownMenu open={creationsOpen} onOpenChange={setCreationsOpen}>
                 <DropdownMenuTrigger asChild>
                   <button className="ap-nav-pill__item flex items-center gap-1.5">
-                    <Layers className="h-4 w-4" />
-                    {t("myCreations")}
+                    <Plus className="h-4 w-4" />
+                    {t("createNew")}
                     <ChevronDown className="chevron-icon h-3.5 w-3.5" style={{ color: "var(--ap-muted)" }} />
                   </button>
                 </DropdownMenuTrigger>
@@ -197,7 +194,7 @@ export const Header = ({
                   >
                     <X />
                   </button>
-                  {availableCreationItems.map((item) => {
+                  {createMenuItems.map((item) => {
                     const Icon = item.icon;
                     return (
                       <DropdownMenuItem
@@ -261,16 +258,16 @@ export const Header = ({
                         {item.label}
                       </DropdownMenuItem>
                     ))}
-                  {availableCreationItems.length > 0 && (
+                  {user && (
                     <>
                       <DropdownMenuSeparator style={{ background: "var(--ap-line)" }} />
                       <DropdownMenuLabel
                         className="px-2 py-1.5 text-xs font-bold uppercase tracking-wide"
                         style={{ color: "var(--ap-muted)" }}
                       >
-                        {t("myCreations")}
+                        {t("createNew")}
                       </DropdownMenuLabel>
-                      {availableCreationItems.map((item) => {
+                      {createMenuItems.map((item) => {
                         const Icon = item.icon;
                         return (
                           <DropdownMenuItem
@@ -286,44 +283,86 @@ export const Header = ({
                       })}
                     </>
                   )}
-                  {user && (
-                    <DropdownMenuItem
-                      className="gap-2 rounded-md text-sm cursor-pointer"
-                      style={{ color: "var(--ap-ink)" }}
-                      onSelect={() => navigate("/profile")}
-                    >
-                      <User className="h-4 w-4" style={{ color: "var(--ap-muted)" }} />
-                      {t("profile")}
-                    </DropdownMenuItem>
-                  )}
-                  {isAdmin && (
-                    <DropdownMenuItem
-                      className="gap-2 rounded-md text-sm cursor-pointer"
-                      style={{ color: "var(--ap-ink)" }}
-                      onSelect={() => navigate("/admin")}
-                    >
-                      Admin
-                    </DropdownMenuItem>
-                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
           )}
 
-          {/* Admin console shortcut (admins only) */}
-          {isAdmin && (
-            <button
-              className="ap-btn ap-btn--ghost ap-btn--sm ap-icon-btn"
-              style={{ padding: "8px 10px" }}
-              onClick={() => navigate("/admin")}
-              aria-label="Administration"
-              title="Administration"
-            >
-              <Shield className="h-4 w-4" />
-            </button>
-          )}
-
-          {/* Language switcher */}
+          {/* Account: profile / admin / language / logout, one entry point */}
+          {user ? (
+            <DropdownMenu open={accountOpen} onOpenChange={setAccountOpen}>
+              <DropdownMenuTrigger asChild>
+                <button className="ap-avatar-btn" aria-label={user.username} title={user.username}>
+                  {avatarInitial}
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                className="z-50 w-52 p-1.5"
+                style={{
+                  background: "var(--ap-card)",
+                  border: "var(--ap-border-w) solid var(--ap-line)",
+                  borderRadius: "var(--ap-r-lg)",
+                  boxShadow: "var(--ap-shadow-card)",
+                }}
+              >
+                <DropdownMenuLabel
+                  className="px-2 py-1.5 text-xs font-bold truncate"
+                  style={{ color: "var(--ap-muted)" }}
+                >
+                  {user.username}
+                </DropdownMenuLabel>
+                <DropdownMenuItem
+                  className="gap-2 rounded-md text-sm cursor-pointer"
+                  style={{ color: "var(--ap-ink)" }}
+                  onSelect={() => navigate("/profile")}
+                >
+                  <User className="h-4 w-4" style={{ color: "var(--ap-muted)" }} />
+                  {t("profile")}
+                </DropdownMenuItem>
+                {isAdmin && (
+                  <DropdownMenuItem
+                    className="gap-2 rounded-md text-sm cursor-pointer"
+                    style={{ color: "var(--ap-ink)" }}
+                    onSelect={() => navigate("/admin")}
+                  >
+                    <Shield className="h-4 w-4" style={{ color: "var(--ap-muted)" }} />
+                    {t("admin")}
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator style={{ background: "var(--ap-line)" }} />
+                <DropdownMenuLabel
+                  className="px-2 py-1.5 text-xs font-bold uppercase tracking-wide"
+                  style={{ color: "var(--ap-muted)" }}
+                >
+                  {t("language")}
+                </DropdownMenuLabel>
+                <DropdownMenuItem
+                  className="rounded-md text-sm cursor-pointer"
+                  style={{ color: "var(--ap-ink)" }}
+                  onClick={() => handleLanguageChange("en")}
+                >
+                  🇬🇧 English
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="rounded-md text-sm cursor-pointer"
+                  style={{ color: "var(--ap-ink)" }}
+                  onClick={() => handleLanguageChange("fr")}
+                >
+                  🇫🇷 Français
+                </DropdownMenuItem>
+                <DropdownMenuSeparator style={{ background: "var(--ap-line)" }} />
+                <DropdownMenuItem
+                  className="gap-2 rounded-md text-sm cursor-pointer"
+                  style={{ color: "var(--ap-ink)" }}
+                  onSelect={handleLogout}
+                >
+                  <LogOut className="h-4 w-4" style={{ color: "var(--ap-muted)" }} />
+                  {t("logout")}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+          <>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
@@ -359,35 +398,14 @@ export const Header = ({
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-
-          {/* Auth */}
-          {user ? (
-            <>
-              <button
-                className="ap-btn ap-btn--ghost ap-btn--sm ap-icon-btn"
-                style={{ padding: "8px 10px" }}
-                onClick={() => navigate("/profile")}
-                title={user.username}
-              >
-                <User className="h-4 w-4" />
-              </button>
-              <button
-                className="ap-btn ap-btn--ghost ap-btn--sm ap-icon-btn"
-                style={{ padding: "8px 10px" }}
-                onClick={handleLogout}
-                title={t("logout")}
-              >
-                <LogOut className="h-4 w-4" />
-              </button>
-            </>
-          ) : (
-            <button
-              className="ap-btn ap-btn--sm"
-              onClick={() => navigate("/auth")}
-            >
-              <User className="h-3.5 w-3.5" />
-              {t("login")}
-            </button>
+          <button
+            className="ap-btn ap-btn--sm"
+            onClick={() => navigate("/auth")}
+          >
+            <User className="h-3.5 w-3.5" />
+            {t("login")}
+          </button>
+          </>
           )}
         </div>
       </div>
