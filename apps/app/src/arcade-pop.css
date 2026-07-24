@@ -622,6 +622,18 @@ body { transition: background-color .25s ease, color .25s ease; }
   transition: opacity .18s var(--ap-ease);
 }
 
+/* Avatar trigger for the account dropdown — replaces the row of separate
+   profile/admin/language/logout icon buttons with one entry point. */
+.ap-avatar-btn {
+  width: 34px; height: 34px; border-radius: 50%; flex: 0 0 auto;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--ap-brand); color: #fff; border: none; cursor: pointer;
+  font-family: var(--ap-font-display); font-weight: 700; font-size: 13px;
+  box-shadow: 0 2px 0 var(--ap-brand-deep);
+  transition: transform .12s;
+}
+.ap-avatar-btn:hover { transform: translateY(-1px); }
+
 /* ============================================================
    12. EYEBROW — badge live avec dot pulsant
    ============================================================ */
