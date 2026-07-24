@@ -53,12 +53,12 @@ const CREATE_ITEMS = [
 // Same 6 routes ContentExplorer.tsx's (now-removed) TYPE_TABS used to link to
 // — content-type switching moved from an in-page tab strip into this submenu.
 const CREATIONS_ITEMS = [
-  { label: "Quiz", path: "/my-quizzes" },
-  { label: "Sondages", path: "/my-polls" },
-  { label: "Flashcards", path: "/my-flashcards" },
-  { label: "Slides", path: "/my-slides" },
-  { label: "Cours", path: "/my-courses" },
-  { label: "Examens", path: "/my-exams" },
+  { label: t("creationTypeQuiz"), path: "/my-quizzes" },
+  { label: t("creationTypePoll"), path: "/my-polls" },
+  { label: t("creationTypeFlashcard"), path: "/my-flashcards" },
+  { label: t("creationTypeSlide"), path: "/my-slides" },
+  { label: t("creationTypeCourse"), path: "/my-courses" },
+  { label: t("creationTypeExam"), path: "/my-exams" },
 ];
 
 const NAV_ITEMS = [
@@ -79,6 +79,10 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [createOpen, setCreateOpen] = useState(false);
+  // Lazy init re-runs fresh on every mount — correct today because AppSidebar
+  // remounts on every route change (each page instantiates its own AppLayout).
+  // If routing ever moves to a persistent shared-layout wrapper, this would
+  // need to become a useEffect keyed on location.pathname instead.
   const [creationsOpen, setCreationsOpen] = useState(
     () => CREATIONS_ITEMS.some((item) => item.path === location.pathname),
   );
@@ -167,8 +171,12 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
                       {CREATIONS_ITEMS.map((item) => (
                         <SidebarMenuSubItem key={item.path}>
                           <SidebarMenuSubButton
+                            href={item.path}
                             isActive={location.pathname === item.path}
-                            onClick={() => navigate(item.path)}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              navigate(item.path);
+                            }}
                           >
                             <span>{item.label}</span>
                           </SidebarMenuSubButton>
