@@ -17,6 +17,7 @@ import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/s
 import { AppSidebar } from "@/components/AppSidebar";
 import { BrandMonogram } from "@/components/BrandMonogram";
 import { BrandWordmark } from "@/components/BrandWordmark";
+import { Footer } from "@/components/Footer";
 
 interface AppLayoutProps {
   subtitle?: string;
@@ -221,7 +222,10 @@ export const AppLayout = ({ subtitle, extraSection, children }: AppLayoutProps) 
           </div>
         </header>
 
-        <main className="flex-1">{children}</main>
+        <div className="flex flex-1 flex-col">
+          <div className="flex-1">{children}</div>
+          <Footer />
+        </div>
       </SidebarInset>
     </SidebarProvider>
   );
