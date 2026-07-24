@@ -13,7 +13,9 @@ export const Footer = () => {
     {
       title: t('footerProduct'),
       links: [
-        { label: t('features'), onClick: () => navigate('/features') },
+        // features/about/contact now live in apps/marketing — full navigation
+        // (not react-router navigate()) so the domain-level rewrite reaches it.
+        { label: t('features'), onClick: () => { window.location.href = '/features'; } },
         { label: t('pricing'), onClick: () => navigate('/pricing') },
         { label: t('footerBuilder'), onClick: () => navigate('/builder-start?type=quiz') },
         { label: t('discoverPublic'), onClick: () => navigate('/discover') },
@@ -22,9 +24,9 @@ export const Footer = () => {
     {
       title: t('footerCompany'),
       links: [
-        { label: t('footerAbout'), onClick: () => navigate('/about') },
+        { label: t('footerAbout'), onClick: () => { window.location.href = '/about'; } },
         { label: t('footerCareers') },
-        { label: t('footerContact'), onClick: () => navigate('/contact') },
+        { label: t('footerContact'), onClick: () => { window.location.href = '/contact'; } },
       ],
     },
     {

@@ -61,10 +61,12 @@ export const Header = ({
 
   const primaryNavigationItems = [
     { label: t("home"), onClick: () => navigate("/"), requiresAuth: false },
-    { label: t("features"), onClick: () => navigate("/features"), requiresAuth: false },
+    // features/about/contact now live in apps/marketing — full navigation
+    // (not react-router navigate()) so the domain-level rewrite reaches it.
+    { label: t("features"), onClick: () => { window.location.href = "/features"; }, requiresAuth: false },
     { label: t("pricing"), onClick: () => navigate("/pricing"), requiresAuth: false },
-    { label: t("footerAbout"), onClick: () => navigate("/about"), requiresAuth: false },
-    { label: t("footerContact"), onClick: () => navigate("/contact"), requiresAuth: false },
+    { label: t("footerAbout"), onClick: () => { window.location.href = "/about"; }, requiresAuth: false },
+    { label: t("footerContact"), onClick: () => { window.location.href = "/contact"; }, requiresAuth: false },
   ];
 
   const creationMenuItems = [

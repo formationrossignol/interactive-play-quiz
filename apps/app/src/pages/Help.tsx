@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { ChevronDown, ChevronUp, HelpCircle, Mail } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import { useSEO } from "@/hooks/useSEO";
 import { useFaq } from "@/lib/pages/hooks";
 import type { FaqGroup } from "@/lib/pages/types";
@@ -37,7 +36,6 @@ const FAQItem = ({ q, a }: { q: string; a: string }) => {
 };
 
 const Help = () => {
-  const navigate = useNavigate();
   const { data: faq, isLoading } = useFaq();
   useSEO({
     title: "Centre d'aide",
@@ -89,14 +87,15 @@ const Help = () => {
             <p className="ap-muted" style={{ fontSize: "14px", marginBottom: "20px" }}>
               Notre équipe est là pour vous aider. Envoyez-nous un message.
             </p>
-            <button
+            {/* /contact now lives in apps/marketing — full navigation. */}
+            <a
               className="ap-btn ap-btn--pill"
-              onClick={() => navigate("/contact")}
+              href="/contact"
               style={{ gap: "8px" }}
             >
               <Mail className="w-4 h-4" />
               Nous contacter
-            </button>
+            </a>
           </div>
 
         </div>

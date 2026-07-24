@@ -1,0 +1,85 @@
+/* ============================================================
+   Brivia · « Arcade Pop » — Shared component classes
+   ------------------------------------------------------------
+   Subset of apps/app/src/arcade-pop.css's component sections
+   (2 BASE typography, 3 BOUTONS, 4 CARTES, 9 LOGO, part of 10
+   UTILITAIRES) — just what apps/marketing's pages ported so far
+   actually use. Grows as more pages get ported; requires
+   tokens.css to already be loaded (consumes --ap-* vars).
+   ============================================================ */
+
+.ap-display { font-family: var(--ap-font-display); font-weight: 600; letter-spacing: -.5px; margin: 0; }
+.ap-h1 { font-family: var(--ap-font-display); font-weight: 600; font-size: 56px; line-height: 1; letter-spacing: -1.5px; margin: 0; }
+.ap-h2 { font-family: var(--ap-font-display); font-weight: 600; font-size: 38px; line-height: 1.05; letter-spacing: -1px; margin: 0; }
+.ap-h3 { font-family: var(--ap-font-display); font-weight: 600; font-size: 20px; margin: 0; }
+.ap-lead { font-size: 19px; line-height: 1.5; color: #5f5675; font-weight: 400; }
+.ap-muted { color: var(--ap-muted); }
+
+/* ── Boutons — le ressort « pop » (offset plein qui s'écrase au clic) ── */
+.ap-btn {
+  font-family: var(--ap-font-display);
+  font-weight: 600;
+  font-size: 15.5px;
+  border: none;
+  cursor: pointer;
+  border-radius: var(--ap-r-md);
+  padding: 13px 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  color: #fff;
+  background: var(--ap-brand);
+  box-shadow: 0 5px 0 var(--ap-brand-deep);
+  transition: transform .08s var(--ap-ease), box-shadow .08s var(--ap-ease);
+}
+.ap-btn:hover  { transform: translateY(-2px); box-shadow: 0 7px 0 var(--ap-brand-deep); }
+.ap-btn:active { transform: translateY(5px);  box-shadow: 0 0px 0 var(--ap-brand-deep); }
+
+.ap-btn--lg { font-size: 18px; padding: 17px 30px; border-radius: var(--ap-r-lg); }
+.ap-btn--sm { font-size: 14px; padding: 9px 16px; border-radius: var(--ap-r-sm); }
+.ap-btn--pill { border-radius: var(--ap-r-pill); }
+
+.ap-btn--ghost {
+  background: var(--ap-card); color: var(--ap-ink);
+  box-shadow: 0 5px 0 var(--ap-line-2), inset 0 0 0 2px var(--ap-line);
+}
+.ap-btn--ghost:hover  { box-shadow: 0 7px 0 var(--ap-line-2), inset 0 0 0 2px var(--ap-line-2); }
+.ap-btn--ghost:active { box-shadow: 0 1px 0 var(--ap-line-2), inset 0 0 0 2px var(--ap-line-2); }
+
+/* ── Cartes & surfaces ── */
+.ap-card {
+  background: var(--ap-card);
+  border: 2px solid var(--ap-line);
+  border-radius: var(--ap-r-lg);
+  box-shadow: var(--ap-shadow-soft);
+  padding: 24px;
+}
+.ap-card--floaty { box-shadow: var(--ap-shadow-card); border-radius: var(--ap-r-xl); }
+.ap-card--hover { transition: transform .12s var(--ap-ease), box-shadow .12s var(--ap-ease); }
+.ap-card--hover:hover { transform: translateY(-3px); box-shadow: var(--ap-shadow-card); }
+
+.ap-tile__icon {
+  width: 54px; height: 54px; border-radius: var(--ap-r-md);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; margin-bottom: 16px;
+}
+.ap-tile__icon svg { width: 26px; height: 26px; }
+
+/* ── Logo / marque ── */
+.ap-logo {
+  width: 46px; height: 46px; border-radius: 15px; background: var(--ap-brand);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 6px 0 var(--ap-brand-deep), 0 10px 18px rgba(67,56,202,.35);
+  flex: 0 0 auto;
+}
+.ap-brandname {
+  font-family: 'Sora Variable', 'Sora', system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 24px;
+  letter-spacing: -0.035em;
+}
+
+/* ── Utilitaires ── */
+.ap-row { display: flex; align-items: center; }
+.ap-gap-8  { gap: 8px; }  .ap-gap-12 { gap: 12px; }  .ap-gap-16 { gap: 16px; }  .ap-gap-24 { gap: 24px; }

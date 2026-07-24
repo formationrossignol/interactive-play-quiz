@@ -19,3 +19,10 @@ body {
 .static-prose li { margin-bottom: 8px; }
 .static-prose strong { color: var(--ap-ink); }
 .static-prose a { color: var(--ap-brand); font-weight: 700; }
+
+/* About mission card: injected HTML paragraphs styled like .ap-lead. */
+.about-mission p {
+  color: var(--ap-muted); font-family: var(--ap-font-body); font-weight: 700;
+  font-size: 16px; line-height: 1.6; margin: 0 0 20px;
+}
+.about-mission p:last-child { margin-bottom: 0; }

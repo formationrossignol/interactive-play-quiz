@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     "./tokens.css": "./tokens.css",
+    "./components.css": "./components.css",
     "./BrandMonogram": "./src/BrandMonogram.tsx",
     "./BrandWordmark": "./src/BrandWordmark.tsx"
   },
