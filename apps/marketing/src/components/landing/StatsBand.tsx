@@ -1,14 +1,12 @@
 "use client";
 
-import { useLiveVisitors } from "@/lib/useLiveVisitors";
-
-/** Mirrors apps/app/src/components/landing/StatsBand.tsx. The app shares one
- *  presence-channel subscription between the hero pill and this band (via a
- *  lifted liveVisitors prop); here each opens its own client-side
- *  subscription instead — two channels on the same topic instead of one,
- *  simpler to wire across the server/client split and a negligible cost for
- *  a marketing page. Only the visitor count is real; the other two tiles
- *  are explicit placeholders — do not replace them with an invented number. */
+/** Mirrors apps/app/src/components/landing/StatsBand.tsx. Shares one
+ *  presence-channel subscription between the hero pill and this band via a
+ *  lifted liveVisitors prop — Supabase's channel() dedupes by topic, so two
+ *  independent useLiveVisitors() calls for "live-visitors" collide on the
+ *  same channel and the second .on() throws after the first subscribe().
+ *  Only the visitor count is real; the other two tiles are explicit
+ *  placeholders — do not replace them with an invented number. */
 const PlaceholderTile = ({ label }: { label: string }) => (
   <div
     className="ap-card"
@@ -22,8 +20,7 @@ const PlaceholderTile = ({ label }: { label: string }) => (
   </div>
 );
 
-export const StatsBand = () => {
-  const liveVisitors = useLiveVisitors();
+export const StatsBand = ({ liveVisitors }: { liveVisitors: number | null }) => {
   return (
     <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 18 }} className="strip-grid">
       <div className="ap-card ap-card--hover" style={{ textAlign: "center", padding: "22px 18px" }}>
