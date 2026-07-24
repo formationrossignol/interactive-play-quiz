@@ -13,7 +13,8 @@ type CellValue = string | boolean;
 type Row = { label: string; values: [CellValue, CellValue, CellValue] };
 type Category = { title: string; rows: Row[] };
 
-/** Grounded in src/lib/plans.ts (CONTENT_CAPS, AUDIENCE_CAP, ADVANCED_QUIZ_TYPES)
+/** Mirrors apps/app/src/components/PlanComparator.tsx — grounded in
+ *  apps/app/src/lib/plans.ts (CONTENT_CAPS, AUDIENCE_CAP, ADVANCED_QUIZ_TYPES)
  *  and the Pro-plan feature copy in i18n — no invented figures. */
 const CATEGORIES: Category[] = [
   {
@@ -56,9 +57,6 @@ const Cell = ({ value, accent }: { value: CellValue; accent: string }) => {
   );
 };
 
-/** Full feature-by-feature comparator below the pricing cards — same three
- *  plans, same CTAs, just laid out for side-by-side scanning (à la
- *  Mentimeter's /plans page). */
 export const PlanComparator = ({ plans }: { plans: ComparatorPlan[] }) => {
   return (
     <div className="ap-compare-wrap">

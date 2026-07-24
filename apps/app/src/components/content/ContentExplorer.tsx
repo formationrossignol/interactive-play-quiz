@@ -357,7 +357,7 @@ export function ContentExplorer({
   const handleDuplicate = (rowId: string) =>
     c.duplicateItem(rowId).then(() => toast.success("Dupliqué")).catch((e) => {
       if (e instanceof PlanLimitError) {
-        toast.error(e.message, { action: { label: "Passer Pro", onClick: () => navigate("/pricing") } });
+        toast.error(e.message, { action: { label: "Passer Pro", onClick: () => { window.location.href = "/pricing"; } } });
       } else {
         toast.error("Erreur lors de la duplication");
       }

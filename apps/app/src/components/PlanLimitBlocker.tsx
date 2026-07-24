@@ -16,7 +16,7 @@ export const PlanLimitBlocker = ({ title, description }: PlanLimitBlockerProps) 
         </div>
         <h2 className="ap-h2" style={{ fontSize: "24px", marginBottom: "12px" }}>{title}</h2>
         <p className="ap-muted" style={{ fontSize: "15px", marginBottom: "24px" }}>{description}</p>
-        <button className="ap-btn ap-btn--pill" onClick={() => navigate("/pricing")}>
+        <button className="ap-btn ap-btn--pill" onClick={() => { window.location.href = "/pricing"; }}>
           Passer au plan Pro
         </button>
       </div>

@@ -319,7 +319,7 @@ const ProfilePage = () => {
                   <button
                     className="ap-btn ap-btn--pill"
                     style={{ gap: "8px" }}
-                    onClick={() => navigate("/pricing")}
+                    onClick={() => { window.location.href = "/pricing"; }}
                   >
                     <Zap style={{ width: 15, height: 15 }} />
                     Passer à Pro

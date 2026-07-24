@@ -153,7 +153,7 @@ const CourseBuilder = () => {
       }
     } catch (e) {
       if (e instanceof PlanLimitError) {
-        toast.error(e.message, { action: { label: 'Passer Pro', onClick: () => navigate('/pricing') } });
+        toast.error(e.message, { action: { label: 'Passer Pro', onClick: () => { window.location.href = '/pricing'; } } });
       } else {
         toast.error(e instanceof Error ? e.message : "Erreur lors de l'enregistrement");
       }

@@ -585,7 +585,7 @@ export const QuizBuilder = () => {
       } catch (e) {
         if (cancelled) return;
         if (e instanceof PlanLimitError) {
-          toast.error(e.message, { action: { label: "Passer Pro", onClick: () => navigate("/pricing") } });
+          toast.error(e.message, { action: { label: "Passer Pro", onClick: () => { window.location.href = "/pricing"; } } });
         }
       }
     })();
@@ -741,7 +741,7 @@ export const QuizBuilder = () => {
       navigate(isFlashcard ? "/my-flashcards" : isPoll ? "/my-polls" : "/my-quizzes");
     } catch (e) {
       if (e instanceof PlanLimitError) {
-        toast.error(e.message, { action: { label: "Passer Pro", onClick: () => navigate("/pricing") } });
+        toast.error(e.message, { action: { label: "Passer Pro", onClick: () => { window.location.href = "/pricing"; } } });
       } else {
         toast.error("Erreur lors de l'enregistrement");
       }
@@ -832,7 +832,7 @@ export const QuizBuilder = () => {
                   onSelect={() => {
                     if (locked) {
                       toast.error("Type de question réservé au plan Pro", {
-                        action: { label: "Passer Pro", onClick: () => navigate("/pricing") },
+                        action: { label: "Passer Pro", onClick: () => { window.location.href = "/pricing"; } },
                       });
                       return;
                     }
