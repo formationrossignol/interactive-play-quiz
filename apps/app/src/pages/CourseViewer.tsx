@@ -565,7 +565,7 @@ const CourseViewer = () => {
         display: "flex", alignItems: "center", gap: 14, padding: "0 18px",
       }}>
         <Breadcrumb
-          onHome={() => navigate("/")}
+          onHome={() => { window.location.href = "/"; }}
           items={[
             { label: "Mes cours", onClick: () => navigate("/my-courses") },
             { label: course.title },

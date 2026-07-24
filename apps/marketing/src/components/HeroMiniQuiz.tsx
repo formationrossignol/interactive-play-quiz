@@ -1,5 +1,9 @@
+"use client";
+
 import { useState, useEffect, useRef, useCallback } from "react";
 
+// Mirrors apps/app/src/components/HeroMiniQuiz.tsx verbatim — pure client
+// state (no data fetching, no auth), fully self-contained.
 const ALL_QUESTIONS = [
   {
     q: "Quel océan est le plus profond ?",
@@ -217,7 +221,6 @@ export function HeroMiniQuiz() {
       role="group"
       aria-label="Démo interactive : essayez une question"
     >
-      {/* Score pill */}
       {pillBonus !== null && (
         <div key={pillKey} className="ap-score-pill" style={{ top: 60, left: "50%" }}>
           +{pillBonus} pts
@@ -225,7 +228,6 @@ export function HeroMiniQuiz() {
       )}
 
       {done ? (
-        /* ── Done screen ── */
         <div style={{ textAlign: "center", padding: "20px 0" }}>
           <div style={{ fontSize: 40, marginBottom: 10 }}>🎉</div>
           <p style={{ fontFamily: "var(--ap-font-display)", fontSize: 18, fontWeight: 600, color: "var(--ap-muted)", marginBottom: 4 }}>
@@ -244,9 +246,7 @@ export function HeroMiniQuiz() {
         </div>
       ) : (
         <>
-          {/* ── Top row: circular timer + badge ── */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
-            {/* Circular timer */}
             <div style={{ position: "relative", width: 56, height: 56 }} aria-hidden="true">
               <svg width="56" height="56" viewBox="0 0 56 56" style={{ transform: "rotate(-90deg)" }}>
                 <circle
@@ -275,13 +275,11 @@ export function HeroMiniQuiz() {
               </span>
             </div>
 
-            {/* Question badge */}
             <span className="ap-badge ap-badge--flash" style={{ fontSize: 12.5, fontWeight: 800 }}>
               Q{qIndex + 1}/{QUESTIONS.length} · {animatedScore} pts
             </span>
           </div>
 
-          {/* ── Question ── */}
           <h2 style={{
             fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 19,
             lineHeight: 1.35, color: "var(--ap-ink)", marginBottom: 18,
@@ -289,7 +287,6 @@ export function HeroMiniQuiz() {
             {q.q}
           </h2>
 
-          {/* ── Answers ── */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
             {q.answers.map((a, i) => {
               const isSelected = selected === i;
@@ -346,7 +343,6 @@ export function HeroMiniQuiz() {
             })}
           </div>
 
-          {/* ── Hint row ── */}
           <div style={{
             marginTop: 16, fontSize: 13.5, fontWeight: 700, color: "var(--ap-muted)",
             display: "flex", alignItems: "center", justifyContent: "space-between", minHeight: 24,

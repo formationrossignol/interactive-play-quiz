@@ -1,8 +1,6 @@
-import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 
 const NotFound = () => {
-  const navigate = useNavigate();
   return (
     <div style={{ minHeight: "100vh" }}>
       <Header />
@@ -19,9 +17,10 @@ const NotFound = () => {
         <p className="ap-muted" style={{ marginBottom: "32px", fontSize: "16px" }}>
           La page que vous cherchez n'existe pas.
         </p>
-        <button className="ap-btn ap-btn--pill" onClick={() => navigate("/")}>
+        {/* / now lives in apps/marketing — full navigation. */}
+        <a className="ap-btn ap-btn--pill" href="/">
           Retour à l'accueil
-        </button>
+        </a>
       </div>
     </div>
   );

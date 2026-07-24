@@ -1,10 +1,14 @@
-import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
+"use client";
 
+import { useEffect, useState } from "react";
+import { supabaseBrowser } from "./supabaseBrowser";
+
+// Mirrors apps/app/src/hooks/useLiveVisitors.ts, using the client-side
+// Supabase client instead of the server one.
 export function useLiveVisitors() {
   const [count, setCount] = useState<number | null>(null);
   useEffect(() => {
-    const channel = supabase.channel("live-visitors", {
+    const channel = supabaseBrowser.channel("live-visitors", {
       config: { presence: { key: crypto.randomUUID() } },
     });
     channel
@@ -17,7 +21,7 @@ export function useLiveVisitors() {
           await channel.track({ online_at: new Date().toISOString() });
         }
       });
-    return () => { void supabase.removeChannel(channel); };
+    return () => { void supabaseBrowser.removeChannel(channel); };
   }, []);
   return count;
 }

@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { Navigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { Rocket, PenLine, ShieldCheck, Mail, FileText, Users, Link2 } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -32,7 +31,13 @@ const Admin = () => {
   const reports = useModerationReports();
   const subs = useSubscribers();
 
-  if (isLoading) {
+  // / now lives in apps/marketing — full navigation (not react-router
+  // <Navigate>) so the domain-level rewrite reaches it.
+  useEffect(() => {
+    if (!isLoading && !isAdmin) window.location.href = "/";
+  }, [isLoading, isAdmin]);
+
+  if (isLoading || !isAdmin) {
     return (
       <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
         <Header />
@@ -43,7 +48,6 @@ const Admin = () => {
       </div>
     );
   }
-  if (!isAdmin) return <Navigate to="/" replace />;
 
   const allContent = [
     ...(roadmap.data ?? []), ...(guides.data ?? []),

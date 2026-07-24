@@ -1,20 +1,10 @@
-import { useEffect, useState } from "react";
-import { fetchPartners, type Partner } from "@/lib/siteSettings";
+import type { Partner } from "@/lib/types";
 
-/** Trust band — fixed headline on the left, logos auto-scroll on the
- *  right (grayed out, colored on hover). Own band, visually decoupled
- *  from the footer. Content is entirely admin-managed
- *  (site_settings.partners_logos). Renders nothing until at least one
- *  partner is configured, on every theme. */
-export const PartnersStrip = () => {
-  const [partners, setPartners] = useState<Partner[]>([]);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetchPartners().then((p) => { if (!cancelled) setPartners(p); });
-    return () => { cancelled = true; };
-  }, []);
-
+/** Mirrors apps/app/src/components/PartnersStrip.tsx, but server-rendered:
+ *  partners are fetched once in page.tsx (fetchPartners) and passed down,
+ *  rather than fetched client-side on mount. No client interactivity here
+ *  beyond the CSS :hover pause, so no 'use client' needed. */
+export const PartnersStrip = ({ partners }: { partners: Partner[] }) => {
   if (partners.length === 0) return null;
 
   const logos = (

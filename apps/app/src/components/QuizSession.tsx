@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef, memo } from "react";
 import type { ReactNode } from "react";
 import type { EditableQuestion } from "@/lib/questionTypes";
-import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -141,7 +140,6 @@ const PlayerSidebarItem = memo(({ player, answered, offline, onKick }: PlayerSid
 ));
 
 export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandlerReady }: QuizSessionProps) => {
-  const navigate = useNavigate();
   const [players, setPlayers] = useState<Player[]>([]);
   const [sessionReady, setSessionReady] = useState(false);
 
@@ -815,8 +813,8 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
     if (isHost && gameStateRef.current !== 'final') {
       patchSessionState(quiz.gameCode, { gameState: 'abandoned' });
     }
-    navigate("/");
-  }, [isHost, quiz.gameCode, navigate]);
+    window.location.href = "/";
+  }, [isHost, quiz.gameCode]);
 
   // Register exit handler with parent (dialog lives in parent to avoid flicker)
   useEffect(() => {

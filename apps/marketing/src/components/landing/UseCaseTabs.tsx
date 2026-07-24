@@ -1,13 +1,13 @@
+"use client";
+
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Check } from "lucide-react";
 
 type Persona = "education" | "entreprise";
 
-/** Bullets grounded in real product surfaces (ExamBuilder/ExamRoom timed
- *  auto-submit) and real plan caps from PlanComparator.tsx — no invented
- *  figures or features. */
-const PANELS: Record<Persona, { title: string; bullets: string[]; cta: string; route: string }> = {
+/** Mirrors apps/app/src/components/landing/UseCaseTabs.tsx. Bullets grounded
+ *  in real product surfaces — no invented figures or features. */
+const PANELS: Record<Persona, { title: string; bullets: string[]; cta: string; href: string }> = {
   education: {
     title: "Pour les enseignants et formateurs",
     bullets: [
@@ -16,7 +16,7 @@ const PANELS: Record<Persona, { title: string; bullets: string[]; cta: string; r
       "Gratuit jusqu'à 20 participants par session, sans limite de durée",
     ],
     cta: "Créer mon premier quiz",
-    route: "/builder-start?type=quiz",
+    href: "/builder-start?type=quiz",
   },
   entreprise: {
     title: "Pour les entreprises et écoles",
@@ -26,12 +26,11 @@ const PANELS: Record<Persona, { title: string; bullets: string[]; cta: string; r
       "SSO, marque blanche et success manager dédié en plan Entreprise",
     ],
     cta: "Voir les formules",
-    route: "/pricing",
+    href: "/pricing",
   },
 };
 
 export const UseCaseTabs = () => {
-  const navigate = useNavigate();
   const [persona, setPersona] = useState<Persona>("education");
   const panel = PANELS[persona];
 
@@ -66,9 +65,9 @@ export const UseCaseTabs = () => {
       </ul>
 
       <div style={{ textAlign: "center" }}>
-        <button className="ap-btn ap-btn--pill" onClick={() => navigate(panel.route)}>
+        <a className="ap-btn ap-btn--pill" href={panel.href}>
           {panel.cta}
-        </button>
+        </a>
       </div>
     </div>
   );

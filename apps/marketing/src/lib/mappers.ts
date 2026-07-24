@@ -1,4 +1,4 @@
-import type { GuideRow, Guide, FaqRow, FaqGroup } from "./types";
+import type { GuideRow, Guide, FaqRow, FaqGroup, ReviewRow, Review } from "./types";
 
 // Mirrors apps/app/src/lib/pages/mappers.ts.
 export function mapGuide(row: GuideRow): Guide {
@@ -21,4 +21,11 @@ export function groupFaq(rows: FaqRow[]): FaqGroup[] {
     group.questions.push({ q: r.question, a: r.answer });
   }
   return groups;
+}
+
+export function mapReview(row: ReviewRow): Review {
+  return {
+    id: row.id, p: row.persona, stars: row.stars, text: row.text,
+    av: row.avatar_emoji, name: row.author_name, role: row.author_role,
+  };
 }

@@ -218,7 +218,7 @@ export default function ExamBuilder() {
         position: 'sticky', top: 0, zIndex: 10,
       }}>
         <Breadcrumb
-          onHome={() => navigate('/')}
+          onHome={() => { window.location.href = '/'; }}
           items={[
             { label: 'Mes examens', onClick: () => navigate('/my-exams') },
             { label: saved ? "Modifier l'examen" : 'Nouvel examen' },

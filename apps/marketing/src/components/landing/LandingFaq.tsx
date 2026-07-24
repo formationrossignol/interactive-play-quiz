@@ -1,9 +1,7 @@
-import { FaqAccordion } from "@/components/FaqAccordion";
+import { FaqAccordionItem } from "@/components/FaqAccordion";
 
-/** Pre-sale objections for the landing page — distinct from the support
- *  FAQ on /help (useFaq()/Help.tsx) and from the billing-specific FAQ on
- *  /pricing (PaymentFaq.tsx). Grounded in PlanComparator.tsx caps and
- *  AuthPage.tsx's RGPD copy — no invented figures. */
+/** Mirrors apps/app/src/components/landing/LandingFaq.tsx — pre-sale
+ *  objections, distinct from /help's support FAQ and /pricing's billing FAQ. */
 const PRODUCT_FAQ = [
   {
     q: "Est-ce vraiment gratuit pour commencer ?",
@@ -27,4 +25,10 @@ const PRODUCT_FAQ = [
   },
 ];
 
-export const LandingFaq = () => <FaqAccordion items={PRODUCT_FAQ} />;
+export const LandingFaq = () => (
+  <div className="ap-card" style={{ padding: "8px 28px" }}>
+    {PRODUCT_FAQ.map((item) => (
+      <FaqAccordionItem key={item.q} q={item.q} a={item.a} />
+    ))}
+  </div>
+);

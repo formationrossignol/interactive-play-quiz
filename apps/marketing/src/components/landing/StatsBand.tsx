@@ -1,8 +1,14 @@
-/** Only the visitor count is real (Supabase presence channel, same source
- *  as the hero pill — passed down as a prop so both consumers share one
- *  channel subscription instead of opening a second one with the same
- *  topic name). The other two tiles are explicit placeholders — do not
- *  replace them with an invented number. */
+"use client";
+
+import { useLiveVisitors } from "@/lib/useLiveVisitors";
+
+/** Mirrors apps/app/src/components/landing/StatsBand.tsx. The app shares one
+ *  presence-channel subscription between the hero pill and this band (via a
+ *  lifted liveVisitors prop); here each opens its own client-side
+ *  subscription instead — two channels on the same topic instead of one,
+ *  simpler to wire across the server/client split and a negligible cost for
+ *  a marketing page. Only the visitor count is real; the other two tiles
+ *  are explicit placeholders — do not replace them with an invented number. */
 const PlaceholderTile = ({ label }: { label: string }) => (
   <div
     className="ap-card"
@@ -16,7 +22,8 @@ const PlaceholderTile = ({ label }: { label: string }) => (
   </div>
 );
 
-export const StatsBand = ({ liveVisitors }: { liveVisitors: number | null }) => {
+export const StatsBand = () => {
+  const liveVisitors = useLiveVisitors();
   return (
     <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 18 }} className="strip-grid">
       <div className="ap-card ap-card--hover" style={{ textAlign: "center", padding: "22px 18px" }}>
@@ -28,9 +35,6 @@ export const StatsBand = ({ liveVisitors }: { liveVisitors: number | null }) => 
         </div>
       </div>
 
-      {/* TODO: brancher une vraie requête Supabase (ex. nombre de quiz créés,
-          nombre de sessions jouées) une fois qu'une requête d'agrégation
-          existe côté backend — ne pas inventer de chiffre en attendant. */}
       <PlaceholderTile label="Bientôt disponible" />
       <PlaceholderTile label="Bientôt disponible" />
     </div>

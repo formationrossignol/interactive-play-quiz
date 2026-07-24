@@ -317,7 +317,7 @@ const CourseBuilder = () => {
         display: "flex", alignItems: "center", gap: 16, padding: "0 18px",
       }}>
         <Breadcrumb
-          onHome={() => navigate("/")}
+          onHome={() => { window.location.href = "/"; }}
           items={[
             { label: "Mes cours", onClick: () => navigate("/my-courses") },
             { label: courseId ? "Modifier le cours" : "Nouveau cours" },

@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useSEO } from "@/hooks/useSEO";
 import { login, register, requestPasswordReset, verifyMfaLogin, getCurrentUser } from "@/lib/auth";
 import { toast } from "sonner";
@@ -10,7 +9,6 @@ import { BrandWordmark } from "@/components/BrandWordmark";
 type View = "login" | "register" | "mfa" | "forgot" | "confirm-email";
 
 const AuthPage = () => {
-  const navigate = useNavigate();
   useSEO({ title: "Connexion", path: "/auth", noindex: true });
   const [view, setView] = useState<View>("login");
   const [busy, setBusy] = useState(false);
@@ -23,8 +21,8 @@ const AuthPage = () => {
 
   // Already signed in (e.g. arriving from the email confirmation link)
   useEffect(() => {
-    if (getCurrentUser()) navigate("/");
-  }, [navigate]);
+    if (getCurrentUser()) window.location.href = "/";
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,7 +31,7 @@ const AuthPage = () => {
     setBusy(false);
     if (result.status === "ok") {
       toast.success(t("loginSuccess"));
-      navigate("/");
+      window.location.href = "/";
     } else if (result.status === "mfa_required") {
       setView("mfa");
     } else if (result.status === "email_not_confirmed") {
@@ -53,7 +51,7 @@ const AuthPage = () => {
     setBusy(false);
     if (result.status === "ok") {
       toast.success(t("registerSuccess"));
-      navigate("/");
+      window.location.href = "/";
     } else if (result.status === "confirm_email") {
       setView("confirm-email");
     } else if (result.status === "email_in_use") {
@@ -70,7 +68,7 @@ const AuthPage = () => {
     setBusy(false);
     if (user) {
       toast.success(t("loginSuccess"));
-      navigate("/");
+      window.location.href = "/";
     } else {
       toast.error(t("mfaInvalidCode"));
       setMfaCode("");
@@ -505,7 +503,7 @@ const AuthPage = () => {
         {/* Brand */}
         <div
           style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "44px", cursor: "pointer" }}
-          onClick={() => navigate("/")}
+          onClick={() => { window.location.href = "/"; }}
         >
           <span style={{ width: 46, height: 46, borderRadius: "14px", background: "rgba(255,255,255,.16)", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }}>
             <BrandMonogram size={24} diamondColor="#b4a9ff" />

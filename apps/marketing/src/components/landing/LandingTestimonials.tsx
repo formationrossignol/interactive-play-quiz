@@ -1,25 +1,20 @@
-import { useNavigate } from "react-router-dom";
-import { useReviews } from "@/lib/pages/hooks";
+import type { Review } from "@/lib/types";
 
 const stars = (n: number) => "★★★★★☆☆☆☆☆".slice(5 - n, 10 - n);
 
-/** Real, moderated reviews via useReviews() — same source as
- *  Temoignages.tsx (/reviews). Renders an honest empty state instead of a
- *  placeholder name/quote when there are none yet. */
-export const LandingTestimonials = () => {
-  const navigate = useNavigate();
-  const { data: reviews, isLoading } = useReviews();
-  const top = (reviews ?? []).slice(0, 3);
-
-  if (isLoading) return null;
+/** Mirrors apps/app/src/components/landing/LandingTestimonials.tsx, server-
+ *  rendered: reviews are fetched once in page.tsx and passed down. Renders
+ *  an honest empty state instead of a placeholder name/quote. */
+export const LandingTestimonials = ({ reviews }: { reviews: Review[] }) => {
+  const top = reviews.slice(0, 3);
 
   if (top.length === 0) {
     return (
       <div className="ap-card" style={{ textAlign: "center", padding: "40px 28px" }}>
         <p className="ap-muted" style={{ marginBottom: 16 }}>Les premiers avis arriveront bientôt ici.</p>
-        <button className="ap-btn ap-btn--ghost ap-btn--pill ap-btn--sm" onClick={() => navigate("/reviews")}>
+        <a className="ap-btn ap-btn--ghost ap-btn--pill ap-btn--sm" href="/reviews">
           Voir les avis
-        </button>
+        </a>
       </div>
     );
   }

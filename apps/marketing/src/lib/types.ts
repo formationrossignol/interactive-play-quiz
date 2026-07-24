@@ -43,3 +43,33 @@ export interface FaqGroup {
   category: string;
   questions: { q: string; a: string }[];
 }
+
+// ── Reviews ──────────────────────────────────────────────────────────────
+export type ReviewPersona = "formateur" | "enseignant" | "entreprise";
+export interface ReviewRow {
+  id: string;
+  persona: ReviewPersona;
+  stars: number;
+  text: string;
+  author_name: string;
+  author_role: string;
+  avatar_emoji: string;
+  sort: number;
+}
+export interface Review {
+  id: string;
+  p: ReviewPersona;
+  stars: number;
+  text: string;
+  av: string;
+  name: string;
+  role: string;
+}
+
+// ── Partners (site_settings) ──────────────────────────────────────────────
+export interface Partner {
+  id: string;
+  name: string;
+  logoUrl: string;
+  link?: string;
+}

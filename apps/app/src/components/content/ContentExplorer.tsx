@@ -611,7 +611,7 @@ export function ContentExplorer({
                 {view === "all" ? (
                   <div className="flex items-center gap-1 flex-wrap mb-4" style={{ fontSize: 14, minHeight: 28 }}>
                     <button
-                      onClick={() => navigate("/")}
+                      onClick={() => { window.location.href = "/"; }}
                       aria-label="Accueil"
                       style={{
                         display: "grid", placeItems: "center", width: 28, height: 28,
@@ -645,7 +645,7 @@ export function ContentExplorer({
                 ) : (
                   <div className="flex items-center gap-1 flex-wrap mb-4" style={{ fontSize: 14, minHeight: 28 }}>
                     <button
-                      onClick={() => navigate("/")}
+                      onClick={() => { window.location.href = "/"; }}
                       aria-label="Accueil"
                       style={{
                         display: "grid", placeItems: "center", width: 28, height: 28,
