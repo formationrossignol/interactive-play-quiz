@@ -1,0 +1,79 @@
+/* Mirrors the base + TÉMOIGNAGES section of apps/app/src/pages/community-pages.css
+   (self-contained like the app's own per-page-family CSS files — the base
+   .lq scaffold is intentionally duplicated across style files here, matching
+   the app's own convention of not sharing it between community-pages.css /
+   roadmap-pages.css). Skips GUIDES/COMMUNAUTÉ sections, not needed here. */
+.lq{
+  --r-sm:var(--ap-r-sm); --r-md:var(--ap-r-md); --r-lg:var(--ap-r-lg); --r-xl:var(--ap-r-xl);
+  --sh-soft:var(--ap-shadow-soft); --sh-card:var(--ap-shadow-card);
+  --disp:var(--ap-font-display); --body:var(--ap-font-body); --mono:var(--ap-font-mono);
+  --ease:var(--ap-ease); --spring:var(--ap-spring);
+}
+.lq{color:var(--ap-ink);font-family:var(--body)}
+.lq svg{flex-shrink:0}
+.lq a{color:var(--ap-brand);font-weight:800;text-decoration:none}
+.lq h1,.lq h2,.lq h3,.lq h4{font-family:var(--disp);font-weight:600;margin:0}
+
+.lq .wrap{max-width:1120px;margin:0 auto;padding:0 32px}
+.lq .btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;border:none;border-radius:999px;
+  font-family:var(--disp);font-weight:600;font-size:15px;color:#fff;padding:12px 22px;
+  background:var(--ap-brand);box-shadow:0 5px 0 var(--ap-brand-deep);
+  transition:transform .08s var(--ease),box-shadow .08s var(--ease);
+}
+.lq .btn:hover{transform:translateY(-2px);box-shadow:0 7px 0 var(--ap-brand-deep)}
+.lq .btn:active{transform:translateY(5px);box-shadow:0 0 0 var(--ap-brand-deep)}
+.lq .btn--quiz{background:var(--ap-quiz);box-shadow:0 5px 0 var(--ap-quiz-deep)}
+.lq .btn--quiz:hover{box-shadow:0 7px 0 var(--ap-quiz-deep)}
+.lq .card{background:var(--ap-card);border:2px solid var(--ap-line);border-radius:var(--r-lg);box-shadow:var(--sh-soft)}
+.lq .pill{font-size:11px;font-weight:900;padding:3px 10px;border-radius:999px;background:var(--ap-paper-2);color:var(--ap-muted)}
+.lq .eyebrow{font-size:12px;font-weight:900;letter-spacing:1.2px;text-transform:uppercase;color:var(--ap-brand)}
+.lq .lead{color:var(--ap-muted);font-weight:700;font-size:16px;line-height:1.55}
+.lq .page-hero{text-align:center;max-width:640px;margin:42px auto 30px}
+.lq .page-hero h1{font-size:clamp(30px,4.2vw,44px);letter-spacing:-1px;margin:10px 0 14px}
+.lq .chip{
+  border:2px solid var(--ap-line);background:var(--ap-card);border-radius:999px;padding:8px 17px;
+  font-weight:800;font-size:13.5px;color:var(--ap-muted);box-shadow:0 3px 0 var(--ap-line);cursor:pointer;
+  font-family:inherit;
+}
+.lq .chip.on{background:var(--ap-brand);border-color:var(--ap-brand);color:#fff;box-shadow:0 3px 0 var(--ap-brand-deep)}
+.lq .chips{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:28px;position:relative}
+
+/* TÉMOIGNAGES */
+.lq .ratingband{
+  display:grid;grid-template-columns:auto 1fr;gap:30px;align-items:center;padding:26px 30px;margin-bottom:26px;position:relative;
+}
+@media(max-width:720px){.lq .ratingband{grid-template-columns:1fr}}
+.lq .bigscore{text-align:center}
+.lq .bigscore b{font-family:var(--disp);font-weight:600;font-size:52px;line-height:1;display:block}
+.lq .bigscore .stars{color:var(--ap-flash);font-size:19px;letter-spacing:2px}
+.lq .bigscore small{color:var(--ap-muted);font-weight:800;font-size:12.5px}
+.lq .rbars{display:flex;flex-direction:column;gap:7px}
+.lq .rbar{display:flex;align-items:center;gap:10px;font-weight:800;font-size:12.5px;color:var(--ap-muted)}
+.lq .rbar .rtrack{flex:1;height:11px;background:var(--ap-paper-2);border:2px solid var(--ap-line);border-radius:99px;overflow:hidden}
+.lq .rbar .rtrack i{display:block;height:100%;background:var(--ap-flash);border-radius:99px}
+.lq .rbar .rl{width:34px}
+.lq .rbar .rp{width:38px;text-align:right;font-family:var(--mono)}
+.lq .featured-t{
+  display:grid;grid-template-columns:auto 1fr;gap:24px;align-items:center;
+  background:linear-gradient(135deg,var(--ap-brand),#5a35e6);border-radius:var(--r-xl);color:#fff;
+  padding:28px 32px;margin-bottom:26px;position:relative;
+}
+@media(max-width:720px){.lq .featured-t{grid-template-columns:1fr;text-align:center}}
+.lq .featured-t .fpic{width:92px;height:92px;border-radius:28px;background:rgba(255,255,255,.15);border:2px solid rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;font-size:44px;margin:0 auto}
+.lq .featured-t blockquote{margin:0;font-family:var(--disp);font-weight:500;font-size:20px;line-height:1.4}
+.lq .featured-t footer{margin-top:12px;font-weight:800;font-size:13.5px;color:#d9ccff}
+.lq .tgrid{columns:3 280px;column-gap:16px;margin-bottom:30px}
+.lq .tcard{break-inside:avoid;margin-bottom:16px;padding:19px 20px}
+.lq .tcard .tstars{color:var(--ap-flash);font-size:14px;letter-spacing:1px;margin-bottom:9px}
+.lq .tcard p{margin:0 0 13px;font-weight:700;font-size:13.5px;line-height:1.55;color:var(--ap-ink)}
+.lq .tcard .twho{display:flex;align-items:center;gap:10px}
+.lq .tcard .twho .tw-av{width:36px;height:36px;border-radius:13px;background:var(--ap-paper-2);border:2px solid var(--ap-line);display:flex;align-items:center;justify-content:center;font-size:17px}
+.lq .tcard .twho b{font-weight:900;font-size:13px;display:block}
+.lq .tcard .twho small{color:var(--ap-muted);font-weight:700;font-size:11.5px}
+.lq .tcard .tsrc{margin-left:auto}
+.lq .finalcta{
+  text-align:center;background:var(--ap-ink);border-radius:var(--r-xl);color:#fff;padding:40px 28px;margin-bottom:60px;
+}
+.lq .finalcta h2{font-size:26px;margin-bottom:8px}
+.lq .finalcta p{color:#c9b8ff;font-weight:700;font-size:14px;margin:0 0 22px}
