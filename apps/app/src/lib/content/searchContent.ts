@@ -55,7 +55,10 @@ export async function searchContent(userId: string, query: string): Promise<Sear
     .in('type', CONTENT_TYPES as unknown as string[])
     .ilike('data->>title', `%${query}%`)
     .order('updated_at', { ascending: false })
-    .limit(30);
+    // Buffer above the 8-result display cap: mapSearchRows() drops trashed rows client-side
+    // (deletedAt lives in JSONB, not a real column), so a wider fetch avoids trash crowding
+    // out live matches.
+    .limit(50);
   if (error) throw error;
   return mapSearchRows((data ?? []) as SearchRow[]);
 }

@@ -1,12 +1,39 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { supabase } from '@/lib/supabase';
 
-// searchContent.ts imports the real Supabase client at module load (for the
-// searchContent() query fn); stub it so the pure helpers can be tested
-// without VITE_SUPABASE_URL in the env — same pattern as foldersRepo.test.ts.
-import { vi } from 'vitest';
-vi.mock('@/lib/supabase', () => ({ supabase: {} }));
+// Mock the Supabase client. `from()` returns a chainable builder whose methods
+// all return the same builder; the builder is thenable so `await`-ing it at any
+// terminal method resolves the configured { data, error } result — same pattern
+// as contentRepo.test.ts.
+vi.mock('@/lib/supabase', () => ({
+  supabase: { from: vi.fn() },
+}));
 
-import { mapSearchRows, getSearchResultRoute } from '../searchContent';
+import { mapSearchRows, getSearchResultRoute, searchContent } from '../searchContent';
+import { CONTENT_TYPES } from '../types';
+
+type Result = { data: unknown; error: unknown };
+
+function makeBuilder(result: Result) {
+  const builder: Record<string, ReturnType<typeof vi.fn>> & {
+    then: (resolve: (r: Result) => unknown) => unknown;
+  } = {
+    select: vi.fn(() => builder),
+    eq: vi.fn(() => builder),
+    in: vi.fn(() => builder),
+    ilike: vi.fn(() => builder),
+    order: vi.fn(() => builder),
+    limit: vi.fn(() => builder),
+    then: (resolve) => resolve(result),
+  } as never;
+  return builder;
+}
+
+const fromMock = supabase.from as unknown as ReturnType<typeof vi.fn>;
+
+beforeEach(() => {
+  fromMock.mockReset();
+});
 
 describe('mapSearchRows', () => {
   it('drops trashed rows, keeps the rest shaped for display', () => {
@@ -44,5 +71,34 @@ describe('getSearchResultRoute', () => {
     expect(getSearchResultRoute('slide', 'id1')).toBe('/presentation-editor?id=id1');
     expect(getSearchResultRoute('course', 'id1')).toBe('/course-builder?courseId=id1');
     expect(getSearchResultRoute('exam', 'id1')).toBe('/exam-builder?examId=id1');
+  });
+});
+
+describe('searchContent', () => {
+  it('builds the right query and returns mapped results', async () => {
+    const rows = [
+      { id: 'row-1', type: 'quiz', data: { id: 'item-1', title: 'Capitales du monde' } },
+      { id: 'row-2', type: 'poll', data: { id: 'item-2', title: 'Sondage', deletedAt: '2026-01-01' } },
+    ];
+    const builder = makeBuilder({ data: rows, error: null });
+    fromMock.mockReturnValue(builder);
+
+    const result = await searchContent('u1', 'monde');
+
+    expect(fromMock).toHaveBeenCalledWith('content');
+    expect(builder.eq).toHaveBeenCalledWith('user_id', 'u1');
+    expect(builder.in).toHaveBeenCalledWith('type', CONTENT_TYPES);
+    expect(builder.ilike).toHaveBeenCalledWith('data->>title', '%monde%');
+    expect(builder.order).toHaveBeenCalledWith('updated_at', { ascending: false });
+    expect(builder.limit).toHaveBeenCalledWith(50);
+    expect(result).toEqual(mapSearchRows(rows));
+  });
+
+  it('throws when the query returns an error', async () => {
+    const err = new Error('boom');
+    const builder = makeBuilder({ data: null, error: err });
+    fromMock.mockReturnValue(builder);
+
+    await expect(searchContent('u1', 'x')).rejects.toBe(err);
   });
 });
