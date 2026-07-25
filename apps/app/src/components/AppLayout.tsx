@@ -104,9 +104,8 @@ export const AppLayout = ({ subtitle, extraSection, children }: AppLayoutProps) 
             </div>
           </div>
 
-          <GlobalSearch user={user} />
-
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex items-center gap-3">
+            <GlobalSearch user={user} />
             {user ? (
               <DropdownMenu open={accountOpen} onOpenChange={setAccountOpen}>
                 <DropdownMenuTrigger asChild>

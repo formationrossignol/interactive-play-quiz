@@ -1,8 +1,20 @@
-import { useState } from "react";
-import { Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { RotateCw, Trash2, X } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { SpinWheel } from "@/components/tools/SpinWheel";
 import { useSEO } from "@/hooks/useSEO";
+
+const overlayStyle: React.CSSProperties = {
+  position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)",
+  display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100,
+};
+
+const panelStyle: React.CSSProperties = {
+  width: "min(380px, 90vw)",
+  background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)",
+  borderRadius: "var(--ap-r-lg)", boxShadow: "var(--ap-shadow-card)", padding: 28,
+  textAlign: "center", position: "relative",
+};
 
 const DEFAULT_ITEMS = ["Alex", "Camille", "Dominique", "Jordan", "Léa", "Sacha"];
 const STORAGE_KEY = "tools-wheel-items";
@@ -30,6 +42,15 @@ const WheelTool = () => {
   const [items, setItems] = useState<string[]>(loadItems);
   const [draft, setDraft] = useState(items.join("\n"));
   const [winner, setWinner] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!winner) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setWinner(null);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [winner]);
 
   const applyDraft = () => {
     const next = draft
@@ -93,27 +114,44 @@ const WheelTool = () => {
 
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "20px" }}>
             <SpinWheel items={items} onResult={(item) => setWinner(item)} />
-
-            {winner && (
-              <div className="ap-card" style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: "16px" }}>
-                <div>
-                  <p className="ap-muted" style={{ fontSize: 12, margin: 0 }}>Résultat</p>
-                  <p className="ap-h3" style={{ fontSize: 20, margin: 0 }}>{winner}</p>
-                </div>
-                <button
-                  type="button"
-                  className="ap-btn ap-btn--ghost ap-btn--sm"
-                  onClick={removeWinnerFromList}
-                  title="Retirer de la liste"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                  Retirer
-                </button>
-              </div>
-            )}
           </div>
         </div>
       </div>
+
+      {winner && (
+        <div style={overlayStyle} onClick={() => setWinner(null)}>
+          <div style={panelStyle} onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              onClick={() => setWinner(null)}
+              className="ap-btn ap-btn--ghost ap-btn--sm ap-icon-btn"
+              aria-label="Fermer"
+              style={{ position: "absolute", top: 12, right: 12 }}
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            <p className="ap-muted" style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>Le résultat est...</p>
+            <p
+              className="ap-h2"
+              style={{ fontSize: 28, margin: "0 0 24px", color: "var(--ap-brand)", overflowWrap: "break-word" }}
+            >
+              {winner}
+            </p>
+
+            <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
+              <button type="button" className="ap-btn ap-btn--sm" onClick={() => setWinner(null)}>
+                <RotateCw className="h-3.5 w-3.5" />
+                Rejouer
+              </button>
+              <button type="button" className="ap-btn ap-btn--ghost ap-btn--sm" onClick={removeWinnerFromList}>
+                <Trash2 className="h-3.5 w-3.5" />
+                Retirer de la liste
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AppLayout>
   );
 };
