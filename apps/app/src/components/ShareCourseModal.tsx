@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
+import { toast } from "sonner";
 import { t } from "@/lib/i18n";
 import { getCurrentUser } from "@/lib/auth";
 import { PersonPicker } from "@/components/sharing/PersonPicker";
@@ -51,6 +52,8 @@ const rowStyle: React.CSSProperties = {
   borderBottom: "var(--ap-border-w) solid var(--ap-line)",
 };
 
+const errMsg = (e: unknown) => (e instanceof Error ? e.message : "Une erreur est survenue");
+
 export const ShareCourseModal = ({ contentId, courseTitle, onClose }: ShareCourseModalProps) => {
   const user = getCurrentUser();
   const [tab, setTab] = useState<"people" | "groups">("people");
@@ -60,20 +63,43 @@ export const ShareCourseModal = ({ contentId, courseTitle, onClose }: ShareCours
   const [newGroupName, setNewGroupName] = useState("");
   const [expandedGroupId, setExpandedGroupId] = useState<string | null>(null);
   const [groupMembers, setGroupMembers] = useState<Record<string, GroupMember[]>>({});
+  const [busy, setBusy] = useState<Set<string>>(new Set());
+
+  const setBusyKey = (key: string, value: boolean) => {
+    setBusy((prev) => {
+      const next = new Set(prev);
+      if (value) next.add(key); else next.delete(key);
+      return next;
+    });
+  };
+
+  /** Runs `fn`, disabling any control keyed by `key` while it's in flight, and
+   *  toasting on failure instead of leaving the UI silently stuck. */
+  const runBusy = (key: string, fn: () => Promise<unknown>) => {
+    if (busy.has(key)) return;
+    setBusyKey(key, true);
+    fn()
+      .catch((e) => toast.error(errMsg(e)))
+      .finally(() => setBusyKey(key, false));
+  };
 
   const reloadShares = (id: string) => {
-    listContentShares(id).then((rows) => {
-      setShares(rows);
-      const ids = rows.map((r) => r.shared_with_user_id).filter((v): v is string => !!v);
-      if (ids.length) usernamesByIds(ids).then((matches) => {
-        setUsernames(Object.fromEntries(matches.map((m) => [m.id, m.username])));
-      });
-    });
+    listContentShares(id)
+      .then((rows) => {
+        setShares(rows);
+        const ids = rows.map((r) => r.shared_with_user_id).filter((v): v is string => !!v);
+        if (ids.length) {
+          usernamesByIds(ids)
+            .then((matches) => setUsernames(Object.fromEntries(matches.map((m) => [m.id, m.username]))))
+            .catch((e) => toast.error(errMsg(e)));
+        }
+      })
+      .catch((e) => toast.error(errMsg(e)));
   };
 
   const reloadGroups = () => {
     if (!user) return;
-    listGroups(user.id).then(setGroups);
+    listGroups(user.id).then(setGroups).catch((e) => toast.error(errMsg(e)));
   };
 
   useEffect(() => {
@@ -87,37 +113,42 @@ export const ShareCourseModal = ({ contentId, courseTitle, onClose }: ShareCours
   const sharedGroupIds = new Set(shares.map((s) => s.shared_with_group_id).filter(Boolean));
 
   const handlePickUsername = (match: UsernameMatch) => {
-    addContentShareByUserId(contentId, match.id).then(() => reloadShares(contentId));
+    runBusy(`add-user-${match.id}`, () =>
+      addContentShareByUserId(contentId, match.id).then(() => reloadShares(contentId)));
   };
   const handleInviteEmail = (email: string) => {
-    resolveContentShareByEmail(contentId, email).then(() => reloadShares(contentId));
+    runBusy(`invite-${email}`, () =>
+      resolveContentShareByEmail(contentId, email).then(() => reloadShares(contentId)));
   };
   const handleRemoveShare = (shareId: string) => {
-    removeContentShare(shareId).then(() => reloadShares(contentId));
+    runBusy(`share-${shareId}`, () =>
+      removeContentShare(shareId).then(() => reloadShares(contentId)));
   };
 
   const toggleGroupShare = (group: Group, shared: boolean) => {
-    if (shared) {
-      addContentShareByGroupId(contentId, group.id).then(() => reloadShares(contentId));
-    } else {
+    runBusy(`group-${group.id}`, () => {
+      if (shared) {
+        return addContentShareByGroupId(contentId, group.id).then(() => reloadShares(contentId));
+      }
       const share = shares.find((s) => s.shared_with_group_id === group.id);
-      if (share) removeContentShare(share.id).then(() => reloadShares(contentId));
-    }
+      return share ? removeContentShare(share.id).then(() => reloadShares(contentId)) : Promise.resolve();
+    });
   };
 
   const handleCreateGroup = () => {
     if (!user || !newGroupName.trim()) return;
-    createGroup(user.id, newGroupName.trim()).then((group) => {
-      setNewGroupName("");
-      reloadGroups();
-      setExpandedGroupId(group.id);
-    });
+    runBusy("create-group", () =>
+      createGroup(user.id, newGroupName.trim()).then((group) => {
+        setNewGroupName("");
+        reloadGroups();
+        setExpandedGroupId(group.id);
+      }));
   };
 
   const loadMembers = (groupId: string) => {
-    listGroupMembers(groupId).then((members) => {
-      setGroupMembers((prev) => ({ ...prev, [groupId]: members }));
-    });
+    listGroupMembers(groupId)
+      .then((members) => setGroupMembers((prev) => ({ ...prev, [groupId]: members })))
+      .catch((e) => toast.error(errMsg(e)));
   };
 
   const toggleExpandGroup = (groupId: string) => {
@@ -163,7 +194,12 @@ export const ShareCourseModal = ({ contentId, courseTitle, onClose }: ShareCours
                       {share.pending_email && !share.shared_with_user_id && (
                         <span style={{ fontSize: 11, fontWeight: 800, color: "var(--ap-muted)" }}>{t("sharePending")}</span>
                       )}
-                      <button type="button" className="ap-btn ap-btn--ghost ap-btn--sm" onClick={() => handleRemoveShare(share.id)}>
+                      <button
+                        type="button"
+                        className="ap-btn ap-btn--ghost ap-btn--sm"
+                        disabled={busy.has(`share-${share.id}`)}
+                        onClick={() => handleRemoveShare(share.id)}
+                      >
                         {t("shareRemove")}
                       </button>
                     </div>
@@ -185,7 +221,9 @@ export const ShareCourseModal = ({ contentId, courseTitle, onClose }: ShareCours
                   color: "var(--ap-ink)", fontFamily: "var(--ap-font-body)", fontSize: 13,
                 }}
               />
-              <button type="button" className="ap-btn ap-btn--sm" onClick={handleCreateGroup}>{t("shareCreateGroup")}</button>
+              <button type="button" className="ap-btn ap-btn--sm" disabled={busy.has("create-group")} onClick={handleCreateGroup}>
+                {t("shareCreateGroup")}
+              </button>
             </div>
 
             {groups.map((group) => (
@@ -194,6 +232,7 @@ export const ShareCourseModal = ({ contentId, courseTitle, onClose }: ShareCours
                   <input
                     type="checkbox"
                     checked={sharedGroupIds.has(group.id)}
+                    disabled={busy.has(`group-${group.id}`)}
                     onChange={(e) => toggleGroupShare(group, e.target.checked)}
                   />
                   <span style={{ flex: 1, fontSize: 13, fontWeight: 700 }}>{group.name}</span>
@@ -204,8 +243,12 @@ export const ShareCourseModal = ({ contentId, courseTitle, onClose }: ShareCours
                 {expandedGroupId === group.id && (
                   <div style={{ paddingLeft: 24, paddingTop: 8 }}>
                     <PersonPicker
-                      onPickUsername={(match) => addGroupMemberByUserId(group.id, match.id).then(() => loadMembers(group.id))}
-                      onInviteEmail={(email) => resolveGroupMemberByEmail(group.id, email).then(() => loadMembers(group.id))}
+                      onPickUsername={(match) =>
+                        runBusy(`member-add-${match.id}`, () =>
+                          addGroupMemberByUserId(group.id, match.id).then(() => loadMembers(group.id)))}
+                      onInviteEmail={(email) =>
+                        runBusy(`member-invite-${email}`, () =>
+                          resolveGroupMemberByEmail(group.id, email).then(() => loadMembers(group.id)))}
                     />
                     <div style={{ marginTop: 8 }}>
                       {(groupMembers[group.id] ?? []).map((member) => (
@@ -216,7 +259,10 @@ export const ShareCourseModal = ({ contentId, courseTitle, onClose }: ShareCours
                           <button
                             type="button"
                             className="ap-btn ap-btn--ghost ap-btn--sm"
-                            onClick={() => removeGroupMember(member.id).then(() => loadMembers(group.id))}
+                            disabled={busy.has(`member-${member.id}`)}
+                            onClick={() =>
+                              runBusy(`member-${member.id}`, () =>
+                                removeGroupMember(member.id).then(() => loadMembers(group.id)))}
                           >
                             {t("shareRemove")}
                           </button>
