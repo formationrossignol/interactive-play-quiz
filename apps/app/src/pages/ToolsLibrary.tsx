@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Dices } from "lucide-react";
+import { Dices, Timer } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { useSEO } from "@/hooks/useSEO";
 
@@ -11,9 +11,9 @@ interface ToolCard {
   accent: string;
 }
 
-// First entry of a growing standalone-tools library — independent mini-apps
-// usable without a course/quiz behind them (classroom utilities). More cards
-// join this list as tools ship; this one isn't a placeholder grid.
+// Growing standalone-tools library — independent mini-apps usable without a
+// course/quiz behind them (classroom utilities). More cards join this list
+// as tools ship.
 const TOOLS: ToolCard[] = [
   {
     path: "/tools/wheel",
@@ -21,6 +21,13 @@ const TOOLS: ToolCard[] = [
     title: "Roue de tirage au sort",
     description: "Ajoutez des noms ou options et laissez la roue désigner un gagnant au hasard.",
     accent: "var(--ap-quiz)",
+  },
+  {
+    path: "/tools/chronometre",
+    icon: Timer,
+    title: "Chronomètre",
+    description: "Démarrez, mettez en pause, enregistrez des tours.",
+    accent: "var(--ap-poll)",
   },
 ];
 

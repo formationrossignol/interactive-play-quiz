@@ -1,6 +1,6 @@
 import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Globe, LogOut, Shield, User } from "lucide-react";
+import { Check, Globe, LogOut, Shield, User } from "lucide-react";
 import { getCurrentUser, logout } from "@/lib/auth";
 import { getLanguage, setLanguage, t, type Language } from "@/lib/i18n";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -70,8 +70,6 @@ export const AppLayout = ({ subtitle, extraSection, children }: AppLayoutProps) 
     window.addEventListener("resize", updateHeaderHeight);
     return () => window.removeEventListener("resize", updateHeaderHeight);
   }, []);
-
-  void currentLanguage;
 
   return (
     <SidebarProvider>
@@ -154,18 +152,22 @@ export const AppLayout = ({ subtitle, extraSection, children }: AppLayoutProps) 
                     {t("language")}
                   </DropdownMenuLabel>
                   <DropdownMenuItem
-                    className="rounded-md text-sm cursor-pointer"
+                    className="gap-2 rounded-md text-sm cursor-pointer"
                     style={{ color: "var(--ap-ink)" }}
                     onClick={() => handleLanguageChange("en")}
                   >
-                    🇬🇧 English
+                    <Globe className="h-3.5 w-3.5" style={{ color: "var(--ap-muted)" }} />
+                    English
+                    {currentLanguage === "en" && <Check className="h-3.5 w-3.5 ml-auto" />}
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    className="rounded-md text-sm cursor-pointer"
+                    className="gap-2 rounded-md text-sm cursor-pointer"
                     style={{ color: "var(--ap-ink)" }}
                     onClick={() => handleLanguageChange("fr")}
                   >
-                    🇫🇷 Français
+                    <Globe className="h-3.5 w-3.5" style={{ color: "var(--ap-muted)" }} />
+                    Français
+                    {currentLanguage === "fr" && <Check className="h-3.5 w-3.5 ml-auto" />}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator style={{ background: "var(--ap-line)" }} />
                   <DropdownMenuItem
@@ -200,18 +202,22 @@ export const AppLayout = ({ subtitle, extraSection, children }: AppLayoutProps) 
                     }}
                   >
                     <DropdownMenuItem
-                      className="rounded-md text-sm cursor-pointer"
+                      className="gap-2 rounded-md text-sm cursor-pointer"
                       style={{ color: "var(--ap-ink)" }}
                       onClick={() => handleLanguageChange("en")}
                     >
-                      🇬🇧 English
+                      <Globe className="h-3.5 w-3.5" style={{ color: "var(--ap-muted)" }} />
+                      English
+                      {currentLanguage === "en" && <Check className="h-3.5 w-3.5 ml-auto" />}
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      className="rounded-md text-sm cursor-pointer"
+                      className="gap-2 rounded-md text-sm cursor-pointer"
                       style={{ color: "var(--ap-ink)" }}
                       onClick={() => handleLanguageChange("fr")}
                     >
-                      🇫🇷 Français
+                      <Globe className="h-3.5 w-3.5" style={{ color: "var(--ap-muted)" }} />
+                      Français
+                      {currentLanguage === "fr" && <Check className="h-3.5 w-3.5 ml-auto" />}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>

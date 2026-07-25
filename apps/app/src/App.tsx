@@ -57,6 +57,7 @@ const PresentationEditorPage = lazy(() => import("./pages/PresentationEditorPage
 // Standalone tools library — independent classroom mini-apps, no auth required
 const ToolsLibrary = lazy(() => import("./pages/ToolsLibrary"));
 const WheelTool = lazy(() => import("./pages/tools/WheelTool"));
+const ChronometerTool = lazy(() => import("./pages/tools/ChronometerTool"));
 
 const queryClient = new QueryClient();
 
@@ -116,6 +117,7 @@ const App = () => (
               <Route path="/presentation-editor" element={<PresentationEditorPage />} />
               <Route path="/tools" element={<ToolsLibrary />} />
               <Route path="/tools/wheel" element={<WheelTool />} />
+              <Route path="/tools/chronometre" element={<ChronometerTool />} />
               <Route path="/admin" element={<Admin />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
