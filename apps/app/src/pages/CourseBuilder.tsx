@@ -19,6 +19,7 @@ import { getUserQuizzes, getUserFlashcardSets } from "@/lib/quizStorage";
 import { assertSafeImportFile } from "@/lib/fileValidation";
 import { CONTENT_CAPS, getPlan, PlanLimitError } from "@/lib/plans";
 import { PlanLimitBlocker } from "@/components/PlanLimitBlocker";
+import { upsertContentBySource } from "@/lib/content/contentRepo";
 import { toast } from "sonner";
 import {
   BarChart2,
@@ -143,14 +144,25 @@ const CourseBuilder = () => {
         modules,
         tags: [],
       };
+      let saved: Course | null;
       if (courseId) {
-        updateCourse(courseId, data);
+        saved = updateCourse(courseId, data);
         toast.success("Cours enregistré");
       } else {
-        createCourse(data);
+        saved = createCourse(data);
         toast.success("Cours créé !");
-        navigate("/my-courses");
       }
+
+      // Mirror into the Supabase `content` table so it's viewable by anyone
+      // other than the owner's own browser (shared/public course viewing),
+      // same pattern QuizBuilder.tsx/ExamBuilder.tsx already use for their types.
+      if (saved && user) {
+        try {
+          await upsertContentBySource(user.id, 'course', saved.id, saved as unknown as Record<string, unknown>, saved.isPublic);
+        } catch (e) { console.error('[CourseBuilder] content mirror failed', e); }
+      }
+
+      if (!courseId) navigate("/my-courses");
     } catch (e) {
       if (e instanceof PlanLimitError) {
         toast.error(e.message, { action: { label: 'Passer Pro', onClick: () => { window.location.href = '/pricing'; } } });
