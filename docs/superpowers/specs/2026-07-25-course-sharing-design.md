@@ -6,6 +6,15 @@ A course creator can only make a course fully public (`is_public`) or fully priv
 ## Scope
 Course creators can share a course with individual users (by username search or exact email) or with reusable named groups of users. Shared users get **read/view access only** (can open and follow the course, cannot edit it). Scoped to `type = 'course'` content only — not quizzes/polls/etc.
 
+## Prerequisite (discovered during planning): courses aren't actually cross-user-viewable today
+
+Investigation while planning this feature found that `CourseViewer.tsx` reads courses exclusively via `getCourseById()` (`apps/app/src/lib/courseStorage.ts`), which is pure `localStorage` — no Supabase call at all. Worse, `CourseBuilder.tsx`'s save path (`createCourse`/`updateCourse`, also in `courseStorage.ts`) never mirrors into the Supabase `content` table the way `QuizBuilder.tsx`/`ExamBuilder.tsx` already do for their types via `upsertContentBySource`. So today, **no course — public, shared, or otherwise — is actually viewable by anyone but its creator's own browser**; `is_public` and the existing `content_public_read` RLS policy are already correct for courses, but inert, because nothing ever populates or reads the Supabase side for course content.
+
+This is a pre-existing gap, not something sharing introduces, but sharing cannot work without fixing it. Two additions, scoped tightly to avoid touching the legacy localStorage editing flow itself:
+
+1. **`CourseBuilder.tsx` mirrors on save**: after `createCourse`/`updateCourse` succeeds, call `upsertContentBySource(user.id, 'course', course.id, course, course.isPublic)` — same call shape `QuizBuilder.tsx` already uses for its types (see `apps/app/src/components/QuizBuilder.tsx:736`). This is additive only; the legacy localStorage read/write path CourseBuilder/CourseViewer use for the owner's own editing is untouched.
+2. **`CourseViewer.tsx` Supabase fallback**: when `getCourseById(courseId)` returns `null` (not the owner's own browser), fall back to a new `getContentBySourceAnyOwner('course', courseId)` repo function (no `user_id` filter — RLS decides visibility: owner, `is_public`, or now `content_shares`) and adapt the returned `ContentRow.data` into the same `Course` shape the rest of the viewer already renders.
+
 ## Data model
 
 New migration (`supabase/migrations/<timestamp>_course_sharing.sql`), following this repo's existing pattern (see `supabase/migrations/20260713120000_content_and_folders.sql`, `20260716120000_pages_cms_foundation.sql`):
