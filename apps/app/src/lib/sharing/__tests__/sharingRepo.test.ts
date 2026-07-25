@@ -19,4 +19,12 @@ describe('mergeSharedContentIds', () => {
   it('returns an empty array when given no shares', () => {
     expect(mergeSharedContentIds([], [])).toEqual([]);
   });
+
+  it('dedupes duplicates within a single list', () => {
+    expect(mergeSharedContentIds([{ content_id: 'a' }, { content_id: 'a' }])).toEqual(['a']);
+  });
+
+  it('works with a single list argument', () => {
+    expect(mergeSharedContentIds([{ content_id: 'x' }, { content_id: 'y' }]).sort()).toEqual(['x', 'y']);
+  });
 });

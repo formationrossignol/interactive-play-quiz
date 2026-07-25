@@ -90,10 +90,12 @@ export async function addGroupMemberByUserId(groupId: string, userId: string): P
   return data;
 }
 
-export async function resolveGroupMemberByEmail(groupId: string, email: string): Promise<GroupMember> {
+// The DB function inserts `on conflict (...) do nothing returning * into result`, so a
+// duplicate invite (already a member) leaves `result` NULL and PostgREST returns `data: null`.
+export async function resolveGroupMemberByEmail(groupId: string, email: string): Promise<GroupMember | null> {
   const { data, error } = await supabase.rpc('resolve_group_member', { p_group_id: groupId, p_email: email });
   if (error) throw error;
-  return data;
+  return data ?? null;
 }
 
 export async function removeGroupMember(memberId: string): Promise<void> {
@@ -131,10 +133,12 @@ export async function addContentShareByGroupId(contentId: string, groupId: strin
   return data;
 }
 
-export async function resolveContentShareByEmail(contentId: string, email: string): Promise<ContentShare> {
+// The DB function inserts `on conflict (...) do nothing returning * into result`, so a
+// duplicate invite (already shared) leaves `result` NULL and PostgREST returns `data: null`.
+export async function resolveContentShareByEmail(contentId: string, email: string): Promise<ContentShare | null> {
   const { data, error } = await supabase.rpc('resolve_content_share', { p_content_id: contentId, p_email: email });
   if (error) throw error;
-  return data;
+  return data ?? null;
 }
 
 export async function removeContentShare(shareId: string): Promise<void> {
