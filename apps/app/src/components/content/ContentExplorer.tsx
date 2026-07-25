@@ -10,7 +10,7 @@
  * renderers; courses pass their own.
  */
 import { useEffect, useMemo, useState, type MutableRefObject, type ReactNode } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { DndContext, useDroppable, type DragEndEvent } from "@dnd-kit/core";
 import { toast } from "sonner";
 import {
@@ -49,21 +49,6 @@ import type { ItemCtx } from "./GenericItem";
 const PAGE_SIZE = 12;
 
 type ShortcutView = "all" | "favorites" | "public" | "trash";
-
-interface TypeTab {
-  type: ContentType;
-  label: string;
-  route: string;
-  dot: string; // css var
-}
-
-const TYPE_TABS: TypeTab[] = [
-  { type: "quiz", label: "Quiz", route: "/my-quizzes", dot: "--ap-quiz" },
-  { type: "poll", label: "Sondages", route: "/my-polls", dot: "--ap-poll" },
-  { type: "flashcard", label: "Flashcards", route: "/my-flashcards", dot: "--ap-flash" },
-  { type: "slide", label: "Slides", route: "/my-slides", dot: "--ap-pres" },
-  { type: "course", label: "Cours", route: "/my-courses", dot: "--ap-pres" },
-];
 
 const deleteTypeOf = (t: ContentType): "quiz" | "poll" | "flashcard" | "slide" =>
   t === "poll" ? "poll" : t === "flashcard" ? "flashcard" : t === "slide" ? "slide" : "quiz";
@@ -513,43 +498,6 @@ export function ContentExplorer({
           </div>
         </div>
 
-        {/* Type tabs — proof of the shared explorer, anchored to the content rule */}
-        <nav
-          aria-label="Type de contenu"
-          style={{ display: "flex", gap: 6, alignItems: "flex-end", margin: "2px 0 24px", borderBottom: "3px solid var(--ap-line)", overflowX: "auto" }}
-        >
-          {TYPE_TABS.map((tab) => {
-            const on = tab.type === type;
-            return (
-              <Link
-                key={tab.type}
-                to={tab.route}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  border: `2px solid ${on ? `var(${tab.dot})` : "var(--ap-line)"}`,
-                  borderBottom: "none",
-                  background: on ? `var(${tab.dot})` : "var(--ap-paper-2)",
-                  color: on ? "#fff" : "var(--ap-muted)",
-                  borderRadius: "15px 15px 0 0",
-                  padding: on ? "10px 19px 15px" : "10px 19px 13px",
-                  marginBottom: "-3px",
-                  fontFamily: "var(--ap-font-display)",
-                  fontWeight: 600,
-                  fontSize: 14,
-                  textDecoration: "none",
-                  whiteSpace: "nowrap",
-                  flexShrink: 0,
-                }}
-              >
-                <span style={{ width: 9, height: 9, borderRadius: "50%", background: on ? "#fff" : `var(${tab.dot})` }} />
-                {tab.label}
-              </Link>
-            );
-          })}
-        </nav>
-
         {c.error && (
           <div style={{ borderRadius: "var(--ap-r-md)", border: "2px solid var(--ap-quiz)", background: "var(--ap-paper-2)", padding: "16px", marginBottom: "16px", color: "var(--ap-quiz)", fontWeight: 700 }}>
             {c.error}
@@ -626,7 +574,7 @@ export function ContentExplorer({
                       style={{ padding: "2px 8px", fontWeight: 700 }}
                       onClick={() => goFolder(null)}
                     >
-                      {rootLabel}
+                      Racine
                     </button>
                     {breadcrumb.map((f) => (
                       <span key={f.id} className="flex items-center gap-1">

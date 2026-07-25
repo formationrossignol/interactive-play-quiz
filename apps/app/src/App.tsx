@@ -30,6 +30,7 @@ const DiscoverQuizzes = lazy(() => import("./pages/DiscoverQuizzes"));
 // Authenticated / builder pages — heavy deps (TipTap, xlsx, dnd-kit)
 const QuizBuilder = lazy(() => import("./pages/QuizBuilder"));
 const QuizBuilderStart = lazy(() => import("./pages/QuizBuilderStart"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
 const MyQuizzes = lazy(() => import("./pages/MyQuizzes"));
 const MyPolls = lazy(() => import("./pages/MyPolls"));
 const MyFlashcards = lazy(() => import("./pages/MyFlashcards"));
@@ -82,6 +83,7 @@ const App = () => (
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/builder-start" element={<QuizBuilderStart />} />
               <Route path="/builder" element={<QuizBuilder />} />
+              <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/my-quizzes" element={<MyQuizzes />} />
               <Route path="/my-polls" element={<MyPolls />} />
               <Route path="/my-flashcards" element={<MyFlashcards />} />

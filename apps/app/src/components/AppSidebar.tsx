@@ -6,6 +6,7 @@ import {
   ChevronDown,
   ClipboardList,
   Compass,
+  FolderOpen,
   GraduationCap,
   LayoutDashboard,
   Layers,
@@ -24,6 +25,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   Sidebar,
   SidebarContent,
@@ -32,6 +34,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
 
 // "+ Créer" jumps straight into a builder's start flow — moved here from the
@@ -45,8 +50,18 @@ const CREATE_ITEMS = [
   { label: t("createExam"), icon: ClipboardList, path: "/exam-builder" },
 ];
 
+// Same 6 routes ContentExplorer.tsx's (now-removed) TYPE_TABS used to link to
+// — content-type switching moved from an in-page tab strip into this submenu.
+const CREATIONS_ITEMS = [
+  { label: t("creationTypeQuiz"), path: "/my-quizzes" },
+  { label: t("creationTypePoll"), path: "/my-polls" },
+  { label: t("creationTypeFlashcard"), path: "/my-flashcards" },
+  { label: t("creationTypeSlide"), path: "/my-slides" },
+  { label: t("creationTypeCourse"), path: "/my-courses" },
+  { label: t("creationTypeExam"), path: "/my-exams" },
+];
+
 const NAV_ITEMS = [
-  { label: t("dashboard"), icon: LayoutDashboard, path: "/my-quizzes", requiresAuth: true },
   { label: t("questionBank"), icon: Library, path: "/question-bank", requiresAuth: true },
   { label: t("discoverPublic"), icon: Compass, path: "/discover", requiresAuth: false },
   { label: t("footerCommunity"), icon: Users, path: "/community", requiresAuth: false },
@@ -64,6 +79,13 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [createOpen, setCreateOpen] = useState(false);
+  // Lazy init re-runs fresh on every mount — correct today because AppSidebar
+  // remounts on every route change (each page instantiates its own AppLayout).
+  // If routing ever moves to a persistent shared-layout wrapper, this would
+  // need to become a useEffect keyed on location.pathname instead.
+  const [creationsOpen, setCreationsOpen] = useState(
+    () => CREATIONS_ITEMS.some((item) => item.path === location.pathname),
+  );
 
   return (
     <Sidebar>
@@ -119,6 +141,53 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
       <SidebarContent>
         <SidebarGroup>
           <SidebarMenu>
+            {user && (
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  isActive={location.pathname === "/dashboard"}
+                  onClick={() => navigate("/dashboard")}
+                >
+                  <LayoutDashboard />
+                  <span>{t("dashboard")}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )}
+
+            {user && (
+              <Collapsible open={creationsOpen} onOpenChange={setCreationsOpen}>
+                <SidebarMenuItem>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton>
+                      <FolderOpen />
+                      <span>{t("myCreations")}</span>
+                      <ChevronDown
+                        className="chevron-icon ml-auto h-3.5 w-3.5"
+                        style={{ transform: creationsOpen ? "rotate(180deg)" : undefined }}
+                      />
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarMenuSub>
+                      {CREATIONS_ITEMS.map((item) => (
+                        <SidebarMenuSubItem key={item.path}>
+                          <SidebarMenuSubButton
+                            href={item.path}
+                            isActive={location.pathname === item.path}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              navigate(item.path);
+                            }}
+                          >
+                            <span>{item.label}</span>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      ))}
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                </SidebarMenuItem>
+              </Collapsible>
+            )}
+
             {NAV_ITEMS.filter((item) => (item.requiresAuth ? Boolean(user) : true)).map((item) => {
               const Icon = item.icon;
               return (
