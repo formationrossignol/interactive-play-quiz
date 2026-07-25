@@ -18,6 +18,11 @@ const TYPE_META: Record<ContentType, { icon: typeof BookOpen; labelKey: LabelKey
   exam: { icon: ClipboardList, labelKey: "creationTypeExam" },
 };
 
+type SearchStatus = "idle" | "loading" | "error" | "done";
+
+const LISTBOX_ID = "global-search-listbox";
+const optionId = (i: number) => `global-search-option-${i}`;
+
 interface GlobalSearchProps {
   user: AuthUser | null;
 }
@@ -26,29 +31,47 @@ export const GlobalSearch = ({ user }: GlobalSearchProps) => {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
+  const [status, setStatus] = useState<SearchStatus>("idle");
   const [open, setOpen] = useState(false);
   const [highlighted, setHighlighted] = useState(0);
-  const [loading, setLoading] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const requestIdRef = useRef(0);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => { isMountedRef.current = false; };
+  }, []);
 
   useEffect(() => {
     const trimmed = query.trim();
     if (!user || trimmed.length < 2) {
+      requestIdRef.current += 1;
       setResults([]);
+      setStatus("idle");
       setOpen(false);
       return;
     }
-    setLoading(true);
+
+    const thisRequestId = ++requestIdRef.current;
+    setStatus("loading");
+    setOpen(true);
+
     const handle = setTimeout(() => {
       searchContent(user.id, trimmed)
         .then((found) => {
+          if (!isMountedRef.current || requestIdRef.current !== thisRequestId) return;
           setResults(found);
           setHighlighted(0);
-          setOpen(true);
+          setStatus("done");
         })
-        .catch(() => setResults([]))
-        .finally(() => setLoading(false));
+        .catch(() => {
+          if (!isMountedRef.current || requestIdRef.current !== thisRequestId) return;
+          setResults([]);
+          setStatus("error");
+        });
     }, 300);
+
     return () => clearTimeout(handle);
   }, [query, user]);
 
@@ -65,10 +88,17 @@ export const GlobalSearch = ({ user }: GlobalSearchProps) => {
   const openResult = (result: SearchResult) => {
     setOpen(false);
     setQuery("");
+    setStatus("idle");
     navigate(getSearchResultRoute(result.type, result.itemId));
   };
 
   if (!user) return null;
+
+  const statusMessage =
+    status === "loading" ? t("searchLoading")
+    : status === "error" ? t("searchError")
+    : status === "done" && results.length === 0 ? t("searchNoResults")
+    : null;
 
   return (
     <div ref={containerRef} style={{ position: "relative", flex: 1, maxWidth: 420 }}>
@@ -78,9 +108,13 @@ export const GlobalSearch = ({ user }: GlobalSearchProps) => {
           style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--ap-muted)", pointerEvents: "none" }}
         />
         <input
+          role="combobox"
+          aria-expanded={open}
+          aria-controls={LISTBOX_ID}
+          aria-activedescendant={open && results.length > 0 ? optionId(highlighted) : undefined}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          onFocus={() => { if (results.length) setOpen(true); }}
+          onFocus={() => { if (results.length || status !== "idle") setOpen(true); }}
           onKeyDown={(e) => {
             if (!open || results.length === 0) return;
             if (e.key === "ArrowDown") { e.preventDefault(); setHighlighted((i) => (i + 1) % results.length); }
@@ -107,6 +141,8 @@ export const GlobalSearch = ({ user }: GlobalSearchProps) => {
 
       {open && (
         <div
+          role="listbox"
+          id={LISTBOX_ID}
           className="z-50"
           style={{
             position: "absolute",
@@ -120,9 +156,9 @@ export const GlobalSearch = ({ user }: GlobalSearchProps) => {
             overflow: "hidden",
           }}
         >
-          {results.length === 0 ? (
+          {statusMessage ? (
             <div style={{ padding: "10px 12px", fontSize: 13, color: "var(--ap-muted)" }}>
-              {loading ? "…" : t("searchNoResults")}
+              {statusMessage}
             </div>
           ) : (
             results.map((result, i) => {
@@ -131,6 +167,9 @@ export const GlobalSearch = ({ user }: GlobalSearchProps) => {
               return (
                 <button
                   key={result.rowId}
+                  id={optionId(i)}
+                  role="option"
+                  aria-selected={i === highlighted}
                   type="button"
                   onMouseEnter={() => setHighlighted(i)}
                   onClick={() => openResult(result)}
