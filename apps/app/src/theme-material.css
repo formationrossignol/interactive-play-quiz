@@ -1,0 +1,384 @@
+/* ============================================================
+   Brivia · Thème « Material 3 Expressive »
+   ------------------------------------------------------------
+   Activé par data-theme="material" sur <html> (réglage du profil).
+   Même grammaire de tokens et de classes que Arcade Pop, mais
+   traduit le langage Material 3 Expressive de Google :
+
+     · couleur par RÔLE tonal — primary/secondary/tertiary + un 4e
+       accent « expressive », chacun décliné en paire base/container
+       (surface pastel + texte saturé dessus), jamais un aplat seul
+     · formes « squircle » généreuses et asymétriques, boutons et
+       pilules toujours en stade (999px) — le geste M3 signature
+     · pas de ressort figé Arcade Pop (translateY + ombre solide) :
+       un vrai spring overshoot (cubic-bezier back-out) sur press/hover
+     · élévation tonale — ombres teintées de la couleur primaire à
+       faible opacité, jamais de noir/violet plat
+     · Roboto Flex (axes variables) pour tout, contrastes de graisse
+       marqués entre display et corps — pas de police enfantine
+
+   Importé APRÈS arcade-pop.css : à spécificité égale ou
+   supérieure, ces règles gagnent la cascade. Se combine avec .dark.
+   ============================================================ */
+
+@import '@fontsource-variable/roboto-flex';
+
+/* ============================================================
+   1. TOKENS
+   ============================================================ */
+:root[data-theme="material"] {
+  /* Couleur par TYPE de contenu — rôle tonal M3 (base + soft container + deep on-container) */
+  --ap-quiz:        #FF5A36;  --ap-quiz-deep:   #8A2C0E;  --ap-quiz-soft:  #FFDBCB;
+  --ap-pres:        #2E7D6B;  --ap-pres-deep:   #1C4F43;  --ap-pres-soft:  #D4F0E9;
+  --ap-poll:        #D9A400;  --ap-poll-deep:   #8A6900;  --ap-poll-soft:  #FFEEB8;
+  --ap-flash:       #D6336C;  --ap-flash-deep:  #8C1D4B;  --ap-flash-soft: #FFDCE8;
+
+  /* Marque : seed tangerine dédiée à ce skin (pas le violet Arcade Pop) */
+  --ap-brand:       #FF5A36;  --ap-brand-deep:  #8A2C0E;  --ap-brand-soft: #FFDBCB;
+  --ap-logo-diamond: #FF5A36;
+  --ap-accent-live: #9CCC1F;  /* accent vivant M3 — lime électrique, célébrations rares */
+  --ap-success:     #1B8368;
+
+  --ap-ink:         #201A17;  /* on-surface — quasi-noir chaud */
+  --ap-muted:       #7A756F;  /* on-surface-variant */
+  --ap-paper:       #FFFBFA;  /* surface — blanc légèrement chaud, jamais pur */
+  --ap-paper-2:     #F3E8E2;  /* surface-container */
+  --ap-card:        #FFFFFF;  /* surface-container-high */
+  --ap-line:        #E7DCD5;  /* outline-variant */
+  --ap-line-2:      #D6C7BE; /* outline */
+
+  /* Rayons — squircle généreux et asymétrique, geste M3 Expressive */
+  --ap-r-sm: 16px;
+  --ap-r-md: 24px;
+  --ap-r-lg: 32px;
+  --ap-r-xl: 40px;
+  --ap-r-pill: 999px;
+
+  /* Élévation tonale — teintée primaire, jamais noir/violet plat */
+  --ap-shadow-soft:  0 1px 3px rgba(255, 90, 54, .14), 0 1px 2px rgba(32, 26, 23, .06);
+  --ap-shadow-card:  0 10px 26px rgba(255, 90, 54, .16), 0 2px 6px rgba(32, 26, 23, .08);
+  --ap-shadow-float: 0 22px 50px rgba(255, 90, 54, .20), 0 6px 16px rgba(32, 26, 23, .10);
+
+  /* Typo — Roboto Flex partout, contraste de graisse marqué display/corps */
+  --ap-font-display: 'Roboto Flex Variable', 'Roboto Flex', system-ui, sans-serif;
+  --ap-font-body:    'Roboto Flex Variable', 'Roboto Flex', system-ui, sans-serif;
+
+  /* Spring overshoot — le geste M3 Expressive, jamais un ease plat */
+  --ap-ease:   cubic-bezier(.2, 0, 0, 1);       /* emphasized decelerate */
+  --ap-spring: cubic-bezier(.34, 1.56, .64, 1); /* back-out spring */
+
+  /* Pas de trame de points — surface unie, la couleur vit dans les containers */
+  --ap-texture: none;
+  --ap-border-w: 1px;
+}
+
+/* ── Variante sombre — surfaces chaudes profondes, tons M3 éclaircis (pas la même teinte inversée) ── */
+.dark[data-theme="material"] {
+  --ap-paper:       #1C1512;
+  --ap-paper-2:     #2A211C;
+  --ap-card:        #251C18;
+  --ap-line:        #3D2F28;
+  --ap-line-2:      #4E3B32;
+  --ap-ink:         #F5E9E2;
+  --ap-muted:       #C4B3A9;
+
+  --ap-brand:       #FF9D78;
+  --ap-brand-deep:  #FFDBCB;
+  --ap-brand-soft:  #6B2A12;
+
+  --ap-quiz:        #FF9D78;  --ap-quiz-deep:   #FFDBCB;  --ap-quiz-soft:  #6B2A12;
+  --ap-pres:        #7FD9C4; --ap-pres-deep:   #D4F0E9;  --ap-pres-soft:  #1E4A3F;
+  --ap-poll:        #F0C64B; --ap-poll-deep:   #FFEEB8;  --ap-poll-soft:  #4A3900;
+  --ap-flash:       #FF8FBC; --ap-flash-deep:  #FFDCE8;  --ap-flash-soft: #5C1030;
+
+  --ap-accent-live: #C4E86B;
+  --ap-success:     #6FD8B8;
+
+  --ap-shadow-soft:  0 1px 3px rgba(0, 0, 0, .35), 0 1px 2px rgba(0, 0, 0, .3);
+  --ap-shadow-card:  0 10px 26px rgba(0, 0, 0, .45), 0 2px 6px rgba(0, 0, 0, .35);
+  --ap-shadow-float: 0 22px 50px rgba(0, 0, 0, .55), 0 6px 16px rgba(0, 0, 0, .4);
+}
+
+/* Textes « deep » (on-container) sur fonds soft, version sombre — le rôle s'inverse, jamais figé */
+.dark[data-theme="material"] .ap-badge--quiz  { color: #FF5A36; }
+.dark[data-theme="material"] .ap-badge--pres  { color: #2E7D6B; }
+.dark[data-theme="material"] .ap-badge--poll  { color: #D9A400; }
+.dark[data-theme="material"] .ap-badge--flash { color: #D6336C; }
+.dark[data-theme="material"] .ap-badge--brand { color: #FF9D78; }
+.dark[data-theme="material"] .ap-lead { color: var(--ap-muted); }
+
+/* ============================================================
+   2. FOND & SIGNALÉTIQUE GLOBALE
+   ============================================================ */
+[data-theme="material"] .ap-app { background-image: none; }
+
+[data-theme="material"] .ap-app :focus-visible {
+  outline: 3px solid var(--ap-brand);
+  outline-offset: 2px;
+  border-radius: var(--ap-r-sm);
+}
+[data-theme="material"] .ap-app ::selection {
+  background: var(--ap-quiz-soft);
+  color: var(--ap-quiz-deep);
+}
+
+[data-theme="material"] a:not([class]) {
+  color: var(--ap-brand);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 2px;
+}
+[data-theme="material"] a:not([class]):hover { color: var(--ap-brand-deep); }
+
+/* ============================================================
+   3. TYPOGRAPHIE — Roboto Flex, écarts de graisse expressifs
+   ============================================================ */
+[data-theme="material"] .ap-display,
+[data-theme="material"] .ap-h1 { font-weight: 800; font-variation-settings: "wght" 800, "opsz" 144; letter-spacing: -.02em; }
+[data-theme="material"] .ap-h2 { font-weight: 700; font-variation-settings: "wght" 700, "opsz" 60; letter-spacing: -.01em; }
+[data-theme="material"] .ap-h3 { font-weight: 600; }
+[data-theme="material"] .ap-lead { color: var(--ap-muted); font-weight: 400; }
+
+/* ============================================================
+   4. BOUTONS — pilules pleines (stade M3), spring overshoot
+   ============================================================ */
+[data-theme="material"] .ap-btn {
+  font-weight: 700;
+  border-radius: var(--ap-r-pill);
+  box-shadow: var(--ap-shadow-soft);
+  transition: transform .22s var(--ap-spring), box-shadow .22s var(--ap-ease), background-color .16s var(--ap-ease);
+}
+[data-theme="material"] .ap-btn:hover {
+  transform: translateY(-2px) scale(1.015);
+  box-shadow: var(--ap-shadow-card);
+}
+[data-theme="material"] .ap-btn:active {
+  transform: translateY(0) scale(.97);
+  box-shadow: var(--ap-shadow-soft);
+}
+
+[data-theme="material"] .ap-btn--lg { border-radius: var(--ap-r-pill); }
+[data-theme="material"] .ap-btn--sm { border-radius: var(--ap-r-pill); }
+[data-theme="material"] .ap-btn--pill { border-radius: var(--ap-r-pill); }
+
+[data-theme="material"] .ap-btn--quiz  { background: var(--ap-quiz);  box-shadow: var(--ap-shadow-soft); }
+[data-theme="material"] .ap-btn--quiz:hover  { box-shadow: var(--ap-shadow-card); }
+[data-theme="material"] .ap-btn--pres  { background: var(--ap-pres);  box-shadow: var(--ap-shadow-soft); color: #fff; }
+[data-theme="material"] .ap-btn--pres:hover  { box-shadow: var(--ap-shadow-card); }
+[data-theme="material"] .ap-btn--poll  { background: var(--ap-poll);  box-shadow: var(--ap-shadow-soft); }
+[data-theme="material"] .ap-btn--poll:hover  { box-shadow: var(--ap-shadow-card); }
+[data-theme="material"] .ap-btn--flash { background: var(--ap-flash); box-shadow: var(--ap-shadow-soft); color: #fff; }
+[data-theme="material"] .ap-btn--flash:hover  { box-shadow: var(--ap-shadow-card); }
+
+/* Bouton « tonal » — le geste M3 : container pastel, texte saturé, pas un aplat */
+[data-theme="material"] .ap-btn--ghost {
+  background: var(--ap-brand-soft); color: var(--ap-brand-deep);
+  box-shadow: none;
+  border-radius: var(--ap-r-pill);
+}
+[data-theme="material"] .ap-btn--ghost:hover {
+  transform: translateY(-2px) scale(1.015);
+  background: var(--ap-quiz-soft);
+  box-shadow: none;
+}
+[data-theme="material"] .ap-btn--ghost:active { transform: translateY(0) scale(.97); }
+
+[data-theme="material"] .ap-icon-btn {
+  border-radius: var(--ap-r-pill);
+  transition: transform .22s var(--ap-spring), background-color .16s var(--ap-ease);
+}
+[data-theme="material"] .ap-icon-btn:hover { transform: scale(1.08) rotate(-4deg); background: var(--ap-brand-soft); }
+[data-theme="material"] .ap-icon-btn:active { transform: scale(.92) rotate(0deg); }
+
+/* ============================================================
+   5. CARTES — squircle généreux, asymétrie d'angles, lift au survol
+   ============================================================ */
+[data-theme="material"] .ap-card {
+  border-width: 1px;
+  border-radius: var(--ap-r-lg);
+  box-shadow: var(--ap-shadow-soft);
+  transition: transform .24s var(--ap-spring), box-shadow .2s var(--ap-ease);
+}
+[data-theme="material"] .ap-card--floaty {
+  box-shadow: var(--ap-shadow-card);
+  /* squircle asymétrique — la signature M3 Expressive, jamais 4 coins égaux */
+  border-radius: var(--ap-r-xl) var(--ap-r-xl) var(--ap-r-xl) var(--ap-r-sm);
+}
+[data-theme="material"] .ap-card--hover:hover {
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: var(--ap-shadow-float);
+}
+
+[data-theme="material"] .ap-tile__icon { border-radius: var(--ap-r-md); }
+
+/* ============================================================
+   6. RÉPONSES DE QUIZ — tuiles container tonal, spring au survol
+   ============================================================ */
+[data-theme="material"] .ap-answer {
+  font-weight: 600;
+  border-radius: var(--ap-r-lg);
+  box-shadow: var(--ap-shadow-soft);
+  transition: transform .18s var(--ap-spring), background .16s var(--ap-ease), box-shadow .16s var(--ap-ease);
+}
+[data-theme="material"] .ap-answer:hover {
+  background: var(--ap-paper-2);
+  transform: translateY(-2px) scale(1.01);
+  box-shadow: var(--ap-shadow-card);
+}
+[data-theme="material"] .ap-answer:active { transform: scale(.98); box-shadow: var(--ap-shadow-soft); }
+
+[data-theme="material"] .ap-answer__shape { border-radius: var(--ap-r-sm); }
+
+[data-theme="material"] .ap-answer--1 { background: var(--ap-quiz-soft); }
+[data-theme="material"] .ap-answer--2 { background: var(--ap-poll-soft); }
+[data-theme="material"] .ap-answer--3 { background: var(--ap-pres-soft); }
+[data-theme="material"] .ap-answer--4 { background: var(--ap-flash-soft); }
+
+[data-theme="material"] .ap-answer--1.ap-answer--selected, [data-theme="material"] .ap-answer--1.ap-answer--selected:hover {
+  box-shadow: inset 0 0 0 3px var(--ap-quiz); transform: scale(1.01);
+}
+[data-theme="material"] .ap-answer--2.ap-answer--selected, [data-theme="material"] .ap-answer--2.ap-answer--selected:hover {
+  box-shadow: inset 0 0 0 3px var(--ap-poll); transform: scale(1.01);
+}
+[data-theme="material"] .ap-answer--3.ap-answer--selected, [data-theme="material"] .ap-answer--3.ap-answer--selected:hover {
+  box-shadow: inset 0 0 0 3px var(--ap-pres); transform: scale(1.01);
+}
+[data-theme="material"] .ap-answer--4.ap-answer--selected, [data-theme="material"] .ap-answer--4.ap-answer--selected:hover {
+  box-shadow: inset 0 0 0 3px var(--ap-flash); transform: scale(1.01);
+}
+
+[data-theme="material"] .ap-answer--solid { box-shadow: var(--ap-shadow-soft); }
+[data-theme="material"] .ap-answer--solid:hover { transform: translateY(-2px) scale(1.01); }
+[data-theme="material"] .ap-answer--solid:active { transform: scale(.98); }
+
+[data-theme="material"] .ap-answer--correct,
+[data-theme="material"] .ap-answer--correct:hover,
+[data-theme="material"] .ap-answer--correct:active {
+  background: var(--ap-success);
+  color: #fff;
+  box-shadow: var(--ap-shadow-card);
+  animation: none;
+}
+[data-theme="material"] .ap-answer--wrong { animation: none; }
+
+/* ============================================================
+   7. FORMULAIRES — champs arrondis, focus ring épais
+   ============================================================ */
+[data-theme="material"] .ap-input,
+[data-theme="material"] .ap-textarea,
+[data-theme="material"] .ap-code {
+  border-width: 1px;
+  border-radius: var(--ap-r-md);
+  font-weight: 500;
+}
+[data-theme="material"] .ap-input::placeholder,
+[data-theme="material"] .ap-textarea::placeholder { color: var(--ap-line-2); }
+[data-theme="material"] .ap-input:focus,
+[data-theme="material"] .ap-textarea:focus,
+[data-theme="material"] .ap-code:focus {
+  border-color: var(--ap-brand);
+  box-shadow: 0 0 0 4px var(--ap-brand-soft);
+}
+[data-theme="material"] .ap-dropzone {
+  border: 2px dashed var(--ap-line-2);
+  border-radius: var(--ap-r-lg);
+  background: var(--ap-paper-2);
+}
+[data-theme="material"] .ap-dropzone:hover {
+  border-color: var(--ap-brand);
+  background: var(--ap-brand-soft);
+}
+
+/* Segmented control — pilule complète, pas des coins carrés */
+[data-theme="material"] .ap-seg {
+  border-radius: var(--ap-r-pill);
+  background: var(--ap-paper-2);
+}
+[data-theme="material"] .ap-seg button { border-radius: var(--ap-r-pill); background: transparent; }
+[data-theme="material"] .ap-seg button.is-on {
+  background: var(--ap-card);
+  color: var(--ap-brand-deep);
+  box-shadow: var(--ap-shadow-soft);
+}
+
+/* Interrupteur */
+[data-theme="material"] .ap-switch { background: var(--ap-line-2); box-shadow: none; border-radius: var(--ap-r-pill); }
+[data-theme="material"] .ap-switch[aria-checked="true"],
+[data-theme="material"] .ap-switch.is-on { background: var(--ap-brand); }
+
+/* ============================================================
+   8. PILLS, BADGES, EYEBROW — containers tonaux, texte saturé dessus
+   ============================================================ */
+[data-theme="material"] .ap-pill,
+[data-theme="material"] .ap-badge {
+  border-radius: var(--ap-r-pill);
+  font-weight: 700;
+}
+[data-theme="material"] .ap-badge--quiz  { background: var(--ap-quiz-soft);  color: var(--ap-quiz-deep); }
+[data-theme="material"] .ap-badge--pres  { background: var(--ap-pres-soft);  color: var(--ap-pres-deep); }
+[data-theme="material"] .ap-badge--poll  { background: var(--ap-poll-soft);  color: var(--ap-poll-deep); }
+[data-theme="material"] .ap-badge--flash { background: var(--ap-flash-soft); color: var(--ap-flash-deep); }
+[data-theme="material"] .ap-badge--brand { background: var(--ap-brand-soft); color: var(--ap-brand-deep); }
+
+[data-theme="material"] .ap-eyebrow {
+  border-radius: var(--ap-r-pill);
+  border: 1px solid var(--ap-line);
+  background: var(--ap-paper-2);
+}
+[data-theme="material"] .ap-eyebrow__dot { background: var(--ap-accent-live); animation: none; }
+
+[data-theme="material"] .ap-type-badge { border-radius: var(--ap-r-sm); }
+[data-theme="material"] .ap-type-badge:hover { transform: scale(1.06); }
+
+/* ============================================================
+   9. MARQUE & NAVIGATION — pilule flottante, spring au survol
+   ============================================================ */
+[data-theme="material"] .ap-logo {
+  border-radius: var(--ap-r-md);
+  box-shadow: none;
+  transition: transform .22s var(--ap-spring);
+}
+[data-theme="material"] .ap-logo:hover { transform: rotate(-4deg) scale(1.05); }
+
+[data-theme="material"] .ap-nav-pill {
+  border-radius: var(--ap-r-pill);
+  border-width: 1px;
+  box-shadow: var(--ap-shadow-soft);
+  background: var(--ap-card);
+}
+[data-theme="material"] .ap-nav-pill__item {
+  border-radius: var(--ap-r-pill);
+  transition: transform .18s var(--ap-spring), background-color .16s var(--ap-ease), color .16s var(--ap-ease);
+}
+[data-theme="material"] .ap-nav-pill__item:hover,
+[data-theme="material"] .ap-nav-pill__item[aria-current="page"] {
+  color: var(--ap-brand-deep);
+  background: var(--ap-brand-soft);
+  transform: scale(1.03);
+}
+
+[data-theme="material"] .ap-mega-menu {
+  border-radius: var(--ap-r-xl) var(--ap-r-xl) var(--ap-r-xl) var(--ap-r-sm);
+  box-shadow: var(--ap-shadow-float);
+}
+[data-theme="material"] .ap-mega-menu__close { border-radius: var(--ap-r-pill); }
+
+/* ============================================================
+   10. MOUVEMENT — spring vivant sur les moments clés, jamais figé
+   ============================================================ */
+[data-theme="material"] .ap-float-pill { animation-timing-function: var(--ap-spring); }
+[data-theme="material"] .ap-score-pill {
+  border-radius: var(--ap-r-pill);
+  animation-timing-function: var(--ap-spring);
+}
+
+/* ============================================================
+   11. CONSOLE ADMIN
+   ============================================================ */
+[data-theme="material"] .adm-btn {
+  border-radius: var(--ap-r-pill);
+  box-shadow: none;
+  transition: transform .18s var(--ap-spring), filter .16s var(--ap-ease);
+}
+[data-theme="material"] .adm-btn:hover { transform: translateY(-1px) scale(1.02); box-shadow: none; filter: brightness(1.04); }
+[data-theme="material"] .adm-btn:active { transform: scale(.97); box-shadow: none; filter: brightness(.96); }

@@ -2,6 +2,7 @@
 @import "./theme-thales.css";
 @import "./theme-innov.css";
 @import "./theme-studio.css";
+@import "./theme-material.css";
 
 @tailwind base;
 @tailwind components;
@@ -346,6 +347,93 @@
     --sidebar-accent: 218 29% 13%;
     --sidebar-accent-foreground: 220 32% 96%;
     --sidebar-border: 217 26% 20%;
+  }
+
+  /* Thème « Material 3 Expressive » — miroir des tokens --ap-* de
+     theme-material.css pour les composants shadcn. Se combine avec .dark. */
+  :root[data-theme="material"] {
+    --background: 12 100% 99%;       /* --ap-paper   #fffbfa */
+    --foreground: 20 16% 11%;        /* --ap-ink     #201a17 */
+
+    --card: 0 0% 100%;               /* --ap-card    #ffffff */
+    --card-foreground: 20 16% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 20 16% 11%;
+
+    --primary: 11 100% 61%;          /* --ap-brand   #ff5a36 */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 21 41% 92%;         /* --ap-paper-2 #f3e8e2 */
+    --secondary-foreground: 20 16% 11%;
+
+    --muted: 21 41% 92%;
+    --muted-foreground: 33 5% 46%;   /* --ap-muted   #7a756f */
+
+    --accent: 18 100% 90%;           /* --ap-brand-soft #ffdbcb */
+    --accent-foreground: 15 82% 30%;
+
+    --destructive: 11 100% 61%;      /* --ap-quiz    #ff5a36 */
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 23 27% 87%;            /* --ap-line    #e7dcd5 */
+    --input: 23 27% 87%;
+    --ring: 11 100% 61%;
+
+    --radius: 1.25rem;                /* squircle généreux — geste M3 Expressive */
+
+    --success: 164 66% 31%;          /* --ap-success #1b8368 */
+    --success-foreground: 0 0% 100%;
+
+    --warning: 45 100% 43%;          /* --ap-poll    #d9a400 */
+    --warning-foreground: 0 0% 100%;
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 20 16% 11%;
+    --sidebar-primary: 11 100% 61%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 21 41% 92%;
+    --sidebar-accent-foreground: 20 16% 11%;
+    --sidebar-border: 23 27% 87%;
+    --sidebar-ring: 11 100% 61%;
+
+    --quiz-accent:      11 100% 61%; /* #ff5a36 */
+    --poll-accent:      45 100% 43%; /* #d9a400 */
+    --flashcard-accent: 339 67% 52%; /* #d6336c */
+    --slide-accent:     166 46% 34%; /* #2e7d6b */
+  }
+
+  .dark[data-theme="material"] {
+    --background: 18 22% 9%;         /* --ap-paper   #1c1512 */
+    --foreground: 22 49% 92%;        /* --ap-ink     #f5e9e2 */
+
+    --card: 18 21% 12%;              /* --ap-card    #251c18 */
+    --card-foreground: 22 49% 92%;
+
+    --popover: 18 21% 12%;
+    --popover-foreground: 22 49% 92%;
+
+    --primary: 16 100% 74%;          /* --ap-brand   #ff9d78 */
+    --primary-foreground: 16 76% 10%;
+
+    --secondary: 21 20% 14%;         /* --ap-paper-2 #2a211c */
+    --secondary-foreground: 22 49% 92%;
+
+    --muted: 21 20% 14%;
+    --muted-foreground: 22 19% 72%;  /* --ap-muted   #c4b3a9 */
+
+    --accent: 16 71% 25%;            /* --ap-brand-soft #6b2a12 */
+    --accent-foreground: 18 100% 90%;
+
+    --border: 20 21% 20%;            /* --ap-line    #3d2f28 */
+    --input: 20 21% 20%;
+    --ring: 16 100% 74%;
+
+    --sidebar-background: 18 21% 12%;
+    --sidebar-foreground: 22 49% 92%;
+    --sidebar-accent: 21 20% 14%;
+    --sidebar-accent-foreground: 22 49% 92%;
+    --sidebar-border: 20 21% 20%;
   }
 
   * {

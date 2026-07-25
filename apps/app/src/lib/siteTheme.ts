@@ -3,7 +3,7 @@
 // The active skin is stamped on <html> as data-theme="<id>" (none for the
 // default Arcade Pop) and every skin ships a light + dark token set.
 
-export type SiteTheme = "arcade" | "thales" | "innov" | "studio";
+export type SiteTheme = "arcade" | "thales" | "innov" | "studio" | "material";
 
 export interface SiteThemeDef {
   id: SiteTheme;
@@ -56,6 +56,16 @@ export const SITE_THEMES: SiteThemeDef[] = [
     },
     colors: ["#5B4FE9", "#172033", "#FFFFFF", "#FF7657"],
     previewFont: "'Plus Jakarta Sans Variable', 'Plus Jakarta Sans', system-ui, sans-serif",
+  },
+  {
+    id: "material",
+    name: "Material 3 Expressive",
+    tagline: {
+      en: "Bold and dynamic — tonal containers, pill shapes, spring motion",
+      fr: "Vif et dynamique — conteneurs tonaux, formes pilules, mouvement ressort",
+    },
+    colors: ["#FF5A36", "#2E7D6B", "#D9A400", "#D6336C"],
+    previewFont: "'Roboto Flex Variable', 'Roboto Flex', system-ui, sans-serif",
   },
 ];
 
