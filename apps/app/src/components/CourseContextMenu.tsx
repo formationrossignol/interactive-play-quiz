@@ -1,4 +1,4 @@
-import { Copy, Edit, MoreHorizontal, Share2, Star, Trash2 } from "lucide-react";
+import { Copy, Edit, MoreHorizontal, Share2, Star, Trash2, Users } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -6,6 +6,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { t } from "@/lib/i18n";
 import type { Course } from "@/lib/courseStorage";
 
 interface CourseContextMenuProps {
@@ -14,6 +15,7 @@ interface CourseContextMenuProps {
   onDuplicate: () => void;
   onToggleFavorite: () => void;
   onShare: () => void;
+  onManageAccess: () => void;
   onTrash: () => void;
 }
 
@@ -30,6 +32,7 @@ export const CourseContextMenu = ({
   onDuplicate,
   onToggleFavorite,
   onShare,
+  onManageAccess,
   onTrash,
 }: CourseContextMenuProps) => (
   <DropdownMenu>
@@ -47,6 +50,9 @@ export const CourseContextMenu = ({
       </DropdownMenuItem>
       <DropdownMenuItem onSelect={onShare} className="flex items-center gap-2 cursor-pointer text-sm">
         <Share2 className="h-3.5 w-3.5" /> Partager
+      </DropdownMenuItem>
+      <DropdownMenuItem onSelect={onManageAccess} className="flex items-center gap-2 cursor-pointer text-sm">
+        <Users className="h-3.5 w-3.5" /> {t("shareManageAccess")}
       </DropdownMenuItem>
       <DropdownMenuSeparator />
       <DropdownMenuItem onSelect={onToggleFavorite} className="flex items-center gap-2 cursor-pointer text-sm">

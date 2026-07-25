@@ -83,6 +83,28 @@ export async function getContentBySource(
   return data ?? null;
 }
 
+/**
+ * Fetch a content row by type + source id, regardless of owner. Used by
+ * CourseViewer's cross-browser fallback: a shared/public course viewed by
+ * anyone other than its creator won't be in that browser's localStorage,
+ * so this is the only way to load it. RLS (owner/is_public/is_open/
+ * content_shares) decides what's actually visible — this function imposes
+ * no additional filter itself.
+ */
+export async function getContentBySourceAnyOwner(
+  type: ContentType,
+  sourceId: string,
+): Promise<ContentRow | null> {
+  const { data, error } = await supabase
+    .from('content')
+    .select('*')
+    .eq('type', type)
+    .eq('source_id', sourceId)
+    .maybeSingle();
+  if (error) throw error;
+  return data ?? null;
+}
+
 export async function createContent(
   userId: string,
   type: ContentType,

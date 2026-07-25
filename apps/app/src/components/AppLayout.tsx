@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
+import { GlobalSearch } from "@/components/GlobalSearch";
 import { BrandMonogram } from "@/components/BrandMonogram";
 import { BrandWordmark } from "@/components/BrandWordmark";
 import { Footer } from "@/components/Footer";
@@ -102,6 +103,8 @@ export const AppLayout = ({ subtitle, extraSection, children }: AppLayoutProps) 
               )}
             </div>
           </div>
+
+          <GlobalSearch user={user} />
 
           <div className="ml-auto flex items-center gap-2">
             {user ? (

@@ -19,6 +19,7 @@ import {
   type Lesson,
   type Module,
 } from "@/lib/courseStorage";
+import { getContentBySourceAnyOwner } from "@/lib/content/contentRepo";
 import { getQuizById } from "@/lib/quizStorage";
 import { assertSafeImportFile } from "@/lib/fileValidation";
 import { sanitizeHtml } from "@/lib/sanitizeHtml";
@@ -375,12 +376,33 @@ const CourseViewer = () => {
   useEffect(() => {
     if (!user) { navigate("/auth"); return; }
     if (!courseId) { navigate("/my-courses"); return; }
-    const c = getCourseById(courseId);
-    if (!c) { toast.error("Cours introuvable"); navigate("/my-courses"); return; }
-    setCourse(c);
-    setProgress(getCourseProgress(courseId, user.id));
-    // No auto-select: land on the course overview first (like Udemy/Coursera/edX),
-    // "Commencer"/"Continuer" is what takes the learner into a lesson.
+
+    const local = getCourseById(courseId);
+    if (local) {
+      setCourse(local);
+      setProgress(getCourseProgress(courseId, user.id));
+      // No auto-select: land on the course overview first (like Udemy/Coursera/edX),
+      // "Commencer"/"Continuer" is what takes the learner into a lesson.
+      return;
+    }
+
+    // Not in this browser's localStorage — the viewer isn't the owner (shared,
+    // public, or cross-device access). Fall back to the Supabase mirror; RLS
+    // decides whether this viewer is actually allowed to see it.
+    let cancelled = false;
+    getContentBySourceAnyOwner('course', courseId)
+      .then((row) => {
+        if (cancelled) return;
+        if (!row) { toast.error("Cours introuvable"); navigate("/my-courses"); return; }
+        setCourse(row.data as unknown as CourseData);
+        setProgress(getCourseProgress(courseId, user.id));
+      })
+      .catch(() => {
+        if (cancelled) return;
+        toast.error("Cours introuvable");
+        navigate("/my-courses");
+      });
+    return () => { cancelled = true; };
   }, [courseId]);
 
   const allLessons = useMemo<Array<{ lesson: Lesson; module: Module }>>(() => {

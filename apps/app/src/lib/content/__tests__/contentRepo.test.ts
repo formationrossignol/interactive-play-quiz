@@ -10,6 +10,7 @@ import {
   setPublic,
   setOpen,
   upsertContentBySource,
+  getContentBySourceAnyOwner,
 } from '../contentRepo';
 
 // Mock the Supabase client. `from()` returns a chainable builder whose methods
@@ -219,6 +220,29 @@ describe('contentRepo', () => {
       is_public: false,
     });
     expect(insertBuilder.update).not.toHaveBeenCalled();
+  });
+
+  it('getContentBySourceAnyOwner returns the row for type+source_id with no user_id filter', async () => {
+    const row = { id: 'r9', user_id: 'someone-else', type: 'course', source_id: 'course-1', data: {} };
+    const builder = makeBuilder({ data: row, error: null });
+    fromMock.mockReturnValue(builder);
+
+    const result = await getContentBySourceAnyOwner('course', 'course-1');
+
+    expect(fromMock).toHaveBeenCalledWith('content');
+    expect(builder.eq).toHaveBeenCalledWith('type', 'course');
+    expect(builder.eq).toHaveBeenCalledWith('source_id', 'course-1');
+    expect(builder.maybeSingle).toHaveBeenCalled();
+    expect(result).toEqual(row);
+  });
+
+  it('getContentBySourceAnyOwner returns null when not found', async () => {
+    const builder = makeBuilder({ data: null, error: null });
+    fromMock.mockReturnValue(builder);
+
+    const result = await getContentBySourceAnyOwner('course', 'missing');
+
+    expect(result).toBeNull();
   });
 
   it('throws when the client returns an error', async () => {

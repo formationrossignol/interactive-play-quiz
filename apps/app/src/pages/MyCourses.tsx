@@ -8,6 +8,7 @@ import { ContentExplorer } from "@/components/content/ContentExplorer";
 import type { ItemCtx } from "@/components/content/GenericItem";
 import { CourseContextMenu } from "@/components/CourseContextMenu";
 import { CourseGeneratorModal } from "@/components/CourseGeneratorModal";
+import { ShareCourseModal } from "@/components/ShareCourseModal";
 import { getCurrentUser } from "@/lib/auth";
 import { getCourseProgress, type Course } from "@/lib/courseStorage";
 import type { ContentDisplay } from "@/lib/content/contentView";
@@ -33,9 +34,10 @@ interface CourseItemProps {
   ctx: ItemCtx;
   navigate: ReturnType<typeof useNavigate>;
   userId: string | undefined;
+  onManageAccess: (contentId: string, title: string) => void;
 }
 
-function CourseCard({ d, ctx, navigate, userId }: CourseItemProps) {
+function CourseCard({ d, ctx, navigate, userId, onManageAccess }: CourseItemProps) {
   const course = d.data as unknown as Course;
   const progress = userId ? getCourseProgress(course.id, userId) : null;
   const total = totalLessons(course);
@@ -109,6 +111,7 @@ function CourseCard({ d, ctx, navigate, userId }: CourseItemProps) {
             onDuplicate={ctx.onDuplicate}
             onToggleFavorite={ctx.onFavorite}
             onShare={() => shareCourse(course)}
+            onManageAccess={() => onManageAccess(d.id, course.title)}
             onTrash={ctx.onTrash}
           />
           <button
@@ -125,7 +128,7 @@ function CourseCard({ d, ctx, navigate, userId }: CourseItemProps) {
   );
 }
 
-function CourseRow({ d, ctx, navigate, userId }: CourseItemProps) {
+function CourseRow({ d, ctx, navigate, userId, onManageAccess }: CourseItemProps) {
   const course = d.data as unknown as Course;
   const progress = userId ? getCourseProgress(course.id, userId) : null;
   const total = totalLessons(course);
@@ -166,6 +169,7 @@ function CourseRow({ d, ctx, navigate, userId }: CourseItemProps) {
           onDuplicate={ctx.onDuplicate}
           onToggleFavorite={ctx.onFavorite}
           onShare={() => shareCourse(course)}
+          onManageAccess={() => onManageAccess(d.id, course.title)}
           onTrash={ctx.onTrash}
         />
         <button className="ap-btn ap-btn--sm ap-btn--pill ap-btn--pres" style={{ fontSize: "12px", padding: "4px 12px", display: "flex", alignItems: "center", gap: "4px" }} onClick={(e) => { e.stopPropagation(); navigate(`/course/${course.id}`); }}>
@@ -188,6 +192,7 @@ const MyCourses = () => {
   const navigate = useNavigate();
   const user = getCurrentUser();
   const [generatorOpen, setGeneratorOpen] = useState(false);
+  const [manageAccessTarget, setManageAccessTarget] = useState<{ contentId: string; title: string } | null>(null);
   const reloadRef = useRef<(() => void) | null>(null);
 
   return (
@@ -211,10 +216,15 @@ const MyCourses = () => {
             <Sparkles className="h-4 w-4" /> Générer par IA
           </button>
         }
-        renderCard={(d, ctx) => <CourseCard d={d} ctx={ctx} navigate={navigate} userId={user?.id} />}
-        renderRow={(d, ctx) => <CourseRow d={d} ctx={ctx} navigate={navigate} userId={user?.id} />}
+        renderCard={(d, ctx) => <CourseCard d={d} ctx={ctx} navigate={navigate} userId={user?.id} onManageAccess={(contentId, title) => setManageAccessTarget({ contentId, title })} />}
+        renderRow={(d, ctx) => <CourseRow d={d} ctx={ctx} navigate={navigate} userId={user?.id} onManageAccess={(contentId, title) => setManageAccessTarget({ contentId, title })} />}
       />
       <CourseGeneratorModal open={generatorOpen} onClose={() => { setGeneratorOpen(false); reloadRef.current?.(); }} />
+      <ShareCourseModal
+        contentId={manageAccessTarget?.contentId ?? null}
+        courseTitle={manageAccessTarget?.title ?? ""}
+        onClose={() => setManageAccessTarget(null)}
+      />
     </>
   );
 };
