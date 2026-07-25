@@ -6,6 +6,7 @@ import {
   ChevronDown,
   ClipboardList,
   Compass,
+  Dices,
   FolderOpen,
   GraduationCap,
   LayoutDashboard,
@@ -76,6 +77,7 @@ const EXPLORE_ITEMS = [
   { label: t("questionBank"), icon: Library, path: "/question-bank", requiresAuth: true },
   { label: t("discoverPublic"), icon: Compass, path: "/discover", requiresAuth: false },
   { label: t("footerCommunity"), icon: Users, path: "/community", requiresAuth: false },
+  { label: t("navTools"), icon: Dices, path: "/tools", requiresAuth: false },
 ];
 
 interface AppSidebarProps {

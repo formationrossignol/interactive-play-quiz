@@ -101,7 +101,7 @@ export const GlobalSearch = ({ user }: GlobalSearchProps) => {
     : null;
 
   return (
-    <div ref={containerRef} style={{ position: "relative", flex: 1, maxWidth: 420 }}>
+    <div ref={containerRef} style={{ position: "relative", width: "min(340px, 32vw)", flexShrink: 0 }}>
       <div style={{ position: "relative" }}>
         <Search
           className="h-4 w-4"

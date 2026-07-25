@@ -1,18 +1,22 @@
 import { useEffect, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { KpiRow } from "@/components/dashboard/KpiRow";
+import { ActivityChart } from "@/components/dashboard/ActivityChart";
+import { CreationsByTypeChart } from "@/components/dashboard/CreationsByTypeChart";
 import { NewsModule } from "@/components/dashboard/NewsModule";
 import { getCurrentUser } from "@/lib/auth";
-import { computeDashboardStats, type DashboardStats } from "@/lib/dashboardStats";
+import { computeDashboardStats, computeDashboardCharts, type DashboardStats, type DashboardCharts } from "@/lib/dashboardStats";
 
 const Dashboard = () => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [charts, setCharts] = useState<DashboardCharts | null>(null);
 
   useEffect(() => {
     const user = getCurrentUser();
     if (!user) return;
     let cancelled = false;
     computeDashboardStats(user.id).then((s) => { if (!cancelled) setStats(s); });
+    computeDashboardCharts(user.id).then((c) => { if (!cancelled) setCharts(c); });
     return () => { cancelled = true; };
   }, []);
 
@@ -26,6 +30,11 @@ const Dashboard = () => {
 
         <div style={{ marginBottom: "32px" }}>
           <KpiRow stats={stats} />
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "16px", marginBottom: "32px" }}>
+          <ActivityChart data={charts?.activity ?? []} />
+          <CreationsByTypeChart data={charts?.creationsByType ?? { quiz: 0, poll: 0, flashcard: 0, slide: 0, other: 0 }} />
         </div>
 
         <NewsModule />
