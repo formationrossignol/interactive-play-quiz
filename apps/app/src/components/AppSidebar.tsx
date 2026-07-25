@@ -27,10 +27,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -38,6 +41,9 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
+  SidebarRail,
+  SidebarSeparator,
+  useSidebar,
 } from "@/components/ui/sidebar";
 
 // "+ Créer" jumps straight into a builder's start flow — moved here from the
@@ -62,12 +68,14 @@ const CREATIONS_ITEMS = [
   { label: t("creationTypeExam"), path: "/my-exams" },
 ];
 
-const NAV_ITEMS = [
+// Discovery/social — secondary to the Dashboard + Mes créations workflow,
+// grouped under its own labelled section per sidebar UX best practices
+// (group related items, keep primary actions visually distinct).
+const EXPLORE_ITEMS = [
   { label: t("navSharedWithMe"), icon: Share2, path: "/shared-with-me", requiresAuth: true },
   { label: t("questionBank"), icon: Library, path: "/question-bank", requiresAuth: true },
   { label: t("discoverPublic"), icon: Compass, path: "/discover", requiresAuth: false },
   { label: t("footerCommunity"), icon: Users, path: "/community", requiresAuth: false },
-  { label: t("settings"), icon: Settings, path: "/profile", requiresAuth: true },
 ];
 
 interface AppSidebarProps {
@@ -80,6 +88,8 @@ interface AppSidebarProps {
 export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { state, isMobile } = useSidebar();
+  const collapsedIcon = state === "collapsed" && !isMobile;
   const [createOpen, setCreateOpen] = useState(false);
   // Lazy init re-runs fresh on every mount — correct today because AppSidebar
   // remounts on every route change (each page instantiates its own AppLayout).
@@ -90,18 +100,31 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
   );
 
   return (
-    <Sidebar>
+    <Sidebar collapsible="icon">
       {user && (
         <SidebarHeader>
           <DropdownMenu open={createOpen} onOpenChange={setCreateOpen}>
             <DropdownMenuTrigger asChild>
-              <button className="ap-btn ap-btn--sm" style={{ width: "100%", justifyContent: "space-between" }}>
-                <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <Plus className="h-4 w-4" />
-                  {t("createNew")}
-                </span>
-                <ChevronDown className="chevron-icon h-3.5 w-3.5" />
-              </button>
+              {collapsedIcon ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button className="ap-btn ap-btn--sm ap-icon-btn" aria-label={t("createNew")}>
+                      <Plus className="h-4 w-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" align="center">
+                    {t("createNew")}
+                  </TooltipContent>
+                </Tooltip>
+              ) : (
+                <button className="ap-btn ap-btn--sm" style={{ width: "100%", justifyContent: "space-between" }}>
+                  <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <Plus className="h-4 w-4" />
+                    {t("createNew")}
+                  </span>
+                  <ChevronDown className="chevron-icon h-3.5 w-3.5" />
+                </button>
+              )}
             </DropdownMenuTrigger>
             <DropdownMenuContent
               className="z-50 w-56 p-1.5 ap-mega-menu"
@@ -148,6 +171,7 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
                 <SidebarMenuButton
                   isActive={location.pathname === "/dashboard"}
                   onClick={() => navigate("/dashboard")}
+                  tooltip={t("dashboard")}
                 >
                   <LayoutDashboard />
                   <span>{t("dashboard")}</span>
@@ -156,16 +180,25 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
             )}
 
             {user && (
-              <Collapsible open={creationsOpen} onOpenChange={setCreationsOpen}>
+              <Collapsible open={creationsOpen && !collapsedIcon} onOpenChange={setCreationsOpen}>
                 <SidebarMenuItem>
                   <CollapsibleTrigger asChild>
-                    <SidebarMenuButton>
+                    <SidebarMenuButton
+                      // Collapsed to icon rail: a flyout submenu is unbuilt scope,
+                      // so the trigger becomes a direct shortcut to My quizzes —
+                      // avoids a dead click that silently does nothing.
+                      isActive={collapsedIcon && CREATIONS_ITEMS.some((item) => item.path === location.pathname)}
+                      onClick={collapsedIcon ? () => navigate(CREATIONS_ITEMS[0].path) : undefined}
+                      tooltip={t("myCreations")}
+                    >
                       <FolderOpen />
                       <span>{t("myCreations")}</span>
-                      <ChevronDown
-                        className="chevron-icon ml-auto h-3.5 w-3.5"
-                        style={{ transform: creationsOpen ? "rotate(180deg)" : undefined }}
-                      />
+                      {!collapsedIcon && (
+                        <ChevronDown
+                          className="chevron-icon ml-auto h-3.5 w-3.5"
+                          style={{ transform: creationsOpen ? "rotate(180deg)" : undefined }}
+                        />
+                      )}
                     </SidebarMenuButton>
                   </CollapsibleTrigger>
                   <CollapsibleContent>
@@ -189,14 +222,20 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
                 </SidebarMenuItem>
               </Collapsible>
             )}
+          </SidebarMenu>
+        </SidebarGroup>
 
-            {NAV_ITEMS.filter((item) => (item.requiresAuth ? Boolean(user) : true)).map((item) => {
+        <SidebarGroup>
+          <SidebarGroupLabel>{t("navGroupExplore")}</SidebarGroupLabel>
+          <SidebarMenu>
+            {EXPLORE_ITEMS.filter((item) => (item.requiresAuth ? Boolean(user) : true)).map((item) => {
               const Icon = item.icon;
               return (
                 <SidebarMenuItem key={item.path}>
                   <SidebarMenuButton
                     isActive={location.pathname === item.path}
                     onClick={() => navigate(item.path)}
+                    tooltip={item.label}
                   >
                     <Icon />
                     <span>{item.label}</span>
@@ -206,8 +245,29 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
             })}
           </SidebarMenu>
         </SidebarGroup>
+
         {extraSection}
       </SidebarContent>
+
+      {user && (
+        <SidebarFooter>
+          <SidebarSeparator />
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                isActive={location.pathname === "/profile"}
+                onClick={() => navigate("/profile")}
+                tooltip={t("settings")}
+              >
+                <Settings />
+                <span>{t("settings")}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarFooter>
+      )}
+
+      <SidebarRail />
     </Sidebar>
   );
 };
