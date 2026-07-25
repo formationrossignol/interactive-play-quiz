@@ -509,7 +509,16 @@ export function ContentExplorer({
             <div className="flex flex-col md:flex-row gap-6 items-start">
               {/* ===== Unified sidebar ===== */}
               <aside className="md:w-64 md:flex-shrink-0 w-full">
-                <div className="ap-card" style={{ padding: 12, position: "sticky", top: 84 }}>
+                <div
+                  className="ap-card"
+                  style={{
+                    padding: 12,
+                    position: "sticky",
+                    top: 84,
+                    maxHeight: "calc(100vh - 84px - 24px)",
+                    overflowY: "auto",
+                  }}
+                >
                   <div style={SIDE_LABEL}>Raccourcis</div>
                   <ShortcutRow
                     icon={<Star style={{ width: 16, height: 16 }} />}
