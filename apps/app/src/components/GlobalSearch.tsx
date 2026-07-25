@@ -116,11 +116,11 @@ export const GlobalSearch = ({ user }: GlobalSearchProps) => {
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => { if (results.length || status !== "idle") setOpen(true); }}
           onKeyDown={(e) => {
+            if (e.key === "Escape") { setOpen(false); e.currentTarget.blur(); return; }
             if (!open || results.length === 0) return;
             if (e.key === "ArrowDown") { e.preventDefault(); setHighlighted((i) => (i + 1) % results.length); }
             else if (e.key === "ArrowUp") { e.preventDefault(); setHighlighted((i) => (i - 1 + results.length) % results.length); }
             else if (e.key === "Enter") { e.preventDefault(); openResult(results[highlighted]); }
-            else if (e.key === "Escape") { setOpen(false); }
           }}
           placeholder={t("searchPlaceholder")}
           aria-label={t("searchPlaceholder")}
