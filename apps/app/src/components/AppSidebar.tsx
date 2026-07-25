@@ -14,6 +14,7 @@ import {
   Plus,
   Presentation,
   Settings,
+  Share2,
   Users,
   X,
 } from "lucide-react";
@@ -62,6 +63,7 @@ const CREATIONS_ITEMS = [
 ];
 
 const NAV_ITEMS = [
+  { label: t("navSharedWithMe"), icon: Share2, path: "/shared-with-me", requiresAuth: true },
   { label: t("questionBank"), icon: Library, path: "/question-bank", requiresAuth: true },
   { label: t("discoverPublic"), icon: Compass, path: "/discover", requiresAuth: false },
   { label: t("footerCommunity"), icon: Users, path: "/community", requiresAuth: false },
