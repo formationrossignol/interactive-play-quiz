@@ -11,21 +11,31 @@ alter table public.profiles add column username text;
 
 -- Backfill existing users: prefer their auth metadata username, else the
 -- email local-part, disambiguating any collisions (usernames were never
--- unique before this column existed) with a numeric suffix.
-with candidates as (
-  select
-    u.id,
-    coalesce(nullif(u.raw_user_meta_data->>'username', ''), split_part(u.email, '@', 1)) as base
-  from auth.users u
-),
-numbered as (
-  select id, base, row_number() over (partition by base order by id) as rn
-  from candidates
-)
-update public.profiles p
-set username = n.base || case when n.rn = 1 then '' else '-' || n.rn end
-from numbered n
-where p.id = n.id;
+-- unique before this column existed) with a numeric suffix. Iterative
+-- (not a single set-based UPDATE) so each candidate is checked against
+-- already-assigned usernames before being committed — a synthesized
+-- "base-2" could otherwise collide with a different user's literal base
+-- that already happens to be "base-2", aborting the whole migration.
+do $$
+declare
+  r record;
+  candidate text;
+  suffix int;
+begin
+  for r in
+    select u.id, coalesce(nullif(u.raw_user_meta_data->>'username', ''), split_part(u.email, '@', 1)) as base
+    from auth.users u
+    order by u.id
+  loop
+    candidate := r.base;
+    suffix := 1;
+    while exists (select 1 from public.profiles where username = candidate) loop
+      suffix := suffix + 1;
+      candidate := r.base || '-' || suffix;
+    end loop;
+    update public.profiles set username = candidate where id = r.id;
+  end loop;
+end $$;
 
 alter table public.profiles alter column username set not null;
 alter table public.profiles add constraint profiles_username_unique unique (username);
@@ -84,17 +94,30 @@ create policy group_members_owner on public.group_members
     exists (select 1 from public.groups g where g.id = group_id and g.owner_id = auth.uid())
   );
 
+-- A member needs to read their own membership row (so `content_public_read`'s
+-- group-share subquery — and the future SharedWithMe page — can see it).
+create policy group_members_self_read on public.group_members
+  for select using (user_id = auth.uid());
+
 create policy content_shares_owner on public.content_shares
   for all using (
     exists (select 1 from public.content c where c.id = content_id and c.user_id = auth.uid())
   ) with check (
     exists (select 1 from public.content c where c.id = content_id and c.user_id = auth.uid())
+    and (shared_with_group_id is null or exists (select 1 from public.groups g where g.id = shared_with_group_id and g.owner_id = auth.uid()))
   );
 
 -- A shared user needs to see their own grant rows (SharedWithMe lists them),
 -- which content_shares_owner alone doesn't cover — they aren't the course owner.
 create policy content_shares_read_own on public.content_shares
   for select using (shared_with_user_id = auth.uid());
+
+-- A group member needs to read the content_shares row granting them access
+-- via their group — content_shares_read_own alone only covers direct shares.
+create policy content_shares_group_read on public.content_shares
+  for select using (
+    shared_with_group_id in (select group_id from public.group_members where user_id = auth.uid())
+  );
 
 -- content: extend the existing public-read policy with a shared-access clause.
 drop policy if exists content_public_read on public.content;
@@ -133,14 +156,21 @@ $$;
 -- the owner read other users' rows).
 create or replace function public.usernames_by_ids(ids uuid[])
 returns table(id uuid, username text)
-language sql
+language plpgsql
 security definer
 stable
 set search_path = public
 as $$
-  select p.id, p.username
-  from public.profiles p
-  where p.id = any(ids);
+begin
+  if auth.uid() is null then
+    raise exception 'Not authenticated';
+  end if;
+
+  return query
+    select p.id, p.username
+    from public.profiles p
+    where p.id = any(ids);
+end;
 $$;
 
 -- Resolves an email to a user id (client can never query auth.users directly)
