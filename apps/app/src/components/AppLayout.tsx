@@ -16,8 +16,8 @@ import {
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { GlobalSearch } from "@/components/GlobalSearch";
-import { BrandMonogram } from "@/components/BrandMonogram";
-import { BrandWordmark } from "@/components/BrandWordmark";
+import { BrandMonogram } from "ui/BrandMonogram";
+import { BrandWordmark } from "ui/BrandWordmark";
 import { Footer } from "@/components/Footer";
 
 interface AppLayoutProps {

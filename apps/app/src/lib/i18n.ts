@@ -246,6 +246,8 @@ export const translations = {
     launchPreview: "Open preview",
     dragToReorder: "Drag to reorder",
     confirmLeaveBuilder: "You have unsaved changes. Leave the builder?",
+    confirmLeaveBuilderTitle: "Leave without saving?",
+    leaveBuilder: "Leave without saving",
 
     // Question Types
     questionType: "Question Type",
@@ -680,6 +682,8 @@ export const translations = {
     launchPreview: "Ouvrir l'aperçu",
     dragToReorder: "Glisser pour réorganiser",
     confirmLeaveBuilder: "Vous avez des modifications en cours. Quitter le builder ?",
+    confirmLeaveBuilderTitle: "Quitter sans enregistrer ?",
+    leaveBuilder: "Quitter sans enregistrer",
     
     // Question Types
     questionType: "Type de question",

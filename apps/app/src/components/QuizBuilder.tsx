@@ -9,6 +9,16 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
@@ -52,7 +62,7 @@ import {
   useSortable, verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { BrandMonogram } from "./BrandMonogram";
+import { BrandMonogram } from "ui/BrandMonogram";
 
 // ─── Design constants ──────────────────────────────────────────────────────
 // Ordre position → couleur/forme aligné sur l'écran joueur réel
@@ -106,7 +116,10 @@ const FONT_OPTIONS = [
 
 // ─── Sub-components ────────────────────────────────────────────────────────
 
-const SaveStateIndicator = ({ state }: { state: "saved" | "saving" }) => (
+// Reflects whether there are edits since the quiz was last actually persisted
+// (via handleSaveQuiz) — it never claims "saved" for changes that only exist
+// in component state, unlike the old timer-driven version of this component.
+const SaveStateIndicator = ({ state }: { state: "saved" | "unsaved" }) => (
   <div
     style={{
       display: "flex", alignItems: "center", gap: 7,
@@ -119,14 +132,14 @@ const SaveStateIndicator = ({ state }: { state: "saved" | "saving" }) => (
       flexShrink: 0,
     }}
   >
-    {state === "saving" ? (
-      <span style={{ width: 11, height: 11, borderRadius: "50%", border: "var(--ap-border-w) solid var(--ap-line-2)", borderTopColor: "var(--ap-brand)", display: "inline-block", animation: "spin .7s linear infinite", flexShrink: 0 }} />
+    {state === "unsaved" ? (
+      <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--ap-brand)", display: "inline-block", flexShrink: 0 }} />
     ) : (
       <svg style={{ width: 14, height: 14 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M4 12.5 10 18 20 6" />
       </svg>
     )}
-    <span>{state === "saving" ? "Enregistrement…" : "Enregistré"}</span>
+    <span>{state === "unsaved" ? "Modifications non enregistrées" : "Enregistré"}</span>
   </div>
 );
 
@@ -486,7 +499,7 @@ export const QuizBuilder = () => {
   const [theme, setTheme] = useState<string>(DEFAULT_THEME_ID);
   const [ambianceId, setAmbianceId] = useState<string>(isPoll ? "none" : DEFAULT_AMBIANCE);
   const [previewFont, setPreviewFont] = useState(FONT_OPTIONS[0].value);
-  const [saveState, setSaveState] = useState<"saved" | "saving">("saved");
+  const [saveState, setSaveState] = useState<"saved" | "unsaved">("saved");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
   const [activeTemplateId, setActiveTemplateId] = useState<string | null>(templateId);
@@ -494,8 +507,8 @@ export const QuizBuilder = () => {
   const [questionBankDialogOpen, setQuestionBankDialogOpen] = useState(false);
   const [importFileOpen, setImportFileOpen] = useState(false);
   const [shouldBlockNavigation, setShouldBlockNavigation] = useState(true);
+  const [pendingNavigatePath, setPendingNavigatePath] = useState<string | null>(null);
 
-  const saveTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const firstRender = useRef(true);
   const questionTextareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -513,12 +526,12 @@ export const QuizBuilder = () => {
     el.style.height = `${el.scrollHeight}px`;
   }, [selectedQ?.id, selectedQ?.question]);
 
-  // ── Auto-save indicator ──────────────────────────────────────────────────
+  // ── Dirty tracking ────────────────────────────────────────────────────────
+  // No autosave exists — this only flags that there are edits since the last
+  // real persist (handleSaveQuiz). Never claim "saved" without one.
   useEffect(() => {
     if (firstRender.current) { firstRender.current = false; return; }
-    setSaveState("saving");
-    clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = setTimeout(() => setSaveState("saved"), 900);
+    setSaveState("unsaved");
   }, [questions, title]);
 
   // ── Auth guard ──────────────────────────────────────────────────────────
@@ -650,12 +663,16 @@ export const QuizBuilder = () => {
       ? ["single-choice", "multiple-choice", "likert-scale", "frequency-scale", "star-rating", "ranking", "open-text", "nps-scale"]
       : ["multiple-choice", "true-false", "short-answer", "ranking", "matching", "fill-blank", "slider"];
 
-  const confirmLeave = () => !shouldBlockNavigation || window.confirm(t("confirmLeaveBuilder"));
-
   const handleNavigateAway = (path: string) => {
-    if (!confirmLeave()) return;
-    setShouldBlockNavigation(false);
+    if (shouldBlockNavigation) { setPendingNavigatePath(path); return; }
     navigate(path);
+  };
+
+  const confirmPendingNavigate = () => {
+    if (!pendingNavigatePath) return;
+    setShouldBlockNavigation(false);
+    navigate(pendingNavigatePath);
+    setPendingNavigatePath(null);
   };
 
   // ── Handlers ─────────────────────────────────────────────────────────────
@@ -737,6 +754,7 @@ export const QuizBuilder = () => {
         } catch (e) { console.error("[QuizBuilder] content mirror failed", e); }
       }
       toast.success(quizId ? (isPoll ? "Sondage mis à jour" : "Quiz mis à jour") : (isPoll ? t("pollSaved") : t("quizSaved")));
+      setSaveState("saved");
       setShouldBlockNavigation(false);
       navigate(isFlashcard ? "/my-flashcards" : isPoll ? "/my-polls" : "/my-quizzes");
     } catch (e) {
@@ -1509,6 +1527,20 @@ export const QuizBuilder = () => {
 
       {/* ── Import file modal ── */}
       <ImportFileModal open={importFileOpen} onClose={() => setImportFileOpen(false)} quizType={quizType} onImport={handleImportFromFile} />
+
+      {/* ── Leave-without-saving confirmation ── */}
+      <AlertDialog open={pendingNavigatePath !== null} onOpenChange={(open) => { if (!open) setPendingNavigatePath(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("confirmLeaveBuilderTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("confirmLeaveBuilder")}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmPendingNavigate} className="bg-destructive hover:bg-destructive/90">{t("leaveBuilder")}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

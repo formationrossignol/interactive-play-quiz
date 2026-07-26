@@ -3,8 +3,8 @@ import { useSEO } from "@/hooks/useSEO";
 import { login, register, requestPasswordReset, verifyMfaLogin, getCurrentUser } from "@/lib/auth";
 import { toast } from "sonner";
 import { t } from "@/lib/i18n";
-import { BrandMonogram } from "@/components/BrandMonogram";
-import { BrandWordmark } from "@/components/BrandWordmark";
+import { BrandMonogram } from "ui/BrandMonogram";
+import { BrandWordmark } from "ui/BrandWordmark";
 
 type View = "login" | "register" | "mfa" | "forgot" | "confirm-email";
 
