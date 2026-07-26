@@ -29,6 +29,7 @@ import {
 } from "@/lib/content/contentRepo";
 import type { ContentRow } from "@/lib/content/types";
 import { toast } from "sonner";
+import { useSaveShortcut } from "@/hooks/useSaveShortcut";
 import {
   BarChart2,
   BookOpen,
@@ -233,6 +234,7 @@ const CourseBuilder = () => {
       setSaving(false);
     }
   };
+  useSaveShortcut(handleSave, !saving);
 
   const addModule = () => {
     const id = genId();

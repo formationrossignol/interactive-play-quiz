@@ -15,6 +15,7 @@ import { getContent } from "@/lib/content/contentRepo";
 import { isLegacySlideShape, migrateLegacySlideToPresentation } from "./utils/migrateLegacySlide";
 import { createBlankPresentation, type Presentation } from "./types/presentation";
 import { CollaboratorsButton } from "@/components/CollaboratorsButton";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface PresentationEditorProps {
   contentId: string | null;
@@ -78,7 +79,20 @@ export function PresentationEditor({ contentId, userId, initialPresenting = fals
   }, [contentId, load, setActiveSlideId]);
 
   if (loading || !presentation || !activeSlideId) {
-    return <div style={{ padding: 40, textAlign: "center" }}>Chargement…</div>;
+    return (
+      <div style={{ height: "100vh", display: "flex", flexDirection: "column" }}>
+        <div style={{ height: 56, padding: "8px 16px", display: "flex", gap: 12, alignItems: "center", borderBottom: "var(--ap-border-w) solid var(--ap-line)" }}>
+          <Skeleton className="h-8 w-8 rounded-full" />
+          <Skeleton className="h-5 w-52" />
+          <Skeleton className="ml-auto h-9 w-28 rounded-full" />
+        </div>
+        <div style={{ flex: 1, display: "grid", gridTemplateColumns: "220px minmax(0, 1fr) 280px", gap: 16, padding: 16 }}>
+          <div>{[0, 1, 2].map((item) => <Skeleton key={item} className="mb-3 h-28 w-full" />)}</div>
+          <Skeleton className="h-full min-h-96 w-full rounded-2xl" />
+          <div>{[0, 1, 2, 3].map((item) => <Skeleton key={item} className="mb-4 h-12 w-full" />)}</div>
+        </div>
+      </div>
+    );
   }
 
   if (presenting) {

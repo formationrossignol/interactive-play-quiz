@@ -9,6 +9,7 @@ import { Breadcrumb } from '@/components/Breadcrumb';
 import { MultiStepProgress } from '@/components/MultiStepProgress';
 import { upsertContentBySource } from '@/lib/content/contentRepo';
 import { toast } from 'sonner';
+import { useSaveShortcut } from '@/hooks/useSaveShortcut';
 import {
   ArrowLeft,
   ArrowRight,
@@ -224,6 +225,7 @@ export default function ExamBuilder() {
       setSaving(false);
     }
   };
+  useSaveShortcut(() => handleSave(false), !saving);
 
   if (!user) return null;
 

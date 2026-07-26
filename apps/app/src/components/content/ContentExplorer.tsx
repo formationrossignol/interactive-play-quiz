@@ -33,6 +33,7 @@ import { Pagination } from "@/components/Pagination";
 import { TrashView } from "@/components/TrashView";
 import { DeleteQuizDialog } from "@/components/DeleteQuizDialog";
 import { FolderExplorer } from "@/components/FolderExplorer";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useContentCollection } from "@/hooks/useContentCollection";
 import {
   applySearchSort,
@@ -50,6 +51,54 @@ import type { ItemCtx } from "./GenericItem";
 const PAGE_SIZE = 12;
 
 type ShortcutView = "all" | "favorites" | "public" | "trash";
+
+interface ExplorerPreferences {
+  view?: ShortcutView;
+  category?: string;
+  sort?: SortOption;
+}
+
+const readPreferences = (type: ContentType): ExplorerPreferences => {
+  try {
+    return JSON.parse(localStorage.getItem(`content-explorer-prefs-${type}`) ?? "{}") as ExplorerPreferences;
+  } catch {
+    return {};
+  }
+};
+
+function ContentSkeleton({ viewMode }: { viewMode: "grid" | "list" }) {
+  if (viewMode === "list") {
+    return (
+      <div className="ap-card overflow-hidden p-0">
+        {Array.from({ length: 6 }, (_, index) => (
+          <div key={index} className="flex items-center gap-4 px-4 py-4" style={{ borderBottom: "var(--ap-border-w) solid var(--ap-line)" }}>
+            <Skeleton className="h-8 w-8 rounded-lg" />
+            <div className="flex-1">
+              <Skeleton className="h-4 w-2/5" />
+              <Skeleton className="mt-2 h-3 w-3/5" />
+            </div>
+            <Skeleton className="h-8 w-28 rounded-full" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+  return (
+    <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+      {Array.from({ length: 6 }, (_, index) => (
+        <div key={index} className="ap-card overflow-hidden p-0">
+          <Skeleton className="h-40 w-full rounded-none" />
+          <div className="p-4">
+            <Skeleton className="h-5 w-3/4" />
+            <Skeleton className="mt-3 h-3.5 w-full" />
+            <Skeleton className="mt-2 h-3.5 w-2/3" />
+            <Skeleton className="mt-5 h-9 w-full rounded-full" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 const deleteTypeOf = (t: ContentType): "quiz" | "poll" | "flashcard" | "slide" =>
   t === "poll" ? "poll" : t === "flashcard" ? "flashcard" : t === "slide" ? "slide" : "quiz";
@@ -255,13 +304,13 @@ export function ContentExplorer({
     if (reloadRef) reloadRef.current = c.reload;
   }, [reloadRef, c.reload]);
 
-  const [view, setView] = useState<ShortcutView>("all");
+  const [view, setView] = useState<ShortcutView>(() => readPreferences(type).view ?? "all");
   const [viewMode, setViewModeState] = useState<"grid" | "list">(
     () => (localStorage.getItem(`view-mode-${type}`) as "grid" | "list") ?? "grid",
   );
   const [search, setSearch] = useState("");
-  const [category, setCategory] = useState("Tous");
-  const [sort, setSort] = useState<SortOption>("newest");
+  const [category, setCategory] = useState(() => readPreferences(type).category ?? "Tous");
+  const [sort, setSort] = useState<SortOption>(() => readPreferences(type).sort ?? "newest");
   const [page, setPage] = useState(1);
   const [permDeleteTarget, setPermDeleteTarget] = useState<ContentDisplay | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -271,6 +320,10 @@ export function ContentExplorer({
     setViewModeState(mode);
     localStorage.setItem(`view-mode-${type}`, mode);
   };
+
+  useEffect(() => {
+    localStorage.setItem(`content-explorer-prefs-${type}`, JSON.stringify({ view, category, sort }));
+  }, [type, view, category, sort]);
 
   const opts = useMemo(() => ({ search, category, sort }), [search, category, sort]);
 
@@ -360,7 +413,16 @@ export function ContentExplorer({
       .catch((e) => { logUnexpected("favorite")(e); toast.error("Erreur"); });
 
   const handleTrash = (rowId: string) =>
-    c.trashItem(rowId).then(() => toast.success("Mis à la corbeille"))
+    c.trashItem(rowId).then(() => toast.success("Mis à la corbeille", {
+      action: {
+        label: "Annuler",
+        onClick: () => {
+          void c.restoreItem(rowId)
+            .then(() => toast.success("Suppression annulée"))
+            .catch((e) => { logUnexpected("undoTrash")(e); toast.error("Impossible d'annuler"); });
+        },
+      },
+    }))
       .catch((e) => { logUnexpected("trash")(e); toast.error("Erreur"); });
 
   const handleDuplicate = (rowId: string) =>
@@ -370,6 +432,21 @@ export function ContentExplorer({
   const handleRestore = (rowId: string) =>
     c.restoreItem(rowId).then(() => toast.success("Restauré"))
       .catch((e) => { logUnexpected("restore")(e); toast.error("Erreur"); });
+
+  const handleCopyLink = async (d: ContentDisplay) => {
+    const id = String((d.data.id as string | undefined) ?? d.id);
+    const path = d.type === "course" ? `/course/${id}`
+      : d.type === "exam" ? `/join-exam/${String(d.data.joinCode ?? "")}`
+      : d.type === "slide" ? `/presentation-editor?id=${id}&present=1`
+      : d.type === "flashcard" ? `/preview/${id}`
+      : `/quiz/${id}`;
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}${path}`);
+      toast.success("Lien copié !");
+    } catch {
+      toast.error("Impossible de copier le lien");
+    }
+  };
 
   const handlePermDeleteConfirm = () => {
     if (permDeleteTarget) {
@@ -408,6 +485,7 @@ export function ContentExplorer({
     onFavorite: () => handleFavorite(d),
     onTrash: () => handleTrash(d.id),
     onDuplicate: () => handleDuplicate(d.id),
+    onCopyLink: () => handleCopyLink(d),
     onManageAccess: () => setManageAccessTarget({ contentId: d.id, title: d.title }),
   });
 
@@ -462,7 +540,7 @@ export function ContentExplorer({
   // ---- content by view ----
   let content: ReactNode;
   if (c.loading) {
-    content = <p className="py-10 text-center text-sm text-muted-foreground">Chargement…</p>;
+    content = <ContentSkeleton viewMode={viewMode} />;
   } else if (view === "trash") {
     content = (
       <TrashView

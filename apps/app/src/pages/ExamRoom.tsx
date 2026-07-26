@@ -13,6 +13,7 @@ import { AudienceCapError } from '@/lib/plans';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { Map as MapIcon, Flag, MessageCircle } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const PART_KEY = 'exam_participant';
 
@@ -335,7 +336,7 @@ export default function ExamRoom() {
   };
 
   /* ── Render helpers ───────────────────────────────────────────── */
-  if (phase === 'loading') return <Screen><Spinner /></Screen>;
+  if (phase === 'loading') return <Screen maxWidth={520}><ExamRoomSkeleton /></Screen>;
 
   if (phase === 'not-found') return (
     <Screen>
@@ -924,14 +925,19 @@ function Info({ icon, label }: { icon: string; label: string }) {
   );
 }
 
-function Spinner() {
+function ExamRoomSkeleton() {
   return (
-    <svg width="40" height="40" viewBox="0 0 40 40" style={{ animation: 'spin .9s linear infinite' }}>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-      <circle cx="20" cy="20" r="16" fill="none" stroke="var(--ap-line-2)" strokeWidth="4" />
-      <circle cx="20" cy="20" r="16" fill="none" stroke="var(--ap-brand)" strokeWidth="4"
-        strokeDasharray="80" strokeDashoffset="60" strokeLinecap="round" />
-    </svg>
+    <div style={{
+      width: '100%', padding: 24, background: 'var(--ap-card)',
+      border: 'var(--ap-border-w) solid var(--ap-line)', borderRadius: 'var(--ap-r-lg)',
+    }}>
+      <Skeleton className="mx-auto mb-5 h-12 w-12 rounded-full" />
+      <Skeleton className="mx-auto mb-3 h-7 w-3/5" />
+      <Skeleton className="mx-auto mb-8 h-4 w-4/5" />
+      <Skeleton className="mb-3 h-12 w-full" />
+      <Skeleton className="mb-5 h-12 w-full" />
+      <Skeleton className="h-12 w-full rounded-full" />
+    </div>
   );
 }
 

@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDraggable } from "@dnd-kit/core";
 import { toast } from "sonner";
-import { BookOpen, GraduationCap, GripVertical, Sparkles, Star } from "lucide-react";
+import { BookOpen, GraduationCap, GripVertical, Link2, Pencil, Sparkles, Star, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ContentExplorer } from "@/components/content/ContentExplorer";
 import type { ItemCtx } from "@/components/content/GenericItem";
@@ -137,7 +137,7 @@ function CourseRow({ d, ctx, navigate, userId }: CourseItemProps) {
   return (
     <div
       ref={setNodeRef}
-      className="ap-row flex items-center gap-4 cursor-pointer px-4 py-3 transition-colors"
+      className="ap-row group flex items-center gap-4 cursor-pointer px-4 py-3 transition-colors"
       style={{ borderBottom: "var(--ap-border-w) solid var(--ap-line)", opacity: isDragging ? 0.4 : 1 }}
       onClick={() => navigate(`/course/${course.id}`)}
       onMouseEnter={(e) => (e.currentTarget.style.background = "var(--ap-paper-2)")}
@@ -160,7 +160,16 @@ function CourseRow({ d, ctx, navigate, userId }: CourseItemProps) {
         <span className="ap-pill" style={{ fontSize: "11px", padding: "2px 8px" }}>{total} leçon{total !== 1 ? "s" : ""}</span>
         {total > 0 && <span className="ap-pill" style={{ fontSize: "11px", padding: "2px 8px" }}>{pct}%</span>}
       </div>
-      <div className="flex items-center gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+      <div className="ap-hover-actions flex items-center gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+        <button className="ap-btn ap-btn--ghost ap-btn--sm ap-icon-btn" title="Modifier" aria-label={`Modifier ${course.title}`} onClick={() => navigate(`/course-builder?courseId=${course.id}`)}>
+          <Pencil className="h-3.5 w-3.5" />
+        </button>
+        <button className="ap-btn ap-btn--ghost ap-btn--sm ap-icon-btn" title="Copier le lien" aria-label={`Copier le lien de ${course.title}`} onClick={ctx.onCopyLink}>
+          <Link2 className="h-3.5 w-3.5" />
+        </button>
+        <button className="ap-btn ap-btn--ghost ap-btn--sm ap-icon-btn" style={{ color: "var(--ap-quiz)" }} title="Mettre à la corbeille" aria-label={`Mettre ${course.title} à la corbeille`} onClick={ctx.onTrash}>
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
         <CourseContextMenu
           course={course}
           onEdit={() => navigate(`/course-builder?courseId=${course.id}`)}
@@ -170,10 +179,6 @@ function CourseRow({ d, ctx, navigate, userId }: CourseItemProps) {
           onManageAccess={ctx.onManageAccess}
           onTrash={ctx.onTrash}
         />
-        <button className="ap-btn ap-btn--sm ap-btn--pill ap-btn--pres" style={{ fontSize: "12px", padding: "4px 12px", display: "flex", alignItems: "center", gap: "4px" }} onClick={(e) => { e.stopPropagation(); navigate(`/course/${course.id}`); }}>
-          <BookOpen className="h-3 w-3" />
-          {progress && completed > 0 ? "Continuer" : "Commencer"}
-        </button>
       </div>
     </div>
   );

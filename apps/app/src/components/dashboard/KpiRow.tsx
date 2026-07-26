@@ -2,16 +2,7 @@ import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowDown, ArrowUp, BarChart2, Minus, Sparkles, Target, Users } from "lucide-react";
 import type { DashboardStats } from "@/lib/dashboardStats";
-
-const EMPTY_STATS: DashboardStats = {
-  totalCreations: 0, totalSessions: 0, totalParticipants: 0, avgScore: null,
-  trends: {
-    creations: { current: 0, previous: 0, deltaPct: null },
-    sessions: { current: 0, previous: 0, deltaPct: null },
-    participants: { current: 0, previous: 0, deltaPct: null },
-    avgScore: { current: null, previous: null },
-  },
-};
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Tile {
   icon: ReactNode;
@@ -41,7 +32,27 @@ function TrendBadge({ deltaPct }: { deltaPct: number | null }) {
 
 export function KpiRow({ stats }: { stats: DashboardStats | null }) {
   const navigate = useNavigate();
-  const s = stats ?? EMPTY_STATS;
+
+  if (!stats) {
+    return (
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
+        {Array.from({ length: 4 }, (_, index) => (
+          <div key={index} className="ap-card" style={{ padding: 20 }}>
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-10 w-10 rounded-xl" />
+              <div className="flex-1">
+                <Skeleton className="h-6 w-20" />
+                <Skeleton className="mt-2 h-3.5 w-28" />
+              </div>
+            </div>
+            <Skeleton className="mt-4 h-3 w-32" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  const s = stats;
 
   const scoreDeltaPct = ((): number | null => {
     const { current, previous } = s.trends.avgScore;

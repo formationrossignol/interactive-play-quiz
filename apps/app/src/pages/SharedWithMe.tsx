@@ -14,6 +14,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { t } from "@/lib/i18n";
 import { listSharedWithMe, type SharedContentRow } from "@/lib/sharing/sharingRepo";
 import type { ContentType } from "@/lib/content/types";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const TYPE_META: Record<ContentType, { label: string; icon: typeof GraduationCap; color: string }> = {
   quiz: { label: "Quiz", icon: ListChecks, color: "var(--ap-quiz)" },
@@ -64,6 +65,17 @@ const SharedWithMe = () => {
         )}
 
         <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))" }}>
+          {loading && [0, 1, 2, 3].map((item) => (
+            <div key={item} className="ap-card p-5">
+              <div className="mb-5 flex items-center justify-between">
+                <Skeleton className="h-8 w-8 rounded-full" />
+                <Skeleton className="h-7 w-24 rounded-full" />
+              </div>
+              <Skeleton className="mb-3 h-3 w-16" />
+              <Skeleton className="mb-2 h-5 w-4/5" />
+              <Skeleton className="h-4 w-full" />
+            </div>
+          ))}
           {sharedContent.map((row) => {
             const title = typeof row.data?.title === "string" ? row.data.title : "";
             const description = typeof row.data?.description === "string" ? row.data.description : "";

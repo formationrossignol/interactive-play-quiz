@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import { ImportFileModal } from "./ImportFileModal";
 import { getCurrentUser } from "@/lib/auth";
+import { useSaveShortcut } from "@/hooks/useSaveShortcut";
 import { getPlan, isQuestionTypeLocked } from "@/lib/plans";
 import { showError } from "@/lib/errorTaxonomy";
 import { saveQuiz, updateQuiz, getQuizById, type SavedQuiz } from "@/lib/quizStorage";
@@ -804,6 +805,7 @@ export const QuizBuilder = () => {
       showError(e, "QuizBuilder.save", "Erreur lors de l'enregistrement");
     }
   };
+  useSaveShortcut(handleSaveQuiz);
 
   const handlePreviewQuiz = () => {
     if (questions.length === 0) { toast.error("Ajoutez au moins une question pour prévisualiser"); return; }

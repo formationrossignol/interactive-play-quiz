@@ -1,5 +1,5 @@
 import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Check, Command, Globe, LogOut, Shield, User } from "lucide-react";
 import { getCurrentUser, logout } from "@/lib/auth";
 import { getLanguage, setLanguage, t, type Language } from "@/lib/i18n";
@@ -20,6 +20,7 @@ import { CommandPalette } from "@/components/CommandPalette";
 import { BrandMonogram } from "ui/BrandMonogram";
 import { BrandWordmark } from "ui/BrandWordmark";
 import { Footer } from "@/components/Footer";
+import { useScrollRestoration } from "@/hooks/useScrollRestoration";
 
 interface AppLayoutProps {
   subtitle?: string;
@@ -36,6 +37,8 @@ interface AppLayoutProps {
 export const AppLayout = ({ subtitle, extraSection, children }: AppLayoutProps) => {
   useLanguage();
   const navigate = useNavigate();
+  const location = useLocation();
+  useScrollRestoration(`${location.pathname}${location.search}`);
   const { isAdmin } = useIsAdmin();
   const [user, setUser] = useState(getCurrentUser());
   const [currentLanguage, setCurrentLanguage] = useState<Language>(getLanguage());
