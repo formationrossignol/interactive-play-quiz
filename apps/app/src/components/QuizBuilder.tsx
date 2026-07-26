@@ -27,15 +27,21 @@ import {
 import {
   Plus, Trash2, Upload, GripVertical, Settings,
   ChevronRight, ChevronDown, Eye, ImageIcon, MoreHorizontal,
-  Copy, Library, HelpCircle, Home,
+  ArrowRight, Copy, Library, HelpCircle, Home,
 } from "lucide-react";
 import { ImportFileModal } from "./ImportFileModal";
 import { getCurrentUser } from "@/lib/auth";
 import { getPlan, isQuestionTypeLocked } from "@/lib/plans";
 import { showError } from "@/lib/errorTaxonomy";
 import { saveQuiz, updateQuiz, getQuizById, type SavedQuiz } from "@/lib/quizStorage";
-import { getContent, upsertContentBySource } from "@/lib/content/contentRepo";
-import type { ContentType } from "@/lib/content/types";
+import {
+  getContent,
+  getContentBySource,
+  getContentBySourceAnyOwner,
+  updateCollaborativeContent,
+  upsertContentBySource,
+} from "@/lib/content/contentRepo";
+import type { ContentRow, ContentType } from "@/lib/content/types";
 import { getPollTemplate } from "@/lib/pollTemplates";
 import { getQuizTemplate } from "@/lib/quizTemplates";
 import { getFlashcardTemplate } from "@/lib/flashcardTemplates";
@@ -64,6 +70,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { BrandMonogram } from "ui/BrandMonogram";
+import { CollaboratorsButton } from "@/components/CollaboratorsButton";
 
 // ─── Design constants ──────────────────────────────────────────────────────
 // Ordre position → couleur/forme aligné sur l'écran joueur réel
@@ -510,6 +517,7 @@ export const QuizBuilder = () => {
   const [shouldBlockNavigation, setShouldBlockNavigation] = useState(true);
   const [pendingNavigatePath, setPendingNavigatePath] = useState<string | null>(null);
   const [titleTouched, setTitleTouched] = useState(false);
+  const [contentRow, setContentRow] = useState<ContentRow | null>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
 
   const firstRender = useRef(true);
@@ -576,6 +584,11 @@ export const QuizBuilder = () => {
     if (eq) {
       applyLoadedQuiz(eq);
       toast.success("Quiz chargé pour édition");
+      if (user) {
+        void getContentBySource(user.id, eq.type as ContentType, eq.id)
+          .then(setContentRow)
+          .catch(() => setContentRow(null));
+      }
       return;
     }
 
@@ -588,24 +601,21 @@ export const QuizBuilder = () => {
     let cancelled = false;
     (async () => {
       try {
-        const row = await getContent(quizId);
+        const row = await getContent(quizId)
+          ?? await getContentBySourceAnyOwner(quizType as ContentType, quizId);
         if (cancelled || !row?.data) return;
-        const recovered = saveQuiz(row.data as unknown as SavedQuiz);
+        const recovered = row.data as unknown as SavedQuiz;
         if (cancelled) return;
-        const user = getCurrentUser();
-        if (user) {
-          await upsertContentBySource(user.id, recovered.type as ContentType, recovered.id, recovered as unknown as Record<string, unknown>, !!recovered.isPublic);
-        }
-        if (cancelled) return;
-        toast.success("Quiz récupéré depuis la sauvegarde cloud");
-        navigate(`/builder?type=${recovered.type}&quizId=${recovered.id}`, { replace: true });
+        setContentRow(row);
+        applyLoadedQuiz(recovered);
+        toast.success(row.user_id === user?.id ? "Création récupérée depuis le cloud" : "Création collaborative chargée");
       } catch (e) {
         if (cancelled) return;
         showError(e, "QuizBuilder.recoverFromCloud");
       }
     })();
     return () => { cancelled = true; };
-  }, [quizId]);
+  }, [quizId, quizType, user?.id]);
 
   // ── Load template ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -748,22 +758,43 @@ export const QuizBuilder = () => {
         transitionTime, category, type: quizType,
         headerImage, theme, font: previewFont, ambianceId,
       };
-      const saved = quizId ? updateQuiz(quizId, data) : saveQuiz(data);
+      let saved: SavedQuiz | null;
+      if (contentRow && user && contentRow.user_id !== user.id) {
+        const current = contentRow.data as unknown as SavedQuiz;
+        saved = {
+          ...current,
+          ...data,
+          id: current.id ?? quizId ?? contentRow.id,
+          userId: contentRow.user_id,
+          createdAt: current.createdAt ?? new Date().toISOString(),
+        };
+        const updatedRow = await updateCollaborativeContent(
+          contentRow.id,
+          saved as unknown as Record<string, unknown>,
+        );
+        setContentRow(updatedRow);
+      } else {
+        saved = quizId ? updateQuiz(quizId, data) : saveQuiz(data);
+      }
       // Mirror into the Supabase `content` table so the item appears in the
       // content-backed lists (My Quizzes/Polls/Flashcards/Slides read from
       // there, not from the legacy `saved_quizzes` localStorage store).
       // Non-blocking: a local save already succeeded, so a network hiccup
       // must not break the flow.
-      const user = getCurrentUser();
-      if (saved && user) {
+      if (saved && user && (!contentRow || contentRow.user_id === user.id)) {
         try {
           await upsertContentBySource(user.id, saved.type as ContentType, saved.id, saved as unknown as Record<string, unknown>, !!saved.isPublic);
+          const row = await getContentBySource(user.id, saved.type as ContentType, saved.id);
+          if (row) setContentRow(row);
         } catch (e) { console.error("[QuizBuilder] content mirror failed", e); }
       }
       toast.success(quizId ? (isPoll ? "Sondage mis à jour" : "Quiz mis à jour") : (isPoll ? t("pollSaved") : t("quizSaved")));
       setSaveState("saved");
-      setShouldBlockNavigation(false);
-      navigate(isFlashcard ? "/my-flashcards" : isPoll ? "/my-polls" : "/my-quizzes");
+      if (!quizId && saved) {
+        setShouldBlockNavigation(false);
+        navigate(`/builder?type=${saved.type}&quizId=${saved.id}`, { replace: true });
+        setTimeout(() => setShouldBlockNavigation(true), 0);
+      }
     } catch (e) {
       showError(e, "QuizBuilder.save", "Erreur lors de l'enregistrement");
     }
@@ -1230,6 +1261,12 @@ export const QuizBuilder = () => {
 
         <div style={{ flex: 1 }} />
 
+        <CollaboratorsButton
+          contentId={contentRow?.id ?? null}
+          contentTitle={title || (isPoll ? "Nouveau sondage" : isFlashcard ? "Nouvelles flashcards" : "Nouveau quiz")}
+          canManage={contentRow?.user_id === user?.id}
+        />
+
         {/* Settings */}
         <button
           onClick={() => setSettingsOpen(true)}
@@ -1262,7 +1299,7 @@ export const QuizBuilder = () => {
           style={{ padding: "10px 18px", fontSize: 14 }}
         >
           {quizId ? "Mettre à jour" : "Publier"}
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+          <ArrowRight style={{ width: 15, height: 15 }} />
         </button>
       </div>
 
@@ -1437,7 +1474,12 @@ export const QuizBuilder = () => {
                     <Label className="cursor-pointer">{t("public")}</Label>
                     <TooltipProvider><Tooltip><TooltipTrigger asChild><button className="text-muted-foreground hover:text-foreground"><HelpCircle className="w-4 h-4" /></button></TooltipTrigger><TooltipContent><p className="max-w-xs">{t("publicTooltip")}</p></TooltipContent></Tooltip></TooltipProvider>
                   </div>
-                  <Switch checked={isPublic} onCheckedChange={setIsPublic} />
+                  <Switch
+                    checked={isPublic}
+                    onCheckedChange={setIsPublic}
+                    disabled={Boolean(contentRow && contentRow.user_id !== user?.id)}
+                    title={contentRow && contentRow.user_id !== user?.id ? "Seul le propriétaire peut modifier la visibilité" : undefined}
+                  />
                 </div>
                 <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                   <div className="flex items-center gap-2">

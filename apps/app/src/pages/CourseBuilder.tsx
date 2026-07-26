@@ -4,6 +4,7 @@ import { AppLayout } from "@/components/AppLayout";
 import { Breadcrumb } from "@/components/Breadcrumb";
 import RichTextEditor from "@/components/RichTextEditor";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { getCurrentUser } from "@/lib/auth";
 import {
   createCourse,
@@ -19,7 +20,14 @@ import { getUserQuizzes, getUserFlashcardSets } from "@/lib/quizStorage";
 import { assertSafeImportFile } from "@/lib/fileValidation";
 import { CONTENT_CAPS, getPlan, PlanLimitError } from "@/lib/plans";
 import { PlanLimitBlocker } from "@/components/PlanLimitBlocker";
-import { upsertContentBySource } from "@/lib/content/contentRepo";
+import {
+  getContent,
+  getContentBySource,
+  getContentBySourceAnyOwner,
+  updateCollaborativeContent,
+  upsertContentBySource,
+} from "@/lib/content/contentRepo";
+import type { ContentRow } from "@/lib/content/types";
 import { toast } from "sonner";
 import {
   BarChart2,
@@ -39,6 +47,7 @@ import {
   Video,
   X,
 } from "lucide-react";
+import { CollaboratorsButton } from "@/components/CollaboratorsButton";
 
 const extractYouTubeId = (url: string): string | null => {
   const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
@@ -101,6 +110,7 @@ const CourseBuilder = () => {
   const [collapsedModules, setCollapsedModules] = useState<Set<string>>(new Set());
   const [selected, setSelected] = useState<SelectedItem>({ type: "info" });
   const [saving, setSaving] = useState(false);
+  const [contentRow, setContentRow] = useState<ContentRow | null>(null);
 
   const userQuizzes = user ? getUserQuizzes(user.id).filter((q) => q.type === "quiz") : [];
   const userPolls = user ? getUserQuizzes(user.id).filter((q) => q.type === "poll") : [];
@@ -124,9 +134,35 @@ const CourseBuilder = () => {
         setCoverImage(course.coverImage || "");
         setModules(course.modules);
         setGeneratedByAI(!!course.generatedByAI);
+        void getContentBySource(user.id, "course", course.id)
+          .then(setContentRow)
+          .catch(() => setContentRow(null));
       } else {
-        toast.error("Cours introuvable");
-        navigate("/my-courses");
+        let cancelled = false;
+        (async () => {
+          try {
+            const row = await getContentBySourceAnyOwner("course", courseId)
+              ?? await getContent(courseId);
+            if (cancelled || !row) return;
+            const sharedCourse = row.data as unknown as Course;
+            setContentRow(row);
+            setTitle(sharedCourse.title);
+            setDescription(sharedCourse.description);
+            setOverview(sharedCourse.overview || "");
+            setObjectives(sharedCourse.objectives || []);
+            setCategory(sharedCourse.category || "Autre");
+            setIsPublic(sharedCourse.isPublic);
+            setCoverImage(sharedCourse.coverImage || "");
+            setModules(sharedCourse.modules);
+            setGeneratedByAI(!!sharedCourse.generatedByAI);
+            toast.success("Cours collaboratif chargé");
+          } catch {
+            if (cancelled) return;
+            toast.error("Cours introuvable");
+            navigate("/my-courses");
+          }
+        })();
+        return () => { cancelled = true; };
       }
     }
   }, [courseId, user, navigate]);
@@ -146,9 +182,26 @@ const CourseBuilder = () => {
         isFavorite: false,
         modules,
         tags: [],
+        generatedByAI,
       };
       let saved: Course | null;
-      if (courseId) {
+      if (contentRow && contentRow.user_id !== user.id) {
+        const current = contentRow.data as unknown as Course;
+        saved = {
+          ...current,
+          ...data,
+          id: current.id ?? courseId ?? contentRow.id,
+          userId: contentRow.user_id,
+          createdAt: current.createdAt ?? new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        const updatedRow = await updateCollaborativeContent(
+          contentRow.id,
+          saved as unknown as Record<string, unknown>,
+        );
+        setContentRow(updatedRow);
+        toast.success("Cours collaboratif enregistré");
+      } else if (courseId) {
         saved = updateCourse(courseId, data);
         toast.success("Cours enregistré");
       } else {
@@ -159,13 +212,17 @@ const CourseBuilder = () => {
       // Mirror into the Supabase `content` table so it's viewable by anyone
       // other than the owner's own browser (shared/public course viewing),
       // same pattern QuizBuilder.tsx/ExamBuilder.tsx already use for their types.
-      if (saved && user) {
+      if (saved && user && (!contentRow || contentRow.user_id === user.id)) {
         try {
           await upsertContentBySource(user.id, 'course', saved.id, saved as unknown as Record<string, unknown>, saved.isPublic);
+          const row = await getContentBySource(user.id, "course", saved.id);
+          if (row) setContentRow(row);
         } catch (e) { console.error('[CourseBuilder] content mirror failed', e); }
       }
 
-      if (!courseId) navigate("/my-courses");
+      if (!courseId && saved) {
+        navigate(`/course-builder?courseId=${saved.id}`, { replace: true });
+      }
     } catch (e) {
       if (e instanceof PlanLimitError) {
         toast.error(e.message, { action: { label: 'Passer Pro', onClick: () => { window.location.href = '/pricing'; } } });
@@ -354,6 +411,12 @@ const CourseBuilder = () => {
         )}
 
         <div style={{ flex: 1 }} />
+
+        <CollaboratorsButton
+          contentId={contentRow?.id ?? null}
+          contentTitle={title || "Nouveau cours"}
+          canManage={contentRow?.user_id === user.id}
+        />
 
         <button
           className="ap-btn ap-btn--pill"
@@ -659,25 +722,15 @@ const CourseBuilder = () => {
                         </SelectContent>
                       </Select>
                     </div>
-                    <div style={{ flex: "0 0 auto", paddingTop: 24, display: "flex", alignItems: "center" }}>
-                      <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", userSelect: "none" }}>
-                        <div
-                          onClick={() => setIsPublic((v) => !v)}
-                          style={{
-                            width: 40, height: 22, borderRadius: 999,
-                            background: isPublic ? "var(--ap-brand)" : "var(--ap-line)",
-                            position: "relative", transition: "background 0.2s", cursor: "pointer",
-                          }}
-                        >
-                          <div style={{
-                            position: "absolute", top: 3, left: isPublic ? 20 : 2,
-                            width: 16, height: 16, borderRadius: "50%",
-                            background: "#fff", transition: "left 0.2s",
-                            boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
-                          }} />
-                        </div>
-                        <span className="ap-muted" style={{ fontSize: "13px", fontWeight: 600 }}>Public</span>
-                      </label>
+                    <div style={{ flex: "0 0 auto", paddingTop: 24, display: "flex", alignItems: "center", gap: 10 }}>
+                      <Switch
+                        checked={isPublic}
+                        onCheckedChange={setIsPublic}
+                        disabled={Boolean(contentRow && contentRow.user_id !== user.id)}
+                        aria-label="Rendre le cours public"
+                        title={contentRow && contentRow.user_id !== user.id ? "Seul le propriétaire peut modifier la visibilité" : undefined}
+                      />
+                      <span className="ap-muted" style={{ fontSize: "13px", fontWeight: 600 }}>Public</span>
                     </div>
                   </div>
                 </div>

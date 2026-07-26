@@ -14,6 +14,7 @@ import { PresentationMode, exportPresentationAsFile, importPresentationFromFile 
 import { getContent } from "@/lib/content/contentRepo";
 import { isLegacySlideShape, migrateLegacySlideToPresentation } from "./utils/migrateLegacySlide";
 import { createBlankPresentation, type Presentation } from "./types/presentation";
+import { CollaboratorsButton } from "@/components/CollaboratorsButton";
 
 interface PresentationEditorProps {
   contentId: string | null;
@@ -30,13 +31,20 @@ export function PresentationEditor({ contentId, userId, initialPresenting = fals
   const setTitle = useDocStore((s) => s.setTitle);
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState("");
+  const [contentOwnerId, setContentOwnerId] = useState(userId);
   const activeSlideId = useEditorUIStore((s) => s.activeSlideId);
   const setActiveSlideId = useEditorUIStore((s) => s.setActiveSlideId);
   const setZoom = useEditorUIStore((s) => s.setZoom);
   const zoom = useEditorUIStore((s) => s.zoom);
 
-  const { status } = useAutosave(contentId, userId);
+  const { status, contentId: savedContentId } = useAutosave(contentId, userId);
   useKeyboardShortcuts(activeSlideId ?? "", presenting);
+
+  useEffect(() => {
+    if (!contentId && savedContentId) {
+      navigate(`/presentation-editor?id=${savedContentId}`, { replace: true });
+    }
+  }, [contentId, navigate, savedContentId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -49,6 +57,7 @@ export function PresentationEditor({ contentId, userId, initialPresenting = fals
       try {
         const row = await getContent(contentId);
         if (cancelled) return;
+        if (row) setContentOwnerId(row.user_id);
         const raw = row?.data ?? {};
         const pres: Presentation = isLegacySlideShape(raw)
           ? migrateLegacySlideToPresentation(raw as Parameters<typeof migrateLegacySlideToPresentation>[0])
@@ -133,6 +142,11 @@ export function PresentationEditor({ contentId, userId, initialPresenting = fals
           <span style={{ fontSize: 12, color: "var(--ap-muted)" }}>
             {status === "saving" ? "Enregistrement…" : status === "saved" ? "Enregistré" : status === "error" ? "Erreur d'enregistrement" : ""}
           </span>
+          <CollaboratorsButton
+            contentId={savedContentId}
+            contentTitle={presentation.title}
+            canManage={contentOwnerId === userId}
+          />
           <button
             className="ap-btn ap-btn--sm ap-btn--ghost ap-icon-btn"
             aria-label="Réduire le zoom"

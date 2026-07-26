@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useDocStore } from "../store/useDocStore";
-import { createContent, updateContent } from "@/lib/content/contentRepo";
+import { createContent, updateCollaborativeContent } from "@/lib/content/contentRepo";
 
 export type SaveStatus = "idle" | "saving" | "saved" | "error";
 
@@ -39,7 +39,7 @@ export function useAutosave(initialContentId: string | null, userId: string) {
     timerRef.current = setTimeout(async () => {
       try {
         if (contentId) {
-          await updateContent(contentId, { data: presentation as unknown as Record<string, unknown> });
+          await updateCollaborativeContent(contentId, presentation as unknown as Record<string, unknown>);
         } else {
           const row = await createContent(userId, "slide", presentation as unknown as Record<string, unknown>);
           setContentId(row.id);

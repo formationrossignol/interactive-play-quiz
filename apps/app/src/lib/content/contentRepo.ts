@@ -174,6 +174,23 @@ export async function updateContent(
 }
 
 /**
+ * Update only a document's JSON payload. Owners and collaborators with the
+ * `editor` role are authorized by the database RPC; metadata such as owner,
+ * folder and publication state cannot be changed through this path.
+ */
+export async function updateCollaborativeContent(
+  id: string,
+  data: Record<string, unknown>,
+): Promise<ContentRow> {
+  const { data: row, error } = await supabase.rpc('update_collaborative_content', {
+    p_content_id: id,
+    p_data: data,
+  });
+  if (error) throw error;
+  return row as ContentRow;
+}
+
+/**
  * Duplicate a content row for its owner.
  *
  * quiz/poll/flashcard/course are still edited through their legacy

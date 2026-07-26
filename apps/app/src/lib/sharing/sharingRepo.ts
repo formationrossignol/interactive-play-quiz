@@ -22,7 +22,14 @@ export interface ContentShare {
   shared_with_user_id: string | null;
   shared_with_group_id: string | null;
   pending_email: string | null;
+  permission: SharePermission;
   created_at: string;
+}
+
+export type SharePermission = 'viewer' | 'editor';
+
+export interface SharedContentRow extends ContentRow {
+  access_level: SharePermission;
 }
 
 export interface UsernameMatch {
@@ -113,32 +120,65 @@ export async function listContentShares(contentId: string): Promise<ContentShare
   return data ?? [];
 }
 
-export async function addContentShareByUserId(contentId: string, userId: string): Promise<ContentShare> {
+export async function addContentShareByUserId(
+  contentId: string,
+  userId: string,
+  permission: SharePermission = 'viewer',
+): Promise<ContentShare> {
   const { data, error } = await supabase
     .from('content_shares')
-    .insert({ content_id: contentId, shared_with_user_id: userId })
+    .upsert(
+      { content_id: contentId, shared_with_user_id: userId, permission },
+      { onConflict: 'content_id,shared_with_user_id' },
+    )
     .select()
     .single();
   if (error) throw error;
   return data;
 }
 
-export async function addContentShareByGroupId(contentId: string, groupId: string): Promise<ContentShare> {
+export async function addContentShareByGroupId(
+  contentId: string,
+  groupId: string,
+  permission: SharePermission = 'viewer',
+): Promise<ContentShare> {
   const { data, error } = await supabase
     .from('content_shares')
-    .insert({ content_id: contentId, shared_with_group_id: groupId })
+    .upsert(
+      { content_id: contentId, shared_with_group_id: groupId, permission },
+      { onConflict: 'content_id,shared_with_group_id' },
+    )
     .select()
     .single();
   if (error) throw error;
   return data;
 }
 
-// The DB function inserts `on conflict (...) do nothing returning * into result`, so a
-// duplicate invite (already shared) leaves `result` NULL and PostgREST returns `data: null`.
-export async function resolveContentShareByEmail(contentId: string, email: string): Promise<ContentShare | null> {
-  const { data, error } = await supabase.rpc('resolve_content_share', { p_content_id: contentId, p_email: email });
+// The DB function resolves accounts server-side and updates the role when the
+// same address is invited again.
+export async function resolveContentShareByEmail(
+  contentId: string,
+  email: string,
+  permission: SharePermission = 'viewer',
+): Promise<ContentShare | null> {
+  const { data, error } = await supabase.rpc('resolve_content_share', {
+    p_content_id: contentId,
+    p_email: email,
+    p_permission: permission,
+  });
   if (error) throw error;
   return data ?? null;
+}
+
+export async function updateContentSharePermission(
+  shareId: string,
+  permission: SharePermission,
+): Promise<void> {
+  const { error } = await supabase
+    .from('content_shares')
+    .update({ permission })
+    .eq('id', shareId);
+  if (error) throw error;
 }
 
 export async function removeContentShare(shareId: string): Promise<void> {
@@ -151,11 +191,11 @@ export function mergeSharedContentIds(...lists: { content_id: string }[][]): str
   return Array.from(new Set(lists.flat().map((r) => r.content_id)));
 }
 
-/** Courses shared with `userId`, directly or via any group they belong to. */
-export async function listSharedWithMe(userId: string): Promise<ContentRow[]> {
+/** Content shared with `userId`, directly or via any group they belong to. */
+export async function listSharedWithMe(userId: string): Promise<SharedContentRow[]> {
   const { data: direct, error: directError } = await supabase
     .from('content_shares')
-    .select('content_id')
+    .select('content_id, permission')
     .eq('shared_with_user_id', userId);
   if (directError) throw directError;
 
@@ -166,25 +206,37 @@ export async function listSharedWithMe(userId: string): Promise<ContentRow[]> {
   if (groupsError) throw groupsError;
   const groupIds = (myGroups ?? []).map((g: { group_id: string }) => g.group_id);
 
-  let viaGroups: { content_id: string }[] = [];
+  let viaGroups: { content_id: string; permission: SharePermission }[] = [];
   if (groupIds.length > 0) {
     const { data, error } = await supabase
       .from('content_shares')
-      .select('content_id')
+      .select('content_id, permission')
       .in('shared_with_group_id', groupIds);
     if (error) throw error;
     viaGroups = data ?? [];
   }
 
-  const contentIds = mergeSharedContentIds(direct ?? [], viaGroups);
+  const allShares = [
+    ...((direct ?? []) as { content_id: string; permission: SharePermission }[]),
+    ...viaGroups,
+  ];
+  const contentIds = mergeSharedContentIds(allShares);
   if (contentIds.length === 0) return [];
 
   const { data: rows, error: rowsError } = await supabase
     .from('content')
     .select('*')
-    .eq('type', 'course')
     .in('id', contentIds)
     .order('updated_at', { ascending: false });
   if (rowsError) throw rowsError;
-  return rows ?? [];
+  const permissionByContentId = new Map<string, SharePermission>();
+  allShares.forEach(({ content_id, permission }) => {
+    if (permission === 'editor' || !permissionByContentId.has(content_id)) {
+      permissionByContentId.set(content_id, permission);
+    }
+  });
+  return (rows ?? []).map((row) => ({
+    ...row,
+    access_level: permissionByContentId.get(row.id) ?? 'viewer',
+  }));
 }
