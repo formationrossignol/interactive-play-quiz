@@ -96,8 +96,8 @@ function CourseCard({ d, ctx, navigate, userId }: CourseItemProps) {
               <span className="text-xs" style={{ color: "var(--ap-muted)" }}>{pct}% terminé</span>
               <span className="text-xs" style={{ color: "var(--ap-muted)" }}>{completed}/{total}</span>
             </div>
-            <div style={{ height: 4, background: "var(--ap-line)", borderRadius: 999 }}>
-              <div style={{ height: "100%", width: `${pct}%`, background: "var(--ap-pres)", borderRadius: 999, transition: "width 0.3s" }} />
+            <div style={{ height: 4, background: "var(--ap-line)", borderRadius: "var(--ap-r-sm)" }}>
+              <div style={{ height: "100%", width: `${pct}%`, background: "var(--ap-pres)", borderRadius: "var(--ap-r-sm)", transition: "width 0.3s" }} />
             </div>
           </div>
         )}
@@ -151,8 +151,8 @@ function CourseRow({ d, ctx, navigate, userId }: CourseItemProps) {
         <p className="ap-h3 truncate" style={{ fontSize: "14px", marginBottom: "2px" }}>{course.title}</p>
         {course.description && <p className="ap-muted truncate" style={{ fontSize: "12px" }}>{course.description}</p>}
         {total > 0 && progress && (
-          <div style={{ height: 3, background: "var(--ap-line)", borderRadius: 999, marginTop: 4, width: 120 }}>
-            <div style={{ height: "100%", width: `${pct}%`, background: "var(--ap-pres)", borderRadius: 999 }} />
+          <div style={{ height: 3, background: "var(--ap-line)", borderRadius: "var(--ap-r-sm)", marginTop: 4, width: 120 }}>
+            <div style={{ height: "100%", width: `${pct}%`, background: "var(--ap-pres)", borderRadius: "var(--ap-r-sm)" }} />
           </div>
         )}
       </div>

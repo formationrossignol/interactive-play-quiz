@@ -41,7 +41,7 @@ export const TransitionCountdown = ({
             background: "rgba(255,255,255,0.12)",
             border: "2px solid rgba(255,255,255,0.25)",
             padding: "6px 15px",
-            borderRadius: 999,
+            borderRadius: "var(--ap-r-sm)",
             marginBottom: 22,
             fontFamily: "var(--ap-font-body)",
           }}

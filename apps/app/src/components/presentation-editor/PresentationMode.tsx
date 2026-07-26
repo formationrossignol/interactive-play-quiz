@@ -92,7 +92,7 @@ export function PresentationMode({ onExit }: { onExit: () => void }) {
           Style
         </button>
         {styleOpen && (
-          <div style={{ width: 300, marginTop: 8, padding: 14, borderRadius: 15, background: "rgba(22,22,28,.92)", border: "1px solid rgba(255,255,255,.24)", boxShadow: "0 12px 30px rgba(0,0,0,.28)", backdropFilter: "blur(12px)" }}>
+          <div style={{ width: 300, marginTop: 8, padding: 14, borderRadius: "var(--ap-r-md)", background: "rgba(22,22,28,.92)", border: "1px solid rgba(255,255,255,.24)", boxShadow: "0 12px 30px rgba(0,0,0,.28)", backdropFilter: "blur(12px)" }}>
             <label style={{ display: "grid", gap: 6, marginBottom: 12, fontSize: 12, fontWeight: 800 }}>
               Police
               <select

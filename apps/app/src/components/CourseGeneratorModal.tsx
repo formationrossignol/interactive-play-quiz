@@ -120,7 +120,7 @@ export const CourseGeneratorModal = ({ open, onClose }: Props) => {
           {/* File chips */}
           <div style={{ display:"flex", gap:6, marginBottom:20 }}>
             {FILE_CHIPS.map((c) => (
-              <span key={c.ext} style={{ fontSize:11, fontWeight:800, letterSpacing:".06em", padding:"4px 10px", borderRadius:999, color:c.color, background:c.bg }}>
+              <span key={c.ext} style={{ fontSize:11, fontWeight:800, letterSpacing:".06em", padding:"4px 10px", borderRadius:"var(--ap-r-sm)", color:c.color, background:c.bg }}>
                 {c.ext}
               </span>
             ))}
@@ -220,7 +220,7 @@ export const CourseGeneratorModal = ({ open, onClose }: Props) => {
                 <button
                   onClick={reset}
                   style={{
-                    flex:1, padding:"13px 0", borderRadius:999, border:"var(--ap-border-w) solid var(--ap-line)",
+                    flex:1, padding:"13px 0", borderRadius:"var(--ap-r-sm)", border:"var(--ap-border-w) solid var(--ap-line)",
                     background:"var(--ap-card)", fontFamily:"var(--ap-font-body)", fontWeight:800, fontSize:15,
                     color:"var(--ap-ink)", cursor:"pointer",
                   }}
@@ -232,7 +232,7 @@ export const CourseGeneratorModal = ({ open, onClose }: Props) => {
                 onClick={generate}
                 disabled={!file}
                 style={{
-                  flex:1, padding:"13px 0", borderRadius:999, border:"none",
+                  flex:1, padding:"13px 0", borderRadius:"var(--ap-r-sm)", border:"none",
                   background: !file ? "var(--ap-line-2)" : "var(--ap-brand)",
                   color:"#fff", fontFamily:"var(--ap-font-body)", fontWeight:800, fontSize:15,
                   cursor: !file ? "not-allowed" : "pointer",

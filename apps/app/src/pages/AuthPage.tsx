@@ -622,7 +622,7 @@ const AuthPage = () => {
           style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "44px", cursor: "pointer" }}
           onClick={() => { window.location.href = "/"; }}
         >
-          <span style={{ width: 46, height: 46, borderRadius: "14px", background: "rgba(255,255,255,.16)", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }}>
+          <span style={{ width: 46, height: 46, borderRadius: "var(--ap-r-md)", background: "rgba(255,255,255,.16)", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }}>
             <BrandMonogram size={24} diamondColor="#b4a9ff" />
           </span>
           <BrandWordmark size={26} color="#fff" />
@@ -644,7 +644,7 @@ const AuthPage = () => {
         </div>
 
         {/* Testimonial */}
-        <div style={{ background: "rgba(255,255,255,.10)", border: "1px solid rgba(255,255,255,.18)", borderRadius: "18px", padding: "20px 22px", backdropFilter: "blur(4px)" }}>
+        <div style={{ background: "rgba(255,255,255,.10)", border: "1px solid rgba(255,255,255,.18)", borderRadius: "var(--ap-r-md)", padding: "20px 22px", backdropFilter: "blur(4px)" }}>
           <p style={{ margin: "0 0 12px", fontSize: "14.5px", fontWeight: 700, lineHeight: 1.5, color: "#fff" }}>
             « Mes M2 réclament le quiz Brivia à chaque fin de module. Le taux de réussite à l'examen a gagné 12 points. »
           </p>

@@ -139,7 +139,7 @@ const SaveStateIndicator = ({ state }: { state: "saved" | "unsaved" }) => (
     style={{
       display: "flex", alignItems: "center", gap: 7,
       fontSize: 12.5, fontWeight: 700,
-      padding: "5px 12px", borderRadius: 999,
+      padding: "5px 12px", borderRadius: "var(--ap-r-sm)",
       border: `2px solid ${state === "saved" ? "color-mix(in srgb, var(--ap-pres) 35%, transparent)" : "var(--ap-line)"}`,
       background: state === "saved" ? "var(--ap-pres-soft)" : "var(--ap-paper)",
       color: state === "saved" ? "var(--ap-pres-deep)" : "var(--ap-muted)",
@@ -261,11 +261,11 @@ const PhonePreview = ({
   return (
     <div style={{
       width: 258, flexShrink: 0,
-      background: "var(--ap-ink)", borderRadius: 34, padding: 9,
+      background: "var(--ap-ink)", borderRadius: "var(--ap-r-md)", padding: 9,
       boxShadow: "0 10px 0 #16102a, 0 30px 50px rgba(36,27,58,.28)",
     }}>
       <div style={{
-        background: "var(--ap-paper)", borderRadius: 26, overflow: "hidden",
+        background: "var(--ap-paper)", borderRadius: "var(--ap-r-md)", overflow: "hidden",
         display: "flex", flexDirection: "column", minHeight: 470,
       }}>
         {/* Notch */}
@@ -276,7 +276,7 @@ const PhonePreview = ({
           <span style={{
             fontFamily: "var(--ap-font-display)", fontWeight: 600, fontSize: 13,
             display: "inline-flex", alignItems: "center", gap: 5,
-            background: "white", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: 999,
+            background: "white", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-sm)",
             padding: "4px 10px",
           }}>
             <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--ap-brand)", display: "inline-block" }} />
@@ -286,7 +286,7 @@ const PhonePreview = ({
             fontSize: 11, fontWeight: 800, color: "var(--ap-flash-deep)",
             background: "var(--ap-flash-soft)",
             border: "2px solid color-mix(in srgb, var(--ap-flash) 45%, transparent)",
-            padding: "4px 9px", borderRadius: 999,
+            padding: "4px 9px", borderRadius: "var(--ap-r-sm)",
           }}>
             Q{questionIndex + 1}/{totalQuestions || 1} · {pts} pts
           </span>
@@ -305,7 +305,7 @@ const PhonePreview = ({
             minHeight: layout.mediaPosition === "background" && hasMedia ? 176 : 74,
             margin: "4px 12px 10px",
             overflow: "hidden",
-            borderRadius: 15,
+            borderRadius: "var(--ap-r-md)",
             background: layout.mediaPosition === "background" && hasMedia ? "var(--ap-ink)" : "transparent",
           }}
         >
@@ -353,7 +353,7 @@ const PhonePreview = ({
               <div key={i} style={{
                 display: "flex", alignItems: "center", gap: 9,
                 background: "white", border: "var(--ap-border-w) solid var(--ap-line)",
-                borderRadius: 13, padding: "10px 11px",
+                borderRadius: "var(--ap-r-md)", padding: "10px 11px",
                 fontWeight: 700, fontSize: 12.5,
                 boxShadow: "0 3px 0 var(--ap-line)", color: "var(--ap-ink)",
               }}>
@@ -949,7 +949,7 @@ export const QuizBuilder = () => {
               style={{
                 display: "inline-flex", alignItems: "center", gap: 8,
                 fontSize: 12.5, fontWeight: 800, padding: "7px 14px",
-                borderRadius: 999, cursor: "pointer", marginBottom: 18,
+                borderRadius: "var(--ap-r-sm)", cursor: "pointer", marginBottom: 18,
                 color: meta.dot === "var(--ap-quiz)" ? "var(--ap-quiz-deep)" : meta.dot === "var(--ap-poll)" ? "var(--ap-poll-deep)" : "var(--ap-pres-deep)",
                 background: meta.dot === "var(--ap-quiz)" ? "var(--ap-quiz-soft)" : meta.dot === "var(--ap-poll)" ? "var(--ap-poll-soft)" : "var(--ap-pres-soft)",
                 border: `2px solid color-mix(in srgb, ${meta.dot} 40%, transparent)`,
@@ -996,7 +996,7 @@ export const QuizBuilder = () => {
                     </small>
                   </span>
                   {locked && (
-                    <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 800, color: "var(--ap-brand)", background: "var(--ap-brand-soft)", padding: "2px 6px", borderRadius: 999 }}>
+                    <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 800, color: "var(--ap-brand)", background: "var(--ap-brand-soft)", padding: "2px 6px", borderRadius: "var(--ap-r-sm)" }}>
                       Pro
                     </span>
                   )}
@@ -1159,7 +1159,7 @@ export const QuizBuilder = () => {
                   return (
                     <button key={opt.value} onClick={() => upd({ points: opt.value })}
                       style={{
-                        flex: 1, border: "none", borderRadius: 12, padding: "9px 6px",
+                        flex: 1, border: "none", borderRadius: "var(--ap-r-md)", padding: "9px 6px",
                         background: isOn ? "var(--ap-ink)" : "transparent",
                         color: isOn ? "white" : "var(--ap-muted)",
                         fontWeight: 800, fontSize: 12.5, cursor: "pointer",
@@ -1181,7 +1181,7 @@ export const QuizBuilder = () => {
                   return (
                     <button key={opt.value} onClick={() => upd({ timeLimit: opt.value })}
                       style={{
-                        flex: 1, border: "none", borderRadius: 12, padding: "9px 6px",
+                        flex: 1, border: "none", borderRadius: "var(--ap-r-md)", padding: "9px 6px",
                         background: isOn ? "var(--ap-brand)" : "transparent",
                         color: isOn ? "white" : "var(--ap-muted)",
                         fontWeight: 700, fontSize: 12.5, cursor: "pointer",
@@ -1421,7 +1421,7 @@ export const QuizBuilder = () => {
                   onClick={handlePreviewQuiz}
                   disabled={questions.length === 0}
                   className="ap-btn ap-btn--ghost"
-                  style={{ padding: "10px 18px", borderRadius: 999, fontSize: 14 }}
+                  style={{ padding: "10px 18px", borderRadius: "var(--ap-r-sm)", fontSize: 14 }}
                 >
                   <Eye style={{ width: 15, height: 15 }} />
                   Aperçu

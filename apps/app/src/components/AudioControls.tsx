@@ -39,7 +39,7 @@ export const AudioControls = ({ audio, className }: AudioControlsProps) => {
           style={{
             position: 'absolute', top: 'calc(100% + 8px)', right: 0, zIndex: 30,
             background: 'rgba(20,14,40,0.95)', border: '1px solid rgba(255,255,255,0.15)',
-            borderRadius: 12, padding: '12px 14px', width: 160,
+            borderRadius: "var(--ap-r-md)", padding: '12px 14px', width: 160,
           }}
         >
           <input

@@ -47,6 +47,7 @@ import {
 } from "@/lib/content/contentView";
 import type { ContentType, FolderRow } from "@/lib/content/types";
 import type { ItemCtx } from "./GenericItem";
+import { ExplorerEmptyState } from "./ExplorerEmptyState";
 
 const PAGE_SIZE = 12;
 
@@ -183,7 +184,7 @@ function ShortcutRow({
             fontSize: 11,
             fontWeight: 800,
             padding: "2px 7px",
-            borderRadius: 999,
+            borderRadius: "var(--ap-r-sm)",
             background: active ? "var(--ap-card)" : "var(--ap-paper-2)",
             color: active ? "var(--ap-brand)" : "var(--ap-muted)",
           }}
@@ -217,7 +218,7 @@ function FolderDropCard({ folder, count, onOpen }: { folder: FolderRow; count: n
         style={{
           width: 44,
           height: 44,
-          borderRadius: 13,
+          borderRadius: "var(--ap-r-md)",
           background: "var(--ap-brand-soft)",
           color: "var(--ap-brand)",
           display: "flex",
@@ -388,13 +389,10 @@ export function ContentExplorer({
       const label = view === "favorites" ? "Favoris" : view === "public" ? "Contenus publics" : "Corbeille";
       return [{ label }];
     }
-    const root: BreadcrumbItem = c.currentFolderId === null
-      ? { label: "Racine" }
-      : { label: "Racine", onClick: () => goFolder(null) };
     const folders: BreadcrumbItem[] = breadcrumb.map((f) =>
       f.id === c.currentFolderId ? { label: f.name } : { label: f.name, onClick: () => goFolder(f.id) },
     );
-    return [root, ...folders];
+    return folders;
     // eslint-disable-next-line react-hooks/exhaustive-deps -- goFolder is stable per render, not memoized
   }, [view, breadcrumb, c.currentFolderId]);
 
@@ -517,24 +515,21 @@ export function ContentExplorer({
   };
 
   const emptyBox = (title: string, body: string, cs: ReactNode) => (
-    <div style={{ borderRadius: "var(--ap-r-lg)", border: "var(--ap-border-w) dashed var(--ap-line-2)", background: "var(--ap-paper-2)", padding: "48px 24px", textAlign: "center" }}>
-      <div style={{ width: 64, height: 64, margin: "0 auto 16px", borderRadius: 20, background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ap-brand)" }}>
-        {cs}
-      </div>
-      <h3 className="ap-h3" style={{ fontSize: 19, marginBottom: 6 }}>{title}</h3>
-      <p className="ap-muted" style={{ fontSize: 14, margin: "0 0 20px" }}>{body}</p>
-      {view === "all" && !searching && (
+    <ExplorerEmptyState
+      icon={cs}
+      title={title}
+      body={body}
+      action={view === "all" && !searching ? (
         <button className={`ap-btn ap-btn--sm ap-btn--pill ${accentBtn}`} onClick={cta.onClick}>{cta.label}</button>
-      )}
-      {searching && (
+      ) : searching ? (
         <button
           className="ap-btn ap-btn--ghost ap-btn--sm ap-btn--pill"
           onClick={() => { setSearch(""); setCategory("Tous"); }}
         >
           Effacer la recherche
         </button>
-      )}
-    </div>
+      ) : undefined}
+    />
   );
 
   // ---- content by view ----

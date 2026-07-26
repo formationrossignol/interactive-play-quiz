@@ -58,7 +58,7 @@ export function QuestionLayoutPicker({
                 justifyContent: compact ? "center" : "flex-start",
                 gap: compact ? 4 : 8,
                 padding: compact ? "8px 4px" : "10px",
-                borderRadius: 12,
+                borderRadius: "var(--ap-r-md)",
                 border: `2px solid ${selected ? "var(--ap-brand)" : "var(--ap-line)"}`,
                 background: selected ? "var(--ap-brand-soft)" : "var(--ap-card)",
                 color: selected ? "var(--ap-brand-deep)" : "var(--ap-muted)",

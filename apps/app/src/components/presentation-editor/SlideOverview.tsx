@@ -41,7 +41,7 @@ function OverviewSlide({ slide, index, width, height, active, onClick }: { slide
   const presentation = useDocStore.getState().presentation;
   return (
     <button type="button" onClick={onClick} style={{ border: 0, padding: 0, background: "transparent", textAlign: "left", cursor: "pointer" }}>
-      <div style={{ width: previewWidth, height: height * scale, border: `3px solid ${active ? "var(--ap-brand)" : "var(--ap-line)"}`, borderRadius: 14, overflow: "hidden", background: slide.background?.value ?? presentation?.theme?.backgroundColor ?? "#fff", boxShadow: active ? "0 0 0 4px var(--ap-brand-soft)" : "0 4px 14px rgba(30,32,45,.08)" }}>
+      <div style={{ width: previewWidth, height: height * scale, border: `3px solid ${active ? "var(--ap-brand)" : "var(--ap-line)"}`, borderRadius: "var(--ap-r-md)", overflow: "hidden", background: slide.background?.value ?? presentation?.theme?.backgroundColor ?? "#fff", boxShadow: active ? "0 0 0 4px var(--ap-brand-soft)" : "0 4px 14px rgba(30,32,45,.08)" }}>
         <div style={{ position: "relative", width, height, transform: `scale(${scale})`, transformOrigin: "top left", pointerEvents: "none", color: presentation?.theme?.textColor ?? "#24202d", fontFamily: presentation?.theme?.fontFamily ?? "Arial, sans-serif" }}>
           {slide.elements.map((element) => <StaticElement key={element.id} slideId={slide.id} element={element} />)}
           <LineArrowLayer lines={lines} width={width} height={height} />

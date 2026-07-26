@@ -32,12 +32,12 @@
   --ap-line:        #efe6d3;  /* bordures / séparateurs */
   --ap-line-2:      #d8ccb5;  /* bordures pointillées / dropzones */
 
-  /* Rayons — tout est rond */
-  --ap-r-sm: 12px;
-  --ap-r-md: 16px;
-  --ap-r-lg: 24px;
-  --ap-r-xl: 30px;
-  --ap-r-pill: 999px;
+  /* Rayons — une courbe légère et cohérente, sans effet « bulle ». */
+  --ap-r-sm: 5px;
+  --ap-r-md: 7px;
+  --ap-r-lg: 9px;
+  --ap-r-xl: 11px;
+  --ap-r-pill: 7px;
 
   /* Ombres « 3D douce » : un offset plein (la couleur) + une diffuse */
   --ap-shadow-soft:  0 4px 0 var(--ap-line);

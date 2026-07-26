@@ -48,11 +48,11 @@
   --ap-line-2:      #D6C7BE; /* outline */
 
   /* Rayons — squircle généreux et asymétrique, geste M3 Expressive */
-  --ap-r-sm: 16px;
-  --ap-r-md: 24px;
-  --ap-r-lg: 32px;
-  --ap-r-xl: 40px;
-  --ap-r-pill: 999px;
+  --ap-r-sm: 5px;
+  --ap-r-md: 7px;
+  --ap-r-lg: 9px;
+  --ap-r-xl: 11px;
+  --ap-r-pill: 7px;
 
   /* Élévation tonale — teintée primaire, jamais noir/violet plat */
   --ap-shadow-soft:  0 1px 3px rgba(255, 90, 54, .14), 0 1px 2px rgba(32, 26, 23, .06);

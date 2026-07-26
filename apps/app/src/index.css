@@ -40,7 +40,7 @@
     --input: 37 43% 88%;
     --ring: 258 100% 65%;
 
-    --radius: 1rem;
+    --radius: 0.5rem;
 
     --success: 160 79% 42%;          /* --ap-pres    #15c08a */
     --success-foreground: 0 0% 100%;
@@ -531,3 +531,11 @@
 }
 .prose a { color: var(--ap-brand); text-decoration: underline; }
 .prose p { margin: 0.4em 0; }
+
+/* Les anciennes utilitaires Tailwind très arrondies convergent vers le même
+   rayon léger. `rounded-full` reste réservé aux vrais cercles fonctionnels. */
+.ap-app .rounded-xl,
+.ap-app .rounded-2xl,
+.ap-app .rounded-3xl {
+  border-radius: var(--ap-r-lg) !important;
+}

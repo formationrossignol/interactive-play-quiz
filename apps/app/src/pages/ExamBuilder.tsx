@@ -288,7 +288,7 @@ export default function ExamBuilder() {
         <div style={{ flex: 1 }} />
         {saved && (
           <span style={{
-            fontSize: 11, fontWeight: 800, letterSpacing: '.06em', padding: '4px 10px', borderRadius: 999,
+            fontSize: 11, fontWeight: 800, letterSpacing: '.06em', padding: '4px 10px', borderRadius: "var(--ap-r-sm)",
             background: saved.status === 'draft' ? 'var(--ap-paper-2)' : 'var(--ap-pres-soft)',
             color: saved.status === 'draft' ? 'var(--ap-muted)' : 'var(--ap-pres-deep)',
           }}>
@@ -318,7 +318,7 @@ export default function ExamBuilder() {
             <button
               onClick={() => { navigate(`/exam/${saved.id}/admin`); }}
               style={{
-                marginLeft: 'auto', padding: '8px 16px', borderRadius: 999,
+                marginLeft: 'auto', padding: '8px 16px', borderRadius: "var(--ap-r-sm)",
                 background: 'var(--ap-pres)', color: '#fff', border: 'none',
                 fontFamily: 'var(--ap-font-body)', fontWeight: 800, fontSize: 13, cursor: 'pointer',
               }}
@@ -571,7 +571,7 @@ export default function ExamBuilder() {
             <button
               onClick={goPrev}
               style={{
-                flex: 1, padding: '14px 0', borderRadius: 999,
+                flex: 1, padding: '14px 0', borderRadius: "var(--ap-r-sm)",
                 border: 'var(--ap-border-w) solid var(--ap-line)', background: 'var(--ap-card)',
                 fontFamily: 'var(--ap-font-body)', fontWeight: 800, fontSize: 15,
                 color: 'var(--ap-ink)', cursor: 'pointer',
@@ -585,7 +585,7 @@ export default function ExamBuilder() {
             <button
               onClick={goNext}
               style={{
-                flex: 2, padding: '14px 0', borderRadius: 999, border: 'none',
+                flex: 2, padding: '14px 0', borderRadius: "var(--ap-r-sm)", border: 'none',
                 background: 'var(--ap-brand)', color: '#fff',
                 fontFamily: 'var(--ap-font-body)', fontWeight: 800, fontSize: 15,
                 cursor: 'pointer', boxShadow: '0 4px 0 var(--ap-brand-deep)',
@@ -600,7 +600,7 @@ export default function ExamBuilder() {
                 onClick={() => handleSave(false)}
                 disabled={saving}
                 style={{
-                  flex: 1, padding: '14px 0', borderRadius: 999,
+                  flex: 1, padding: '14px 0', borderRadius: "var(--ap-r-sm)",
                   border: 'var(--ap-border-w) solid var(--ap-line)', background: 'var(--ap-card)',
                   fontFamily: 'var(--ap-font-body)', fontWeight: 800, fontSize: 15,
                   color: 'var(--ap-ink)', cursor: saving ? 'not-allowed' : 'pointer',
@@ -615,7 +615,7 @@ export default function ExamBuilder() {
                 onClick={() => handleSave(true)}
                 disabled={saving}
                 style={{
-                  flex: 2, padding: '14px 0', borderRadius: 999, border: 'none',
+                  flex: 2, padding: '14px 0', borderRadius: "var(--ap-r-sm)", border: 'none',
                   background: 'var(--ap-brand)', color: '#fff',
                   fontFamily: 'var(--ap-font-body)', fontWeight: 800, fontSize: 15,
                   cursor: saving ? 'not-allowed' : 'pointer',

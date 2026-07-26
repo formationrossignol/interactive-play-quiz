@@ -291,7 +291,7 @@ export const PollSession = ({ poll }: PollSessionProps) => {
           <section aria-label="Participants connectés">
             <div style={{ display: "flex", alignItems: "baseline", gap: 12, margin: "4px 2px 16px" }}>
               <h2 style={{ fontFamily: "var(--ap-font-display)", fontWeight: 600, fontSize: 22, margin: 0 }}>Participants</h2>
-              <span style={{ fontFamily: "var(--ap-font-mono)", fontWeight: 700, fontSize: 15, fontVariantNumeric: "tabular-nums", color: "var(--ap-poll-deep)", background: "var(--ap-poll-soft)", border: "2px solid rgba(47,123,255,.4)", borderRadius: 999, padding: "4px 13px" }} role="status" aria-live="polite">
+              <span style={{ fontFamily: "var(--ap-font-mono)", fontWeight: 700, fontSize: 15, fontVariantNumeric: "tabular-nums", color: "var(--ap-poll-deep)", background: "var(--ap-poll-soft)", border: "2px solid rgba(47,123,255,.4)", borderRadius: "var(--ap-r-sm)", padding: "4px 13px" }} role="status" aria-live="polite">
                 {players.length}
               </span>
             </div>
@@ -346,7 +346,7 @@ export const PollSession = ({ poll }: PollSessionProps) => {
     <div style={{ ...pageSt, paddingBottom: 110 }}>
       {/* Topbar */}
       <div style={{ ...topbarSt, position: "sticky", top: 0, zIndex: 20, background: "var(--ap-card)", borderBottom: "var(--ap-border-w) solid var(--ap-line)" }}>
-        <span style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--ap-poll-deep)", background: "var(--ap-poll-soft)", border: "2px solid rgba(47,123,255,.35)", padding: "5px 13px", borderRadius: 999 }}>
+        <span style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--ap-poll-deep)", background: "var(--ap-poll-soft)", border: "2px solid rgba(47,123,255,.35)", padding: "5px 13px", borderRadius: "var(--ap-r-sm)" }}>
           📊 Sondage en direct
         </span>
         <span style={{ fontWeight: 800, fontSize: 14, color: "var(--ap-muted)" }}>
@@ -361,7 +361,7 @@ export const PollSession = ({ poll }: PollSessionProps) => {
             fontFamily: "var(--ap-font-mono)", fontWeight: 700, fontSize: 14, fontVariantNumeric: "tabular-nums",
             color: answeredCount > 0 && answeredCount >= players.length && players.length > 0 ? "var(--ap-pres-deep)" : "var(--ap-ink)",
             background: answeredCount > 0 && answeredCount >= players.length && players.length > 0 ? "var(--ap-pres-soft)" : "var(--ap-paper-2)",
-            border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: 999, padding: "5px 13px",
+            border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-sm)", padding: "5px 13px",
           }}
         >
           <PencilLine style={{ width:14, height:14, display:"inline", verticalAlign:"-2px", marginRight:6 }} /> {answeredCount}<span style={{ color: "var(--ap-muted)" }}>/{Math.max(players.length, answeredCount)}</span> réponse{answeredCount > 1 ? "s" : ""}
@@ -535,7 +535,7 @@ const topbarSt: React.CSSProperties = {
 };
 
 const logoSt: React.CSSProperties = {
-  width: 36, height: 36, borderRadius: 12, background: "var(--ap-poll)",
+  width: 36, height: 36, borderRadius: "var(--ap-r-md)", background: "var(--ap-poll)",
   display: "grid", placeItems: "center", boxShadow: "0 4px 0 var(--ap-poll-deep)",
   transform: "rotate(-6deg)", flexShrink: 0,
 };
@@ -544,7 +544,7 @@ const quitBtnSt: React.CSSProperties = {
   display: "inline-flex", alignItems: "center", gap: 8,
   fontWeight: 800, fontSize: 13, color: "var(--ap-muted)", cursor: "pointer",
   background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)",
-  borderRadius: 999, padding: "8px 15px", boxShadow: "0 3px 0 var(--ap-line)",
+  borderRadius: "var(--ap-r-sm)", padding: "8px 15px", boxShadow: "0 3px 0 var(--ap-line)",
   fontFamily: "var(--ap-font-body)",
 };
 

@@ -539,7 +539,7 @@ export default function ExamRoom() {
             <div style={{
               fontSize: 13, fontWeight: 800, color: 'var(--ap-muted)',
               background: 'var(--ap-paper-2)',
-              padding: '4px 12px', borderRadius: 999, whiteSpace: 'nowrap',
+              padding: '4px 12px', borderRadius: "var(--ap-r-sm)", whiteSpace: 'nowrap',
             }}>
               {minutesLeft} min
             </div>
@@ -559,7 +559,7 @@ export default function ExamRoom() {
             <MessageCircle size={17} />
             {unreadCount > 0 && (
               <span style={{
-                position: 'absolute', top: -4, right: -4, minWidth: 16, height: 16, borderRadius: 999,
+                position: 'absolute', top: -4, right: -4, minWidth: 16, height: 16, borderRadius: "var(--ap-r-sm)",
                 background: '#ff5a4d', color: '#fff', fontSize: 10, fontWeight: 800,
                 display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 3px',
               }}>
@@ -629,7 +629,7 @@ export default function ExamRoom() {
               <button
                 onClick={() => void handleSendChat()}
                 disabled={chatSending}
-                style={{ padding: '8px 12px', borderRadius: 999, border: 'none', background: 'var(--ap-brand)', color: '#fff', fontFamily: 'var(--ap-font-body)', fontWeight: 800, fontSize: 12, cursor: 'pointer' }}
+                style={{ padding: '8px 12px', borderRadius: "var(--ap-r-sm)", border: 'none', background: 'var(--ap-brand)', color: '#fff', fontFamily: 'var(--ap-font-body)', fontWeight: 800, fontSize: 12, cursor: 'pointer' }}
               >
                 Envoyer
               </button>
@@ -745,7 +745,7 @@ export default function ExamRoom() {
             <button
               onClick={() => setConfirmSubmit(true)}
               style={{
-                width: '100%', padding: '16px 0', borderRadius: 999, border: 'none',
+                width: '100%', padding: '16px 0', borderRadius: "var(--ap-r-sm)", border: 'none',
                 background: answered === orderedQs.length ? 'var(--ap-brand)' : 'var(--ap-line-2)',
                 color: '#fff', fontFamily: 'var(--ap-font-body)', fontWeight: 800, fontSize: 16,
                 cursor: 'pointer', boxShadow: answered === orderedQs.length ? '0 4px 0 var(--ap-brand-deep)' : 'none',
@@ -769,14 +769,14 @@ export default function ExamRoom() {
               <div style={{ display: 'flex', gap: 10 }}>
                 <button
                   onClick={() => setConfirmSubmit(false)}
-                  style={{ flex: 1, padding: '12px 0', borderRadius: 999, border: 'var(--ap-border-w) solid var(--ap-line)', background: 'var(--ap-paper-2)', fontFamily: 'var(--ap-font-body)', fontWeight: 800, fontSize: 14, cursor: 'pointer', color: 'var(--ap-ink)' }}
+                  style={{ flex: 1, padding: '12px 0', borderRadius: "var(--ap-r-sm)", border: 'var(--ap-border-w) solid var(--ap-line)', background: 'var(--ap-paper-2)', fontFamily: 'var(--ap-font-body)', fontWeight: 800, fontSize: 14, cursor: 'pointer', color: 'var(--ap-ink)' }}
                 >
                   Continuer
                 </button>
                 <button
                   onClick={handleSubmit}
                   disabled={submitting}
-                  style={{ flex: 2, padding: '12px 0', borderRadius: 999, border: 'none', background: 'var(--ap-brand)', color: '#fff', fontFamily: 'var(--ap-font-body)', fontWeight: 800, fontSize: 14, cursor: 'pointer' }}
+                  style={{ flex: 2, padding: '12px 0', borderRadius: "var(--ap-r-sm)", border: 'none', background: 'var(--ap-brand)', color: '#fff', fontFamily: 'var(--ap-font-body)', fontWeight: 800, fontSize: 14, cursor: 'pointer' }}
                 >
                   {submitting ? '…' : '✅ Soumettre définitivement'}
                 </button>
@@ -918,7 +918,7 @@ function Info({ icon, label }: { icon: string; label: string }) {
       display: 'flex', alignItems: 'center', gap: 6,
       fontSize: 13, fontWeight: 800, color: 'var(--ap-ink)',
       background: 'var(--ap-paper)', border: 'var(--ap-border-w) solid var(--ap-line)',
-      borderRadius: 999, padding: '6px 14px',
+      borderRadius: "var(--ap-r-sm)", padding: '6px 14px',
     }}>
       <span>{icon}</span><span>{label}</span>
     </div>
@@ -966,7 +966,7 @@ const inputSt: React.CSSProperties = {
 };
 
 const primaryBtnSt: React.CSSProperties = {
-  width: '100%', marginTop: 20, padding: '14px 0', borderRadius: 999,
+  width: '100%', marginTop: 20, padding: '14px 0', borderRadius: "var(--ap-r-sm)",
   border: 'none', background: 'var(--ap-brand)', color: '#fff',
   fontFamily: 'var(--ap-font-body)', fontWeight: 800, fontSize: 15,
   cursor: 'pointer', boxShadow: '0 4px 0 var(--ap-brand-deep)',

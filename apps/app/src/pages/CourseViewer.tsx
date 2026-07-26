@@ -16,8 +16,10 @@ import {
   MonitorSmartphone,
   PlaySquare,
   RefreshCw,
+  ScrollText,
   Sparkles,
   Star,
+  Trophy,
   Upload,
   Video,
 } from "lucide-react";
@@ -45,6 +47,7 @@ import { getQuizById } from "@/lib/quizStorage";
 import { assertSafeImportFile } from "@/lib/fileValidation";
 import { sanitizeHtml } from "@/lib/sanitizeHtml";
 import { toast } from "sonner";
+import { CourseCertificateDialog } from "@/components/CourseCertificateDialog";
 
 /* ─── Type system ──────────────────────────────────────────────── */
 const TYPE_LABEL: Record<string, string> = {
@@ -274,7 +277,7 @@ function CourseOverviewScreen({
               {course.category && (
                 <span style={{
                   display: "inline-block", fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase",
-                  padding: "5px 12px", borderRadius: 999, background: "rgba(255,255,255,.15)", color: "#fff",
+                  padding: "5px 12px", borderRadius: "var(--ap-r-sm)", background: "rgba(255,255,255,.15)", color: "#fff",
                 }}>
                   {course.category}
                 </span>
@@ -284,7 +287,7 @@ function CourseOverviewScreen({
                   title="Ce cours a été généré par IA à partir d'un document."
                   style={{
                     display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11.5, fontWeight: 800,
-                    padding: "5px 12px", borderRadius: 999, background: "rgba(255,255,255,.15)", color: "#fff",
+                    padding: "5px 12px", borderRadius: "var(--ap-r-sm)", background: "rgba(255,255,255,.15)", color: "#fff",
                   }}
                 >
                   <Sparkles style={{ width: 12, height: 12 }} />
@@ -457,7 +460,7 @@ function CourseOverviewScreen({
                 style={{
                   display: "inline-flex", alignItems: "center", gap: 8,
                   fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 13.5,
-                  padding: "10px 18px", borderRadius: 999, border: "none", cursor: "pointer",
+                  padding: "10px 18px", borderRadius: "var(--ap-r-sm)", border: "none", cursor: "pointer",
                   color: "#fff", background: "var(--ap-brand)", boxShadow: "0 4px 0 var(--ap-brand-deep)",
                 }}
               >
@@ -494,8 +497,8 @@ function CourseOverviewScreen({
                   <span>{progressPct}% terminé</span>
                   <span>{completedCount}/{totalLessons}</span>
                 </div>
-                <div style={{ height: 6, background: "var(--ap-line)", borderRadius: 999 }}>
-                  <div style={{ height: "100%", width: `${progressPct}%`, background: allDone ? "var(--ap-flash)" : "var(--ap-brand)", borderRadius: 999, transition: "width .3s" }} />
+                <div style={{ height: 6, background: "var(--ap-line)", borderRadius: "var(--ap-r-sm)" }}>
+                  <div style={{ height: "100%", width: `${progressPct}%`, background: allDone ? "var(--ap-flash)" : "var(--ap-brand)", borderRadius: "var(--ap-r-sm)", transition: "width .3s" }} />
                 </div>
               </div>
             )}
@@ -505,7 +508,7 @@ function CourseOverviewScreen({
               style={{
                 width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
                 fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 15,
-                padding: "14px 20px", borderRadius: 999, border: "none", cursor: "pointer",
+                padding: "14px 20px", borderRadius: "var(--ap-r-sm)", border: "none", cursor: "pointer",
                 color: "#fff", background: "var(--ap-brand)", boxShadow: "0 4px 0 var(--ap-brand-deep)",
               }}
             >
@@ -531,6 +534,7 @@ const CourseViewer = () => {
   const [collapsedModules, setCollapsedModules] = useState<Set<string>>(new Set());
   const [pdfObjectUrl, setPdfObjectUrl] = useState<string | null>(null);
   const [doneBtnPop, setDoneBtnPop] = useState(false);
+  const [certificateOpen, setCertificateOpen] = useState(false);
   const mainRef = useRef<HTMLDivElement>(null);
   const confettiFiredRef = useRef(false);
 
@@ -909,13 +913,28 @@ const CourseViewer = () => {
             className={`cv-finish${allDone ? " show" : ""}`}
             style={{
               margin: "0 32px 24px", maxWidth: 720, marginLeft: "auto", marginRight: "auto",
-              background: "linear-gradient(135deg, var(--ap-flash-soft), #fff)",
-              border: "2px solid color-mix(in srgb, var(--ap-flash) 55%, transparent)",
-              borderRadius: "var(--ap-r-lg)", boxShadow: "0 5px 0 color-mix(in srgb, var(--ap-flash) 45%, transparent)",
-              padding: "20px 24px", alignItems: "center", gap: 16,
+              background: "var(--ap-card)",
+              border: "var(--ap-border-w) solid var(--ap-line)",
+              borderLeft: "5px solid var(--ap-brand)",
+              borderRadius: "var(--ap-r-lg)", boxShadow: "var(--ap-shadow-soft)",
+              padding: "20px 24px", alignItems: "center", gap: 16, flexWrap: "wrap",
             }}
           >
-            <span style={{ fontSize: 38 }} aria-hidden="true">🏆</span>
+            <span
+              aria-hidden="true"
+              style={{
+                width: 44,
+                height: 44,
+                display: "grid",
+                placeItems: "center",
+                flexShrink: 0,
+                borderRadius: "var(--ap-r-md)",
+                background: "var(--ap-brand-soft)",
+                color: "var(--ap-brand)",
+              }}
+            >
+              <Trophy size={23} />
+            </span>
             <div>
               <h3 style={{ fontFamily: "var(--ap-font-display)", fontWeight: 600, fontSize: 19 }}>Cours terminé, bravo !</h3>
               <p style={{ fontSize: 13.5, fontWeight: 700, color: "var(--ap-muted)" }}>
@@ -924,15 +943,17 @@ const CourseViewer = () => {
             </div>
             <div style={{ flex: 1 }} />
             <button
-              className="cv-btn"
+              type="button"
+              className="ap-btn ap-btn--sm"
+              onClick={() => setCertificateOpen(true)}
               style={{
                 display: "inline-flex", alignItems: "center", gap: 9,
                 fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 14.5,
-                padding: "12px 22px", borderRadius: 999, border: "none", cursor: "pointer",
-                color: "var(--ap-ink)", background: "var(--ap-flash)", boxShadow: "0 4px 0 var(--ap-flash-deep)",
+                padding: "12px 18px", cursor: "pointer",
               }}
             >
-              📜 Obtenir mon attestation
+              <ScrollText size={17} />
+              Obtenir mon attestation
             </button>
           </div>
 
@@ -945,7 +966,7 @@ const CourseViewer = () => {
                 <span style={{
                   display: "inline-flex", alignItems: "center", gap: 8,
                   fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase",
-                  padding: "5px 12px", borderRadius: 999, border: `2px solid ${kicker[2]}`,
+                  padding: "5px 12px", borderRadius: "var(--ap-r-sm)", border: `2px solid ${kicker[2]}`,
                   color: kicker[0], background: kicker[1],
                 }}>
                   {TYPE_LABEL[lesson.type] ?? lesson.type}
@@ -1004,7 +1025,7 @@ const CourseViewer = () => {
                   display: "flex", alignItems: "center", gap: 20,
                 }}>
                   <span style={{
-                    flexShrink: 0, width: 64, height: 64, borderRadius: 18,
+                    flexShrink: 0, width: 64, height: 64, borderRadius: "var(--ap-r-md)",
                     display: "grid", placeItems: "center", fontSize: 30,
                     background: TYPE_LAUNCH_BG.quiz,
                   }} aria-hidden="true">🎯</span>
@@ -1023,7 +1044,7 @@ const CourseViewer = () => {
                       style={{
                         display: "inline-flex", alignItems: "center", gap: 9,
                         fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 14.5,
-                        padding: "12px 22px", borderRadius: 999, border: "none", cursor: "pointer",
+                        padding: "12px 22px", borderRadius: "var(--ap-r-sm)", border: "none", cursor: "pointer",
                         color: "#fff", background: "var(--ap-brand)", boxShadow: "0 4px 0 var(--ap-brand-deep)",
                       }}
                     >
@@ -1042,7 +1063,7 @@ const CourseViewer = () => {
                   display: "flex", alignItems: "center", gap: 20,
                 }}>
                   <span style={{
-                    flexShrink: 0, width: 64, height: 64, borderRadius: 18,
+                    flexShrink: 0, width: 64, height: 64, borderRadius: "var(--ap-r-md)",
                     display: "grid", placeItems: "center", fontSize: 30,
                     background: TYPE_LAUNCH_BG.poll,
                   }} aria-hidden="true">📊</span>
@@ -1061,7 +1082,7 @@ const CourseViewer = () => {
                       style={{
                         display: "inline-flex", alignItems: "center", gap: 9,
                         fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 14.5,
-                        padding: "12px 22px", borderRadius: 999, border: "none", cursor: "pointer",
+                        padding: "12px 22px", borderRadius: "var(--ap-r-sm)", border: "none", cursor: "pointer",
                         color: "#fff", background: "var(--ap-poll)", boxShadow: "0 4px 0 var(--ap-poll-deep)",
                       }}
                     >
@@ -1080,7 +1101,7 @@ const CourseViewer = () => {
                   display: "flex", alignItems: "center", gap: 20,
                 }}>
                   <span style={{
-                    flexShrink: 0, width: 64, height: 64, borderRadius: 18,
+                    flexShrink: 0, width: 64, height: 64, borderRadius: "var(--ap-r-md)",
                     display: "grid", placeItems: "center", fontSize: 30,
                     background: TYPE_LAUNCH_BG.flashcard,
                   }} aria-hidden="true">🃏</span>
@@ -1099,7 +1120,7 @@ const CourseViewer = () => {
                       style={{
                         display: "inline-flex", alignItems: "center", gap: 9,
                         fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 14.5,
-                        padding: "12px 22px", borderRadius: 999, border: "none", cursor: "pointer",
+                        padding: "12px 22px", borderRadius: "var(--ap-r-sm)", border: "none", cursor: "pointer",
                         color: "#fff", background: "var(--ap-brand)", boxShadow: "0 4px 0 var(--ap-brand-deep)",
                       }}
                     >
@@ -1118,7 +1139,7 @@ const CourseViewer = () => {
                     boxShadow: "0 5px 0 var(--ap-line)", padding: 24,
                     display: "flex", alignItems: "center", gap: 20,
                   }}>
-                    <span style={{ flexShrink: 0, width: 64, height: 64, borderRadius: 18, display: "grid", placeItems: "center", fontSize: 30, background: TYPE_LAUNCH_BG.document }}>🧪</span>
+                    <span style={{ flexShrink: 0, width: 64, height: 64, borderRadius: "var(--ap-r-md)", display: "grid", placeItems: "center", fontSize: 30, background: TYPE_LAUNCH_BG.document }}>🧪</span>
                     <p style={{ color: "var(--ap-muted)", fontWeight: 700, fontSize: 14 }}>Aucun document importé.</p>
                   </div>
                 ) : lesson.documentMimeType === "text/markdown" ? (
@@ -1140,7 +1161,7 @@ const CourseViewer = () => {
                     boxShadow: "0 5px 0 var(--ap-line)", padding: 24,
                     display: "flex", alignItems: "center", gap: 20,
                   }}>
-                    <span style={{ flexShrink: 0, width: 64, height: 64, borderRadius: 18, display: "grid", placeItems: "center", fontSize: 30, background: TYPE_LAUNCH_BG.document }}>🧪</span>
+                    <span style={{ flexShrink: 0, width: 64, height: 64, borderRadius: "var(--ap-r-md)", display: "grid", placeItems: "center", fontSize: 30, background: TYPE_LAUNCH_BG.document }}>🧪</span>
                     <div style={{ flex: 1 }}>
                       <h3 style={{ fontFamily: "var(--ap-font-display)", fontWeight: 600, fontSize: 18 }}>{lesson.documentName}</h3>
                       <p style={{ fontSize: 13, fontWeight: 700, color: "var(--ap-muted)", marginTop: 3 }}>Aperçu non disponible, téléchargez.</p>
@@ -1151,7 +1172,7 @@ const CourseViewer = () => {
                       style={{
                         display: "inline-flex", alignItems: "center", gap: 9,
                         fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 14.5,
-                        padding: "12px 22px", borderRadius: 999, border: "none", cursor: "pointer",
+                        padding: "12px 22px", borderRadius: "var(--ap-r-sm)", border: "none", cursor: "pointer",
                         color: "var(--ap-ink)", background: "var(--ap-card)", textDecoration: "none",
                         boxShadow: "0 4px 0 var(--ap-line), inset 0 0 0 2px var(--ap-line)",
                       }}
@@ -1171,7 +1192,7 @@ const CourseViewer = () => {
                     boxShadow: "0 5px 0 var(--ap-line)", padding: 24,
                     display: "flex", alignItems: "center", gap: 20,
                   }}>
-                    <span style={{ flexShrink: 0, width: 64, height: 64, borderRadius: 18, display: "grid", placeItems: "center", fontSize: 30, background: TYPE_LAUNCH_BG.document }}>🌐</span>
+                    <span style={{ flexShrink: 0, width: 64, height: 64, borderRadius: "var(--ap-r-md)", display: "grid", placeItems: "center", fontSize: 30, background: TYPE_LAUNCH_BG.document }}>🌐</span>
                     <p style={{ color: "var(--ap-muted)", fontWeight: 700, fontSize: 14 }}>Aucune page intégrée configurée.</p>
                   </div>
                 ) : (
@@ -1197,14 +1218,14 @@ const CourseViewer = () => {
                   }}>
                     {submission ? (
                       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                        <span style={{ flexShrink: 0, width: 48, height: 48, borderRadius: 14, display: "grid", placeItems: "center", fontSize: 22, background: TYPE_LAUNCH_BG.document }}>✅</span>
+                        <span style={{ flexShrink: 0, width: 48, height: 48, borderRadius: "var(--ap-r-md)", display: "grid", placeItems: "center", fontSize: 22, background: TYPE_LAUNCH_BG.document }}>✅</span>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <p style={{ fontWeight: 700, fontSize: 14.5 }}>{submission.fileName}</p>
                           <p style={{ fontSize: 12.5, color: "var(--ap-muted)", fontWeight: 700, marginTop: 2 }}>
                             Déposé le {new Date(submission.submittedAt).toLocaleString("fr")}
                           </p>
                         </div>
-                        <label className="cv-btn" style={{ display: "inline-flex", alignItems: "center", gap: 8, fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 13.5, padding: "10px 16px", borderRadius: 999, cursor: "pointer", color: "var(--ap-ink)", background: "var(--ap-card)", boxShadow: "0 4px 0 var(--ap-line), inset 0 0 0 2px var(--ap-line)" }}>
+                        <label className="cv-btn" style={{ display: "inline-flex", alignItems: "center", gap: 8, fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 13.5, padding: "10px 16px", borderRadius: "var(--ap-r-sm)", cursor: "pointer", color: "var(--ap-ink)", background: "var(--ap-card)", boxShadow: "0 4px 0 var(--ap-line), inset 0 0 0 2px var(--ap-line)" }}>
                           Remplacer
                           <input type="file" style={{ display: "none" }} onChange={handleLessonFileUpload} />
                         </label>
@@ -1242,7 +1263,7 @@ const CourseViewer = () => {
                 style={{
                   display: "inline-flex", alignItems: "center", gap: 9,
                   fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 14.5,
-                  padding: "12px 22px", borderRadius: 999, border: "none", cursor: "pointer",
+                  padding: "12px 22px", borderRadius: "var(--ap-r-sm)", border: "none", cursor: "pointer",
                   color: isCompleted ? "var(--ap-pres-deep)" : "#fff",
                   background: isCompleted ? "var(--ap-card)" : "var(--ap-pres-deep)",
                   boxShadow: isCompleted
@@ -1263,7 +1284,7 @@ const CourseViewer = () => {
                   style={{
                     display: "inline-flex", alignItems: "center", gap: 9,
                     fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 14.5,
-                    padding: "12px 22px", borderRadius: 999, cursor: "pointer",
+                    padding: "12px 22px", borderRadius: "var(--ap-r-sm)", cursor: "pointer",
                     color: "var(--ap-ink)", background: "var(--ap-card)", border: "none",
                     boxShadow: "0 4px 0 var(--ap-line), inset 0 0 0 2px var(--ap-line)",
                   }}
@@ -1280,7 +1301,7 @@ const CourseViewer = () => {
                   style={{
                     display: "inline-flex", alignItems: "center", gap: 9,
                     fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 14.5,
-                    padding: "12px 22px", borderRadius: 999, border: "none", cursor: "pointer",
+                    padding: "12px 22px", borderRadius: "var(--ap-r-sm)", border: "none", cursor: "pointer",
                     color: "#fff", background: "var(--ap-brand)", boxShadow: "0 4px 0 var(--ap-brand-deep)",
                   }}
                 >
@@ -1294,6 +1315,14 @@ const CourseViewer = () => {
         </div>
       </div>
       )}
+      <CourseCertificateDialog
+        open={certificateOpen}
+        onOpenChange={setCertificateOpen}
+        course={course}
+        learnerName={user.username || user.email}
+        learnerId={user.id}
+        totalLessons={totalLessons}
+      />
     </div>
   );
 };

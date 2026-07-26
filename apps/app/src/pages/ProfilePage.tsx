@@ -275,7 +275,7 @@ const ProfilePage = () => {
                       display: "inline-flex", alignItems: "center", gap: "6px",
                       background: `var(${meta.color})`, color: "#fff",
                       fontFamily: "var(--ap-font-display)", fontWeight: 700,
-                      fontSize: "13px", padding: "5px 14px", borderRadius: "999px",
+                      fontSize: "13px", padding: "5px 14px", borderRadius: "var(--ap-r-sm)",
                       boxShadow: `0 3px 0 var(${meta.colorDeep})`,
                     }}
                   >
@@ -305,8 +305,8 @@ const ProfilePage = () => {
                             <span>{CONTENT_KIND_LABELS[kind]}</span>
                             <span>{used} / {cap}</span>
                           </div>
-                          <div style={{ height: "6px", borderRadius: "999px", background: "var(--ap-line)", overflow: "hidden" }}>
-                            <div style={{ height: "100%", width: `${pct}%`, background: used >= cap ? "var(--ap-flash)" : "var(--ap-brand)", borderRadius: "999px" }} />
+                          <div style={{ height: "6px", borderRadius: "var(--ap-r-sm)", background: "var(--ap-line)", overflow: "hidden" }}>
+                            <div style={{ height: "100%", width: `${pct}%`, background: used >= cap ? "var(--ap-flash)" : "var(--ap-brand)", borderRadius: "var(--ap-r-sm)" }} />
                           </div>
                         </div>
                       );

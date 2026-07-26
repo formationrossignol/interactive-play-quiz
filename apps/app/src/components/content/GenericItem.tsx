@@ -169,7 +169,7 @@ function ItemMenu({
                   onSelect={() => ctx.onMove(null)}
                   className="flex items-center gap-2 cursor-pointer text-sm"
                 >
-                  <FolderOpen className="h-3.5 w-3.5" /> Racine
+                  <FolderOpen className="h-3.5 w-3.5" /> Hors dossier
                 </DropdownMenuItem>
               )}
               {ctx.folders.map((f) => (
@@ -264,8 +264,8 @@ export function GenericCard(props: GenericItemProps) {
   return (
     <div
       ref={setNodeRef}
-      className="ap-card ap-card--hover flex h-full cursor-pointer flex-col overflow-hidden"
-      style={{ opacity: isDragging ? 0.4 : 1 }}
+      className="ap-card ap-card--hover flex h-full cursor-pointer flex-col overflow-hidden p-0"
+      style={{ opacity: isDragging ? 0.4 : 1, padding: 0 }}
       onClick={() => navigate(config.editRoute(id))}
     >
       {img ? (
@@ -289,7 +289,7 @@ export function GenericCard(props: GenericItemProps) {
           className="relative h-52 w-full overflow-hidden flex-shrink-0 flex items-center justify-center"
           style={{ background: `color-mix(in srgb, var(${accentVar}) 14%, var(--ap-paper-2))` }}
         >
-          <DefaultHeaderIcon style={{ width: 40, height: 40, color: `var(${accentVar})`, opacity: 0.8 }} />
+          <DefaultHeaderIcon style={{ width: 48, height: 48, color: `var(${accentVar})`, opacity: 0.72 }} />
           <button
             type="button"
             {...attributes}

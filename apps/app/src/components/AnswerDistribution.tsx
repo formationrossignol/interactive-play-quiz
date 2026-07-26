@@ -47,13 +47,13 @@ export const AnswerDistribution = ({ answers, distribution, correctAnswer }: Ans
           const isCorrect = i === correctIndex;
 
           return (
-            <div key={i} style={{ position: 'relative', height: 64, borderRadius: 14, overflow: 'hidden' }}>
+            <div key={i} style={{ position: 'relative', height: 64, borderRadius: "var(--ap-r-md)", overflow: 'hidden' }}>
               {/* Track */}
               <div style={{
                 position: 'absolute', inset: 0,
                 background: 'rgba(255,255,255,0.04)',
                 border: `2px solid ${isCorrect ? 'rgba(34,197,94,0.5)' : 'rgba(255,255,255,0.07)'}`,
-                borderRadius: 14,
+                borderRadius: "var(--ap-r-md)",
                 boxShadow: isCorrect ? '0 0 20px rgba(34,197,94,0.15)' : 'none',
               }} />
 

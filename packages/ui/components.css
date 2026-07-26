@@ -174,7 +174,7 @@
 
 /* ── Logo / marque ── */
 .ap-logo {
-  width: 46px; height: 46px; border-radius: 15px; background: var(--ap-brand);
+  width: 46px; height: 46px; border-radius: var(--ap-r-md); background: var(--ap-brand);
   display: flex; align-items: center; justify-content: center;
   box-shadow: 0 6px 0 var(--ap-brand-deep), 0 10px 18px rgba(67,56,202,.35);
   flex: 0 0 auto;
