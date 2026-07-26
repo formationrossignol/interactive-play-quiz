@@ -7,7 +7,7 @@ import {
   ClipboardList,
   Compass,
   Dices,
-  FolderOpen,
+  Gem,
   GraduationCap,
   LayoutDashboard,
   Layers,
@@ -193,7 +193,7 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
                       onClick={collapsedIcon ? () => navigate(CREATIONS_ITEMS[0].path) : undefined}
                       tooltip={t("myCreations")}
                     >
-                      <FolderOpen />
+                      <Gem />
                       <span>{t("myCreations")}</span>
                       {!collapsedIcon && (
                         <ChevronDown

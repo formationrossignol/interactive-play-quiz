@@ -27,6 +27,7 @@ import {
   PanelBottom,
   Ruler,
   Square,
+  Table2,
   Type,
   Underline as UnderlineIcon,
   Ungroup,
@@ -217,6 +218,9 @@ export function EditorToolbar({ slideId }: { slideId: string }) {
       </ToolButton>
       <ToolButton active={activeTool === "video"} label="Vidéo" onClick={() => setActiveTool("video")}>
         <VideoIcon size={18} />
+      </ToolButton>
+      <ToolButton active={activeTool === "table"} label="Dessiner un tableau" onClick={() => setActiveTool("table")}>
+        <Table2 size={18} />
       </ToolButton>
       <Separator />
       <div ref={layoutsRef} style={{ position: "relative" }}>

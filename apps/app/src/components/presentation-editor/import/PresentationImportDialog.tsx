@@ -4,6 +4,12 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { importGoogleSlidesPresentation, importPresentationFile } from "./presentationImport";
 import type { Presentation as PresentationDocument } from "../types/presentation";
 
+interface ImportProgressState {
+  message: string;
+  current?: number;
+  total?: number;
+}
+
 export function PresentationImportDialog({
   open,
   onOpenChange,
@@ -17,28 +23,29 @@ export function PresentationImportDialog({
   const [tab, setTab] = useState<"file" | "google">("file");
   const [googleUrl, setGoogleUrl] = useState("");
   const [dragging, setDragging] = useState(false);
-  const [progress, setProgress] = useState("");
+  const [progress, setProgress] = useState<ImportProgressState | null>(null);
   const [error, setError] = useState("");
-  const busy = Boolean(progress);
+  const busy = progress !== null;
 
   async function run(task: () => Promise<PresentationDocument>) {
     setError("");
     try {
       const presentation = await task();
-      setProgress("Finalisation de l’import…");
+      setProgress((current) => ({ ...(current ?? {}), message: "Finalisation de l’import…" }));
       await onImport(presentation);
       onOpenChange(false);
       setGoogleUrl("");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "L’import a échoué.");
     } finally {
-      setProgress("");
+      setProgress(null);
     }
   }
 
   function handleFile(file?: File) {
     if (!file || busy) return;
-    void run(() => importPresentationFile(file, (message) => setProgress(message)));
+    setProgress({ message: "Préparation du fichier…" });
+    void run(() => importPresentationFile(file, (message, current, total) => setProgress({ message, current, total })));
   }
 
   return (
@@ -98,7 +105,7 @@ export function PresentationImportDialog({
               <span style={{ width: 54, height: 54, display: "grid", placeItems: "center", margin: "0 auto 14px", borderRadius: 16, background: "var(--ap-pres-soft)", color: "var(--ap-pres-deep)" }}>
                 {busy ? <LoaderCircle className="h-6 w-6 animate-spin" /> : <Upload className="h-6 w-6" />}
               </span>
-              <b style={{ display: "block", fontSize: 16 }}>{progress || "Déposez votre fichier ici"}</b>
+              <b style={{ display: "block", fontSize: 16 }}>{progress?.message || "Déposez votre fichier ici"}</b>
               <span style={{ display: "block", marginTop: 6, color: "var(--ap-muted)", fontSize: 13 }}>
                 PowerPoint .pptx ou document .pdf · 50 Mo max
               </span>
@@ -129,7 +136,7 @@ export function PresentationImportDialog({
                 type="button"
                 className="ap-btn ap-btn--pill ap-btn--sm"
                 disabled={!googleUrl.trim() || busy}
-                onClick={() => void run(() => importGoogleSlidesPresentation(googleUrl, (message) => setProgress(message)))}
+                onClick={() => void run(() => importGoogleSlidesPresentation(googleUrl, (message, current, total) => setProgress({ message, current, total })))}
               >
                 {busy ? <LoaderCircle className="h-4 w-4 animate-spin" /> : "Importer"}
               </button>
@@ -137,7 +144,39 @@ export function PresentationImportDialog({
             <p style={{ margin: "12px 0 0", padding: 12, borderRadius: 12, background: "var(--ap-brand-soft)", color: "var(--ap-brand-deep)", fontSize: 12.5, fontWeight: 650, lineHeight: 1.45 }}>
               Le lien doit être accessible aux personnes qui le possèdent. Pour un document privé, téléchargez-le depuis Google Slides au format PPTX ou PDF.
             </p>
-            {progress && <p style={{ marginTop: 14, fontSize: 13, fontWeight: 800 }}>{progress}</p>}
+            {progress && <p style={{ marginTop: 14, fontSize: 13, fontWeight: 800 }}>{progress.message}</p>}
+          </div>
+        )}
+
+        {progress && (
+          <div style={{ display: "grid", gap: 7 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 12.5, fontWeight: 800 }}>
+              <span>{progress.message}</span>
+              {progress.current != null && progress.total != null && (
+                <span style={{ color: "var(--ap-brand)", whiteSpace: "nowrap" }}>
+                  Slide {progress.current} / {progress.total} importées
+                </span>
+              )}
+            </div>
+            <div
+              role="progressbar"
+              aria-label="Progression de l’import"
+              aria-valuemin={0}
+              aria-valuemax={progress.total ?? 100}
+              aria-valuenow={progress.current ?? undefined}
+              style={{ height: 9, overflow: "hidden", borderRadius: 999, background: "var(--ap-line)" }}
+            >
+              <div
+                style={{
+                  width: progress.current != null && progress.total ? `${Math.round(progress.current / progress.total * 100)}%` : "32%",
+                  height: "100%",
+                  borderRadius: 999,
+                  background: "linear-gradient(90deg, var(--ap-brand), var(--ap-pres))",
+                  transition: "width .2s ease",
+                  animation: progress.current == null ? "ap-import-progress 1.2s ease-in-out infinite alternate" : undefined,
+                }}
+              />
+            </div>
           </div>
         )}
 

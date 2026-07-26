@@ -58,6 +58,9 @@ function cloneSlide(source: Slide, id: string): Slide {
         childIds: element.childIds.map((childId) => elementIds.get(childId) ?? childId),
       } as SlideElement;
     }
+    if (element.type === "table") {
+      return { ...shared, cells: [...element.cells] } as SlideElement;
+    }
     return shared as SlideElement;
   });
   return { ...source, id, elements };

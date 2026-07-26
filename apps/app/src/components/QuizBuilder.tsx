@@ -239,7 +239,25 @@ const PhonePreview = ({
   const hasMedia = Boolean(question.image);
 
   const isTF = question.type === "true-false";
-  const displayAnswers = isTF ? ["Vrai", "Faux"] : answers;
+  const displayAnswers = isTF
+    ? ["Vrai", "Faux"]
+    : question.type === "ranking"
+      ? (question.items?.length ? question.items : ["Priorité 1", "Priorité 2", "Priorité 3"])
+      : question.type === "likert-scale" || question.type === "frequency-scale"
+        ? (question.scale?.length ? question.scale : ["Jamais", "Parfois", "Toujours"])
+        : question.type === "matching"
+          ? (question.leftColumn?.map((item) => item.text || "Élément à associer") ?? ["Concept A", "Concept B"])
+          : question.type === "star-rating"
+            ? ["★  ★  ★  ★  ★"]
+            : question.type === "nps-scale"
+              ? ["0  1  2  3  4  5  6  7  8  9  10"]
+              : question.type === "slider"
+                ? [`${question.min ?? 0}   ━━━━━●━━━━   ${question.max ?? 100}`]
+                : question.type === "open-text"
+                  ? ["Écrivez librement votre réponse…"]
+                  : question.type === "short-answer" || question.type === "fill-blank"
+                    ? ["Saisissez votre réponse…"]
+                    : answers;
 
   return (
     <div style={{
@@ -1260,6 +1278,20 @@ export const QuizBuilder = () => {
       );
     }
 
+    const participantPreviewQuestion = hoveredQuestionType
+      ? {
+          ...getDefaultQuestion(hoveredQuestionType),
+          id: "type-hover-preview",
+          type: hoveredQuestionType,
+          question: getQuestionTypeDescription(hoveredQuestionType),
+          answers: ["Première option", "Deuxième option", "Troisième option", "Autre réponse"],
+          items: ["Priorité principale", "Deuxième priorité", "Troisième priorité"],
+          scale: hoveredQuestionType === "frequency-scale"
+            ? ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"]
+            : ["Pas du tout", "Plutôt non", "Neutre", "Plutôt oui", "Tout à fait"],
+        } satisfies EditableQuestion
+      : selectedQ;
+
     return (
       <>
         <div style={labelStyle}>
@@ -1268,11 +1300,11 @@ export const QuizBuilder = () => {
           <span style={{ flex: 1, height: 2, background: "var(--ap-line-2)", opacity: 0.5, borderRadius: 2 }} />
         </div>
         <PhonePreview
-          question={selectedQ}
+          question={participantPreviewQuestion}
           questionIndex={selectedIdx ?? 0}
           totalQuestions={questions.length}
         />
-        {selectedQ && (
+        {participantPreviewQuestion && (
           <p style={{ marginTop: 16, fontSize: 12, fontWeight: 700, color: "var(--ap-muted)", textAlign: "center", lineHeight: 1.5 }}>
             Tout ce que vous tapez apparaît ici<br />
             <strong style={{ color: "var(--ap-ink)" }}>instantanément</strong>

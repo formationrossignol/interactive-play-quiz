@@ -6,6 +6,7 @@ import { ImageElementView } from "./ImageElementView";
 import { ShapeElementView } from "./ShapeElementView";
 import { VideoElementView } from "./VideoElementView";
 import { GroupElementView } from "./GroupElementView";
+import { TableElementView } from "./TableElementView";
 
 interface CanvasElementProps {
   slideId: string;
@@ -54,6 +55,7 @@ export function CanvasElement({ slideId, element, elementRef, onPointerDown }: C
       {element.type === "image" && <ImageElementView element={element} />}
       {(element.type === "rect" || element.type === "circle") && <ShapeElementView element={element} />}
       {element.type === "video" && <VideoElementView element={element} />}
+      {element.type === "table" && <TableElementView slideId={slideId} element={element} />}
       {element.type === "group" && <GroupElementView />}
     </div>
   );

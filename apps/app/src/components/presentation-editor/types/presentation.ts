@@ -70,12 +70,26 @@ export interface GroupElement extends BaseElement {
   childIds: string[];
 }
 
+export interface TableElement extends BaseElement {
+  type: "table";
+  rows: number;
+  columns: number;
+  cells: string[];
+  headerRow: boolean;
+  borderColor: string;
+  borderWidth: number;
+  headerFill: string;
+  cellFill: string;
+  textColor: string;
+}
+
 export type SlideElement =
   | TextElement
   | ImageElement
   | ShapeElement
   | LineElement
   | VideoElement
+  | TableElement
   | GroupElement;
 
 export interface Slide {
