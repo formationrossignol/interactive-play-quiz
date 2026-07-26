@@ -5,15 +5,15 @@ import { useDocStore } from "../../store/useDocStore";
 import { createBlankPresentation } from "../../types/presentation";
 
 vi.mock("@/lib/content/contentRepo", () => ({
-  updateContent: vi.fn(async () => {}),
+  updateCollaborativeContent: vi.fn(async () => {}),
   createContent: vi.fn(async () => ({ id: "new-row-id" })),
 }));
-import { updateContent, createContent } from "@/lib/content/contentRepo";
+import { updateCollaborativeContent, createContent } from "@/lib/content/contentRepo";
 
 beforeEach(() => {
   vi.clearAllTimers();
   vi.useFakeTimers({ shouldAdvanceTime: true });
-  vi.mocked(updateContent).mockClear();
+  vi.mocked(updateCollaborativeContent).mockClear();
   vi.mocked(createContent).mockClear();
   useDocStore.getState().load(createBlankPresentation("existing-id"));
 });
@@ -34,7 +34,7 @@ describe("useAutosave", () => {
       vi.advanceTimersByTime(1500);
     });
     await vi.waitFor(() => expect(result.current.status).toBe("saved"));
-    expect(updateContent).toHaveBeenCalledTimes(1);
+    expect(updateCollaborativeContent).toHaveBeenCalledTimes(1);
     unmount();
   });
 
@@ -49,7 +49,7 @@ describe("useAutosave", () => {
     act(() => {
       vi.advanceTimersByTime(5000);
     });
-    expect(updateContent).not.toHaveBeenCalled();
+    expect(updateCollaborativeContent).not.toHaveBeenCalled();
     unmount();
   });
 
@@ -68,7 +68,7 @@ describe("useAutosave", () => {
   });
 
   it("sets status to error when the save rejects", async () => {
-    (updateContent as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error("network error"));
+    (updateCollaborativeContent as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error("network error"));
     const { result, unmount } = renderHook(() => useAutosave("row-1", "user-1"));
     act(() => {
       useDocStore.getState().addSlide();
