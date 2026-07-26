@@ -18,9 +18,9 @@ function textFromJson(node?: JSONContent): string {
   return (node.content ?? []).map(textFromJson).join(node.type === "paragraph" || node.type === "heading" ? "\n" : "");
 }
 
-function backgroundSvg(slide: Slide, width: number, height: number) {
+function backgroundSvg(slide: Slide, width: number, height: number, fallbackColor = "#ffffff") {
   const background = slide.background;
-  if (!background) return `<rect width="${width}" height="${height}" fill="#ffffff"/>`;
+  if (!background) return `<rect width="${width}" height="${height}" fill="${xmlEscape(fallbackColor)}"/>`;
   if (background.type === "image") {
     return `<rect width="${width}" height="${height}" fill="#ffffff"/><image href="${xmlEscape(background.value)}" width="${width}" height="${height}" preserveAspectRatio="xMidYMid slice"/>`;
   }
@@ -47,19 +47,19 @@ function wrapText(value: string, maxChars: number) {
   return result.filter((line, index, all) => line || index < all.length - 1);
 }
 
-function textElementSvg(element: TextElement) {
+function textElementSvg(element: TextElement, presentation: Presentation) {
   const text = textFromJson(element.richText).trim();
   const heading = element.richText.content?.some((node) => node.type === "heading");
   const fontSize = heading ? 42 : 24;
   const lines = wrapText(text, Math.max(8, Math.floor(element.width / (fontSize * .56))));
   return `<g transform="translate(${element.x} ${element.y}) rotate(${element.rotation} ${element.width / 2} ${element.height / 2})" opacity="${element.opacity}">
-    <text x="0" y="${fontSize}" fill="#24202d" font-family="Arial, sans-serif" font-size="${fontSize}" font-weight="${heading ? 700 : 400}">
+    <text x="0" y="${fontSize}" fill="${xmlEscape(presentation.theme?.textColor ?? "#24202d")}" font-family="${xmlEscape(presentation.theme?.fontFamily ?? "Arial, sans-serif")}" font-size="${fontSize}" font-weight="${heading ? 700 : 400}">
       ${lines.map((line, index) => `<tspan x="0" dy="${index === 0 ? 0 : fontSize * 1.22}">${xmlEscape(line)}</tspan>`).join("")}
     </text>
   </g>`;
 }
 
-function tableSvg(element: TableElement) {
+function tableSvg(element: TableElement, presentation: Presentation) {
   const cellWidth = element.width / element.columns;
   const cellHeight = element.height / element.rows;
   const cells: string[] = [];
@@ -70,7 +70,7 @@ function tableSvg(element: TableElement) {
       const y = element.y + row * cellHeight;
       const fill = element.headerRow && row === 0 ? element.headerFill : element.cellFill;
       cells.push(`<rect x="${x}" y="${y}" width="${cellWidth}" height="${cellHeight}" fill="${xmlEscape(fill)}" stroke="${xmlEscape(element.borderColor)}" stroke-width="${element.borderWidth}"/>`);
-      cells.push(`<text x="${x + 10}" y="${y + Math.min(cellHeight - 8, 26)}" fill="${xmlEscape(element.textColor)}" font-family="Arial, sans-serif" font-size="16" font-weight="${element.headerRow && row === 0 ? 700 : 400}">${xmlEscape(element.cells[index] ?? "")}</text>`);
+      cells.push(`<text x="${x + 10}" y="${y + Math.min(cellHeight - 8, 26)}" fill="${xmlEscape(element.textColor)}" font-family="${xmlEscape(presentation.theme?.fontFamily ?? "Arial, sans-serif")}" font-size="16" font-weight="${element.headerRow && row === 0 ? 700 : 400}">${xmlEscape(element.cells[index] ?? "")}</text>`);
     }
   }
   return `<g opacity="${element.opacity}">${cells.join("")}</g>`;
@@ -79,7 +79,7 @@ function tableSvg(element: TableElement) {
 export function serializeSlideToSvg(presentation: Presentation, slide: Slide, slideNumber: number): string {
   const elements = slide.elements.slice().sort((a, b) => a.zIndex - b.zIndex).map((element) => {
     if (!element.visible || element.type === "group" || element.type === "video") return "";
-    if (element.type === "text") return textElementSvg(element);
+    if (element.type === "text") return textElementSvg(element, presentation);
     if (element.type === "image") {
       return `<image href="${xmlEscape(element.src)}" x="${element.x}" y="${element.y}" width="${element.width}" height="${element.height}" opacity="${element.opacity}" preserveAspectRatio="${element.fit === "contain" ? "xMidYMid meet" : "xMidYMid slice"}" transform="rotate(${element.rotation} ${element.x + element.width / 2} ${element.y + element.height / 2})"/>`;
     }
@@ -93,17 +93,25 @@ export function serializeSlideToSvg(presentation: Presentation, slide: Slide, sl
       const [start, end] = element.points;
       return `<line x1="${start[0]}" y1="${start[1]}" x2="${end[0]}" y2="${end[1]}" stroke="${xmlEscape(element.stroke)}" stroke-width="${element.strokeWidth}"${element.type === "arrow" ? ' marker-end="url(#arrow)"' : ""}/>`;
     }
-    if (element.type === "table") return tableSvg(element);
+    if (element.type === "table") return tableSvg(element, presentation);
     return "";
   }).join("");
   const footer = presentation.footer;
   const showFooter = footer && !(footer.skipTitleSlide && slideNumber === 1);
+  const footerAlignment = footer?.alignment ?? "left";
+  const footerX = footerAlignment === "left" ? 34 : footerAlignment === "center" ? presentation.width / 2 : presentation.width - 34;
+  const footerAnchor = footerAlignment === "left" ? "start" : footerAlignment === "center" ? "middle" : "end";
+  const numberPosition = footer?.slideNumberPosition ?? "right";
+  const numberX = numberPosition === "left" ? 34 : numberPosition === "center" ? presentation.width / 2 : presentation.width - 34;
+  const numberAnchor = numberPosition === "left" ? "start" : numberPosition === "center" ? "middle" : "end";
+  const exportFont = presentation.theme?.fontFamily ?? "Arial, sans-serif";
+  const exportColor = presentation.theme?.textColor ?? "#555866";
   const footerSvg = showFooter
-    ? `<text x="34" y="${presentation.height - 24}" fill="#555866" font-family="Arial, sans-serif" font-size="14">${xmlEscape(footer.text)}</text>${footer.showSlideNumber ? `<text x="${presentation.width - 34}" y="${presentation.height - 24}" text-anchor="end" fill="#555866" font-family="Arial, sans-serif" font-size="14">${slideNumber}</text>` : ""}`
+    ? `<text x="${footerX}" y="${presentation.height - 24}" text-anchor="${footerAnchor}" fill="${xmlEscape(exportColor)}" opacity=".72" font-family="${xmlEscape(exportFont)}" font-size="14">${xmlEscape(footer.text)}</text>${footer.showSlideNumber ? `<text x="${numberX}" y="${presentation.height - 24}" text-anchor="${numberAnchor}" fill="${xmlEscape(exportColor)}" opacity=".72" font-family="${xmlEscape(exportFont)}" font-size="14">${slideNumber}</text>` : ""}`
     : "";
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${presentation.width}" height="${presentation.height}" viewBox="0 0 ${presentation.width} ${presentation.height}">
     <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#24202d"/></marker></defs>
-    ${backgroundSvg(slide, presentation.width, presentation.height)}
+    ${backgroundSvg(slide, presentation.width, presentation.height, presentation.theme?.backgroundColor)}
     ${elements}
     ${footerSvg}
   </svg>`;

@@ -34,7 +34,9 @@ export const useChronometerStore = create<ChronometerState>((set, get) => ({
   running: false,
   laps: [],
   widgetOpen: false,
-  start: () => set((state) => state.running ? state : { running: true, startedAt: Date.now() }),
+  start: () => set((state) => state.running
+    ? { widgetOpen: true }
+    : { running: true, startedAt: Date.now(), widgetOpen: true }),
   pause: () => set((state) => ({
     elapsed: currentElapsed(state),
     running: false,

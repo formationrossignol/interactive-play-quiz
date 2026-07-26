@@ -19,7 +19,7 @@ export function TableElementView({ slideId, element }: { slideId: string; elemen
         tableLayout: "fixed",
         borderCollapse: "collapse",
         color: element.textColor,
-        fontFamily: "Arial, sans-serif",
+        fontFamily: "inherit",
         fontSize: 16,
         background: element.cellFill,
       }}

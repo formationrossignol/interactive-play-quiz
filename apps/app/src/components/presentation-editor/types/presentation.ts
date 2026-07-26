@@ -107,15 +107,30 @@ export interface Presentation {
   format: PresentationFormat;
   width: number;
   height: number;
-  themeId?: string; // forward-compat placeholder only, unused in this phase
+  themeId?: string; // legacy theme identifier retained for imported documents
+  theme?: PresentationTheme;
   footer?: PresentationFooter;
   slides: Slide[];
 }
+
+export type FooterAlignment = "left" | "center" | "right";
+export type SlideNumberPosition = "left" | "center" | "right";
 
 export interface PresentationFooter {
   showSlideNumber: boolean;
   text: string;
   skipTitleSlide: boolean;
+  alignment?: FooterAlignment;
+  slideNumberPosition?: SlideNumberPosition;
+}
+
+export interface PresentationTheme {
+  templateId: string;
+  fontFamily: string;
+  textColor: string;
+  accentColor: string;
+  backgroundColor: string;
+  defaultLayoutId: import("../layouts/slideLayouts").SlideLayoutId;
 }
 
 export const PRESENTATION_FORMAT_SIZE: Record<Exclude<PresentationFormat, "custom">, { width: number; height: number }> = {
@@ -131,7 +146,21 @@ export function createBlankPresentation(id: string, title = "Sans titre"): Prese
     format: "16:9",
     width: PRESENTATION_FORMAT_SIZE["16:9"].width,
     height: PRESENTATION_FORMAT_SIZE["16:9"].height,
-    footer: { showSlideNumber: false, text: "", skipTitleSlide: false },
+    theme: {
+      templateId: "brivia",
+      fontFamily: "'Sora Variable', 'Sora', sans-serif",
+      textColor: "#24202d",
+      accentColor: "#6c63ff",
+      backgroundColor: "#ffffff",
+      defaultLayoutId: "title-body",
+    },
+    footer: {
+      showSlideNumber: false,
+      text: "",
+      skipTitleSlide: false,
+      alignment: "left",
+      slideNumberPosition: "right",
+    },
     slides: [{ id: slideId, order: 0, hidden: false, elements: [] }],
   };
 }

@@ -4,6 +4,7 @@ import {
   Award,
   BarChart3,
   BookOpen,
+  CalendarDays,
   Check,
   ChevronDown,
   ChevronUp,
@@ -14,6 +15,7 @@ import {
   Layers3,
   MonitorSmartphone,
   PlaySquare,
+  RefreshCw,
   Sparkles,
   Star,
   Upload,
@@ -190,6 +192,12 @@ const formatCourseDuration = (minutes: number) => {
   return `${hours} h${rest ? ` ${rest} min` : ""}`;
 };
 
+const formatCourseDate = (value: string) => new Intl.DateTimeFormat("fr-FR", {
+  day: "2-digit",
+  month: "long",
+  year: "numeric",
+}).format(new Date(value));
+
 function CourseOverviewScreen({
   course, totalLessons, completedCount, progressPct, allDone, allLessons, completedIds,
   ratingSummary, reviews, myReview, reviewRatingDraft, reviewCommentDraft,
@@ -299,6 +307,16 @@ function CourseOverviewScreen({
               <span>{course.modules.length} module{course.modules.length > 1 ? "s" : ""}</span>
               <span>{totalLessons} leçon{totalLessons > 1 ? "s" : ""}</span>
               {minutes > 0 && <span>{minutes} min</span>}
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", marginTop: 11, fontSize: 12, fontWeight: 650, color: "rgba(255,255,255,.78)" }}>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                <CalendarDays style={{ width: 13, height: 13 }} />
+                Créé le {formatCourseDate(course.createdAt)}
+              </span>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                <RefreshCw style={{ width: 13, height: 13 }} />
+                Mis à jour le {formatCourseDate(course.updatedAt)}
+              </span>
             </div>
           </div>
         </div>

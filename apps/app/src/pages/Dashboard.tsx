@@ -33,8 +33,6 @@ const Dashboard = () => {
           <KpiRow stats={stats} />
         </div>
 
-        {userId && <RecentWorks userId={userId} />}
-
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "16px", marginBottom: "32px" }}>
           <div id="dashboard-activity-chart">
             <ActivityChart data={charts?.activity ?? []} />
@@ -43,6 +41,8 @@ const Dashboard = () => {
             <CreationsByTypeChart data={charts?.creationsByType ?? { quiz: 0, poll: 0, flashcard: 0, slide: 0, other: 0 }} />
           </div>
         </div>
+
+        {userId && <RecentWorks userId={userId} />}
 
         <NewsModule />
       </div>

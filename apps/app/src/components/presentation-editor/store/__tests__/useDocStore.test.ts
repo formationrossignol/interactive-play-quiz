@@ -23,7 +23,25 @@ describe("slide management", () => {
       showSlideNumber: true,
       text: "Cours de géométrie",
       skipTitleSlide: true,
+      alignment: "left",
+      slideNumberPosition: "right",
     });
+  });
+
+  it("applies a coherent template and uses its layout for the next slide", () => {
+    useDocStore.getState().applyTemplate("editorial");
+    const presentation = useDocStore.getState().presentation!;
+    expect(presentation.theme).toMatchObject({
+      templateId: "editorial",
+      fontFamily: "Georgia, serif",
+      backgroundColor: "#fff8f0",
+    });
+    expect(presentation.slides[0].background).toEqual({ type: "color", value: "#fff8f0" });
+    useDocStore.getState().addSlide();
+    expect(useDocStore.getState().presentation!.slides[1]).toMatchObject({
+      layoutId: "title-body",
+    });
+    expect(useDocStore.getState().presentation!.slides[1].background).toBeUndefined();
   });
 
   it("addSlide appends a slide with the next order", () => {

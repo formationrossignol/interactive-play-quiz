@@ -48,7 +48,7 @@ export function SlideNavigator() {
   // Hooks must run unconditionally on every render (Rules of Hooks) — call
   // this before the early return below.
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
@@ -139,9 +139,13 @@ export function SlideNavigator() {
                 presentationWidth={presentation.width}
                 presentationHeight={presentation.height}
                 footer={presentation.footer}
+                theme={presentation.theme}
                 isActive={slide.id === activeSlideId}
                 isSelected={false}
-                onSelect={() => setActiveSlideId(slide.id)}
+                onSelect={() => {
+                  setActiveSlideId(slide.id);
+                  useEditorUIStore.getState().clearSelection();
+                }}
               />
               <div style={{ display: "flex", justifyContent: "flex-end" }}>
                 <DropdownMenu>

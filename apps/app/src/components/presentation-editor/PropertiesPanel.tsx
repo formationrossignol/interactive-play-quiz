@@ -2,6 +2,7 @@ import { useDocStore } from "./store/useDocStore";
 import { useEditorUIStore } from "./store/useEditorUIStore";
 import { useHistoryStore } from "./store/useHistoryStore";
 import type { ImageElement, ShapeElement, SlideBackground, SlideElement, TableElement } from "./types/presentation";
+import { Minus, Plus } from "lucide-react";
 
 function NumberField({ label, value, onCommit }: { label: string; value: number; onCommit: (n: number) => void }) {
   return (
@@ -14,6 +15,47 @@ function NumberField({ label, value, onCommit }: { label: string; value: number;
         style={{ border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-sm)", padding: "6px 8px", fontSize: 13 }}
       />
     </label>
+  );
+}
+
+function StepperField({
+  label,
+  value,
+  min,
+  max,
+  onCommit,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  onCommit: (n: number) => void;
+}) {
+  return (
+    <div style={{ display: "grid", gap: 5 }}>
+      <span style={{ fontSize: 12, fontWeight: 800, color: "var(--ap-muted)" }}>{label}</span>
+      <div style={{ display: "grid", gridTemplateColumns: "32px 1fr 32px", alignItems: "center", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-sm)", overflow: "hidden", background: "var(--ap-paper)" }}>
+        <button
+          type="button"
+          aria-label={`Supprimer ${label.toLowerCase().startsWith("l") ? "une ligne" : "une colonne"}`}
+          disabled={value <= min}
+          onClick={() => onCommit(value - 1)}
+          style={{ height: 34, border: 0, borderRight: "var(--ap-border-w) solid var(--ap-line)", background: "transparent", color: "var(--ap-ink)", cursor: value <= min ? "not-allowed" : "pointer", display: "grid", placeItems: "center" }}
+        >
+          <Minus size={15} />
+        </button>
+        <strong style={{ textAlign: "center", fontSize: 13, fontVariantNumeric: "tabular-nums" }}>{value}</strong>
+        <button
+          type="button"
+          aria-label={`Ajouter ${label.toLowerCase().startsWith("l") ? "une ligne" : "une colonne"}`}
+          disabled={value >= max}
+          onClick={() => onCommit(value + 1)}
+          style={{ height: 34, border: 0, borderLeft: "var(--ap-border-w) solid var(--ap-line)", background: "transparent", color: "var(--ap-ink)", cursor: value >= max ? "not-allowed" : "pointer", display: "grid", placeItems: "center" }}
+        >
+          <Plus size={15} />
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -141,8 +183,8 @@ export function PropertiesPanel({ slideId }: { slideId: string }) {
         return (
           <>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-              <NumberField label="Lignes" value={table.rows} onCommit={(rows) => resizeTable(table, rows, table.columns)} />
-              <NumberField label="Colonnes" value={table.columns} onCommit={(columns) => resizeTable(table, table.rows, columns)} />
+              <StepperField label="Lignes" value={table.rows} min={1} max={20} onCommit={(rows) => resizeTable(table, rows, table.columns)} />
+              <StepperField label="Colonnes" value={table.columns} min={1} max={12} onCommit={(columns) => resizeTable(table, table.rows, columns)} />
             </div>
             <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
               <input type="checkbox" checked={table.headerRow} onChange={(event) => commit({ headerRow: event.target.checked } as Partial<TableElement>)} />

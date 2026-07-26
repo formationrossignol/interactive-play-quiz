@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { DisabledReason } from "@/components/ui/disabled-reason";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -1414,20 +1413,28 @@ export const QuizBuilder = () => {
         </button>
 
         {/* Preview */}
-        <DisabledReason reason={questions.length === 0 ? "Ajoutez au moins une question pour ouvrir l’aperçu." : undefined}>
-          {(descriptionId) => (
-            <button
-              onClick={handlePreviewQuiz}
-              disabled={questions.length === 0}
-              aria-describedby={descriptionId}
-              className="ap-btn ap-btn--ghost"
-              style={{ padding: "10px 18px", borderRadius: 999, fontSize: 14 }}
-            >
-              <Eye style={{ width: 15, height: 15 }} />
-              Aperçu
-            </button>
-          )}
-        </DisabledReason>
+        <TooltipProvider delayDuration={180}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span style={{ display: "inline-flex", flexShrink: 0 }}>
+                <button
+                  onClick={handlePreviewQuiz}
+                  disabled={questions.length === 0}
+                  className="ap-btn ap-btn--ghost"
+                  style={{ padding: "10px 18px", borderRadius: 999, fontSize: 14 }}
+                >
+                  <Eye style={{ width: 15, height: 15 }} />
+                  Aperçu
+                </button>
+              </span>
+            </TooltipTrigger>
+            {questions.length === 0 && (
+              <TooltipContent side="bottom" align="end">
+                Ajoutez au moins une question pour ouvrir l’aperçu.
+              </TooltipContent>
+            )}
+          </Tooltip>
+        </TooltipProvider>
 
         {/* Save / Publish */}
         <button

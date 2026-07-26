@@ -14,7 +14,7 @@ export function CanvasRulers({ width, height, zoom }: CanvasRulersProps) {
   return (
     <div
       aria-hidden="true"
-      style={{ position: "sticky", top: 0, left: 0, width: "100%", height: 0, zIndex: 30, pointerEvents: "none" }}
+      style={{ position: "sticky", top: 0, left: 0, width: "100%", height: 0, zIndex: 3, pointerEvents: "none" }}
     >
       <div
         style={{
@@ -32,7 +32,7 @@ export function CanvasRulers({ width, height, zoom }: CanvasRulersProps) {
           backgroundSize: `${Math.max(4, scaledStep / 4)}px 9px`,
           backgroundPosition: "left bottom",
           backgroundRepeat: "repeat-x",
-          zIndex: 30,
+          zIndex: 3,
         }}
       >
         <div style={{ position: "absolute", left: "50%", top: 0, width: width * zoom, height: "100%", transform: "translateX(-50%)" }}>
@@ -58,7 +58,7 @@ export function CanvasRulers({ width, height, zoom }: CanvasRulersProps) {
           backgroundSize: `9px ${Math.max(4, scaledStep / 4)}px`,
           backgroundPosition: "right top",
           backgroundRepeat: "repeat-y",
-          zIndex: 31,
+          zIndex: 4,
         }}
       >
         <div style={{ position: "absolute", left: 0, top: "50%", width: "100%", height: height * zoom, transform: "translateY(-50%)" }}>
@@ -69,7 +69,7 @@ export function CanvasRulers({ width, height, zoom }: CanvasRulersProps) {
           ))}
         </div>
       </div>
-      <div style={{ position: "absolute", left: 0, top: 0, width: 32, height: 32, background: "var(--ap-paper-2)", borderRight: "1px solid var(--ap-line-2)", borderBottom: "1px solid var(--ap-line-2)", zIndex: 32 }} />
+      <div style={{ position: "absolute", left: 0, top: 0, width: 32, height: 32, background: "var(--ap-paper-2)", borderRight: "1px solid var(--ap-line-2)", borderBottom: "1px solid var(--ap-line-2)", zIndex: 5 }} />
     </div>
   );
 }
