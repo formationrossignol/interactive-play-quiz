@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
-import { initAuth } from "@/lib/auth";
+import { initAuth, getCurrentUser } from "@/lib/auth";
 import { RouteTransition } from "@/components/RouteTransition";
 import { RouteFallback } from "@/components/RouteFallback";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -7,7 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { CookieConsentProvider } from "@/contexts/CookieConsentContext";
 import { CookieConsent } from "@/components/CookieConsent";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 // Critical player path — loaded first, separate chunks from builder deps
 const JoinQuiz = lazy(() => import("./pages/JoinQuiz"));
@@ -71,6 +71,16 @@ const AuthGate = ({ children }: { children: ReactNode }) => {
   return <>{children}</>;
 };
 
+/** apps/app has no route of its own at "/" — in production it's reached
+ *  behind apps/marketing's fallback rewrite, whose own home page owns that
+ *  URL (see docs/marketing-app-decoupling.md). But dozens of call sites in
+ *  this app (AppLayout's logo, AuthPage post-login, "Retour à l'accueil"
+ *  buttons, breadcrumb Home buttons…) already assume window.location.href =
+ *  "/" lands somewhere real within the app itself — true for direct visits
+ *  to the app's own *.vercel.app URL, and needed as a sane fallback
+ *  regardless of the marketing split. */
+const RootRedirect = () => <Navigate to={getCurrentUser() ? "/dashboard" : "/auth"} replace />;
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -83,6 +93,7 @@ const App = () => (
           <Suspense fallback={<RouteFallback />}>
             <RouteTransition>
             <Routes>
+              <Route path="/" element={<RootRedirect />} />
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/builder-start" element={<QuizBuilderStart />} />
