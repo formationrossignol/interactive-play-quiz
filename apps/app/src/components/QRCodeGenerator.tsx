@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import QRCode from "qrcode";
 import { Download, Share2, Copy } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 interface QRCodeGeneratorProps {
   gameCode: string;
@@ -14,7 +14,6 @@ interface QRCodeGeneratorProps {
 
 export const QRCodeGenerator = ({ gameCode, joinUrl, compact = false, compactSize = 108 }: QRCodeGeneratorProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { toast } = useToast();
 
   useEffect(() => {
     if (canvasRef.current) {
@@ -38,9 +37,9 @@ export const QRCodeGenerator = ({ gameCode, joinUrl, compact = false, compactSiz
   const copyJoinUrl = async () => {
     try {
       await navigator.clipboard.writeText(joinUrl);
-      toast({ title: "Lien copié !", duration: 2000 });
+      toast.success("Lien copié !", { duration: 2000 });
     } catch {
-      toast({ title: "Échec de la copie", variant: "destructive", duration: 2000 });
+      toast.error("Échec de la copie", { duration: 2000 });
     }
   };
 

@@ -6,6 +6,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { CONTENT_CAPS, getPlan, PlanLimitError } from '@/lib/plans';
 import { PlanLimitBlocker } from '@/components/PlanLimitBlocker';
 import { Breadcrumb } from '@/components/Breadcrumb';
+import { MultiStepProgress } from '@/components/MultiStepProgress';
 import { upsertContentBySource } from '@/lib/content/contentRepo';
 import { toast } from 'sonner';
 
@@ -39,6 +40,8 @@ interface FormState {
   status: Exam['status'];
 }
 
+const STEPS = ['Informations', 'Planification', 'Comportement', 'Résultats'] as const;
+
 const DEFAULTS: FormState = {
   title: '',
   description: '',
@@ -64,6 +67,7 @@ export default function ExamBuilder() {
   const presetQuizId = params.get('quizId');
 
   const [form, setForm] = useState<FormState>({ ...DEFAULTS, quizId: presetQuizId ?? '' });
+  const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState<Exam | null>(null);
   const [used, setUsed] = useState(0);
@@ -73,6 +77,9 @@ export default function ExamBuilder() {
 
   const cap = CONTENT_CAPS[getPlan(user)].exam;
   const atCap = !examId && cap !== null && used >= cap;
+  // The wizard is for creation; editing an existing exam shows every section
+  // at once so a small tweak doesn't require walking through every step.
+  const isEditing = !!examId;
 
   useEffect(() => {
     if (user) getHostExams(user.id).then((exams) => setUsed(exams.length));
@@ -109,6 +116,26 @@ export default function ExamBuilder() {
 
   const set = <K extends keyof FormState>(key: K, val: FormState[K]) =>
     setForm((f) => ({ ...f, [key]: val }));
+
+  // Only the first step (title/quiz source) has fields the rest of the form
+  // depends on — later steps have no invalid state, just choices.
+  const stepError = (s: number): string | null => {
+    if (s === 0) {
+      if (!form.title.trim()) return 'Titre requis';
+      if (!form.quizId) return 'Choisir un quiz source';
+    }
+    if (s === 1 && new Date(form.closeAt) <= new Date(form.openAt)) {
+      return "La date de fermeture doit être après l'ouverture";
+    }
+    return null;
+  };
+
+  const goNext = () => {
+    const err = stepError(step);
+    if (err) { toast.error(err); return; }
+    setStep((s) => Math.min(s + 1, STEPS.length - 1));
+  };
+  const goPrev = () => setStep((s) => Math.max(s - 1, 0));
 
   const handleSave = async (publish: boolean) => {
     if (!form.title.trim()) { toast.error('Titre requis'); return; }
@@ -267,7 +294,21 @@ export default function ExamBuilder() {
           </div>
         )}
 
-        {/* Basics */}
+        {/* Step progress — REQ-FRM-004/FOR-013: long creation forms split
+            into steps with visible progress. Not shown when editing, since
+            every section is visible at once there. */}
+        {!isEditing && (
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
+              <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--ap-muted)' }}>
+                Étape {step + 1}/{STEPS.length} — {STEPS[step]}
+              </span>
+            </div>
+            <MultiStepProgress totalSteps={STEPS.length} currentStep={step} />
+          </div>
+        )}
+
+        {(isEditing || step === 0) && (
         <div className="eb-section">
           <div className="eb-section-title">📋 Informations générales</div>
           <div style={{ marginBottom: 16 }}>
@@ -299,7 +340,10 @@ export default function ExamBuilder() {
             </select>
           </div>
         </div>
+        )}
 
+        {(isEditing || step === 1) && (
+        <>
         {/* Dates */}
         <div className="eb-section">
           <div className="eb-section-title">📅 Période d'accès</div>
@@ -357,7 +401,11 @@ export default function ExamBuilder() {
             </div>
           </div>
         </div>
+        </>
+        )}
 
+        {(isEditing || step === 2) && (
+        <>
         {/* Options */}
         <div className="eb-section">
           <div className="eb-section-title">🔀 Options d'affichage</div>
@@ -417,7 +465,11 @@ export default function ExamBuilder() {
             </div>
           </div>
         </div>
+        </>
+        )}
 
+        {(isEditing || step === 3) && (
+        <>
         {/* Results policy */}
         <div className="eb-section">
           <div className="eb-section-title">👁️ Affichage des résultats</div>
@@ -460,36 +512,67 @@ export default function ExamBuilder() {
             </div>
           )}
         </div>
+        </>
+        )}
 
         {/* Actions */}
         <div style={{ display: 'flex', gap: 12 }}>
-          <button
-            onClick={() => handleSave(false)}
-            disabled={saving}
-            style={{
-              flex: 1, padding: '14px 0', borderRadius: 999,
-              border: 'var(--ap-border-w) solid var(--ap-line)', background: 'var(--ap-card)',
-              fontFamily: 'var(--ap-font-body)', fontWeight: 800, fontSize: 15,
-              color: 'var(--ap-ink)', cursor: saving ? 'not-allowed' : 'pointer',
-              opacity: saving ? .6 : 1,
-            }}
-          >
-            {saving ? '…' : 'Sauvegarder brouillon'}
-          </button>
-          <button
-            onClick={() => handleSave(true)}
-            disabled={saving}
-            style={{
-              flex: 2, padding: '14px 0', borderRadius: 999, border: 'none',
-              background: 'var(--ap-brand)', color: '#fff',
-              fontFamily: 'var(--ap-font-body)', fontWeight: 800, fontSize: 15,
-              cursor: saving ? 'not-allowed' : 'pointer',
-              boxShadow: '0 4px 0 var(--ap-brand-deep)',
-              opacity: saving ? .6 : 1,
-            }}
-          >
-            {saving ? '…' : saved?.status === 'draft' ? '🚀 Publier l\'examen' : '💾 Mettre à jour'}
-          </button>
+          {!isEditing && step > 0 && (
+            <button
+              onClick={goPrev}
+              style={{
+                flex: 1, padding: '14px 0', borderRadius: 999,
+                border: 'var(--ap-border-w) solid var(--ap-line)', background: 'var(--ap-card)',
+                fontFamily: 'var(--ap-font-body)', fontWeight: 800, fontSize: 15,
+                color: 'var(--ap-ink)', cursor: 'pointer',
+              }}
+            >
+              ← Précédent
+            </button>
+          )}
+          {!isEditing && step < STEPS.length - 1 ? (
+            <button
+              onClick={goNext}
+              style={{
+                flex: 2, padding: '14px 0', borderRadius: 999, border: 'none',
+                background: 'var(--ap-brand)', color: '#fff',
+                fontFamily: 'var(--ap-font-body)', fontWeight: 800, fontSize: 15,
+                cursor: 'pointer', boxShadow: '0 4px 0 var(--ap-brand-deep)',
+              }}
+            >
+              Suivant →
+            </button>
+          ) : (
+            <>
+              <button
+                onClick={() => handleSave(false)}
+                disabled={saving}
+                style={{
+                  flex: 1, padding: '14px 0', borderRadius: 999,
+                  border: 'var(--ap-border-w) solid var(--ap-line)', background: 'var(--ap-card)',
+                  fontFamily: 'var(--ap-font-body)', fontWeight: 800, fontSize: 15,
+                  color: 'var(--ap-ink)', cursor: saving ? 'not-allowed' : 'pointer',
+                  opacity: saving ? .6 : 1,
+                }}
+              >
+                {saving ? '…' : 'Sauvegarder brouillon'}
+              </button>
+              <button
+                onClick={() => handleSave(true)}
+                disabled={saving}
+                style={{
+                  flex: 2, padding: '14px 0', borderRadius: 999, border: 'none',
+                  background: 'var(--ap-brand)', color: '#fff',
+                  fontFamily: 'var(--ap-font-body)', fontWeight: 800, fontSize: 15,
+                  cursor: saving ? 'not-allowed' : 'pointer',
+                  boxShadow: '0 4px 0 var(--ap-brand-deep)',
+                  opacity: saving ? .6 : 1,
+                }}
+              >
+                {saving ? '…' : saved?.status === 'draft' ? '🚀 Publier l\'examen' : '💾 Mettre à jour'}
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>

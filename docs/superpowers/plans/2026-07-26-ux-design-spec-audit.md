@@ -8,7 +8,7 @@
 
 **Read this as:** a gap list + a phased roadmap, not a finished redesign. Nothing has been changed in the codebase yet — this is the artifact you asked for before picking what to build.
 
-**Status (2026-07-26):** P0, P1, and P2 (except the nav re-grouping item, deliberately skipped pending user sign-off) implemented on branch `fix/ux-audit-p0` (commits `8edd8f2`, `361eff7`, `d0f8778`, `9707561`), pushed to origin. P3 not started. See the roadmap section below for what's in each phase; items already shipped are not re-marked inline there, check the commits for the exact diff.
+**Status (2026-07-26):** P0, P1, P2 (except nav re-grouping, deliberately skipped pending user sign-off), and P3 (except Storybook, deliberately not attempted — a separate tooling initiative, not "polish") all implemented on branch `fix/ux-audit-p0` (commits `8edd8f2`, `361eff7`, `d0f8778`, `9707561`, `5370fb4`, `831e3cd`), pushed to origin. The full roadmap below is done except those two explicitly-skipped items. See the roadmap section for what's in each phase; items already shipped are not re-marked inline there, check the commits for the exact diff.
 
 ---
 
