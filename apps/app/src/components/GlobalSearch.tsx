@@ -7,9 +7,9 @@ import type { User as AuthUser } from "@/lib/auth";
 import type { ContentType } from "@/lib/content/types";
 import { getSearchResultRoute, searchContent, type SearchResult } from "@/lib/content/searchContent";
 
-type LabelKey = "creationTypeQuiz" | "creationTypePoll" | "creationTypeFlashcard" | "creationTypeSlide" | "creationTypeCourse" | "creationTypeExam";
+export type LabelKey = "creationTypeQuiz" | "creationTypePoll" | "creationTypeFlashcard" | "creationTypeSlide" | "creationTypeCourse" | "creationTypeExam";
 
-const TYPE_META: Record<ContentType, { icon: typeof BookOpen; labelKey: LabelKey }> = {
+export const TYPE_META: Record<ContentType, { icon: typeof BookOpen; labelKey: LabelKey }> = {
   quiz: { icon: BookOpen, labelKey: "creationTypeQuiz" },
   poll: { icon: BarChart3, labelKey: "creationTypePoll" },
   flashcard: { icon: Layers, labelKey: "creationTypeFlashcard" },

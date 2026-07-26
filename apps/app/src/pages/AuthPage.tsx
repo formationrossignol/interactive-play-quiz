@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSEO } from "@/hooks/useSEO";
 import { login, register, requestPasswordReset, verifyMfaLogin, getCurrentUser } from "@/lib/auth";
 import { toast } from "sonner";
@@ -11,6 +11,7 @@ type View = "login" | "register" | "mfa" | "forgot" | "confirm-email";
 const AuthPage = () => {
   useSEO({ title: "Connexion", path: "/auth", noindex: true });
   const [view, setView] = useState<View>("login");
+  const changeView = (v: View) => { setFieldErrors({}); setView(v); };
   const [busy, setBusy] = useState(false);
   const [loginData, setLoginData] = useState({ email: "", password: "" });
   const [registerData, setRegisterData] = useState({ email: "", username: "", password: "" });
@@ -18,6 +19,50 @@ const AuthPage = () => {
   const [forgotEmail, setForgotEmail] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  const loginEmailRef = useRef<HTMLInputElement>(null);
+  const registerUsernameRef = useRef<HTMLInputElement>(null);
+  const registerEmailRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
+  const forgotEmailRef = useRef<HTMLInputElement>(null);
+
+  const clearFieldError = (field: string) =>
+    setFieldErrors((prev) => {
+      if (!(field in prev)) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+
+  const runFieldValidation = (field: string, value: string, validator: (v: string) => string | undefined) => {
+    const err = validator(value);
+    setFieldErrors((prev) => {
+      if (!err) {
+        if (!(field in prev)) return prev;
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      }
+      return { ...prev, [field]: err };
+    });
+  };
+
+  const emailError = (v: string): string | undefined => {
+    if (!v.trim()) return t("emailRequired");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim())) return t("emailInvalid");
+    return undefined;
+  };
+  const usernameError = (v: string): string | undefined => {
+    if (!v.trim()) return t("usernameRequired");
+    if (v.trim().length < 3) return t("usernameTooShort");
+    return undefined;
+  };
+  const passwordError = (v: string, minEight: boolean): string | undefined => {
+    if (!v) return t("passwordRequired");
+    if (minEight && v.length < 8) return t("passwordTooShort");
+    return undefined;
+  };
 
   // Already signed in (e.g. arriving from the email confirmation link)
   useEffect(() => {
@@ -26,6 +71,17 @@ const AuthPage = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    const errors: Record<string, string> = {};
+    const emailErr = emailError(loginData.email);
+    const pwErr = passwordError(loginData.password, false);
+    if (emailErr) errors.loginEmail = emailErr;
+    if (pwErr) errors.password = pwErr;
+    if (emailErr || pwErr) {
+      setFieldErrors(errors);
+      (emailErr ? loginEmailRef : passwordRef).current?.focus();
+      return;
+    }
+    setFieldErrors({});
     setBusy(true);
     const result = await login(loginData.email, loginData.password);
     setBusy(false);
@@ -45,7 +101,19 @@ const AuthPage = () => {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (registerData.password.length < 8) { toast.error(t("passwordTooShort")); return; }
+    const errors: Record<string, string> = {};
+    const usernameErr = usernameError(registerData.username);
+    const emailErr = emailError(registerData.email);
+    const pwErr = passwordError(registerData.password, true);
+    if (usernameErr) errors.registerUsername = usernameErr;
+    if (emailErr) errors.registerEmail = emailErr;
+    if (pwErr) errors.password = pwErr;
+    if (usernameErr || emailErr || pwErr) {
+      setFieldErrors(errors);
+      (usernameErr ? registerUsernameRef : emailErr ? registerEmailRef : passwordRef).current?.focus();
+      return;
+    }
+    setFieldErrors({});
     setBusy(true);
     const result = await register(registerData.email, registerData.username, registerData.password);
     setBusy(false);
@@ -55,7 +123,8 @@ const AuthPage = () => {
     } else if (result.status === "confirm_email") {
       setView("confirm-email");
     } else if (result.status === "email_in_use") {
-      toast.error(t("emailAlreadyUsed"));
+      setFieldErrors({ registerEmail: t("emailAlreadyUsed") });
+      registerEmailRef.current?.focus();
     } else {
       toast.error(result.message);
     }
@@ -77,6 +146,13 @@ const AuthPage = () => {
 
   const handleForgot = async (e: React.FormEvent) => {
     e.preventDefault();
+    const emailErr = emailError(forgotEmail);
+    if (emailErr) {
+      setFieldErrors({ forgotEmail: emailErr });
+      forgotEmailRef.current?.focus();
+      return;
+    }
+    setFieldErrors({});
     setBusy(true);
     await requestPasswordReset(forgotEmail);
     setBusy(false);
@@ -134,6 +210,20 @@ const AuthPage = () => {
   const onBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     e.currentTarget.style.borderColor = "var(--ap-line)";
     e.currentTarget.style.boxShadow = "none";
+  };
+
+  // Inline field error — same visual language as the password-length hint
+  // below, wired to aria-invalid/aria-describedby on the matching input.
+  const FieldError = ({ id, message }: { id: string; message?: string }) => {
+    if (!message) return null;
+    return (
+      <p id={id} role="alert" style={{ margin: "8px 0 0", fontSize: "12.5px", fontWeight: 800, color: "var(--ap-quiz-deep)", display: "flex", alignItems: "center", gap: "6px" }}>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="9" /><path d="M12 8v5M12 16h.01" />
+        </svg>
+        {message}
+      </p>
+    );
   };
 
   // Live password-length hint (mirrors the mockup)
@@ -195,31 +285,36 @@ const AuthPage = () => {
     </svg>
   );
 
+  const passwordHasError = showPwHint || !!fieldErrors.password;
   const passwordField = (
     <div>
-      <label style={labelStyle}>Mot de passe</label>
+      <label style={labelStyle} htmlFor="auth-password">Mot de passe</label>
       <div style={{ position: "relative" }}>
         <input
+          id="auth-password"
+          ref={passwordRef}
           type={showPassword ? "text" : "password"}
           required
           minLength={view === "register" ? 8 : undefined}
           value={pwValue}
-          onChange={(e) =>
-            view === "register"
-              ? setRegisterData({ ...registerData, password: e.target.value })
-              : setLoginData({ ...loginData, password: e.target.value })
-          }
+          aria-invalid={passwordHasError}
+          aria-describedby={fieldErrors.password ? "auth-password-error" : undefined}
+          onChange={(e) => {
+            if (view === "register") setRegisterData({ ...registerData, password: e.target.value });
+            else setLoginData({ ...loginData, password: e.target.value });
+          }}
           style={{
             ...inputStyle,
             paddingRight: "46px",
-            borderColor: showPwHint ? "var(--ap-quiz)" : "var(--ap-line)",
+            borderColor: passwordHasError ? "var(--ap-quiz)" : "var(--ap-line)",
           }}
           placeholder="••••••••"
           onFocus={(e) => {
-            if (!showPwHint) onFocus(e);
+            if (!passwordHasError) onFocus(e);
           }}
           onBlur={(e) => {
-            if (!showPwHint) onBlur(e);
+            if (!passwordHasError) onBlur(e);
+            runFieldValidation("password", e.target.value, (v) => passwordError(v, view === "register"));
           }}
         />
         <button
@@ -252,13 +347,15 @@ const AuthPage = () => {
           )}
         </button>
       </div>
-      {showPwHint && (
-        <p style={{ margin: "8px 0 0", fontSize: "12.5px", fontWeight: 800, color: "var(--ap-quiz-deep)", display: "flex", alignItems: "center", gap: "6px" }}>
+      {showPwHint ? (
+        <p id="auth-password-error" role="alert" style={{ margin: "8px 0 0", fontSize: "12.5px", fontWeight: 800, color: "var(--ap-quiz-deep)", display: "flex", alignItems: "center", gap: "6px" }}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="9" /><path d="M12 8v5M12 16h.01" />
           </svg>
           8 caractères minimum — il en manque {pwMissing}
         </p>
+      ) : (
+        <FieldError id="auth-password-error" message={fieldErrors.password} />
       )}
     </div>
   );
@@ -269,10 +366,10 @@ const AuthPage = () => {
       {(view === "login" || view === "register") && (
         <>
           <div className="ap-seg" style={{ marginBottom: "22px" }}>
-            <button className={view === "login" ? "is-on" : ""} onClick={() => setView("login")}>
+            <button className={view === "login" ? "is-on" : ""} onClick={() => changeView("login")}>
               Connexion
             </button>
-            <button className={view === "register" ? "is-on" : ""} onClick={() => setView("register")}>
+            <button className={view === "register" ? "is-on" : ""} onClick={() => changeView("register")}>
               Inscription
             </button>
           </div>
@@ -293,17 +390,22 @@ const AuthPage = () => {
       {view === "login" && (
         <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           <div>
-            <label style={labelStyle}>Email</label>
+            <label style={labelStyle} htmlFor="login-email">Email</label>
             <input
+              id="login-email"
+              ref={loginEmailRef}
               type="email"
               required
               value={loginData.email}
+              aria-invalid={!!fieldErrors.loginEmail}
+              aria-describedby={fieldErrors.loginEmail ? "login-email-error" : undefined}
               onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
-              style={inputStyle}
+              style={{ ...inputStyle, borderColor: fieldErrors.loginEmail ? "var(--ap-quiz)" : "var(--ap-line)" }}
               placeholder="votre@email.com"
               onFocus={onFocus}
-              onBlur={onBlur}
+              onBlur={(e) => { onBlur(e); runFieldValidation("loginEmail", e.target.value, emailError); }}
             />
+            <FieldError id="login-email-error" message={fieldErrors.loginEmail} />
           </div>
           {passwordField}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "10px" }}>
@@ -316,7 +418,7 @@ const AuthPage = () => {
               />
               Rester connecté
             </label>
-            <button type="button" onClick={() => setView("forgot")} style={linkButtonStyle}>
+            <button type="button" onClick={() => changeView("forgot")} style={linkButtonStyle}>
               {t("forgotPassword")}
             </button>
           </div>
@@ -329,30 +431,40 @@ const AuthPage = () => {
       {view === "register" && (
         <form onSubmit={handleRegister} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           <div>
-            <label style={labelStyle}>Nom d'utilisateur</label>
+            <label style={labelStyle} htmlFor="register-username">Nom d'utilisateur</label>
             <input
+              id="register-username"
+              ref={registerUsernameRef}
               type="text"
               required
               value={registerData.username}
+              aria-invalid={!!fieldErrors.registerUsername}
+              aria-describedby={fieldErrors.registerUsername ? "register-username-error" : undefined}
               onChange={(e) => setRegisterData({ ...registerData, username: e.target.value })}
-              style={inputStyle}
+              style={{ ...inputStyle, borderColor: fieldErrors.registerUsername ? "var(--ap-quiz)" : "var(--ap-line)" }}
               placeholder="JohnDoe"
               onFocus={onFocus}
-              onBlur={onBlur}
+              onBlur={(e) => { onBlur(e); runFieldValidation("registerUsername", e.target.value, usernameError); }}
             />
+            <FieldError id="register-username-error" message={fieldErrors.registerUsername} />
           </div>
           <div>
-            <label style={labelStyle}>Email</label>
+            <label style={labelStyle} htmlFor="register-email">Email</label>
             <input
+              id="register-email"
+              ref={registerEmailRef}
               type="email"
               required
               value={registerData.email}
-              onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
-              style={inputStyle}
+              aria-invalid={!!fieldErrors.registerEmail}
+              aria-describedby={fieldErrors.registerEmail ? "register-email-error" : undefined}
+              onChange={(e) => { setRegisterData({ ...registerData, email: e.target.value }); clearFieldError("registerEmail"); }}
+              style={{ ...inputStyle, borderColor: fieldErrors.registerEmail ? "var(--ap-quiz)" : "var(--ap-line)" }}
               placeholder="votre@email.com"
               onFocus={onFocus}
-              onBlur={onBlur}
+              onBlur={(e) => { onBlur(e); runFieldValidation("registerEmail", e.target.value, emailError); }}
             />
+            <FieldError id="register-email-error" message={fieldErrors.registerEmail} />
           </div>
           {passwordField}
           <button type="submit" className="ap-btn ap-btn--pill" disabled={busy} style={{ width: "100%", marginTop: "4px" }}>
@@ -385,7 +497,7 @@ const AuthPage = () => {
           <button type="submit" className="ap-btn ap-btn--pill" disabled={busy} style={{ width: "100%" }}>
             {t("verify")}
           </button>
-          <button type="button" onClick={() => setView("login")} style={{ ...linkButtonStyle, color: "var(--ap-muted)", alignSelf: "center" }}>
+          <button type="button" onClick={() => changeView("login")} style={{ ...linkButtonStyle, color: "var(--ap-muted)", alignSelf: "center" }}>
             {t("backToLogin")}
           </button>
         </form>
@@ -394,23 +506,28 @@ const AuthPage = () => {
       {view === "forgot" && (
         <form onSubmit={handleForgot} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           <div>
-            <label style={labelStyle}>Email</label>
+            <label style={labelStyle} htmlFor="forgot-email">Email</label>
             <input
+              id="forgot-email"
+              ref={forgotEmailRef}
               type="email"
               required
               autoFocus
               value={forgotEmail}
+              aria-invalid={!!fieldErrors.forgotEmail}
+              aria-describedby={fieldErrors.forgotEmail ? "forgot-email-error" : undefined}
               onChange={(e) => setForgotEmail(e.target.value)}
-              style={inputStyle}
+              style={{ ...inputStyle, borderColor: fieldErrors.forgotEmail ? "var(--ap-quiz)" : "var(--ap-line)" }}
               placeholder="votre@email.com"
               onFocus={onFocus}
-              onBlur={onBlur}
+              onBlur={(e) => { onBlur(e); runFieldValidation("forgotEmail", e.target.value, emailError); }}
             />
+            <FieldError id="forgot-email-error" message={fieldErrors.forgotEmail} />
           </div>
           <button type="submit" className="ap-btn ap-btn--pill" disabled={busy} style={{ width: "100%" }}>
             {t("send")}
           </button>
-          <button type="button" onClick={() => setView("login")} style={{ ...linkButtonStyle, color: "var(--ap-muted)", alignSelf: "center" }}>
+          <button type="button" onClick={() => changeView("login")} style={{ ...linkButtonStyle, color: "var(--ap-muted)", alignSelf: "center" }}>
             {t("backToLogin")}
           </button>
         </form>
@@ -420,7 +537,7 @@ const AuthPage = () => {
         <div style={{ textAlign: "center", display: "flex", flexDirection: "column", gap: "12px" }}>
           <h2 className="ap-h3" style={{ margin: 0 }}>{t("confirmEmailTitle")}</h2>
           <p className="ap-muted" style={{ fontSize: "14px", margin: 0 }}>{t("confirmEmailBody")}</p>
-          <button type="button" onClick={() => setView("login")} style={{ ...linkButtonStyle, alignSelf: "center" }}>
+          <button type="button" onClick={() => changeView("login")} style={{ ...linkButtonStyle, alignSelf: "center" }}>
             {t("backToLogin")}
           </button>
         </div>

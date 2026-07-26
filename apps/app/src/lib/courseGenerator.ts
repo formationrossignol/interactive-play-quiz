@@ -148,6 +148,7 @@ function buildAndSave(gen: GenCourse): string {
     isFavorite: false,
     category: gen.category ?? 'Formation',
     tags: [],
+    generatedByAI: true,
   });
 
   return course.id;

@@ -508,10 +508,13 @@ export const QuizBuilder = () => {
   const [importFileOpen, setImportFileOpen] = useState(false);
   const [shouldBlockNavigation, setShouldBlockNavigation] = useState(true);
   const [pendingNavigatePath, setPendingNavigatePath] = useState<string | null>(null);
+  const [titleTouched, setTitleTouched] = useState(false);
+  const titleInputRef = useRef<HTMLInputElement>(null);
 
   const firstRender = useRef(true);
   const questionTextareaRef = useRef<HTMLTextAreaElement>(null);
 
+  const titleError = titleTouched && !title.trim() ? t("titleRequired") : undefined;
   const activeTheme = THEMES.find(t => t.id === theme) ?? THEMES[0];
   const activeFont = FONT_OPTIONS.find(f => f.value === previewFont) ?? FONT_OPTIONS[0];
   const selectedQ = selectedIdx !== null ? questions[selectedIdx] : null;
@@ -730,7 +733,12 @@ export const QuizBuilder = () => {
   };
 
   const handleSaveQuiz = async () => {
-    if (!title.trim()) { toast.error(t("titleRequired")); return; }
+    if (!title.trim()) {
+      setTitleTouched(true);
+      toast.error(t("titleRequired"));
+      titleInputRef.current?.focus();
+      return;
+    }
     if (questions.length === 0) { toast.error(t("oneQuestionRequired")); return; }
     try {
       const data = {
@@ -1188,19 +1196,39 @@ export const QuizBuilder = () => {
             {backLabel}
           </button>
           <ChevronRight style={{ width: 15, height: 15, color: "var(--ap-line-2)", flexShrink: 0 }} />
-          <input
-            value={title}
-            onChange={e => setTitle(e.target.value)}
-            placeholder={isPoll ? "Mon Sondage" : isFlashcard ? "Mes Flashcards" : "Mon Quiz"}
-            style={{
-              fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 15.5, color: "var(--ap-ink)",
-              border: "2px solid transparent", borderRadius: "var(--ap-r-sm)", background: "transparent",
-              padding: "5px 9px", width: 280, outline: "none",
-              transition: "border-color .15s, background .15s",
-            }}
-            onFocus={e => { e.target.style.borderColor = "var(--ap-brand)"; e.target.style.background = "white"; }}
-            onBlur={e => { e.target.style.borderColor = "transparent"; e.target.style.background = "transparent"; }}
-          />
+          <div style={{ position: "relative" }}>
+            <input
+              ref={titleInputRef}
+              value={title}
+              onChange={e => setTitle(e.target.value)}
+              placeholder={isPoll ? "Mon Sondage" : isFlashcard ? "Mes Flashcards" : "Mon Quiz"}
+              aria-invalid={!!titleError}
+              aria-describedby={titleError ? "quiz-title-error" : undefined}
+              style={{
+                fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 15.5, color: "var(--ap-ink)",
+                border: `2px solid ${titleError ? "var(--ap-quiz)" : "transparent"}`, borderRadius: "var(--ap-r-sm)",
+                background: titleError ? "var(--ap-quiz-soft)" : "transparent",
+                padding: "5px 9px", width: 280, outline: "none",
+                transition: "border-color .15s, background .15s",
+              }}
+              onFocus={e => { if (!titleError) { e.target.style.borderColor = "var(--ap-brand)"; e.target.style.background = "white"; } }}
+              onBlur={e => { setTitleTouched(true); if (!titleError) { e.target.style.borderColor = "transparent"; e.target.style.background = "transparent"; } }}
+            />
+            {titleError && (
+              <p
+                id="quiz-title-error"
+                role="alert"
+                style={{
+                  position: "absolute", top: "calc(100% + 4px)", left: 0, zIndex: 30, whiteSpace: "nowrap",
+                  margin: 0, fontSize: 12, fontWeight: 800, color: "var(--ap-quiz-deep)",
+                  background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-quiz)",
+                  borderRadius: "var(--ap-r-sm)", padding: "4px 9px", boxShadow: "var(--ap-shadow-soft)",
+                }}
+              >
+                {titleError}
+              </p>
+            )}
+          </div>
         </nav>
 
         <SaveStateIndicator state={saveState} />

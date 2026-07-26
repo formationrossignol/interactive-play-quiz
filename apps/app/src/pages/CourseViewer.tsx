@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Star } from "lucide-react";
+import { Sparkles, Star } from "lucide-react";
 import { Breadcrumb } from "@/components/Breadcrumb";
 import { getCurrentUser } from "@/lib/auth";
 import {
@@ -184,14 +184,28 @@ function CourseOverviewScreen({
         )}
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(0deg, rgba(10,8,30,.82), rgba(10,8,30,.15) 60%)" }} />
         <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: "28px 40px", maxWidth: 900 }}>
-          {course.category && (
-            <span style={{
-              display: "inline-block", fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase",
-              padding: "5px 12px", borderRadius: 999, background: "rgba(255,255,255,.15)", color: "#fff", marginBottom: 10,
-            }}>
-              {course.category}
-            </span>
-          )}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+            {course.category && (
+              <span style={{
+                display: "inline-block", fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase",
+                padding: "5px 12px", borderRadius: 999, background: "rgba(255,255,255,.15)", color: "#fff",
+              }}>
+                {course.category}
+              </span>
+            )}
+            {course.generatedByAI && (
+              <span
+                title="Ce cours a été généré par IA à partir d'un document."
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11.5, fontWeight: 800,
+                  padding: "5px 12px", borderRadius: 999, background: "rgba(255,255,255,.15)", color: "#fff",
+                }}
+              >
+                <Sparkles style={{ width: 12, height: 12 }} />
+                Généré par IA
+              </span>
+            )}
+          </div>
           <h1 style={{ fontFamily: "var(--ap-font-display)", fontWeight: 600, fontSize: "clamp(24px, 3.2vw, 34px)", color: "#fff", lineHeight: 1.15, marginBottom: 10 }}>
             {course.title}
           </h1>

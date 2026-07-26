@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getCurrentUser, updateProfile, User as AuthUser, type Theme, type Language } from "@/lib/auth";
@@ -102,6 +102,8 @@ const ProfilePage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [username, setUsername] = useState("");
+  const [usernameTouched, setUsernameTouched] = useState(false);
+  const usernameRef = useRef<HTMLInputElement>(null);
   const [email, setEmail] = useState("");
   const [theme, setTheme] = useState<Theme>("light");
   const [siteTheme, setSiteTheme] = useState<SiteTheme>("arcade");
@@ -160,9 +162,16 @@ const ProfilePage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
+  const usernameError = usernameTouched && !username.trim() ? t("usernameRequired") : undefined;
+
   const handleSave = async () => {
     if (!user) return;
-    if (!username.trim()) { toast.error(t("usernameRequired")); return; }
+    if (!username.trim()) {
+      setUsernameTouched(true);
+      toast.error(t("usernameRequired"));
+      usernameRef.current?.focus();
+      return;
+    }
     const updatedUser = await updateProfile({ username: username.trim(), theme, siteTheme, language });
     if (!updatedUser) { toast.error(t("loginError")); return; }
     setUser(updatedUser);
@@ -332,13 +341,26 @@ const ProfilePage = () => {
             <h2 className="ap-h3" style={{ marginBottom: "20px" }}>{t("profileInfo")}</h2>
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               <div>
-                <label style={labelStyle}>{t("username")}</label>
+                <label style={labelStyle} htmlFor="profile-username">{t("username")}</label>
                 <input
-                  style={inputStyle}
+                  id="profile-username"
+                  ref={usernameRef}
+                  style={{ ...inputStyle, borderColor: usernameError ? "var(--ap-quiz)" : "var(--ap-line)" }}
                   value={username}
+                  aria-invalid={!!usernameError}
+                  aria-describedby={usernameError ? "profile-username-error" : undefined}
                   onChange={(e) => setUsername(e.target.value)}
-                  onFocus={onFocus} onBlur={onBlur}
+                  onFocus={(e) => { if (!usernameError) onFocus(e); }}
+                  onBlur={(e) => { setUsernameTouched(true); if (!usernameError) onBlur(e); }}
                 />
+                {usernameError && (
+                  <p id="profile-username-error" role="alert" style={{ margin: "8px 0 0", fontSize: "12.5px", fontWeight: 800, color: "var(--ap-quiz-deep)", display: "flex", alignItems: "center", gap: "6px" }}>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="9" /><path d="M12 8v5M12 16h.01" />
+                    </svg>
+                    {usernameError}
+                  </p>
+                )}
               </div>
               <div>
                 <label style={labelStyle}>{t("email")}</label>

@@ -49,7 +49,7 @@ import {
 
 // "+ Créer" jumps straight into a builder's start flow — moved here from the
 // old Header.tsx pill nav, not duplicated.
-const CREATE_ITEMS = [
+export const CREATE_ITEMS = [
   { label: t("navCreateQuiz"), icon: BookOpen, path: "/builder-start?type=quiz" },
   { label: t("navCreatePoll"), icon: BarChart3, path: "/builder-start?type=poll" },
   { label: t("createFlashcards"), icon: Layers, path: "/builder-start?type=flashcard" },
@@ -60,7 +60,7 @@ const CREATE_ITEMS = [
 
 // Same 6 routes ContentExplorer.tsx's (now-removed) TYPE_TABS used to link to
 // — content-type switching moved from an in-page tab strip into this submenu.
-const CREATIONS_ITEMS = [
+export const CREATIONS_ITEMS = [
   { label: t("creationTypeQuiz"), path: "/my-quizzes" },
   { label: t("creationTypePoll"), path: "/my-polls" },
   { label: t("creationTypeFlashcard"), path: "/my-flashcards" },
@@ -72,7 +72,7 @@ const CREATIONS_ITEMS = [
 // Discovery/social — secondary to the Dashboard + Mes créations workflow,
 // grouped under its own labelled section per sidebar UX best practices
 // (group related items, keep primary actions visually distinct).
-const EXPLORE_ITEMS = [
+export const EXPLORE_ITEMS = [
   { label: t("navSharedWithMe"), icon: Share2, path: "/shared-with-me", requiresAuth: true },
   { label: t("questionBank"), icon: Library, path: "/question-bank", requiresAuth: true },
   { label: t("discoverPublic"), icon: Compass, path: "/discover", requiresAuth: false },

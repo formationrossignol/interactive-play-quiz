@@ -53,6 +53,39 @@ describe('computeDashboardStats', () => {
 
     const stats = await computeDashboardStats('user-1');
 
-    expect(stats).toEqual({ totalCreations: 0, totalSessions: 0, totalParticipants: 0, avgScore: null });
+    expect(stats).toEqual({
+      totalCreations: 0, totalSessions: 0, totalParticipants: 0, avgScore: null,
+      trends: {
+        creations: { current: 0, previous: 0, deltaPct: null },
+        sessions: { current: 0, previous: 0, deltaPct: null },
+        participants: { current: 0, previous: 0, deltaPct: null },
+        avgScore: { current: null, previous: null },
+      },
+    });
+  });
+
+  it('buckets sessions/participants/creations into trailing-14-day vs previous-14-day windows', async () => {
+    const dayMs = 24 * 60 * 60 * 1000;
+    const daysAgo = (n: number) => new Date(Date.now() - n * dayMs).toISOString();
+
+    vi.mocked(getUserQuizzes).mockReturnValue([
+      { id: 'q1', type: 'quiz', createdAt: daysAgo(3) },
+    ] as ReturnType<typeof getUserQuizzes>);
+    vi.mocked(getUserCourses).mockReturnValue([]);
+    vi.mocked(getHostExams).mockResolvedValue([]);
+    vi.mocked(readSessionHistory).mockReturnValue([
+      { id: 'r-current', date: daysAgo(2), questionCount: 1, players: [{ id: 'p1', name: 'A', avatar: '', score: 100, correctAnswers: 1 }] },
+      { id: 'r-current-2', date: daysAgo(10), questionCount: 1, players: [{ id: 'p2', name: 'B', avatar: '', score: 50, correctAnswers: 0 }] },
+      { id: 'r-previous', date: daysAgo(20), questionCount: 1, players: [{ id: 'p3', name: 'C', avatar: '', score: 0, correctAnswers: 0 }] },
+      { id: 'r-outside', date: daysAgo(40), questionCount: 1, players: [{ id: 'p4', name: 'D', avatar: '', score: 0, correctAnswers: 0 }] },
+    ]);
+    vi.mocked(getPollResults).mockReturnValue(null);
+
+    const stats = await computeDashboardStats('user-1');
+
+    expect(stats.trends.sessions).toEqual({ current: 2, previous: 1, deltaPct: 100 });
+    expect(stats.trends.participants).toEqual({ current: 2, previous: 1, deltaPct: 100 });
+    expect(stats.trends.creations).toEqual({ current: 1, previous: 0, deltaPct: null });
+    expect(stats.trends.avgScore).toEqual({ current: 75, previous: 0 });
   });
 });

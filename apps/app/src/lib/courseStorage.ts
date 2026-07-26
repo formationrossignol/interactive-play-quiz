@@ -37,6 +37,7 @@ export interface Course {
   deletedAt?: string;
   overview?: string; // longer intro shown at the top of the course viewer
   objectives?: string[]; // bullet list of learning objectives
+  generatedByAI?: boolean; // true when created via CourseGeneratorModal — see REQ-AI-002/AID-001
 }
 
 export interface CourseProgress {
