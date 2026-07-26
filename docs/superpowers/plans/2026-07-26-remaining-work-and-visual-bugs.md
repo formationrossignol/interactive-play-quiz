@@ -3,6 +3,8 @@
 **Date:** 2026-07-26
 **Context:** follow-up to `2026-07-26-ux-design-spec-audit.md` (P0–P3 shipped on `fix/ux-audit-p0`, pushed). This doc tracks what's still open: roadmap leftovers + real bugs the user found by actually using the deployed app (first real visual feedback this session — no browser access was available while building P0–P3, so these are exactly the kind of thing that slipped through build-only verification).
 
+**Update:** all four items in §2 (2.1–2.4) implemented — see commit on `fix/ux-audit-p0` following this doc's previous version. 2.1 was also extended past the original two files to every emoji-as-icon spot found in `Communaute.tsx` and the admin panel (`CardActions.tsx`, `RoadmapBoard.tsx`, `ContentTab.tsx`, `GuidesGrid.tsx`, `ModerationTab.tsx`, `ReviewsList.tsx`, `StaticPagesList.tsx`, `SubscribersTab.tsx`) — per-item content emoji (guide cover emoji, review avatar emoji) were deliberately left alone, those are user content, not UI icons. §1 (nav re-grouping, Storybook, the pre-existing a11y warnings) is still open.
+
 ---
 
 ## 1. Roadmap leftovers (skipped by choice, not oversight)

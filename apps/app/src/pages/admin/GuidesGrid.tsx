@@ -1,3 +1,4 @@
+import { FileText, Video } from "lucide-react";
 import type { GuideAdminRow } from "@/lib/pages/types";
 import { CardActions } from "./CardActions";
 
@@ -23,7 +24,9 @@ export const GuidesGrid = ({ rows, onEdit, onNew, onToggleStatus, onDelete }: Pr
           <h4>{g.title || "—"}</h4>
           <div className="adm-gmeta">
             <span className={`adm-lvl ${g.level}`}>{LVL[g.level] ?? g.level}</span>
-            <span className="adm-fmt">{g.format === "video" ? "🎬 Vidéo" : "Article"}</span>
+            <span className="adm-fmt">
+              {g.format === "video" ? <><Video className="h-2.5 w-2.5" /> Vidéo</> : <><FileText className="h-2.5 w-2.5" /> Article</>}
+            </span>
           </div>
           <CardActions
             status={g.status}

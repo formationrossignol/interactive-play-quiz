@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ExternalLink } from "lucide-react";
 import { useAdminStaticPages } from "@/lib/pages/adminHooks";
 import { STATIC_PAGE_META, STATIC_PAGE_DEFAULTS, mergeStaticPage, type StaticSlug } from "@/lib/pages/staticPageDefaults";
 import type { StaticPage } from "@/lib/pages/types";
@@ -28,7 +29,9 @@ export const StaticPagesList = () => {
               </span>
               <span className="adm-status is-published">publié</span>
               <div className="r-actions">
-                <a className="adm-btn adm-btn--ghost adm-btn--sm" href={m.path} target="_blank" rel="noopener noreferrer">Voir ↗</a>
+                <a className="adm-btn adm-btn--ghost adm-btn--sm" href={m.path} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                  Voir <ExternalLink className="h-3 w-3" />
+                </a>
                 <button className="adm-btn adm-btn--sm" onClick={() => setEditing({ slug: m.slug, page })}>Éditer</button>
               </div>
             </div>

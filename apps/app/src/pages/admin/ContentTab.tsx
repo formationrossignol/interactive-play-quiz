@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Map, BookOpen, HelpCircle, Package, MessageSquare, FileText } from "lucide-react";
 import { useAdminRoadmap, useAdminGuides, useAdminFaq, useAdminReleases, useAdminReviews, useContentMutations } from "@/lib/pages/adminHooks";
 import type { RoadmapCol, Status } from "@/lib/pages/types";
 import { RoadmapBoard } from "./RoadmapBoard";
@@ -14,13 +15,13 @@ import { ChangelogEditor } from "./editors/ChangelogEditor";
 import { ReviewEditor } from "./editors/ReviewEditor";
 
 type Res = "roadmap_items" | "guides" | "faq_items" | "changelog_releases" | "reviews" | "static_pages";
-const RES: { key: Res; label: string; icon: string }[] = [
-  { key: "roadmap_items", label: "Roadmap", icon: "🗺️" },
-  { key: "guides", label: "Guides", icon: "📚" },
-  { key: "faq_items", label: "FAQ", icon: "❓" },
-  { key: "changelog_releases", label: "Changelog", icon: "📦" },
-  { key: "reviews", label: "Témoignages", icon: "💬" },
-  { key: "static_pages", label: "Pages", icon: "📄" },
+const RES: { key: Res; label: string; icon: typeof Map }[] = [
+  { key: "roadmap_items", label: "Roadmap", icon: Map },
+  { key: "guides", label: "Guides", icon: BookOpen },
+  { key: "faq_items", label: "FAQ", icon: HelpCircle },
+  { key: "changelog_releases", label: "Changelog", icon: Package },
+  { key: "reviews", label: "Témoignages", icon: MessageSquare },
+  { key: "static_pages", label: "Pages", icon: FileText },
 ];
 
 export const ContentTab = () => {
@@ -53,7 +54,7 @@ export const ContentTab = () => {
         <div className="adm-pills">
           {RES.map((r) => (
             <button key={r.key} className={`adm-pill${res === r.key ? " on" : ""}`} onClick={() => setRes(r.key)}>
-              {r.icon} {r.label}
+              <r.icon className="h-3.5 w-3.5" /> {r.label}
             </button>
           ))}
         </div>
