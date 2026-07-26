@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronRight, Home } from "lucide-react";
+import { ChevronRight, Download, Home, Minus, Play, Plus, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { useDocStore } from "./store/useDocStore";
 import { useEditorUIStore } from "./store/useEditorUIStore";
@@ -133,11 +133,29 @@ export function PresentationEditor({ contentId, userId, initialPresenting = fals
           <span style={{ fontSize: 12, color: "var(--ap-muted)" }}>
             {status === "saving" ? "Enregistrement…" : status === "saved" ? "Enregistré" : status === "error" ? "Erreur d'enregistrement" : ""}
           </span>
-          <button className="ap-btn ap-btn--sm ap-btn--ghost" onClick={() => setZoom(zoom - 0.1)}>−</button>
+          <button
+            className="ap-btn ap-btn--sm ap-btn--ghost ap-icon-btn"
+            aria-label="Réduire le zoom"
+            title="Réduire le zoom"
+            onClick={() => setZoom(zoom - 0.1)}
+          >
+            <Minus size={16} aria-hidden="true" />
+          </button>
           <span style={{ fontSize: 12, width: 40, textAlign: "center" }}>{Math.round(zoom * 100)}%</span>
-          <button className="ap-btn ap-btn--sm ap-btn--ghost" onClick={() => setZoom(zoom + 0.1)}>+</button>
-          <button className="ap-btn ap-btn--sm ap-btn--ghost" onClick={exportPresentationAsFile}>Exporter JSON</button>
+          <button
+            className="ap-btn ap-btn--sm ap-btn--ghost ap-icon-btn"
+            aria-label="Augmenter le zoom"
+            title="Augmenter le zoom"
+            onClick={() => setZoom(zoom + 0.1)}
+          >
+            <Plus size={16} aria-hidden="true" />
+          </button>
+          <button className="ap-btn ap-btn--sm ap-btn--ghost" onClick={exportPresentationAsFile}>
+            <Download size={15} aria-hidden="true" />
+            Exporter JSON
+          </button>
           <label className="ap-btn ap-btn--sm ap-btn--ghost" style={{ cursor: "pointer" }}>
+            <Upload size={15} aria-hidden="true" />
             Importer JSON
             <input type="file" accept="application/json" style={{ display: "none" }} onChange={(e) => {
               const f = e.target.files?.[0];
@@ -145,7 +163,10 @@ export function PresentationEditor({ contentId, userId, initialPresenting = fals
               importPresentationFromFile(f).catch((err: Error) => toast.error(err.message));
             }} />
           </label>
-          <button className="ap-btn ap-btn--sm ap-btn--pill" onClick={() => setPresenting(true)}>▶ Présenter</button>
+          <button className="ap-btn ap-btn--sm ap-btn--pill" onClick={() => setPresenting(true)}>
+            <Play size={15} aria-hidden="true" />
+            Présenter
+          </button>
         </div>
       </div>
       <EditorToolbar slideId={activeSlideId} />

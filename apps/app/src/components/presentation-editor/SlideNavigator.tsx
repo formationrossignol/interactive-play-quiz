@@ -4,6 +4,7 @@ import { useDocStore } from "./store/useDocStore";
 import { useEditorUIStore } from "./store/useEditorUIStore";
 import { useHistoryStore } from "./store/useHistoryStore";
 import { SlideThumbnail } from "./SlideThumbnail";
+import { Copy, Eye, EyeOff, Plus, Trash2 } from "lucide-react";
 
 export function SlideNavigator() {
   const presentation = useDocStore((s) => s.presentation);
@@ -42,7 +43,8 @@ export function SlideNavigator() {
           setActiveSlideId(id);
         }}
       >
-        + Diapositive
+        <Plus size={17} aria-hidden="true" />
+        Diapositive
       </button>
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={ids} strategy={verticalListSortingStrategy}>
@@ -61,24 +63,29 @@ export function SlideNavigator() {
                 <button
                   className="ap-btn ap-btn--ghost ap-btn--sm"
                   title="Dupliquer"
+                  aria-label={`Dupliquer la diapositive ${i + 1}`}
                   onClick={() => { useHistoryStore.getState().commit(); useDocStore.getState().duplicateSlide(slide.id); }}
                 >
-                  ⧉
+                  <Copy size={16} aria-hidden="true" />
                 </button>
                 <button
                   className="ap-btn ap-btn--ghost ap-btn--sm"
                   title={slide.hidden ? "Afficher" : "Masquer"}
+                  aria-label={`${slide.hidden ? "Afficher" : "Masquer"} la diapositive ${i + 1}`}
                   onClick={() => { useHistoryStore.getState().commit(); useDocStore.getState().toggleSlideHidden(slide.id); }}
                 >
-                  {slide.hidden ? "👁" : "🚫"}
+                  {slide.hidden
+                    ? <Eye size={16} aria-hidden="true" />
+                    : <EyeOff size={16} aria-hidden="true" />}
                 </button>
                 <button
                   className="ap-btn ap-btn--ghost ap-btn--sm"
                   title="Supprimer"
+                  aria-label={`Supprimer la diapositive ${i + 1}`}
                   disabled={slides.length <= 1}
                   onClick={() => { useHistoryStore.getState().commit(); useDocStore.getState().deleteSlide(slide.id); }}
                 >
-                  🗑
+                  <Trash2 size={16} aria-hidden="true" />
                 </button>
               </div>
             </div>

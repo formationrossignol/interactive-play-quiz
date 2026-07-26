@@ -1,5 +1,6 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { EyeOff } from "lucide-react";
 import type { Slide } from "./types/presentation";
 
 interface SlideThumbnailProps {
@@ -58,7 +59,12 @@ export function SlideThumbnail({ slide, index, presentationWidth, presentationHe
           return <div key={e.id} style={style} />;
         })}
       </div>
-      {slide.hidden && <span style={{ position: "absolute", right: 4, top: 2, fontSize: 10 }}>🚫</span>}
+      {slide.hidden && (
+        <EyeOff
+          aria-label="Diapositive masquée"
+          style={{ position: "absolute", right: 4, top: 3, width: 12, height: 12, color: "var(--ap-muted)" }}
+        />
+      )}
     </div>
   );
 }

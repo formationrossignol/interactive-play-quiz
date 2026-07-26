@@ -183,44 +183,46 @@ function CourseOverviewScreen({
           <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg, var(--ap-pres-soft), var(--ap-brand-soft))" }} />
         )}
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(0deg, rgba(10,8,30,.82), rgba(10,8,30,.15) 60%)" }} />
-        <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: "28px 40px", maxWidth: 900 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
-            {course.category && (
-              <span style={{
-                display: "inline-block", fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase",
-                padding: "5px 12px", borderRadius: 999, background: "rgba(255,255,255,.15)", color: "#fff",
-              }}>
-                {course.category}
-              </span>
-            )}
-            {course.generatedByAI && (
-              <span
-                title="Ce cours a été généré par IA à partir d'un document."
-                style={{
-                  display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11.5, fontWeight: 800,
+        <div style={{ position: "absolute", left: 0, right: 0, bottom: 0 }}>
+          <div style={{ maxWidth: 1100, margin: "0 auto", padding: "28px 40px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+              {course.category && (
+                <span style={{
+                  display: "inline-block", fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase",
                   padding: "5px 12px", borderRadius: 999, background: "rgba(255,255,255,.15)", color: "#fff",
-                }}
-              >
-                <Sparkles style={{ width: 12, height: 12 }} />
-                Généré par IA
-              </span>
+                }}>
+                  {course.category}
+                </span>
+              )}
+              {course.generatedByAI && (
+                <span
+                  title="Ce cours a été généré par IA à partir d'un document."
+                  style={{
+                    display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11.5, fontWeight: 800,
+                    padding: "5px 12px", borderRadius: 999, background: "rgba(255,255,255,.15)", color: "#fff",
+                  }}
+                >
+                  <Sparkles style={{ width: 12, height: 12 }} />
+                  Généré par IA
+                </span>
+              )}
+            </div>
+            <h1 style={{ fontFamily: "var(--ap-font-display)", fontWeight: 600, fontSize: "clamp(24px, 3.2vw, 34px)", color: "#fff", lineHeight: 1.15, marginBottom: 10 }}>
+              {course.title}
+            </h1>
+            {course.description && (
+              <p style={{ fontSize: 15, color: "rgba(255,255,255,.85)", maxWidth: 640, marginBottom: 12 }}>{course.description}</p>
             )}
-          </div>
-          <h1 style={{ fontFamily: "var(--ap-font-display)", fontWeight: 600, fontSize: "clamp(24px, 3.2vw, 34px)", color: "#fff", lineHeight: 1.15, marginBottom: 10 }}>
-            {course.title}
-          </h1>
-          {course.description && (
-            <p style={{ fontSize: 15, color: "rgba(255,255,255,.85)", maxWidth: 640, marginBottom: 12 }}>{course.description}</p>
-          )}
-          <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap", fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,.9)" }}>
-            {ratingSummary.count > 0 && (
-              <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                <Star style={{ width: 14, height: 14, color: "#f4970a" }} fill="#f4970a" /> {ratingSummary.average} ({ratingSummary.count} avis)
-              </span>
-            )}
-            <span>{course.modules.length} module{course.modules.length > 1 ? "s" : ""}</span>
-            <span>{totalLessons} leçon{totalLessons > 1 ? "s" : ""}</span>
-            {minutes > 0 && <span>{minutes} min</span>}
+            <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap", fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,.9)" }}>
+              {ratingSummary.count > 0 && (
+                <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                  <Star style={{ width: 14, height: 14, color: "#f4970a" }} fill="#f4970a" /> {ratingSummary.average} ({ratingSummary.count} avis)
+                </span>
+              )}
+              <span>{course.modules.length} module{course.modules.length > 1 ? "s" : ""}</span>
+              <span>{totalLessons} leçon{totalLessons > 1 ? "s" : ""}</span>
+              {minutes > 0 && <span>{minutes} min</span>}
+            </div>
           </div>
         </div>
       </div>
