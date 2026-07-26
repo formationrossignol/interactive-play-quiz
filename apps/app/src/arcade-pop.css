@@ -157,7 +157,11 @@ body { transition: background-color .25s ease, color .25s ease; }
 
 /* ── Route transitions ─────────────────────────────────────────── */
 @media (prefers-reduced-motion: no-preference) {
-  .ap-route-enter { animation: ap-route-in .18s ease-out both; }
+  /* Keep the entry frame before the animation starts, but do not retain its
+     transform afterwards. A forwards-filled transform makes this wrapper the
+     containing block for AppSidebar's fixed desktop panel, so the sidebar
+     scrolls away when the page is taller than the viewport. */
+  .ap-route-enter { animation: ap-route-in .18s ease-out backwards; }
 }
 @keyframes ap-route-in {
   from { opacity: 0; transform: translateY(6px); }

@@ -8,7 +8,17 @@ import { getCurrentUser } from '@/lib/auth';
 import { PlanLimitError } from '@/lib/plans';
 import { createContent } from '@/lib/content/contentRepo';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ClipboardCheck, GripVertical, Star } from 'lucide-react';
+import {
+  ArrowRight,
+  BarChart3,
+  CalendarDays,
+  CheckCircle2,
+  ClipboardCheck,
+  Clock3,
+  GripVertical,
+  Star,
+  UserRound,
+} from 'lucide-react';
 import { ContentExplorer } from '@/components/content/ContentExplorer';
 import type { ItemCtx } from '@/components/content/GenericItem';
 import { ExamContextMenu } from '@/components/ExamContextMenu';
@@ -56,17 +66,50 @@ const statusBadge = (liveStatus: string) => {
   );
 };
 
+const metaItemStyle: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 5,
+};
+
+const metaIconStyle: React.CSSProperties = {
+  width: 14,
+  height: 14,
+  flexShrink: 0,
+};
+
 const renderMeta = (exam: Exam, stats: ExamStats) => (
   <>
-    <span>
-      📅 {new Date(exam.openAt).toLocaleDateString('fr')} → {new Date(exam.closeAt).toLocaleDateString('fr')}
+    <span style={metaItemStyle}>
+      <CalendarDays aria-hidden="true" style={metaIconStyle} />
+      {new Date(exam.openAt).toLocaleDateString('fr')}
+      <ArrowRight aria-hidden="true" style={{ ...metaIconStyle, width: 12, height: 12 }} />
+      {new Date(exam.closeAt).toLocaleDateString('fr')}
     </span>
-    {exam.durationMinutes && <span>⏱️ {exam.durationMinutes} min</span>}
+    {exam.durationMinutes && (
+      <span style={metaItemStyle}>
+        <Clock3 aria-hidden="true" style={metaIconStyle} />
+        {exam.durationMinutes} min
+      </span>
+    )}
     {stats.completedAttempts > 0 && (
       <>
-        <span>👤 {stats.completedAttempts} réponse{stats.completedAttempts > 1 ? 's' : ''}</span>
-        {stats.avgScore !== null && <span>📊 moy. {stats.avgScore}%</span>}
-        {stats.passRate !== null && <span>✅ {stats.passRate}% réussite</span>}
+        <span style={metaItemStyle}>
+          <UserRound aria-hidden="true" style={metaIconStyle} />
+          {stats.completedAttempts} réponse{stats.completedAttempts > 1 ? 's' : ''}
+        </span>
+        {stats.avgScore !== null && (
+          <span style={metaItemStyle}>
+            <BarChart3 aria-hidden="true" style={metaIconStyle} />
+            moy. {stats.avgScore}%
+          </span>
+        )}
+        {stats.passRate !== null && (
+          <span style={metaItemStyle}>
+            <CheckCircle2 aria-hidden="true" style={metaIconStyle} />
+            {stats.passRate}% réussite
+          </span>
+        )}
       </>
     )}
   </>
@@ -98,7 +141,8 @@ const primaryButton = (exam: Exam, navigate: ReturnType<typeof useNavigate>, siz
     className="ap-btn ap-btn--sm ap-btn--pill"
     style={{ fontSize: size.text, padding: size.pad }}
   >
-    Résultats →
+    Résultats
+    <ArrowRight aria-hidden="true" className="h-4 w-4" />
   </button>
 );
 
