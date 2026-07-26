@@ -2,7 +2,6 @@ import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 import { initAuth } from "@/lib/auth";
 import { RouteTransition } from "@/components/RouteTransition";
 import { RouteFallback } from "@/components/RouteFallback";
-import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { CookieConsentProvider } from "@/contexts/CookieConsentContext";
@@ -77,7 +76,6 @@ const App = () => (
     <TooltipProvider>
       <CookieConsentProvider>
       <div className="ap-app">
-        <Toaster />
         <Sonner />
         <CookieConsent />
         <AuthGate>

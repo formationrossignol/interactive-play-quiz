@@ -31,7 +31,8 @@ import {
 } from "lucide-react";
 import { ImportFileModal } from "./ImportFileModal";
 import { getCurrentUser } from "@/lib/auth";
-import { getPlan, isQuestionTypeLocked, PlanLimitError } from "@/lib/plans";
+import { getPlan, isQuestionTypeLocked } from "@/lib/plans";
+import { showError } from "@/lib/errorTaxonomy";
 import { saveQuiz, updateQuiz, getQuizById, type SavedQuiz } from "@/lib/quizStorage";
 import { getContent, upsertContentBySource } from "@/lib/content/contentRepo";
 import type { ContentType } from "@/lib/content/types";
@@ -600,9 +601,7 @@ export const QuizBuilder = () => {
         navigate(`/builder?type=${recovered.type}&quizId=${recovered.id}`, { replace: true });
       } catch (e) {
         if (cancelled) return;
-        if (e instanceof PlanLimitError) {
-          toast.error(e.message, { action: { label: "Passer Pro", onClick: () => { window.location.href = "/pricing"; } } });
-        }
+        showError(e, "QuizBuilder.recoverFromCloud");
       }
     })();
     return () => { cancelled = true; };
@@ -766,11 +765,7 @@ export const QuizBuilder = () => {
       setShouldBlockNavigation(false);
       navigate(isFlashcard ? "/my-flashcards" : isPoll ? "/my-polls" : "/my-quizzes");
     } catch (e) {
-      if (e instanceof PlanLimitError) {
-        toast.error(e.message, { action: { label: "Passer Pro", onClick: () => { window.location.href = "/pricing"; } } });
-      } else {
-        toast.error("Erreur lors de l'enregistrement");
-      }
+      showError(e, "QuizBuilder.save", "Erreur lors de l'enregistrement");
     }
   };
 

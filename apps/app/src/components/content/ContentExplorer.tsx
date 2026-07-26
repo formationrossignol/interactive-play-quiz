@@ -27,7 +27,7 @@ import {
 import { AppLayout } from "@/components/AppLayout";
 import { Breadcrumb, type BreadcrumbItem } from "@/components/Breadcrumb";
 import { ShareContentModal } from "@/components/ShareContentModal";
-import { PlanLimitError } from "@/lib/plans";
+import { showError } from "@/lib/errorTaxonomy";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Pagination } from "@/components/Pagination";
 import { TrashView } from "@/components/TrashView";
@@ -345,32 +345,36 @@ export function ContentExplorer({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- goFolder is stable per render, not memoized
   }, [view, breadcrumb, c.currentFolderId]);
 
+  // Generic per-action catches keep their existing friendly copy (it's
+  // already better than the raw error message would be) but now log the
+  // underlying error for diagnosis instead of swallowing it silently.
+  const logUnexpected = (context: string) => (e: unknown) => console.error(`[ContentExplorer.${context}]`, e);
+
   const handleMove = (rowId: string, folderId: string | null) =>
-    c.moveContent(rowId, folderId).then(() => toast.success("Déplacé")).catch(() => toast.error("Erreur lors du déplacement"));
+    c.moveContent(rowId, folderId).then(() => toast.success("Déplacé"))
+      .catch((e) => { logUnexpected("move")(e); toast.error("Erreur lors du déplacement"); });
 
   const handleFavorite = (d: ContentDisplay) =>
     c.toggleFavorite(d.id)
       .then(() => toast.success(d.isFavorite ? "Retiré des favoris" : "Ajouté aux favoris"))
-      .catch(() => toast.error("Erreur"));
+      .catch((e) => { logUnexpected("favorite")(e); toast.error("Erreur"); });
 
   const handleTrash = (rowId: string) =>
-    c.trashItem(rowId).then(() => toast.success("Mis à la corbeille")).catch(() => toast.error("Erreur"));
+    c.trashItem(rowId).then(() => toast.success("Mis à la corbeille"))
+      .catch((e) => { logUnexpected("trash")(e); toast.error("Erreur"); });
 
   const handleDuplicate = (rowId: string) =>
-    c.duplicateItem(rowId).then(() => toast.success("Dupliqué")).catch((e) => {
-      if (e instanceof PlanLimitError) {
-        toast.error(e.message, { action: { label: "Passer Pro", onClick: () => { window.location.href = "/pricing"; } } });
-      } else {
-        toast.error("Erreur lors de la duplication");
-      }
-    });
+    c.duplicateItem(rowId).then(() => toast.success("Dupliqué"))
+      .catch((e) => showError(e, "ContentExplorer.duplicate"));
 
   const handleRestore = (rowId: string) =>
-    c.restoreItem(rowId).then(() => toast.success("Restauré")).catch(() => toast.error("Erreur"));
+    c.restoreItem(rowId).then(() => toast.success("Restauré"))
+      .catch((e) => { logUnexpected("restore")(e); toast.error("Erreur"); });
 
   const handlePermDeleteConfirm = () => {
     if (permDeleteTarget) {
-      c.removeItem(permDeleteTarget.id).then(() => toast.success("Supprimé définitivement")).catch(() => toast.error("Erreur"));
+      c.removeItem(permDeleteTarget.id).then(() => toast.success("Supprimé définitivement"))
+        .catch((e) => { logUnexpected("permDelete")(e); toast.error("Erreur"); });
     }
     setDeleteDialogOpen(false);
     setPermDeleteTarget(null);
@@ -419,6 +423,21 @@ export function ContentExplorer({
       </div>
     );
 
+  // Paginates any item list the same way the main library view already does
+  // (PAGE_SIZE=12) — REQ-PERF-003/TBL-009: favorites/public used to render
+  // every match unbounded, the only lists in this shell that weren't capped.
+  const paginatedBlock = (items: ContentDisplay[]) => {
+    const totalPages = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
+    const clampedPage = Math.min(page, totalPages);
+    const paginated = items.slice((clampedPage - 1) * PAGE_SIZE, clampedPage * PAGE_SIZE);
+    return (
+      <>
+        {itemsBlock(paginated)}
+        <Pagination page={clampedPage} totalPages={totalPages} onPageChange={setPage} className="mt-8" />
+      </>
+    );
+  };
+
   const emptyBox = (title: string, body: string, cs: ReactNode) => (
     <div style={{ borderRadius: "var(--ap-r-lg)", border: "var(--ap-border-w) dashed var(--ap-line-2)", background: "var(--ap-paper-2)", padding: "48px 24px", textAlign: "center" }}>
       <div style={{ width: 64, height: 64, margin: "0 auto 16px", borderRadius: 20, background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ap-brand)" }}>
@@ -455,18 +474,15 @@ export function ContentExplorer({
     );
   } else if (view === "favorites") {
     content = favorites.length
-      ? itemsBlock(favorites)
+      ? paginatedBlock(favorites)
       : emptyBox("Aucun favori", `Marquez un ${oneLabel} d'une étoile pour le retrouver ici.`, <Star style={{ width: 26, height: 26 }} />);
   } else if (view === "public") {
     content = publicDisplay.length
-      ? itemsBlock(publicDisplay)
+      ? paginatedBlock(publicDisplay)
       : emptyBox(`Aucun ${oneLabel} public`, "Rendez un de vos contenus public pour qu'il apparaisse ici.", <Globe style={{ width: 26, height: 26 }} />);
   } else {
     // library
     const showFolders = !searching && childFolders.length > 0;
-    const totalPages = Math.max(1, Math.ceil(libraryItems.length / PAGE_SIZE));
-    const clampedPage = Math.min(page, totalPages);
-    const paginated = libraryItems.slice((clampedPage - 1) * PAGE_SIZE, clampedPage * PAGE_SIZE);
 
     let body: ReactNode;
     if (libraryItems.length === 0 && !showFolders) {
@@ -491,8 +507,7 @@ export function ContentExplorer({
               <div style={SECTION_TITLE}>{rootLabel} — {libraryItems.length}<span style={{ flex: 1, height: 2, background: "var(--ap-line)", borderRadius: 2 }} /></div>
             </>
           )}
-          {itemsBlock(paginated)}
-          <Pagination page={clampedPage} totalPages={totalPages} onPageChange={setPage} className="mt-8" />
+          {paginatedBlock(libraryItems)}
         </>
       );
     }
