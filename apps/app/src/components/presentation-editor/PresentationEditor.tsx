@@ -1,6 +1,19 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronRight, Grid2X2, Home, Minus, Play, Plus, Scan, Upload } from "lucide-react";
+import {
+  ChevronRight,
+  Grid2X2,
+  Home,
+  Minus,
+  PanelLeftClose,
+  PanelLeftOpen,
+  PanelRightClose,
+  PanelRightOpen,
+  Play,
+  Plus,
+  Scan,
+  Upload,
+} from "lucide-react";
 import { useDocStore } from "./store/useDocStore";
 import { useEditorUIStore } from "./store/useEditorUIStore";
 import { useAutosave } from "./hooks/useAutosave";
@@ -39,6 +52,8 @@ export function PresentationEditor({ contentId, userId, initialPresenting = fals
   const [contentOwnerId, setContentOwnerId] = useState(userId);
   const [importOpen, setImportOpen] = useState(false);
   const [overviewOpen, setOverviewOpen] = useState(false);
+  const [leftPanelOpen, setLeftPanelOpen] = useState(true);
+  const [rightPanelOpen, setRightPanelOpen] = useState(true);
   const activeSlideId = useEditorUIStore((s) => s.activeSlideId);
   const setActiveSlideId = useEditorUIStore((s) => s.setActiveSlideId);
   const setZoom = useEditorUIStore((s) => s.setZoom);
@@ -217,10 +232,58 @@ export function PresentationEditor({ contentId, userId, initialPresenting = fals
         </div>
       </div>
       <EditorToolbar slideId={activeSlideId} />
-      <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-        <SlideNavigator />
+      <div style={{ flex: 1, display: "flex", overflow: "hidden", position: "relative" }}>
+        {leftPanelOpen ? (
+          <div style={{ position: "relative", flexShrink: 0, borderRight: "var(--ap-border-w) solid var(--ap-line)", background: "var(--ap-card)" }}>
+            <SlideNavigator />
+            <button
+              type="button"
+              className="ap-btn ap-btn--ghost ap-icon-btn"
+              aria-label="Rétracter les miniatures"
+              title="Rétracter les miniatures"
+              onClick={() => setLeftPanelOpen(false)}
+              style={{ position: "absolute", top: 8, right: -14, zIndex: 6, width: 30, height: 30, background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)" }}
+            >
+              <PanelLeftClose size={16} />
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            aria-label="Afficher les miniatures"
+            title="Afficher les miniatures"
+            onClick={() => setLeftPanelOpen(true)}
+            style={{ width: 38, flexShrink: 0, border: 0, borderRight: "var(--ap-border-w) solid var(--ap-line)", background: "var(--ap-card)", color: "var(--ap-muted)", cursor: "pointer" }}
+          >
+            <PanelLeftOpen size={18} />
+          </button>
+        )}
         <SlideCanvas userId={userId} />
-        <PropertiesPanel slideId={activeSlideId} />
+        {rightPanelOpen ? (
+          <div style={{ position: "relative", flexShrink: 0, borderLeft: "var(--ap-border-w) solid var(--ap-line)", background: "var(--ap-card)", overflowY: "auto" }}>
+            <button
+              type="button"
+              className="ap-btn ap-btn--ghost ap-icon-btn"
+              aria-label="Rétracter les propriétés"
+              title="Rétracter les propriétés"
+              onClick={() => setRightPanelOpen(false)}
+              style={{ position: "absolute", top: 8, left: -14, zIndex: 6, width: 30, height: 30, background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)" }}
+            >
+              <PanelRightClose size={16} />
+            </button>
+            <PropertiesPanel slideId={activeSlideId} />
+          </div>
+        ) : (
+          <button
+            type="button"
+            aria-label="Afficher les propriétés"
+            title="Afficher les propriétés"
+            onClick={() => setRightPanelOpen(true)}
+            style={{ width: 38, flexShrink: 0, border: 0, borderLeft: "var(--ap-border-w) solid var(--ap-line)", background: "var(--ap-card)", color: "var(--ap-muted)", cursor: "pointer" }}
+          >
+            <PanelRightOpen size={18} />
+          </button>
+        )}
       </div>
       <PresentationImportDialog
         open={importOpen}

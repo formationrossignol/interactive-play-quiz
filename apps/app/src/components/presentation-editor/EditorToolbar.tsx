@@ -24,6 +24,7 @@ import {
   LayoutTemplate,
   Minus,
   MousePointer2,
+  Palette,
   PanelBottom,
   Ruler,
   Square,
@@ -32,6 +33,7 @@ import {
   Underline as UnderlineIcon,
   Ungroup,
   Video as VideoIcon,
+  WandSparkles,
 } from "lucide-react";
 import { useDocStore } from "./store/useDocStore";
 import { useEditorUIStore, type EditorTool } from "./store/useEditorUIStore";
@@ -39,6 +41,11 @@ import { useHistoryStore } from "./store/useHistoryStore";
 import { alignLeft, alignCenterH, alignRight, alignTop, alignMiddleV, alignBottom, distributeHorizontal, distributeVertical } from "./utils/geometry";
 import type { SlideElement } from "./types/presentation";
 import { SlideLayoutPicker } from "./layouts/SlideLayoutPicker";
+import {
+  PRESENTATION_FONT_OPTIONS,
+  PRESENTATION_TEMPLATES,
+  PRESENTATION_TEXT_COLORS,
+} from "./templates/presentationTemplates";
 
 const FONT_FAMILIES = [
   { label: "Défaut", value: "" },
@@ -161,10 +168,12 @@ export function EditorToolbar({ slideId }: { slideId: string }) {
   const [shapesOpen, setShapesOpen] = useState(false);
   const [layoutsOpen, setLayoutsOpen] = useState(false);
   const [footerOpen, setFooterOpen] = useState(false);
+  const [themeOpen, setThemeOpen] = useState(false);
   const [lastShape, setLastShape] = useState<EditorTool>("rect");
   const shapesRef = useRef<HTMLDivElement | null>(null);
   const layoutsRef = useRef<HTMLDivElement | null>(null);
   const footerRef = useRef<HTMLDivElement | null>(null);
+  const themeRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!shapesOpen) return;
@@ -193,6 +202,15 @@ export function EditorToolbar({ slideId }: { slideId: string }) {
     return () => document.removeEventListener("pointerdown", onDocPointerDown);
   }, [footerOpen]);
 
+  useEffect(() => {
+    if (!themeOpen) return;
+    function onDocPointerDown(e: PointerEvent) {
+      if (themeRef.current && !themeRef.current.contains(e.target as Node)) setThemeOpen(false);
+    }
+    document.addEventListener("pointerdown", onDocPointerDown);
+    return () => document.removeEventListener("pointerdown", onDocPointerDown);
+  }, [themeOpen]);
+
   const slide = presentation?.slides.find((s) => s.id === slideId);
   const selected = slide ? slide.elements.filter((el) => selectedIds.has(el.id)) : [];
   const isShapeToolActive = SHAPE_TOOLS.some((t) => t.id === activeTool);
@@ -206,7 +224,7 @@ export function EditorToolbar({ slideId }: { slideId: string }) {
   }
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 2, padding: "6px 12px", borderBottom: "var(--ap-border-w) solid var(--ap-line)", flexWrap: "wrap" }}>
+    <div style={{ position: "relative", zIndex: 50, display: "flex", alignItems: "center", gap: 2, padding: "6px 12px", borderBottom: "var(--ap-border-w) solid var(--ap-line)", background: "var(--ap-card)", flexWrap: "wrap" }}>
       <ToolButton active={activeTool === "select"} label="Sélection" onClick={() => setActiveTool("select")}>
         <MousePointer2 size={18} />
       </ToolButton>
@@ -262,6 +280,121 @@ export function EditorToolbar({ slideId }: { slideId: string }) {
       >
         <Ruler size={18} />
       </ToolButton>
+      <div ref={themeRef} style={{ position: "relative" }}>
+        <button
+          type="button"
+          aria-expanded={themeOpen}
+          onClick={() => setThemeOpen((open) => !open)}
+          className="ap-btn ap-btn--ghost ap-btn--sm"
+          style={{ height: 34, padding: "0 10px" }}
+        >
+          <Palette size={17} aria-hidden="true" />
+          Style & template
+          <ChevronDown size={12} aria-hidden="true" />
+        </button>
+        {themeOpen && (
+          <div
+            style={{
+              position: "absolute",
+              top: "calc(100% + 6px)",
+              left: 0,
+              width: 370,
+              padding: 16,
+              zIndex: 60,
+              background: "var(--ap-card)",
+              border: "var(--ap-border-w) solid var(--ap-line)",
+              borderRadius: "var(--ap-r-md)",
+              boxShadow: "var(--ap-shadow-card)",
+            }}
+          >
+            <strong style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 11, fontSize: 14 }}>
+              <WandSparkles size={16} color="var(--ap-brand)" />
+              Templates de présentation
+            </strong>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 16 }}>
+              {PRESENTATION_TEMPLATES.map((template) => {
+                const active = presentation?.theme?.templateId === template.id;
+                return (
+                  <button
+                    key={template.id}
+                    type="button"
+                    onClick={() => {
+                      useHistoryStore.getState().commit();
+                      useDocStore.getState().applyTemplate(template.id);
+                    }}
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "32px 1fr",
+                      alignItems: "center",
+                      gap: 9,
+                      padding: 9,
+                      textAlign: "left",
+                      border: `2px solid ${active ? "var(--ap-brand)" : "var(--ap-line)"}`,
+                      borderRadius: 12,
+                      background: "var(--ap-card)",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <span
+                      aria-hidden="true"
+                      style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: 9,
+                        background: template.theme.backgroundColor,
+                        border: `7px solid ${template.theme.accentColor}`,
+                      }}
+                    />
+                    <span style={{ minWidth: 0 }}>
+                      <b style={{ display: "block", fontSize: 12.5 }}>{template.label}</b>
+                      <small style={{ display: "block", color: "var(--ap-muted)", lineHeight: 1.25 }}>{template.description}</small>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            <label style={{ display: "grid", gap: 6, marginBottom: 12, fontSize: 12, fontWeight: 800, color: "var(--ap-muted)" }}>
+              Police de la présentation
+              <select
+                value={presentation?.theme?.fontFamily ?? PRESENTATION_FONT_OPTIONS[0].value}
+                onChange={(event) => {
+                  useHistoryStore.getState().commit();
+                  useDocStore.getState().updateTheme({ fontFamily: event.target.value, templateId: "personnalise" });
+                }}
+                style={{ height: 38, border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-sm)", background: "var(--ap-paper)", color: "var(--ap-ink)", padding: "0 9px", fontFamily: "inherit" }}
+              >
+                {PRESENTATION_FONT_OPTIONS.map((font) => <option key={font.label} value={font.value}>{font.label}</option>)}
+              </select>
+            </label>
+            <div>
+              <span style={{ display: "block", marginBottom: 7, fontSize: 12, fontWeight: 800, color: "var(--ap-muted)" }}>Couleur du texte</span>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {PRESENTATION_TEXT_COLORS.map((color) => (
+                  <button
+                    key={color}
+                    type="button"
+                    aria-label={`Couleur ${color}`}
+                    title={color}
+                    onClick={() => {
+                      useHistoryStore.getState().commit();
+                      useDocStore.getState().updateTheme({ textColor: color, templateId: "personnalise" });
+                    }}
+                    style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: "50%",
+                      background: color,
+                      border: presentation?.theme?.textColor === color ? "3px solid var(--ap-brand)" : "2px solid var(--ap-line)",
+                      boxShadow: color === "#ffffff" ? "inset 0 0 0 1px #aaa" : "none",
+                      cursor: "pointer",
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
       <div ref={footerRef} style={{ position: "relative" }}>
         <button
           type="button"
@@ -323,6 +456,38 @@ export function EditorToolbar({ slideId }: { slideId: string }) {
                 style={{ width: "100%", height: 38, padding: "0 10px", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-sm)", background: "var(--ap-paper)", color: "var(--ap-ink)", fontFamily: "inherit", fontSize: 13 }}
               />
             </label>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 12 }}>
+              <label style={{ display: "grid", gap: 6, fontSize: 12, fontWeight: 800, color: "var(--ap-muted)" }}>
+                Alignement du pied
+                <select
+                  value={presentation?.footer?.alignment ?? "left"}
+                  onChange={(event) => {
+                    useHistoryStore.getState().commit();
+                    useDocStore.getState().updateFooter({ alignment: event.target.value as "left" | "center" | "right" });
+                  }}
+                  style={{ height: 36, border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-sm)", background: "var(--ap-paper)", padding: "0 8px" }}
+                >
+                  <option value="left">Gauche</option>
+                  <option value="center">Centre</option>
+                  <option value="right">Droite</option>
+                </select>
+              </label>
+              <label style={{ display: "grid", gap: 6, fontSize: 12, fontWeight: 800, color: "var(--ap-muted)" }}>
+                Numéro de diapo
+                <select
+                  value={presentation?.footer?.slideNumberPosition ?? "right"}
+                  onChange={(event) => {
+                    useHistoryStore.getState().commit();
+                    useDocStore.getState().updateFooter({ slideNumberPosition: event.target.value as "left" | "center" | "right" });
+                  }}
+                  style={{ height: 36, border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-sm)", background: "var(--ap-paper)", padding: "0 8px" }}
+                >
+                  <option value="left">Gauche</option>
+                  <option value="center">Centre</option>
+                  <option value="right">Droite</option>
+                </select>
+              </label>
+            </div>
           </div>
         )}
       </div>
@@ -341,7 +506,7 @@ export function EditorToolbar({ slideId }: { slideId: string }) {
           <ChevronDown size={12} />
         </button>
         {shapesOpen && (
-          <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, display: "flex", gap: 2, padding: 4, background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-sm)", boxShadow: "0 4px 12px rgba(0,0,0,.12)", zIndex: 10 }}>
+          <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, display: "flex", gap: 2, padding: 4, background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-sm)", boxShadow: "0 4px 12px rgba(0,0,0,.12)", zIndex: 60 }}>
             {SHAPE_TOOLS.map(({ id, label, Icon }) => (
               <ToolButton
                 key={id}

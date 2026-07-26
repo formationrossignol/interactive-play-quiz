@@ -1,7 +1,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { EyeOff } from "lucide-react";
-import type { PresentationFooter, Slide } from "./types/presentation";
+import type { PresentationFooter, PresentationTheme, Slide } from "./types/presentation";
 import { SlideFooter } from "./SlideFooter";
 
 interface SlideThumbnailProps {
@@ -10,6 +10,7 @@ interface SlideThumbnailProps {
   presentationWidth: number;
   presentationHeight: number;
   footer?: PresentationFooter;
+  theme?: PresentationTheme;
   isActive: boolean;
   isSelected: boolean;
   onSelect: (e: React.MouseEvent) => void;
@@ -19,7 +20,7 @@ interface SlideThumbnailProps {
  *  element data but renders it inert (no drag/edit handlers) at ~1/8
  *  scale via CSS transform, so there is no separate thumbnail renderer to
  *  keep in sync with the real canvas. */
-export function SlideThumbnail({ slide, index, presentationWidth, presentationHeight, footer, isActive, isSelected, onSelect }: SlideThumbnailProps) {
+export function SlideThumbnail({ slide, index, presentationWidth, presentationHeight, footer, theme, isActive, isSelected, onSelect }: SlideThumbnailProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: slide.id });
   const THUMB_WIDTH = 160;
   const scale = THUMB_WIDTH / presentationWidth;
@@ -40,7 +41,9 @@ export function SlideThumbnail({ slide, index, presentationWidth, presentationHe
         overflow: "hidden",
         width: THUMB_WIDTH, height: thumbHeight,
         position: "relative", flexShrink: 0,
-        background: slide.background?.value ?? "#fff",
+        background: slide.background?.value ?? theme?.backgroundColor ?? "#fff",
+        color: theme?.textColor ?? "#24202d",
+        fontFamily: theme?.fontFamily ?? "Arial, sans-serif",
       }}
     >
       <span style={{ position: "absolute", left: 4, top: 2, fontSize: 10, fontWeight: 800, color: "var(--ap-muted)" }}>{index + 1}</span>

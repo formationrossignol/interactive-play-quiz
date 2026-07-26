@@ -1,6 +1,7 @@
 import { create } from "zustand";
-import type { Presentation, PresentationFooter, Slide, SlideBackground, SlideElement } from "../types/presentation";
+import type { Presentation, PresentationFooter, PresentationTheme, Slide, SlideBackground, SlideElement } from "../types/presentation";
 import { applySlideLayout, createSlideFromLayout, type SlideLayoutId } from "../layouts/slideLayouts";
+import { DEFAULT_PRESENTATION_THEME, PRESENTATION_TEMPLATES } from "../templates/presentationTemplates";
 
 interface DocState {
   presentation: Presentation | null;
@@ -10,6 +11,8 @@ interface DocState {
   importJSON: (json: string) => void;
   setTitle: (title: string) => void;
   updateFooter: (patch: Partial<PresentationFooter>) => void;
+  updateTheme: (patch: Partial<PresentationTheme>) => void;
+  applyTemplate: (templateId: string) => void;
 
   addSlide: (afterSlideId?: string, layoutId?: SlideLayoutId) => string;
   duplicateSlide: (slideId: string) => string;
@@ -66,12 +69,36 @@ function cloneSlide(source: Slide, id: string): Slide {
   return { ...source, id, elements };
 }
 
+function recolorLayoutElements(elements: SlideElement[], accentColor: string): SlideElement[] {
+  return elements.map((element) => (
+    element.layoutGenerated && (element.type === "rect" || element.type === "circle")
+      ? { ...element, fill: accentColor }
+      : element
+  ));
+}
+
 export const useDocStore = create<DocState>((set, get) => ({
   presentation: null,
 
-  load: (presentation) => set({ presentation }),
+  load: (presentation) => set({
+    presentation: {
+      ...presentation,
+      theme: { ...DEFAULT_PRESENTATION_THEME, ...presentation.theme },
+      footer: {
+        showSlideNumber: false,
+        text: "",
+        skipTitleSlide: false,
+        alignment: "left",
+        slideNumberPosition: "right",
+        ...presentation.footer,
+      },
+    },
+  }),
   exportJSON: () => JSON.stringify(get().presentation),
-  importJSON: (json) => set({ presentation: JSON.parse(json) as Presentation }),
+  importJSON: (json) => {
+    const parsed = JSON.parse(json) as Presentation;
+    get().load(parsed);
+  },
 
   setTitle: (title) => set((state) => {
     if (!state.presentation) return state;
@@ -80,20 +107,63 @@ export const useDocStore = create<DocState>((set, get) => ({
 
   updateFooter: (patch) => set((state) => {
     if (!state.presentation) return state;
-    const current = state.presentation.footer ?? { showSlideNumber: false, text: "", skipTitleSlide: false };
+    const current = state.presentation.footer ?? {
+      showSlideNumber: false,
+      text: "",
+      skipTitleSlide: false,
+      alignment: "left",
+      slideNumberPosition: "right",
+    };
     return { presentation: { ...state.presentation, footer: { ...current, ...patch } } };
   }),
 
-  addSlide: (afterSlideId, layoutId = "title-body") => {
+  updateTheme: (patch) => set((state) => {
+    if (!state.presentation) return state;
+    const current = state.presentation.theme ?? DEFAULT_PRESENTATION_THEME;
+    return { presentation: { ...state.presentation, theme: { ...current, ...patch } } };
+  }),
+
+  applyTemplate: (templateId) => set((state) => {
+    if (!state.presentation) return state;
+    const template = PRESENTATION_TEMPLATES.find((item) => item.id === templateId);
+    if (!template) return state;
+    return {
+      presentation: {
+        ...state.presentation,
+        theme: { ...template.theme },
+        slides: state.presentation.slides.map((slide) => ({
+          ...slide,
+          background: { type: "color", value: template.theme.backgroundColor },
+          elements: recolorLayoutElements(slide.elements, template.theme.accentColor).map((element) => (
+            element.type === "table"
+              ? {
+                  ...element,
+                  headerFill: template.theme.accentColor,
+                  cellFill: template.theme.backgroundColor,
+                  textColor: template.theme.textColor,
+                }
+              : element
+          )),
+        })),
+      },
+    };
+  }),
+
+  addSlide: (afterSlideId, layoutId) => {
     const id = nextId("slide");
     set((state) => {
       if (!state.presentation) return state;
+      const effectiveLayoutId = layoutId ?? state.presentation.theme?.defaultLayoutId ?? "title-body";
       const nextSlide = createSlideFromLayout(
         id,
         0,
-        layoutId,
+        effectiveLayoutId,
         state.presentation.width,
         state.presentation.height,
+      );
+      nextSlide.elements = recolorLayoutElements(
+        nextSlide.elements,
+        state.presentation.theme?.accentColor ?? "#6c63ff",
       );
       const afterIndex = afterSlideId
         ? state.presentation.slides.findIndex((slide) => slide.id === afterSlideId)
@@ -182,7 +252,15 @@ export const useDocStore = create<DocState>((set, get) => ({
 
   addElement: (slideId, element) => set((state) => {
     if (!state.presentation) return state;
-    return { presentation: mapSlide(state.presentation, slideId, (s) => ({ ...s, elements: [...s.elements, element] })) };
+    const themedElement = element.type === "table"
+      ? {
+          ...element,
+          headerFill: state.presentation.theme?.accentColor ?? element.headerFill,
+          cellFill: state.presentation.theme?.backgroundColor ?? element.cellFill,
+          textColor: state.presentation.theme?.textColor ?? element.textColor,
+        }
+      : element;
+    return { presentation: mapSlide(state.presentation, slideId, (s) => ({ ...s, elements: [...s.elements, themedElement] })) };
   }),
 
   updateElement: (slideId, elementId, patch) => set((state) => {
