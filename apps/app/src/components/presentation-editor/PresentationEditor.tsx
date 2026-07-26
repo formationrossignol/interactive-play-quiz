@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronRight, Download, Home, Minus, Play, Plus, Upload } from "lucide-react";
-import { toast } from "sonner";
 import { useDocStore } from "./store/useDocStore";
 import { useEditorUIStore } from "./store/useEditorUIStore";
 import { useAutosave } from "./hooks/useAutosave";
@@ -10,13 +9,15 @@ import { EditorToolbar } from "./EditorToolbar";
 import { SlideNavigator } from "./SlideNavigator";
 import { SlideCanvas } from "./SlideCanvas";
 import { PropertiesPanel } from "./PropertiesPanel";
-import { PresentationMode, exportPresentationAsFile, importPresentationFromFile } from "./PresentationMode";
+import { PresentationMode, exportPresentationAsFile } from "./PresentationMode";
 import { getContent } from "@/lib/content/contentRepo";
 import { isLegacySlideShape, migrateLegacySlideToPresentation } from "./utils/migrateLegacySlide";
 import { createBlankPresentation, type Presentation } from "./types/presentation";
 import { CollaboratorsButton } from "@/components/CollaboratorsButton";
 import { Skeleton } from "@/components/ui/skeleton";
 import { showError } from "@/lib/errorTaxonomy";
+import { PresentationImportDialog } from "./import/PresentationImportDialog";
+import { createSlideFromLayout } from "./layouts/slideLayouts";
 
 interface PresentationEditorProps {
   contentId: string | null;
@@ -34,6 +35,7 @@ export function PresentationEditor({ contentId, userId, initialPresenting = fals
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState("");
   const [contentOwnerId, setContentOwnerId] = useState(userId);
+  const [importOpen, setImportOpen] = useState(false);
   const activeSlideId = useEditorUIStore((s) => s.activeSlideId);
   const setActiveSlideId = useEditorUIStore((s) => s.setActiveSlideId);
   const setZoom = useEditorUIStore((s) => s.setZoom);
@@ -53,6 +55,9 @@ export function PresentationEditor({ contentId, userId, initialPresenting = fals
     async function init() {
       if (!contentId) {
         const blank = createBlankPresentation(`new-${Date.now()}`);
+        blank.slides = [
+          createSlideFromLayout(blank.slides[0].id, 0, "title", blank.width, blank.height),
+        ];
         if (!cancelled) { load(blank); setActiveSlideId(blank.slides[0].id); setLoading(false); }
         return;
       }
@@ -183,15 +188,10 @@ export function PresentationEditor({ contentId, userId, initialPresenting = fals
             <Download size={15} aria-hidden="true" />
             Exporter JSON
           </button>
-          <label className="ap-btn ap-btn--sm ap-btn--ghost" style={{ cursor: "pointer" }}>
+          <button className="ap-btn ap-btn--sm ap-btn--ghost" onClick={() => setImportOpen(true)}>
             <Upload size={15} aria-hidden="true" />
-            Importer JSON
-            <input type="file" accept="application/json" style={{ display: "none" }} onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (!f) return;
-              importPresentationFromFile(f).catch((err: Error) => toast.error(err.message));
-            }} />
-          </label>
+            Importer
+          </button>
           <button className="ap-btn ap-btn--sm ap-btn--pill" onClick={() => setPresenting(true)}>
             <Play size={15} aria-hidden="true" />
             Présenter
@@ -204,6 +204,15 @@ export function PresentationEditor({ contentId, userId, initialPresenting = fals
         <SlideCanvas userId={userId} />
         <PropertiesPanel slideId={activeSlideId} />
       </div>
+      <PresentationImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        onImport={(imported) => {
+          const next = { ...imported, id: contentId ?? imported.id };
+          load(next);
+          setActiveSlideId(next.slides[0]?.id ?? null);
+        }}
+      />
     </div>
   );
 }

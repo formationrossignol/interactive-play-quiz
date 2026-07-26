@@ -1,13 +1,15 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { EyeOff } from "lucide-react";
-import type { Slide } from "./types/presentation";
+import type { PresentationFooter, Slide } from "./types/presentation";
+import { SlideFooter } from "./SlideFooter";
 
 interface SlideThumbnailProps {
   slide: Slide;
   index: number;
   presentationWidth: number;
   presentationHeight: number;
+  footer?: PresentationFooter;
   isActive: boolean;
   isSelected: boolean;
   onSelect: (e: React.MouseEvent) => void;
@@ -17,7 +19,7 @@ interface SlideThumbnailProps {
  *  element data but renders it inert (no drag/edit handlers) at ~1/8
  *  scale via CSS transform, so there is no separate thumbnail renderer to
  *  keep in sync with the real canvas. */
-export function SlideThumbnail({ slide, index, presentationWidth, presentationHeight, isActive, isSelected, onSelect }: SlideThumbnailProps) {
+export function SlideThumbnail({ slide, index, presentationWidth, presentationHeight, footer, isActive, isSelected, onSelect }: SlideThumbnailProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: slide.id });
   const THUMB_WIDTH = 160;
   const scale = THUMB_WIDTH / presentationWidth;
@@ -58,6 +60,7 @@ export function SlideThumbnail({ slide, index, presentationWidth, presentationHe
           }
           return <div key={e.id} style={style} />;
         })}
+        <SlideFooter footer={footer} slideNumber={index + 1} isTitleSlide={index === 0} />
       </div>
       {slide.hidden && (
         <EyeOff

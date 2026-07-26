@@ -1,5 +1,6 @@
 import { create } from "zustand";
-import type { Presentation, Slide, SlideBackground, SlideElement } from "../types/presentation";
+import type { Presentation, PresentationFooter, Slide, SlideBackground, SlideElement } from "../types/presentation";
+import { applySlideLayout, createSlideFromLayout, type SlideLayoutId } from "../layouts/slideLayouts";
 
 interface DocState {
   presentation: Presentation | null;
@@ -8,14 +9,16 @@ interface DocState {
   exportJSON: () => string;
   importJSON: (json: string) => void;
   setTitle: (title: string) => void;
+  updateFooter: (patch: Partial<PresentationFooter>) => void;
 
-  addSlide: (afterSlideId?: string) => string;
+  addSlide: (afterSlideId?: string, layoutId?: SlideLayoutId) => string;
   duplicateSlide: (slideId: string) => string;
   insertSlideCopy: (slide: Slide, afterSlideId: string) => string;
   deleteSlide: (slideId: string) => void;
   reorderSlides: (slideId: string, toIndex: number) => void;
   toggleSlideHidden: (slideId: string) => void;
   setSlideBackground: (slideId: string, background: SlideBackground | undefined) => void;
+  applySlideLayout: (slideId: string, layoutId: SlideLayoutId) => void;
 
   addElement: (slideId: string, element: SlideElement) => void;
   updateElement: (slideId: string, elementId: string, patch: Partial<SlideElement>) => void;
@@ -72,11 +75,23 @@ export const useDocStore = create<DocState>((set, get) => ({
     return { presentation: { ...state.presentation, title } };
   }),
 
-  addSlide: (afterSlideId) => {
+  updateFooter: (patch) => set((state) => {
+    if (!state.presentation) return state;
+    const current = state.presentation.footer ?? { showSlideNumber: false, text: "", skipTitleSlide: false };
+    return { presentation: { ...state.presentation, footer: { ...current, ...patch } } };
+  }),
+
+  addSlide: (afterSlideId, layoutId = "title-body") => {
     const id = nextId("slide");
     set((state) => {
       if (!state.presentation) return state;
-      const nextSlide: Slide = { id, order: 0, hidden: false, elements: [] };
+      const nextSlide = createSlideFromLayout(
+        id,
+        0,
+        layoutId,
+        state.presentation.width,
+        state.presentation.height,
+      );
       const afterIndex = afterSlideId
         ? state.presentation.slides.findIndex((slide) => slide.id === afterSlideId)
         : -1;
@@ -151,6 +166,15 @@ export const useDocStore = create<DocState>((set, get) => ({
   setSlideBackground: (slideId, background) => set((state) => {
     if (!state.presentation) return state;
     return { presentation: mapSlide(state.presentation, slideId, (s) => ({ ...s, background })) };
+  }),
+
+  applySlideLayout: (slideId, layoutId) => set((state) => {
+    if (!state.presentation) return state;
+    return {
+      presentation: mapSlide(state.presentation, slideId, (slide) => (
+        applySlideLayout(slide, layoutId, state.presentation!.width, state.presentation!.height)
+      )),
+    };
   }),
 
   addElement: (slideId, element) => set((state) => {

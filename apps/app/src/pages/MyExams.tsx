@@ -162,7 +162,7 @@ function ExamCard({ d, ctx, navigate, onDuplicate }: ExamItemProps) {
       onClick={() => navigate(`/exam/${exam.id}/admin`)}
     >
       <div
-        className="relative h-40 w-full overflow-hidden flex-shrink-0 flex items-center justify-center"
+        className="relative h-52 w-full overflow-hidden flex-shrink-0 flex items-center justify-center"
         style={{ background: `color-mix(in srgb, var(--ap-brand) 14%, var(--ap-paper-2))` }}
       >
         <ClipboardCheck style={{ width: 40, height: 40, color: 'var(--ap-brand)', opacity: 0.8 }} />

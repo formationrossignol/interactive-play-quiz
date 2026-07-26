@@ -15,6 +15,7 @@ import {
   MoreHorizontal,
   Plus,
   Trash2,
+  LayoutTemplate,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -23,6 +24,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { SLIDE_LAYOUTS, type SlideLayoutId } from "./layouts/slideLayouts";
 
 function snapshotSlide(slide: Slide): Slide {
   return {
@@ -63,9 +65,9 @@ export function SlideNavigator() {
     void reordered; // ordering is recomputed by reorderSlides itself; kept for clarity
   }
 
-  function addSlide(afterSlideId?: string) {
+  function addSlide(afterSlideId?: string, layoutId: SlideLayoutId = "title-body") {
     useHistoryStore.getState().commit();
-    const id = useDocStore.getState().addSlide(afterSlideId);
+    const id = useDocStore.getState().addSlide(afterSlideId, layoutId);
     setActiveSlideId(id);
   }
 
@@ -93,13 +95,38 @@ export function SlideNavigator() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: 12, overflowY: "auto", width: 184 }}>
-      <button
-        className="ap-btn ap-btn--sm ap-btn--pill"
-        onClick={() => addSlide()}
-      >
-        <Plus size={17} aria-hidden="true" />
-        Diapositive
-      </button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button className="ap-btn ap-btn--sm ap-btn--pill">
+            <Plus size={17} aria-hidden="true" />
+            Diapositive
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          align="start"
+          style={{
+            minWidth: 250,
+            background: "var(--ap-card)",
+            border: "var(--ap-border-w) solid var(--ap-line)",
+            borderRadius: "var(--ap-r-md)",
+            boxShadow: "var(--ap-shadow-card)",
+          }}
+        >
+          {SLIDE_LAYOUTS.map((layout) => (
+            <DropdownMenuItem
+              key={layout.id}
+              className="flex items-start gap-2 cursor-pointer text-sm"
+              onSelect={() => addSlide(activeSlideId ?? undefined, layout.id)}
+            >
+              <LayoutTemplate className="mt-0.5 h-4 w-4" />
+              <span>
+                <b style={{ display: "block" }}>{layout.label}</b>
+                <small style={{ color: "var(--ap-muted)" }}>{layout.description}</small>
+              </span>
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={ids} strategy={verticalListSortingStrategy}>
           {slides.map((slide, i) => (
@@ -109,6 +136,7 @@ export function SlideNavigator() {
                 index={i}
                 presentationWidth={presentation.width}
                 presentationHeight={presentation.height}
+                footer={presentation.footer}
                 isActive={slide.id === activeSlideId}
                 isSelected={false}
                 onSelect={() => setActiveSlideId(slide.id)}

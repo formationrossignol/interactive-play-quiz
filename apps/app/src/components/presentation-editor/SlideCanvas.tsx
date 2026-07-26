@@ -12,6 +12,8 @@ import { rectsIntersect } from "./utils/geometry";
 import { createElementForTool, type DrawableTool } from "./utils/createElement";
 import { IMAGE_TYPES, MediaValidationError, uploadPresentationMedia, VIDEO_TYPES } from "./utils/mediaRepo";
 import type { LineElement, SlideElement } from "./types/presentation";
+import { CanvasRulers } from "./CanvasRulers";
+import { SlideFooter } from "./SlideFooter";
 
 function newElementId(): string {
   return `el-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
@@ -33,6 +35,8 @@ export function SlideCanvas({ userId }: { userId: string }) {
   const activeTool = useEditorUIStore((s) => s.activeTool);
   const setActiveTool = useEditorUIStore((s) => s.setActiveTool);
   const zoom = useEditorUIStore((s) => s.zoom);
+  const showGrid = useEditorUIStore((s) => s.showGrid);
+  const showRulers = useEditorUIStore((s) => s.showRulers);
   const selectedIds = useEditorUIStore((s) => s.selectedIds);
   const select = useEditorUIStore((s) => s.select);
   const toggleSelect = useEditorUIStore((s) => s.toggleSelect);
@@ -58,6 +62,8 @@ export function SlideCanvas({ userId }: { userId: string }) {
 
   const lines = slide.elements.filter((e): e is LineElement => e.type === "line" || e.type === "arrow");
   const selectable = slide.elements.filter((e) => e.type !== "line" && e.type !== "arrow");
+  const slideIndex = presentation.slides.findIndex((item) => item.id === slide.id);
+  const rulerOffset = showRulers ? 32 : 0;
 
   function placeElement(tool: DrawableTool, start: Point, end: Point) {
     if (!slide) return;
@@ -195,7 +201,7 @@ export function SlideCanvas({ userId }: { userId: string }) {
   }
 
   return (
-    <div style={{ overflow: "auto", flex: 1, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--ap-paper-2)" }}>
+    <div style={{ overflow: "auto", flex: 1, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--ap-paper-2)", padding: 24 }}>
       <input
         ref={imageInputRef}
         type="file"
@@ -211,20 +217,45 @@ export function SlideCanvas({ userId }: { userId: string }) {
         onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; void handleMediaFile(f); }}
       />
       <div
-        data-slide-stage
-        onPointerDown={stagePointerDown}
         style={{
           position: "relative",
-          width: presentation.width,
-          height: presentation.height,
-          transform: `scale(${zoom})`,
-          transformOrigin: "center center",
-          background: slide.background?.value ?? "#fff",
-          boxShadow: "0 8px 24px rgba(0,0,0,.15)",
+          width: presentation.width * zoom + rulerOffset,
+          height: presentation.height * zoom + rulerOffset,
           flexShrink: 0,
-          cursor: activeTool === "select" ? "default" : "crosshair",
+          margin: "auto",
         }}
       >
+        {showRulers && <CanvasRulers width={presentation.width} height={presentation.height} zoom={zoom} offset={rulerOffset} />}
+        <div
+          data-slide-stage
+          onPointerDown={stagePointerDown}
+          style={{
+            position: "absolute",
+            left: rulerOffset,
+            top: rulerOffset,
+            width: presentation.width,
+            height: presentation.height,
+            transform: `scale(${zoom})`,
+            transformOrigin: "top left",
+            background: slide.background?.value ?? "#fff",
+            boxShadow: "0 8px 24px rgba(0,0,0,.15)",
+            cursor: activeTool === "select" ? "default" : "crosshair",
+            overflow: "hidden",
+          }}
+        >
+        {showGrid && (
+          <div
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              inset: 0,
+              zIndex: 0,
+              pointerEvents: "none",
+              backgroundImage: "linear-gradient(to right, rgba(75, 93, 125, .2) 1px, transparent 1px), linear-gradient(to bottom, rgba(75, 93, 125, .2) 1px, transparent 1px)",
+              backgroundSize: "40px 40px",
+            }}
+          />
+        )}
         {selectable.map((element) => (
           <CanvasElement
             key={element.id}
@@ -254,6 +285,12 @@ export function SlideCanvas({ userId }: { userId: string }) {
           return <TransformControls slideId={slide.id} element={el} zoom={zoom} node={nodesRef.current.get(onlyId) ?? null} />;
         })()}
         <div ref={marqueeRef} style={{ position: "absolute", display: "none", border: "1px dashed var(--ap-brand)", background: "rgba(108,99,255,.08)", pointerEvents: "none" }} />
+        <SlideFooter
+          footer={presentation.footer}
+          slideNumber={slideIndex + 1}
+          isTitleSlide={slideIndex === 0}
+        />
+        </div>
       </div>
     </div>
   );

@@ -32,7 +32,7 @@ function PublicQuizHeader({ quiz }: { quiz: ReturnType<typeof getPublicQuizzes>[
   return (
     <div
       style={{
-        height: 180,
+        height: 220,
         overflow: "hidden",
         position: "relative",
         flexShrink: 0,

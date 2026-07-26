@@ -269,7 +269,7 @@ export function GenericCard(props: GenericItemProps) {
       onClick={() => navigate(config.editRoute(id))}
     >
       {img ? (
-        <div className="relative h-40 w-full overflow-hidden flex-shrink-0">
+        <div className="relative h-52 w-full overflow-hidden flex-shrink-0">
           <img src={img} alt={d.title} className="h-full w-full object-cover" />
           <button
             type="button"
@@ -286,7 +286,7 @@ export function GenericCard(props: GenericItemProps) {
         </div>
       ) : (
         <div
-          className="relative h-40 w-full overflow-hidden flex-shrink-0 flex items-center justify-center"
+          className="relative h-52 w-full overflow-hidden flex-shrink-0 flex items-center justify-center"
           style={{ background: `color-mix(in srgb, var(${accentVar}) 14%, var(--ap-paper-2))` }}
         >
           <DefaultHeaderIcon style={{ width: 40, height: 40, color: `var(${accentVar})`, opacity: 0.8 }} />

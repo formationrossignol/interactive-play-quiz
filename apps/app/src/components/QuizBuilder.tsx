@@ -55,7 +55,7 @@ import { AMBIANCE_OPTIONS, DEFAULT_AMBIANCE } from "@/lib/audioManifest";
 import { hexToRgba } from "@/lib/color";
 import { toast } from "sonner";
 import { t } from "@/lib/i18n";
-import type { QuizQuestionType, PollQuestionType, EditableQuestion } from "@/lib/questionTypes";
+import { getQuestionTypeDescription, type QuizQuestionType, type PollQuestionType, type EditableQuestion } from "@/lib/questionTypes";
 import type { PollTemplate } from "@/lib/pollTemplates";
 import type { QuizTemplate } from "@/lib/quizTemplates";
 import { PollTemplateSelectorEnhanced } from "./PollTemplateSelectorEnhanced";
@@ -76,6 +76,9 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { BrandMonogram } from "ui/BrandMonogram";
 import { CollaboratorsButton } from "@/components/CollaboratorsButton";
+import { QuestionLayoutPicker } from "@/components/QuestionLayoutPicker";
+import { getQuestionLayout } from "@/lib/contentLayouts";
+import { QuestionTypeExample } from "@/components/QuestionTypeExample";
 
 // ─── Design constants ──────────────────────────────────────────────────────
 // Ordre position → couleur/forme aligné sur l'écran joueur réel
@@ -232,6 +235,8 @@ const PhonePreview = ({
   const pts = question.points ?? 1000;
   const answers: string[] = question.answers || [];
   const qText = question.question || "";
+  const layout = getQuestionLayout(question.layout ?? (question.image ? "media-top" : "standard"));
+  const hasMedia = Boolean(question.image);
 
   const isTF = question.type === "true-false";
   const displayAnswers = isTF ? ["Vrai", "Faux"] : answers;
@@ -270,13 +275,57 @@ const PhonePreview = ({
           </span>
         </div>
 
-        {/* Question */}
-        <p style={{
-          fontWeight: 800, fontSize: 14.5, lineHeight: 1.4,
-          padding: "8px 16px 12px", minHeight: 62, color: "var(--ap-ink)",
-        }}>
-          {qText || <span style={{ color: "var(--ap-muted)" }}>Posez votre question…</span>}
-        </p>
+        {/* Question + media layout */}
+        <div
+          style={{
+            position: "relative",
+            display: "flex",
+            flexDirection: layout.mediaPosition === "left"
+              ? "row"
+              : layout.mediaPosition === "right"
+                ? "row-reverse"
+                : "column",
+            minHeight: layout.mediaPosition === "background" && hasMedia ? 176 : 74,
+            margin: "4px 12px 10px",
+            overflow: "hidden",
+            borderRadius: 15,
+            background: layout.mediaPosition === "background" && hasMedia ? "var(--ap-ink)" : "transparent",
+          }}
+        >
+          {hasMedia && layout.mediaPosition !== "none" && (
+            <img
+              src={question.image}
+              alt=""
+              style={{
+                position: layout.mediaPosition === "background" ? "absolute" : "relative",
+                inset: layout.mediaPosition === "background" ? 0 : undefined,
+                width: layout.mediaPosition === "left" || layout.mediaPosition === "right" ? "42%" : "100%",
+                height: layout.mediaPosition === "top" ? 104 : layout.mediaPosition === "background" ? "100%" : 112,
+                objectFit: "cover",
+                flexShrink: 0,
+              }}
+            />
+          )}
+          {layout.mediaPosition === "background" && hasMedia && (
+            <span aria-hidden="true" style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(20,15,35,.1), rgba(20,15,35,.82))" }} />
+          )}
+          <p style={{
+            position: "relative",
+            zIndex: 1,
+            flex: 1,
+            display: "flex",
+            alignItems: layout.mediaPosition === "background" ? "flex-end" : "center",
+            fontWeight: 800,
+            fontSize: layout.mediaPosition === "background" ? 17 : 14.5,
+            lineHeight: 1.35,
+            padding: "10px 12px",
+            minWidth: 0,
+            color: layout.mediaPosition === "background" && hasMedia ? "white" : "var(--ap-ink)",
+            textShadow: layout.mediaPosition === "background" && hasMedia ? "0 2px 8px rgba(0,0,0,.45)" : undefined,
+          }}>
+            {qText || <span style={{ color: "var(--ap-muted)" }}>Posez votre question…</span>}
+          </p>
+        </div>
 
         {/* Answers */}
         <div style={{ display: "grid", gap: 8, padding: "0 12px 14px", marginTop: "auto" }}>
@@ -525,6 +574,7 @@ export const QuizBuilder = () => {
   const [shouldBlockNavigation, setShouldBlockNavigation] = useState(true);
   const [pendingNavigatePath, setPendingNavigatePath] = useState<string | null>(null);
   const [titleTouched, setTitleTouched] = useState(false);
+  const [hoveredQuestionType, setHoveredQuestionType] = useState<QuizQuestionType | PollQuestionType | null>(null);
   const [contentRow, setContentRow] = useState<ContentRow | null>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
 
@@ -665,7 +715,7 @@ export const QuizBuilder = () => {
     if (isFlashcard) return { type: "flashcard", recto: "", verso: "", rectoImage: "", versoImage: "" };
     if (isPoll) {
       const pt = type || "single-choice";
-      const base = { type: pt, question: "", image: "" };
+      const base = { type: pt, question: "", image: "", layout: "standard" as const };
       switch (pt) {
         case "single-choice": case "multiple-choice": return { ...base, answers: ["", "", "", ""], allowMultiple: pt === "multiple-choice" };
         case "likert-scale":    return { ...base, scale: ["Tout à fait d'accord", "D'accord", "Neutre", "Pas d'accord", "Pas du tout d'accord"] };
@@ -711,7 +761,7 @@ export const QuizBuilder = () => {
   };
 
   const handleAddQuestion = (type?: QuizQuestionType | PollQuestionType) => {
-    const newQ = { id: Date.now().toString(), ...getDefaultQuestion(type), image: "" };
+    const newQ = { id: Date.now().toString(), ...getDefaultQuestion(type), image: "", layout: "standard" as const };
     setQuestions(prev => { const updated = [...prev, newQ]; setSelectedIdx(updated.length - 1); return updated; });
   };
 
@@ -876,7 +926,7 @@ export const QuizBuilder = () => {
       <div style={{ maxWidth: 660, margin: "0 auto" }}>
 
         {/* Type chip */}
-        <DropdownMenu>
+        <DropdownMenu onOpenChange={(open) => { if (!open) setHoveredQuestionType(null); }}>
           <DropdownMenuTrigger asChild>
             <button
               style={{
@@ -895,7 +945,7 @@ export const QuizBuilder = () => {
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            style={{ background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-lg)", boxShadow: "var(--ap-shadow-card)" }}
+            style={{ minWidth: 360, background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-lg)", boxShadow: "var(--ap-shadow-card)" }}
             className="z-50 p-1.5"
           >
             {getAvailableTypes().map(type => {
@@ -905,7 +955,9 @@ export const QuizBuilder = () => {
               return (
                 <DropdownMenuItem
                   key={type}
-                  className="gap-2 rounded-xl text-sm cursor-pointer"
+                  className="gap-3 rounded-xl text-sm cursor-pointer py-2.5"
+                  onPointerEnter={() => setHoveredQuestionType(type)}
+                  onFocus={() => setHoveredQuestionType(type)}
                   onSelect={() => {
                     if (locked) {
                       toast.error("Type de question réservé au plan Pro", {
@@ -919,8 +971,13 @@ export const QuizBuilder = () => {
                   style={locked ? { opacity: 0.5 } : undefined}
                   aria-disabled={locked}
                 >
-                  <TypeIcon style={{ width: 16, height: 16, color: m.dot, flexShrink: 0 }} aria-hidden="true" />
-                  {m.label}
+                  <TypeIcon style={{ width: 18, height: 18, color: m.dot, flexShrink: 0 }} aria-hidden="true" />
+                  <span style={{ minWidth: 0 }}>
+                    <b style={{ display: "block", color: "var(--ap-ink)", lineHeight: 1.25 }}>{m.label}</b>
+                    <small style={{ display: "block", marginTop: 2, color: "var(--ap-muted)", fontSize: 11.5, lineHeight: 1.3 }}>
+                      {getQuestionTypeDescription(type)}
+                    </small>
+                  </span>
                   {locked && (
                     <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 800, color: "var(--ap-brand)", background: "var(--ap-brand-soft)", padding: "2px 6px", borderRadius: 999 }}>
                       Pro
@@ -931,6 +988,19 @@ export const QuizBuilder = () => {
             })}
           </DropdownMenuContent>
         </DropdownMenu>
+
+        {hoveredQuestionType && <QuestionTypeExample type={hoveredQuestionType} />}
+
+        {!hoveredQuestionType && (
+        <>
+        {!isFlashcard && (
+          <div style={{ marginBottom: 22 }}>
+            <QuestionLayoutPicker
+              value={q.layout}
+              onChange={(layout) => upd({ layout })}
+            />
+          </div>
+        )}
 
         {/* Question textarea */}
         <div style={{ marginBottom: 18 }}>
@@ -990,7 +1060,10 @@ export const QuizBuilder = () => {
               const file = e.target.files?.[0];
               if (!file) return;
               const r = new FileReader();
-              r.onloadend = () => upd({ image: r.result as string });
+              r.onloadend = () => upd({
+                image: r.result as string,
+                layout: !q.layout || q.layout === "standard" ? "media-top" : q.layout,
+              });
               r.readAsDataURL(file);
               e.target.value = "";
             }} />
@@ -1106,6 +1179,8 @@ export const QuizBuilder = () => {
               </div>
             </div>
           </div>
+        )}
+        </>
         )}
       </div>
     );
@@ -1463,7 +1538,7 @@ export const QuizBuilder = () => {
             <div>
               <Label>{t("headerImage")}</Label>
               {headerImage && (
-                <div className="relative w-full h-32 rounded-lg overflow-hidden mt-2 mb-2">
+                <div className="relative w-full h-48 rounded-lg overflow-hidden mt-2 mb-2">
                   <img src={headerImage} alt="Header" className="w-full h-full object-cover" />
                   <Button variant="ghost" size="sm" className="absolute top-2 right-2 bg-black/50 hover:bg-black/70" onClick={() => setHeaderImage("")}>
                     <Trash2 className="w-4 h-4 text-white" />
