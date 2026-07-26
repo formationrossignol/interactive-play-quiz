@@ -666,7 +666,7 @@ export const translations = {
 
     // Discover
     discover: "Découvrir",
-    discoverPublic: "Découvrir les Quiz Publics",
+    discoverPublic: "Découvrir les quiz publics",
     
     // Quiz Builder
     settings: "Paramètres",
@@ -755,7 +755,7 @@ export const translations = {
     pollTemplatesDesc: "Démarrez rapidement avec un modèle pré-rempli",
     
     // Question Bank
-    questionBank: "Banque de Questions",
+    questionBank: "Banque de questions",
     questionBankImportDescription: "Parcourez vos questions enregistrées et importez-les dans ce quiz",
     questionBankEmpty: "Votre banque de questions est vide",
     manageQuestionBank: "Gérer ma banque de questions",
