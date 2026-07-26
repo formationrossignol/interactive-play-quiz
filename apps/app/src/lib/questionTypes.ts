@@ -27,6 +27,7 @@ export interface BaseQuestion {
   timeLimit?: number;
   points?: number;
   image?: string;
+  layout?: import("@/lib/contentLayouts").QuestionLayoutId;
 }
 
 export interface MultipleChoiceQuestion extends BaseQuestion {
@@ -213,6 +214,7 @@ export interface EditableQuestion {
   timeLimit?: number;
   points?: number;
   image?: string;
+  layout?: import("@/lib/contentLayouts").QuestionLayoutId;
   prompt?: string;
   title?: string;
   explanation?: string;

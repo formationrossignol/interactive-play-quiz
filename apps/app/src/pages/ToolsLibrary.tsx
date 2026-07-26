@@ -61,7 +61,7 @@ const ToolsLibrary = () => {
                 style={{ textAlign: "left", display: "flex", flexDirection: "column", cursor: "pointer", overflow: "hidden", padding: 0 }}
               >
                 <div
-                  className="relative h-40 w-full flex-shrink-0 flex items-center justify-center"
+                  className="relative h-52 w-full flex-shrink-0 flex items-center justify-center"
                   style={{ background: `color-mix(in srgb, ${tool.accent} 14%, var(--ap-paper-2))` }}
                 >
                   <Icon style={{ width: 40, height: 40, color: tool.accent, opacity: 0.8 }} />

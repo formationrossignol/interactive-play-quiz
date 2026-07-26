@@ -4,6 +4,7 @@ import { CanvasElement } from "./elements/CanvasElement";
 import { LineArrowLayer } from "./elements/LineArrowLayer";
 import type { LineElement } from "./types/presentation";
 import { X } from "lucide-react";
+import { SlideFooter } from "./SlideFooter";
 
 export function PresentationMode({ onExit }: { onExit: () => void }) {
   const presentation = useDocStore((s) => s.presentation);
@@ -47,6 +48,7 @@ export function PresentationMode({ onExit }: { onExit: () => void }) {
 
   if (!presentation || !slide) return null;
   const lines = slide.elements.filter((e): e is LineElement => e.type === "line" || e.type === "arrow");
+  const slideNumber = presentation.slides.findIndex((item) => item.id === slide.id) + 1;
 
   return (
     <div
@@ -69,6 +71,7 @@ export function PresentationMode({ onExit }: { onExit: () => void }) {
           <CanvasElement key={element.id} slideId={slide.id} element={element} elementRef={() => {}} />
         ))}
         <LineArrowLayer lines={lines} width={presentation.width} height={presentation.height} />
+        <SlideFooter footer={presentation.footer} slideNumber={slideNumber} isTitleSlide={slideNumber === 1} />
       </div>
       <div style={{ position: "absolute", bottom: 16, right: 16, color: "#fff", fontSize: 14, fontFamily: "var(--ap-font-body)" }}>
         {index + 1} / {visibleSlides.length}

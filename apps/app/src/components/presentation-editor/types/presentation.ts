@@ -26,6 +26,8 @@ export interface BaseElement {
   locked: boolean;
   visible: boolean;
   groupId?: string;
+  layoutSlotId?: string;
+  layoutGenerated?: boolean;
 }
 
 export interface TextElement extends BaseElement {
@@ -40,6 +42,7 @@ export interface ImageElement extends BaseElement {
   borderRadius: number;
   borderWidth: number;
   borderColor: string;
+  fit?: "cover" | "contain";
 }
 
 export interface ShapeElement extends BaseElement {
@@ -80,6 +83,7 @@ export interface Slide {
   order: number;
   hidden: boolean;
   background?: SlideBackground;
+  layoutId?: import("../layouts/slideLayouts").SlideLayoutId;
   elements: SlideElement[];
 }
 
@@ -90,7 +94,14 @@ export interface Presentation {
   width: number;
   height: number;
   themeId?: string; // forward-compat placeholder only, unused in this phase
+  footer?: PresentationFooter;
   slides: Slide[];
+}
+
+export interface PresentationFooter {
+  showSlideNumber: boolean;
+  text: string;
+  skipTitleSlide: boolean;
 }
 
 export const PRESENTATION_FORMAT_SIZE: Record<Exclude<PresentationFormat, "custom">, { width: number; height: number }> = {
@@ -106,6 +117,7 @@ export function createBlankPresentation(id: string, title = "Sans titre"): Prese
     format: "16:9",
     width: PRESENTATION_FORMAT_SIZE["16:9"].width,
     height: PRESENTATION_FORMAT_SIZE["16:9"].height,
+    footer: { showSlideNumber: false, text: "", skipTitleSlide: false },
     slides: [{ id: slideId, order: 0, hidden: false, elements: [] }],
   };
 }

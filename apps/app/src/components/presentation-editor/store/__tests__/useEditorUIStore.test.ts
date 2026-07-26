@@ -48,3 +48,15 @@ describe("tool and drag flags", () => {
     expect([...state.selectedIds]).toEqual(["a"]);
   });
 });
+
+describe("canvas guides", () => {
+  it("toggles grid and rulers independently", () => {
+    const store = useEditorUIStore.getState();
+    expect(store.showGrid).toBe(false);
+    expect(store.showRulers).toBe(true);
+    store.toggleGrid();
+    store.toggleRulers();
+    expect(useEditorUIStore.getState().showGrid).toBe(true);
+    expect(useEditorUIStore.getState().showRulers).toBe(false);
+  });
+});

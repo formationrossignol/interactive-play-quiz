@@ -26,7 +26,7 @@ function RecentWorksSkeleton() {
     <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
       {Array.from({ length: 4 }, (_, index) => (
         <div key={index}>
-          <Skeleton className="h-28 w-full rounded-xl" />
+          <Skeleton className="h-36 w-full rounded-xl" />
           <Skeleton className="mt-3 h-5 w-4/5" />
           <Skeleton className="mt-2 h-4 w-2/5" />
         </div>
@@ -86,7 +86,7 @@ export function RecentWorks({ userId }: { userId: string }) {
                 onClick={() => navigate(getSearchResultRoute(row.type, itemId(row)))}
               >
                 <span
-                  className="relative flex h-28 w-full items-center justify-center overflow-hidden rounded-xl transition-transform group-hover:-translate-y-0.5"
+                  className="relative flex h-36 w-full items-center justify-center overflow-hidden rounded-xl transition-transform group-hover:-translate-y-0.5"
                   style={{
                     border: "var(--ap-border-w) solid var(--ap-line)",
                     background: image

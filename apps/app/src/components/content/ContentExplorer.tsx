@@ -87,7 +87,7 @@ function ContentSkeleton({ viewMode }: { viewMode: "grid" | "list" }) {
     <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
       {Array.from({ length: 6 }, (_, index) => (
         <div key={index} className="ap-card overflow-hidden p-0">
-          <Skeleton className="h-40 w-full rounded-none" />
+          <Skeleton className="h-52 w-full rounded-none" />
           <div className="p-4">
             <Skeleton className="h-5 w-3/4" />
             <Skeleton className="mt-3 h-3.5 w-full" />
@@ -544,10 +544,10 @@ export function ContentExplorer({
   } else if (view === "trash") {
     content = (
       <TrashView
-        items={trashed as unknown as Parameters<typeof TrashView>[0]["items"]}
+        items={trashed}
         viewMode={viewMode}
         onRestore={handleRestore}
-        onPermanentDelete={(item) => { setPermDeleteTarget(item as unknown as ContentDisplay); setDeleteDialogOpen(true); }}
+        onPermanentDelete={(item) => { setPermDeleteTarget(item); setDeleteDialogOpen(true); }}
       />
     );
   } else if (view === "favorites") {

@@ -61,6 +61,7 @@ import { FONT_STACKS, HOST_ANSWER_STYLES, MILLIONAIRE_ANSWER_STYLES } from "@/li
 import { ExportMenu } from "./ExportMenu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { exportLiveResults, type LiveResultsExportFormat } from "@/lib/liveResultsExport";
+import { getQuestionLayout, type QuestionLayoutId } from "@/lib/contentLayouts";
 
 interface Player {
   id: string;
@@ -86,7 +87,74 @@ interface QuizQuestion {
   points: number;
   items?: Array<{ id: string; text: string; correctPosition: number }>;
   image?: string;
+  layout?: QuestionLayoutId;
   [key: string]: unknown;
+}
+
+function QuestionMediaLayout({
+  question,
+  image,
+  layoutId,
+}: {
+  question: string;
+  image?: string;
+  layoutId?: QuestionLayoutId;
+}) {
+  const layout = getQuestionLayout(layoutId);
+  const sideBySide = Boolean(image && (layout.mediaPosition === "left" || layout.mediaPosition === "right"));
+  const background = Boolean(image && layout.mediaPosition === "background");
+
+  return (
+    <div
+      className="w-full max-w-4xl overflow-hidden"
+      style={{
+        position: "relative",
+        display: "flex",
+        flexDirection: sideBySide
+          ? (layout.mediaPosition === "right" ? "row-reverse" : "row")
+          : "column",
+        alignItems: "stretch",
+        gap: sideBySide ? 24 : 0,
+        minHeight: background ? 300 : undefined,
+        borderRadius: background ? 28 : undefined,
+        background: background ? "rgba(0,0,0,.35)" : undefined,
+      }}
+    >
+      {image && layout.mediaPosition !== "none" && (
+        <img
+          src={image}
+          alt={question}
+          style={{
+            position: background ? "absolute" : "relative",
+            inset: background ? 0 : undefined,
+            width: sideBySide ? "46%" : "100%",
+            height: background ? "100%" : sideBySide ? 260 : 220,
+            objectFit: "cover",
+            borderRadius: background ? undefined : 22,
+            border: background ? undefined : "1px solid rgba(255,255,255,.12)",
+            boxShadow: background ? undefined : "0 14px 38px rgba(0,0,0,.22)",
+          }}
+        />
+      )}
+      {background && (
+        <span aria-hidden="true" style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(0,0,0,.08), rgba(0,0,0,.82))" }} />
+      )}
+      <h1
+        className="relative z-10 flex flex-1 items-center justify-center text-center text-white drop-shadow-2xl leading-snug"
+        style={{
+          fontFamily: "var(--ap-font-display)",
+          fontSize: "clamp(1.4rem, 3.5vw, 2.6rem)",
+          fontWeight: 700,
+          padding: background ? 36 : sideBySide ? "24px 8px" : "20px 0 0",
+          margin: 0,
+          alignItems: background ? "flex-end" : "center",
+          textShadow: "0 2px 16px rgba(0,0,0,0.4)",
+        }}
+      >
+        {question}
+      </h1>
+    </div>
+  );
 }
 
 interface QuizSession {
@@ -334,6 +402,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
   const fontFamily = quiz.font ? FONT_STACKS[quiz.font] : undefined;
 
   const questionImage = typeof currentQuestion?.image === "string" ? currentQuestion.image : undefined;
+  const questionLayout = currentQuestion?.layout ?? (questionImage ? "media-top" : "standard");
   const headerImage = typeof quiz.headerImage === "string" ? quiz.headerImage : undefined;
 
   const ThemedBackground = ({ children, className }: { children: ReactNode; className?: string }) => (
@@ -1249,7 +1318,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
         </div>
 
         {/* Question image */}
-        {questionImage && (
+        {questionImage && isMillionnaire && (
           <div className="overflow-hidden rounded-2xl border border-white/10 bg-black/30 shadow-xl max-h-52 w-full max-w-3xl">
             <img src={questionImage} alt={currentQuestion.question} className="h-full w-full object-cover" />
           </div>
@@ -1263,12 +1332,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
             </h1>
           </div>
         ) : (
-          <h1
-            className="text-center text-white drop-shadow-2xl max-w-4xl leading-snug"
-            style={{ fontFamily: 'var(--ap-font-display)', fontSize: 'clamp(1.4rem, 3.5vw, 2.6rem)', fontWeight: 700, textShadow: '0 2px 16px rgba(0,0,0,0.4)' }}
-          >
-            {currentQuestion.question}
-          </h1>
+          <QuestionMediaLayout question={currentQuestion.question} image={questionImage} layoutId={questionLayout} />
         )}
 
         {/* Pulsing "answers coming" indicator */}
@@ -1390,7 +1454,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
               </div>
 
               {/* Question image */}
-              {questionImage && (
+              {questionImage && isMillionnaire && (
                 <div className="overflow-hidden rounded-2xl border border-white/10 bg-black/30 shadow-xl max-h-48 w-full max-w-3xl">
                   <img
                     src={questionImage}
@@ -1408,12 +1472,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
                   </h1>
                 </div>
               ) : (
-                <h1
-                  className="text-center text-white drop-shadow-2xl max-w-4xl leading-snug"
-                  style={{ fontFamily: 'var(--ap-font-display)', fontSize: 'clamp(1.4rem, 3.5vw, 2.6rem)', fontWeight: 700, textShadow: '0 2px 16px rgba(0,0,0,0.4)' }}
-                >
-                  {currentQuestion.question}
-                </h1>
+                <QuestionMediaLayout question={currentQuestion.question} image={questionImage} layoutId={questionLayout} />
               )}
 
               {/* Word-cloud / ranking types (non-standard) */}

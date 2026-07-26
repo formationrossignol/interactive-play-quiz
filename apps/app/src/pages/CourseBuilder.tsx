@@ -604,7 +604,7 @@ const CourseBuilder = () => {
                   <div>
                     {fieldLabel("Image d'en-tête")}
                     {coverImage ? (
-                      <div className="relative h-36 w-full overflow-hidden" style={{ borderRadius: "var(--ap-r-sm)" }}>
+                      <div className="relative h-52 w-full overflow-hidden" style={{ borderRadius: "var(--ap-r-sm)" }}>
                         <img src={coverImage} alt="Aperçu de l'image d'en-tête" className="h-full w-full object-cover" />
                         <button
                           type="button"

@@ -13,6 +13,19 @@ beforeEach(() => {
 });
 
 describe("slide management", () => {
+  it("updates slide numbering and footer settings", () => {
+    useDocStore.getState().updateFooter({
+      showSlideNumber: true,
+      text: "Cours de géométrie",
+      skipTitleSlide: true,
+    });
+    expect(useDocStore.getState().presentation!.footer).toEqual({
+      showSlideNumber: true,
+      text: "Cours de géométrie",
+      skipTitleSlide: true,
+    });
+  });
+
   it("addSlide appends a slide with the next order", () => {
     useDocStore.getState().addSlide();
     const slides = useDocStore.getState().presentation!.slides;

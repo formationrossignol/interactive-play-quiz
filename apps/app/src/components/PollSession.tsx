@@ -22,6 +22,7 @@ import {
   type PollQuestionResult,
   type PollResultSession,
 } from "@/lib/pollResults";
+import { getQuestionLayout, type QuestionLayoutId } from "@/lib/contentLayouts";
 
 interface PollSessionProps {
   poll: SavedQuiz;
@@ -40,6 +41,7 @@ type PollQuestion = {
   minLabel?: string;
   maxLabel?: string;
   image?: string;
+  layout?: QuestionLayoutId;
 };
 
 const POLL_BAR_COLORS = ["#2f7bff", "#15c08a", "#ffb020", "#ff5a4d", "#7048ff", "#0ea5b7"];
@@ -334,6 +336,11 @@ export const PollSession = ({ poll }: PollSessionProps) => {
   const maxCount = Math.max(...counts, 1);
   const texts = Array.from(textResponsesRef.current.get(currentIndex)?.values() ?? []);
   const answeredCount = currentQuestion.type === "open-text" ? texts.length : totalVotes;
+  const questionLayout = getQuestionLayout(currentQuestion.layout ?? (currentQuestion.image ? "media-top" : "standard"));
+  const sideBySide = currentQuestion.image && (
+    questionLayout.mediaPosition === "left" || questionLayout.mediaPosition === "right"
+  );
+  const backgroundMedia = Boolean(currentQuestion.image && questionLayout.mediaPosition === "background");
 
   return (
     <div style={{ ...pageSt, paddingBottom: 110 }}>
@@ -366,14 +373,59 @@ export const PollSession = ({ poll }: PollSessionProps) => {
 
         {/* Question card */}
         <div className="ap-card" style={{ padding: "28px 28px 24px" }}>
-          <h1 style={{ fontFamily: "var(--ap-font-display)", fontWeight: 600, fontSize: "clamp(20px,3vw,28px)", lineHeight: 1.25, margin: "0 0 6px", textAlign: "center" }}>
-            {currentQuestion?.question || `Question ${currentIndex + 1}`}
-          </h1>
-          {currentQuestion?.image && (
-            <div style={{ margin: "14px auto 4px", maxWidth: 480, overflow: "hidden", borderRadius: "var(--ap-r-md)", border: "var(--ap-border-w) solid var(--ap-line)" }}>
-              <img src={currentQuestion.image} alt="Illustration" style={{ width: "100%", height: 220, objectFit: "cover", display: "block" }} />
-            </div>
-          )}
+          <div
+            style={{
+              position: "relative",
+              overflow: "hidden",
+              borderRadius: backgroundMedia ? "var(--ap-r-lg)" : undefined,
+              minHeight: backgroundMedia ? 260 : undefined,
+              display: "flex",
+              flexDirection: sideBySide
+                ? (questionLayout.mediaPosition === "right" ? "row-reverse" : "row")
+                : "column",
+              alignItems: "stretch",
+              gap: sideBySide ? 22 : 0,
+              background: backgroundMedia ? "var(--ap-ink)" : undefined,
+            }}
+          >
+            {currentQuestion?.image && questionLayout.mediaPosition !== "none" && (
+              <img
+                src={currentQuestion.image}
+                alt="Illustration"
+                style={{
+                  position: backgroundMedia ? "absolute" : "relative",
+                  inset: backgroundMedia ? 0 : undefined,
+                  width: sideBySide ? "45%" : "100%",
+                  height: backgroundMedia ? "100%" : sideBySide ? 210 : 220,
+                  objectFit: "cover",
+                  display: "block",
+                  borderRadius: backgroundMedia ? undefined : "var(--ap-r-md)",
+                }}
+              />
+            )}
+            {backgroundMedia && (
+              <span aria-hidden="true" style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(20,15,35,.12), rgba(20,15,35,.82))" }} />
+            )}
+            <h1 style={{
+              position: "relative",
+              zIndex: 1,
+              flex: 1,
+              display: "flex",
+              alignItems: backgroundMedia ? "flex-end" : "center",
+              justifyContent: "center",
+              fontFamily: "var(--ap-font-display)",
+              fontWeight: 600,
+              fontSize: "clamp(20px,3vw,28px)",
+              lineHeight: 1.25,
+              margin: 0,
+              padding: backgroundMedia ? 28 : sideBySide ? "18px 4px" : "0 0 14px",
+              textAlign: "center",
+              color: backgroundMedia ? "white" : "var(--ap-ink)",
+              textShadow: backgroundMedia ? "0 2px 14px rgba(0,0,0,.45)" : undefined,
+            }}>
+              {currentQuestion?.question || `Question ${currentIndex + 1}`}
+            </h1>
+          </div>
 
           <div style={{ marginTop: 22 }}>
             {options.length > 0 ? (

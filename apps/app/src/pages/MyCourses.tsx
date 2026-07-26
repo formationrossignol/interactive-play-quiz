@@ -51,7 +51,7 @@ function CourseCard({ d, ctx, navigate, userId }: CourseItemProps) {
       onClick={() => navigate(`/course/${course.id}`)}
     >
       {course.coverImage ? (
-        <div className="relative h-40 w-full overflow-hidden flex-shrink-0">
+        <div className="relative h-52 w-full overflow-hidden flex-shrink-0">
           <img src={course.coverImage} alt={course.title} className="h-full w-full object-cover" />
           <button type="button" {...attributes} {...listeners} style={gripOverlayStyle} className="ap-grip" onClick={(e) => e.stopPropagation()} aria-label={`Déplacer ${course.title}`}>
             <GripVertical style={{ width: 14, height: 14 }} />
@@ -59,7 +59,7 @@ function CourseCard({ d, ctx, navigate, userId }: CourseItemProps) {
         </div>
       ) : (
         <div
-          className="relative h-40 w-full overflow-hidden flex-shrink-0 flex items-center justify-center"
+          className="relative h-52 w-full overflow-hidden flex-shrink-0 flex items-center justify-center"
           style={{ background: "color-mix(in srgb, var(--ap-pres) 14%, var(--ap-paper-2))" }}
         >
           <GraduationCap style={{ width: 40, height: 40, color: "var(--ap-pres)", opacity: 0.8 }} />

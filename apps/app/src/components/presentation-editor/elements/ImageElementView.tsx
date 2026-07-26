@@ -19,7 +19,7 @@ export function ImageElementView({ element }: { element: ImageElement }) {
       src={element.src}
       alt=""
       style={{
-        width: "100%", height: "100%", objectFit: "cover",
+        width: "100%", height: "100%", objectFit: element.fit ?? "cover",
         borderRadius: element.borderRadius,
         border: element.borderWidth > 0 ? `${element.borderWidth}px solid ${element.borderColor}` : undefined,
         ...cropStyle,

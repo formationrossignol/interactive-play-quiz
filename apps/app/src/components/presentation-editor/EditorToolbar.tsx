@@ -18,10 +18,14 @@ import {
   ChevronDown,
   Circle,
   Group,
+  Grid3X3,
   Image as ImageIcon,
   Italic,
+  LayoutTemplate,
   Minus,
   MousePointer2,
+  PanelBottom,
+  Ruler,
   Square,
   Type,
   Underline as UnderlineIcon,
@@ -33,6 +37,7 @@ import { useEditorUIStore, type EditorTool } from "./store/useEditorUIStore";
 import { useHistoryStore } from "./store/useHistoryStore";
 import { alignLeft, alignCenterH, alignRight, alignTop, alignMiddleV, alignBottom, distributeHorizontal, distributeVertical } from "./utils/geometry";
 import type { SlideElement } from "./types/presentation";
+import { SlideLayoutPicker } from "./layouts/SlideLayoutPicker";
 
 const FONT_FAMILIES = [
   { label: "Défaut", value: "" },
@@ -148,11 +153,17 @@ export function EditorToolbar({ slideId }: { slideId: string }) {
   const activeTool = useEditorUIStore((s) => s.activeTool);
   const setActiveTool = useEditorUIStore((s) => s.setActiveTool);
   const selectedIds = useEditorUIStore((s) => s.selectedIds);
+  const showGrid = useEditorUIStore((s) => s.showGrid);
+  const showRulers = useEditorUIStore((s) => s.showRulers);
   const presentation = useDocStore((s) => s.presentation);
 
   const [shapesOpen, setShapesOpen] = useState(false);
+  const [layoutsOpen, setLayoutsOpen] = useState(false);
+  const [footerOpen, setFooterOpen] = useState(false);
   const [lastShape, setLastShape] = useState<EditorTool>("rect");
   const shapesRef = useRef<HTMLDivElement | null>(null);
+  const layoutsRef = useRef<HTMLDivElement | null>(null);
+  const footerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!shapesOpen) return;
@@ -162,6 +173,24 @@ export function EditorToolbar({ slideId }: { slideId: string }) {
     document.addEventListener("pointerdown", onDocPointerDown);
     return () => document.removeEventListener("pointerdown", onDocPointerDown);
   }, [shapesOpen]);
+
+  useEffect(() => {
+    if (!layoutsOpen) return;
+    function onDocPointerDown(e: PointerEvent) {
+      if (layoutsRef.current && !layoutsRef.current.contains(e.target as Node)) setLayoutsOpen(false);
+    }
+    document.addEventListener("pointerdown", onDocPointerDown);
+    return () => document.removeEventListener("pointerdown", onDocPointerDown);
+  }, [layoutsOpen]);
+
+  useEffect(() => {
+    if (!footerOpen) return;
+    function onDocPointerDown(e: PointerEvent) {
+      if (footerRef.current && !footerRef.current.contains(e.target as Node)) setFooterOpen(false);
+    }
+    document.addEventListener("pointerdown", onDocPointerDown);
+    return () => document.removeEventListener("pointerdown", onDocPointerDown);
+  }, [footerOpen]);
 
   const slide = presentation?.slides.find((s) => s.id === slideId);
   const selected = slide ? slide.elements.filter((el) => selectedIds.has(el.id)) : [];
@@ -189,6 +218,110 @@ export function EditorToolbar({ slideId }: { slideId: string }) {
       <ToolButton active={activeTool === "video"} label="Vidéo" onClick={() => setActiveTool("video")}>
         <VideoIcon size={18} />
       </ToolButton>
+      <Separator />
+      <div ref={layoutsRef} style={{ position: "relative" }}>
+        <button
+          type="button"
+          aria-expanded={layoutsOpen}
+          onClick={() => setLayoutsOpen((open) => !open)}
+          className="ap-btn ap-btn--ghost ap-btn--sm"
+          style={{ height: 34, padding: "0 10px" }}
+        >
+          <LayoutTemplate size={17} aria-hidden="true" />
+          Mise en page
+          <ChevronDown size={12} aria-hidden="true" />
+        </button>
+        {layoutsOpen && (
+          <SlideLayoutPicker
+            value={slide?.layoutId}
+            onSelect={(layoutId) => {
+              useHistoryStore.getState().commit();
+              useDocStore.getState().applySlideLayout(slideId, layoutId);
+              useEditorUIStore.getState().select([]);
+              setLayoutsOpen(false);
+            }}
+          />
+        )}
+      </div>
+      <Separator />
+      <ToolButton
+        active={showGrid}
+        label={showGrid ? "Masquer la grille" : "Afficher la grille"}
+        onClick={() => useEditorUIStore.getState().toggleGrid()}
+      >
+        <Grid3X3 size={18} />
+      </ToolButton>
+      <ToolButton
+        active={showRulers}
+        label={showRulers ? "Masquer les règles" : "Afficher les règles"}
+        onClick={() => useEditorUIStore.getState().toggleRulers()}
+      >
+        <Ruler size={18} />
+      </ToolButton>
+      <div ref={footerRef} style={{ position: "relative" }}>
+        <button
+          type="button"
+          aria-expanded={footerOpen}
+          onClick={() => setFooterOpen((open) => !open)}
+          className="ap-btn ap-btn--ghost ap-btn--sm"
+          style={{ height: 34, padding: "0 10px" }}
+        >
+          <PanelBottom size={17} aria-hidden="true" />
+          Pied de page
+          <ChevronDown size={12} aria-hidden="true" />
+        </button>
+        {footerOpen && (
+          <div
+            style={{
+              position: "absolute",
+              top: "calc(100% + 6px)",
+              left: 0,
+              width: 310,
+              padding: 16,
+              zIndex: 20,
+              background: "var(--ap-card)",
+              border: "var(--ap-border-w) solid var(--ap-line)",
+              borderRadius: "var(--ap-r-md)",
+              boxShadow: "var(--ap-shadow-card)",
+            }}
+          >
+            <strong style={{ display: "block", marginBottom: 12, fontSize: 14 }}>Numéro et pied de page</strong>
+            <label style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 10, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={presentation?.footer?.showSlideNumber ?? false}
+                onChange={(event) => {
+                  useHistoryStore.getState().commit();
+                  useDocStore.getState().updateFooter({ showSlideNumber: event.target.checked });
+                }}
+              />
+              Afficher le numéro de diapositive
+            </label>
+            <label style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 14, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={presentation?.footer?.skipTitleSlide ?? false}
+                onChange={(event) => {
+                  useHistoryStore.getState().commit();
+                  useDocStore.getState().updateFooter({ skipTitleSlide: event.target.checked });
+                }}
+              />
+              Ne pas afficher sur la première diapo
+            </label>
+            <label style={{ display: "grid", gap: 6, fontSize: 12, fontWeight: 800, color: "var(--ap-muted)" }}>
+              Texte du pied de page
+              <input
+                type="text"
+                value={presentation?.footer?.text ?? ""}
+                placeholder="Nom du cours, date, établissement…"
+                onFocus={() => useHistoryStore.getState().commit()}
+                onChange={(event) => useDocStore.getState().updateFooter({ text: event.target.value })}
+                style={{ width: "100%", height: 38, padding: "0 10px", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-sm)", background: "var(--ap-paper)", color: "var(--ap-ink)", fontFamily: "inherit", fontSize: 13 }}
+              />
+            </label>
+          </div>
+        )}
+      </div>
 
       <div ref={shapesRef} style={{ position: "relative", display: "flex", alignItems: "center" }}>
         <ToolButton active={isShapeToolActive} label="Formes" onClick={() => setActiveTool(lastShape)}>
