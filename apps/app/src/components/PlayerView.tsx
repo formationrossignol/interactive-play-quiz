@@ -28,6 +28,7 @@ import {
 import { supabase } from "@/lib/supabase";
 import { getPollOptions } from "@/lib/pollResults";
 import { PLAYER_ANSWER_SHAPES as answerShapes } from "@/lib/answerVisuals";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface PlayerViewProps {
   gameCode: string;
@@ -890,9 +891,10 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
             <style>{`@keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }`}</style>
           </>
         ) : (
-          <p className="text-white text-lg animate-pulse" style={{ fontFamily: 'var(--ap-font-display)' }}>
-            Chargement…
-          </p>
+          <div className="w-full max-w-xl px-6" role="status" aria-label="Chargement du résultat">
+            <Skeleton className="mx-auto mb-5 h-8 w-3/5 bg-white/20" />
+            <Skeleton className="mx-auto h-5 w-2/5 bg-white/20" />
+          </div>
         )}
       </div>
     );
@@ -904,9 +906,12 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
         className="min-h-screen flex items-center justify-center"
         style={{ background: "var(--ap-brand)" }}
       >
-        <p className="text-white text-lg animate-pulse" style={{ fontFamily: "var(--ap-font-display)" }}>
-          Chargement de la question…
-        </p>
+        <div className="w-full max-w-2xl px-6" role="status" aria-label="Chargement de la question">
+          <Skeleton className="mx-auto mb-8 h-9 w-4/5 bg-white/20" />
+          <div className="grid grid-cols-2 gap-4">
+            {[0, 1, 2, 3].map((item) => <Skeleton key={item} className="h-28 w-full rounded-2xl bg-white/20" />)}
+          </div>
+        </div>
       </div>
     );
   }

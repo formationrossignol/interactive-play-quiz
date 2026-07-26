@@ -26,6 +26,35 @@ export class ValidationError extends Error {
 }
 
 const upgradeAction = { label: 'Passer Pro', onClick: () => { window.location.href = '/pricing'; } };
+const retryAction = { label: 'Réessayer', onClick: () => { window.location.reload(); } };
+const loginAction = { label: 'Se reconnecter', onClick: () => { window.location.href = '/auth'; } };
+const backToContentAction = { label: 'Retour aux contenus', onClick: () => { window.location.href = '/dashboard'; } };
+const refreshAction = { label: 'Actualiser', onClick: () => { window.location.reload(); } };
+const requestAccessAction = {
+  label: "Demander l’accès",
+  onClick: () => {
+    const subject = encodeURIComponent("Demande d’accès à une ressource Brivia");
+    const body = encodeURIComponent(`Bonjour,\n\nPouvez-vous me donner accès à cette ressource ?\n${window.location.href}`);
+    window.location.href = `mailto:?subject=${subject}&body=${body}`;
+  },
+};
+
+interface ErrorSignals {
+  status: number | null;
+  code: string;
+  message: string;
+}
+
+function getErrorSignals(e: unknown): ErrorSignals {
+  if (!e || typeof e !== 'object') return { status: null, code: '', message: '' };
+  const candidate = e as { status?: number | string; statusCode?: number | string; code?: string; message?: string; details?: string };
+  const rawStatus = Number(candidate.status ?? candidate.statusCode);
+  return {
+    status: Number.isFinite(rawStatus) ? rawStatus : null,
+    code: String(candidate.code ?? ''),
+    message: `${candidate.message ?? ''} ${candidate.details ?? ''}`.toLowerCase(),
+  };
+}
 
 /** Pure: maps a caught value to its kind + display message. No I/O, so this
  *  is the part worth unit-testing directly. */
@@ -36,9 +65,71 @@ export function classifyError(e: unknown): ClassifiedError {
   if (e instanceof ValidationError) {
     return { kind: 'validation', message: e.message };
   }
+  const signals = getErrorSignals(e);
+  if (
+    signals.status === 401
+    || signals.code === 'PGRST301'
+    || /jwt expired|invalid jwt|session.*expired|not authenticated/.test(signals.message)
+  ) {
+    return {
+      kind: 'business',
+      message: 'Votre session a expiré. Reconnectez-vous pour continuer.',
+      action: loginAction,
+    };
+  }
+  if (
+    signals.status === 403
+    || signals.code === '42501'
+    || /permission denied|forbidden|not authorized|not authorised|row-level security|insufficient privilege/.test(signals.message)
+  ) {
+    return {
+      kind: 'business',
+      message: "Vous n’avez pas les droits pour modifier cette ressource.",
+      action: requestAccessAction,
+    };
+  }
+  if (signals.status === 404 || signals.code === 'PGRST116' || /not found|introuvable/.test(signals.message)) {
+    return {
+      kind: 'business',
+      message: 'Cette ressource est introuvable ou a été supprimée.',
+      action: backToContentAction,
+    };
+  }
+  if (signals.status === 409 || signals.code === '23505' || /conflict|duplicate key/.test(signals.message)) {
+    return {
+      kind: 'business',
+      message: 'Cette ressource a été modifiée ailleurs. Actualisez la page avant de recommencer.',
+      action: refreshAction,
+    };
+  }
+  if (signals.status === 429 || /rate limit|too many requests/.test(signals.message)) {
+    return {
+      kind: 'business',
+      message: 'Trop de demandes ont été envoyées. Patientez quelques secondes puis réessayez.',
+      action: retryAction,
+    };
+  }
+  if (signals.status === 408 || signals.status === 504 || /timeout|timed out/.test(signals.message)) {
+    return {
+      kind: 'system',
+      message: 'La demande a pris trop de temps. Vérifiez votre connexion puis réessayez.',
+      action: retryAction,
+    };
+  }
+  if (
+    e instanceof TypeError
+    || /failed to fetch|networkerror|network error|econnreset|offline/.test(signals.message)
+  ) {
+    return {
+      kind: 'system',
+      message: 'Connexion impossible. Vérifiez votre accès Internet puis réessayez.',
+      action: retryAction,
+    };
+  }
   return {
     kind: 'system',
-    message: e instanceof Error ? e.message : 'Une erreur inattendue est survenue.',
+    message: 'L’action n’a pas abouti. Réessayez ou rechargez la page.',
+    action: retryAction,
   };
 }
 

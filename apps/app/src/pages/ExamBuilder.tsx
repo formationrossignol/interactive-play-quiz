@@ -3,13 +3,14 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { createExam, updateExam, getExamById, getHostExams, type Exam } from '@/lib/examStorage';
 import { getUserQuizzes } from '@/lib/quizStorage';
 import { getCurrentUser } from '@/lib/auth';
-import { CONTENT_CAPS, getPlan, PlanLimitError } from '@/lib/plans';
+import { CONTENT_CAPS, getPlan } from '@/lib/plans';
 import { PlanLimitBlocker } from '@/components/PlanLimitBlocker';
 import { Breadcrumb } from '@/components/Breadcrumb';
 import { MultiStepProgress } from '@/components/MultiStepProgress';
 import { upsertContentBySource } from '@/lib/content/contentRepo';
 import { toast } from 'sonner';
 import { useSaveShortcut } from '@/hooks/useSaveShortcut';
+import { showError } from '@/lib/errorTaxonomy';
 import {
   ArrowLeft,
   ArrowRight,
@@ -216,11 +217,7 @@ export default function ExamBuilder() {
       toast.success(publish ? 'Examen publié !' : saved ? 'Examen mis à jour' : 'Brouillon sauvegardé');
       if (publish) setTimeout(() => navigate(`/exam/${exam!.id}/admin`), 600);
     } catch (e) {
-      if (e instanceof PlanLimitError) {
-        toast.error(e.message, { action: { label: 'Passer Pro', onClick: () => { window.location.href = '/pricing'; } } });
-      } else {
-        toast.error((e as Error).message);
-      }
+      showError(e, 'ExamBuilder.save', 'Impossible d’enregistrer cet examen. Réessayez dans un instant.');
     } finally {
       setSaving(false);
     }

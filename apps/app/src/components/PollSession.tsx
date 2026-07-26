@@ -7,6 +7,7 @@ import { QRCodeGenerator } from "@/components/QRCodeGenerator";
 import { AvatarDisplay } from "@/components/BetterAvatars";
 import { BrandMonogram } from "ui/BrandMonogram";
 import type { SavedQuiz } from "@/lib/quizStorage";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   ensureSessionState,
   ensureSessionInSupabase,
@@ -257,7 +258,7 @@ export const PollSession = ({ poll }: PollSessionProps) => {
                   {sessionReady ? (
                     <QRCodeGenerator gameCode={poll.id} joinUrl={joinUrl} compact compactSize={108} />
                   ) : (
-                    <div style={{ width: 108, height: 108, display: "grid", placeItems: "center", color: "var(--ap-muted)", fontSize: 12, fontWeight: 700 }}>Chargement…</div>
+                    <Skeleton className="h-[108px] w-[108px] rounded-lg" />
                   )}
                 </div>
               </div>

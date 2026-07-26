@@ -5,7 +5,7 @@ import { useDraggable } from '@dnd-kit/core';
 import { toast } from 'sonner';
 import { computeExamStats, computeExamStatus, duplicateExam, type Exam, type ExamStats, type ExamStatus } from '@/lib/examStorage';
 import { getCurrentUser } from '@/lib/auth';
-import { PlanLimitError } from '@/lib/plans';
+import { showError } from '@/lib/errorTaxonomy';
 import { createContent } from '@/lib/content/contentRepo';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
@@ -295,11 +295,7 @@ export default function MyExams() {
       toast.success('Examen dupliqué');
       reloadRef.current?.();
     } catch (e) {
-      if (e instanceof PlanLimitError) {
-        toast.error(e.message, { action: { label: 'Passer Pro', onClick: () => { window.location.href = '/pricing'; } } });
-      } else {
-        toast.error((e as Error).message || 'Erreur lors de la duplication');
-      }
+      showError(e, 'MyExams.duplicate', 'Impossible de dupliquer cet examen. Réessayez dans un instant.');
     }
   };
 

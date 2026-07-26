@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { DisabledReason } from "@/components/ui/disabled-reason";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -27,7 +28,10 @@ import {
 import {
   Plus, Trash2, Upload, GripVertical, Settings,
   ChevronRight, ChevronDown, Eye, ImageIcon, MoreHorizontal,
-  ArrowRight, Copy, Library, HelpCircle, Home,
+  ArrowRight, Copy, Library, HelpCircle, Home, type LucideIcon,
+  ListChecks, CircleDot, ToggleLeft, TextCursorInput, ArrowUpDown,
+  Link2, TextSelect, SlidersHorizontal, Rows3, ChartNoAxesColumn,
+  Star, MessageSquareText, Gauge, Layers3, Presentation,
 } from "lucide-react";
 import { ImportFileModal } from "./ImportFileModal";
 import { getCurrentUser } from "@/lib/auth";
@@ -84,22 +88,22 @@ const ANSWER_CONFIGS = [
   { color: "var(--ap-flash)", shape: <path d="M12 2 22 12 12 22 2 12z" fill="white" /> },
 ] as const;
 
-const QTYPE_META: Record<string, { label: string; dot: string }> = {
-  "multiple-choice":  { label: "QCM",         dot: "var(--ap-quiz)"  },
-  "single-choice":    { label: "Choix unique", dot: "var(--ap-quiz)"  },
-  "true-false":       { label: "Vrai / Faux",  dot: "var(--ap-poll)" },
-  "short-answer":     { label: "Réponse courte", dot: "var(--ap-flash)" },
-  "ranking":          { label: "Classement",   dot: "var(--ap-pres)"  },
-  "matching":         { label: "Association",  dot: "var(--ap-quiz)"  },
-  "fill-blank":       { label: "Lacune",       dot: "var(--ap-poll)" },
-  "slider":           { label: "Curseur",      dot: "var(--ap-flash)" },
-  "likert-scale":     { label: "Likert",       dot: "var(--ap-poll)" },
-  "frequency-scale":  { label: "Fréquence",    dot: "var(--ap-poll)" },
-  "star-rating":      { label: "Étoiles",      dot: "var(--ap-flash)" },
-  "open-text":        { label: "Texte ouvert", dot: "var(--ap-pres)"  },
-  "nps-scale":        { label: "NPS",          dot: "var(--ap-brand)" },
-  "flashcard":        { label: "Carte",        dot: "var(--ap-flash)" },
-  "slide":            { label: "Slide",        dot: "var(--ap-pres)"  },
+const QTYPE_META: Record<string, { label: string; dot: string; icon: LucideIcon }> = {
+  "multiple-choice":  { label: "QCM",            dot: "var(--ap-quiz)",  icon: ListChecks },
+  "single-choice":    { label: "Choix unique",   dot: "var(--ap-quiz)",  icon: CircleDot },
+  "true-false":       { label: "Vrai / Faux",    dot: "var(--ap-poll)",  icon: ToggleLeft },
+  "short-answer":     { label: "Réponse courte", dot: "var(--ap-flash)", icon: TextCursorInput },
+  "ranking":          { label: "Classement",     dot: "var(--ap-pres)",  icon: ArrowUpDown },
+  "matching":         { label: "Association",    dot: "var(--ap-quiz)",  icon: Link2 },
+  "fill-blank":       { label: "Lacune",         dot: "var(--ap-poll)",  icon: TextSelect },
+  "slider":           { label: "Curseur",        dot: "var(--ap-flash)", icon: SlidersHorizontal },
+  "likert-scale":     { label: "Likert",         dot: "var(--ap-poll)",  icon: Rows3 },
+  "frequency-scale":  { label: "Fréquence",      dot: "var(--ap-poll)",  icon: ChartNoAxesColumn },
+  "star-rating":      { label: "Étoiles",        dot: "var(--ap-flash)", icon: Star },
+  "open-text":        { label: "Texte ouvert",   dot: "var(--ap-pres)",  icon: MessageSquareText },
+  "nps-scale":        { label: "NPS",            dot: "var(--ap-brand)", icon: Gauge },
+  "flashcard":        { label: "Carte",          dot: "var(--ap-flash)", icon: Layers3 },
+  "slide":            { label: "Slide",          dot: "var(--ap-pres)",  icon: Presentation },
 };
 
 const POINTS_OPTIONS = [
@@ -322,7 +326,8 @@ const RailItem = ({
   onSelect: (i: number) => void; onDelete: (i: number) => void; onDuplicate: (i: number) => void;
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: question.id });
-  const meta = QTYPE_META[question.type] || { label: question.type, dot: "var(--ap-muted)" };
+  const meta = QTYPE_META[question.type] || { label: question.type, dot: "var(--ap-muted)", icon: HelpCircle };
+  const MetaIcon = meta.icon;
   const displayText =
     question.type === "slide"      ? (question.title?.trim() || "Diapositive vide")
     : question.type === "flashcard" ? (question.recto?.trim() || "Flashcard vide")
@@ -364,7 +369,7 @@ const RailItem = ({
             fontSize: 10.5, fontWeight: 800, letterSpacing: ".07em",
             textTransform: "uppercase", color: "var(--ap-muted)",
           }}>
-            <i style={{ width: 7, height: 7, borderRadius: 2, background: meta.dot, display: "inline-block", flexShrink: 0 }} />
+            <MetaIcon style={{ width: 13, height: 13, color: meta.dot, flexShrink: 0 }} aria-hidden="true" />
             {meta.label}
           </span>
           <span style={{
@@ -862,7 +867,8 @@ export const QuizBuilder = () => {
 
     if (isFlashcard) return <div style={{ maxWidth: 660, margin: "0 auto" }}><FlashcardEditor flashcard={q as unknown as React.ComponentProps<typeof FlashcardEditor>["flashcard"]} onChange={upd as unknown as React.ComponentProps<typeof FlashcardEditor>["onChange"]} /></div>;
 
-    const meta = QTYPE_META[q.type] || { label: q.type, dot: "var(--ap-muted)" };
+    const meta = QTYPE_META[q.type] || { label: q.type, dot: "var(--ap-muted)", icon: HelpCircle };
+    const SelectedTypeIcon = meta.icon;
     const isMC = q.type === "multiple-choice" || q.type === "single-choice";
     const isTF = q.type === "true-false";
 
@@ -883,7 +889,7 @@ export const QuizBuilder = () => {
                 transition: "transform .15s var(--ap-spring)",
               }}
             >
-              <i style={{ width: 8, height: 8, borderRadius: 2, background: meta.dot, display: "inline-block" }} />
+              <SelectedTypeIcon style={{ width: 15, height: 15, color: meta.dot }} aria-hidden="true" />
               {meta.label}
               <ChevronDown style={{ width: 12, height: 12, opacity: 0.6 }} />
             </button>
@@ -893,7 +899,8 @@ export const QuizBuilder = () => {
             className="z-50 p-1.5"
           >
             {getAvailableTypes().map(type => {
-              const m = QTYPE_META[type] || { label: type, dot: "var(--ap-muted)" };
+              const m = QTYPE_META[type] || { label: type, dot: "var(--ap-muted)", icon: HelpCircle };
+              const TypeIcon = m.icon;
               const locked = !isPoll && isQuestionTypeLocked(type, plan);
               return (
                 <DropdownMenuItem
@@ -912,7 +919,7 @@ export const QuizBuilder = () => {
                   style={locked ? { opacity: 0.5 } : undefined}
                   aria-disabled={locked}
                 >
-                  <i style={{ width: 7, height: 7, borderRadius: 2, background: m.dot, display: "inline-block", flexShrink: 0 }} />
+                  <TypeIcon style={{ width: 16, height: 16, color: m.dot, flexShrink: 0 }} aria-hidden="true" />
                   {m.label}
                   {locked && (
                     <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 800, color: "var(--ap-brand)", background: "var(--ap-brand-soft)", padding: "2px 6px", borderRadius: 999 }}>
@@ -1300,15 +1307,20 @@ export const QuizBuilder = () => {
         </button>
 
         {/* Preview */}
-        <button
-          onClick={handlePreviewQuiz}
-          disabled={questions.length === 0}
-          className="ap-btn ap-btn--ghost"
-          style={{ padding: "10px 18px", borderRadius: 999, fontSize: 14 }}
-        >
-          <Eye style={{ width: 15, height: 15 }} />
-          Aperçu
-        </button>
+        <DisabledReason reason={questions.length === 0 ? "Ajoutez au moins une question pour ouvrir l’aperçu." : undefined}>
+          {(descriptionId) => (
+            <button
+              onClick={handlePreviewQuiz}
+              disabled={questions.length === 0}
+              aria-describedby={descriptionId}
+              className="ap-btn ap-btn--ghost"
+              style={{ padding: "10px 18px", borderRadius: 999, fontSize: 14 }}
+            >
+              <Eye style={{ width: 15, height: 15 }} />
+              Aperçu
+            </button>
+          )}
+        </DisabledReason>
 
         {/* Save / Publish */}
         <button
@@ -1499,6 +1511,11 @@ export const QuizBuilder = () => {
                     title={contentRow && contentRow.user_id !== user?.id ? "Seul le propriétaire peut modifier la visibilité" : undefined}
                   />
                 </div>
+                {contentRow && contentRow.user_id !== user?.id && (
+                  <p className="m-0 px-3 text-xs font-semibold text-muted-foreground">
+                    Seul le propriétaire peut modifier la visibilité de cette ressource.
+                  </p>
+                )}
                 <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                   <div className="flex items-center gap-2">
                     <Label className="cursor-pointer">{t("speedBonus")}</Label>

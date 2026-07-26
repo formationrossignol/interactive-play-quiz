@@ -59,6 +59,7 @@ import {
 import { supabase, supabaseUrl, supabaseKey } from "@/lib/supabase";
 import { FONT_STACKS, HOST_ANSWER_STYLES, MILLIONAIRE_ANSWER_STYLES } from "@/lib/answerVisuals";
 import { ExportMenu } from "./ExportMenu";
+import { Skeleton } from "@/components/ui/skeleton";
 import { exportLiveResults, type LiveResultsExportFormat } from "@/lib/liveResultsExport";
 
 interface Player {
@@ -1108,7 +1109,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
                 {sessionReady ? (
                   <QRCodeGenerator gameCode={quiz.gameCode} joinUrl={joinUrl} compact compactSize={128} />
                 ) : (
-                  <span style={{ color:'var(--ap-muted)',fontSize:12,fontWeight:700 }}>Chargement…</span>
+                  <Skeleton className="h-32 w-32 rounded-xl" />
                 )}
               </div>
             </div>

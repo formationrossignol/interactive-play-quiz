@@ -35,6 +35,18 @@
 }
 .ap-btn:hover  { transform: translateY(-2px); box-shadow: 0 7px 0 var(--ap-brand-deep); }
 .ap-btn:active { transform: translateY(5px);  box-shadow: 0 0px 0 var(--ap-brand-deep); }
+.ap-btn:disabled,
+.ap-btn[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: .55;
+  transform: none;
+  box-shadow: 0 2px 0 var(--ap-line-2);
+}
+.ap-btn:disabled:hover,
+.ap-btn[aria-disabled="true"]:hover {
+  transform: none;
+  box-shadow: 0 2px 0 var(--ap-line-2);
+}
 
 .ap-btn--lg { font-size: 18px; padding: 17px 30px; border-radius: var(--ap-r-lg); }
 .ap-btn--sm { font-size: 14px; padding: 9px 16px; border-radius: var(--ap-r-sm); }
@@ -58,6 +70,38 @@
 .ap-card--floaty { box-shadow: var(--ap-shadow-card); border-radius: var(--ap-r-xl); }
 .ap-card--hover { transition: transform .12s var(--ap-ease), box-shadow .12s var(--ap-ease); }
 .ap-card--hover:hover { transform: translateY(-3px); box-shadow: var(--ap-shadow-card); }
+
+/* One loading language across the product: the highlight travels through the
+   placeholder to make progress visible without a spinner or layout jump. */
+.ap-skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--ap-paper-2);
+  background-image: linear-gradient(
+    100deg,
+    transparent 18%,
+    color-mix(in srgb, var(--ap-card) 82%, white) 48%,
+    transparent 78%
+  );
+  background-repeat: no-repeat;
+  background-size: 220% 100%;
+  animation: ap-skeleton-shimmer 1.35s ease-in-out infinite;
+}
+@keyframes ap-skeleton-shimmer {
+  from { background-position: 130% 0; }
+  to { background-position: -130% 0; }
+}
+
+/* Native interaction hints: text accepts input, drag handles move content,
+   and unavailable controls explain themselves without looking clickable. */
+.ap-app input:not([type="button"]):not([type="submit"]):not([type="reset"]),
+.ap-app textarea,
+.ap-app [contenteditable="true"] { cursor: text; }
+.ap-grip { cursor: grab; touch-action: none; }
+.ap-grip:active,
+.ap-grip[aria-pressed="true"] { cursor: grabbing; }
+[draggable="true"] { cursor: grab; }
+[draggable="true"]:active { cursor: grabbing; }
 
 .ap-tile { position: relative; overflow: hidden; }
 .ap-tile__blob {
@@ -372,7 +416,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ap-btn, .ap-answer, .ap-card--hover, .ap-logo { transition: none; }
+  .ap-btn, .ap-answer, .ap-card--hover, .ap-logo, .ap-hover-actions, .ap-grip { transition: none; }
+  .ap-skeleton-shimmer { animation: none; background-image: none; }
   .ap-cascade > * { animation: none; }
   .ap-confetti-piece { animation: none; display: none; }
   .ap-answer--correct { animation: none; }
