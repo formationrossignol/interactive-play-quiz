@@ -20,6 +20,7 @@ import {
   Video,
 } from "lucide-react";
 import { Breadcrumb } from "@/components/Breadcrumb";
+import { Skeleton } from "@/components/ui/skeleton";
 import { getCurrentUser } from "@/lib/auth";
 import {
   getCourseById,
@@ -1112,7 +1113,7 @@ const CourseViewer = () => {
                   <div style={{ borderRadius: "var(--ap-r-lg)", overflow: "hidden", border: "var(--ap-border-w) solid var(--ap-line)", boxShadow: "0 5px 0 var(--ap-line)" }}>
                     {pdfObjectUrl
                       ? <iframe src={pdfObjectUrl} title={lesson.documentName ?? "Document"} style={{ width: "100%", height: "75vh", border: "none", display: "block" }} />
-                      : <p style={{ padding: 24, color: "var(--ap-muted)", fontSize: 13, textAlign: "center" }}>Chargement…</p>
+                      : <div style={{ padding: 18 }} role="status" aria-label="Chargement du document"><Skeleton className="h-[70vh] w-full rounded-xl" /></div>
                     }
                   </div>
                 ) : (

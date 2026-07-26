@@ -8,6 +8,7 @@ import { getPollOptions } from "@/lib/pollResults";
 import { Trophy, LogOut, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Play, X, RotateCcw } from "lucide-react";
 import type { SavedQuiz } from "@/lib/quizStorage";
 import type { EditableQuestion } from "@/lib/questionTypes";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface ParticipantPreviewProps {
   question: EditableQuestion;
@@ -383,8 +384,14 @@ const PreviewPage = () => {
   }, [quizId]);
 
   if (!quiz) return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#0f172a", color: "#fff" }}>
-      Chargement…
+    <div style={{ minHeight: "100vh", padding: 24, background: "#0f172a" }} role="status" aria-label="Chargement de l’aperçu">
+      <div style={{ maxWidth: 760, margin: "8vh auto 0" }}>
+        <Skeleton className="mx-auto mb-5 h-5 w-32 bg-white/20" />
+        <Skeleton className="mx-auto mb-8 h-10 w-4/5 bg-white/20" />
+        <Skeleton className="mb-4 h-24 w-full rounded-2xl bg-white/20" />
+        <Skeleton className="mb-4 h-24 w-full rounded-2xl bg-white/20" />
+        <Skeleton className="h-24 w-full rounded-2xl bg-white/20" />
+      </div>
     </div>
   );
 

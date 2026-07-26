@@ -1,5 +1,5 @@
-import { Loader2 } from "lucide-react";
 import type { VideoElement } from "../types/presentation";
+import { Skeleton } from "@/components/ui/skeleton";
 
 function embedUrl(element: VideoElement): string | null {
   if (element.provider === "youtube") {
@@ -18,8 +18,8 @@ function embedUrl(element: VideoElement): string | null {
 export function VideoElementView({ element }: { element: VideoElement }) {
   if (element.provider === "upload" && !element.src) {
     return (
-      <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--ap-paper-2)", border: "1px dashed var(--ap-line)", color: "var(--ap-muted)" }}>
-        <Loader2 size={20} className="animate-spin" />
+      <div style={{ width: "100%", height: "100%", border: "1px dashed var(--ap-line)", overflow: "hidden" }}>
+        <Skeleton className="h-full w-full rounded-none" />
       </div>
     );
   }

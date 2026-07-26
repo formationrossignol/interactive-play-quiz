@@ -18,7 +18,7 @@ import {
 } from "@/lib/courseStorage";
 import { getUserQuizzes, getUserFlashcardSets } from "@/lib/quizStorage";
 import { assertSafeImportFile } from "@/lib/fileValidation";
-import { CONTENT_CAPS, getPlan, PlanLimitError } from "@/lib/plans";
+import { CONTENT_CAPS, getPlan } from "@/lib/plans";
 import { PlanLimitBlocker } from "@/components/PlanLimitBlocker";
 import {
   getContent,
@@ -30,6 +30,7 @@ import {
 import type { ContentRow } from "@/lib/content/types";
 import { toast } from "sonner";
 import { useSaveShortcut } from "@/hooks/useSaveShortcut";
+import { showError } from "@/lib/errorTaxonomy";
 import {
   BarChart2,
   BookOpen,
@@ -225,11 +226,7 @@ const CourseBuilder = () => {
         navigate(`/course-builder?courseId=${saved.id}`, { replace: true });
       }
     } catch (e) {
-      if (e instanceof PlanLimitError) {
-        toast.error(e.message, { action: { label: 'Passer Pro', onClick: () => { window.location.href = '/pricing'; } } });
-      } else {
-        toast.error(e instanceof Error ? e.message : "Erreur lors de l'enregistrement");
-      }
+      showError(e, "CourseBuilder.save", "Impossible d’enregistrer ce cours. Réessayez dans un instant.");
     } finally {
       setSaving(false);
     }

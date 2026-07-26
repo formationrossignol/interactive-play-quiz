@@ -16,6 +16,7 @@ import { isLegacySlideShape, migrateLegacySlideToPresentation } from "./utils/mi
 import { createBlankPresentation, type Presentation } from "./types/presentation";
 import { CollaboratorsButton } from "@/components/CollaboratorsButton";
 import { Skeleton } from "@/components/ui/skeleton";
+import { showError } from "@/lib/errorTaxonomy";
 
 interface PresentationEditorProps {
   contentId: string | null;
@@ -67,7 +68,7 @@ export function PresentationEditor({ contentId, userId, initialPresenting = fals
         setActiveSlideId(pres.slides?.[0]?.id ?? null);
       } catch (err) {
         if (cancelled) return;
-        toast.error("Impossible de charger cette présentation.");
+        showError(err, "PresentationEditor.load", "Impossible de charger cette présentation. Réessayez ou revenez à vos contenus.");
         load(createBlankPresentation(contentId));
         setActiveSlideId(null);
       } finally {

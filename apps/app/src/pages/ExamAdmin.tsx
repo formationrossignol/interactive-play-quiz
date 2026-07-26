@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { Fragment, useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   type LucideIcon, XCircle, ChevronLeft, Lock, Unlock, Users, CheckCircle2,
@@ -13,6 +13,7 @@ import {
 } from '@/lib/examStorage';
 import { ExportMenu } from '@/components/ExportMenu';
 import { showError } from '@/lib/errorTaxonomy';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -166,14 +167,7 @@ export default function ExamAdmin() {
   );
 
   if (!exam) return (
-    <div style={wrapSt}>
-      <svg width="40" height="40" viewBox="0 0 40 40" style={{ animation: 'spin .9s linear infinite' }}>
-        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-        <circle cx="20" cy="20" r="16" fill="none" stroke="var(--ap-line-2)" strokeWidth="4" />
-        <circle cx="20" cy="20" r="16" fill="none" stroke="var(--ap-brand)" strokeWidth="4"
-          strokeDasharray="80" strokeDashoffset="60" strokeLinecap="round" />
-      </svg>
-    </div>
+    <ExamAdminSkeleton />
   );
 
   const liveStatus = computeExamStatus(exam);
@@ -235,7 +229,7 @@ export default function ExamAdmin() {
         </button>
       </div>
 
-      <div style={{ maxWidth: 860, margin: '0 auto', padding: '24px 16px' }}>
+      <div style={{ maxWidth: 1180, margin: '0 auto', padding: '24px 16px' }}>
 
         {/* Join code */}
         {liveStatus !== 'draft' && (
@@ -379,19 +373,16 @@ export default function ExamAdmin() {
             Personne n'a encore soumis.
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {finished.map((att) => (
-              <AttemptRow
-                key={att.id}
-                att={att} exam={exam} quiz={quiz} now={now}
-                isExpanded={expanded === att.id}
-                onToggleExpand={() => setExpanded(expanded === att.id ? null : att.id)}
-                onRemove={() => setAttemptToRemove(att)}
-                isChatOpen={chatWithId === att.id}
-                onToggleChat={() => setChatWithId(chatWithId === att.id ? null : att.id)}
-              />
-            ))}
-          </div>
+          <ResultsTable
+            attempts={finished}
+            exam={exam}
+            quiz={quiz}
+            expandedId={expanded}
+            chatWithId={chatWithId}
+            onToggleExpand={(attemptId) => setExpanded(expanded === attemptId ? null : attemptId)}
+            onToggleChat={(attemptId) => setChatWithId(chatWithId === attemptId ? null : attemptId)}
+            onRemove={setAttemptToRemove}
+          />
         )}
 
         {/* Per-question analysis */}
@@ -475,6 +466,165 @@ export default function ExamAdmin() {
       </AlertDialog>
     </div>
   );
+}
+
+function ExamAdminSkeleton() {
+  return (
+    <div style={{ minHeight: '100vh' }} role="status" aria-label="Chargement des résultats de l’examen">
+      <div style={{ height: 60, padding: '0 24px', display: 'flex', alignItems: 'center', gap: 16, borderBottom: 'var(--ap-border-w) solid var(--ap-line)' }}>
+        <Skeleton className="h-8 w-8 rounded-full" />
+        <Skeleton className="h-5 w-64" />
+        <Skeleton className="ml-auto h-8 w-24 rounded-full" />
+      </div>
+      <div style={{ maxWidth: 1180, margin: '0 auto', padding: '24px 16px' }}>
+        <Skeleton className="mb-5 h-28 w-full rounded-2xl" />
+        <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {[0, 1, 2, 3].map((item) => <Skeleton key={item} className="h-28 w-full rounded-2xl" />)}
+        </div>
+        <Skeleton className="mb-4 h-12 w-full rounded-xl" />
+        {[0, 1, 2, 3].map((item) => <Skeleton key={item} className="mb-2 h-16 w-full rounded-xl" />)}
+      </div>
+    </div>
+  );
+}
+
+function ResultsTable({
+  attempts, exam, quiz, expandedId, chatWithId, onToggleExpand, onToggleChat, onRemove,
+}: {
+  attempts: Attempt[];
+  exam: Exam;
+  quiz: SavedQuiz | null;
+  expandedId: string | null;
+  chatWithId: string | null;
+  onToggleExpand: (attemptId: string) => void;
+  onToggleChat: (attemptId: string) => void;
+  onRemove: (attempt: Attempt) => void;
+}) {
+  const totalQuestions = quiz?.questions.length ?? 0;
+
+  return (
+    <div style={{
+      overflowX: 'auto', background: 'var(--ap-card)',
+      border: 'var(--ap-border-w) solid var(--ap-line)', borderRadius: 'var(--ap-r-lg)',
+    }}>
+      <table style={{ width: '100%', minWidth: 920, borderCollapse: 'collapse', textAlign: 'left' }}>
+        <thead>
+          <tr style={{ background: 'var(--ap-paper-2)' }}>
+            <ResultsHeader>Participant</ResultsHeader>
+            <ResultsHeader>Statut</ResultsHeader>
+            <ResultsHeader>Réponses</ResultsHeader>
+            <ResultsHeader>Score</ResultsHeader>
+            <ResultsHeader>Temps</ResultsHeader>
+            <ResultsHeader>Rendu le</ResultsHeader>
+            <ResultsHeader style={{ width: 132, textAlign: 'right' }}>Actions</ResultsHeader>
+          </tr>
+        </thead>
+        <tbody>
+          {attempts.map((att) => {
+            const badge = STATUS_LABEL[att.status];
+            const answered = Object.values(att.answers).filter((value) => value !== null && value !== undefined && value !== '').length;
+            const isExpanded = expandedId === att.id;
+            const isChatOpen = chatWithId === att.id;
+            return (
+              <Fragment key={att.id}>
+                <tr style={{ borderTop: '1px solid var(--ap-line)', background: isExpanded ? 'var(--ap-paper)' : 'transparent' }}>
+                  <ResultsCell>
+                    <button
+                      type="button"
+                      onClick={() => onToggleExpand(att.id)}
+                      aria-expanded={isExpanded}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 9, width: '100%',
+                        border: 0, padding: 0, background: 'transparent', color: 'var(--ap-ink)',
+                        textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit',
+                      }}
+                    >
+                      <ChevronDown
+                        className="h-3.5 w-3.5"
+                        style={{ color: 'var(--ap-muted)', transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}
+                        aria-hidden="true"
+                      />
+                      <span style={{ minWidth: 0 }}>
+                        <span style={{ display: 'block', fontWeight: 800 }}>{att.participantName}</span>
+                        {att.participantEmail && (
+                          <span style={{ display: 'block', color: 'var(--ap-muted)', fontSize: 11, marginTop: 2 }}>{att.participantEmail}</span>
+                        )}
+                      </span>
+                    </button>
+                  </ResultsCell>
+                  <ResultsCell>
+                    <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.05em', padding: '4px 8px', borderRadius: 999, color: badge.color, background: badge.bg }}>
+                      {badge.label}
+                    </span>
+                  </ResultsCell>
+                  <ResultsCell style={{ fontWeight: 800 }}>
+                    {answered}/{totalQuestions || att.questionOrder.length}
+                  </ResultsCell>
+                  <ResultsCell>
+                    <span style={{ fontFamily: 'var(--ap-font-display)', fontWeight: 800, fontSize: 17, color: att.passed ? '#0d8f68' : '#d83d34' }}>
+                      {att.percentage === null ? '—' : `${att.percentage}%`}
+                    </span>
+                  </ResultsCell>
+                  <ResultsCell style={{ fontFamily: 'var(--ap-font-mono)', fontWeight: 700 }}>{fmt(att.timeUsedSeconds)}</ResultsCell>
+                  <ResultsCell style={{ color: 'var(--ap-muted)', fontSize: 12, fontWeight: 700 }}>
+                    {att.submittedAt ? new Date(att.submittedAt).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }) : '—'}
+                  </ResultsCell>
+                  <ResultsCell style={{ textAlign: 'right' }}>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      <button
+                        type="button"
+                        onClick={() => onToggleChat(att.id)}
+                        className="ap-btn ap-btn--ghost ap-btn--sm ap-icon-btn"
+                        title="Discussion avec ce participant"
+                        aria-label={`Discussion avec ${att.participantName}`}
+                        style={{ color: isChatOpen ? 'var(--ap-brand)' : 'var(--ap-muted)' }}
+                      >
+                        <MessageCircle className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onRemove(att)}
+                        className="ap-btn ap-btn--ghost ap-btn--sm ap-icon-btn"
+                        title="Retirer ce participant"
+                        aria-label={`Retirer ${att.participantName}`}
+                        style={{ color: '#d83d34' }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </ResultsCell>
+                </tr>
+                {isChatOpen && (
+                  <tr style={{ borderTop: '1px solid var(--ap-line)' }}>
+                    <td colSpan={7}>
+                      <AttemptChat examId={exam.id} attemptId={att.id} participantName={att.participantName} />
+                    </td>
+                  </tr>
+                )}
+                {isExpanded && (
+                  <tr style={{ borderTop: '1px solid var(--ap-line)' }}>
+                    <td colSpan={7}><AttemptDetail att={att} exam={exam} quiz={quiz} /></td>
+                  </tr>
+                )}
+              </Fragment>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function ResultsHeader({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+  return (
+    <th style={{ padding: '13px 15px', fontSize: 11, fontWeight: 800, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--ap-muted)', ...style }}>
+      {children}
+    </th>
+  );
+}
+
+function ResultsCell({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+  return <td style={{ padding: '13px 15px', verticalAlign: 'middle', fontSize: 13, ...style }}>{children}</td>;
 }
 
 function AttemptRow({
@@ -622,7 +772,7 @@ function AttemptChat({ examId, attemptId, participantName }: { examId: string; a
       setMessages((prev) => (prev.some((m) => m.id === sent.id) ? prev : [...prev, sent]));
       setText('');
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Échec de l'envoi");
+      showError(e, 'ExamAdmin.sendMessage', 'Impossible d’envoyer le message. Vérifiez votre connexion puis réessayez.');
     } finally {
       setSending(false);
     }

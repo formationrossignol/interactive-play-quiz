@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { generateCourseFromFile } from "@/lib/courseGenerator";
 import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const ACCEPTED = [".pdf", ".docx", ".txt", ".md"];
 const ACCEPTED_MIME = [
@@ -172,18 +173,13 @@ export const CourseGeneratorModal = ({ open, onClose }: Props) => {
           {/* Loading state */}
           {phase === "loading" && (
             <div style={{ padding:"32px 0", textAlign:"center" }}>
-              <div style={{ marginBottom:20 }}>
-                <svg width="48" height="48" viewBox="0 0 48 48" style={{ animation:"spin 1.2s linear infinite" }}>
-                  <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-                  <circle cx="24" cy="24" r="20" fill="none" stroke="var(--ap-line-2)" strokeWidth="4"/>
-                  <circle cx="24" cy="24" r="20" fill="none" stroke="var(--ap-brand)" strokeWidth="4"
-                    strokeDasharray="125" strokeDashoffset="90" strokeLinecap="round"/>
-                </svg>
+              <div role="status" aria-label="Génération du cours en cours">
+                <Skeleton className="mx-auto mb-5 h-14 w-14 rounded-full" />
+                <Skeleton className="mx-auto mb-3 h-6 w-52" />
+                <Skeleton className="mx-auto mb-5 h-4 w-64 max-w-full" />
+                <Skeleton className="mx-auto h-2.5 w-4/5 rounded-full" />
               </div>
-              <p style={{ fontFamily:"var(--ap-font-display)", fontWeight:600, fontSize:17, marginBottom:8 }}>
-                Génération en cours…
-              </p>
-              <p style={{ fontSize:13, fontWeight:700, color:"var(--ap-muted)" }}>{progress}</p>
+              <p style={{ fontSize:13, fontWeight:700, color:"var(--ap-muted)", marginTop:14 }}>{progress}</p>
               <p style={{ fontSize:11, color:"var(--ap-muted)", marginTop:12, fontWeight:700 }}>
                 Peut prendre 20 à 60 secondes selon la taille du document
               </p>
