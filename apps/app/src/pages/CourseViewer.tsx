@@ -48,6 +48,7 @@ import { assertSafeImportFile } from "@/lib/fileValidation";
 import { sanitizeHtml } from "@/lib/sanitizeHtml";
 import { toast } from "sonner";
 import { CourseCertificateDialog } from "@/components/CourseCertificateDialog";
+import defaultCourseOverviewImage from "@/assets/course-overview-default.jpg";
 
 /* ─── Type system ──────────────────────────────────────────────── */
 const TYPE_LABEL: Record<string, string> = {
@@ -265,11 +266,11 @@ function CourseOverviewScreen({
     <div style={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
       {/* Hero */}
       <div style={{ position: "relative", height: 300, flexShrink: 0, overflow: "hidden" }}>
-        {course.coverImage ? (
-          <img src={course.coverImage} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-        ) : (
-          <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg, var(--ap-pres-soft), var(--ap-brand-soft))" }} />
-        )}
+        <img
+          src={course.coverImage || defaultCourseOverviewImage}
+          alt=""
+          style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center" }}
+        />
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(0deg, rgba(10,8,30,.82), rgba(10,8,30,.15) 60%)" }} />
         <div style={{ position: "absolute", left: 0, right: 0, bottom: 0 }}>
           <div style={{ maxWidth: 1100, margin: "0 auto", padding: "28px 40px" }}>
