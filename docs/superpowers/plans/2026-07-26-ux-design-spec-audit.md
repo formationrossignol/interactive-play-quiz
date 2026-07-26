@@ -8,6 +8,8 @@
 
 **Read this as:** a gap list + a phased roadmap, not a finished redesign. Nothing has been changed in the codebase yet — this is the artifact you asked for before picking what to build.
 
+**Status (2026-07-26):** P0 and P1 implemented on branch `fix/ux-audit-p0` (commits `8edd8f2`, `361eff7`). P2/P3 not started. See the roadmap section below for what's in each phase; items already shipped are not re-marked inline there, check the commits for the exact diff.
+
 ---
 
 ## Executive summary
