@@ -38,6 +38,8 @@ const normalizeStoredQuiz = (quiz: Partial<SavedQuiz>, fallbackId: string): Save
   theme: quiz.theme,
   font: quiz.font,
   ambianceId: quiz.ambianceId,
+  liveReactionsEnabled: quiz.liveReactionsEnabled ?? true,
+  endChatEnabled: quiz.endChatEnabled ?? true,
   rating: quiz.rating,
   ratingCount: quiz.ratingCount,
 });
@@ -114,6 +116,8 @@ const LiveQuizPage = () => {
       font: loadedQuiz.font,
       ambianceId: loadedQuiz.ambianceId,
       transitionTime: loadedQuiz.transitionTime,
+      liveReactionsEnabled: loadedQuiz.liveReactionsEnabled ?? true,
+      endChatEnabled: loadedQuiz.endChatEnabled ?? true,
     };
   }, [loadedQuiz]);
 

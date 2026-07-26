@@ -85,6 +85,8 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
   const [quizQuestions, setQuizQuestions] = useState<EditableQuestion[]>([]);
   // Poll mode: no timer, no points, neutral confirmations
   const [isPoll, setIsPoll] = useState(false);
+  const [liveReactionsEnabled, setLiveReactionsEnabled] = useState(true);
+  const [endChatEnabled, setEndChatEnabled] = useState(true);
   const [openTextValue, setOpenTextValue] = useState('');
 
   // Type-specific answer state
@@ -312,6 +314,8 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
         setQuizQuestions((prev) => prev.length === 0 ? data.quiz_data.questions : prev);
         if (data.quiz_data.type === 'poll') setIsPoll(true);
         if (typeof data.quiz_data.ambianceId === 'string') setAmbianceId(data.quiz_data.ambianceId);
+        setLiveReactionsEnabled(data.quiz_data.liveReactionsEnabled !== false);
+        setEndChatEnabled(data.quiz_data.endChatEnabled !== false);
         hasQuizData = true;
       }
 
@@ -789,7 +793,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
           </div>
 
           {/* Reaction panel (lobby) — quiz only, the poll host has no reactions feed */}
-          {!isPoll && (
+          {!isPoll && liveReactionsEnabled && (
           <div
             className="mt-5"
             style={{
@@ -1737,9 +1741,9 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
           </div>
         )}
 
-        <style>{`.reaction-comment-input::placeholder { color: rgba(255,255,255,0.85); }`}</style>
-        {/* Reaction panel */}
-        <div
+        {endChatEnabled && <style>{`.reaction-comment-input::placeholder { color: rgba(255,255,255,0.85); }`}</style>}
+        {/* Reactions and end-of-game chat */}
+        {(liveReactionsEnabled || endChatEnabled) && <div
           className="mb-6"
           style={{
             background: 'rgba(255,255,255,0.12)',
@@ -1749,9 +1753,9 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
           }}
         >
           <p style={{ color: 'rgba(255,255,255,0.75)', fontWeight: 700, fontSize: '13px', marginBottom: '10px', fontFamily: 'var(--ap-font-body)' }}>
-            Réagis au quiz !
+            {liveReactionsEnabled ? 'Réagis au quiz !' : 'Partage ton commentaire'}
           </p>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
+          {liveReactionsEnabled && <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: endChatEnabled ? '12px' : 0, flexWrap: 'wrap' }}>
             {REACTION_EMOJIS.map((e) => (
               <button
                 key={e}
@@ -1770,8 +1774,8 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
                 {e}
               </button>
             ))}
-          </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
+          </div>}
+          {endChatEnabled && <div style={{ display: 'flex', gap: '8px' }}>
             <input
               value={reactionComment}
               onChange={(e) => setReactionComment(e.target.value.slice(0, 100))}
@@ -1811,8 +1815,8 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
             >
               Envoyer
             </button>
-          </div>
-        </div>
+          </div>}
+        </div>}
 
         <button
           className="ap-btn ap-btn--lg ap-btn--pill"

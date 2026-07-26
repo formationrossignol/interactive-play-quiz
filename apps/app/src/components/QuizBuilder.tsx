@@ -506,6 +506,8 @@ export const QuizBuilder = () => {
   const [headerImage, setHeaderImage] = useState("");
   const [theme, setTheme] = useState<string>(DEFAULT_THEME_ID);
   const [ambianceId, setAmbianceId] = useState<string>(isPoll ? "none" : DEFAULT_AMBIANCE);
+  const [liveReactionsEnabled, setLiveReactionsEnabled] = useState(true);
+  const [endChatEnabled, setEndChatEnabled] = useState(true);
   const [previewFont, setPreviewFont] = useState(FONT_OPTIONS[0].value);
   const [saveState, setSaveState] = useState<"saved" | "unsaved">("saved");
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -544,7 +546,7 @@ export const QuizBuilder = () => {
   useEffect(() => {
     if (firstRender.current) { firstRender.current = false; return; }
     setSaveState("unsaved");
-  }, [questions, title]);
+  }, [questions, title, liveReactionsEnabled, endChatEnabled]);
 
   // ── Auth guard ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -571,6 +573,8 @@ export const QuizBuilder = () => {
     setHeaderImage(eq.headerImage || "");
     setTheme(THEMES.some(t => t.id === eq.theme) ? eq.theme : DEFAULT_THEME_ID);
     setAmbianceId(eq.ambianceId ?? (isPoll ? "none" : DEFAULT_AMBIANCE));
+    setLiveReactionsEnabled(eq.liveReactionsEnabled ?? true);
+    setEndChatEnabled(eq.endChatEnabled ?? true);
     setPreviewFont(FONT_OPTIONS.some(f => f.value === eq.font) ? eq.font : FONT_OPTIONS[0].value);
     const qs = eq.questions.map((q, i) => ({ id: q.id || String(Date.now()) + i, ...q, image: q.image || "" }));
     setQuestions(qs);
@@ -757,6 +761,7 @@ export const QuizBuilder = () => {
         speedBonus: isPoll ? false : speedBonus,
         transitionTime, category, type: quizType,
         headerImage, theme, font: previewFont, ambianceId,
+        liveReactionsEnabled, endChatEnabled,
       };
       let saved: SavedQuiz | null;
       if (contentRow && user && contentRow.user_id !== user.id) {
@@ -802,7 +807,18 @@ export const QuizBuilder = () => {
 
   const handlePreviewQuiz = () => {
     if (questions.length === 0) { toast.error("Ajoutez au moins une question pour prévisualiser"); return; }
-    const tmp = { id: "preview-" + Date.now(), title: title || "Mon Quiz", description, questions, type: quizType, headerImage, theme, font: previewFont };
+    const tmp = {
+      id: "preview-" + Date.now(),
+      title: title || "Mon Quiz",
+      description,
+      questions,
+      type: quizType,
+      headerImage,
+      theme,
+      font: previewFont,
+      liveReactionsEnabled,
+      endChatEnabled,
+    };
     localStorage.setItem(`quiz-${tmp.id}`, JSON.stringify(tmp));
     setShouldBlockNavigation(false);
     navigate(`/preview/${tmp.id}`);
@@ -1488,6 +1504,28 @@ export const QuizBuilder = () => {
                   </div>
                   <Switch checked={speedBonus} onCheckedChange={setSpeedBonus} />
                 </div>
+                {!isFlashcard && (
+                  <>
+                    <div className="flex items-center justify-between gap-4 p-3 bg-muted/50 rounded-lg">
+                      <div>
+                        <Label className="cursor-pointer">Réactions live</Label>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Autoriser les participants à envoyer des réactions emoji pendant le lobby et à la fin.
+                        </p>
+                      </div>
+                      <Switch checked={liveReactionsEnabled} onCheckedChange={setLiveReactionsEnabled} />
+                    </div>
+                    <div className="flex items-center justify-between gap-4 p-3 bg-muted/50 rounded-lg">
+                      <div>
+                        <Label className="cursor-pointer">Chat de fin de partie</Label>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Autoriser les participants à publier un commentaire sur l'écran final.
+                        </p>
+                      </div>
+                      <Switch checked={endChatEnabled} onCheckedChange={setEndChatEnabled} />
+                    </div>
+                  </>
+                )}
                 <div>
                   <Label>{t("transitionTime")}</Label>
                   <Input type="number" min="3" max="10" value={transitionTime} onChange={e => setTransitionTime(parseInt(e.target.value) || 5)} className="mt-2" />

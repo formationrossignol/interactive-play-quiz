@@ -40,12 +40,12 @@ const Communaute = () => {
   });
 
   return (
-    <AppLayout>
+    <AppLayout subtitle="Communauté">
       <main className="lq" style={{ flex: 1 }}>
         <div className="wrap">
           <div className="page-hero">
             <span className="eyebrow">Communauté</span>
-            <h1>2 400 formateurs qui s'entraident.</h1>
+            <h1 className="ap-h2">2 400 formateurs qui s'entraident.</h1>
             <p className="lead">Posez vos questions, partagez vos quiz, votez pour les prochaines fonctionnalités.</p>
           </div>
 
@@ -69,7 +69,7 @@ const Communaute = () => {
                 <h3 style={{ fontSize: "16px" }}>Discussions récentes</h3>
                 <span style={{ flex: 1 }} />
                 {/* /contact now lives in apps/marketing — full navigation. */}
-                <button className="btn btn--sm" onClick={() => { window.location.href = "/contact"; }}>Nouveau sujet</button>
+                <button className="ap-btn ap-btn--sm ap-btn--pill" onClick={() => { window.location.href = "/contact"; }}>Nouveau sujet</button>
               </div>
               {THREADS.map((th, i) => (
                 <div className="threadrow" key={i}>

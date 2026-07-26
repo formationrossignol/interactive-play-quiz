@@ -89,20 +89,18 @@ export const AppLayout = ({ subtitle, extraSection, children }: AppLayoutProps) 
         >
           <SidebarTrigger />
 
-          <div
-            className="flex cursor-pointer items-center gap-3 transition-opacity hover:opacity-80"
+          <button
+            type="button"
+            className="flex cursor-pointer items-center gap-3 border-0 bg-transparent p-0 transition-opacity hover:opacity-80"
             onClick={() => (user ? navigate("/my-quizzes") : (window.location.href = "/"))}
+            title={subtitle}
+            aria-label={subtitle ? `Brivia — ${subtitle}` : "Brivia"}
           >
             <span className="ap-logo">
               <BrandMonogram size={22} />
             </span>
-            <div>
-              <BrandWordmark size={20} />
-              {subtitle && (
-                <p className="text-xs font-semibold mt-0.5" style={{ color: "var(--ap-muted)" }}>{subtitle}</p>
-              )}
-            </div>
-          </div>
+            <BrandWordmark size={20} />
+          </button>
 
           <div className="ml-auto flex items-center gap-3">
             <GlobalSearch user={user} />

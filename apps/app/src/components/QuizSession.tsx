@@ -6,7 +6,20 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Users, Clock, Trophy, Settings, Download, LogOut, Flag, Gamepad2, PencilLine } from "lucide-react";
+import {
+  Braces,
+  ChartNoAxesColumnIncreasing,
+  Clock,
+  FileSpreadsheet,
+  FileText,
+  Flag,
+  Gamepad2,
+  LogOut,
+  PencilLine,
+  Settings,
+  Trophy,
+  Users,
+} from "lucide-react";
 import { QRCodeGenerator } from "./QRCodeGenerator";
 import { WordCloudQuestion } from "./WordCloudQuestion";
 import { RankingQuestion } from "./RankingQuestion";
@@ -45,6 +58,8 @@ import {
 } from "@/lib/sessionState";
 import { supabase, supabaseUrl, supabaseKey } from "@/lib/supabase";
 import { FONT_STACKS, HOST_ANSWER_STYLES, MILLIONAIRE_ANSWER_STYLES } from "@/lib/answerVisuals";
+import { ExportMenu } from "./ExportMenu";
+import { exportLiveResults, type LiveResultsExportFormat } from "@/lib/liveResultsExport";
 
 interface Player {
   id: string;
@@ -87,6 +102,8 @@ interface QuizSession {
   font?: string;
   transitionTime?: number;
   ambianceId?: string;
+  liveReactionsEnabled?: boolean;
+  endChatEnabled?: boolean;
 }
 
 interface QuizSessionProps {
@@ -140,6 +157,8 @@ const PlayerSidebarItem = memo(({ player, answered, offline, onKick }: PlayerSid
 ));
 
 export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandlerReady }: QuizSessionProps) => {
+  const liveReactionsEnabled = quiz.liveReactionsEnabled ?? true;
+  const endChatEnabled = quiz.endChatEnabled ?? true;
   const [players, setPlayers] = useState<Player[]>([]);
   const [sessionReady, setSessionReady] = useState(false);
 
@@ -432,7 +451,9 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
         // and private (session_quiz_answers, answer key only submit-answer reads).
         const ok = await createLiveSession(
           quiz.gameCode, quiz.title, quiz.questions, quiz.ambianceId,
-          AUDIENCE_CAP[getPlan(getCurrentUser())]
+          AUDIENCE_CAP[getPlan(getCurrentUser())],
+          liveReactionsEnabled,
+          endChatEnabled,
         );
         if (!ok) {
           toast.error('Erreur Supabase lors de la réinitialisation. Vérifiez la console.');
@@ -615,7 +636,9 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
 
   // Poll for player reactions (waiting + final screens, host-only)
   useEffect(() => {
-    if (!isHost || (gameState !== 'final' && gameState !== 'waiting')) return;
+    const lobbyReactionsActive = gameState === 'waiting' && liveReactionsEnabled;
+    const finalInteractionsActive = gameState === 'final' && (liveReactionsEnabled || endChatEnabled);
+    if (!isHost || (!lobbyReactionsActive && !finalInteractionsActive)) return;
     seenReactionKeysRef.current = new Set();
 
     const poll = async () => {
@@ -636,6 +659,8 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
 
         const reactionText = p.lastReaction!.comment || p.lastReaction!.emoji;
         const isEmoji = !p.lastReaction!.comment;
+        if (isEmoji && !liveReactionsEnabled) return;
+        if (!isEmoji && (!endChatEnabled || gameState !== 'final')) return;
 
         // Spawn floating bubble with avatar + name + content
         const floatId = `${Date.now()}-${Math.random()}`;
@@ -663,7 +688,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
     poll();
     const interval = setInterval(poll, 2000);
     return () => clearInterval(interval);
-  }, [isHost, gameState, quiz.gameCode]);
+  }, [isHost, gameState, quiz.gameCode, liveReactionsEnabled, endChatEnabled]);
 
   // Update session stats
   useEffect(() => {
@@ -850,7 +875,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
     reactionsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [reactionComments]);
 
-  const exportResults = () => {
+  const exportResults = async (format: LiveResultsExportFormat) => {
     const results = {
       quiz: quiz.title,
       gameCode: quiz.gameCode,
@@ -863,14 +888,13 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
       })),
       stats: sessionStats
     };
-
-    const blob = new Blob([JSON.stringify(results, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `quiz-results-${quiz.gameCode}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
+    try {
+      await exportLiveResults(format, results);
+      toast.success(`Export ${format} téléchargé`);
+    } catch (error) {
+      console.error(`[QuizSession] export ${format} failed`, error);
+      toast.error(`Impossible de générer l'export ${format}`);
+    }
   };
 
   if (gameState === 'waiting') {
@@ -926,7 +950,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
         `}</style>
 
         {/* Floating reactions */}
-        {floatingReactions.map((r) => (
+        {liveReactionsEnabled && floatingReactions.map((r) => (
           <div key={r.id} className="reaction-float-lobby" style={{ left:`${r.x}%`, bottom:'15%' }}>
             <div style={{ display:'flex',alignItems:'center',gap:6,background:'rgba(0,0,0,.78)',backdropFilter:'blur(10px)',border:'1.5px solid rgba(255,255,255,.2)',borderRadius:999,padding:'6px 14px',boxShadow:'0 4px 20px rgba(0,0,0,.3)' }}>
               <div style={{ flexShrink:0 }}><AvatarDisplay emoji={r.avatar} size="xs" /></div>
@@ -1672,7 +1696,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
         <Fireworks />
 
         {/* Floating reaction bubbles */}
-        {(() => {
+        {(liveReactionsEnabled || endChatEnabled) && (() => {
           const fpMap: Record<string,{bg:string;border:string;nameColor:string;textColor:string}> = {};
           if (p1) fpMap[p1.name] = { bg:'linear-gradient(135deg,#FFE566,#FFCC00)', border:'#e5aa00', nameColor:'#7a4000', textColor:'#5a2e00' };
           if (p2) fpMap[p2.name] = { bg:'linear-gradient(135deg,#E8E8E8,#C0C0C0)', border:'#aaa',    nameColor:'#333',    textColor:'#222' };
@@ -1811,22 +1835,22 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
               opacity:0, transform:'translateY(16px)',
               animation:'rise .5s cubic-bezier(.2,.7,.3,1) .6s forwards',
             }}>
-              <button
-                onClick={exportResults}
+              <ExportMenu
+                align="center"
+                className="ap-btn ap-btn--pill"
                 style={{
-                  display:'inline-flex', alignItems:'center', gap:9,
                   fontFamily:'var(--ap-font-body)', fontWeight:800, fontSize:15,
                   padding:'13px 24px', borderRadius:999, border:'none', cursor:'pointer',
                   color:'#241b3a', background:'#ffb020',
                   boxShadow:'0 5px 0 #c98700',
-                  transition:'transform .15s,box-shadow .15s',
                 }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform='translateY(-2px)'; (e.currentTarget as HTMLElement).style.boxShadow='0 7px 0 #c98700'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform=''; (e.currentTarget as HTMLElement).style.boxShadow='0 5px 0 #c98700'; }}
-              >
-                <Download style={{ width:16, height:16 }} />
-                Exporter les résultats
-              </button>
+                options={[
+                  { id: 'pdf', label: 'PDF', icon: FileText, onSelect: () => exportResults('PDF') },
+                  { id: 'excel', label: 'Excel (.xlsx)', icon: FileSpreadsheet, onSelect: () => exportResults('Excel') },
+                  { id: 'csv', label: 'CSV', icon: ChartNoAxesColumnIncreasing, onSelect: () => exportResults('CSV') },
+                  { id: 'json', label: 'JSON', icon: Braces, onSelect: () => exportResults('JSON') },
+                ]}
+              />
               <button
                 onClick={() => window.location.href = '/'}
                 style={{
@@ -1847,7 +1871,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
         </div>
 
         {/* ── Live reactions sidebar (host only) ── */}
-        {isHost && (
+        {isHost && endChatEnabled && (
           <div style={{
             width:240, flexShrink:0,
             display:'flex', flexDirection:'column', padding:16,
