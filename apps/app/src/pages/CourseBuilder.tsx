@@ -32,6 +32,7 @@ import {
   Layers,
   Plus,
   Save,
+  Sparkles,
   Trash2,
   Info,
   Upload,
@@ -96,6 +97,7 @@ const CourseBuilder = () => {
   const [isPublic, setIsPublic] = useState(false);
   const [coverImage, setCoverImage] = useState("");
   const [modules, setModules] = useState<Module[]>([]);
+  const [generatedByAI, setGeneratedByAI] = useState(false);
   const [collapsedModules, setCollapsedModules] = useState<Set<string>>(new Set());
   const [selected, setSelected] = useState<SelectedItem>({ type: "info" });
   const [saving, setSaving] = useState(false);
@@ -121,6 +123,7 @@ const CourseBuilder = () => {
         setIsPublic(course.isPublic);
         setCoverImage(course.coverImage || "");
         setModules(course.modules);
+        setGeneratedByAI(!!course.generatedByAI);
       } else {
         toast.error("Cours introuvable");
         navigate("/my-courses");
@@ -334,6 +337,21 @@ const CourseBuilder = () => {
             { label: courseId ? "Modifier le cours" : "Nouveau cours" },
           ]}
         />
+
+        {generatedByAI && (
+          <span
+            title="Ce cours a été généré par IA à partir d'un document, puis peut être modifié librement."
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 5, flexShrink: 0,
+              padding: "4px 10px", borderRadius: 999, fontSize: 11.5, fontWeight: 800,
+              color: "var(--ap-brand-deep)", background: "var(--ap-brand-soft)",
+              border: "var(--ap-border-w) solid color-mix(in srgb, var(--ap-brand) 35%, transparent)",
+            }}
+          >
+            <Sparkles className="h-3 w-3" />
+            Généré par IA
+          </span>
+        )}
 
         <div style={{ flex: 1 }} />
 

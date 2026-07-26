@@ -5,7 +5,7 @@ import { LogOut, Lightbulb, PencilLine, Flag } from "lucide-react";
 import { MultiStepProgress } from "@/components/MultiStepProgress";
 import { QRCodeGenerator } from "@/components/QRCodeGenerator";
 import { AvatarDisplay } from "@/components/BetterAvatars";
-import { BrandMonogram } from "@/components/BrandMonogram";
+import { BrandMonogram } from "ui/BrandMonogram";
 import type { SavedQuiz } from "@/lib/quizStorage";
 import {
   ensureSessionState,

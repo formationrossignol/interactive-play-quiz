@@ -23,9 +23,9 @@ import {
   type UsernameMatch,
 } from "@/lib/sharing/sharingRepo";
 
-interface ShareCourseModalProps {
+interface ShareContentModalProps {
   contentId: string | null;
-  courseTitle: string;
+  contentTitle: string;
   onClose: () => void;
 }
 
@@ -54,7 +54,7 @@ const rowStyle: React.CSSProperties = {
 
 const errMsg = (e: unknown) => (e instanceof Error ? e.message : "Une erreur est survenue");
 
-export const ShareCourseModal = ({ contentId, courseTitle, onClose }: ShareCourseModalProps) => {
+export const ShareContentModal = ({ contentId, contentTitle, onClose }: ShareContentModalProps) => {
   const user = getCurrentUser();
   const [tab, setTab] = useState<"people" | "groups">("people");
   const [shares, setShares] = useState<ContentShare[]>([]);
@@ -163,7 +163,7 @@ export const ShareCourseModal = ({ contentId, courseTitle, onClose }: ShareCours
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
           <div>
             <h2 className="ap-h3" style={{ fontSize: 16 }}>{t("shareManageAccess")}</h2>
-            <p className="ap-muted" style={{ fontSize: 12 }}>{courseTitle}</p>
+            <p className="ap-muted" style={{ fontSize: 12 }}>{contentTitle}</p>
           </div>
           <button type="button" onClick={onClose} className="ap-btn ap-btn--ghost ap-btn--sm ap-icon-btn" aria-label="Fermer">
             <X className="h-4 w-4" />

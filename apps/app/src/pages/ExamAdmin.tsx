@@ -5,6 +5,16 @@ import {
   updateExam, exportCSV, cancelAttempt, getMessagesForAttempt, sendMessage,
   type Exam, type Attempt, type ExamStats, type ExamMessage,
 } from '@/lib/examStorage';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { getCurrentUser } from '@/lib/auth';
 import { getContentBySource } from '@/lib/content/contentRepo';
 import type { SavedQuiz } from '@/lib/quizStorage';
@@ -60,6 +70,7 @@ export default function ExamAdmin() {
   const [error, setError] = useState('');
   const [now, setNow] = useState(() => Date.now());
   const [chatWithId, setChatWithId] = useState<string | null>(null);
+  const [attemptToRemove, setAttemptToRemove] = useState<Attempt | null>(null);
 
   const load = useCallback(async () => {
     if (!examId) return;
@@ -109,8 +120,10 @@ export default function ExamAdmin() {
     if (updated) { setExam(updated); toast.success('Statut mis à jour'); }
   };
 
-  const handleRemove = async (att: Attempt) => {
-    if (!window.confirm(`Retirer ${att.participantName} ? Sa tentative sera exclue du suivi en direct et des statistiques.`)) return;
+  const confirmRemoveAttempt = async () => {
+    const att = attemptToRemove;
+    if (!att) return;
+    setAttemptToRemove(null);
     try {
       const ok = await cancelAttempt(att.id);
       if (ok) { toast.success('Participant retiré'); void load(); } else { toast.error('Échec du retrait (permissions ?)'); }
@@ -296,7 +309,7 @@ export default function ExamAdmin() {
                   att={att} exam={exam} quiz={quiz} now={now}
                   isExpanded={expanded === att.id}
                   onToggleExpand={() => setExpanded(expanded === att.id ? null : att.id)}
-                  onRemove={() => handleRemove(att)}
+                  onRemove={() => setAttemptToRemove(att)}
                   isChatOpen={chatWithId === att.id}
                   onToggleChat={() => setChatWithId(chatWithId === att.id ? null : att.id)}
                 />
@@ -344,7 +357,7 @@ export default function ExamAdmin() {
                 att={att} exam={exam} quiz={quiz} now={now}
                 isExpanded={expanded === att.id}
                 onToggleExpand={() => setExpanded(expanded === att.id ? null : att.id)}
-                onRemove={() => handleRemove(att)}
+                onRemove={() => setAttemptToRemove(att)}
                 isChatOpen={chatWithId === att.id}
                 onToggleChat={() => setChatWithId(chatWithId === att.id ? null : att.id)}
               />
@@ -414,6 +427,23 @@ export default function ExamAdmin() {
           </div>
         )}
       </div>
+
+      <AlertDialog open={attemptToRemove !== null} onOpenChange={(open) => { if (!open) setAttemptToRemove(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Retirer {attemptToRemove?.participantName} ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Sa tentative sera exclue du suivi en direct et des statistiques.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={() => void confirmRemoveAttempt()} className="bg-destructive hover:bg-destructive/90">
+              Retirer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

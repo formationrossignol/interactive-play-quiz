@@ -17,7 +17,6 @@ import {
   ChevronRight,
   Folder as FolderIcon,
   Globe,
-  Home,
   LayoutGrid,
   List,
   Search,
@@ -26,6 +25,8 @@ import {
   Trash2,
 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
+import { Breadcrumb, type BreadcrumbItem } from "@/components/Breadcrumb";
+import { ShareContentModal } from "@/components/ShareContentModal";
 import { PlanLimitError } from "@/lib/plans";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Pagination } from "@/components/Pagination";
@@ -264,6 +265,7 @@ export function ContentExplorer({
   const [page, setPage] = useState(1);
   const [permDeleteTarget, setPermDeleteTarget] = useState<ContentDisplay | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [manageAccessTarget, setManageAccessTarget] = useState<{ contentId: string; title: string } | null>(null);
 
   const setViewMode = (mode: "grid" | "list") => {
     setViewModeState(mode);
@@ -328,6 +330,21 @@ export function ContentExplorer({
   const goFolder = (id: string | null) => { setView("all"); c.setCurrentFolderId(id); setPage(1); };
   const goShortcut = (v: ShortcutView) => { setView(v); setPage(1); };
 
+  const breadcrumbItems: BreadcrumbItem[] = useMemo(() => {
+    if (view !== "all") {
+      const label = view === "favorites" ? "Favoris" : view === "public" ? "Contenus publics" : "Corbeille";
+      return [{ label }];
+    }
+    const root: BreadcrumbItem = c.currentFolderId === null
+      ? { label: "Racine" }
+      : { label: "Racine", onClick: () => goFolder(null) };
+    const folders: BreadcrumbItem[] = breadcrumb.map((f) =>
+      f.id === c.currentFolderId ? { label: f.name } : { label: f.name, onClick: () => goFolder(f.id) },
+    );
+    return [root, ...folders];
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- goFolder is stable per render, not memoized
+  }, [view, breadcrumb, c.currentFolderId]);
+
   const handleMove = (rowId: string, folderId: string | null) =>
     c.moveContent(rowId, folderId).then(() => toast.success("Déplacé")).catch(() => toast.error("Erreur lors du déplacement"));
 
@@ -387,6 +404,7 @@ export function ContentExplorer({
     onFavorite: () => handleFavorite(d),
     onTrash: () => handleTrash(d.id),
     onDuplicate: () => handleDuplicate(d.id),
+    onManageAccess: () => setManageAccessTarget({ contentId: d.id, title: d.title }),
   });
 
   // ---- item grid / list ----
@@ -564,59 +582,9 @@ export function ContentExplorer({
               {/* ===== Content ===== */}
               <main className="flex-1 min-w-0 w-full">
                 {/* Breadcrumb */}
-                {view === "all" ? (
-                  <div className="flex items-center gap-1 flex-wrap mb-4" style={{ fontSize: 14, minHeight: 28 }}>
-                    <button
-                      onClick={() => { window.location.href = "/"; }}
-                      aria-label="Accueil"
-                      style={{
-                        display: "grid", placeItems: "center", width: 28, height: 28,
-                        borderRadius: "50%", border: "var(--ap-border-w) solid var(--ap-line)",
-                        background: "var(--ap-card)", cursor: "pointer", flexShrink: 0, marginRight: 2,
-                      }}
-                    >
-                      <Home style={{ width: 13, height: 13, color: "var(--ap-ink)" }} />
-                    </button>
-                    <ChevronRight className="h-4 w-4" style={{ color: "var(--ap-muted)" }} />
-                    <button
-                      className="ap-btn ap-btn--ghost ap-btn--sm"
-                      style={{ padding: "2px 8px", fontWeight: 700 }}
-                      onClick={() => goFolder(null)}
-                    >
-                      Racine
-                    </button>
-                    {breadcrumb.map((f) => (
-                      <span key={f.id} className="flex items-center gap-1">
-                        <ChevronRight className="h-4 w-4" style={{ color: "var(--ap-muted)" }} />
-                        <button
-                          className="ap-btn ap-btn--ghost ap-btn--sm"
-                          style={{ padding: "2px 8px", fontWeight: 700, color: f.id === c.currentFolderId ? "var(--ap-brand)" : "var(--ap-ink)" }}
-                          onClick={() => goFolder(f.id)}
-                        >
-                          {f.name}
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-1 flex-wrap mb-4" style={{ fontSize: 14, minHeight: 28 }}>
-                    <button
-                      onClick={() => { window.location.href = "/"; }}
-                      aria-label="Accueil"
-                      style={{
-                        display: "grid", placeItems: "center", width: 28, height: 28,
-                        borderRadius: "50%", border: "var(--ap-border-w) solid var(--ap-line)",
-                        background: "var(--ap-card)", cursor: "pointer", flexShrink: 0, marginRight: 2,
-                      }}
-                    >
-                      <Home style={{ width: 13, height: 13, color: "var(--ap-ink)" }} />
-                    </button>
-                    <ChevronRight className="h-4 w-4" style={{ color: "var(--ap-muted)" }} />
-                    <span className="ap-h3" style={{ fontSize: 15 }}>
-                      {view === "favorites" ? "Favoris" : view === "public" ? "Contenus publics" : "Corbeille"}
-                    </span>
-                  </div>
-                )}
+                <div className="mb-4">
+                  <Breadcrumb onHome={() => { window.location.href = "/"; }} items={breadcrumbItems} />
+                </div>
 
                 {showToolbar && (
                   <div className="flex flex-col sm:flex-row gap-3 mb-5">
@@ -678,6 +646,12 @@ export function ContentExplorer({
         onConfirm={handlePermDeleteConfirm}
         title={permDeleteTarget?.title || ""}
         type={deleteTypeOf(type)}
+      />
+
+      <ShareContentModal
+        contentId={manageAccessTarget?.contentId ?? null}
+        contentTitle={manageAccessTarget?.title ?? ""}
+        onClose={() => setManageAccessTarget(null)}
       />
     </AppLayout>
   );

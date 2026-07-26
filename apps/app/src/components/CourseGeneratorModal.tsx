@@ -36,16 +36,6 @@ export const CourseGeneratorModal = ({ open, onClose }: Props) => {
   const [error, setError] = useState("");
   const [dragging, setDragging] = useState(false);
 
-  // WARNING: VITE_* env vars are inlined into the public JS bundle by Vite at build time.
-  // Never set VITE_ANTHROPIC_API_KEY to a real key in a production deployment — it would be
-  // extractable by anyone visiting the site. Only the per-session pasted key (below,
-  // stored in sessionStorage) is safe for a publicly deployed instance.
-  const [apiKey, setApiKey] = useState(
-    () => import.meta.env.VITE_ANTHROPIC_API_KEY || sessionStorage.getItem("anthropic_key") || ""
-  );
-
-  const envKey = !!import.meta.env.VITE_ANTHROPIC_API_KEY;
-
   const accept = (f: File) => {
     const ok = ACCEPTED_MIME.includes(f.type) || ACCEPTED.some((e) => f.name.toLowerCase().endsWith(e));
     if (!ok) { toast.error("Format non supporté (PDF, DOCX, TXT, MD)"); return; }
@@ -61,14 +51,10 @@ export const CourseGeneratorModal = ({ open, onClose }: Props) => {
 
   const generate = async () => {
     if (!file) return;
-    const key = apiKey.trim();
-    if (!key) { setError("Clé API Anthropic requise"); return; }
-    if (!envKey) sessionStorage.setItem("anthropic_key", key);
-
     setPhase("loading"); setError("");
 
     try {
-      const courseId = await generateCourseFromFile(file, key, (msg) => setProgress(msg));
+      const courseId = await generateCourseFromFile(file, (msg) => setProgress(msg));
       setPhase("done");
       toast.success("Cours généré !");
       setTimeout(() => {
@@ -180,33 +166,6 @@ export const CourseGeneratorModal = ({ open, onClose }: Props) => {
                   </div>
                 </>
               )}
-            </div>
-          )}
-
-          {/* API key input (if no env var) */}
-          {!envKey && phase === "idle" && (
-            <div style={{ marginBottom:16 }}>
-              <label style={{ display:"block", fontSize:11, fontWeight:800, letterSpacing:".08em", textTransform:"uppercase", color:"var(--ap-muted)", marginBottom:6 }}>
-                Clé API Anthropic
-              </label>
-              <input
-                type="password"
-                placeholder="sk-ant-api03-…"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                style={{
-                  width:"100%", padding:"10px 14px",
-                  fontFamily:"var(--ap-font-mono)", fontWeight:700, fontSize:13,
-                  color:"var(--ap-ink)", background:"var(--ap-paper-2)",
-                  border:"var(--ap-border-w) solid var(--ap-line)", borderRadius:"var(--ap-r-sm)",
-                  outline:"none", boxSizing:"border-box",
-                }}
-                onFocus={(e) => { e.currentTarget.style.borderColor = "var(--ap-brand)"; }}
-                onBlur={(e) => { e.currentTarget.style.borderColor = "var(--ap-line)"; }}
-              />
-              <p style={{ fontSize:11, color:"var(--ap-muted)", fontWeight:700, marginTop:5 }}>
-                Clé stockée en session uniquement. Ou ajoutez <code style={{ fontFamily:"var(--ap-font-mono)", background:"var(--ap-paper-2)", padding:"1px 5px", borderRadius:4 }}>VITE_ANTHROPIC_API_KEY</code> dans <code style={{ fontFamily:"var(--ap-font-mono)", background:"var(--ap-paper-2)", padding:"1px 5px", borderRadius:4 }}>.env.local</code>.
-              </p>
             </div>
           )}
 

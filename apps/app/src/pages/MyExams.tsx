@@ -162,6 +162,7 @@ function ExamCard({ d, ctx, navigate, onDuplicate }: ExamItemProps) {
             onEdit={() => navigate(`/exam-builder?examId=${exam.id}`)}
             onDuplicate={() => onDuplicate(d)}
             onToggleFavorite={ctx.onFavorite}
+            onManageAccess={ctx.onManageAccess}
             onTrash={ctx.onTrash}
           />
           <div onClick={(e) => e.stopPropagation()}>{primaryButton(exam, navigate, { text: '13px', pad: '8px 15px' })}</div>
@@ -208,6 +209,7 @@ function ExamRow({ d, ctx, navigate, onDuplicate }: ExamItemProps) {
           onEdit={() => navigate(`/exam-builder?examId=${exam.id}`)}
           onDuplicate={() => onDuplicate(d)}
           onToggleFavorite={ctx.onFavorite}
+          onManageAccess={ctx.onManageAccess}
           onTrash={ctx.onTrash}
         />
         {primaryButton(exam, navigate, { text: '12px', pad: '6px 12px' })}

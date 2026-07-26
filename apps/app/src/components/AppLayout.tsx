@@ -1,6 +1,6 @@
 import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Check, Globe, LogOut, Shield, User } from "lucide-react";
+import { Check, Command, Globe, LogOut, Shield, User } from "lucide-react";
 import { getCurrentUser, logout } from "@/lib/auth";
 import { getLanguage, setLanguage, t, type Language } from "@/lib/i18n";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -16,8 +16,9 @@ import {
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { GlobalSearch } from "@/components/GlobalSearch";
-import { BrandMonogram } from "@/components/BrandMonogram";
-import { BrandWordmark } from "@/components/BrandWordmark";
+import { CommandPalette } from "@/components/CommandPalette";
+import { BrandMonogram } from "ui/BrandMonogram";
+import { BrandWordmark } from "ui/BrandWordmark";
 import { Footer } from "@/components/Footer";
 
 interface AppLayoutProps {
@@ -39,6 +40,7 @@ export const AppLayout = ({ subtitle, extraSection, children }: AppLayoutProps) 
   const [user, setUser] = useState(getCurrentUser());
   const [currentLanguage, setCurrentLanguage] = useState<Language>(getLanguage());
   const [accountOpen, setAccountOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
   const topBarRef = useRef<HTMLElement | null>(null);
 
   const avatarInitial = (user?.username || "?").trim().charAt(0).toUpperCase();
@@ -104,6 +106,16 @@ export const AppLayout = ({ subtitle, extraSection, children }: AppLayoutProps) 
 
           <div className="ml-auto flex items-center gap-3">
             <GlobalSearch user={user} />
+            <button
+              type="button"
+              className="ap-btn ap-btn--ghost ap-btn--sm ap-icon-btn"
+              style={{ padding: "8px 10px" }}
+              aria-label={`${t("commandPaletteOpen")} (${navigator.platform.includes("Mac") ? "⌘" : "Ctrl+"}K)`}
+              title={`${t("commandPaletteOpen")} (${navigator.platform.includes("Mac") ? "⌘K" : "Ctrl+K"})`}
+              onClick={() => setPaletteOpen(true)}
+            >
+              <Command className="h-4 w-4" />
+            </button>
             {user ? (
               <DropdownMenu open={accountOpen} onOpenChange={setAccountOpen}>
                 <DropdownMenuTrigger asChild>
@@ -235,6 +247,8 @@ export const AppLayout = ({ subtitle, extraSection, children }: AppLayoutProps) 
           <Footer />
         </div>
       </SidebarInset>
+
+      <CommandPalette user={user} open={paletteOpen} onOpenChange={setPaletteOpen} />
     </SidebarProvider>
   );
 };

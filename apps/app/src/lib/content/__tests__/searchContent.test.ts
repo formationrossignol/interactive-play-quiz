@@ -101,4 +101,34 @@ describe('searchContent', () => {
 
     await expect(searchContent('u1', 'x')).rejects.toBe(err);
   });
+
+  it('falls back to fuzzy matching when the exact substring search finds nothing', async () => {
+    const exactBuilder = makeBuilder({ data: [], error: null });
+    const fuzzyRows = [
+      { id: 'row-9', type: 'quiz', data: { id: 'item-9', title: 'Quiz de culture générale' } },
+      { id: 'row-10', type: 'poll', data: { id: 'item-10', title: 'Sans rapport' } },
+    ];
+    const fuzzyBuilder = makeBuilder({ data: fuzzyRows, error: null });
+    fromMock.mockReturnValueOnce(exactBuilder).mockReturnValueOnce(fuzzyBuilder);
+
+    // "quizz" has no exact substring in either title, but is a 1-edit typo of "quiz".
+    const result = await searchContent('u1', 'quizz');
+
+    expect(fromMock).toHaveBeenCalledTimes(2);
+    expect(exactBuilder.ilike).toHaveBeenCalledWith('data->>title', '%quizz%');
+    expect(fuzzyBuilder.ilike).not.toHaveBeenCalled();
+    expect(result).toEqual([
+      { rowId: 'row-9', itemId: 'item-9', type: 'quiz', title: 'Quiz de culture générale' },
+    ]);
+  });
+
+  it('does not fall back when the exact search already found results', async () => {
+    const rows = [{ id: 'row-1', type: 'quiz', data: { id: 'item-1', title: 'Capitales du monde' } }];
+    const builder = makeBuilder({ data: rows, error: null });
+    fromMock.mockReturnValue(builder);
+
+    await searchContent('u1', 'monde');
+
+    expect(fromMock).toHaveBeenCalledTimes(1);
+  });
 });

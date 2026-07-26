@@ -1,8 +1,25 @@
+import { useMemo } from "react";
+import type { ColumnDef } from "@tanstack/react-table";
 import { useSubscribers } from "@/lib/pages/adminHooks";
+import { DataTable } from "@/components/ui/data-table";
+import type { SubscriberRow } from "@/lib/pages/types";
+
+const columns: ColumnDef<SubscriberRow>[] = [
+  {
+    accessorKey: "user_id",
+    header: "Utilisateur",
+    cell: ({ getValue }) => <span className="adm-mono">{(getValue() as string).slice(0, 8)}…</span>,
+  },
+  {
+    accessorKey: "created_at",
+    header: "Abonné le",
+    cell: ({ getValue }) => new Date(getValue() as string).toLocaleDateString("fr-FR"),
+  },
+];
 
 export const SubscribersTab = () => {
   const { data, isLoading } = useSubscribers();
-  const rows = data ?? [];
+  const rows = useMemo(() => data ?? [], [data]);
   return (
     <div className="adm-panel">
       <div className="adm-panel-head">
@@ -11,17 +28,7 @@ export const SubscribersTab = () => {
       {rows.length === 0 && !isLoading ? (
         <div className="adm-empty"><span className="e-emo">📭</span>Aucun abonné pour le moment.</div>
       ) : (
-        <table className="adm-tbl">
-          <thead><tr><th>Utilisateur</th><th>Abonné le</th></tr></thead>
-          <tbody>
-            {rows.map((s) => (
-              <tr key={s.user_id}>
-                <td><span className="adm-mono">{s.user_id.slice(0, 8)}…</span></td>
-                <td>{new Date(s.created_at).toLocaleDateString("fr-FR")}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <DataTable columns={columns} data={rows} emptyMessage="Aucun abonné pour le moment." />
       )}
     </div>
   );

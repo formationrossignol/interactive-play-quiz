@@ -17,7 +17,7 @@ import { ExitQuizDialog } from "./ExitQuizDialog";
 import { CircularTimer } from "./CircularTimer";
 import { QuizSessionAnswerDistribution } from "./QuizSession_AnswerDistribution";
 import { RaceLeaderboard } from "./RaceLeaderboard";
-import { BrandMonogram } from "./BrandMonogram";
+import { BrandMonogram } from "ui/BrandMonogram";
 import { Fireworks } from "./Fireworks";
 import { TransitionTimer, CountdownSplash } from "./TransitionTimer";
 import { AvatarDisplay, getAvatarRender } from "./BetterAvatars";
