@@ -23,6 +23,7 @@ import {
   Presentation,
   Star,
   Trash2,
+  Users,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -39,6 +40,7 @@ import {
 import type { ContentDisplay } from "@/lib/content/contentView";
 import type { FolderRow } from "@/lib/content/types";
 import { readSessionHistory } from "@/lib/sessionState";
+import { t } from "@/lib/i18n";
 
 type NavigateFn = ReturnType<typeof useNavigate>;
 
@@ -49,6 +51,9 @@ export interface ItemCtx {
   onFavorite: () => void;
   onTrash: () => void;
   onDuplicate: () => void;
+  /** Opens the shared access-management modal for this item — REQ-UX-001:
+   *  sharing used to be a courses-only, 4-click action. */
+  onManageAccess: () => void;
 }
 
 /** Static per-type behaviour for the generic renderers. */
@@ -174,6 +179,9 @@ function ItemMenu({
             </DropdownMenuSubContent>
           </DropdownMenuSub>
         )}
+        <DropdownMenuItem onSelect={ctx.onManageAccess} className="flex items-center gap-2 cursor-pointer text-sm">
+          <Users className="h-3.5 w-3.5" /> {t("shareManageAccess")}
+        </DropdownMenuItem>
         <DropdownMenuItem onSelect={ctx.onFavorite} className="flex items-center gap-2 cursor-pointer text-sm">
           <Star className="h-3.5 w-3.5" style={d.isFavorite ? { fill: "#fbbf24", color: "#fbbf24" } : {}} />
           {d.isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
@@ -290,7 +298,7 @@ export function GenericCard(props: GenericItemProps) {
           </button>
         </div>
       )}
-      <div className="flex flex-1 flex-col gap-2.5" style={{ padding: "14px 16px 12px" }}>
+      <div className="flex flex-1 flex-col gap-2.5" style={{ padding: "var(--density-card-pad, 14px 16px 12px)" }}>
         <div className="flex items-start gap-2">
           <div className="flex-1 min-w-0">
             <h3 className="ap-h3 line-clamp-2" style={{ fontSize: "15.5px", lineHeight: 1.25 }}>{d.title}</h3>
@@ -333,8 +341,11 @@ export function GenericRow(props: GenericItemProps) {
   return (
     <div
       ref={setNodeRef}
-      className="ap-row flex items-center gap-4 cursor-pointer px-4 py-3 transition-colors"
-      style={{ borderBottom: "var(--ap-border-w) solid var(--ap-line)", opacity: isDragging ? 0.4 : 1 }}
+      className="ap-row flex items-center gap-4 cursor-pointer px-4 transition-colors"
+      style={{
+        borderBottom: "var(--ap-border-w) solid var(--ap-line)", opacity: isDragging ? 0.4 : 1,
+        paddingTop: "var(--density-row-pad-y, 12px)", paddingBottom: "var(--density-row-pad-y, 12px)",
+      }}
       onClick={() => navigate(config.editRoute(id))}
       onMouseEnter={(e) => (e.currentTarget.style.background = "var(--ap-paper-2)")}
       onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}

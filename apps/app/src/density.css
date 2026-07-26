@@ -1,0 +1,34 @@
+/* Display density (compact / standard / comfortable) — REQ-PER-005,
+ * REQ-THM-006/007. Orthogonal to the site skin and light/dark mode: only
+ * spacing changes here, nothing is hidden or removed at any density.
+ *
+ * The app has no systemic spacing-token layer yet (raw px values are inline
+ * almost everywhere — see the UX audit's design-system section), so this is
+ * intentionally scoped to the shared, already-unified surfaces that use
+ * these tokens: the content-library cards/rows (GenericItem.tsx) and the
+ * DataTable component — not a whole-app reskin.
+ */
+
+:root {
+  --density-card-pad: 14px 16px 12px;
+  --density-row-pad-y: 12px;
+  --density-table-cell-pad: 16px 16px;
+}
+
+[data-density="compact"] {
+  --density-card-pad: 8px 12px 8px;
+  --density-row-pad-y: 6px;
+  --density-table-cell-pad: 8px 12px;
+}
+
+[data-density="comfortable"] {
+  --density-card-pad: 20px 22px 18px;
+  --density-row-pad-y: 18px;
+  --density-table-cell-pad: 20px 16px;
+}
+
+.ap-density-table td,
+.ap-density-table th {
+  padding-top: var(--density-table-cell-pad);
+  padding-bottom: var(--density-table-cell-pad);
+}

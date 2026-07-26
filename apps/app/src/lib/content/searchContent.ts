@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { CONTENT_TYPES, type ContentType } from './types';
+import { fuzzyScore } from './fuzzyMatch';
 
 export interface SearchResult {
   rowId: string;
@@ -60,5 +61,35 @@ export async function searchContent(userId: string, query: string): Promise<Sear
     // out live matches.
     .limit(50);
   if (error) throw error;
-  return mapSearchRows((data ?? []) as SearchRow[]);
+  const exact = mapSearchRows((data ?? []) as SearchRow[]);
+  if (exact.length > 0) return exact;
+  return fuzzySearchContent(userId, query);
+}
+
+/** REQ-SRC-005 fallback — only runs when the exact substring search finds
+ *  nothing, so the common case pays no extra cost. Fetches a bounded set of
+ *  the user's most-recent content (no server-side text filter, since a typo
+ *  wouldn't survive one) and ranks it client-side by edit distance. */
+async function fuzzySearchContent(userId: string, query: string): Promise<SearchResult[]> {
+  const { data, error } = await supabase
+    .from('content')
+    .select('id,type,data')
+    .eq('user_id', userId)
+    .in('type', CONTENT_TYPES as unknown as string[])
+    .order('updated_at', { ascending: false })
+    .limit(150);
+  if (error) throw error;
+
+  return ((data ?? []) as SearchRow[])
+    .filter((row) => !row.data?.deletedAt)
+    .map((row) => ({ row, score: fuzzyScore(query, String(row.data?.title ?? '')) }))
+    .filter((r): r is { row: SearchRow; score: number } => r.score !== null)
+    .sort((a, b) => a.score - b.score)
+    .slice(0, 8)
+    .map(({ row }) => ({
+      rowId: row.id,
+      itemId: String((row.data?.id as string | undefined) ?? row.id),
+      type: row.type as ContentType,
+      title: String(row.data?.title ?? ''),
+    }));
 }

@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { Breadcrumb, type BreadcrumbItem } from "@/components/Breadcrumb";
+import { ShareContentModal } from "@/components/ShareContentModal";
 import { PlanLimitError } from "@/lib/plans";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Pagination } from "@/components/Pagination";
@@ -264,6 +265,7 @@ export function ContentExplorer({
   const [page, setPage] = useState(1);
   const [permDeleteTarget, setPermDeleteTarget] = useState<ContentDisplay | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [manageAccessTarget, setManageAccessTarget] = useState<{ contentId: string; title: string } | null>(null);
 
   const setViewMode = (mode: "grid" | "list") => {
     setViewModeState(mode);
@@ -402,6 +404,7 @@ export function ContentExplorer({
     onFavorite: () => handleFavorite(d),
     onTrash: () => handleTrash(d.id),
     onDuplicate: () => handleDuplicate(d.id),
+    onManageAccess: () => setManageAccessTarget({ contentId: d.id, title: d.title }),
   });
 
   // ---- item grid / list ----
@@ -643,6 +646,12 @@ export function ContentExplorer({
         onConfirm={handlePermDeleteConfirm}
         title={permDeleteTarget?.title || ""}
         type={deleteTypeOf(type)}
+      />
+
+      <ShareContentModal
+        contentId={manageAccessTarget?.contentId ?? null}
+        contentTitle={manageAccessTarget?.title ?? ""}
+        onClose={() => setManageAccessTarget(null)}
       />
     </AppLayout>
   );

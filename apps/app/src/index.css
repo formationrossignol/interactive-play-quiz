@@ -3,6 +3,7 @@
 @import "./theme-innov.css";
 @import "./theme-studio.css";
 @import "./theme-material.css";
+@import "./density.css";
 
 @tailwind base;
 @tailwind components;

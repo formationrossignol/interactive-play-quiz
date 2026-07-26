@@ -8,6 +8,7 @@ import { openBillingPortal, pollForPlanUpgrade } from "@/lib/billing";
 import { getUserQuizzes } from "@/lib/quizStorage";
 import { setLanguage as setI18nLanguage, getLanguage, t } from "@/lib/i18n";
 import { SITE_THEMES, applySiteTheme, normalizeSiteTheme, type SiteTheme } from "@/lib/siteTheme";
+import { DENSITIES, applyDensity, normalizeDensity, type Density } from "@/lib/density";
 import { AppLayout } from "@/components/AppLayout";
 import { SecuritySection } from "@/components/SecuritySection";
 import { Save, Trophy, BookOpen, Clock, Sun, Moon, Zap, Building2, User } from "lucide-react";
@@ -107,6 +108,7 @@ const ProfilePage = () => {
   const [email, setEmail] = useState("");
   const [theme, setTheme] = useState<Theme>("light");
   const [siteTheme, setSiteTheme] = useState<SiteTheme>("arcade");
+  const [density, setDensity] = useState<Density>("standard");
   const [language, setLanguage] = useState<Language>("en");
   const [plan, setPlan] = useState<Plan>("starter");
   const [stats, setStats] = useState({ totalQuizzes: 0, publicQuizzes: 0, totalQuestions: 0 });
@@ -120,6 +122,7 @@ const ProfilePage = () => {
     setEmail(currentUser.email);
     setTheme(currentUser.theme || "light");
     setSiteTheme(normalizeSiteTheme(currentUser.siteTheme));
+    setDensity(normalizeDensity(currentUser.density));
     setLanguage(currentUser.language || "en");
     setPlan(currentUser.plan || "starter");
     getContentUsage(currentUser.id, currentUser.plan || "starter").then(setUsage);
@@ -172,12 +175,13 @@ const ProfilePage = () => {
       usernameRef.current?.focus();
       return;
     }
-    const updatedUser = await updateProfile({ username: username.trim(), theme, siteTheme, language });
+    const updatedUser = await updateProfile({ username: username.trim(), theme, siteTheme, density, language });
     if (!updatedUser) { toast.error(t("loginError")); return; }
     setUser(updatedUser);
     setI18nLanguage(language);
     document.documentElement.classList.toggle("dark", theme === "dark");
     applySiteTheme(siteTheme);
+    applyDensity(density);
     toast.success(t("profileUpdated"));
     setTimeout(() => window.location.reload(), 500);
   };
@@ -461,6 +465,28 @@ const ProfilePage = () => {
                     </SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div>
+                <label style={labelStyle}>{t("density")}</label>
+                <Select
+                  value={density}
+                  onValueChange={(v: Density) => {
+                    setDensity(v);
+                    // Aperçu instantané — persisté définitivement au clic sur Enregistrer
+                    applyDensity(v);
+                  }}
+                >
+                  <SelectTrigger style={{ ...triggerStyle, marginTop: "8px" }}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent style={{ background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-md)" }}>
+                    {DENSITIES.map((d) => (
+                      <SelectItem key={d.id} value={d.id}>{d.label[getLanguage()]}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="ap-muted" style={{ fontSize: "11px", marginTop: "6px" }}>{t("densityHint")}</p>
               </div>
 
               <div>

@@ -26,6 +26,8 @@ export const translations = {
     searchNoResults: "No results",
     searchLoading: "Searching…",
     searchError: "Search failed",
+    searchRecentTitle: "Recent searches",
+    searchRemoveRecent: "Remove from recent searches",
     commandPaletteOpen: "Open command palette",
     commandPalettePlaceholder: "Search pages, actions, or content…",
     commandPaletteEmpty: "No matches",
@@ -388,6 +390,8 @@ export const translations = {
     theme: "Theme",
     lightMode: "Light",
     darkMode: "Dark",
+    density: "Density",
+    densityHint: "Adjusts spacing in tables and content lists",
     language: "Language",
     
     // Categories
@@ -472,6 +476,8 @@ export const translations = {
     searchNoResults: "Aucun résultat",
     searchLoading: "Recherche…",
     searchError: "Échec de la recherche",
+    searchRecentTitle: "Recherches récentes",
+    searchRemoveRecent: "Retirer des recherches récentes",
     commandPaletteOpen: "Ouvrir la palette de commandes",
     commandPalettePlaceholder: "Rechercher une page, une action ou un contenu…",
     commandPaletteEmpty: "Aucun résultat",
@@ -833,6 +839,8 @@ export const translations = {
     theme: "Thème",
     lightMode: "Clair",
     darkMode: "Sombre",
+    density: "Densité",
+    densityHint: "Ajuste l'espacement des tableaux et des listes de contenu",
     language: "Langue",
     
     // Categories
