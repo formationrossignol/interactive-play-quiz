@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronRight, Download, Home, Minus, Play, Plus, Upload } from "lucide-react";
+import { ChevronRight, Grid2X2, Home, Minus, Play, Plus, Scan, Upload } from "lucide-react";
 import { useDocStore } from "./store/useDocStore";
 import { useEditorUIStore } from "./store/useEditorUIStore";
 import { useAutosave } from "./hooks/useAutosave";
@@ -9,7 +9,7 @@ import { EditorToolbar } from "./EditorToolbar";
 import { SlideNavigator } from "./SlideNavigator";
 import { SlideCanvas } from "./SlideCanvas";
 import { PropertiesPanel } from "./PropertiesPanel";
-import { PresentationMode, exportPresentationAsFile } from "./PresentationMode";
+import { PresentationMode } from "./PresentationMode";
 import { getContent } from "@/lib/content/contentRepo";
 import { isLegacySlideShape, migrateLegacySlideToPresentation } from "./utils/migrateLegacySlide";
 import { createBlankPresentation, type Presentation } from "./types/presentation";
@@ -18,6 +18,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { showError } from "@/lib/errorTaxonomy";
 import { PresentationImportDialog } from "./import/PresentationImportDialog";
 import { createSlideFromLayout } from "./layouts/slideLayouts";
+import { PresentationExportMenu } from "./export/PresentationExportMenu";
+import { SlideOverview } from "./SlideOverview";
 
 interface PresentationEditorProps {
   contentId: string | null;
@@ -36,10 +38,14 @@ export function PresentationEditor({ contentId, userId, initialPresenting = fals
   const [titleDraft, setTitleDraft] = useState("");
   const [contentOwnerId, setContentOwnerId] = useState(userId);
   const [importOpen, setImportOpen] = useState(false);
+  const [overviewOpen, setOverviewOpen] = useState(false);
   const activeSlideId = useEditorUIStore((s) => s.activeSlideId);
   const setActiveSlideId = useEditorUIStore((s) => s.setActiveSlideId);
   const setZoom = useEditorUIStore((s) => s.setZoom);
   const zoom = useEditorUIStore((s) => s.zoom);
+  const fitZoom = useEditorUIStore((s) => s.fitZoom);
+  const fitToCanvas = useEditorUIStore((s) => s.fitToCanvas);
+  const relativeZoom = fitZoom > 0 ? zoom / fitZoom : 1;
 
   const { status, contentId: savedContentId } = useAutosave(contentId, userId);
   useKeyboardShortcuts(activeSlideId ?? "", presenting);
@@ -58,7 +64,12 @@ export function PresentationEditor({ contentId, userId, initialPresenting = fals
         blank.slides = [
           createSlideFromLayout(blank.slides[0].id, 0, "title", blank.width, blank.height),
         ];
-        if (!cancelled) { load(blank); setActiveSlideId(blank.slides[0].id); setLoading(false); }
+        if (!cancelled) {
+          load(blank);
+          setActiveSlideId(blank.slides[0].id);
+          useEditorUIStore.getState().fitToCanvas();
+          setLoading(false);
+        }
         return;
       }
       try {
@@ -71,11 +82,13 @@ export function PresentationEditor({ contentId, userId, initialPresenting = fals
           : (raw as unknown as Presentation);
         load(pres.slides?.length ? pres : createBlankPresentation(contentId));
         setActiveSlideId(pres.slides?.[0]?.id ?? null);
+        useEditorUIStore.getState().fitToCanvas();
       } catch (err) {
         if (cancelled) return;
         showError(err, "PresentationEditor.load", "Impossible de charger cette présentation. Réessayez ou revenez à vos contenus.");
-        load(createBlankPresentation(contentId));
-        setActiveSlideId(null);
+          load(createBlankPresentation(contentId));
+          setActiveSlideId(null);
+          useEditorUIStore.getState().fitToCanvas();
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -171,23 +184,28 @@ export function PresentationEditor({ contentId, userId, initialPresenting = fals
             className="ap-btn ap-btn--sm ap-btn--ghost ap-icon-btn"
             aria-label="Réduire le zoom"
             title="Réduire le zoom"
-            onClick={() => setZoom(zoom - 0.1)}
+            onClick={() => setZoom(fitZoom * Math.max(.25, relativeZoom - .1))}
           >
             <Minus size={16} aria-hidden="true" />
           </button>
-          <span style={{ fontSize: 12, width: 40, textAlign: "center" }}>{Math.round(zoom * 100)}%</span>
+          <span style={{ fontSize: 12, width: 44, textAlign: "center" }}>{Math.round(relativeZoom * 100)}%</span>
           <button
             className="ap-btn ap-btn--sm ap-btn--ghost ap-icon-btn"
             aria-label="Augmenter le zoom"
             title="Augmenter le zoom"
-            onClick={() => setZoom(zoom + 0.1)}
+            onClick={() => setZoom(fitZoom * Math.min(4, relativeZoom + .1))}
           >
             <Plus size={16} aria-hidden="true" />
           </button>
-          <button className="ap-btn ap-btn--sm ap-btn--ghost" onClick={exportPresentationAsFile}>
-            <Download size={15} aria-hidden="true" />
-            Exporter JSON
+          <button className="ap-btn ap-btn--sm ap-btn--ghost" onClick={fitToCanvas}>
+            <Scan size={15} aria-hidden="true" />
+            Ajuster
           </button>
+          <button className="ap-btn ap-btn--sm ap-btn--ghost" onClick={() => setOverviewOpen(true)}>
+            <Grid2X2 size={15} aria-hidden="true" />
+            Toutes les slides
+          </button>
+          <PresentationExportMenu presentation={presentation} activeSlideId={activeSlideId} />
           <button className="ap-btn ap-btn--sm ap-btn--ghost" onClick={() => setImportOpen(true)}>
             <Upload size={15} aria-hidden="true" />
             Importer
@@ -211,8 +229,10 @@ export function PresentationEditor({ contentId, userId, initialPresenting = fals
           const next = { ...imported, id: contentId ?? imported.id };
           load(next);
           setActiveSlideId(next.slides[0]?.id ?? null);
+          useEditorUIStore.getState().fitToCanvas();
         }}
       />
+      <SlideOverview open={overviewOpen} onClose={() => setOverviewOpen(false)} />
     </div>
   );
 }

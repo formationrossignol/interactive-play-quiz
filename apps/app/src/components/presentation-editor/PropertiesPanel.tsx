@@ -1,7 +1,7 @@
 import { useDocStore } from "./store/useDocStore";
 import { useEditorUIStore } from "./store/useEditorUIStore";
 import { useHistoryStore } from "./store/useHistoryStore";
-import type { ImageElement, ShapeElement, SlideBackground, SlideElement } from "./types/presentation";
+import type { ImageElement, ShapeElement, SlideBackground, SlideElement, TableElement } from "./types/presentation";
 
 function NumberField({ label, value, onCommit }: { label: string; value: number; onCommit: (n: number) => void }) {
   return (
@@ -87,6 +87,17 @@ export function PropertiesPanel({ slideId }: { slideId: string }) {
     useDocStore.getState().updateElement(slideId, el.id, patch);
   }
 
+  function resizeTable(table: TableElement, rows: number, columns: number) {
+    const nextRows = Math.max(1, Math.min(20, rows));
+    const nextColumns = Math.max(1, Math.min(12, columns));
+    const cells = Array.from({ length: nextRows * nextColumns }, (_, index) => {
+      const row = Math.floor(index / nextColumns);
+      const column = index % nextColumns;
+      return table.cells[row * table.columns + column] ?? "";
+    });
+    commit({ rows: nextRows, columns: nextColumns, cells } as Partial<TableElement>);
+  }
+
   return (
     <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 12, width: 240 }}>
       <div key={el.id} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
@@ -124,6 +135,38 @@ export function PropertiesPanel({ slideId }: { slideId: string }) {
           </label>
         </>
       )}
+
+      {el.type === "table" && (() => {
+        const table = el as TableElement;
+        return (
+          <>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              <NumberField label="Lignes" value={table.rows} onCommit={(rows) => resizeTable(table, rows, table.columns)} />
+              <NumberField label="Colonnes" value={table.columns} onCommit={(columns) => resizeTable(table, table.rows, columns)} />
+            </div>
+            <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
+              <input type="checkbox" checked={table.headerRow} onChange={(event) => commit({ headerRow: event.target.checked } as Partial<TableElement>)} />
+              Première ligne en en-tête
+            </label>
+            <NumberField label="Épaisseur des bordures" value={table.borderWidth} onCommit={(borderWidth) => commit({ borderWidth } as Partial<TableElement>)} />
+            {[
+              ["Bordures", "borderColor"],
+              ["Fond d’en-tête", "headerFill"],
+              ["Fond des cellules", "cellFill"],
+              ["Texte", "textColor"],
+            ].map(([label, key]) => (
+              <label key={key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, fontSize: 12, fontWeight: 700, color: "var(--ap-muted)" }}>
+                {label}
+                <input
+                  type="color"
+                  value={String(table[key as keyof TableElement])}
+                  onChange={(event) => commit({ [key]: event.target.value } as Partial<TableElement>)}
+                />
+              </label>
+            ))}
+          </>
+        );
+      })()}
     </div>
   );
 }

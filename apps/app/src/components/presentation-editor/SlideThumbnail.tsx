@@ -54,6 +54,10 @@ export function SlideThumbnail({ slide, index, presentationWidth, presentationHe
             style.background = "var(--ap-line)";
           } else if (e.type === "video") {
             style.background = "var(--ap-ink)";
+          } else if (e.type === "table") {
+            style.backgroundColor = e.cellFill;
+            style.backgroundImage = `linear-gradient(${e.borderColor} ${e.borderWidth}px, transparent ${e.borderWidth}px), linear-gradient(90deg, ${e.borderColor} ${e.borderWidth}px, transparent ${e.borderWidth}px)`;
+            style.backgroundSize = `${100 / e.columns}% ${100 / e.rows}%`;
           }
           if (e.type === "image") {
             return <img key={e.id} src={(e as { src: string }).src} alt="" style={{ ...style, objectFit: "cover" }} />;

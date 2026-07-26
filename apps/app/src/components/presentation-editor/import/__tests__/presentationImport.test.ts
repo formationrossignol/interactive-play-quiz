@@ -32,7 +32,8 @@ describe("parsePptxBuffer", () => {
       </p:sld>
     `);
     const buffer = await zip.generateAsync({ type: "arraybuffer" });
-    const presentation = await parsePptxBuffer(buffer, "Roadmap");
+    const progress: { current?: number; total?: number }[] = [];
+    const presentation = await parsePptxBuffer(buffer, "Roadmap", (_message, current, total) => progress.push({ current, total }));
 
     expect(presentation.title).toBe("Roadmap");
     expect(presentation.format).toBe("16:9");
@@ -43,5 +44,6 @@ describe("parsePptxBuffer", () => {
       y: 96,
     });
     expect(JSON.stringify(presentation.slides[0].elements[0])).toContain("Vision 2027");
+    expect(progress.at(-1)).toEqual({ current: 1, total: 1 });
   });
 });

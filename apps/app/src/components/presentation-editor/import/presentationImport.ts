@@ -167,7 +167,7 @@ export async function parsePptxBuffer(
   const slides: Slide[] = [];
   for (let index = 0; index < slidePaths.length; index += 1) {
     const path = slidePaths[index];
-    onProgress?.(`Conversion de la diapositive ${index + 1}…`, index + 1, slidePaths.length);
+    onProgress?.(`Conversion de la diapositive ${index + 1}…`, index, slidePaths.length);
     const xml = await zip.file(path)!.async("string");
     const doc = parser.parseFromString(xml, "application/xml");
     const relPath = path.replace("/slides/", "/slides/_rels/") + ".rels";
@@ -259,6 +259,7 @@ export async function parsePptxBuffer(
       background,
       elements,
     });
+    onProgress?.(`Diapositive ${index + 1} importée`, index + 1, slidePaths.length);
   }
 
   return {
@@ -303,7 +304,7 @@ export async function parsePdfBuffer(
   let presentationWidth = DEFAULT_WIDTH;
   let presentationHeight = DEFAULT_HEIGHT;
   for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
-    onProgress?.(`Rendu de la page ${pageNumber}…`, pageNumber, pdf.numPages);
+    onProgress?.(`Rendu de la page ${pageNumber}…`, pageNumber - 1, pdf.numPages);
     const page = await pdf.getPage(pageNumber);
     const baseViewport = page.getViewport({ scale: 1 });
     const targetWidth = Math.min(1600, Math.max(1000, baseViewport.width * 1.6));
@@ -338,6 +339,7 @@ export async function parsePdfBuffer(
         fit: "contain",
       } satisfies ImageElement],
     });
+    onProgress?.(`Diapositive ${pageNumber} importée`, pageNumber, pdf.numPages);
     page.cleanup();
   }
   await loadingTask.destroy();

@@ -1,51 +1,23 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Flag, Pause, Play, RotateCcw } from "lucide-react";
-
-const formatElapsed = (ms: number) => {
-  const centis = Math.floor((ms % 1000) / 10);
-  const totalSeconds = Math.floor(ms / 1000);
-  const seconds = totalSeconds % 60;
-  const minutes = Math.floor(totalSeconds / 60) % 60;
-  const hours = Math.floor(totalSeconds / 3600);
-  const pad = (n: number, len = 2) => n.toString().padStart(len, "0");
-  return hours > 0
-    ? `${pad(hours)}:${pad(minutes)}:${pad(seconds)}.${pad(centis)}`
-    : `${pad(minutes)}:${pad(seconds)}.${pad(centis)}`;
-};
+import { currentElapsed, formatElapsed, useChronometerStore } from "./useChronometerStore";
 
 export const Chronometer = () => {
-  const [elapsed, setElapsed] = useState(0);
-  const [running, setRunning] = useState(false);
-  const [laps, setLaps] = useState<number[]>([]);
-  const startedAtRef = useRef(0);
-  const rafRef = useRef<number>();
+  const state = useChronometerStore();
+  const { running, laps, start, pause, reset, addLap } = state;
+  const [now, setNow] = useState(Date.now());
+  const elapsed = currentElapsed(state, now);
 
   useEffect(() => {
     if (!running) return;
+    let raf = 0;
     const tick = () => {
-      setElapsed(Date.now() - startedAtRef.current);
-      rafRef.current = requestAnimationFrame(tick);
+      setNow(Date.now());
+      raf = requestAnimationFrame(tick);
     };
-    rafRef.current = requestAnimationFrame(tick);
-    return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
   }, [running]);
-
-  const start = () => {
-    startedAtRef.current = Date.now() - elapsed;
-    setRunning(true);
-  };
-
-  const pause = () => setRunning(false);
-
-  const reset = () => {
-    setRunning(false);
-    setElapsed(0);
-    setLaps([]);
-  };
-
-  const addLap = () => setLaps((prev) => [elapsed, ...prev]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 24, width: "100%" }}>

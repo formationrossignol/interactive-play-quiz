@@ -8,6 +8,7 @@ import { CookieConsentProvider } from "@/contexts/CookieConsentContext";
 import { CookieConsent } from "@/components/CookieConsent";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { FloatingChronometer } from "@/components/tools/FloatingChronometer";
 
 // Critical player path — loaded first, separate chunks from builder deps
 const JoinQuiz = lazy(() => import("./pages/JoinQuiz"));
@@ -133,6 +134,7 @@ const App = () => (
             </Routes>
             </RouteTransition>
           </Suspense>
+          <FloatingChronometer />
         </BrowserRouter>
         </AuthGate>
       </div>

@@ -32,6 +32,8 @@ function snapshotSlide(slide: Slide): Slide {
     elements: slide.elements.map((element) => (
       element.type === "group"
         ? { ...element, childIds: [...element.childIds] }
+        : element.type === "table"
+          ? { ...element, cells: [...element.cells] }
         : { ...element }
     )),
   };
