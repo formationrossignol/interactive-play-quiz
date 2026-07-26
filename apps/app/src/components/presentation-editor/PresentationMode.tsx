@@ -3,6 +3,7 @@ import { useDocStore } from "./store/useDocStore";
 import { CanvasElement } from "./elements/CanvasElement";
 import { LineArrowLayer } from "./elements/LineArrowLayer";
 import type { LineElement } from "./types/presentation";
+import { X } from "lucide-react";
 
 export function PresentationMode({ onExit }: { onExit: () => void }) {
   const presentation = useDocStore((s) => s.presentation);
@@ -72,8 +73,13 @@ export function PresentationMode({ onExit }: { onExit: () => void }) {
       <div style={{ position: "absolute", bottom: 16, right: 16, color: "#fff", fontSize: 14, fontFamily: "var(--ap-font-body)" }}>
         {index + 1} / {visibleSlides.length}
       </div>
-      <button onClick={onExit} style={{ position: "absolute", top: 16, right: 16, color: "#fff", background: "none", border: "none", fontSize: 20, cursor: "pointer" }}>
-        ✕
+      <button
+        onClick={onExit}
+        aria-label="Quitter le mode présentation"
+        title="Quitter"
+        style={{ position: "absolute", top: 16, right: 16, color: "#fff", background: "none", border: "none", cursor: "pointer", padding: 6, display: "grid", placeItems: "center" }}
+      >
+        <X size={22} aria-hidden="true" />
       </button>
     </div>
   );

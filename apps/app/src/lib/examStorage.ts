@@ -581,14 +581,26 @@ export async function computeExamStats(examId: string): Promise<ExamStats> {
   };
 }
 
-/* ══ CSV export ════════════════════════════════════════════════ */
+/* ══ Results exports ═══════════════════════════════════════════ */
 
-export async function exportCSV(exam: Exam): Promise<void> {
+const EXAM_EXPORT_HEADERS = [
+  'Participant',
+  'Email',
+  'Début',
+  'Soumission',
+  'Temps (min)',
+  'Score (%)',
+  'Statut',
+  'Mode',
+] as const;
+
+type ExamExportValue = string | number;
+
+async function getExamExportRows(exam: Exam): Promise<ExamExportValue[][]> {
   const attempts = (await getAttemptsForExam(exam.id))
     .filter((a) => a.status !== 'in-progress' && a.status !== 'cancelled');
 
-  const headers = ['Participant', 'Email', 'Début', 'Soumission', 'Temps (min)', 'Score (%)', 'Statut', 'Mode'];
-  const rows = attempts.map((a) => [
+  return attempts.map((a) => [
     a.participantName,
     a.participantEmail || '',
     new Date(a.startedAt).toLocaleString('fr'),
@@ -598,8 +610,21 @@ export async function exportCSV(exam: Exam): Promise<void> {
     a.passed === true ? 'Réussi' : a.passed === false ? 'Échoué' : '',
     a.submissionMode === 'manual' ? 'Manuel' : a.submissionMode === 'auto' ? 'Automatique' : '',
   ]);
+}
 
-  const csv = [headers, ...rows]
+function examExportFilename(exam: Exam): string {
+  const safeTitle = exam.title
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9_-]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+  return `resultats_${safeTitle || 'examen'}_${exam.joinCode}`;
+}
+
+export async function exportCSV(exam: Exam): Promise<void> {
+  const rows = await getExamExportRows(exam);
+
+  const csv = [[...EXAM_EXPORT_HEADERS], ...rows]
     .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(','))
     .join('\n');
   const bom = '﻿'; // UTF-8 BOM for Excel
@@ -607,9 +632,58 @@ export async function exportCSV(exam: Exam): Promise<void> {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = `resultats_${exam.title.replace(/\s+/g, '_')}_${exam.joinCode}.csv`;
+  link.download = `${examExportFilename(exam)}.csv`;
   link.click();
   URL.revokeObjectURL(url);
+}
+
+export async function exportExcel(exam: Exam): Promise<void> {
+  const rows = await getExamExportRows(exam);
+  const XLSX = await import('xlsx');
+  const worksheet = XLSX.utils.aoa_to_sheet([[...EXAM_EXPORT_HEADERS], ...rows]);
+  worksheet['!cols'] = [
+    { wch: 24 },
+    { wch: 30 },
+    { wch: 21 },
+    { wch: 21 },
+    { wch: 13 },
+    { wch: 11 },
+    { wch: 12 },
+    { wch: 14 },
+  ];
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Résultats');
+  XLSX.writeFile(workbook, `${examExportFilename(exam)}.xlsx`);
+}
+
+export async function exportPDF(exam: Exam): Promise<void> {
+  const rows = await getExamExportRows(exam);
+  const [{ jsPDF }, { default: autoTable }] = await Promise.all([
+    import('jspdf'),
+    import('jspdf-autotable'),
+  ]);
+  const document = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+
+  document.setFont('helvetica', 'bold');
+  document.setFontSize(16);
+  document.text(`Résultats — ${exam.title}`, 14, 15);
+  document.setFont('helvetica', 'normal');
+  document.setFontSize(9);
+  document.setTextColor(100);
+  document.text(`Code : ${exam.joinCode} · Exporté le ${new Date().toLocaleString('fr')}`, 14, 21);
+
+  autoTable(document, {
+    startY: 27,
+    head: [[...EXAM_EXPORT_HEADERS]],
+    body: rows.map((row) => row.map(String)),
+    theme: 'grid',
+    styles: { font: 'helvetica', fontSize: 8, cellPadding: 2.2, overflow: 'linebreak' },
+    headStyles: { fillColor: [76, 57, 168], textColor: 255, fontStyle: 'bold' },
+    alternateRowStyles: { fillColor: [247, 244, 238] },
+    margin: { left: 10, right: 10 },
+  });
+
+  document.save(`${examExportFilename(exam)}.pdf`);
 }
 
 /* ══ Utils ══════════════════════════════════════════════════════ */

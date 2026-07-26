@@ -3,11 +3,12 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   type LucideIcon, XCircle, ChevronLeft, Lock, Unlock, Users, CheckCircle2,
   Trophy, BarChart2, Timer, Calendar, RotateCcw, HelpCircle, MessageCircle,
-  Trash2, ChevronDown, Play, Flag, Save, Hand, Bot,
+  Trash2, ChevronDown, Play, Flag, Save, Hand, Bot, FileDown,
+  FileSpreadsheet, FileText,
 } from 'lucide-react';
 import {
   getExamById, getAttemptsForExam, computeExamStats, computeExamStatus,
-  updateExam, exportCSV, cancelAttempt, getMessagesForAttempt, sendMessage,
+  updateExam, exportCSV, exportExcel, exportPDF, cancelAttempt, getMessagesForAttempt, sendMessage,
   type Exam, type Attempt, type ExamStats, type ExamMessage,
 } from '@/lib/examStorage';
 import {
@@ -137,6 +138,19 @@ export default function ExamAdmin() {
     }
   };
 
+  const handleExport = async (
+    format: 'CSV' | 'Excel' | 'PDF',
+    exporter: (targetExam: Exam) => Promise<void>,
+  ) => {
+    if (!exam) return;
+    try {
+      await exporter(exam);
+      toast.success(`Export ${format} téléchargé`);
+    } catch (exportError) {
+      console.error(`Export ${format} failed`, exportError);
+      toast.error(`Impossible de générer l'export ${format}`);
+    }
+  };
 
   if (error) return (
     <div style={wrapSt}>
@@ -330,12 +344,29 @@ export default function ExamAdmin() {
             Résultats ({completed.length} soumis{completed.length > 1 ? 's' : ''})
           </h2>
           {completed.length > 0 && (
-            <button
-              onClick={() => { void exportCSV(exam); toast.success('Export CSV lancé'); }}
-              style={{ ...outlineBtn, fontSize: 12 }}
-            >
-              ⬇️ Exporter CSV
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8, flexWrap: 'wrap' }}>
+              <button
+                onClick={() => { void handleExport('CSV', exportCSV); }}
+                style={{ ...outlineBtn, display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12 }}
+              >
+                <FileDown className="h-3.5 w-3.5" aria-hidden="true" />
+                Exporter CSV
+              </button>
+              <button
+                onClick={() => { void handleExport('Excel', exportExcel); }}
+                style={{ ...outlineBtn, display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12 }}
+              >
+                <FileSpreadsheet className="h-3.5 w-3.5" aria-hidden="true" />
+                Exporter Excel
+              </button>
+              <button
+                onClick={() => { void handleExport('PDF', exportPDF); }}
+                style={{ ...outlineBtn, display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12 }}
+              >
+                <FileText className="h-3.5 w-3.5" aria-hidden="true" />
+                Exporter PDF
+              </button>
+            </div>
           )}
         </div>
 
