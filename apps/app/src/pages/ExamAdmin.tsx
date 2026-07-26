@@ -218,12 +218,12 @@ export default function ExamAdmin() {
         <span style={{ fontFamily: 'var(--ap-font-display)', fontWeight: 600, fontSize: 18, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {exam.title}
         </span>
-        <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.05em', padding: '4px 10px', borderRadius: 999, color: badge.color, background: badge.bg, flexShrink: 0 }}>
+        <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.05em', padding: '4px 10px', borderRadius: "var(--ap-r-sm)", color: badge.color, background: badge.bg, flexShrink: 0 }}>
           {badge.label}
         </span>
         <button
           onClick={() => navigate(`/exam-builder?examId=${exam.id}`)}
-          style={{ padding: '6px 14px', borderRadius: 999, border: 'var(--ap-border-w) solid var(--ap-line)', background: 'none', fontFamily: 'var(--ap-font-body)', fontWeight: 800, fontSize: 12, color: 'var(--ap-ink)', cursor: 'pointer', flexShrink: 0 }}
+          style={{ padding: '6px 14px', borderRadius: "var(--ap-r-sm)", border: 'var(--ap-border-w) solid var(--ap-line)', background: 'none', fontFamily: 'var(--ap-font-body)', fontWeight: 800, fontSize: 12, color: 'var(--ap-ink)', cursor: 'pointer', flexShrink: 0 }}
         >
           Modifier
         </button>
@@ -429,9 +429,9 @@ export default function ExamAdmin() {
                           {qs.pctCorrect}%
                         </span>
                       </div>
-                      <div style={{ height: 6, background: 'var(--ap-line)', borderRadius: 999, overflow: 'hidden' }}>
+                      <div style={{ height: 6, background: 'var(--ap-line)', borderRadius: "var(--ap-r-sm)", overflow: 'hidden' }}>
                         <div style={{
-                          height: '100%', borderRadius: 999,
+                          height: '100%', borderRadius: "var(--ap-r-sm)",
                           width: `${qs.pctCorrect}%`,
                           background: qs.pctCorrect >= 70 ? '#15c08a' : qs.pctCorrect >= 40 ? '#f4970a' : '#ff5a4d',
                           transition: 'width .4s',
@@ -553,7 +553,7 @@ function ResultsTable({
                     </button>
                   </ResultsCell>
                   <ResultsCell>
-                    <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.05em', padding: '4px 8px', borderRadius: 999, color: badge.color, background: badge.bg }}>
+                    <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.05em', padding: '4px 8px', borderRadius: "var(--ap-r-sm)", color: badge.color, background: badge.bg }}>
                       {badge.label}
                     </span>
                   </ResultsCell>
@@ -664,7 +664,7 @@ function AttemptRow({
         {/* Live progress bar */}
         {isLive && (
           <div style={{ width: 90, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
-            <div style={{ height: 6, borderRadius: 999, background: 'var(--ap-line)', overflow: 'hidden' }}>
+            <div style={{ height: 6, borderRadius: "var(--ap-r-sm)", background: 'var(--ap-line)', overflow: 'hidden' }}>
               <div style={{ width: `${progressPct}%`, height: '100%', background: 'var(--ap-brand)', transition: 'width .3s' }} />
             </div>
             <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--ap-muted)', textAlign: 'center' }}>
@@ -699,7 +699,7 @@ function AttemptRow({
         </div>
 
         {/* Status badge */}
-        <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.05em', padding: '3px 8px', borderRadius: 999, color: ab.color, background: ab.bg, flexShrink: 0 }}>
+        <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.05em', padding: '3px 8px', borderRadius: "var(--ap-r-sm)", color: ab.color, background: ab.bg, flexShrink: 0 }}>
           {ab.label}
         </span>
 
@@ -914,7 +914,7 @@ const rowIconBtn: React.CSSProperties = {
 };
 
 const outlineBtn: React.CSSProperties = {
-  padding: '8px 14px', borderRadius: 999,
+  padding: '8px 14px', borderRadius: "var(--ap-r-sm)",
   border: 'var(--ap-border-w) solid var(--ap-line)', background: 'var(--ap-paper-2)',
   fontFamily: 'var(--ap-font-body)', fontWeight: 800, fontSize: 13,
   color: 'var(--ap-ink)', cursor: 'pointer',

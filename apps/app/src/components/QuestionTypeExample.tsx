@@ -95,7 +95,7 @@ function TypeSpecificExample({ type }: { type: QuestionType }) {
   if (type === "slider") {
     return (
       <div style={{ ...cardStyle, padding: "26px 28px" }}>
-        <div style={{ height: 8, borderRadius: 999, background: "linear-gradient(90deg, var(--ap-brand) 58%, var(--ap-line) 58%)", position: "relative" }}>
+        <div style={{ height: 8, borderRadius: "var(--ap-r-sm)", background: "linear-gradient(90deg, var(--ap-brand) 58%, var(--ap-line) 58%)", position: "relative" }}>
           <span style={{ position: "absolute", left: "58%", top: "50%", width: 30, height: 30, borderRadius: "50%", background: "var(--ap-brand)", border: "4px solid #fff", transform: "translate(-50%, -50%)", boxShadow: "0 2px 8px rgba(0,0,0,.2)" }} />
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", marginTop: 18, fontSize: 12, fontWeight: 800, color: "var(--ap-muted)" }}><span>0</span><span>100</span></div>
@@ -148,7 +148,7 @@ export function QuestionTypeExample({ type }: { type: QuestionType }) {
   return (
     <div aria-live="polite" style={{ maxWidth: 760, margin: "0 auto", height: "100%", minHeight: 500, display: "flex", flexDirection: "column", justifyContent: "center" }}>
       <div style={{ textAlign: "center", marginBottom: 28 }}>
-        <span style={{ display: "inline-flex", padding: "6px 11px", borderRadius: 999, background: "var(--ap-brand-soft)", color: "var(--ap-brand-deep)", fontSize: 11, fontWeight: 900, letterSpacing: ".08em", textTransform: "uppercase" }}>{example.eyebrow}</span>
+        <span style={{ display: "inline-flex", padding: "6px 11px", borderRadius: "var(--ap-r-sm)", background: "var(--ap-brand-soft)", color: "var(--ap-brand-deep)", fontSize: 11, fontWeight: 900, letterSpacing: ".08em", textTransform: "uppercase" }}>{example.eyebrow}</span>
         <h2 style={{ margin: "14px auto 7px", maxWidth: 650, fontSize: 25, lineHeight: 1.25, fontWeight: 900, color: "var(--ap-ink)" }}>{example.question}</h2>
         <p style={{ margin: 0, color: "var(--ap-muted)", fontSize: 13, fontWeight: 650 }}>Aperçu générique — sélectionnez ce type pour le personnaliser</p>
       </div>

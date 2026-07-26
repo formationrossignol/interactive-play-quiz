@@ -330,7 +330,7 @@ export function EditorToolbar({ slideId }: { slideId: string }) {
                       padding: 9,
                       textAlign: "left",
                       border: `2px solid ${active ? "var(--ap-brand)" : "var(--ap-line)"}`,
-                      borderRadius: 12,
+                      borderRadius: "var(--ap-r-md)",
                       background: "var(--ap-card)",
                       cursor: "pointer",
                     }}

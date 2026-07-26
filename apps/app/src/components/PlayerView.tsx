@@ -933,7 +933,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
                 style={{
                   display: "flex", alignItems: "center", gap: 4, fontWeight: 900, fontSize: 12,
                   color: "var(--ap-flash-deep)", background: "var(--ap-flash-soft)",
-                  border: "2px solid var(--ap-flash)", borderRadius: 999, padding: "3px 10px",
+                  border: "2px solid var(--ap-flash)", borderRadius: "var(--ap-r-sm)", padding: "3px 10px",
                 }}
                 aria-label={`Série de ${streak}`}
               >
@@ -947,7 +947,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
                   display: "flex", alignItems: "center", gap: 6,
                   fontFamily: "var(--ap-font-mono, var(--ap-font-display))", fontWeight: 800, fontSize: 14,
                   background: "rgba(255,255,255,0.15)", border: "2px solid rgba(255,255,255,0.25)",
-                  borderRadius: 999, padding: "5px 13px", color: "#fff",
+                  borderRadius: "var(--ap-r-sm)", padding: "5px 13px", color: "#fff",
                 }}
               >
                 <Zap className="w-3.5 h-3.5" style={{ fill: "var(--ap-flash)", color: "var(--ap-flash)" }} />
@@ -990,7 +990,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
           <div className="ap-card ap-card--floaty mb-4">
             {!isPoll && (
               <div
-                style={{ height: 8, background: "var(--ap-paper-2)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: 99, overflow: "hidden", marginBottom: 16 }}
+                style={{ height: 8, background: "var(--ap-paper-2)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-md)", overflow: "hidden", marginBottom: 16 }}
                 role="timer"
                 aria-label={`Temps restant : ${timeLeft} secondes`}
               >
@@ -999,7 +999,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
                     height: "100%",
                     width: `${Math.max(0, Math.min(100, (liveQuestion.timeLimit > 0 ? timeLeft / liveQuestion.timeLimit : 0) * 100))}%`,
                     background: timeLeft <= 5 ? "var(--ap-quiz)" : "var(--ap-brand)",
-                    borderRadius: 99,
+                    borderRadius: "var(--ap-r-md)",
                     transition: "width .3s linear, background .3s",
                   }}
                 />
@@ -1408,7 +1408,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
                 style={{
                   display: 'inline-block',
                   fontFamily: 'var(--ap-font-mono, var(--ap-font-display))', fontWeight: 800, fontSize: 22,
-                  color: '#fff', background: 'rgba(255,255,255,0.2)', borderRadius: 999, padding: '6px 20px',
+                  color: '#fff', background: 'rgba(255,255,255,0.2)', borderRadius: "var(--ap-r-sm)", padding: '6px 20px',
                 }}
               >
                 {lastAnswerCorrect ? `+ ${lastEarnedPoints.toLocaleString('fr-FR')} pts` : '+ 0 pt'}

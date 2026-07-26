@@ -102,7 +102,7 @@ export function PresentationImportDialog({
             }}
           >
             <div>
-              <span style={{ width: 54, height: 54, display: "grid", placeItems: "center", margin: "0 auto 14px", borderRadius: 16, background: "var(--ap-pres-soft)", color: "var(--ap-pres-deep)" }}>
+              <span style={{ width: 54, height: 54, display: "grid", placeItems: "center", margin: "0 auto 14px", borderRadius: "var(--ap-r-md)", background: "var(--ap-pres-soft)", color: "var(--ap-pres-deep)" }}>
                 {busy ? <LoaderCircle className="h-6 w-6 animate-spin" /> : <Upload className="h-6 w-6" />}
               </span>
               <b style={{ display: "block", fontSize: 16 }}>{progress?.message || "Déposez votre fichier ici"}</b>
@@ -141,7 +141,7 @@ export function PresentationImportDialog({
                 {busy ? <LoaderCircle className="h-4 w-4 animate-spin" /> : "Importer"}
               </button>
             </div>
-            <p style={{ margin: "12px 0 0", padding: 12, borderRadius: 12, background: "var(--ap-brand-soft)", color: "var(--ap-brand-deep)", fontSize: 12.5, fontWeight: 650, lineHeight: 1.45 }}>
+            <p style={{ margin: "12px 0 0", padding: 12, borderRadius: "var(--ap-r-md)", background: "var(--ap-brand-soft)", color: "var(--ap-brand-deep)", fontSize: 12.5, fontWeight: 650, lineHeight: 1.45 }}>
               Le lien doit être accessible aux personnes qui le possèdent. Pour un document privé, téléchargez-le depuis Google Slides au format PPTX ou PDF.
             </p>
             {progress && <p style={{ marginTop: 14, fontSize: 13, fontWeight: 800 }}>{progress.message}</p>}
@@ -164,13 +164,13 @@ export function PresentationImportDialog({
               aria-valuemin={0}
               aria-valuemax={progress.total ?? 100}
               aria-valuenow={progress.current ?? undefined}
-              style={{ height: 9, overflow: "hidden", borderRadius: 999, background: "var(--ap-line)" }}
+              style={{ height: 9, overflow: "hidden", borderRadius: "var(--ap-r-sm)", background: "var(--ap-line)" }}
             >
               <div
                 style={{
                   width: progress.current != null && progress.total ? `${Math.round(progress.current / progress.total * 100)}%` : "32%",
                   height: "100%",
-                  borderRadius: 999,
+                  borderRadius: "var(--ap-r-sm)",
                   background: "linear-gradient(90deg, var(--ap-brand), var(--ap-pres))",
                   transition: "width .2s ease",
                   animation: progress.current == null ? "ap-import-progress 1.2s ease-in-out infinite alternate" : undefined,

@@ -62,7 +62,7 @@ const statusBadge = (liveStatus: string) => {
   return (
     <span style={{
       fontSize: 11, fontWeight: 800, letterSpacing: '.05em', padding: '2px 8px',
-      borderRadius: 999, color: badge.color, background: badge.bg,
+      borderRadius: "var(--ap-r-sm)", color: badge.color, background: badge.bg,
     }}>
       {badge.label}
     </span>

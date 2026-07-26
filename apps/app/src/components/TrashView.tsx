@@ -2,6 +2,7 @@ import { useState } from "react";
 import { BarChart2, Clock, FileCheck2, GraduationCap, Layers3, ListChecks, Presentation, RotateCcw, Trash2, type LucideIcon } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { ContentDisplay } from "@/lib/content/contentView";
+import { ExplorerEmptyState } from "@/components/content/ExplorerEmptyState";
 
 interface TrashViewProps {
   items: ContentDisplay[];
@@ -50,15 +51,19 @@ function TrashHeader({ item, compact = false }: { item: ContentDisplay; compact?
       <img
         src={image}
         alt=""
-        className={compact ? "h-20 w-28 flex-shrink-0 rounded-xl object-cover" : "h-52 w-full object-cover"}
+        className={compact ? "h-20 w-28 flex-shrink-0 object-cover" : "h-52 w-full object-cover"}
+        style={compact ? { borderRadius: "var(--ap-r-md)" } : undefined}
       />
     );
   }
   const Icon = visual.Icon;
   return (
     <div
-      className={compact ? "h-20 w-28 flex-shrink-0 rounded-xl grid place-items-center" : "h-52 w-full grid place-items-center"}
-      style={{ background: `color-mix(in srgb, ${visual.color} 14%, var(--ap-paper-2))` }}
+      className={compact ? "h-20 w-28 flex-shrink-0 grid place-items-center" : "h-52 w-full grid place-items-center"}
+      style={{
+        background: `color-mix(in srgb, ${visual.color} 14%, var(--ap-paper-2))`,
+        ...(compact ? { borderRadius: "var(--ap-r-md)" } : {}),
+      }}
     >
       <Icon style={{ width: compact ? 28 : 48, height: compact ? 28 : 48, color: visual.color, opacity: 0.72 }} />
     </div>
@@ -76,18 +81,11 @@ export const TrashView = ({ items, viewMode, onRestore, onPermanentDelete }: Tra
 
   if (items.length === 0) {
     return (
-      <div
-        style={{
-          borderRadius: "var(--ap-r-lg)",
-          border: "var(--ap-border-w) dashed var(--ap-line-2)",
-          background: "var(--ap-paper-2)",
-          padding: "48px 24px",
-          textAlign: "center",
-        }}
-      >
-        <Trash2 className="h-10 w-10 mx-auto mb-3" style={{ color: "var(--ap-muted)" }} />
-        <p className="ap-muted" style={{ fontSize: "14px" }}>La corbeille est vide.</p>
-      </div>
+      <ExplorerEmptyState
+        icon={<Trash2 style={{ width: 26, height: 26 }} />}
+        title="La corbeille est vide"
+        body="Les contenus supprimés apparaîtront ici pendant 30 jours avant leur suppression définitive."
+      />
     );
   }
 
@@ -127,7 +125,7 @@ export const TrashView = ({ items, viewMode, onRestore, onPermanentDelete }: Tra
               <div
                 key={item.id}
                 className="ap-card flex flex-col overflow-hidden p-0"
-                style={{ opacity: 0.8 }}
+                style={{ opacity: 0.8, padding: 0 }}
               >
                 <TrashHeader item={item} />
                 <div className="flex flex-1 flex-col p-4">

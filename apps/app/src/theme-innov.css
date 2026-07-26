@@ -46,8 +46,8 @@
   /* Arrondis légers — moderne sans être joueur */
   --ap-r-sm: 4px;
   --ap-r-md: 8px;
-  --ap-r-lg: 12px;
-  --ap-r-xl: 14px;
+  --ap-r-lg: 8px;
+  --ap-r-xl: 10px;
 
   /* Aplats francs, ombres minimales */
   --ap-shadow-soft:  0 2px 8px rgba(0, 0, 0, .06);

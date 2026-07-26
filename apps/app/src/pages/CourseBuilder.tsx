@@ -399,7 +399,7 @@ const CourseBuilder = () => {
             title="Ce cours a été généré par IA à partir d'un document, puis peut être modifié librement."
             style={{
               display: "inline-flex", alignItems: "center", gap: 5, flexShrink: 0,
-              padding: "4px 10px", borderRadius: 999, fontSize: 11.5, fontWeight: 800,
+              padding: "4px 10px", borderRadius: "var(--ap-r-sm)", fontSize: 11.5, fontWeight: 800,
               color: "var(--ap-brand-deep)", background: "var(--ap-brand-soft)",
               border: "var(--ap-border-w) solid color-mix(in srgb, var(--ap-brand) 35%, transparent)",
             }}

@@ -41,7 +41,7 @@ const MyQuizzes = () => {
       headerExtras={
         <button
           onClick={() => navigate("/my-exams")}
-          style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 16px", borderRadius: 999, border: "var(--ap-border-w) solid var(--ap-line)", background: "var(--ap-paper-2)", fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 13, color: "var(--ap-ink)", cursor: "pointer" }}
+          style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 16px", borderRadius: "var(--ap-r-sm)", border: "var(--ap-border-w) solid var(--ap-line)", background: "var(--ap-paper-2)", fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 13, color: "var(--ap-ink)", cursor: "pointer" }}
         >
           <ClipboardCheck className="h-4 w-4" /> Examens
         </button>

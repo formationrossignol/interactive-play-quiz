@@ -19,12 +19,12 @@ export function FloatingChronometer() {
   if (location.pathname === "/tools/chronometre" || !widgetOpen) return null;
 
   return (
-    <aside style={{ position: "fixed", right: 22, bottom: 22, zIndex: 800, width: 300, padding: 16, borderRadius: 20, border: "2px solid var(--ap-line)", background: "var(--ap-card)", boxShadow: "0 12px 38px rgba(36,32,45,.25)" }}>
+    <aside style={{ position: "fixed", right: 22, bottom: 22, zIndex: 800, width: 300, padding: 16, borderRadius: "var(--ap-r-md)", border: "2px solid var(--ap-line)", background: "var(--ap-card)", boxShadow: "0 12px 38px rgba(36,32,45,.25)" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
         <strong style={{ display: "flex", alignItems: "center", gap: 8 }}><Clock3 size={17} color="var(--ap-brand)" /> Chronomètre</strong>
         <button type="button" className="ap-btn ap-btn--ghost ap-icon-btn" onClick={() => setWidgetOpen(false)} aria-label="Fermer le chronomètre"><X size={16} /></button>
       </div>
-      <div style={{ padding: "15px 10px", borderRadius: 14, background: "var(--ap-paper-2)", textAlign: "center", fontFamily: "var(--ap-font-display)", fontWeight: 800, fontSize: 30, fontVariantNumeric: "tabular-nums" }}>
+      <div style={{ padding: "15px 10px", borderRadius: "var(--ap-r-md)", background: "var(--ap-paper-2)", textAlign: "center", fontFamily: "var(--ap-font-display)", fontWeight: 800, fontSize: 30, fontVariantNumeric: "tabular-nums" }}>
         {formatElapsed(elapsed)}
       </div>
       <div style={{ display: "flex", gap: 7, marginTop: 12 }}>
