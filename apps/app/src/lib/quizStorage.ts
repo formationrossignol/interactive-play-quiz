@@ -22,6 +22,10 @@ export interface SavedQuiz {
   theme?: string;
   font?: string;
   ambianceId?: string;
+  /** Player emoji reactions during the lobby and final screen. Defaults to true for legacy quizzes. */
+  liveReactionsEnabled?: boolean;
+  /** Player text chat shown at the end of a live quiz. Defaults to true for legacy quizzes. */
+  endChatEnabled?: boolean;
   rating?: number;
   ratingCount?: number;
   folderId?: string | null;

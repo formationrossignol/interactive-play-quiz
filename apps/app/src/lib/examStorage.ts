@@ -686,6 +686,32 @@ export async function exportPDF(exam: Exam): Promise<void> {
   document.save(`${examExportFilename(exam)}.pdf`);
 }
 
+export async function exportJSON(exam: Exam): Promise<void> {
+  const rows = await getExamExportRows(exam);
+  const attempts = rows.map((row) => Object.fromEntries(
+    EXAM_EXPORT_HEADERS.map((header, index) => [header, row[index]]),
+  ));
+  const payload = {
+    exam: {
+      id: exam.id,
+      title: exam.title,
+      joinCode: exam.joinCode,
+      openAt: exam.openAt,
+      closeAt: exam.closeAt,
+      passingScore: exam.passingScore,
+    },
+    exportedAt: new Date().toISOString(),
+    attempts,
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `${examExportFilename(exam)}.json`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
 /* ══ Utils ══════════════════════════════════════════════════════ */
 
 function shuffle<T>(arr: T[]): T[] {

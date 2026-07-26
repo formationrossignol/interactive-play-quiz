@@ -23,7 +23,31 @@ describe('createLiveSession', () => {
     const ok = await createLiveSession('123456', 'My Quiz', [{ id: 'q1', type: 'multiple-choice' }]);
     expect(ok).toBe(true);
     expect(invokeMock).toHaveBeenCalledWith('create-session', {
-      body: { game_code: '123456', title: 'My Quiz', questions: [{ id: 'q1', type: 'multiple-choice' }], ambiance_id: 'arcade', max_participants: null },
+      body: {
+        game_code: '123456',
+        title: 'My Quiz',
+        questions: [{ id: 'q1', type: 'multiple-choice' }],
+        ambiance_id: 'arcade',
+        max_participants: null,
+        live_reactions_enabled: true,
+        end_chat_enabled: true,
+      },
+    });
+  });
+
+  it('forwards disabled live interaction settings', async () => {
+    invokeMock.mockResolvedValue({ data: { ok: true }, error: null });
+    await createLiveSession('123456', 'My Quiz', [], 'calm', 20, false, false);
+    expect(invokeMock).toHaveBeenCalledWith('create-session', {
+      body: {
+        game_code: '123456',
+        title: 'My Quiz',
+        questions: [],
+        ambiance_id: 'calm',
+        max_participants: 20,
+        live_reactions_enabled: false,
+        end_chat_enabled: false,
+      },
     });
   });
 

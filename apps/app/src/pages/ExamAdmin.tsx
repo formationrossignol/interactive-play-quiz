@@ -3,14 +3,15 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   type LucideIcon, XCircle, ChevronLeft, Lock, Unlock, Users, CheckCircle2,
   Trophy, BarChart2, Timer, Calendar, RotateCcw, HelpCircle, MessageCircle,
-  Trash2, ChevronDown, Play, Flag, Save, Hand, Bot, FileDown,
-  FileSpreadsheet, FileText,
+  Trash2, ChevronDown, Play, Flag, Save, Hand, Bot, Braces,
+  ChartNoAxesColumnIncreasing, FileSpreadsheet, FileText,
 } from 'lucide-react';
 import {
   getExamById, getAttemptsForExam, computeExamStats, computeExamStatus,
-  updateExam, exportCSV, exportExcel, exportPDF, cancelAttempt, getMessagesForAttempt, sendMessage,
+  updateExam, exportCSV, exportExcel, exportJSON, exportPDF, cancelAttempt, getMessagesForAttempt, sendMessage,
   type Exam, type Attempt, type ExamStats, type ExamMessage,
 } from '@/lib/examStorage';
+import { ExportMenu } from '@/components/ExportMenu';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -139,7 +140,7 @@ export default function ExamAdmin() {
   };
 
   const handleExport = async (
-    format: 'CSV' | 'Excel' | 'PDF',
+    format: 'CSV' | 'Excel' | 'PDF' | 'JSON',
     exporter: (targetExam: Exam) => Promise<void>,
   ) => {
     if (!exam) return;
@@ -344,29 +345,15 @@ export default function ExamAdmin() {
             Résultats ({completed.length} soumis{completed.length > 1 ? 's' : ''})
           </h2>
           {completed.length > 0 && (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8, flexWrap: 'wrap' }}>
-              <button
-                onClick={() => { void handleExport('CSV', exportCSV); }}
-                style={{ ...outlineBtn, display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12 }}
-              >
-                <FileDown className="h-3.5 w-3.5" aria-hidden="true" />
-                Exporter CSV
-              </button>
-              <button
-                onClick={() => { void handleExport('Excel', exportExcel); }}
-                style={{ ...outlineBtn, display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12 }}
-              >
-                <FileSpreadsheet className="h-3.5 w-3.5" aria-hidden="true" />
-                Exporter Excel
-              </button>
-              <button
-                onClick={() => { void handleExport('PDF', exportPDF); }}
-                style={{ ...outlineBtn, display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12 }}
-              >
-                <FileText className="h-3.5 w-3.5" aria-hidden="true" />
-                Exporter PDF
-              </button>
-            </div>
+            <ExportMenu
+              style={{ ...outlineBtn, fontSize: 12 }}
+              options={[
+                { id: 'pdf', label: 'PDF', icon: FileText, onSelect: () => handleExport('PDF', exportPDF) },
+                { id: 'excel', label: 'Excel (.xlsx)', icon: FileSpreadsheet, onSelect: () => handleExport('Excel', exportExcel) },
+                { id: 'csv', label: 'CSV', icon: ChartNoAxesColumnIncreasing, onSelect: () => handleExport('CSV', exportCSV) },
+                { id: 'json', label: 'JSON', icon: Braces, onSelect: () => handleExport('JSON', exportJSON) },
+              ]}
+            />
           )}
         </div>
 

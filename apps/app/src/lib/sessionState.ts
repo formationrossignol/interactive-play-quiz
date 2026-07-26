@@ -459,10 +459,20 @@ export const createLiveSession = async (
   // bank Question type, so keep this structurally loose to avoid a false mismatch.
   questions: unknown[],
   ambianceId?: string,
-  maxParticipants?: number | null
+  maxParticipants?: number | null,
+  liveReactionsEnabled = true,
+  endChatEnabled = true,
 ): Promise<boolean> => {
   const { error } = await supabase.functions.invoke("create-session", {
-    body: { game_code: gameCode, title, questions, ambiance_id: ambianceId ?? "arcade", max_participants: maxParticipants ?? null },
+    body: {
+      game_code: gameCode,
+      title,
+      questions,
+      ambiance_id: ambianceId ?? "arcade",
+      max_participants: maxParticipants ?? null,
+      live_reactions_enabled: liveReactionsEnabled,
+      end_chat_enabled: endChatEnabled,
+    },
   });
   if (error) console.error("[createLiveSession error]", gameCode, await describeFunctionsError(error));
   return !error;
