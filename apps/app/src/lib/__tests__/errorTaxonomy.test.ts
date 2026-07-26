@@ -27,6 +27,18 @@ describe('classifyError', () => {
     expect(result.kind).toBe('system');
     expect(result.message).toBe('Une erreur inattendue est survenue.');
   });
+
+  it('turns technical permission failures into an actionable message', () => {
+    const result = classifyError({ status: 403, message: 'Forbidden' });
+    expect(result.kind).toBe('business');
+    expect(result.message).toBe("Vous n’avez pas les droits pour modifier cette ressource.");
+    expect(result.action?.label).toBe("Demander l’accès");
+  });
+
+  it('recognises Supabase row-level security failures', () => {
+    const result = classifyError({ code: '42501', message: 'permission denied for table content' });
+    expect(result.action?.label).toBe("Demander l’accès");
+  });
 });
 
 describe('showError', () => {

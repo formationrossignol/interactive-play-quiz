@@ -734,6 +734,11 @@ const CourseBuilder = () => {
                       />
                       <span className="ap-muted" style={{ fontSize: "13px", fontWeight: 600 }}>Public</span>
                     </div>
+                    {contentRow && contentRow.user_id !== user.id && (
+                      <p className="ap-muted" style={{ flexBasis: "100%", margin: "-6px 0 0", fontSize: 12, fontWeight: 700, textAlign: "right" }}>
+                        Seul le propriétaire peut modifier la visibilité de cette ressource.
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>

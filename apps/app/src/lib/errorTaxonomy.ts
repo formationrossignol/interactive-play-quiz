@@ -26,6 +26,24 @@ export class ValidationError extends Error {
 }
 
 const upgradeAction = { label: 'Passer Pro', onClick: () => { window.location.href = '/pricing'; } };
+const requestAccessAction = {
+  label: "Demander l’accès",
+  onClick: () => {
+    const subject = encodeURIComponent("Demande d’accès à une ressource Brivia");
+    const body = encodeURIComponent(`Bonjour,\n\nPouvez-vous me donner accès à cette ressource ?\n${window.location.href}`);
+    window.location.href = `mailto:?subject=${subject}&body=${body}`;
+  },
+};
+
+function isPermissionError(e: unknown): boolean {
+  if (!e || typeof e !== 'object') return false;
+  const candidate = e as { status?: number; code?: string; message?: string; details?: string };
+  const message = `${candidate.message ?? ''} ${candidate.details ?? ''}`.toLowerCase();
+  return candidate.status === 403
+    || candidate.code === '42501'
+    || candidate.code === 'PGRST301'
+    || /permission denied|forbidden|not authorized|not authorised|row-level security|insufficient privilege/.test(message);
+}
 
 /** Pure: maps a caught value to its kind + display message. No I/O, so this
  *  is the part worth unit-testing directly. */
@@ -35,6 +53,13 @@ export function classifyError(e: unknown): ClassifiedError {
   }
   if (e instanceof ValidationError) {
     return { kind: 'validation', message: e.message };
+  }
+  if (isPermissionError(e)) {
+    return {
+      kind: 'business',
+      message: "Vous n’avez pas les droits pour modifier cette ressource.",
+      action: requestAccessAction,
+    };
   }
   return {
     kind: 'system',

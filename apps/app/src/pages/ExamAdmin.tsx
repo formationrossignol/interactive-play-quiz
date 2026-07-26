@@ -12,6 +12,7 @@ import {
   type Exam, type Attempt, type ExamStats, type ExamMessage,
 } from '@/lib/examStorage';
 import { ExportMenu } from '@/components/ExportMenu';
+import { showError } from '@/lib/errorTaxonomy';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -133,9 +134,14 @@ export default function ExamAdmin() {
     setAttemptToRemove(null);
     try {
       const ok = await cancelAttempt(att.id);
-      if (ok) { toast.success('Participant retiré'); void load(); } else { toast.error('Échec du retrait (permissions ?)'); }
+      if (ok) {
+        toast.success('Participant retiré');
+        void load();
+      } else {
+        showError({ status: 403, message: 'permission denied' }, 'ExamAdmin.removeAttempt');
+      }
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Échec du retrait');
+      showError(e, 'ExamAdmin.removeAttempt', 'Impossible de retirer ce participant.');
     }
   };
 
@@ -148,8 +154,7 @@ export default function ExamAdmin() {
       await exporter(exam);
       toast.success(`Export ${format} téléchargé`);
     } catch (exportError) {
-      console.error(`Export ${format} failed`, exportError);
-      toast.error(`Impossible de générer l'export ${format}`);
+      showError(exportError, `ExamAdmin.export${format}`, `Impossible de générer l’export ${format}. Réessayez dans un instant.`);
     }
   };
 
@@ -344,17 +349,17 @@ export default function ExamAdmin() {
           <h2 style={{ fontFamily: 'var(--ap-font-display)', fontWeight: 600, fontSize: 18 }}>
             Résultats ({completed.length} soumis{completed.length > 1 ? 's' : ''})
           </h2>
-          {completed.length > 0 && (
-            <ExportMenu
-              style={{ ...outlineBtn, fontSize: 12 }}
-              options={[
-                { id: 'pdf', label: 'PDF', icon: FileText, onSelect: () => handleExport('PDF', exportPDF) },
-                { id: 'excel', label: 'Excel (.xlsx)', icon: FileSpreadsheet, onSelect: () => handleExport('Excel', exportExcel) },
-                { id: 'csv', label: 'CSV', icon: ChartNoAxesColumnIncreasing, onSelect: () => handleExport('CSV', exportCSV) },
-                { id: 'json', label: 'JSON', icon: Braces, onSelect: () => handleExport('JSON', exportJSON) },
-              ]}
-            />
-          )}
+          <ExportMenu
+            style={{ ...outlineBtn, fontSize: 12 }}
+            disabled={completed.length === 0}
+            disabledReason={completed.length === 0 ? "Attendez au moins un examen rendu pour exporter les résultats." : undefined}
+            options={[
+              { id: 'pdf', label: 'PDF', icon: FileText, onSelect: () => handleExport('PDF', exportPDF) },
+              { id: 'excel', label: 'Excel (.xlsx)', icon: FileSpreadsheet, onSelect: () => handleExport('Excel', exportExcel) },
+              { id: 'csv', label: 'CSV', icon: ChartNoAxesColumnIncreasing, onSelect: () => handleExport('CSV', exportCSV) },
+              { id: 'json', label: 'JSON', icon: Braces, onSelect: () => handleExport('JSON', exportJSON) },
+            ]}
+          />
         </div>
 
         {attempts.length === 0 ? (

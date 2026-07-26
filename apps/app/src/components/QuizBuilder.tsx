@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { DisabledReason } from "@/components/ui/disabled-reason";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -1300,15 +1301,20 @@ export const QuizBuilder = () => {
         </button>
 
         {/* Preview */}
-        <button
-          onClick={handlePreviewQuiz}
-          disabled={questions.length === 0}
-          className="ap-btn ap-btn--ghost"
-          style={{ padding: "10px 18px", borderRadius: 999, fontSize: 14 }}
-        >
-          <Eye style={{ width: 15, height: 15 }} />
-          Aperçu
-        </button>
+        <DisabledReason reason={questions.length === 0 ? "Ajoutez au moins une question pour ouvrir l’aperçu." : undefined}>
+          {(descriptionId) => (
+            <button
+              onClick={handlePreviewQuiz}
+              disabled={questions.length === 0}
+              aria-describedby={descriptionId}
+              className="ap-btn ap-btn--ghost"
+              style={{ padding: "10px 18px", borderRadius: 999, fontSize: 14 }}
+            >
+              <Eye style={{ width: 15, height: 15 }} />
+              Aperçu
+            </button>
+          )}
+        </DisabledReason>
 
         {/* Save / Publish */}
         <button
@@ -1499,6 +1505,11 @@ export const QuizBuilder = () => {
                     title={contentRow && contentRow.user_id !== user?.id ? "Seul le propriétaire peut modifier la visibilité" : undefined}
                   />
                 </div>
+                {contentRow && contentRow.user_id !== user?.id && (
+                  <p className="m-0 px-3 text-xs font-semibold text-muted-foreground">
+                    Seul le propriétaire peut modifier la visibilité de cette ressource.
+                  </p>
+                )}
                 <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                   <div className="flex items-center gap-2">
                     <Label className="cursor-pointer">{t("speedBonus")}</Label>

@@ -154,7 +154,9 @@ export function SlideNavigator() {
                       disabled={!copiedSlide}
                       onSelect={() => pasteSlide(slide.id)}
                     >
-                      <ClipboardPaste className="h-4 w-4" /> Coller
+                      <ClipboardPaste className="h-4 w-4" />
+                      <span>Coller</span>
+                      {!copiedSlide && <span className="ml-auto text-xs">Copiez d’abord une slide</span>}
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
@@ -182,7 +184,9 @@ export function SlideNavigator() {
                       disabled={slides.length <= 1}
                       onSelect={() => deleteSlide(slide.id)}
                     >
-                      <Trash2 className="h-4 w-4" /> Supprimer
+                      <Trash2 className="h-4 w-4" />
+                      <span>Supprimer</span>
+                      {slides.length <= 1 && <span className="ml-auto text-xs">Une slide minimum</span>}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
