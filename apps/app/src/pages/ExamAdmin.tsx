@@ -1,6 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
+  type LucideIcon, XCircle, ChevronLeft, Lock, Unlock, Users, CheckCircle2,
+  Trophy, BarChart2, Timer, Calendar, RotateCcw, HelpCircle, MessageCircle,
+  Trash2, ChevronDown, Play, Flag, Save, Hand, Bot,
+} from 'lucide-react';
+import {
   getExamById, getAttemptsForExam, computeExamStats, computeExamStatus,
   updateExam, exportCSV, cancelAttempt, getMessagesForAttempt, sendMessage,
   type Exam, type Attempt, type ExamStats, type ExamMessage,
@@ -135,7 +140,7 @@ export default function ExamAdmin() {
 
   if (error) return (
     <div style={wrapSt}>
-      <div style={{ fontSize: 52, marginBottom: 12 }}>❌</div>
+      <div style={{ marginBottom: 12 }}><XCircle style={{ width: 52, height: 52, color: 'var(--ap-quiz)' }} /></div>
       <h1 style={{ fontFamily: 'var(--ap-font-display)', fontWeight: 700, fontSize: 22 }}>{error}</h1>
     </div>
   );
@@ -193,8 +198,9 @@ export default function ExamAdmin() {
       }}>
         <button
           onClick={() => navigate('/my-exams')}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ap-muted)', fontSize: 20, padding: 4 }}
-        >←</button>
+          aria-label="Retour"
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ap-muted)', padding: 4, display: 'flex' }}
+        ><ChevronLeft style={{ width: 22, height: 22 }} /></button>
         <span style={{ fontFamily: 'var(--ap-font-display)', fontWeight: 600, fontSize: 18, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {exam.title}
         </span>
@@ -247,13 +253,13 @@ export default function ExamAdmin() {
             <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
 
               {liveStatus === 'open' && (
-                <button onClick={() => handleStatusChange('closed')} style={{ ...outlineBtn, color: '#ff5a4d', borderColor: '#ff9e96' }}>
-                  🔒 Fermer
+                <button onClick={() => handleStatusChange('closed')} style={{ ...outlineBtn, color: '#ff5a4d', borderColor: '#ff9e96', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                  <Lock className="h-3.5 w-3.5" /> Fermer
                 </button>
               )}
               {liveStatus === 'closed' && (
-                <button onClick={() => handleStatusChange('open')} style={{ ...outlineBtn, color: '#15c08a', borderColor: '#4dd9a0' }}>
-                  🔓 Rouvrir
+                <button onClick={() => handleStatusChange('open')} style={{ ...outlineBtn, color: '#15c08a', borderColor: '#4dd9a0', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                  <Unlock className="h-3.5 w-3.5" /> Rouvrir
                 </button>
               )}
             </div>
@@ -262,21 +268,21 @@ export default function ExamAdmin() {
 
         {/* Stats */}
         <div className="ea-row" style={{ marginBottom: 24 }}>
-          <StatCard icon="👤" label="Participants" value={String(stats.totalAttempts)} />
-          <StatCard icon="✅" label="Terminés" value={String(stats.completedAttempts)} />
+          <StatCard icon={Users} label="Participants" value={String(stats.totalAttempts)} />
+          <StatCard icon={CheckCircle2} label="Terminés" value={String(stats.completedAttempts)} />
           <StatCard
-            icon="🏆"
+            icon={Trophy}
             label="Taux de réussite"
             value={stats.passRate !== null ? `${stats.passRate}%` : '-'}
             highlight={stats.passRate !== null}
           />
           <StatCard
-            icon="📊"
+            icon={BarChart2}
             label="Score moyen"
             value={stats.avgScore !== null ? `${stats.avgScore}%` : '-'}
           />
           <StatCard
-            icon="⏱️"
+            icon={Timer}
             label="Durée moy."
             value={stats.avgTimeMinutes !== null ? `${stats.avgTimeMinutes} min` : '-'}
           />
@@ -289,11 +295,11 @@ export default function ExamAdmin() {
           fontSize: 12, fontWeight: 700, color: 'var(--ap-muted)',
           display: 'flex', gap: 20, flexWrap: 'wrap', alignItems: 'center',
         }}>
-          <span>📅 {new Date(exam.openAt).toLocaleString('fr')} → {new Date(exam.closeAt).toLocaleString('fr')}</span>
-          {exam.durationMinutes && <span>⏱️ {exam.durationMinutes} min</span>}
-          <span>🔄 Max {exam.maxAttempts} tentative{exam.maxAttempts > 1 ? 's' : ''}</span>
-          <span>🏆 Seuil {exam.passingScore}%</span>
-          {quiz && <span>❓ {quiz.questions.length} questions</span>}
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><Calendar className="h-3.5 w-3.5" /> {new Date(exam.openAt).toLocaleString('fr')} → {new Date(exam.closeAt).toLocaleString('fr')}</span>
+          {exam.durationMinutes && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><Timer className="h-3.5 w-3.5" /> {exam.durationMinutes} min</span>}
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><RotateCcw className="h-3.5 w-3.5" /> Max {exam.maxAttempts} tentative{exam.maxAttempts > 1 ? 's' : ''}</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><Trophy className="h-3.5 w-3.5" /> Seuil {exam.passingScore}%</span>
+          {quiz && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><HelpCircle className="h-3.5 w-3.5" /> {quiz.questions.length} questions</span>}
         </div>
 
         {/* In-progress participants — kept visually separate from submissions */}
@@ -377,8 +383,8 @@ export default function ExamAdmin() {
                 color: 'var(--ap-ink)',
               }}
             >
-              <span>📊 Analyse par question</span>
-              <span style={{ fontSize: 14, color: 'var(--ap-muted)', transform: showQuestionStats ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}>▼</span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><BarChart2 className="h-4 w-4" /> Analyse par question</span>
+              <ChevronDown style={{ width: 14, height: 14, color: 'var(--ap-muted)', transform: showQuestionStats ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }} />
             </button>
 
             {showQuestionStats && (
@@ -528,19 +534,19 @@ function AttemptRow({
         <button
           onClick={(e) => { e.stopPropagation(); onToggleChat(); }}
           title="Discussion avec ce participant"
-          style={{ ...rowIconBtn, color: isChatOpen ? 'var(--ap-brand)' : 'var(--ap-muted)' }}
+          style={{ ...rowIconBtn, color: isChatOpen ? 'var(--ap-brand)' : 'var(--ap-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
         >
-          💬
+          <MessageCircle className="h-4 w-4" />
         </button>
         <button
           onClick={(e) => { e.stopPropagation(); onRemove(); }}
           title="Retirer ce participant"
-          style={{ ...rowIconBtn, color: '#ff5a4d' }}
+          style={{ ...rowIconBtn, color: '#ff5a4d', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
         >
-          🗑️
+          <Trash2 className="h-4 w-4" />
         </button>
 
-        <span style={{ color: 'var(--ap-muted)', fontSize: 12, transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}>▼</span>
+        <ChevronDown style={{ width: 14, height: 14, color: 'var(--ap-muted)', transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }} />
       </div>
 
       {/* Persistent chat thread */}
@@ -647,11 +653,13 @@ function AttemptDetail({ att, exam, quiz }: { att: Attempt; exam: Exam; quiz: Sa
   return (
     <div style={{ padding: '0 18px 18px', borderTop: 'var(--ap-border-w) solid var(--ap-line)' }}>
       <div style={{ display: 'flex', gap: 20, padding: '14px 0', fontSize: 12, fontWeight: 700, color: 'var(--ap-muted)', flexWrap: 'wrap', borderBottom: '1px solid var(--ap-line)', marginBottom: 14 }}>
-        <span>▶ {new Date(att.startedAt).toLocaleString('fr')}</span>
-        {att.submittedAt && <span>🏁 {new Date(att.submittedAt).toLocaleString('fr')}</span>}
-        <span>⏱ {Math.floor(att.timeUsedSeconds / 60)} min {att.timeUsedSeconds % 60} s</span>
-        <span>💾 {att.logs.filter((l) => l.event === 'saved').length} sauvegardes auto</span>
-        <span>{att.submissionMode === 'manual' ? '✋ Manuel' : '🤖 Automatique'}</span>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><Play className="h-3.5 w-3.5" /> {new Date(att.startedAt).toLocaleString('fr')}</span>
+        {att.submittedAt && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><Flag className="h-3.5 w-3.5" /> {new Date(att.submittedAt).toLocaleString('fr')}</span>}
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><Timer className="h-3.5 w-3.5" /> {Math.floor(att.timeUsedSeconds / 60)} min {att.timeUsedSeconds % 60} s</span>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><Save className="h-3.5 w-3.5" /> {att.logs.filter((l) => l.event === 'saved').length} sauvegardes auto</span>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+          {att.submissionMode === 'manual' ? <><Hand className="h-3.5 w-3.5" /> Manuel</> : <><Bot className="h-3.5 w-3.5" /> Automatique</>}
+        </span>
       </div>
 
       {/* Answers overview */}
@@ -706,13 +714,13 @@ function checkCorrect(q: { type: string; correctAnswer: unknown }, given: number
   return given === q.correctAnswer;
 }
 
-function StatCard({ icon, label, value, highlight }: { icon: string; label: string; value: string; highlight?: boolean }) {
+function StatCard({ icon: Icon, label, value, highlight }: { icon: LucideIcon; label: string; value: string; highlight?: boolean }) {
   return (
     <div style={{
       background: 'var(--ap-card)', border: 'var(--ap-border-w) solid var(--ap-line)',
       borderRadius: 'var(--ap-r-lg)', padding: '16px 20px', textAlign: 'center',
     }}>
-      <div style={{ fontSize: 22, marginBottom: 6 }}>{icon}</div>
+      <div style={{ marginBottom: 6, display: 'flex', justifyContent: 'center' }}><Icon style={{ width: 22, height: 22, color: 'var(--ap-muted)' }} /></div>
       <div style={{
         fontFamily: 'var(--ap-font-display)', fontWeight: 800, fontSize: 24,
         color: highlight ? 'var(--ap-brand)' : 'var(--ap-ink)', marginBottom: 4,

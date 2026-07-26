@@ -1,7 +1,14 @@
+import { Star, BadgeCheck } from "lucide-react";
 import type { ReviewAdminRow } from "@/lib/pages/types";
 import { CardActions } from "./CardActions";
 
-const stars = (n: number) => "★★★★★☆☆☆☆☆".slice(5 - n, 10 - n);
+const StarRating = ({ n }: { n: number }) => (
+  <>
+    {Array.from({ length: 5 }, (_, i) => (
+      <Star key={i} className="h-3.5 w-3.5" style={{ display: "inline", fill: i < n ? "currentColor" : "none" }} />
+    ))}
+  </>
+);
 
 type Props = {
   rows: ReviewAdminRow[];
@@ -15,7 +22,7 @@ export const ReviewsList = ({ rows, onEdit, onNew, onUnpublish, onDelete }: Prop
   <div className="adm-tgrid">
     {[...rows].sort((a, b) => a.sort - b.sort).map((r) => (
       <div className="adm-tcard" key={r.id}>
-        <div className="adm-tstars">{stars(r.stars)}</div>
+        <div className="adm-tstars"><StarRating n={r.stars} /></div>
         <p>{r.text}</p>
         <div className="adm-twho">
           <span className="adm-tav">{r.avatar_emoji || "🙂"}</span>
@@ -23,7 +30,7 @@ export const ReviewsList = ({ rows, onEdit, onNew, onUnpublish, onDelete }: Prop
             <span className="who-name">{r.author_name || "—"}</span>
             <span className="who-role">{r.author_role}</span>
           </div>
-          <span className="adm-tverif">✓ Vérifié</span>
+          <span className="adm-tverif"><BadgeCheck className="h-3 w-3" style={{ display: "inline", verticalAlign: "-1px" }} /> Vérifié</span>
         </div>
         <CardActions
           status={r.status}

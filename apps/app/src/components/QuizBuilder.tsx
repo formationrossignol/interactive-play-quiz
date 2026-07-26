@@ -1013,7 +1013,7 @@ export const QuizBuilder = () => {
                   return (
                     <button key={opt.value} onClick={() => upd({ points: opt.value })}
                       style={{
-                        flex: 1, border: "none", borderRadius: 9, padding: "9px 6px",
+                        flex: 1, border: "none", borderRadius: 12, padding: "9px 6px",
                         background: isOn ? "var(--ap-ink)" : "transparent",
                         color: isOn ? "white" : "var(--ap-muted)",
                         fontWeight: 800, fontSize: 12.5, cursor: "pointer",
@@ -1035,7 +1035,7 @@ export const QuizBuilder = () => {
                   return (
                     <button key={opt.value} onClick={() => upd({ timeLimit: opt.value })}
                       style={{
-                        flex: 1, border: "none", borderRadius: 9, padding: "9px 6px",
+                        flex: 1, border: "none", borderRadius: 12, padding: "9px 6px",
                         background: isOn ? "var(--ap-brand)" : "transparent",
                         color: isOn ? "white" : "var(--ap-muted)",
                         fontWeight: 700, fontSize: 12.5, cursor: "pointer",

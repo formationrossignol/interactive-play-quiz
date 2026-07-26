@@ -175,7 +175,7 @@ export const GlobalSearch = ({ user }: GlobalSearchProps) => {
             overflowY: "auto",
             background: "var(--ap-card)",
             border: "var(--ap-border-w) solid var(--ap-line)",
-            borderRadius: "var(--ap-r-lg)",
+            borderRadius: "var(--ap-r-sm)",
             boxShadow: "var(--ap-shadow-card)",
             overflow: "hidden",
           }}
