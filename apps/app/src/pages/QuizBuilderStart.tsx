@@ -1,6 +1,21 @@
 import { useState } from "react";
 import { useNavigate, useLocation, Navigate } from "react-router-dom";
-import { ArrowRight, Plus } from "lucide-react";
+import type { ComponentType } from "react";
+import {
+  Activity,
+  ArrowRight,
+  BookOpen,
+  Globe2,
+  GraduationCap,
+  Landmark,
+  Map,
+  MessageSquare,
+  Microscope,
+  PartyPopper,
+  Plus,
+  Rocket,
+  UsersRound,
+} from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { PollTemplateSelectorEnhanced } from "@/components/PollTemplateSelectorEnhanced";
 import { QuizTemplateSelectorEnhanced } from "@/components/QuizTemplateSelectorEnhanced";
@@ -16,15 +31,18 @@ import type { PollTemplate } from "@/lib/pollTemplates";
 import type { QuizTemplate } from "@/lib/quizTemplates";
 import type { FlashcardTemplate } from "@/lib/flashcardTemplates";
 
-// Pastel gradient backgrounds for template cards — cycles by index
-const CARD_GRADIENTS = [
-  "linear-gradient(135deg, #6C63FF 0%, #4ECDC4 100%)",
-  "linear-gradient(135deg, #FF6B6B 0%, #FFE66D 100%)",
-  "linear-gradient(135deg, #2ECC71 0%, #1ABC9C 100%)",
-  "linear-gradient(135deg, #F093FB 0%, #F5576C 100%)",
-  "linear-gradient(135deg, #4FACFE 0%, #00F2FE 100%)",
-  "linear-gradient(135deg, #43E97B 0%, #38F9D7 100%)",
-];
+const TEMPLATE_ICONS: Record<string, ComponentType<{ style?: React.CSSProperties }>> = {
+  "culture-generale": Globe2,
+  sciences: Microscope,
+  histoire: Landmark,
+  geographie: Map,
+  "satisfaction-formation": GraduationCap,
+  "engagement-equipe": UsersRound,
+  "preparation-projet": Rocket,
+  "feedback-produit": MessageSquare,
+  icebreaker: PartyPopper,
+  "pulse-survey": Activity,
+};
 
 const PREVIEW_COUNT = 5;
 
@@ -47,6 +65,7 @@ export const QuizBuilderStart = () => {
 
   const isPoll = quizType === "poll";
   const isFlashcard = quizType === "flashcard";
+  const templateAccent = isPoll ? "--ap-poll" : isFlashcard ? "--ap-flash" : "--ap-quiz";
 
   const handleFromScratch = () => navigate(`/builder?type=${quizType}`);
   const handleSelectTemplate = (template: PollTemplate | QuizTemplate | FlashcardTemplate) => {
@@ -119,161 +138,141 @@ export const QuizBuilderStart = () => {
 
             {/* Horizontal scrollable strip */}
             <div
+              className="qb-template-strip"
               style={{
                 display: "flex",
-                gap: "14px",
+                gap: "16px",
                 overflowX: "auto",
-                paddingBottom: "12px",
+                padding: "4px 4px 16px",
+                margin: "0 -4px",
                 scrollbarWidth: "thin",
               }}
             >
               {/* Blank card */}
               <button
                 onClick={handleFromScratch}
+                className="ap-card ap-card--hover qb-template-card"
                 style={{
                   flexShrink: 0,
                   display: "flex",
                   flexDirection: "column",
-                  alignItems: "center",
-                  gap: "12px",
-                  background: "none",
-                  border: "none",
+                  alignItems: "stretch",
                   cursor: "pointer",
                   padding: 0,
-                  width: 140,
+                  width: 164,
+                  overflow: "hidden",
+                  textAlign: "left",
                 }}
               >
                 <div
                   style={{
-                    width: 140,
-                    height: 100,
-                    borderRadius: "var(--ap-r-md)",
-                    border: "var(--ap-border-w) dashed var(--ap-line)",
-                    background: "var(--ap-card)",
+                    height: 108,
+                    borderBottom: "var(--ap-border-w) solid var(--ap-line)",
+                    background: "var(--ap-paper-2)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    transition: "border-color .15s, background .15s",
-                  }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLDivElement).style.borderColor = "var(--ap-brand)";
-                    (e.currentTarget as HTMLDivElement).style.background = "var(--ap-brand-soft)";
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLDivElement).style.borderColor = "var(--ap-line)";
-                    (e.currentTarget as HTMLDivElement).style.background = "var(--ap-card)";
                   }}
                 >
-                  <Plus style={{ width: 28, height: 28, color: "var(--ap-muted)" }} />
+                  <span
+                    style={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: "var(--ap-r-md)",
+                      border: "var(--ap-border-w) dashed var(--ap-line-2)",
+                      display: "grid",
+                      placeItems: "center",
+                      background: "var(--ap-card)",
+                    }}
+                  >
+                    <Plus style={{ width: 24, height: 24, color: "var(--ap-muted)" }} />
+                  </span>
                 </div>
-                <span style={{ fontSize: "13px", fontWeight: 700, color: "var(--ap-ink)", fontFamily: "var(--ap-font-body)" }}>
+                <span style={{ padding: "13px 14px 14px", fontSize: "13px", fontWeight: 800, color: "var(--ap-ink)", fontFamily: "var(--ap-font-body)" }}>
                   Vierge
                 </span>
               </button>
 
               {/* Template cards */}
-              {(isFlashcard ? [] : previewTemplates).map((tpl, idx) => (
-                <button
-                  key={tpl.id}
-                  onClick={() => handleSelectTemplate(tpl)}
-                  style={{
-                    flexShrink: 0,
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    gap: "12px",
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    padding: 0,
-                    width: 140,
-                  }}
-                >
-                  <div
+              {(isFlashcard ? [] : previewTemplates).map((tpl) => {
+                const TemplateIcon = TEMPLATE_ICONS[tpl.id] ?? BookOpen;
+                return (
+                  <button
+                    key={tpl.id}
+                    onClick={() => handleSelectTemplate(tpl)}
+                    className="ap-card ap-card--hover qb-template-card"
                     style={{
-                      width: 140,
-                      height: 100,
-                      borderRadius: "var(--ap-r-md)",
-                      background: CARD_GRADIENTS[idx % CARD_GRADIENTS.length],
+                      flexShrink: 0,
                       display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: "36px",
-                      boxShadow: "0 4px 16px rgba(0,0,0,.10)",
-                      transition: "transform .15s, box-shadow .15s",
-                      position: "relative",
+                      flexDirection: "column",
+                      alignItems: "stretch",
+                      cursor: "pointer",
+                      padding: 0,
+                      width: 164,
                       overflow: "hidden",
-                    }}
-                    onMouseEnter={(e) => {
-                      (e.currentTarget as HTMLDivElement).style.transform = "translateY(-3px)";
-                      (e.currentTarget as HTMLDivElement).style.boxShadow = "0 8px 24px rgba(0,0,0,.16)";
-                    }}
-                    onMouseLeave={(e) => {
-                      (e.currentTarget as HTMLDivElement).style.transform = "";
-                      (e.currentTarget as HTMLDivElement).style.boxShadow = "0 4px 16px rgba(0,0,0,.10)";
+                      textAlign: "left",
                     }}
                   >
-                    <span style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,.2))" }}>{tpl.icon}</span>
-                  </div>
-                  <span
-                    style={{
-                      fontSize: "13px",
-                      fontWeight: 700,
-                      color: "var(--ap-ink)",
-                      fontFamily: "var(--ap-font-body)",
-                      textAlign: "center",
-                      maxWidth: 130,
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                    title={tpl.name}
-                  >
-                    {tpl.name}
-                  </span>
-                </button>
-              ))}
+                    <div
+                      style={{
+                        height: 108,
+                        borderBottom: "var(--ap-border-w) solid var(--ap-line)",
+                        background: `color-mix(in srgb, var(${templateAccent}) 14%, var(--ap-paper-2))`,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <TemplateIcon style={{ width: 38, height: 38, color: `var(${templateAccent})` }} />
+                    </div>
+                    <span
+                      style={{
+                        padding: "13px 14px 14px",
+                        fontSize: "13px",
+                        fontWeight: 800,
+                        color: "var(--ap-ink)",
+                        fontFamily: "var(--ap-font-body)",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                      title={tpl.name}
+                    >
+                      {tpl.name}
+                    </span>
+                  </button>
+                );
+              })}
 
               {/* Browse all card */}
               <button
                 onClick={() => setShowAll(true)}
+                className="ap-card ap-card--hover qb-template-card"
                 style={{
                   flexShrink: 0,
                   display: "flex",
                   flexDirection: "column",
-                  alignItems: "center",
-                  gap: "12px",
-                  background: "none",
-                  border: "none",
+                  alignItems: "stretch",
                   cursor: "pointer",
                   padding: 0,
-                  width: 140,
+                  width: 164,
+                  overflow: "hidden",
+                  textAlign: "left",
                 }}
               >
                 <div
                   style={{
-                    width: 140,
-                    height: 100,
-                    borderRadius: "var(--ap-r-md)",
-                    background: "linear-gradient(135deg, var(--ap-brand) 0%, var(--ap-flash) 100%)",
+                    height: 108,
+                    borderBottom: "var(--ap-border-w) solid var(--ap-line)",
+                    background: `color-mix(in srgb, var(${templateAccent}) 14%, var(--ap-paper-2))`,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    boxShadow: "0 4px 16px rgba(0,0,0,.10)",
-                    transition: "transform .15s, box-shadow .15s",
-                  }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLDivElement).style.transform = "translateY(-3px)";
-                    (e.currentTarget as HTMLDivElement).style.boxShadow = "0 8px 24px rgba(0,0,0,.16)";
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLDivElement).style.transform = "";
-                    (e.currentTarget as HTMLDivElement).style.boxShadow = "0 4px 16px rgba(0,0,0,.10)";
                   }}
                 >
-                  <ArrowRight style={{ width: 28, height: 28, color: "#fff" }} />
+                  <ArrowRight style={{ width: 34, height: 34, color: `var(${templateAccent})` }} />
                 </div>
-                <span style={{ fontSize: "13px", fontWeight: 700, color: "var(--ap-ink)", fontFamily: "var(--ap-font-body)" }}>
+                <span style={{ padding: "13px 14px 14px", fontSize: "13px", fontWeight: 800, color: "var(--ap-ink)", fontFamily: "var(--ap-font-body)" }}>
                   Voir tout
                 </span>
               </button>

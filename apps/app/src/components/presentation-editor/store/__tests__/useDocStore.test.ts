@@ -30,6 +30,30 @@ describe("slide management", () => {
     expect(slides.map((s, i) => s.order)).toEqual([0, 1]);
   });
 
+  it("addSlide can insert a blank slide after a specified slide", () => {
+    const store = useDocStore.getState();
+    store.addSlide();
+    const [firstId, secondId] = useDocStore.getState().presentation!.slides.map((slide) => slide.id);
+    const insertedId = useDocStore.getState().addSlide(firstId);
+    expect(useDocStore.getState().presentation!.slides.map((slide) => slide.id)).toEqual([
+      firstId,
+      insertedId,
+      secondId,
+    ]);
+  });
+
+  it("insertSlideCopy pastes a copied slide after the target with fresh element ids", () => {
+    const store = useDocStore.getState();
+    const firstId = store.presentation!.slides[0].id;
+    store.addElement(firstId, rect("source-element"));
+    const source = useDocStore.getState().presentation!.slides[0];
+    const pastedId = useDocStore.getState().insertSlideCopy(source, firstId);
+    const slides = useDocStore.getState().presentation!.slides;
+    expect(slides[1].id).toBe(pastedId);
+    expect(slides[1].elements).toHaveLength(1);
+    expect(slides[1].elements[0].id).not.toBe("source-element");
+  });
+
   it("deleteSlide removes it and reindexes order", () => {
     const store = useDocStore.getState();
     store.addSlide();

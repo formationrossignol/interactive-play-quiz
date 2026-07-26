@@ -9,8 +9,9 @@ interface DocState {
   importJSON: (json: string) => void;
   setTitle: (title: string) => void;
 
-  addSlide: () => string;
+  addSlide: (afterSlideId?: string) => string;
   duplicateSlide: (slideId: string) => string;
+  insertSlideCopy: (slide: Slide, afterSlideId: string) => string;
   deleteSlide: (slideId: string) => void;
   reorderSlides: (slideId: string, toIndex: number) => void;
   toggleSlideHidden: (slideId: string) => void;
@@ -40,6 +41,25 @@ function nextId(prefix: string): string {
   return `${prefix}-${Date.now()}-${uid}`;
 }
 
+function cloneSlide(source: Slide, id: string): Slide {
+  const elementIds = new Map(source.elements.map((element) => [element.id, nextId("el")]));
+  const elements = source.elements.map((element): SlideElement => {
+    const shared = {
+      ...element,
+      id: elementIds.get(element.id)!,
+      groupId: element.groupId ? elementIds.get(element.groupId) : undefined,
+    };
+    if (element.type === "group") {
+      return {
+        ...shared,
+        childIds: element.childIds.map((childId) => elementIds.get(childId) ?? childId),
+      } as SlideElement;
+    }
+    return shared as SlideElement;
+  });
+  return { ...source, id, elements };
+}
+
 export const useDocStore = create<DocState>((set, get) => ({
   presentation: null,
 
@@ -52,11 +72,21 @@ export const useDocStore = create<DocState>((set, get) => ({
     return { presentation: { ...state.presentation, title } };
   }),
 
-  addSlide: () => {
+  addSlide: (afterSlideId) => {
     const id = nextId("slide");
     set((state) => {
       if (!state.presentation) return state;
-      const slides = reindex([...state.presentation.slides, { id, order: 0, hidden: false, elements: [] }]);
+      const nextSlide: Slide = { id, order: 0, hidden: false, elements: [] };
+      const afterIndex = afterSlideId
+        ? state.presentation.slides.findIndex((slide) => slide.id === afterSlideId)
+        : -1;
+      const slides = afterIndex >= 0
+        ? reindex([
+            ...state.presentation.slides.slice(0, afterIndex + 1),
+            nextSlide,
+            ...state.presentation.slides.slice(afterIndex + 1),
+          ])
+        : reindex([...state.presentation.slides, nextSlide]);
       return { presentation: { ...state.presentation, slides } };
     });
     return id;
@@ -69,11 +99,24 @@ export const useDocStore = create<DocState>((set, get) => ({
       const idx = state.presentation.slides.findIndex((s) => s.id === slideId);
       if (idx === -1) return state;
       const source = state.presentation.slides[idx];
-      const copy: Slide = {
-        ...source,
-        id: newId,
-        elements: source.elements.map((e) => ({ ...e, id: nextId("el") })),
-      };
+      const copy = cloneSlide(source, newId);
+      const slides = reindex([
+        ...state.presentation.slides.slice(0, idx + 1),
+        copy,
+        ...state.presentation.slides.slice(idx + 1),
+      ]);
+      return { presentation: { ...state.presentation, slides } };
+    });
+    return newId;
+  },
+
+  insertSlideCopy: (source, afterSlideId) => {
+    const newId = nextId("slide");
+    set((state) => {
+      if (!state.presentation) return state;
+      const idx = state.presentation.slides.findIndex((slide) => slide.id === afterSlideId);
+      if (idx === -1) return state;
+      const copy = cloneSlide(source, newId);
       const slides = reindex([
         ...state.presentation.slides.slice(0, idx + 1),
         copy,

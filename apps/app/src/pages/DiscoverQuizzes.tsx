@@ -6,7 +6,7 @@ import { AppLayout } from "@/components/AppLayout";
 import { Pagination } from "@/components/Pagination";
 import { RatingStars } from "@/components/RatingStars";
 import { getPublicQuizzes, rateQuiz } from "@/lib/quizStorage";
-import { Search, Play, Clock, Users } from "lucide-react";
+import { BarChart2, ListChecks, Search, Play, Clock, Users } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { toast } from "sonner";
 import { t } from "@/lib/i18n";
@@ -23,6 +23,37 @@ const triggerStyle = {
   border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-sm)",
   background: "var(--ap-card)", color: "var(--ap-ink)", height: "42px",
 };
+
+function PublicQuizHeader({ quiz }: { quiz: ReturnType<typeof getPublicQuizzes>[number] }) {
+  const isPoll = quiz.type === "poll";
+  const HeaderIcon = isPoll ? BarChart2 : ListChecks;
+  const accent = isPoll ? "--ap-poll" : "--ap-quiz";
+
+  return (
+    <div
+      style={{
+        height: 180,
+        overflow: "hidden",
+        position: "relative",
+        flexShrink: 0,
+        display: "grid",
+        placeItems: "center",
+        background: `color-mix(in srgb, var(${accent}) 14%, var(--ap-paper-2))`,
+        borderBottom: "var(--ap-border-w) solid var(--ap-line)",
+      }}
+    >
+      <HeaderIcon aria-hidden="true" style={{ width: 44, height: 44, color: `var(${accent})`, opacity: 0.8 }} />
+      {quiz.headerImage && (
+        <img
+          src={quiz.headerImage}
+          alt=""
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+          onError={(event) => { event.currentTarget.style.display = "none"; }}
+        />
+      )}
+    </div>
+  );
+}
 
 const DiscoverQuizzes = () => {
   const navigate = useNavigate();
@@ -177,16 +208,7 @@ const DiscoverQuizzes = () => {
                 className="ap-card ap-card--hover"
                 style={{ display: "flex", flexDirection: "column", overflow: "hidden", padding: 0 }}
               >
-                {/* header image */}
-                {quiz.headerImage && (
-                  <div style={{ height: 180, overflow: "hidden" }}>
-                    <img
-                      src={quiz.headerImage}
-                      alt={quiz.title}
-                      style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform .3s", display: "block" }}
-                    />
-                  </div>
-                )}
+                <PublicQuizHeader quiz={quiz} />
 
                 <div style={{ padding: "20px", display: "flex", flexDirection: "column", flex: 1, gap: "10px" }}>
                   {/* title + type badge */}

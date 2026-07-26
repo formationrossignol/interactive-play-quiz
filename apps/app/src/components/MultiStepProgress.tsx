@@ -9,7 +9,7 @@ interface MultiStepProgressProps {
 /**
  * Barre de progression segmentée, lisible sur tous les fonds de l'app
  * (crème Arcade Pop, violet joueur, thèmes sombres de session) :
- * fait = vert --ap-pres, en cours = jaune --ap-flash pulsé, à venir = neutre.
+ * fait = vert --ap-pres, en cours = jaune --ap-flash fixe, à venir = neutre.
  */
 export const MultiStepProgress = ({ totalSteps, currentStep, className }: MultiStepProgressProps) => {
   return (
@@ -17,10 +17,7 @@ export const MultiStepProgress = ({ totalSteps, currentStep, className }: MultiS
       {Array.from({ length: totalSteps }).map((_, index) => (
         <div
           key={index}
-          className={cn(
-            "h-2 flex-1 rounded-full transition-all duration-300",
-            index === currentStep && "animate-pulse"
-          )}
+          className="h-2 flex-1 rounded-full transition-[background-color,box-shadow] duration-300"
           style={{
             background:
               index < currentStep
