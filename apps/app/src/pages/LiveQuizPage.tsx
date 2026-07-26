@@ -11,6 +11,7 @@ import { useDocStore } from "@/components/presentation-editor/store/useDocStore"
 import { isLegacySlideShape, migrateLegacySlideToPresentation } from "@/components/presentation-editor/utils/migrateLegacySlide";
 import type { Presentation } from "@/components/presentation-editor/types/presentation";
 import { getQuizById, type SavedQuiz } from "@/lib/quizStorage";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const fallbackKeysForType = (id: string) => [
   `quiz-${id}`,
@@ -153,8 +154,12 @@ const LiveQuizPage = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
-        <div className="rounded-2xl bg-white/10 border border-white/20 p-8 text-center text-white max-w-md w-full">
-          <p className="text-lg text-white">Chargement de votre contenu interactif…</p>
+        <div className="rounded-2xl bg-white/10 border border-white/20 p-8 max-w-md w-full">
+          <Skeleton className="mx-auto mb-5 h-12 w-12 rounded-full bg-white/20" />
+          <Skeleton className="mx-auto mb-3 h-7 w-3/5 bg-white/20" />
+          <Skeleton className="mx-auto mb-8 h-4 w-4/5 bg-white/20" />
+          <Skeleton className="mb-3 h-12 w-full bg-white/20" />
+          <Skeleton className="h-12 w-full rounded-full bg-white/20" />
         </div>
       </div>
     );

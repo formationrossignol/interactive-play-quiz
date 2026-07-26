@@ -17,8 +17,10 @@ import {
   FolderOpen,
   GripVertical,
   Layers,
+  Link2,
   ListChecks,
   MoreHorizontal,
+  Pencil,
   Play,
   Presentation,
   Star,
@@ -51,6 +53,7 @@ export interface ItemCtx {
   onFavorite: () => void;
   onTrash: () => void;
   onDuplicate: () => void;
+  onCopyLink: () => void;
   /** Opens the shared access-management modal for this item — REQ-UX-001:
    *  sharing used to be a courses-only, 4-click action. */
   onManageAccess: () => void;
@@ -151,6 +154,9 @@ function ItemMenu({
         )}
         <DropdownMenuItem onSelect={ctx.onDuplicate} className="flex items-center gap-2 cursor-pointer text-sm">
           <Copy className="h-3.5 w-3.5" /> Dupliquer
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={ctx.onCopyLink} className="flex items-center gap-2 cursor-pointer text-sm">
+          <Link2 className="h-3.5 w-3.5" /> Copier le lien
         </DropdownMenuItem>
         {ctx.folders.length > 0 && (
           <DropdownMenuSub>
@@ -341,7 +347,7 @@ export function GenericRow(props: GenericItemProps) {
   return (
     <div
       ref={setNodeRef}
-      className="ap-row flex items-center gap-4 cursor-pointer px-4 transition-colors"
+      className="ap-row group flex items-center gap-4 cursor-pointer px-4 transition-colors"
       style={{
         borderBottom: "var(--ap-border-w) solid var(--ap-line)", opacity: isDragging ? 0.4 : 1,
         paddingTop: "var(--density-row-pad-y, 12px)", paddingBottom: "var(--density-row-pad-y, 12px)",
@@ -375,9 +381,36 @@ export function GenericRow(props: GenericItemProps) {
         )}
         <span className="ap-pill" style={{ fontSize: "11px", padding: "2px 8px" }}>{config.countLabel(n)}</span>
       </div>
-      <div className="flex items-center gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+      <div className="ap-hover-actions flex items-center gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+        <button
+          type="button"
+          className="ap-btn ap-btn--ghost ap-btn--sm ap-icon-btn"
+          title="Modifier"
+          aria-label={`Modifier ${d.title}`}
+          onClick={() => navigate(config.editRoute(id))}
+        >
+          <Pencil className="h-3.5 w-3.5" />
+        </button>
+        <button
+          type="button"
+          className="ap-btn ap-btn--ghost ap-btn--sm ap-icon-btn"
+          title="Copier le lien"
+          aria-label={`Copier le lien de ${d.title}`}
+          onClick={ctx.onCopyLink}
+        >
+          <Link2 className="h-3.5 w-3.5" />
+        </button>
+        <button
+          type="button"
+          className="ap-btn ap-btn--ghost ap-btn--sm ap-icon-btn"
+          style={{ color: "var(--ap-quiz)" }}
+          title="Mettre à la corbeille"
+          aria-label={`Mettre ${d.title} à la corbeille`}
+          onClick={ctx.onTrash}
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
         <ItemMenu d={d} ctx={ctx} config={config} navigate={navigate} />
-        {primaryButton(props, { text: "12px", pad: "6px 12px" })}
       </div>
     </div>
   );

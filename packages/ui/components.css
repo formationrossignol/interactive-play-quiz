@@ -418,3 +418,25 @@
   border-color: var(--ap-brand);
   transform: translateY(-2px);
 }
+
+/* Contextual row actions: quiet by default, immediately available on hover,
+   keyboard focus, and touch devices. */
+.ap-hover-actions {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(6px);
+  transition: opacity .14s var(--ap-ease), transform .14s var(--ap-ease);
+}
+.ap-row:hover .ap-hover-actions,
+.ap-row:focus-within .ap-hover-actions {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(0);
+}
+@media (hover: none) {
+  .ap-hover-actions {
+    opacity: 1;
+    pointer-events: auto;
+    transform: none;
+  }
+}

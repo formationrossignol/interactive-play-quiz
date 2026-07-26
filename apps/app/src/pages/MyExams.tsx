@@ -16,7 +16,10 @@ import {
   ClipboardCheck,
   Clock3,
   GripVertical,
+  Link2,
+  Pencil,
   Star,
+  Trash2,
   UserRound,
 } from 'lucide-react';
 import { ContentExplorer } from '@/components/content/ContentExplorer';
@@ -224,7 +227,7 @@ function ExamRow({ d, ctx, navigate, onDuplicate }: ExamItemProps) {
   return (
     <div
       ref={setNodeRef}
-      className="ap-row"
+      className="ap-row group"
       style={{ padding: '18px 22px', display: 'flex', alignItems: 'center', gap: 16, cursor: 'pointer', opacity: isDragging ? 0.4 : 1 }}
       onClick={() => navigate(`/exam/${exam.id}/admin`)}
     >
@@ -247,7 +250,16 @@ function ExamRow({ d, ctx, navigate, onDuplicate }: ExamItemProps) {
           {renderMeta(exam, stats)}
         </div>
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
+      <div className="ap-hover-actions" style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
+        <button className="ap-btn ap-btn--ghost ap-btn--sm ap-icon-btn" title="Modifier" aria-label={`Modifier ${exam.title}`} onClick={() => navigate(`/exam-builder?examId=${exam.id}`)}>
+          <Pencil className="h-3.5 w-3.5" />
+        </button>
+        <button className="ap-btn ap-btn--ghost ap-btn--sm ap-icon-btn" title="Copier le lien" aria-label={`Copier le lien de ${exam.title}`} onClick={ctx.onCopyLink}>
+          <Link2 className="h-3.5 w-3.5" />
+        </button>
+        <button className="ap-btn ap-btn--ghost ap-btn--sm ap-icon-btn" style={{ color: 'var(--ap-quiz)' }} title="Mettre à la corbeille" aria-label={`Mettre ${exam.title} à la corbeille`} onClick={ctx.onTrash}>
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
         <ExamContextMenu
           isFavorite={d.isFavorite}
           onEdit={() => navigate(`/exam-builder?examId=${exam.id}`)}
@@ -256,7 +268,6 @@ function ExamRow({ d, ctx, navigate, onDuplicate }: ExamItemProps) {
           onManageAccess={ctx.onManageAccess}
           onTrash={ctx.onTrash}
         />
-        {primaryButton(exam, navigate, { text: '12px', pad: '6px 12px' })}
       </div>
     </div>
   );
@@ -265,8 +276,14 @@ function ExamRow({ d, ctx, navigate, onDuplicate }: ExamItemProps) {
 export default function MyExams() {
   const navigate = useNavigate();
   const user = getCurrentUser();
-  const [status, setStatus] = useState<'Tous' | ExamStatus>('Tous');
+  const [status, setStatus] = useState<'Tous' | ExamStatus>(
+    () => (localStorage.getItem('my-exams-status-filter') as 'Tous' | ExamStatus | null) ?? 'Tous',
+  );
   const reloadRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    localStorage.setItem('my-exams-status-filter', status);
+  }, [status]);
 
   const handleDuplicate = async (d: ContentDisplay) => {
     if (!user) return;

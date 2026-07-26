@@ -37,6 +37,7 @@ export const GlobalSearch = ({ user }: GlobalSearchProps) => {
   const [highlighted, setHighlighted] = useState(0);
   const [recent, setRecent] = useState<string[]>(() => (user ? getRecentSearches(user.id) : []));
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
   const requestIdRef = useRef(0);
   const isMountedRef = useRef(true);
 
@@ -86,6 +87,19 @@ export const GlobalSearch = ({ user }: GlobalSearchProps) => {
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, []);
 
+  useEffect(() => {
+    const focusSearch = (event: KeyboardEvent) => {
+      if (event.key !== "/" || event.metaKey || event.ctrlKey || event.altKey) return;
+      const target = event.target as HTMLElement | null;
+      if (target?.isContentEditable || target?.tagName === "INPUT" || target?.tagName === "TEXTAREA") return;
+      event.preventDefault();
+      inputRef.current?.focus();
+      setOpen(true);
+    };
+    window.addEventListener("keydown", focusSearch);
+    return () => window.removeEventListener("keydown", focusSearch);
+  }, []);
+
   // Results grouped by content type (REQ-SRC-003) while keyboard nav still
   // walks a single flat, score/recency-ordered list — `displayOrder` is that
   // list re-sequenced to match the grouped rendering below, so index N in
@@ -130,6 +144,7 @@ export const GlobalSearch = ({ user }: GlobalSearchProps) => {
           style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--ap-muted)", pointerEvents: "none" }}
         />
         <input
+          ref={inputRef}
           role="combobox"
           aria-expanded={open}
           aria-controls={LISTBOX_ID}

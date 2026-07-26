@@ -13,6 +13,7 @@ import {
   deleteQuestionBankItem,
   duplicateQuestionBankItem,
   getQuestionBankForUser,
+  restoreQuestionBankItem,
   sanitizeQuestionForBank,
   updateQuestionBankItem,
   type QuestionBankItem,
@@ -48,6 +49,8 @@ const DIFFICULTY_BADGE: Record<QuestionDifficulty, string> = {
 
 const PAGE_SIZE = 12;
 const VIEW_KEY = "view-mode-question-bank";
+const TYPE_FILTER_KEY = "question-bank-type-filter";
+const DIFFICULTY_FILTER_KEY = "question-bank-difficulty-filter";
 
 const inputStyle: React.CSSProperties = {
   width: "100%",
@@ -110,8 +113,8 @@ const QuestionBank = () => {
 
   /* ---- bank filters ---- */
   const [bankSearch, setBankSearch] = useState("");
-  const [bankTypeFilter, setBankTypeFilter] = useState("all");
-  const [bankDiffFilter, setBankDiffFilter] = useState("all");
+  const [bankTypeFilter, setBankTypeFilter] = useState(() => localStorage.getItem(TYPE_FILTER_KEY) ?? "all");
+  const [bankDiffFilter, setBankDiffFilter] = useState(() => localStorage.getItem(DIFFICULTY_FILTER_KEY) ?? "all");
   const [bankPage, setBankPage] = useState(1);
 
   /* ---- quiz questions filters ---- */
@@ -156,6 +159,8 @@ const QuestionBank = () => {
   const bankTotalPages = Math.max(1, Math.ceil(filteredBank.length / PAGE_SIZE));
   const bankPaginated = filteredBank.slice((bankPage - 1) * PAGE_SIZE, bankPage * PAGE_SIZE);
   useEffect(() => { setBankPage(1); }, [bankSearch, bankTypeFilter, bankDiffFilter]);
+  useEffect(() => { localStorage.setItem(TYPE_FILTER_KEY, bankTypeFilter); }, [bankTypeFilter]);
+  useEffect(() => { localStorage.setItem(DIFFICULTY_FILTER_KEY, bankDiffFilter); }, [bankDiffFilter]);
 
   /* ---- filtered quiz questions ---- */
   const filteredQQ = useMemo(() => {
@@ -208,7 +213,18 @@ const QuestionBank = () => {
   };
 
   const handleDelete = (item: QuestionBankItem) => {
-    if (deleteQuestionBankItem(item.id)) { toast.success(t("questionBankDeleted")); refreshItems(); }
+    if (!deleteQuestionBankItem(item.id)) return;
+    refreshItems();
+    toast.success(t("questionBankDeleted"), {
+      action: {
+        label: "Annuler",
+        onClick: () => {
+          restoreQuestionBankItem(item);
+          refreshItems();
+          toast.success("Suppression annulée");
+        },
+      },
+    });
   };
   const handleDuplicate = (item: QuestionBankItem) => {
     if (duplicateQuestionBankItem(item.id)) { toast.success(t("questionBankDuplicated")); refreshItems(); }
@@ -390,6 +406,7 @@ const QuestionBank = () => {
                   return (
                     <div
                       key={item.id}
+                      className="ap-row group"
                       style={{
                         display: "flex", alignItems: "center", gap: "14px", padding: "14px 18px",
                         borderTop: idx > 0 ? "var(--ap-border-w) solid var(--ap-line)" : "none",
@@ -409,7 +426,7 @@ const QuestionBank = () => {
                           </span>
                         )}
                       </div>
-                      <div style={{ display: "flex", gap: "4px", flexShrink: 0 }}>
+                      <div className="ap-hover-actions" style={{ gap: "4px", flexShrink: 0 }}>
                         <button className="ap-btn ap-btn--ghost ap-btn--sm" style={{ padding: "7px 10px" }} onClick={() => handleDuplicate(item)} title={t("duplicate")}>
                           <Copy className="h-3.5 w-3.5" />
                         </button>

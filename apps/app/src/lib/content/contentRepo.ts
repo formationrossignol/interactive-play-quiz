@@ -34,6 +34,20 @@ export async function listContent(
   return data ?? [];
 }
 
+/** Most recently edited, non-trashed creations across every content type. */
+export async function listRecentContent(userId: string, limit = 4): Promise<ContentRow[]> {
+  const { data, error } = await supabase
+    .from('content')
+    .select('*')
+    .eq('user_id', userId)
+    .order('updated_at', { ascending: false })
+    .limit(Math.max(limit * 3, 12));
+  if (error) throw error;
+  return ((data ?? []) as ContentRow[])
+    .filter((row) => !row.data?.deletedAt)
+    .slice(0, limit);
+}
+
 /**
  * List public content of a type across all users (for the "public" tab).
  * Relies on the `content_public_read` RLS policy (select allowed when

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { getAttemptById, getExamById, type Attempt, type Exam } from '@/lib/examStorage';
 import { getContentBySource } from '@/lib/content/contentRepo';
 import type { SavedQuiz } from '@/lib/quizStorage';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function ExamResults() {
   const { attemptId } = useParams<{ attemptId: string }>();
@@ -47,14 +48,7 @@ export default function ExamResults() {
   );
 
   if (!attempt || !exam || !quiz) return (
-    <div style={wrapSt}>
-      <svg width="40" height="40" viewBox="0 0 40 40" style={{ animation: 'spin .9s linear infinite' }}>
-        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-        <circle cx="20" cy="20" r="16" fill="none" stroke="var(--ap-line-2)" strokeWidth="4" />
-        <circle cx="20" cy="20" r="16" fill="none" stroke="var(--ap-brand)" strokeWidth="4"
-          strokeDasharray="80" strokeDashoffset="60" strokeLinecap="round" />
-      </svg>
-    </div>
+    <ExamResultsSkeleton />
   );
 
   const passed = attempt.passed;
@@ -82,7 +76,7 @@ export default function ExamResults() {
         </span>
       </div>
 
-      <div style={{ maxWidth: 680, margin: '0 auto', padding: '28px 16px' }}>
+      <div style={{ maxWidth: 1120, margin: '0 auto', padding: '28px 16px' }}>
         {/* Score card */}
         <div style={{
           background: passed ? 'linear-gradient(135deg, #e8faf3, #d0f4e6)' : 'linear-gradient(135deg, #fff3f0, #ffe5e2)',
@@ -106,60 +100,109 @@ export default function ExamResults() {
           </div>
         </div>
 
-        {/* Q&A correction */}
-        {showAnswers && orderedQs.map((q: { id: string; type: string; question: string; answers: string[]; correctAnswer: unknown }, idx: number) => {
-          const given = attempt.answers[q.id];
-          const isCorrect = showCorrection ? checkCorrect(q, given) : null;
+        {showAnswers && (
+          <div style={{
+            overflowX: 'auto',
+            background: 'var(--ap-card)',
+            border: 'var(--ap-border-w) solid var(--ap-line)',
+            borderRadius: 'var(--ap-r-lg)',
+          }}>
+            <table style={{ width: '100%', minWidth: 760, borderCollapse: 'collapse', textAlign: 'left' }}>
+              <thead>
+                <tr style={{ background: 'var(--ap-paper)' }}>
+                  <ResultHeader style={{ width: 64 }}>#</ResultHeader>
+                  <ResultHeader>Question</ResultHeader>
+                  <ResultHeader>Votre réponse</ResultHeader>
+                  {showCorrection && <ResultHeader>Bonne réponse</ResultHeader>}
+                  {showCorrection && <ResultHeader style={{ width: 112 }}>Statut</ResultHeader>}
+                </tr>
+              </thead>
+              <tbody>
+                {orderedQs.map((q: { id: string; type: string; question: string; answers: string[]; correctAnswer: unknown }, idx: number) => {
+                  const given = attempt.answers[q.id];
+                  const isCorrect = showCorrection ? checkCorrect(q, given) : null;
+                  return (
+                    <tr key={q.id} style={{ borderTop: '1px solid var(--ap-line)' }}>
+                      <ResultCell style={{ color: 'var(--ap-muted)', fontWeight: 800 }}>Q{idx + 1}</ResultCell>
+                      <ResultCell style={{ fontWeight: 800, minWidth: 240 }}>{q.question}</ResultCell>
+                      <ResultCell>
+                        <AnswerPill tone={isCorrect === true ? 'success' : isCorrect === false ? 'error' : 'neutral'}>
+                          {formatAnswer(q, given)}
+                        </AnswerPill>
+                      </ResultCell>
+                      {showCorrection && (
+                        <ResultCell>
+                          <AnswerPill tone="success">{formatCorrect(q)}</AnswerPill>
+                        </ResultCell>
+                      )}
+                      {showCorrection && (
+                        <ResultCell>
+                          <span style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 6,
+                            color: isCorrect ? '#0d8f68' : '#d83d34', fontWeight: 800, fontSize: 13,
+                          }}>
+                            {isCorrect ? '✓ Correct' : '✕ Incorrect'}
+                          </span>
+                        </ResultCell>
+                      )}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
-          return (
-            <div key={q.id} style={{
-              background: 'var(--ap-card)', border: `2px solid ${isCorrect === true ? '#4dd9a0' : isCorrect === false ? '#ff9e96' : 'var(--ap-line)'}`,
-              borderRadius: 'var(--ap-r-lg)', padding: '18px 20px', marginBottom: 12,
-            }}>
-              <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
-                {showCorrection && (
-                  <span style={{ fontSize: 16, flexShrink: 0, marginTop: 1 }}>
-                    {isCorrect === true ? '✅' : isCorrect === false ? '❌' : '⭕'}
-                  </span>
-                )}
-                <p style={{ fontWeight: 800, fontSize: 14, lineHeight: 1.4, margin: 0 }}>
-                  <span style={{ color: 'var(--ap-muted)', fontWeight: 700, marginRight: 6 }}>Q{idx + 1}.</span>
-                  {q.question}
-                </p>
-              </div>
+function ResultHeader({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+  return (
+    <th style={{
+      padding: '14px 16px', fontSize: 11, fontWeight: 800, letterSpacing: '.06em',
+      textTransform: 'uppercase', color: 'var(--ap-muted)', ...style,
+    }}>
+      {children}
+    </th>
+  );
+}
 
-              {/* Participant's answer */}
-              <div style={{ marginBottom: showCorrection && isCorrect === false ? 8 : 0 }}>
-                <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--ap-muted)', marginBottom: 4 }}>
-                  Votre réponse
-                </div>
-                <div style={{
-                  padding: '8px 12px', borderRadius: 'var(--ap-r-sm)', fontSize: 13, fontWeight: 700,
-                  background: isCorrect === true ? '#e8faf3' : isCorrect === false ? '#fff3f0' : 'var(--ap-paper)',
-                  color: isCorrect === true ? '#15c08a' : isCorrect === false ? '#ff5a4d' : 'var(--ap-ink)',
-                  border: `1.5px solid ${isCorrect === true ? '#4dd9a0' : isCorrect === false ? '#ff9e96' : 'var(--ap-line)'}`,
-                }}>
-                  {formatAnswer(q, given)}
-                </div>
-              </div>
+function ResultCell({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+  return <td style={{ padding: '14px 16px', verticalAlign: 'top', fontSize: 14, ...style }}>{children}</td>;
+}
 
-              {/* Correct answer (if wrong) */}
-              {showCorrection && isCorrect === false && (
-                <div>
-                  <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.06em', textTransform: 'uppercase', color: '#15c08a', marginBottom: 4 }}>
-                    Bonne réponse
-                  </div>
-                  <div style={{
-                    padding: '8px 12px', borderRadius: 'var(--ap-r-sm)', fontSize: 13, fontWeight: 700,
-                    background: '#e8faf3', color: '#15c08a', border: '1.5px solid #4dd9a0',
-                  }}>
-                    {formatCorrect(q)}
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        })}
+function AnswerPill({ children, tone }: { children: React.ReactNode; tone: 'success' | 'error' | 'neutral' }) {
+  const tones = {
+    success: { background: '#e8faf3', color: '#0d8f68', border: '#9ce7ca' },
+    error: { background: '#fff3f0', color: '#d83d34', border: '#ffc1bc' },
+    neutral: { background: 'var(--ap-paper)', color: 'var(--ap-ink)', border: 'var(--ap-line)' },
+  };
+  const colors = tones[tone];
+  return (
+    <span style={{
+      display: 'inline-block', padding: '7px 10px', borderRadius: 'var(--ap-r-sm)',
+      border: `1px solid ${colors.border}`, background: colors.background,
+      color: colors.color, fontWeight: 700, lineHeight: 1.35,
+    }}>
+      {children}
+    </span>
+  );
+}
+
+function ExamResultsSkeleton() {
+  return (
+    <div style={{ minHeight: '100vh' }}>
+      <div style={{ height: 60, borderBottom: 'var(--ap-border-w) solid var(--ap-line)', padding: '0 24px', display: 'flex', alignItems: 'center', gap: 16 }}>
+        <Skeleton className="h-7 w-7 rounded-full" />
+        <Skeleton className="h-5 w-64" />
+      </div>
+      <div style={{ maxWidth: 1120, margin: '0 auto', padding: '28px 16px' }}>
+        <Skeleton className="h-64 w-full rounded-2xl mb-6" />
+        <div style={{ border: 'var(--ap-border-w) solid var(--ap-line)', borderRadius: 'var(--ap-r-lg)', padding: 16 }}>
+          <Skeleton className="h-10 w-full mb-3" />
+          {[0, 1, 2, 3].map((row) => <Skeleton key={row} className="h-16 w-full mb-2" />)}
+        </div>
       </div>
     </div>
   );
