@@ -43,6 +43,7 @@ import type { ContentDisplay } from "@/lib/content/contentView";
 import type { FolderRow } from "@/lib/content/types";
 import { readSessionHistory } from "@/lib/sessionState";
 import { t } from "@/lib/i18n";
+import { ContentCardHeader, ContentRowThumbnail } from "@/components/content/ContentCardHeader";
 
 type NavigateFn = ReturnType<typeof useNavigate>;
 
@@ -268,42 +269,20 @@ export function GenericCard(props: GenericItemProps) {
       style={{ opacity: isDragging ? 0.4 : 1, padding: 0 }}
       onClick={() => navigate(config.editRoute(id))}
     >
-      {img ? (
-        <div className="relative h-52 w-full overflow-hidden flex-shrink-0">
-          <img src={img} alt={d.title} className="h-full w-full object-cover" />
-          <button
-            type="button"
-            {...attributes}
-            {...listeners}
-            onClick={(e) => e.stopPropagation()}
-            style={gripOverlayStyle}
-            className="ap-grip"
-            title="Déplacer"
-            aria-label={`Déplacer ${d.title}`}
-          >
-            <GripVertical style={{ width: 14, height: 14 }} />
-          </button>
-        </div>
-      ) : (
-        <div
-          className="relative h-52 w-full overflow-hidden flex-shrink-0 flex items-center justify-center"
-          style={{ background: `color-mix(in srgb, var(${accentVar}) 14%, var(--ap-paper-2))` }}
+      <ContentCardHeader image={img} alt={d.title} icon={DefaultHeaderIcon} accent={`var(${accentVar})`}>
+        <button
+          type="button"
+          {...attributes}
+          {...listeners}
+          onClick={(e) => e.stopPropagation()}
+          style={gripOverlayStyle}
+          className="ap-grip"
+          title="Déplacer"
+          aria-label={`Déplacer ${d.title}`}
         >
-          <DefaultHeaderIcon style={{ width: 48, height: 48, color: `var(${accentVar})`, opacity: 0.72 }} />
-          <button
-            type="button"
-            {...attributes}
-            {...listeners}
-            onClick={(e) => e.stopPropagation()}
-            style={gripOverlayStyle}
-            className="ap-grip"
-            title="Déplacer"
-            aria-label={`Déplacer ${d.title}`}
-          >
-            <GripVertical style={{ width: 14, height: 14 }} />
-          </button>
-        </div>
-      )}
+          <GripVertical style={{ width: 14, height: 14 }} />
+        </button>
+      </ContentCardHeader>
       <div className="flex flex-1 flex-col gap-2.5" style={{ padding: "var(--density-card-pad, 14px 16px 12px)" }}>
         <div className="flex items-start gap-2">
           <div className="flex-1 min-w-0">
@@ -343,6 +322,8 @@ export function GenericRow(props: GenericItemProps) {
   const img = headerImage(d);
   const n = config.countOf(d);
   const id = itemId(d);
+  const accentVar = accentVarOf(config.accentBtn);
+  const DefaultHeaderIcon = defaultHeaderIcon[config.accentBtn] ?? ListChecks;
 
   return (
     <div
@@ -368,7 +349,7 @@ export function GenericRow(props: GenericItemProps) {
       >
         <GripVertical style={{ width: 14, height: 14 }} />
       </button>
-      {img && <img src={img} alt={d.title} className="w-12 h-12 rounded object-cover flex-shrink-0" />}
+      <ContentRowThumbnail image={img} alt={d.title} icon={DefaultHeaderIcon} accent={`var(${accentVar})`} />
       <div className="flex-1 min-w-0">
         <p className="ap-h3 truncate" style={{ fontSize: "14px", marginBottom: "2px" }}>{d.title}</p>
         {d.description && <p className="ap-muted truncate" style={{ fontSize: "12px" }}>{d.description}</p>}

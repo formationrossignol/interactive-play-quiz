@@ -26,6 +26,7 @@ import { ContentExplorer } from '@/components/content/ContentExplorer';
 import type { ItemCtx } from '@/components/content/GenericItem';
 import { ExamContextMenu } from '@/components/ExamContextMenu';
 import type { ContentDisplay } from '@/lib/content/contentView';
+import { ContentCardHeader, ContentRowThumbnail } from '@/components/content/ContentCardHeader';
 
 const STATUS_LABEL: Record<string, { label: string; color: string; bg: string }> = {
   draft:     { label: 'Brouillon',  color: '#6d6288', bg: '#f3ecdd' },
@@ -157,15 +158,11 @@ function ExamCard({ d, ctx, navigate, onDuplicate }: ExamItemProps) {
   return (
     <div
       ref={setNodeRef}
-      className="ap-card ap-card--hover flex h-full cursor-pointer flex-col overflow-hidden"
-      style={{ opacity: isDragging ? 0.4 : 1 }}
+      className="ap-card ap-card--hover flex h-full cursor-pointer flex-col overflow-hidden p-0"
+      style={{ opacity: isDragging ? 0.4 : 1, padding: 0 }}
       onClick={() => navigate(`/exam/${exam.id}/admin`)}
     >
-      <div
-        className="relative h-52 w-full overflow-hidden flex-shrink-0 flex items-center justify-center"
-        style={{ background: `color-mix(in srgb, var(--ap-brand) 14%, var(--ap-paper-2))` }}
-      >
-        <ClipboardCheck style={{ width: 40, height: 40, color: 'var(--ap-brand)', opacity: 0.8 }} />
+      <ContentCardHeader image={exam.headerImage} alt={exam.title} icon={ClipboardCheck} accent="var(--ap-brand)">
         <button
           type="button"
           {...attributes}
@@ -178,7 +175,7 @@ function ExamCard({ d, ctx, navigate, onDuplicate }: ExamItemProps) {
         >
           <GripVertical style={{ width: 14, height: 14 }} />
         </button>
-      </div>
+      </ContentCardHeader>
       <div className="flex flex-1 flex-col gap-2.5" style={{ padding: '14px 16px 12px' }}>
         <div className="flex items-start gap-2">
           <div className="flex-1 min-w-0">
@@ -234,6 +231,7 @@ function ExamRow({ d, ctx, navigate, onDuplicate }: ExamItemProps) {
       <button type="button" {...attributes} {...listeners} style={gripStyle} onClick={(e) => e.stopPropagation()} aria-label={`Déplacer ${exam.title}`}>
         <GripVertical className="h-4 w-4" />
       </button>
+      <ContentRowThumbnail image={exam.headerImage} alt={exam.title} icon={ClipboardCheck} accent="var(--ap-brand)" />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
           <span style={{ fontFamily: 'var(--ap-font-display)', fontWeight: 600, fontSize: 16 }}>

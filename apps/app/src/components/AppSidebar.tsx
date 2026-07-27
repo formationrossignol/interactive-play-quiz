@@ -2,6 +2,7 @@ import { type ReactNode, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   BarChart3,
+  Bell,
   BookOpen,
   ChevronDown,
   ClipboardList,
@@ -15,6 +16,7 @@ import {
   Library,
   Map,
   Megaphone,
+  CircleHelp,
   Plus,
   Presentation,
   Settings,
@@ -84,9 +86,11 @@ export const EXPLORE_ITEMS = [
 ];
 
 export const PRODUCT_ITEMS = [
-  { label: "Roadmap", icon: Map, path: "/roadmap" },
-  { label: "Nouveautés", icon: Megaphone, path: "/changelog" },
-  { label: "Signaler un problème", icon: LifeBuoy, path: "/report" },
+  { label: "Notifications", icon: Bell, path: "/notifications", requiresAuth: true },
+  { label: "Centre d’aide", icon: CircleHelp, path: "/help", requiresAuth: false },
+  { label: "Roadmap", icon: Map, path: "/roadmap", requiresAuth: false },
+  { label: "Nouveautés", icon: Megaphone, path: "/changelog", requiresAuth: false },
+  { label: "Signaler un problème", icon: LifeBuoy, path: "/report", requiresAuth: false },
 ];
 
 interface AppSidebarProps {
@@ -260,7 +264,7 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
         <SidebarGroup>
           <SidebarGroupLabel>Produit</SidebarGroupLabel>
           <SidebarMenu>
-            {PRODUCT_ITEMS.map((item) => {
+            {PRODUCT_ITEMS.filter((item) => (item.requiresAuth ? Boolean(user) : true)).map((item) => {
               const Icon = item.icon;
               return (
                 <SidebarMenuItem key={item.path}>

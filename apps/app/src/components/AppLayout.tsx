@@ -21,6 +21,7 @@ import { BrandMonogram } from "ui/BrandMonogram";
 import { BrandWordmark } from "ui/BrandWordmark";
 import { Footer } from "@/components/Footer";
 import { useScrollRestoration } from "@/hooks/useScrollRestoration";
+import { NotificationCenter } from "@/components/notifications/NotificationCenter";
 
 interface AppLayoutProps {
   subtitle?: string;
@@ -107,6 +108,7 @@ export const AppLayout = ({ subtitle, extraSection, children }: AppLayoutProps) 
 
           <div className="ml-auto flex items-center gap-3">
             <GlobalSearch user={user} />
+            {user && <NotificationCenter user={user} />}
             <button
               type="button"
               className="ap-btn ap-btn--ghost ap-btn--sm ap-icon-btn"

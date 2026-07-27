@@ -11,6 +11,7 @@ import { upsertContentBySource } from '@/lib/content/contentRepo';
 import { toast } from 'sonner';
 import { useSaveShortcut } from '@/hooks/useSaveShortcut';
 import { showError } from '@/lib/errorTaxonomy';
+import { assertSafeImportFile } from '@/lib/fileValidation';
 import {
   ArrowLeft,
   ArrowRight,
@@ -23,7 +24,9 @@ import {
   Save,
   Shuffle,
   Timer,
+  Trash2,
   Trophy,
+  Upload,
 } from 'lucide-react';
 
 const now = () => {
@@ -41,6 +44,7 @@ const inHours = (n: number) => {
 interface FormState {
   title: string;
   description: string;
+  headerImage: string;
   quizId: string;
   openAt: string;
   closeAt: string;
@@ -67,6 +71,7 @@ const STEPS = STEP_META.map(({ label }) => label);
 const DEFAULTS: FormState = {
   title: '',
   description: '',
+  headerImage: '',
   quizId: '',
   openAt: now(),
   closeAt: inHours(72),
@@ -103,7 +108,15 @@ export default function ExamBuilder() {
 
   useEffect(() => {
     if (user) getHostExams(user.id).then((exams) => setUsed(exams.length));
-  }, [user?.id]);
+  }, [user]);
+
+  useEffect(() => {
+    if (examId || !presetQuizId || !user) return;
+    const source = getUserQuizzes(user.id).find((quiz) => quiz.type === 'quiz' && quiz.id === presetQuizId);
+    if (source?.headerImage) {
+      setForm((current) => current.headerImage ? current : { ...current, headerImage: source.headerImage ?? '' });
+    }
+  }, [examId, presetQuizId, user]);
 
   useEffect(() => {
     if (!examId) return;
@@ -116,6 +129,7 @@ export default function ExamBuilder() {
       setForm({
         title: exam.title,
         description: exam.description,
+        headerImage: exam.headerImage ?? '',
         quizId: exam.quizId,
         openAt: openLocal.toISOString().slice(0, 16),
         closeAt: closeLocal.toISOString().slice(0, 16),
@@ -164,6 +178,21 @@ export default function ExamBuilder() {
     setStep(target);
   };
 
+  const handleHeaderImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      assertSafeImportFile(file, 4 * 1024 * 1024);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Fichier invalide');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => set('headerImage', reader.result as string);
+    reader.readAsDataURL(file);
+    event.target.value = '';
+  };
+
   const handleSave = async (publish: boolean) => {
     if (!form.title.trim()) { toast.error('Titre requis'); return; }
     if (!form.quizId) { toast.error('Choisir un quiz source'); return; }
@@ -176,6 +205,7 @@ export default function ExamBuilder() {
       const payload: Omit<Exam, 'id' | 'hostId' | 'joinCode' | 'createdAt' | 'updatedAt' | 'maxParticipants'> = {
         title: form.title.trim(),
         description: form.description.trim(),
+        headerImage: form.headerImage || undefined,
         quizId: form.quizId,
         openAt: new Date(form.openAt).toISOString(),
         closeAt: new Date(form.closeAt).toISOString(),
@@ -362,6 +392,35 @@ export default function ExamBuilder() {
         <div className="eb-section">
           <div className="eb-section-title"><ClipboardList style={{ width: 18, height: 18 }} /> Informations générales</div>
           <div style={{ marginBottom: 16 }}>
+            <label className="eb-label">Image d’en-tête</label>
+            {form.headerImage ? (
+              <div style={{ position: 'relative', height: 208, overflow: 'hidden', borderRadius: 'var(--ap-r-sm)', marginBottom: 8 }}>
+                <img src={form.headerImage} alt="Aperçu de l’image d’en-tête" style={{ width: '100%', height: '100%', display: 'block', objectFit: 'cover', objectPosition: 'center' }} />
+                <button
+                  type="button"
+                  className="ap-btn ap-btn--sm ap-icon-btn"
+                  onClick={() => set('headerImage', '')}
+                  aria-label="Supprimer l’image d’en-tête"
+                  style={{ position: 'absolute', top: 8, right: 8, background: 'rgba(20,18,30,.72)', color: '#fff', borderColor: 'rgba(255,255,255,.35)' }}
+                >
+                  <Trash2 size={15} />
+                </button>
+              </div>
+            ) : (
+              <label
+                htmlFor="exam-header-image"
+                style={{
+                  height: 104, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  border: 'var(--ap-border-w) dashed var(--ap-line-2)', borderRadius: 'var(--ap-r-sm)',
+                  color: 'var(--ap-muted)', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                }}
+              >
+                <Upload size={16} /> Ajouter une image d’en-tête
+              </label>
+            )}
+            <input id="exam-header-image" type="file" accept="image/*" className="hidden" onChange={handleHeaderImageUpload} />
+          </div>
+          <div style={{ marginBottom: 16 }}>
             <label className="eb-label">Titre de l'examen</label>
             <input className="eb-input" placeholder="Ex : Examen final, Module 3" value={form.title} onChange={(e) => set('title', e.target.value)} />
           </div>
@@ -381,7 +440,14 @@ export default function ExamBuilder() {
             <select
               className="eb-input"
               value={form.quizId}
-              onChange={(e) => set('quizId', e.target.value)}
+              onChange={(e) => {
+                const quizId = e.target.value;
+                setForm((current) => ({
+                  ...current,
+                  quizId,
+                  headerImage: current.headerImage || quizzes.find((quiz) => quiz.id === quizId)?.headerImage || '',
+                }));
+              }}
             >
               <option value="">Choisir un quiz</option>
               {quizzes.map((q) => (
