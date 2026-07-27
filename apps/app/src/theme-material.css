@@ -104,7 +104,12 @@
   --ap-r-lg: var(--md-sys-shape-corner-large);
   --ap-r-xl: var(--md-sys-shape-corner-extra-large);
   --ap-r-pill: var(--md-sys-shape-corner-full);
-  --ap-shadow-soft: var(--md-sys-elevation-1);
+  /* M3 filled surfaces sit flat at rest — .ap-btn/.ap-card already encode
+     this explicitly below; this keeps generic Button/Card (shadow-card
+     utility, index.css) consistent with them instead of showing a stray
+     shadow next to otherwise-flat surfaces. Real elevation shows up on
+     hover/floaty via --ap-shadow-card/--ap-shadow-float. */
+  --ap-shadow-soft: none;
   --ap-shadow-card: var(--md-sys-elevation-2);
   --ap-shadow-float: var(--md-sys-elevation-3);
   --ap-font-display: "Roboto Flex Variable", "Roboto Flex", system-ui, sans-serif;

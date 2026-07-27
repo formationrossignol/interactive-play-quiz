@@ -3,6 +3,7 @@ import { Bell, BellOff, CheckCheck, Settings2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { ListSkeleton } from "@/components/ui/skeletons";
 import { useNotifications } from "@/hooks/useNotifications";
 import type { User } from "@/lib/auth";
 import { NotificationItem } from "./NotificationItem";
@@ -77,7 +78,7 @@ export function NotificationCenter({ user }: { user: User }) {
               />
             </div>
           ) : center.isLoading ? (
-            <div className="ap-muted" style={{ padding: 28, textAlign: "center", fontSize: 13 }}>Chargement…</div>
+            <div style={{ padding: "12px 20px" }}><ListSkeleton rows={4} /></div>
           ) : visible.length === 0 ? (
             <div style={{ minHeight: 280, display: "grid", placeItems: "center", padding: 28, textAlign: "center" }}>
               <div>

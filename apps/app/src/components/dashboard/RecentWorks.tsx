@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight, BarChart2, BookOpen, ClipboardCheck, GraduationCap, Layers, Presentation } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { CardSkeleton } from "@/components/ui/skeletons";
 import { listRecentContent } from "@/lib/content/contentRepo";
 import { getSearchResultRoute } from "@/lib/content/searchContent";
 import type { ContentRow, ContentType } from "@/lib/content/types";
@@ -25,11 +25,7 @@ function RecentWorksSkeleton() {
   return (
     <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
       {Array.from({ length: 4 }, (_, index) => (
-        <div key={index}>
-          <Skeleton className="h-36 w-full rounded-xl" />
-          <Skeleton className="mt-3 h-5 w-4/5" />
-          <Skeleton className="mt-2 h-4 w-2/5" />
-        </div>
+        <CardSkeleton key={index} withAction={false} mediaClassName="h-36 w-full rounded-xl" />
       ))}
     </div>
   );

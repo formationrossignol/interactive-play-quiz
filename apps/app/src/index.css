@@ -453,10 +453,6 @@
   .card-poll      { border-left: 4px solid var(--ap-poll); }
   .card-flashcard { border-left: 4px solid var(--ap-flash); }
   .card-slide     { border-left: 4px solid var(--ap-pres); }
-
-  /* Utility — shadow tokens mapped from Arcade Pop */
-  .shadow-card       { box-shadow: var(--ap-shadow-soft); }
-  .shadow-card-hover { box-shadow: var(--ap-shadow-card); }
 }
 
 @keyframes spin { to { transform: rotate(360deg); } }
