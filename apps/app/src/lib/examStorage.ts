@@ -24,6 +24,7 @@ export interface Exam {
   quizId: string;
   title: string;
   description: string;
+  headerImage?: string;
   openAt: string;        // ISO datetime
   closeAt: string;       // ISO datetime
   durationMinutes: number | null;  // null = no time limit
@@ -81,6 +82,7 @@ export interface ExamMessage {
 
 interface ExamRow {
   id: string; host_id: string; quiz_id: string; title: string; description: string;
+  header_image: string | null;
   open_at: string; close_at: string; duration_minutes: number | null; max_attempts: number;
   shuffle_questions: boolean; shuffle_answers: boolean; passing_score: number;
   show_results_policy: string; show_detail_policy: string; score_retention_policy: string;
@@ -95,6 +97,7 @@ function examFromRow(r: ExamRow): Exam {
     quizId: r.quiz_id,
     title: r.title,
     description: r.description,
+    headerImage: r.header_image ?? undefined,
     openAt: r.open_at,
     closeAt: r.close_at,
     durationMinutes: r.duration_minutes,
@@ -229,6 +232,7 @@ export const createExam = async (
     quiz_id: data.quizId,
     title: data.title,
     description: data.description,
+    header_image: data.headerImage ?? null,
     open_at: data.openAt,
     close_at: data.closeAt,
     duration_minutes: data.durationMinutes,
@@ -249,6 +253,7 @@ const examUpdatesToRow = (updates: Partial<Exam>): Partial<ExamRow> => {
   const patch: Partial<ExamRow> = {};
   if (updates.title !== undefined) patch.title = updates.title;
   if (updates.description !== undefined) patch.description = updates.description;
+  if (updates.headerImage !== undefined) patch.header_image = updates.headerImage || null;
   if (updates.quizId !== undefined) patch.quiz_id = updates.quizId;
   if (updates.openAt !== undefined) patch.open_at = updates.openAt;
   if (updates.closeAt !== undefined) patch.close_at = updates.closeAt;
@@ -303,6 +308,7 @@ export const duplicateExam = async (id: string): Promise<Exam | null> => {
     quiz_id: original.quizId,
     title: `Copie de ${original.title}`,
     description: original.description,
+    header_image: original.headerImage ?? null,
     open_at: original.openAt,
     close_at: original.closeAt,
     duration_minutes: original.durationMinutes,

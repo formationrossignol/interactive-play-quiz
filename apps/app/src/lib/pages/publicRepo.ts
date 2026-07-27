@@ -2,6 +2,8 @@ import { getCurrentUser } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import type {
   ChangelogItemRow,
+  FaqGroup,
+  FaqRow,
   MyReport,
   NewReport,
   Release,
@@ -14,6 +16,27 @@ import type {
   RoadmapView,
   ShippedCard,
 } from "./types";
+
+export async function fetchFaq(): Promise<FaqGroup[]> {
+  const { data, error } = await supabase
+    .from("faq_items")
+    .select("id,category,question,answer,sort")
+    .eq("status", "published")
+    .order("sort");
+  if (error) throw error;
+  const groups: FaqGroup[] = [];
+  const byCategory = new Map<string, FaqGroup>();
+  for (const row of (data ?? []) as FaqRow[]) {
+    let group = byCategory.get(row.category);
+    if (!group) {
+      group = { category: row.category, questions: [] };
+      byCategory.set(row.category, group);
+      groups.push(group);
+    }
+    group.questions.push({ q: row.question, a: row.answer });
+  }
+  return groups;
+}
 
 const emptyRoadmap = (): RoadmapView => ({ idea: [], planned: [], dev: [], shipped: [] });
 

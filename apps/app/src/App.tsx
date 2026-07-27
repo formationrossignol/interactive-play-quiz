@@ -24,6 +24,8 @@ const DiscoverQuizzes = lazy(() => import("./pages/DiscoverQuizzes"));
 const Roadmap = lazy(() => import("./pages/Roadmap"));
 const Changelog = lazy(() => import("./pages/Changelog"));
 const Report = lazy(() => import("./pages/Report"));
+const HelpCenter = lazy(() => import("./pages/HelpCenter"));
+const Notifications = lazy(() => import("./pages/Notifications"));
 
 // Legal pages: mentions-legales/confidentialite/cgu now live in apps/marketing
 // (see docs/marketing-app-decoupling.md) — no longer routed here.
@@ -119,6 +121,8 @@ const App = () => (
               <Route path="/roadmap" element={<Roadmap />} />
               <Route path="/changelog" element={<Changelog />} />
               <Route path="/report" element={<Report />} />
+              <Route path="/help" element={<HelpCenter />} />
+              <Route path="/notifications" element={<Notifications />} />
               <Route path="/preview/:quizId" element={<PreviewPage />} />
               <Route path="/quiz/:gameCode" element={<LiveQuizPage />} />
               <Route path="/join/:gameCode" element={<JoinQuiz />} />

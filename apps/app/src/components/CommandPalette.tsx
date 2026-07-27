@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/command";
 import { t } from "@/lib/i18n";
 import type { User as AuthUser } from "@/lib/auth";
-import { CREATE_ITEMS, CREATIONS_ITEMS, EXPLORE_ITEMS } from "@/components/AppSidebar";
+import { CREATE_ITEMS, CREATIONS_ITEMS, EXPLORE_ITEMS, PRODUCT_ITEMS } from "@/components/AppSidebar";
 import { TYPE_META } from "@/components/GlobalSearch";
 import { getSearchResultRoute, searchContent, type SearchResult } from "@/lib/content/searchContent";
 
@@ -83,6 +83,15 @@ export const CommandPalette = ({ user, open, onOpenChange: setOpen }: CommandPal
               </CommandItem>
             ))}
             {EXPLORE_ITEMS.filter((item) => (item.requiresAuth ? Boolean(user) : true)).map((item) => {
+              const Icon = item.icon;
+              return (
+                <CommandItem key={item.path} value={item.label} onSelect={() => go(item.path)}>
+                  <Icon className="mr-2 h-4 w-4" />
+                  {item.label}
+                </CommandItem>
+              );
+            })}
+            {PRODUCT_ITEMS.map((item) => {
               const Icon = item.icon;
               return (
                 <CommandItem key={item.path} value={item.label} onSelect={() => go(item.path)}>

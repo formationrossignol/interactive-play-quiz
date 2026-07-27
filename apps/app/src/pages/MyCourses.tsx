@@ -11,6 +11,7 @@ import { CourseGeneratorModal } from "@/components/CourseGeneratorModal";
 import { getCurrentUser } from "@/lib/auth";
 import { getCourseProgress, type Course } from "@/lib/courseStorage";
 import type { ContentDisplay } from "@/lib/content/contentView";
+import { ContentCardHeader, ContentRowThumbnail } from "@/components/content/ContentCardHeader";
 
 const CATEGORIES = ["Tous", "Informatique", "Langues", "Sciences", "Histoire", "Arts", "Business", "Santé", "Autre"];
 
@@ -46,29 +47,16 @@ function CourseCard({ d, ctx, navigate, userId }: CourseItemProps) {
   return (
     <div
       ref={setNodeRef}
-      className="ap-card ap-card--hover flex h-full cursor-pointer flex-col overflow-hidden"
-      style={{ opacity: isDragging ? 0.4 : 1 }}
+      className="ap-card ap-card--hover flex h-full cursor-pointer flex-col overflow-hidden p-0"
+      style={{ opacity: isDragging ? 0.4 : 1, padding: 0 }}
       onClick={() => navigate(`/course/${course.id}`)}
     >
-      {course.coverImage ? (
-        <div className="relative h-52 w-full overflow-hidden flex-shrink-0">
-          <img src={course.coverImage} alt={course.title} className="h-full w-full object-cover" />
-          <button type="button" {...attributes} {...listeners} style={gripOverlayStyle} className="ap-grip" onClick={(e) => e.stopPropagation()} aria-label={`Déplacer ${course.title}`}>
-            <GripVertical style={{ width: 14, height: 14 }} />
-          </button>
-        </div>
-      ) : (
-        <div
-          className="relative h-52 w-full overflow-hidden flex-shrink-0 flex items-center justify-center"
-          style={{ background: "color-mix(in srgb, var(--ap-pres) 14%, var(--ap-paper-2))" }}
-        >
-          <GraduationCap style={{ width: 40, height: 40, color: "var(--ap-pres)", opacity: 0.8 }} />
-          <button type="button" {...attributes} {...listeners} style={gripOverlayStyle} className="ap-grip" onClick={(e) => e.stopPropagation()} aria-label={`Déplacer ${course.title}`}>
-            <GripVertical style={{ width: 14, height: 14 }} />
-          </button>
-        </div>
-      )}
-      <div className="flex flex-1 flex-col p-5">
+      <ContentCardHeader image={course.coverImage} alt={course.title} icon={GraduationCap} accent="var(--ap-pres)">
+        <button type="button" {...attributes} {...listeners} style={gripOverlayStyle} className="ap-grip" onClick={(e) => e.stopPropagation()} aria-label={`Déplacer ${course.title}`}>
+          <GripVertical style={{ width: 14, height: 14 }} />
+        </button>
+      </ContentCardHeader>
+      <div className="flex flex-1 flex-col" style={{ padding: "var(--density-card-pad, 14px 16px 12px)" }}>
         <div className="mb-3 flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             <h3 className="ap-h3 line-clamp-2" style={{ fontSize: "15px" }}>{course.title}</h3>
@@ -146,7 +134,7 @@ function CourseRow({ d, ctx, navigate, userId }: CourseItemProps) {
       <button type="button" {...attributes} {...listeners} style={gripStyle} className="ap-grip" onClick={(e) => e.stopPropagation()} aria-label={`Déplacer ${course.title}`}>
         <GripVertical className="h-4 w-4" />
       </button>
-      <GraduationCap className="h-8 w-8 flex-shrink-0" style={{ color: "var(--ap-pres)" }} />
+      <ContentRowThumbnail image={course.coverImage} alt={course.title} icon={GraduationCap} accent="var(--ap-pres)" />
       <div className="flex-1 min-w-0">
         <p className="ap-h3 truncate" style={{ fontSize: "14px", marginBottom: "2px" }}>{course.title}</p>
         {course.description && <p className="ap-muted truncate" style={{ fontSize: "12px" }}>{course.description}</p>}
