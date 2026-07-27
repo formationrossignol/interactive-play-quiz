@@ -1,31 +1,8 @@
 import { type ReactNode, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import {
-  BarChart3,
-  Bell,
-  BookOpen,
-  ChevronDown,
-  ClipboardList,
-  Compass,
-  Dices,
-  Gem,
-  GraduationCap,
-  LayoutDashboard,
-  Layers,
-  LifeBuoy,
-  Library,
-  Map,
-  Megaphone,
-  CircleHelp,
-  Plus,
-  Presentation,
-  Settings,
-  Share2,
-  Users,
-  X,
-} from "lucide-react";
 import { t } from "@/lib/i18n";
 import type { User as AuthUser } from "@/lib/auth";
+import { MaterialSymbol } from "@/components/MaterialSymbol";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -55,12 +32,12 @@ import {
 // "+ Créer" jumps straight into a builder's start flow — moved here from the
 // old Header.tsx pill nav, not duplicated.
 export const CREATE_ITEMS = [
-  { label: t("navCreateQuiz"), icon: BookOpen, path: "/builder-start?type=quiz" },
-  { label: t("navCreatePoll"), icon: BarChart3, path: "/builder-start?type=poll" },
-  { label: t("createFlashcards"), icon: Layers, path: "/builder-start?type=flashcard" },
-  { label: t("createSlides"), icon: Presentation, path: "/builder-start?type=slide" },
-  { label: t("createCourse"), icon: GraduationCap, path: "/course-builder" },
-  { label: t("createExam"), icon: ClipboardList, path: "/exam-builder" },
+  { label: t("navCreateQuiz"), icon: "quiz", path: "/builder-start?type=quiz" },
+  { label: t("navCreatePoll"), icon: "poll", path: "/builder-start?type=poll" },
+  { label: t("createFlashcards"), icon: "style", path: "/builder-start?type=flashcard" },
+  { label: t("createSlides"), icon: "co_present", path: "/builder-start?type=slide" },
+  { label: t("createCourse"), icon: "school", path: "/course-builder" },
+  { label: t("createExam"), icon: "assignment", path: "/exam-builder" },
 ];
 
 // Same 6 routes ContentExplorer.tsx's (now-removed) TYPE_TABS used to link to
@@ -78,19 +55,19 @@ export const CREATIONS_ITEMS = [
 // grouped under its own labelled section per sidebar UX best practices
 // (group related items, keep primary actions visually distinct).
 export const EXPLORE_ITEMS = [
-  { label: t("navSharedWithMe"), icon: Share2, path: "/shared-with-me", requiresAuth: true },
-  { label: t("questionBank"), icon: Library, path: "/question-bank", requiresAuth: true },
-  { label: t("discoverPublic"), icon: Compass, path: "/discover", requiresAuth: false },
-  { label: t("footerCommunity"), icon: Users, path: "/community", requiresAuth: false },
-  { label: t("navTools"), icon: Dices, path: "/tools", requiresAuth: false },
+  { label: t("navSharedWithMe"), icon: "group_share", path: "/shared-with-me", requiresAuth: true },
+  { label: t("questionBank"), icon: "library_books", path: "/question-bank", requiresAuth: true },
+  { label: t("discoverPublic"), icon: "explore", path: "/discover", requiresAuth: false },
+  { label: t("footerCommunity"), icon: "groups", path: "/community", requiresAuth: false },
+  { label: t("navTools"), icon: "casino", path: "/tools", requiresAuth: false },
 ];
 
 export const PRODUCT_ITEMS = [
-  { label: "Notifications", icon: Bell, path: "/notifications", requiresAuth: true },
-  { label: "Centre d’aide", icon: CircleHelp, path: "/help", requiresAuth: false },
-  { label: "Roadmap", icon: Map, path: "/roadmap", requiresAuth: false },
-  { label: "Nouveautés", icon: Megaphone, path: "/changelog", requiresAuth: false },
-  { label: "Signaler un problème", icon: LifeBuoy, path: "/report", requiresAuth: false },
+  { label: "Notifications", icon: "notifications", path: "/notifications", requiresAuth: true },
+  { label: "Centre d’aide", icon: "help", path: "/help", requiresAuth: false },
+  { label: "Roadmap", icon: "map", path: "/roadmap", requiresAuth: false },
+  { label: "Nouveautés", icon: "campaign", path: "/changelog", requiresAuth: false },
+  { label: "Signaler un problème", icon: "support_agent", path: "/report", requiresAuth: false },
 ];
 
 interface AppSidebarProps {
@@ -124,7 +101,7 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button className="ap-btn ap-btn--sm ap-icon-btn" aria-label={t("createNew")}>
-                      <Plus className="h-4 w-4" />
+                      <MaterialSymbol name="add" size={20} />
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="right" align="center">
@@ -134,10 +111,10 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
               ) : (
                 <button className="ap-btn ap-btn--sm" style={{ width: "100%", justifyContent: "space-between" }}>
                   <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <Plus className="h-4 w-4" />
+                    <MaterialSymbol name="add" size={20} />
                     {t("createNew")}
                   </span>
-                  <ChevronDown className="chevron-icon h-3.5 w-3.5" />
+                  <MaterialSymbol name="keyboard_arrow_down" size={20} className="chevron-icon" />
                 </button>
               )}
             </DropdownMenuTrigger>
@@ -157,10 +134,9 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
                 aria-label="Fermer le menu"
                 onClick={() => setCreateOpen(false)}
               >
-                <X />
+                <MaterialSymbol name="close" size={20} />
               </button>
               {CREATE_ITEMS.map((item) => {
-                const Icon = item.icon;
                 return (
                   <DropdownMenuItem
                     key={item.label}
@@ -168,7 +144,7 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
                     style={{ color: "var(--ap-ink)", fontFamily: "var(--ap-font-body)" }}
                     onSelect={() => navigate(item.path)}
                   >
-                    <Icon className="h-4 w-4" style={{ color: "var(--ap-muted)" }} />
+                    <MaterialSymbol name={item.icon} size={20} style={{ color: "var(--ap-muted)" }} />
                     {item.label}
                   </DropdownMenuItem>
                 );
@@ -188,7 +164,7 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
                   onClick={() => navigate("/dashboard")}
                   tooltip={t("dashboard")}
                 >
-                  <LayoutDashboard />
+                  <MaterialSymbol name="dashboard" size={20} />
                   <span>{t("dashboard")}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -206,11 +182,13 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
                       onClick={collapsedIcon ? () => navigate(CREATIONS_ITEMS[0].path) : undefined}
                       tooltip={t("myCreations")}
                     >
-                      <Gem />
+                      <MaterialSymbol name="category" size={20} />
                       <span>{t("myCreations")}</span>
                       {!collapsedIcon && (
-                        <ChevronDown
-                          className="chevron-icon ml-auto h-3.5 w-3.5"
+                        <MaterialSymbol
+                          name="keyboard_arrow_down"
+                          size={20}
+                          className="chevron-icon ml-auto"
                           style={{ transform: creationsOpen ? "rotate(180deg)" : undefined }}
                         />
                       )}
@@ -244,7 +222,6 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
           <SidebarGroupLabel>{t("navGroupExplore")}</SidebarGroupLabel>
           <SidebarMenu>
             {EXPLORE_ITEMS.filter((item) => (item.requiresAuth ? Boolean(user) : true)).map((item) => {
-              const Icon = item.icon;
               return (
                 <SidebarMenuItem key={item.path}>
                   <SidebarMenuButton
@@ -252,7 +229,7 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
                     onClick={() => navigate(item.path)}
                     tooltip={item.label}
                   >
-                    <Icon />
+                    <MaterialSymbol name={item.icon} size={20} />
                     <span>{item.label}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -265,7 +242,6 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
           <SidebarGroupLabel>Produit</SidebarGroupLabel>
           <SidebarMenu>
             {PRODUCT_ITEMS.filter((item) => (item.requiresAuth ? Boolean(user) : true)).map((item) => {
-              const Icon = item.icon;
               return (
                 <SidebarMenuItem key={item.path}>
                   <SidebarMenuButton
@@ -273,7 +249,7 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
                     onClick={() => navigate(item.path)}
                     tooltip={item.label}
                   >
-                    <Icon />
+                    <MaterialSymbol name={item.icon} size={20} />
                     <span>{item.label}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -295,7 +271,7 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
                 onClick={() => navigate("/profile")}
                 tooltip={t("settings")}
               >
-                <Settings />
+                <MaterialSymbol name="settings" size={20} />
                 <span>{t("settings")}</span>
               </SidebarMenuButton>
             </SidebarMenuItem>

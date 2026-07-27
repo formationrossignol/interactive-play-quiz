@@ -11,6 +11,7 @@ import { SITE_THEMES, applySiteTheme, normalizeSiteTheme, type SiteTheme } from 
 import { DENSITIES, applyDensity, normalizeDensity, type Density } from "@/lib/density";
 import { AppLayout } from "@/components/AppLayout";
 import { SecuritySection } from "@/components/SecuritySection";
+import { MaterialSymbol } from "@/components/MaterialSymbol";
 import { Save, Trophy, BookOpen, Clock, Sun, Moon, Zap, Building2, User } from "lucide-react";
 import { toast } from "sonner";
 
@@ -417,7 +418,7 @@ const ProfilePage = () => {
                             color: "#fff", background: def.colors[0],
                           }}
                         >
-                          Aa
+                          {def.id === "material" ? <MaterialSymbol name="palette" size={24} filled /> : "Aa"}
                         </span>
                         <span style={{ minWidth: 0 }}>
                           <span style={{ display: "block", fontWeight: 800, fontSize: "14px", color: "var(--ap-ink)" }}>
