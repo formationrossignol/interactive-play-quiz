@@ -1,6 +1,5 @@
 import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Check, Command, Globe, LogOut, Shield, User } from "lucide-react";
 import { getCurrentUser, logout } from "@/lib/auth";
 import { getLanguage, setLanguage, t, type Language } from "@/lib/i18n";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -22,6 +21,7 @@ import { BrandWordmark } from "ui/BrandWordmark";
 import { Footer } from "@/components/Footer";
 import { useScrollRestoration } from "@/hooks/useScrollRestoration";
 import { NotificationCenter } from "@/components/notifications/NotificationCenter";
+import { MaterialSymbol } from "@/components/MaterialSymbol";
 
 interface AppLayoutProps {
   subtitle?: string;
@@ -117,7 +117,7 @@ export const AppLayout = ({ subtitle, extraSection, children }: AppLayoutProps) 
               title={`${t("commandPaletteOpen")} (${navigator.platform.includes("Mac") ? "⌘K" : "Ctrl+K"})`}
               onClick={() => setPaletteOpen(true)}
             >
-              <Command className="h-4 w-4" />
+              <MaterialSymbol name="search" size={20} />
             </button>
             {user ? (
               <DropdownMenu open={accountOpen} onOpenChange={setAccountOpen}>
@@ -146,7 +146,7 @@ export const AppLayout = ({ subtitle, extraSection, children }: AppLayoutProps) 
                     style={{ color: "var(--ap-ink)" }}
                     onSelect={() => navigate("/profile")}
                   >
-                    <User className="h-4 w-4" style={{ color: "var(--ap-muted)" }} />
+                    <MaterialSymbol name="person" size={20} style={{ color: "var(--ap-muted)" }} />
                     {t("profile")}
                   </DropdownMenuItem>
                   {isAdmin && (
@@ -155,7 +155,7 @@ export const AppLayout = ({ subtitle, extraSection, children }: AppLayoutProps) 
                       style={{ color: "var(--ap-ink)" }}
                       onSelect={() => navigate("/admin")}
                     >
-                      <Shield className="h-4 w-4" style={{ color: "var(--ap-muted)" }} />
+                      <MaterialSymbol name="admin_panel_settings" size={20} style={{ color: "var(--ap-muted)" }} />
                       {t("admin")}
                     </DropdownMenuItem>
                   )}
@@ -171,18 +171,18 @@ export const AppLayout = ({ subtitle, extraSection, children }: AppLayoutProps) 
                     style={{ color: "var(--ap-ink)" }}
                     onClick={() => handleLanguageChange("en")}
                   >
-                    <Globe className="h-3.5 w-3.5" style={{ color: "var(--ap-muted)" }} />
+                    <MaterialSymbol name="language" size={18} style={{ color: "var(--ap-muted)" }} />
                     English
-                    {currentLanguage === "en" && <Check className="h-3.5 w-3.5 ml-auto" />}
+                    {currentLanguage === "en" && <MaterialSymbol name="check" size={18} className="ml-auto" />}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     className="gap-2 rounded-md text-sm cursor-pointer"
                     style={{ color: "var(--ap-ink)" }}
                     onClick={() => handleLanguageChange("fr")}
                   >
-                    <Globe className="h-3.5 w-3.5" style={{ color: "var(--ap-muted)" }} />
+                    <MaterialSymbol name="language" size={18} style={{ color: "var(--ap-muted)" }} />
                     Français
-                    {currentLanguage === "fr" && <Check className="h-3.5 w-3.5 ml-auto" />}
+                    {currentLanguage === "fr" && <MaterialSymbol name="check" size={18} className="ml-auto" />}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator style={{ background: "var(--ap-line)" }} />
                   <DropdownMenuItem
@@ -190,7 +190,7 @@ export const AppLayout = ({ subtitle, extraSection, children }: AppLayoutProps) 
                     style={{ color: "var(--ap-ink)" }}
                     onSelect={handleLogout}
                   >
-                    <LogOut className="h-4 w-4" style={{ color: "var(--ap-muted)" }} />
+                    <MaterialSymbol name="logout" size={20} style={{ color: "var(--ap-muted)" }} />
                     {t("logout")}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -204,7 +204,7 @@ export const AppLayout = ({ subtitle, extraSection, children }: AppLayoutProps) 
                       style={{ padding: "8px 10px" }}
                       aria-label="Language"
                     >
-                      <Globe className="h-4 w-4" />
+                      <MaterialSymbol name="language" size={20} />
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent
@@ -221,23 +221,23 @@ export const AppLayout = ({ subtitle, extraSection, children }: AppLayoutProps) 
                       style={{ color: "var(--ap-ink)" }}
                       onClick={() => handleLanguageChange("en")}
                     >
-                      <Globe className="h-3.5 w-3.5" style={{ color: "var(--ap-muted)" }} />
+                      <MaterialSymbol name="language" size={18} style={{ color: "var(--ap-muted)" }} />
                       English
-                      {currentLanguage === "en" && <Check className="h-3.5 w-3.5 ml-auto" />}
+                      {currentLanguage === "en" && <MaterialSymbol name="check" size={18} className="ml-auto" />}
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       className="gap-2 rounded-md text-sm cursor-pointer"
                       style={{ color: "var(--ap-ink)" }}
                       onClick={() => handleLanguageChange("fr")}
                     >
-                      <Globe className="h-3.5 w-3.5" style={{ color: "var(--ap-muted)" }} />
+                      <MaterialSymbol name="language" size={18} style={{ color: "var(--ap-muted)" }} />
                       Français
-                      {currentLanguage === "fr" && <Check className="h-3.5 w-3.5 ml-auto" />}
+                      {currentLanguage === "fr" && <MaterialSymbol name="check" size={18} className="ml-auto" />}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
                 <button className="ap-btn ap-btn--sm" onClick={() => navigate("/auth")}>
-                  <User className="h-3.5 w-3.5" />
+                  <MaterialSymbol name="login" size={18} />
                   {t("login")}
                 </button>
               </>
