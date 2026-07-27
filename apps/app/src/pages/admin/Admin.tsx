@@ -12,7 +12,7 @@ import { ModerationTab } from "./ModerationTab";
 import { SubscribersTab } from "./SubscribersTab";
 import { SettingsTab } from "./SettingsTab";
 import { AdminSidebarGroup, type AdminSection } from "./AdminSidebarGroup";
-import { Skeleton } from "@/components/ui/skeleton";
+import { PageSkeleton } from "@/components/ui/skeletons";
 import "./admin.css";
 
 type Section = AdminSection;
@@ -42,16 +42,7 @@ const Admin = () => {
     return (
       <AppLayout>
         <main className="adm">
-          <div role="status" aria-label="Chargement de l’administration">
-            <div className="mb-6 flex items-center justify-between">
-              <Skeleton className="h-8 w-52" />
-              <Skeleton className="h-10 w-32 rounded-full" />
-            </div>
-            <div className="mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              {[0, 1, 2, 3].map((item) => <Skeleton key={item} className="h-28 w-full rounded-2xl" />)}
-            </div>
-            <Skeleton className="h-80 w-full rounded-2xl" />
-          </div>
+          <PageSkeleton />
         </main>
       </AppLayout>
     );

@@ -5,6 +5,7 @@ import { AppLayout } from "@/components/AppLayout";
 import { ExplorerEmptyState } from "@/components/content/ExplorerEmptyState";
 import { NotificationItem } from "@/components/notifications/NotificationItem";
 import { NotificationPreferencesPanel } from "@/components/notifications/NotificationPreferencesPanel";
+import { ListSkeleton } from "@/components/ui/skeletons";
 import { getCurrentUser } from "@/lib/auth";
 import { useNotifications } from "@/hooks/useNotifications";
 import type { NotificationCategory } from "@/lib/notifications/types";
@@ -73,7 +74,7 @@ export default function Notifications() {
 
         <section className="ap-card" style={{ padding: 0, overflow: "hidden" }}>
           {center.isLoading ? (
-            <div className="ap-muted" style={{ padding: 36, textAlign: "center" }}>Chargement…</div>
+            <div style={{ padding: 20 }}><ListSkeleton rows={5} /></div>
           ) : visible.length === 0 ? (
             <ExplorerEmptyState
               icon={<BellOff size={27} />}

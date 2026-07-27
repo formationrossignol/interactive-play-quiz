@@ -11,6 +11,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { AppLayout } from "@/components/AppLayout";
 import { ExplorerEmptyState } from "@/components/content/ExplorerEmptyState";
+import { ListSkeleton } from "@/components/ui/skeletons";
 import { useSEO } from "@/hooks/useSEO";
 import { marketingUrl } from "@/lib/marketingOrigin";
 import { fetchFaq } from "@/lib/pages/publicRepo";
@@ -86,7 +87,7 @@ export default function HelpCenter() {
         </div>
 
         {loading ? (
-          <div className="ap-muted" style={{ padding: 40, textAlign: "center" }}>Chargement…</div>
+          <ListSkeleton rows={6} withAvatar={false} />
         ) : filtered.length === 0 ? (
           <ExplorerEmptyState
             icon={<Search size={27} />}
