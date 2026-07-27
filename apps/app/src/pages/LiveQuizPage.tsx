@@ -52,6 +52,9 @@ const LiveQuizPage = () => {
     try { return storedPlayerRaw ? (JSON.parse(storedPlayerRaw) as { name: string; avatar: string; id: string }) : null; }
     catch { return null; }
   })();
+  // Set by DiscoverQuizzes' "Jouer seul" button, mirroring the join-flow's
+  // own sessionStorage flag — same per-tab-scoped pattern, no new routing.
+  const isSoloMode = gameCode ? sessionStorage.getItem(`quiz-solo-${gameCode}`) === "1" : false;
 
   const [loadedQuiz, setLoadedQuiz] = useState<SavedQuiz | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -205,6 +208,7 @@ const LiveQuizPage = () => {
           <QuizSession
             quiz={quizSession}
             isHost
+            isSolo={isSoloMode}
             onExitRequest={() => setShowExitDialog(true)}
             onExitHandlerReady={(fn) => { exitHandlerRef.current = fn; }}
           />

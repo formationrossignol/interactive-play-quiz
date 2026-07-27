@@ -51,11 +51,15 @@ import {
   pushControlToSupabase,
   appendSessionHistory,
   readSessionHistory,
+  upsertPlayerInSession,
+  submitAnswerToServer,
   DEFAULT_SESSION_CONTROL,
   type SharedPlayer,
   type SessionControl,
   type SessionRun,
 } from "@/lib/sessionState";
+import { QuestionAnswerPanel } from "./QuestionAnswerPanel";
+import { recordQuizAttempt } from "@/lib/quizAttempts";
 import { supabase, supabaseUrl, supabaseKey } from "@/lib/supabase";
 import { FONT_STACKS, HOST_ANSWER_STYLES, MILLIONAIRE_ANSWER_STYLES } from "@/lib/answerVisuals";
 import { ExportMenu } from "./ExportMenu";
@@ -178,6 +182,10 @@ interface QuizSession {
 interface QuizSessionProps {
   quiz: QuizSession;
   isHost?: boolean;
+  /** Solo play: the user is both host and sole player on one merged screen —
+   *  no waiting room, no leaderboard between questions, answers submitted
+   *  directly via QuestionAnswerPanel instead of a second joined device. */
+  isSolo?: boolean;
   onExitRequest?: () => void;
   onExitHandlerReady?: (handler: () => void) => void;
 }
@@ -225,11 +233,19 @@ const PlayerSidebarItem = memo(({ player, answered, offline, onKick }: PlayerSid
   </div>
 ));
 
-export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandlerReady }: QuizSessionProps) => {
+export const QuizSession = ({ quiz, isHost = false, isSolo = false, onExitRequest, onExitHandlerReady }: QuizSessionProps) => {
   const liveReactionsEnabled = quiz.liveReactionsEnabled ?? true;
   const endChatEnabled = quiz.endChatEnabled ?? true;
   const [players, setPlayers] = useState<Player[]>([]);
   const [sessionReady, setSessionReady] = useState(false);
+
+  // Solo play: the host device is also the only player. selfPlayerId is stable
+  // for the lifetime of the component so repeated answers/polls resolve to the
+  // same session_state.players row.
+  const selfPlayerIdRef = useRef<string>(getCurrentUser()?.id ?? crypto.randomUUID());
+  const [soloSelectedAnswer, setSoloSelectedAnswer] = useState<number | string | null>(null);
+  const [soloHasAnswered, setSoloHasAnswered] = useState(false);
+  const soloAttemptSavedRef = useRef(false);
 
   const [gameState, setGameState] = useState<'waiting' | 'transition' | 'question-intro' | 'question' | 'answer-distribution' | 'leaderboard' | 'final'>('waiting');
 
@@ -299,6 +315,10 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
     else if (gameState === 'final') audio.playSfx('podium');
   }, [gameState, audio]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  useEffect(() => {
+    setSoloSelectedAnswer(null);
+    setSoloHasAnswered(false);
+  }, [currentQuestionIndex]);
   const [showSettings, setShowSettings] = useState(false);
   const [sessionHistory, setSessionHistory] = useState<SessionRun[]>([]);
   const [timeLeft, setTimeLeft] = useState(0);
@@ -333,6 +353,26 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
     t.push(setTimeout(() => setRevealPhase('stats'),   5100));
     return () => t.forEach(clearTimeout);
   }, [gameState]);
+
+  // Solo: save the finished run to the user's history once, when the final
+  // screen is reached. Reads the score straight from players (already kept
+  // in sync with Supabase by the polling effect above) rather than tracking
+  // a second, parallel score locally.
+  useEffect(() => {
+    if (!isSolo || gameState !== 'final' || soloAttemptSavedRef.current) return;
+    const user = getCurrentUser();
+    if (!user) return;
+    soloAttemptSavedRef.current = true;
+    const self = players.find((p) => p.id === selfPlayerIdRef.current);
+    void recordQuizAttempt({
+      userId: user.id,
+      quizId: quiz.id,
+      quizTitle: quiz.title,
+      score: self?.score ?? 0,
+      totalQuestions: quiz.questions.length,
+      correctAnswers: self?.correctAnswers ?? 0,
+    }).catch((err) => console.error('[recordQuizAttempt error]', err));
+  }, [isSolo, gameState, players, quiz.id, quiz.title, quiz.questions.length]);
 
   // Lobby join toast
   const [lastJoined, setLastJoined] = useState<{ name: string; avatar: string } | null>(null);
@@ -527,6 +567,17 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
         );
         if (!ok) {
           toast.error('Erreur Supabase lors de la réinitialisation. Vérifiez la console.');
+        }
+        if (ok && isSolo) {
+          const user = getCurrentUser();
+          upsertPlayerInSession(quiz.gameCode, {
+            id: selfPlayerIdRef.current,
+            name: user?.username ?? 'Vous',
+            avatar: '🎮',
+            score: 0,
+            correctAnswers: 0,
+            joinedAt: new Date().toISOString(),
+          }, true);
         }
       } else {
         syncFromStorage();
@@ -772,6 +823,18 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
 
   const QUESTION_READING_SECS = 3;
 
+  /** Solo answering: the host device submits its own answer directly to the
+   *  same submit-answer edge function a joined player's device would call.
+   *  The result updates session_state.players server-side; the host's own
+   *  polling effect (above) picks it up and the existing "all answered"
+   *  auto-advance fires normally — no player-count special-casing needed. */
+  const submitSoloAnswer = useCallback((answer: number | string) => {
+    if (soloHasAnswered) return;
+    setSoloHasAnswered(true);
+    setSoloSelectedAnswer(answer);
+    void submitAnswerToServer(quiz.gameCode, selfPlayerIdRef.current, currentQuestionIndex, answer);
+  }, [soloHasAnswered, quiz.gameCode, currentQuestionIndex]);
+
   const startQuiz = () => {
     if (hasStartedRef.current) return;
     hasStartedRef.current = true;
@@ -982,6 +1045,36 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
       }
       setTimeout(() => { setShowCountdown(false); startQuiz(); }, 3 * 900 + 800);
     };
+
+    // Solo: no code to share, no one to wait for — a single "ready" screen
+    // that still runs through the same 3-2-1 countdown (and unlocks audio via
+    // the same user gesture) as group hosting, then falls into the normal
+    // question-intro/question flow untouched.
+    if (isSolo) {
+      return (
+        <div
+          className="min-h-screen flex flex-col items-center justify-center text-center p-6"
+          style={{ background: "var(--ap-brand)", color: "#fff" }}
+        >
+          {showCountdown ? (
+            <CountdownSplash />
+          ) : (
+            <>
+              <BrandMonogram size={48} />
+              <h1 className="mt-6 mb-2" style={{ fontFamily: "var(--ap-font-display)", fontSize: "clamp(1.5rem,4vw,2.2rem)", fontWeight: 700 }}>
+                {quiz.title}
+              </h1>
+              <p className="mb-8" style={{ color: "rgba(255,255,255,0.75)" }}>
+                {quiz.questions.length} question{quiz.questions.length > 1 ? "s" : ""} · solo
+              </p>
+              <Button variant="hero" size="lg" onClick={handleStart}>
+                Jouer
+              </Button>
+            </>
+          )}
+        </div>
+      );
+    }
 
     const codeLen = quiz.gameCode.length;
     const digitSize = codeLen > 8 ? 26 : codeLen > 6 ? 34 : 44;
@@ -1475,8 +1568,9 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
                 <QuestionMediaLayout question={currentQuestion.question} image={questionImage} layoutId={questionLayout} />
               )}
 
-              {/* Word-cloud / ranking types (non-standard) */}
-              {currentQuestion.type === 'word-cloud' && (
+              {/* Word-cloud / ranking types (non-standard) — group mode only;
+                  solo answers ranking through QuestionAnswerPanel below. */}
+              {!isSolo && currentQuestion.type === 'word-cloud' && (
                 <WordCloudQuestion
                   question={currentQuestion.question}
                   timeLimit={currentQuestion.timeLimit}
@@ -1489,7 +1583,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
                   showResults={false}
                 />
               )}
-              {currentQuestion.type === 'ranking' && currentQuestion.items && (
+              {!isSolo && currentQuestion.type === 'ranking' && currentQuestion.items && (
                 <RankingQuestion
                   question={currentQuestion.question}
                   items={currentQuestion.items}
@@ -1500,71 +1594,90 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
               )}
             </div>
 
-            {/* ── Answer grid ── */}
-            {['multiple-choice', 'single-choice'].includes(currentQuestion.type) && currentQuestion.answers && (
-              <div className="grid grid-cols-2 gap-3 p-4 pt-0 flex-shrink-0">
-                {(currentQuestion.answers as string[]).map((answer, index) => (
-                  isMillionnaire ? (
-                    <div
-                      key={index}
-                      className="flex items-center gap-3 px-3 py-3 text-white font-bold text-base select-none"
-                      style={{ background: ANSWER_STYLES[index % 4].bg, border: '1.5px solid rgba(200,160,0,0.6)', borderRadius: "var(--ap-r-md)", boxShadow: `0 0 20px ${ANSWER_STYLES[index % 4].shadow}, inset 0 1px 0 rgba(200,160,0,0.1)`, minHeight: '64px', fontFamily: 'var(--ap-font-body)' }}
-                    >
-                      <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'rgba(200,160,0,0.15)', border: '1.5px solid rgba(200,160,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#FFD700', fontWeight: 900, fontSize: '1rem', fontFamily: 'var(--ap-font-display)' }}>
-                        {ANSWER_STYLES[index % 4].shape}
-                      </div>
-                      <span className="leading-tight flex-1 text-center">{answer}</span>
-                    </div>
-                  ) : (
-                    <div
-                      key={index}
-                      className="flex items-center gap-4 rounded-2xl px-6 py-4 text-white font-bold text-lg select-none"
-                      style={{ background: ANSWER_STYLES[index % 4].bg, boxShadow: `0 6px 24px ${ANSWER_STYLES[index % 4].shadow}`, minHeight: '72px', fontFamily: 'var(--ap-font-body)' }}
-                    >
-                      <span className="text-2xl opacity-90 flex-shrink-0">{ANSWER_STYLES[index % 4].shape}</span>
-                      <span className="leading-tight">{answer}</span>
-                    </div>
-                  )
-                ))}
+            {/* ── Answer input ──
+                Solo: the host device is the only player, so the tiles that
+                are normally decorative (players answer on their own joined
+                device) become the actual interactive input, via the same
+                QuestionAnswerPanel PlayerView uses — covers every question
+                type PlayerView supports live, not just the 4 the group
+                host-screen bothers to visually render. */}
+            {isSolo ? (
+              <div className="px-4 pb-4 flex-shrink-0">
+                <QuestionAnswerPanel
+                  question={currentQuestion as unknown as EditableQuestion}
+                  hasAnswered={soloHasAnswered}
+                  selectedAnswer={soloSelectedAnswer}
+                  onSubmit={submitSoloAnswer}
+                />
               </div>
-            )}
-
-            {currentQuestion.type === 'true-false' && (
-              <div className="grid grid-cols-2 gap-3 p-4 pt-0 flex-shrink-0">
-                {isMillionnaire ? (
-                  <>
-                    <div className="flex items-center gap-3 px-3 py-3 text-white font-bold text-xl select-none" style={{ background: 'rgba(8,12,40,0.88)', border: '1.5px solid rgba(200,160,0,0.6)', borderRadius: "var(--ap-r-md)", boxShadow: '0 0 20px rgba(200,160,0,0.2)', minHeight: '64px', fontFamily: 'var(--ap-font-display)', justifyContent: 'center' }}>
-                      <span style={{ color: '#FFD700', fontSize: '1.5rem' }}>○</span> {currentQuestion.answers?.[0] ?? 'Vrai'}
-                    </div>
-                    <div className="flex items-center gap-3 px-3 py-3 text-white font-bold text-xl select-none" style={{ background: 'rgba(8,12,40,0.88)', border: '1.5px solid rgba(200,160,0,0.6)', borderRadius: "var(--ap-r-md)", boxShadow: '0 0 20px rgba(200,160,0,0.2)', minHeight: '64px', fontFamily: 'var(--ap-font-display)', justifyContent: 'center' }}>
-                      <span style={{ color: '#FFD700', fontSize: '1.5rem' }}>✕</span> {currentQuestion.answers?.[1] ?? 'Faux'}
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="flex items-center justify-center gap-3 rounded-2xl px-6 py-5 text-white font-bold text-xl select-none" style={{ background: '#27AE60', boxShadow: '0 6px 24px rgba(39,174,96,0.5)', fontFamily: 'var(--ap-font-display)' }}>
-                      <span className="text-3xl">✓</span> {currentQuestion.answers?.[0] ?? 'Vrai'}
-                    </div>
-                    <div className="flex items-center justify-center gap-3 rounded-2xl px-6 py-5 text-white font-bold text-xl select-none" style={{ background: '#E74C3C', boxShadow: '0 6px 24px rgba(231,76,60,0.5)', fontFamily: 'var(--ap-font-display)' }}>
-                      <span className="text-3xl">✗</span> {currentQuestion.answers?.[1] ?? 'Faux'}
-                    </div>
-                  </>
+            ) : (
+              <>
+                {['multiple-choice', 'single-choice'].includes(currentQuestion.type) && currentQuestion.answers && (
+                  <div className="grid grid-cols-2 gap-3 p-4 pt-0 flex-shrink-0">
+                    {(currentQuestion.answers as string[]).map((answer, index) => (
+                      isMillionnaire ? (
+                        <div
+                          key={index}
+                          className="flex items-center gap-3 px-3 py-3 text-white font-bold text-base select-none"
+                          style={{ background: ANSWER_STYLES[index % 4].bg, border: '1.5px solid rgba(200,160,0,0.6)', borderRadius: "var(--ap-r-md)", boxShadow: `0 0 20px ${ANSWER_STYLES[index % 4].shadow}, inset 0 1px 0 rgba(200,160,0,0.1)`, minHeight: '64px', fontFamily: 'var(--ap-font-body)' }}
+                        >
+                          <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'rgba(200,160,0,0.15)', border: '1.5px solid rgba(200,160,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#FFD700', fontWeight: 900, fontSize: '1rem', fontFamily: 'var(--ap-font-display)' }}>
+                            {ANSWER_STYLES[index % 4].shape}
+                          </div>
+                          <span className="leading-tight flex-1 text-center">{answer}</span>
+                        </div>
+                      ) : (
+                        <div
+                          key={index}
+                          className="flex items-center gap-4 rounded-2xl px-6 py-4 text-white font-bold text-lg select-none"
+                          style={{ background: ANSWER_STYLES[index % 4].bg, boxShadow: `0 6px 24px ${ANSWER_STYLES[index % 4].shadow}`, minHeight: '72px', fontFamily: 'var(--ap-font-body)' }}
+                        >
+                          <span className="text-2xl opacity-90 flex-shrink-0">{ANSWER_STYLES[index % 4].shape}</span>
+                          <span className="leading-tight">{answer}</span>
+                        </div>
+                      )
+                    ))}
+                  </div>
                 )}
-              </div>
-            )}
 
-            {currentQuestion.type === 'short-answer' && (
-              <div
-                className="mx-4 mb-4 rounded-2xl border-2 border-dashed border-white/30 bg-white/10 p-5 text-center text-white text-lg font-bold backdrop-blur flex-shrink-0"
-                style={{ fontFamily: 'var(--ap-font-display)' }}
-              >
-                <PencilLine style={{ width:18, height:18, display:"inline", verticalAlign:"-3px", marginRight:8 }} /> Les joueurs tapent leur réponse
-              </div>
+                {currentQuestion.type === 'true-false' && (
+                  <div className="grid grid-cols-2 gap-3 p-4 pt-0 flex-shrink-0">
+                    {isMillionnaire ? (
+                      <>
+                        <div className="flex items-center gap-3 px-3 py-3 text-white font-bold text-xl select-none" style={{ background: 'rgba(8,12,40,0.88)', border: '1.5px solid rgba(200,160,0,0.6)', borderRadius: "var(--ap-r-md)", boxShadow: '0 0 20px rgba(200,160,0,0.2)', minHeight: '64px', fontFamily: 'var(--ap-font-display)', justifyContent: 'center' }}>
+                          <span style={{ color: '#FFD700', fontSize: '1.5rem' }}>○</span> {currentQuestion.answers?.[0] ?? 'Vrai'}
+                        </div>
+                        <div className="flex items-center gap-3 px-3 py-3 text-white font-bold text-xl select-none" style={{ background: 'rgba(8,12,40,0.88)', border: '1.5px solid rgba(200,160,0,0.6)', borderRadius: "var(--ap-r-md)", boxShadow: '0 0 20px rgba(200,160,0,0.2)', minHeight: '64px', fontFamily: 'var(--ap-font-display)', justifyContent: 'center' }}>
+                          <span style={{ color: '#FFD700', fontSize: '1.5rem' }}>✕</span> {currentQuestion.answers?.[1] ?? 'Faux'}
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex items-center justify-center gap-3 rounded-2xl px-6 py-5 text-white font-bold text-xl select-none" style={{ background: '#27AE60', boxShadow: '0 6px 24px rgba(39,174,96,0.5)', fontFamily: 'var(--ap-font-display)' }}>
+                          <span className="text-3xl">✓</span> {currentQuestion.answers?.[0] ?? 'Vrai'}
+                        </div>
+                        <div className="flex items-center justify-center gap-3 rounded-2xl px-6 py-5 text-white font-bold text-xl select-none" style={{ background: '#E74C3C', boxShadow: '0 6px 24px rgba(231,76,60,0.5)', fontFamily: 'var(--ap-font-display)' }}>
+                          <span className="text-3xl">✗</span> {currentQuestion.answers?.[1] ?? 'Faux'}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {currentQuestion.type === 'short-answer' && (
+                  <div
+                    className="mx-4 mb-4 rounded-2xl border-2 border-dashed border-white/30 bg-white/10 p-5 text-center text-white text-lg font-bold backdrop-blur flex-shrink-0"
+                    style={{ fontFamily: 'var(--ap-font-display)' }}
+                  >
+                    <PencilLine style={{ width:18, height:18, display:"inline", verticalAlign:"-3px", marginRight:8 }} /> Les joueurs tapent leur réponse
+                  </div>
+                )}
+              </>
             )}
           </div>
 
           {/* ── Player sidebar (dedicated column, host only) ── */}
-          {isHost && (
+          {isHost && !isSolo && (
             <div className="w-52 border-l border-white/10 bg-black/40 backdrop-blur-md p-3 flex flex-col flex-shrink-0">
               <style>{`
                 .sidebar-player .kick-btn { opacity:0; transform:scale(.6); transition:opacity .15s,transform .15s cubic-bezier(.2,.7,.3,1.3); }
@@ -1609,7 +1722,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
         <QuizSessionAnswerDistribution
           currentQuestion={currentQuestion as unknown as EditableQuestion}
           answerDistribution={answerDistribution}
-          onNext={currentQuestionIndex >= quiz.questions.length - 1 ? nextQuestion : showLeaderboard}
+          onNext={isSolo || currentQuestionIndex >= quiz.questions.length - 1 ? nextQuestion : showLeaderboard}
           onSkipToNext={isHost && currentQuestionIndex + 1 < quiz.questions.length ? nextQuestion : undefined}
           isHost={isHost || false}
           isLastQuestion={currentQuestionIndex >= quiz.questions.length - 1}
