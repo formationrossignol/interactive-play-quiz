@@ -13,7 +13,7 @@
   font-family: var(--body);
   padding: 28px 0 72px;
 }
-.adm .wrap { max-width: 1180px; margin: 0 auto; padding: 0 28px; }
+.adm .wrap { max-width: 1440px; margin: 0 auto; padding: 0 28px; }
 .adm h1, .adm h2, .adm h3, .adm h4 { font-family: var(--disp); font-weight: 600; margin: 0; letter-spacing: -.5px; }
 
 /* ── Console header ── */
@@ -71,22 +71,21 @@
 .adm-navitem .count.alert { background: var(--ap-quiz); color: #fff; }
 
 /* ── KPI stat cards ── */
-.adm-kpi { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin-bottom: 22px; }
+.adm-kpi { display: grid; grid-template-columns: repeat(4, minmax(190px, 1fr)); gap: 14px; margin-bottom: 22px; }
 .adm-stat {
-  position: relative; overflow: hidden;
-  background: var(--ap-card); border: 2px solid var(--ap-line);
-  border-radius: var(--ap-r-lg, 24px); padding: 18px 18px 16px;
+  position: relative; overflow: hidden; min-height: 132px;
+  background: var(--ap-card); border: var(--ap-border-w) solid var(--ap-line);
+  border-left: 4px solid var(--acc, var(--ap-brand));
+  border-radius: var(--ap-r-lg); padding: 18px;
   box-shadow: var(--ap-shadow-soft);
 }
-.adm-stat::before {
-  content: ""; position: absolute; inset: 0 0 auto 0; height: 5px; background: var(--acc, var(--ap-brand));
-}
+.adm-stat::before { display: none; }
 .adm-stat .chip {
-  display: grid; place-items: center; width: 34px; height: 34px; border-radius: 11px;
-  background: var(--acc-soft, var(--ap-brand-soft)); color: var(--acc, var(--ap-brand)); margin-bottom: 12px;
+  display: grid; place-items: center; width: 38px; height: 38px; border-radius: var(--ap-r-md);
+  background: var(--acc-soft, var(--ap-brand-soft)); color: var(--acc, var(--ap-brand)); margin-bottom: 14px;
 }
 .adm-stat .chip svg { width: 17px; height: 17px; stroke-width: 2.25; }
-.adm-stat .num { font-family: var(--disp); font-weight: 600; font-size: 40px; line-height: 1; letter-spacing: -1.5px; }
+.adm-stat .num { font-family: var(--disp); font-weight: 600; font-size: 34px; line-height: 1; letter-spacing: -1px; }
 .adm-stat .lbl { font-weight: 800; font-size: 12.5px; color: var(--ap-muted); margin-top: 4px; }
 .adm-stat.acc-brand { --acc: var(--ap-brand); --acc-soft: var(--ap-brand-soft); }
 .adm-stat.acc-flash { --acc: var(--ap-flash); --acc-soft: var(--ap-flash-soft); }
@@ -312,22 +311,30 @@
 
 /* ── FAQ accordion (public-form editing) ── */
 .adm-faq { display: flex; flex-direction: column; gap: 16px; }
+.adm-faq-create { display: grid; grid-template-columns: minmax(220px, 1fr) auto; gap: 10px; }
 .adm-faqgroup {
   background: var(--ap-card); border: 2px solid var(--ap-line); border-radius: var(--ap-r-lg, 24px);
-  padding: 18px 20px; box-shadow: var(--ap-shadow-soft);
+  padding: 0; overflow: hidden; box-shadow: var(--ap-shadow-soft);
 }
-.adm-faqgroup > .cat {
-  font-family: var(--body); font-weight: 900; font-size: 11px; letter-spacing: .6px;
-  text-transform: uppercase; color: var(--ap-brand); margin-bottom: 6px;
+.adm-faqgroup-head { display: flex; align-items: center; gap: 8px; padding: 12px 14px; background: var(--ap-paper-2); }
+.adm-faqgroup-toggle {
+  min-width: 0; flex: 1; display: flex; align-items: center; gap: 9px;
+  border: 0; background: transparent; color: var(--ap-ink); cursor: pointer;
+  font-family: var(--disp); font-weight: 700; font-size: 15px; text-align: left;
 }
+.adm-faqgroup-toggle svg { margin-left: 2px; transition: transform .16s; }
+.adm-faqgroup-rename { min-width: 0; flex: 1; display: flex; align-items: center; gap: 7px; }
+.adm-faqgroup-rename .ap-input { min-width: 0; height: 38px; }
+.adm-faqgroup-content { padding: 0 18px 16px; }
 .adm-faqrow { padding: 14px 0; border-top: 2px solid var(--ap-line); }
-.adm-faqgroup > .cat + .adm-faqrow { border-top: none; }
 .adm-faqrow.is-draft { opacity: .7; }
 .adm-faqrow .q { display: flex; align-items: center; gap: 8px; font-family: var(--disp); font-weight: 600; font-size: 15px; }
 .adm-faqrow .q .draftdot { font-size: 10px; font-weight: 900; padding: 2px 7px; border-radius:var(--ap-r-sm); background: var(--ap-flash-soft); color: var(--ap-flash-deep); }
 .dark .adm-faqrow .q .draftdot { color: var(--ap-flash); }
 .adm-faqrow .a { margin: 7px 0 0; font-weight: 600; font-size: 13.5px; line-height: 1.55; color: var(--ap-muted); }
+.adm-faqrow .a :where(p, ul, ol) { margin: 0 0 6px; }
 .adm-faqrow .adm-cardactions { border-top: none; padding-top: 10px; max-width: 320px; }
+.adm-drag { display: grid; place-items: center; flex: 0 0 auto; border: 0; background: transparent; color: var(--ap-muted); cursor: grab; padding: 4px; touch-action: none; }
 
 /* ── Testimonials grid (public-form editing) ── */
 .adm-tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
@@ -367,6 +374,7 @@
 
 /* ── Responsive: rail → horizontal scroller ── */
 @media (max-width: 860px) {
+  .adm-kpi { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .adm-shell { grid-template-columns: 1fr; }
   .adm-rail { position: static; flex-direction: row; overflow-x: auto; padding: 8px; }
   .adm-rail-label { display: none; }
@@ -374,6 +382,7 @@
   .adm-navitem .count { margin-left: 8px; }
 }
 @media (max-width: 560px) {
+  .adm-kpi { grid-template-columns: 1fr; }
   .adm-row { grid-template-columns: 1fr; gap: 10px; }
   .adm-row .r-actions { justify-content: flex-start; }
 }

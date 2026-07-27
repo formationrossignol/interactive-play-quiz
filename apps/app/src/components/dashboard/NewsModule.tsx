@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Rocket } from "lucide-react";
 import { fetchLatestChangelog, type ChangelogRelease } from "@/lib/changelog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Link } from "react-router-dom";
 
 export function NewsModule() {
   const [releases, setReleases] = useState<ChangelogRelease[] | null>(null);
@@ -45,10 +46,9 @@ export function NewsModule() {
               </div>
             </div>
           ))}
-          {/* /changelog lives in apps/marketing — full navigation, not react-router Link. */}
-          <a href="/changelog" className="ap-btn ap-btn--ghost ap-btn--sm" style={{ alignSelf: "flex-start", marginTop: "4px" }}>
+          <Link to="/changelog" className="ap-btn ap-btn--ghost ap-btn--sm" style={{ alignSelf: "flex-start", marginTop: "4px" }}>
             Voir tout le changelog
-          </a>
+          </Link>
         </div>
       )}
     </div>

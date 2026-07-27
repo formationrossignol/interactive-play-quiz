@@ -1,16 +1,12 @@
 import { t } from "@/lib/i18n";
 import { useCookieConsent } from "@/contexts/CookieConsentContext";
+import { marketingUrl } from "@/lib/marketingOrigin";
 
 // Legal pages are owned by the separate Next.js marketing deployment. The
 // product app is also deployed directly on its own *.vercel.app origin, where
 // relative links would be swallowed by the SPA catch-all and render its 404.
 // Keep the public deployment as a working default while allowing the custom
 // marketing domain to be supplied per environment.
-const MARKETING_ORIGIN = (
-  import.meta.env.VITE_MARKETING_ORIGIN
-  || "https://interactive-play-quiz-marketing.vercel.app"
-).replace(/\/$/, "");
-
 // Discreet app footer — not the marketing site's: no product/company/
 // support columns, no logo, no social row. Just copyright, build version,
 // and the legally-required links (see apps/marketing/Footer.tsx for the
@@ -33,7 +29,7 @@ export const Footer = () => {
           ].map(({ label, href }) => (
             <a
               key={href}
-              href={`${MARKETING_ORIGIN}${href}`}
+              href={marketingUrl(href)}
               className="text-xs font-bold text-ap-muted hover:text-ap-brand focus-visible:text-ap-brand font-body transition-colors"
             >
               {label}

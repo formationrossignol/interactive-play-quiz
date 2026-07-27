@@ -1,14 +1,15 @@
 import type { StaticPage } from './types';
+import { Heart, LockKeyhole, Scale, ScrollText, Sparkles, type LucideIcon } from 'lucide-react';
 
 export type StaticSlug =
   | 'features' | 'about' | 'mentions-legales' | 'confidentialite' | 'cgu';
 
-export const STATIC_PAGE_META: { slug: StaticSlug; label: string; icon: string; path: string; hasBlocks: boolean }[] = [
-  { slug: 'features', label: 'Fonctionnalités', icon: '✨', path: '/features', hasBlocks: true },
-  { slug: 'about', label: 'À propos', icon: '💜', path: '/about', hasBlocks: true },
-  { slug: 'mentions-legales', label: 'Mentions légales', icon: '⚖️', path: '/mentions-legales', hasBlocks: false },
-  { slug: 'confidentialite', label: 'Confidentialité', icon: '🔒', path: '/confidentialite', hasBlocks: false },
-  { slug: 'cgu', label: 'CGU', icon: '📜', path: '/cgu', hasBlocks: false },
+export const STATIC_PAGE_META: { slug: StaticSlug; label: string; icon: LucideIcon; path: string; hasBlocks: boolean }[] = [
+  { slug: 'features', label: 'Fonctionnalités', icon: Sparkles, path: '/features', hasBlocks: true },
+  { slug: 'about', label: 'À propos', icon: Heart, path: '/about', hasBlocks: true },
+  { slug: 'mentions-legales', label: 'Mentions légales', icon: Scale, path: '/mentions-legales', hasBlocks: false },
+  { slug: 'confidentialite', label: 'Confidentialité', icon: LockKeyhole, path: '/confidentialite', hasBlocks: false },
+  { slug: 'cgu', label: 'CGU', icon: ScrollText, path: '/cgu', hasBlocks: false },
 ];
 
 /** Source-of-truth content. DB rows (admin edits) overlay these when present. */

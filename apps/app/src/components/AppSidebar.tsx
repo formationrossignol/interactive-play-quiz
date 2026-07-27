@@ -11,7 +11,10 @@ import {
   GraduationCap,
   LayoutDashboard,
   Layers,
+  LifeBuoy,
   Library,
+  Map,
+  Megaphone,
   Plus,
   Presentation,
   Settings,
@@ -78,6 +81,12 @@ export const EXPLORE_ITEMS = [
   { label: t("discoverPublic"), icon: Compass, path: "/discover", requiresAuth: false },
   { label: t("footerCommunity"), icon: Users, path: "/community", requiresAuth: false },
   { label: t("navTools"), icon: Dices, path: "/tools", requiresAuth: false },
+];
+
+export const PRODUCT_ITEMS = [
+  { label: "Roadmap", icon: Map, path: "/roadmap" },
+  { label: "Nouveautés", icon: Megaphone, path: "/changelog" },
+  { label: "Signaler un problème", icon: LifeBuoy, path: "/report" },
 ];
 
 interface AppSidebarProps {
@@ -231,6 +240,27 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
           <SidebarGroupLabel>{t("navGroupExplore")}</SidebarGroupLabel>
           <SidebarMenu>
             {EXPLORE_ITEMS.filter((item) => (item.requiresAuth ? Boolean(user) : true)).map((item) => {
+              const Icon = item.icon;
+              return (
+                <SidebarMenuItem key={item.path}>
+                  <SidebarMenuButton
+                    isActive={location.pathname === item.path}
+                    onClick={() => navigate(item.path)}
+                    tooltip={item.label}
+                  >
+                    <Icon />
+                    <span>{item.label}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              );
+            })}
+          </SidebarMenu>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Produit</SidebarGroupLabel>
+          <SidebarMenu>
+            {PRODUCT_ITEMS.map((item) => {
               const Icon = item.icon;
               return (
                 <SidebarMenuItem key={item.path}>

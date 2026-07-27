@@ -35,9 +35,9 @@ const FOOTER_SECTIONS: { title: string; links: FooterLink[] }[] = [
       { label: "Guides", href: "/guides" },
       { label: "Communauté", href: `${APP_ORIGIN}/community`, external: true },
       { label: "Avis", href: "/reviews" },
-      { label: "Roadmap", href: "/roadmap" },
-      { label: "Changelog", href: "/changelog" },
-      { label: "Signaler un bug", href: "/report" },
+      { label: "Roadmap", href: `${APP_ORIGIN}/roadmap`, external: true },
+      { label: "Changelog", href: `${APP_ORIGIN}/changelog`, external: true },
+      { label: "Signaler un bug", href: `${APP_ORIGIN}/report`, external: true },
     ],
   },
 ];

@@ -8,6 +8,13 @@ import type { NextConfig } from "next";
 const APP_ORIGIN = process.env.APP_ORIGIN ?? "https://interactive-play-quiz.vercel.app";
 
 const nextConfig: NextConfig = {
+  async redirects() {
+    return ["roadmap", "changelog", "report"].map((path) => ({
+      source: `/${path}`,
+      destination: `${APP_ORIGIN}/${path}`,
+      permanent: false,
+    }));
+  },
   async rewrites() {
     return {
       beforeFiles: [],

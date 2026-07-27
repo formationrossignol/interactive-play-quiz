@@ -96,6 +96,7 @@ export interface Slide {
   id: string;
   order: number;
   hidden: boolean;
+  notes?: string;
   background?: SlideBackground;
   layoutId?: import("../layouts/slideLayouts").SlideLayoutId;
   elements: SlideElement[];

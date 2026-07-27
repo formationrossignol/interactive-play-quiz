@@ -106,6 +106,27 @@ function SlideBackgroundPanel({ slideId }: { slideId: string }) {
           </button>
         )}
       </div>
+
+      <label style={{ display: "grid", gap: 6, paddingTop: 10, borderTop: "var(--ap-border-w) solid var(--ap-line)", fontSize: 12, fontWeight: 800, color: "var(--ap-muted)" }}>
+        Notes du présentateur
+        <textarea
+          value={slide?.notes ?? ""}
+          onChange={(event) => useDocStore.getState().updateSlideNotes(slideId, event.target.value)}
+          placeholder="Ajoutez vos repères, transitions ou rappels…"
+          style={{
+            minHeight: 120,
+            resize: "vertical",
+            padding: 9,
+            border: "var(--ap-border-w) solid var(--ap-line)",
+            borderRadius: "var(--ap-r-sm)",
+            background: "var(--ap-paper)",
+            color: "var(--ap-ink)",
+            fontFamily: "var(--ap-font-body)",
+            fontSize: 13,
+            lineHeight: 1.45,
+          }}
+        />
+      </label>
     </div>
   );
 }

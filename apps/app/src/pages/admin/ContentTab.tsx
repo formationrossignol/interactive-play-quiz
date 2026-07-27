@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Map, BookOpen, HelpCircle, Package, MessageSquare, FileText } from "lucide-react";
-import { useAdminRoadmap, useAdminGuides, useAdminFaq, useAdminReleases, useAdminReviews, useContentMutations } from "@/lib/pages/adminHooks";
+import { useAdminRoadmap, useAdminGuides, useAdminFaq, useAdminFaqSections, useAdminReleases, useAdminReviews, useContentMutations, useFaqStructureMutation } from "@/lib/pages/adminHooks";
 import type { RoadmapCol, Status } from "@/lib/pages/types";
 import { RoadmapBoard } from "./RoadmapBoard";
 import { GuidesGrid } from "./GuidesGrid";
@@ -31,9 +31,12 @@ export const ContentTab = () => {
   const roadmap = useAdminRoadmap();
   const guides = useAdminGuides();
   const faq = useAdminFaq();
+  const faqSections = useAdminFaqSections();
   const releases = useAdminReleases();
   const reviews = useAdminReviews();
   const mut = useContentMutations(res);
+  const faqSectionMut = useContentMutations("faq_sections");
+  const faqStructure = useFaqStructureMutation();
 
   const onSave = (values: Record<string, unknown>) => {
     const row = editing.row as { id?: string } | undefined;
@@ -90,8 +93,15 @@ export const ContentTab = () => {
       {res === "faq_items" && (
         <FaqAccordion
           rows={faq.data ?? []}
+          sections={faqSections.data ?? []}
           onEdit={edit}
-          onNew={() => setEditing({ open: true, row: undefined })}
+          onNew={(category, sort) => setEditing({ open: true, row: { category, sort } })}
+          onNewSection={(title, sort) => faqSectionMut.create.mutate({ title, sort })}
+          onDeleteSection={(id) => faqSectionMut.remove.mutate(id)}
+          onStructureChange={(sections) => faqStructure.mutate({
+            sections: sections.map(({ id, title, sort }) => ({ id, title, sort })),
+            items: sections.flatMap((section) => section.items.map(({ id, category, sort }) => ({ id, category, sort }))),
+          })}
           onToggleStatus={toggle}
           onDelete={del}
         />

@@ -5,8 +5,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AppLayout } from "@/components/AppLayout";
 import { Pagination } from "@/components/Pagination";
 import { RatingStars } from "@/components/RatingStars";
+import { ExplorerEmptyState } from "@/components/content/ExplorerEmptyState";
 import { getPublicQuizzes, rateQuiz } from "@/lib/quizStorage";
-import { BarChart2, ListChecks, Search, Play, Clock, Users } from "lucide-react";
+import { BarChart2, Compass, ListChecks, Search, Play, Clock, Users } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { toast } from "sonner";
 import { t } from "@/lib/i18n";
@@ -103,22 +104,21 @@ const DiscoverQuizzes = () => {
 
   return (
     <AppLayout subtitle={t("discoverPublic")}>
-      <div className="mx-auto max-w-7xl px-6 py-10">
+      <div className="mx-auto max-w-6xl px-6 py-10">
 
         {/* Page header */}
-        <div style={{ textAlign: "center", marginBottom: "36px" }}>
-          <h1 className="ap-h1" style={{ fontSize: "clamp(32px,5vw,48px)", marginBottom: "12px" }}>
+        <div style={{ marginBottom: "30px" }}>
+          <h1 className="ap-h2" style={{ fontSize: "26px", marginBottom: "4px" }}>
             {t("discoverPublic")}
           </h1>
-          <p className="ap-lead" style={{ fontSize: "16px" }}>
-            Explorez les quiz et sondages publics
+          <p className="ap-muted" style={{ fontSize: "14px" }}>
+            Explorez les quiz et sondages publics créés par la communauté.
           </p>
         </div>
 
         {/* Filter bar */}
         <div
-          className="ap-card"
-          style={{ marginBottom: "28px", padding: "20px 24px", display: "flex", flexDirection: "column", gap: "14px" }}
+          style={{ marginBottom: "28px", display: "flex", flexDirection: "column", gap: "14px" }}
         >
           <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
             {/* search */}
@@ -197,9 +197,26 @@ const DiscoverQuizzes = () => {
 
         {/* Cards grid */}
         {filteredQuizzes.length === 0 ? (
-          <div style={{ borderRadius: "var(--ap-r-lg)", border: "var(--ap-border-w) dashed var(--ap-line-2)", background: "var(--ap-paper-2)", padding: "64px 24px", textAlign: "center" }}>
-            <p className="ap-muted" style={{ fontSize: "16px" }}>Aucun résultat trouvé</p>
-          </div>
+          <ExplorerEmptyState
+            icon={<Compass size={27} />}
+            title={publicQuizzes.length === 0 ? "Aucun quiz ou sondage public" : "Aucun résultat trouvé"}
+            body={publicQuizzes.length === 0
+              ? "Les contenus rendus publics par la communauté apparaîtront ici."
+              : "Modifiez votre recherche ou réinitialisez les filtres pour afficher davantage de contenus."}
+            action={publicQuizzes.length > 0 ? (
+              <button
+                className="ap-btn ap-btn--ghost ap-btn--sm"
+                onClick={() => {
+                  setSearchQuery("");
+                  setSelectedCategory("Tous");
+                  setSelectedTag(null);
+                  setTypeFilter("all");
+                }}
+              >
+                Réinitialiser les filtres
+              </button>
+            ) : undefined}
+          />
         ) : (
           <div style={{ display: "grid", gap: "20px", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))" }}>
             {paginatedQuizzes.map((quiz) => (
