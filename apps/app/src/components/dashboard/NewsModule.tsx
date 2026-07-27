@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Rocket } from "lucide-react";
 import { fetchLatestChangelog, type ChangelogRelease } from "@/lib/changelog";
-import { Skeleton } from "@/components/ui/skeleton";
+import { ListSkeleton } from "@/components/ui/skeletons";
 import { Link } from "react-router-dom";
 
 export function NewsModule() {
@@ -17,17 +17,7 @@ export function NewsModule() {
     <div className="ap-card" style={{ padding: "20px" }}>
       <h2 className="ap-h3" style={{ fontSize: "16px", marginBottom: "16px" }}>Nouveautés</h2>
       {releases === null ? (
-        <div role="status" aria-label="Chargement des nouveautés">
-          {[0, 1, 2].map((item) => (
-            <div key={item} className="mb-3 flex items-center gap-3">
-              <Skeleton className="h-8 w-8 flex-shrink-0 rounded-lg" />
-              <div className="flex-1">
-                <Skeleton className="h-4 w-3/5" />
-                <Skeleton className="mt-2 h-3 w-2/5" />
-              </div>
-            </div>
-          ))}
-        </div>
+        <ListSkeleton rows={3} avatarClassName="rounded-lg" />
       ) : releases.length === 0 ? (
         <p className="ap-muted" style={{ fontSize: "13px" }}>Pas de nouveautés pour l'instant.</p>
       ) : (
