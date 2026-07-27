@@ -98,6 +98,14 @@ const DiscoverQuizzes = () => {
     if (quiz) { localStorage.setItem("current-quiz", JSON.stringify(quiz)); navigate(`/quiz/${quizId}`); }
   };
 
+  const playQuizSolo = (quizId: string) => {
+    const quiz = publicQuizzes.find((q) => q.id === quizId);
+    if (!quiz) return;
+    localStorage.setItem("current-quiz", JSON.stringify(quiz));
+    sessionStorage.setItem(`quiz-solo-${quizId}`, "1");
+    navigate(`/quiz/${quizId}`);
+  };
+
   const handleRateQuiz = (quizId: string, rating: number) => {
     if (rateQuiz(quizId, rating)) { toast.success("Merci pour votre note !"); window.location.reload(); }
   };
@@ -282,14 +290,35 @@ const DiscoverQuizzes = () => {
                   )}
 
                   {/* CTA */}
-                  <button
-                    className={quiz.type === "poll" ? "ap-btn ap-btn--pill ap-btn--poll" : "ap-btn ap-btn--pill ap-btn--quiz"}
-                    style={{ width: "100%", marginTop: "auto", gap: "8px" }}
-                    onClick={() => playQuiz(quiz.id)}
-                  >
-                    <Play style={{ width: 14, height: 14 }} />
-                    {quiz.type === "poll" ? "Répondre" : "Jouer"}
-                  </button>
+                  {quiz.type === "poll" ? (
+                    <button
+                      className="ap-btn ap-btn--pill ap-btn--poll"
+                      style={{ width: "100%", marginTop: "auto", gap: "8px" }}
+                      onClick={() => playQuiz(quiz.id)}
+                    >
+                      <Play style={{ width: 14, height: 14 }} />
+                      Répondre
+                    </button>
+                  ) : (
+                    <div style={{ display: "flex", gap: 8, marginTop: "auto" }}>
+                      <button
+                        className="ap-btn ap-btn--pill ap-btn--quiz"
+                        style={{ flex: 1, gap: "8px" }}
+                        onClick={() => playQuizSolo(quiz.id)}
+                      >
+                        <Play style={{ width: 14, height: 14 }} />
+                        Seul
+                      </button>
+                      <button
+                        className="ap-btn ap-btn--pill ap-btn--ghost"
+                        style={{ flex: 1, gap: "8px" }}
+                        onClick={() => playQuiz(quiz.id)}
+                      >
+                        <Users style={{ width: 14, height: 14 }} />
+                        À plusieurs
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

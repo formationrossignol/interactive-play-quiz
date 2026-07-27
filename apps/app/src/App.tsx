@@ -26,6 +26,7 @@ const Changelog = lazy(() => import("./pages/Changelog"));
 const Report = lazy(() => import("./pages/Report"));
 const HelpCenter = lazy(() => import("./pages/HelpCenter"));
 const Notifications = lazy(() => import("./pages/Notifications"));
+const History = lazy(() => import("./pages/History"));
 
 // Legal pages: mentions-legales/confidentialite/cgu now live in apps/marketing
 // (see docs/marketing-app-decoupling.md) — no longer routed here.
@@ -123,6 +124,7 @@ const App = () => (
               <Route path="/report" element={<Report />} />
               <Route path="/help" element={<HelpCenter />} />
               <Route path="/notifications" element={<Notifications />} />
+              <Route path="/history" element={<History />} />
               <Route path="/preview/:quizId" element={<PreviewPage />} />
               <Route path="/quiz/:gameCode" element={<LiveQuizPage />} />
               <Route path="/join/:gameCode" element={<JoinQuiz />} />

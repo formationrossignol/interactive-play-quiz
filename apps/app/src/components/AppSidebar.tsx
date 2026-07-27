@@ -64,6 +64,7 @@ export const EXPLORE_ITEMS = [
 
 export const PRODUCT_ITEMS = [
   { label: "Notifications", icon: "notifications", path: "/notifications", requiresAuth: true },
+  { label: "Historique", icon: "history", path: "/history", requiresAuth: true },
   { label: "Centre d’aide", icon: "help", path: "/help", requiresAuth: false },
   { label: "Roadmap", icon: "map", path: "/roadmap", requiresAuth: false },
   { label: "Nouveautés", icon: "campaign", path: "/changelog", requiresAuth: false },
