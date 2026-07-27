@@ -20,6 +20,7 @@ interface DocState {
   deleteSlide: (slideId: string) => void;
   reorderSlides: (slideId: string, toIndex: number) => void;
   toggleSlideHidden: (slideId: string) => void;
+  updateSlideNotes: (slideId: string, notes: string) => void;
   setSlideBackground: (slideId: string, background: SlideBackground | undefined) => void;
   applySlideLayout: (slideId: string, layoutId: SlideLayoutId) => void;
 
@@ -234,6 +235,11 @@ export const useDocStore = create<DocState>((set, get) => ({
   toggleSlideHidden: (slideId) => set((state) => {
     if (!state.presentation) return state;
     return { presentation: mapSlide(state.presentation, slideId, (s) => ({ ...s, hidden: !s.hidden })) };
+  }),
+
+  updateSlideNotes: (slideId, notes) => set((state) => {
+    if (!state.presentation) return state;
+    return { presentation: mapSlide(state.presentation, slideId, (slide) => ({ ...slide, notes })) };
   }),
 
   setSlideBackground: (slideId, background) => set((state) => {

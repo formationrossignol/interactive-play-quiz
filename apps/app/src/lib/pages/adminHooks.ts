@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as repo from './adminRepo';
-import type { Status, ReportStatus } from './types';
+import type { Status, ReportStatus, FaqAdminRow, FaqSectionAdminRow } from './types';
 
 // Map a content table to the public query key it feeds, so admin edits refresh public pages.
 const PUBLIC_KEY: Record<string, string> = {
@@ -15,6 +15,7 @@ function useContentList<T>(key: string, fetcher: () => Promise<T[]>) {
 export const useAdminRoadmap = () => useContentList(['roadmap_items'].join(), repo.listRoadmap);
 export const useAdminGuides = () => useContentList(['guides'].join(), repo.listGuides);
 export const useAdminFaq = () => useContentList(['faq_items'].join(), repo.listFaq);
+export const useAdminFaqSections = () => useContentList(['faq_sections'].join(), repo.listFaqSections);
 export const useAdminReleases = () => useContentList(['changelog_releases'].join(), repo.listReleases);
 
 export function useContentMutations(table: string) {
@@ -30,6 +31,21 @@ export function useContentMutations(table: string) {
     remove: useMutation({ mutationFn: (id: string) => repo.deleteRow(table, id), onSuccess: invalidate }),
     setStatus: useMutation({ mutationFn: ({ id, status }: { id: string; status: Status }) => repo.setStatus(table, id, status), onSuccess: invalidate }),
   };
+}
+
+export function useFaqStructureMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (value: {
+      sections: Pick<FaqSectionAdminRow, 'id' | 'title' | 'sort'>[];
+      items: Pick<FaqAdminRow, 'id' | 'category' | 'sort'>[];
+    }) => repo.updateFaqStructure(value.sections, value.items),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'faq_sections'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'faq_items'] });
+      qc.invalidateQueries({ queryKey: ['pages', 'faq'] });
+    },
+  });
 }
 
 export const useReleaseItems = (releaseId: string) =>

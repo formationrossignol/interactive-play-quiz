@@ -8,6 +8,9 @@ import {
   Pencil,
   Presentation,
   Share2,
+  Compass,
+  Link2,
+  Users,
 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { getCurrentUser } from "@/lib/auth";
@@ -15,6 +18,7 @@ import { t } from "@/lib/i18n";
 import { listSharedWithMe, type SharedContentRow } from "@/lib/sharing/sharingRepo";
 import type { ContentType } from "@/lib/content/types";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ExplorerEmptyState } from "@/components/content/ExplorerEmptyState";
 
 const TYPE_META: Record<ContentType, { label: string; icon: typeof GraduationCap; color: string }> = {
   quiz: { label: "Quiz", icon: ListChecks, color: "var(--ap-quiz)" },
@@ -39,6 +43,36 @@ const destinationFor = (row: SharedContentRow) => {
   return "/my-exams";
 };
 
+const SharedEmptyState = ({ onDiscover }: { onDiscover: () => void }) => (
+  <div style={{ display: "grid", gap: 18 }}>
+    <ExplorerEmptyState
+      icon={<Share2 size={27} />}
+      title="Aucun contenu partagé pour le moment"
+      body="Les créations que vos collègues et formateurs partageront avec vous seront regroupées ici."
+      action={(
+        <button className="ap-btn ap-btn--sm" onClick={onDiscover}>
+          <Compass size={15} /> Découvrir les contenus publics
+        </button>
+      )}
+    />
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: 12 }}>
+      {[
+        { icon: Users, title: "Collaborez", body: "Un propriétaire peut vous donner un accès en lecture ou en modification." },
+        { icon: Link2, title: "Retrouvez tout ici", body: "Les quiz, sondages, slides, cours et examens partagés sont centralisés." },
+        { icon: Pencil, title: "Travaillez ensemble", body: "Les contenus modifiables s’ouvrent directement dans leur éditeur." },
+      ].map(({ icon: Icon, title, body }) => (
+        <div key={title} className="ap-card" style={{ padding: 18 }}>
+          <span style={{ width: 36, height: 36, display: "grid", placeItems: "center", marginBottom: 12, borderRadius: "var(--ap-r-md)", background: "var(--ap-brand-soft)", color: "var(--ap-brand)" }}>
+            <Icon size={18} />
+          </span>
+          <strong style={{ display: "block", marginBottom: 5, fontFamily: "var(--ap-font-display)", fontSize: 15 }}>{title}</strong>
+          <p className="ap-muted" style={{ margin: 0, fontSize: 13, lineHeight: 1.5 }}>{body}</p>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
 const SharedWithMe = () => {
   const navigate = useNavigate();
   const user = getCurrentUser();
@@ -60,11 +94,9 @@ const SharedWithMe = () => {
           <p className="ap-muted" style={{ fontSize: "14px" }}>{t("sharedWithMeSubtitle")}</p>
         </div>
 
-        {!loading && sharedContent.length === 0 && (
-          <p className="ap-muted" style={{ fontSize: 14 }}>{t("sharedWithMeEmpty")}</p>
-        )}
+        {!loading && sharedContent.length === 0 && <SharedEmptyState onDiscover={() => navigate("/discover")} />}
 
-        <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))" }}>
+        <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", marginTop: loading || sharedContent.length > 0 ? 0 : 18 }}>
           {loading && [0, 1, 2, 3].map((item) => (
             <div key={item} className="ap-card p-5">
               <div className="mb-5 flex items-center justify-between">

@@ -2,7 +2,7 @@ import type { TableElement } from "../types/presentation";
 import { useDocStore } from "../store/useDocStore";
 import { useHistoryStore } from "../store/useHistoryStore";
 
-export function TableElementView({ slideId, element }: { slideId: string; element: TableElement }) {
+export function TableElementView({ slideId, element, readOnly = false }: { slideId: string; element: TableElement; readOnly?: boolean }) {
   function updateCell(index: number, value: string) {
     if (value === (element.cells[index] ?? "")) return;
     const cells = [...element.cells];
@@ -44,10 +44,10 @@ export function TableElementView({ slideId, element }: { slideId: string; elemen
                   }}
                 >
                   <div
-                    contentEditable
+                    contentEditable={!readOnly}
                     suppressContentEditableWarning
-                    onPointerDown={(event) => event.stopPropagation()}
-                    onBlur={(event) => updateCell(index, event.currentTarget.textContent ?? "")}
+                    onPointerDown={readOnly ? undefined : (event) => event.stopPropagation()}
+                    onBlur={readOnly ? undefined : (event) => updateCell(index, event.currentTarget.textContent ?? "")}
                     style={{ minHeight: "1em", outline: "none", overflow: "hidden" }}
                   >
                     {element.cells[index] ?? ""}

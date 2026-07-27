@@ -200,6 +200,9 @@ export interface GuideAdminRow {
 export interface FaqAdminRow {
   id: string; category: string; question: string; answer: string; status: Status; sort: number;
 }
+export interface FaqSectionAdminRow {
+  id: string; title: string; sort: number;
+}
 export interface ReleaseAdminRow {
   id: string; version: string; title: string; date_label: string;
   intro: string | null; media: string | null; status: Status; sort: number;

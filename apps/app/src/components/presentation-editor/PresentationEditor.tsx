@@ -11,6 +11,7 @@ import {
   PanelRightOpen,
   Play,
   Plus,
+  Presentation as PresenterIcon,
   Scan,
   Upload,
 } from "lucide-react";
@@ -23,6 +24,7 @@ import { SlideNavigator } from "./SlideNavigator";
 import { SlideCanvas } from "./SlideCanvas";
 import { PropertiesPanel } from "./PropertiesPanel";
 import { PresentationMode } from "./PresentationMode";
+import { PresenterMode } from "./PresenterMode";
 import { getContent } from "@/lib/content/contentRepo";
 import { isLegacySlideShape, migrateLegacySlideToPresentation } from "./utils/migrateLegacySlide";
 import { createBlankPresentation, type Presentation } from "./types/presentation";
@@ -44,6 +46,7 @@ export function PresentationEditor({ contentId, userId, initialPresenting = fals
   const navigate = useNavigate();
   const [loading, setLoading] = useState(!!contentId);
   const [presenting, setPresenting] = useState(initialPresenting);
+  const [presenterMode, setPresenterMode] = useState(false);
   const presentation = useDocStore((s) => s.presentation);
   const load = useDocStore((s) => s.load);
   const setTitle = useDocStore((s) => s.setTitle);
@@ -131,6 +134,9 @@ export function PresentationEditor({ contentId, userId, initialPresenting = fals
 
   if (presenting) {
     return <PresentationMode onExit={() => setPresenting(false)} />;
+  }
+  if (presenterMode) {
+    return <PresenterMode onExit={() => setPresenterMode(false)} />;
   }
 
   return (
@@ -228,6 +234,10 @@ export function PresentationEditor({ contentId, userId, initialPresenting = fals
           <button className="ap-btn ap-btn--sm ap-btn--pill" onClick={() => setPresenting(true)}>
             <Play size={15} aria-hidden="true" />
             Présenter
+          </button>
+          <button className="ap-btn ap-btn--sm ap-btn--ghost" onClick={() => setPresenterMode(true)}>
+            <PresenterIcon size={15} aria-hidden="true" />
+            Mode présentateur
           </button>
         </div>
       </div>
