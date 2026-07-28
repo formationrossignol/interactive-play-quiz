@@ -7,7 +7,7 @@ export interface ScormManifestInfo {
 }
 
 function detectVersion(doc: Document): '1.2' | '2004' {
-  const schemaVersionEl = doc.getElementsByTagName('schemaversion')[0];
+  const schemaVersionEl = doc.getElementsByTagNameNS('*', 'schemaversion')[0];
   const schemaVersion = schemaVersionEl?.textContent ?? '';
   if (/2004/.test(schemaVersion)) return '2004';
   if (/1\.2/.test(schemaVersion)) return '1.2';
@@ -22,17 +22,17 @@ function detectVersion(doc: Document): '1.2' | '2004' {
 
 export function parseScormManifest(xml: string): ScormManifestInfo {
   const doc = new DOMParser().parseFromString(xml, 'application/xml');
-  if (doc.getElementsByTagName('parsererror').length > 0) {
+  if (doc.getElementsByTagNameNS('*', 'parsererror').length > 0) {
     throw new ScormManifestError("imsmanifest.xml invalide (XML mal formé).");
   }
 
   const version = detectVersion(doc);
 
-  const organizationsEl = doc.getElementsByTagName('organizations')[0];
+  const organizationsEl = doc.getElementsByTagNameNS('*', 'organizations')[0];
   if (!organizationsEl) throw new ScormManifestError("Aucun élément <organizations> dans imsmanifest.xml.");
 
   const defaultId = organizationsEl.getAttribute('default');
-  const organizations = Array.from(doc.getElementsByTagName('organization'));
+  const organizations = Array.from(doc.getElementsByTagNameNS('*', 'organization'));
 
   let organization: Element | undefined;
   if (defaultId) {
@@ -48,16 +48,21 @@ export function parseScormManifest(xml: string): ScormManifestInfo {
   }
   if (!organization) throw new ScormManifestError("Aucune organisation trouvée dans imsmanifest.xml.");
 
-  const titleEl = organization.getElementsByTagName('title')[0];
+  const titleEl = organization.getElementsByTagNameNS('*', 'title')[0];
   const title = titleEl?.textContent?.trim() || 'Package SCORM importé';
 
-  const firstItem = Array.from(organization.getElementsByTagName('item'))[0];
+  // Some authoring tools wrap the real launchable item in a title-only menu
+  // item even for single-SCO courses. Taking the document-order-first <item>
+  // unconditionally would grab that wrapper (no identifierref) instead of the
+  // actual SCO nested inside it, so find the first item that is launchable.
+  const items = Array.from(organization.getElementsByTagNameNS('*', 'item'));
+  const firstItem = items.find((el) => el.getAttribute('identifierref'));
   if (!firstItem) throw new ScormManifestError("Aucun <item> lançable dans l'organisation par défaut.");
 
   const resourceRef = firstItem.getAttribute('identifierref');
   if (!resourceRef) throw new ScormManifestError("<item> sans identifierref.");
 
-  const resource = Array.from(doc.getElementsByTagName('resource'))
+  const resource = Array.from(doc.getElementsByTagNameNS('*', 'resource'))
     .find((r) => r.getAttribute('identifier') === resourceRef);
   if (!resource) throw new ScormManifestError(`Ressource "${resourceRef}" introuvable dans <resources>.`);
 
