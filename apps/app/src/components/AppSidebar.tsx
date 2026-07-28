@@ -37,6 +37,7 @@ export const CREATE_ITEMS = [
   { label: t("createFlashcards"), icon: "style", path: "/builder-start?type=flashcard" },
   { label: t("createSlides"), icon: "co_present", path: "/builder-start?type=slide" },
   { label: t("createCourse"), icon: "school", path: "/course-builder" },
+  { label: t("createLearningPath"), icon: "route", path: "/learning-path-builder" },
   { label: t("createExam"), icon: "assignment", path: "/exam-builder" },
 ];
 
@@ -48,6 +49,7 @@ export const CREATIONS_ITEMS = [
   { label: t("creationTypeFlashcard"), path: "/my-flashcards" },
   { label: t("creationTypeSlide"), path: "/my-slides" },
   { label: t("creationTypeCourse"), path: "/my-courses" },
+  { label: t("creationTypeLearningPath"), path: "/my-learning-paths" },
   { label: t("creationTypeExam"), path: "/my-exams" },
 ];
 
