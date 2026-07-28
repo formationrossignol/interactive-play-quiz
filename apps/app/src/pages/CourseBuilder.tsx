@@ -19,6 +19,7 @@ import {
 import { getUserQuizzes, getUserFlashcardSets } from "@/lib/quizStorage";
 import { assertSafeImportFile } from "@/lib/fileValidation";
 import { importScormPackage } from "@/lib/scormImport";
+import { ScormManifestError } from "@/lib/scormManifest";
 import { CONTENT_CAPS, getPlan } from "@/lib/plans";
 import { PlanLimitBlocker } from "@/components/PlanLimitBlocker";
 import {
@@ -375,7 +376,10 @@ const CourseBuilder = () => {
         title: currentLesson && currentLesson.title.trim() ? currentLesson.title : result.title,
       });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Import SCORM invalide");
+      // ScormManifestError messages are hand-written and safe to show as-is;
+      // anything else (a Supabase Storage error, a network failure) carries
+      // a technical message not meant for end users.
+      toast.error(err instanceof ScormManifestError ? err.message : "Import SCORM invalide. Réessayez ou vérifiez le fichier.");
     } finally {
       setScormUploading(null);
     }
@@ -1136,7 +1140,7 @@ const CourseBuilder = () => {
                           onChange={(e) => handleScormUpload(e, moduleId, lessonId)}
                         />
                       </label>
-                      {lesson.scormPackageId && (
+                      {lesson.scormPackageId && courseId && (
                         <button
                           onClick={() => navigate(`/course/${courseId}/scorm-report/${lessonId}`)}
                           className="cv-btn"
@@ -1144,6 +1148,11 @@ const CourseBuilder = () => {
                         >
                           Voir les résultats des apprenants →
                         </button>
+                      )}
+                      {lesson.scormPackageId && !courseId && (
+                        <p className="ap-muted" style={{ fontSize: "11.5px", marginTop: "10px" }}>
+                          Enregistrez le cours pour accéder aux résultats des apprenants.
+                        </p>
                       )}
                     </div>
                   )}

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ChevronLeft, Trophy, Users, Clock3, CheckCircle2 } from "lucide-react";
+import { AppLayout } from "@/components/AppLayout";
 import { Breadcrumb } from "@/components/Breadcrumb";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TableSkeleton } from "@/components/ui/skeletons/TableSkeleton";
@@ -37,6 +38,7 @@ export default function CourseScormReport() {
   }, [courseId, lessonId]);
 
   return (
+    <AppLayout subtitle="Reporting SCORM">
     <div style={{ maxWidth: 960, margin: "0 auto", padding: "24px 16px" }}>
       <Breadcrumb
         onHome={() => { window.location.href = "/"; }}
@@ -99,6 +101,7 @@ export default function CourseScormReport() {
         </>
       )}
     </div>
+    </AppLayout>
   );
 }
 

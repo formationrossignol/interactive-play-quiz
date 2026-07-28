@@ -1213,7 +1213,7 @@ const CourseViewer = () => {
 
               {/* ── SCORM ── */}
               {lesson.type === "scorm" && (
-                !lesson.scormPackageId || !course ? (
+                !lesson.scormPackageId || !course || !user ? (
                   <div style={{
                     background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-lg)",
                     boxShadow: "0 5px 0 var(--ap-line)", padding: 24,
@@ -1225,7 +1225,8 @@ const CourseViewer = () => {
                 ) : (
                   <div style={{ borderRadius: "var(--ap-r-lg)", overflow: "hidden", border: "var(--ap-border-w) solid var(--ap-line)", boxShadow: "0 5px 0 var(--ap-line)" }}>
                     <ScormPlayer
-                      userId={course.userId}
+                      userId={user.id}
+                      packageOwnerId={course.userId}
                       localCourseId={course.id}
                       lessonId={lesson.id}
                       scormVersion={lesson.scormVersion ?? "1.2"}

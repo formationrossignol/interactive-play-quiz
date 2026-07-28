@@ -1,9 +1,16 @@
 import { useEffect, useRef } from 'react';
+import { toast } from 'sonner';
 import { createScormApi, type ScormApiState } from '@/lib/scormApi';
 import { upsertScormTracking, type ScormTrackingInput } from '@/lib/scormTracking';
 
 export interface ScormPlayerProps {
+  /** The current learner — this is the tracking row's identity (must equal
+   *  auth.uid() for the scorm_tracking RLS insert/update policy to pass). */
   userId: string;
+  /** The package's owner — this is the Storage path segment the package was
+   *  uploaded under, NOT necessarily the current learner (courses are viewed
+   *  by users other than their author). */
+  packageOwnerId: string;
   localCourseId: string;
   lessonId: string;
   scormVersion: '1.2' | '2004';
@@ -34,6 +41,7 @@ function toTrackingInput(
     suspendData: state.suspendData,
     entry: state.entry,
     exit: state.exit,
+    totalTime: state.totalTime,
     interactions: state.interactions,
   };
 }
@@ -44,7 +52,7 @@ function toTrackingInput(
  *  mounts the matching runtime API (window.API for 1.2, window.API_1484_11
  *  for 2004) that the SCO's own runtime-detection code walks up to find. */
 export function ScormPlayer({
-  userId, localCourseId, lessonId, scormVersion, packageId, launchPath, initialState,
+  userId, packageOwnerId, localCourseId, lessonId, scormVersion, packageId, launchPath, initialState,
 }: ScormPlayerProps) {
   const latestStateRef = useRef<ScormApiState | null>(null);
 
@@ -53,7 +61,9 @@ export function ScormPlayer({
 
     const persist = (state: ScormApiState) => {
       latestStateRef.current = state;
-      void upsertScormTracking(toTrackingInput({ userId, localCourseId, lessonId, scormVersion }, state));
+      upsertScormTracking(toTrackingInput({ userId, localCourseId, lessonId, scormVersion }, state)).catch(() => {
+        toast.error("La progression SCORM n'a pas pu être enregistrée. Vérifiez votre connexion.");
+      });
     };
 
     const api = createScormApi(scormVersion, initialState, persist);
@@ -80,7 +90,7 @@ export function ScormPlayer({
 
   return (
     <iframe
-      src={`/scorm-content/${userId}/${packageId}/${launchPath}`}
+      src={`/scorm-content/${packageOwnerId}/${packageId}/${launchPath}`}
       title="Contenu SCORM"
       style={{ width: '100%', height: '75vh', border: 'none', display: 'block' }}
     />

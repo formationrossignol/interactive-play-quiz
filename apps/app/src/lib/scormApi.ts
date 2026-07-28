@@ -12,6 +12,7 @@ export interface ScormApiState {
   suspendData?: string;
   entry?: string;
   exit?: string;
+  totalTime?: string;
   interactions: ScormInteraction[];
 }
 
@@ -41,6 +42,29 @@ const NOT_INITIALIZED = '301';
 const GENERAL_EXCEPTION = '101';
 const NO_ERROR = '0';
 
+/** Parses SCORM total_time back to seconds — accepts both the 1.2
+ *  HHHH:MM:SS(.ss) format and the 2004 ISO 8601 duration (PT1H2M3S). */
+function parseTimeToSeconds(time: string | undefined): number {
+  if (!time) return 0;
+  const hms = time.match(/^(\d+):(\d{2}):(\d{2}(?:\.\d+)?)$/);
+  if (hms) return Number(hms[1]) * 3600 + Number(hms[2]) * 60 + Number(hms[3]);
+  const iso = time.match(/^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?$/);
+  if (iso) return Number(iso[1] ?? 0) * 3600 + Number(iso[2] ?? 0) * 60 + Number(iso[3] ?? 0);
+  return 0;
+}
+
+/** Formats seconds as SCORM 1.2's HHHH:MM:SS — accepted by both versions'
+ *  readers (scormTracking.ts's parseTotalTimeMinutes handles this format
+ *  for both 1.2 and 2004 rows). */
+function formatSecondsAsHms(totalSeconds: number): string {
+  const whole = Math.max(0, Math.round(totalSeconds));
+  const hours = Math.floor(whole / 3600);
+  const minutes = Math.floor((whole % 3600) / 60);
+  const seconds = whole % 60;
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${String(hours).padStart(4, '0')}:${pad(minutes)}:${pad(seconds)}`;
+}
+
 /** Builds a SCORM 1.2 or 2004 runtime API object backed by an in-memory CMI
  *  model. `initial` seeds resume state (suspend_data, completion status)
  *  from a previously-persisted scorm_tracking row. `onCommit` is called with
@@ -60,6 +84,13 @@ export function createScormApi(
   let initialized = false;
   let terminated = false;
   let lastError = NO_ERROR;
+  let sessionStartMs: number | null = null;
+  const priorTotalSeconds = parseTimeToSeconds(initial.totalTime);
+
+  const currentTotalTime = (): string => {
+    const sessionSeconds = sessionStartMs != null ? (Date.now() - sessionStartMs) / 1000 : 0;
+    return formatSecondsAsHms(priorTotalSeconds + sessionSeconds);
+  };
 
   const state: ScormApiState = {
     lessonStatus: initial.lessonStatus ?? 'not attempted',
@@ -99,6 +130,8 @@ export function createScormApi(
       case 'cmi.core.entry':
       case 'cmi.entry': return state.entry ?? '';
       case 'cmi.progress_measure': return state.progressMeasure != null ? String(state.progressMeasure) : '';
+      case 'cmi.core.total_time':
+      case 'cmi.total_time': return currentTotalTime();
       default: return '';
     }
   }
@@ -141,20 +174,21 @@ export function createScormApi(
 
   function commit(): string {
     if (!initialized) { lastError = NOT_INITIALIZED; return 'false'; }
-    onCommit({ ...state, interactions: [...state.interactions] });
+    onCommit({ ...state, totalTime: currentTotalTime(), interactions: [...state.interactions] });
     return 'true';
   }
 
   function terminate(): string {
     if (!initialized || terminated) { lastError = GENERAL_EXCEPTION; return 'false'; }
     terminated = true;
-    onCommit({ ...state, interactions: [...state.interactions] });
+    onCommit({ ...state, totalTime: currentTotalTime(), interactions: [...state.interactions] });
     return 'true';
   }
 
   function initialize(): string {
     if (initialized) { lastError = GENERAL_EXCEPTION; return 'false'; }
     initialized = true;
+    sessionStartMs = Date.now();
     lastError = NO_ERROR;
     return 'true';
   }
