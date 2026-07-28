@@ -117,25 +117,37 @@ describe('importScormPackage', () => {
     await expect(importScormPackage(file, 'user-1')).rejects.toThrow(/launchPath|href|chemin/i);
   });
 
+  it('rejects a manifest whose launchPath is percent-encoded traversal (..%2F)', async () => {
+    const zip = new JSZip();
+    zip.file('imsmanifest.xml', manifestWithLaunchPath('..%2Fescape.html'));
+    zip.file('index.html', '<html></html>');
+    const buffer = await zip.generateAsync({ type: 'arraybuffer' });
+    const file = new File([buffer], 'evil4.zip', { type: 'application/zip' });
+
+    await expect(importScormPackage(file, 'user-1')).rejects.toThrow(/launchPath|href|chemin/i);
+  });
+
+  it('rejects a manifest whose launchPath is a UNC-style path', async () => {
+    const zip = new JSZip();
+    zip.file('imsmanifest.xml', manifestWithLaunchPath('\\\\server\\evil.html'));
+    zip.file('index.html', '<html></html>');
+    const buffer = await zip.generateAsync({ type: 'arraybuffer' });
+    const file = new File([buffer], 'evil5.zip', { type: 'application/zip' });
+
+    await expect(importScormPackage(file, 'user-1')).rejects.toThrow(/launchPath|href|chemin/i);
+  });
+
   it('rejects a zip containing an entry with an absolute path (zip slip)', async () => {
-    // JSZip's own file()/loadAsync round-trip normalizes away "../" segments
-    // in entry names (a literal ".." traversal never survives loading a zip
-    // built through JSZip's own API), but it does NOT normalize a literal
-    // absolute path such as "/etc/passwd" that a hand-crafted malicious zip
-    // (built by a different tool) could still carry in its central
-    // directory. Simulate that by patching the generated archive's raw
-    // bytes in place — swapping in a same-length name needs no offset/CRC
-    // recalculation — rather than going through zip.file() which would
-    // sanitize it before we could observe the defense working end-to-end.
+    // JSZip's own file()/loadAsync round-trip preserves a literal absolute
+    // entry name like "/etc/passwd" unchanged (verified directly: no
+    // byte-patching workaround needed here, unlike a "../"-based entry name
+    // which JSZip does normalize away).
     const zip = new JSZip();
     zip.file('imsmanifest.xml', MANIFEST);
     zip.file('index.html', '<html><body>SCO</body></html>');
-    const malicious = '/etc/passwd';
-    const placeholder = 'A'.repeat(malicious.length);
-    zip.file(placeholder, 'pwned');
-    const buffer = Buffer.from(await zip.generateAsync({ type: 'nodebuffer' }));
-    const patched = Buffer.from(buffer.toString('binary').split(placeholder).join(malicious), 'binary');
-    const file = new File([patched], 'zipslip.zip', { type: 'application/zip' });
+    zip.file('/etc/passwd', 'pwned');
+    const buffer = await zip.generateAsync({ type: 'arraybuffer' });
+    const file = new File([buffer], 'zipslip.zip', { type: 'application/zip' });
 
     await expect(importScormPackage(file, 'user-1')).rejects.toThrow(/entr|chemin|path/i);
   });

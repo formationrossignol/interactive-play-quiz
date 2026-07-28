@@ -29,22 +29,49 @@ function guessContentType(path: string): string {
 
 // Defensive, non-exhaustive check: rejects the obviously-dangerous shapes
 // (absolute URLs, scheme-like prefixes, absolute paths, `../` traversal
-// segments) rather than attempting general-purpose path sanitization. Both
-// callers below only need "is this clearly trying to escape its own
-// package/user prefix", not a full RFC-3986 URL parse.
+// segments, UNC-style paths, percent-encoded traversal) rather than
+// attempting general-purpose path sanitization. Both callers below only
+// need "is this clearly trying to escape its own package/user prefix", not
+// a full RFC-3986 URL parse.
 function isUnsafeRelativePath(path: string): boolean {
   if (!path) return true;
-  // Absolute URLs / protocol-relative / scheme-like (e.g. "http://", "https://",
-  // "//host/...", "javascript:", "data:").
-  if (/^[a-z][a-z0-9+.-]*:/i.test(path)) return true;
-  if (path.startsWith('//')) return true;
-  // Absolute filesystem-style path.
-  if (path.startsWith('/')) return true;
-  // Path traversal segments, normalizing backslashes first since some zip
-  // tools on Windows emit them as separators.
-  const normalized = path.replace(/\\/g, '/');
-  const segments = normalized.split('/');
-  if (segments.some((segment) => segment === '..')) return true;
+
+  // Single-form checks: independent of decoding, and deliberately ordering-
+  // agnostic (each check normalizes whatever it needs internally) so a UNC
+  // path is caught regardless of what other checks run first.
+  const looksUnsafeRaw = (candidate: string): boolean => {
+    // Absolute URLs / protocol-relative / scheme-like (e.g. "http://",
+    // "https://", "//host/...", "javascript:", "data:").
+    if (/^[a-z][a-z0-9+.-]*:/i.test(candidate)) return true;
+    // UNC-style path ("\\server\share\..."): check the raw string for a
+    // leading "\\" and also check after normalizing backslashes to forward
+    // slashes, so this doesn't depend on backslash-normalization having run
+    // first (or at all) elsewhere.
+    if (candidate.startsWith('\\\\')) return true;
+    const normalized = candidate.replace(/\\/g, '/');
+    if (normalized.startsWith('//')) return true;
+    // Absolute filesystem-style path.
+    if (normalized.startsWith('/')) return true;
+    // Path traversal segments, normalizing backslashes first since some zip
+    // tools on Windows emit them as separators.
+    const segments = normalized.split('/');
+    if (segments.some((segment) => segment === '..')) return true;
+    return false;
+  };
+
+  if (looksUnsafeRaw(path)) return true;
+
+  // Percent-encoded traversal (e.g. "..%2Fescape.html"): decode and re-run
+  // the same checks against the decoded form. A malformed encoding can't be
+  // proven safe, so treat decode failure as unsafe-by-default.
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(path);
+  } catch {
+    return true;
+  }
+  if (decoded !== path && looksUnsafeRaw(decoded)) return true;
+
   return false;
 }
 
