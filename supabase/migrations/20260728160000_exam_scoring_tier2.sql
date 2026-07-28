@@ -29,7 +29,7 @@
 -- Mirrors session_quiz_answers (20260712120000_session_quiz_answers.sql):
 -- RLS enabled, zero policies, so only the service_role (Edge Functions) can
 -- ever read or write it.
-create table public.exam_answer_keys (
+create table if not exists public.exam_answer_keys (
   exam_id uuid primary key references public.exams(id) on delete cascade,
   questions jsonb not null
 );
@@ -187,13 +187,14 @@ $$;
 -- goes through the get-exam-by-code Edge Function (service-role, filters by
 -- the supplied code); the only remaining table-level read is the host's own.
 drop policy if exists exams_public_read on public.exams;
+drop policy if exists exams_owner_read on public.exams;
 create policy exams_owner_read on public.exams for select using (host_id = auth.uid());
 
 -- ── RLS: exam_attempts ──────────────────────────────────────────────────
 -- No more direct client inserts (start-exam-attempt is service-role-only via
 -- start_exam_attempt_atomic) — leaving this policy in place would let a
 -- client bypass the atomic cap check entirely via a raw REST insert.
-drop policy exam_attempts_insert_open on public.exam_attempts;
+drop policy if exists exam_attempts_insert_open on public.exam_attempts;
 
 -- Anyone-with-the-uuid, any-status, forever read is gone. Participant-side
 -- reads (resume, retained-attempt, results) move to get-participant-attempts
@@ -201,7 +202,7 @@ drop policy exam_attempts_insert_open on public.exam_attempts;
 -- server-side by the caller-supplied participant_id — something an RLS
 -- policy can never do for an unauthenticated caller, since there is no
 -- verifiable claim binding an anon request to a participant_id).
-drop policy exam_attempts_read_published on public.exam_attempts;
+drop policy if exists exam_attempts_read_published on public.exam_attempts;
 
 -- Autosave's RPC path only ever keeps status at 'in-progress' (it's not part
 -- of the update payload), so requiring the post-image to still be
@@ -214,7 +215,12 @@ alter policy exam_attempts_update_own on public.exam_attempts
 -- The host needs to be able to move an attempt to 'cancelled' (proctor
 -- removal, ExamAdmin), which the tightened exam_attempts_update_own above no
 -- longer allows (its check now pins status to 'in-progress'). Separate,
--- auth.uid()-verified policy for that one host action.
+-- auth.uid()-verified policy for that one host action. `if exists` guards a
+-- prior hand-applied policy of the same name outside any tracked migration
+-- (discovered mid-deploy: prod already had one, definition unverified) —
+-- dropping and recreating it here makes this migration's version the
+-- authoritative one regardless of what existed before.
+drop policy if exists exam_attempts_host_update on public.exam_attempts;
 create policy exam_attempts_host_update on public.exam_attempts
   for update
   using (exists (select 1 from public.exams e where e.id = exam_id and e.host_id = auth.uid()))
@@ -226,4 +232,4 @@ create policy exam_attempts_host_update on public.exam_attempts
 -- any participant of a published exam at any time, including before
 -- answering (the acute C-1-equivalent leak) — removing it is the actual
 -- close of that hole; questions_public merely made it unnecessary first.
-drop policy content_exam_quiz_read on public.content;
+drop policy if exists content_exam_quiz_read on public.content;
