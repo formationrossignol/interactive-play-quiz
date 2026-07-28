@@ -56,6 +56,7 @@ const MySlides = lazy(() => import("./pages/MySlides"));
 const MyCourses = lazy(() => import("./pages/MyCourses"));
 const CourseBuilder = lazy(() => import("./pages/CourseBuilder"));
 const CourseViewer = lazy(() => import("./pages/CourseViewer"));
+const CourseScormReport = lazy(() => import("./pages/CourseScormReport"));
 const MyExams = lazy(() => import("./pages/MyExams"));
 const ExamBuilder = lazy(() => import("./pages/ExamBuilder"));
 const ExamRoom = lazy(() => import("./pages/ExamRoom"));
@@ -127,6 +128,7 @@ const App = () => (
               <Route path="/my-courses" element={<MyCourses />} />
               <Route path="/course-builder" element={<CourseBuilder />} />
               <Route path="/course/:courseId" element={<CourseViewer />} />
+              <Route path="/course/:courseId/scorm-report/:lessonId" element={<CourseScormReport />} />
               <Route path="/discover" element={<DiscoverQuizzes />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/question-bank" element={<QuestionBank />} />

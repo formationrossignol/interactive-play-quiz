@@ -19,7 +19,16 @@
       ]
     },
     {
-      "source": "/(.*)",
+      "source": "/scorm-content/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self'; connect-src 'self'; frame-ancestors 'self'"
+        }
+      ]
+    },
+    {
+      "source": "/((?!scorm-content/).*)",
       "headers": [
         { "key": "X-Content-Type-Options", "value": "nosniff" },
         {
@@ -30,6 +39,10 @@
     }
   ],
   "rewrites": [
+    {
+      "source": "/scorm-content/:userId/:packageId/(.*)",
+      "destination": "https://lwwfgdebmggxjuvlazwf.supabase.co/storage/v1/object/public/scorm-packages/:userId/:packageId/$1"
+    },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

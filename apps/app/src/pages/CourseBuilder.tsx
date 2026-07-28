@@ -18,6 +18,8 @@ import {
 } from "@/lib/courseStorage";
 import { getUserQuizzes, getUserFlashcardSets } from "@/lib/quizStorage";
 import { assertSafeImportFile } from "@/lib/fileValidation";
+import { importScormPackage } from "@/lib/scormImport";
+import { ScormManifestError } from "@/lib/scormManifest";
 import { CONTENT_CAPS, getPlan } from "@/lib/plans";
 import { PlanLimitBlocker } from "@/components/PlanLimitBlocker";
 import {
@@ -40,6 +42,7 @@ import {
   Globe,
   GraduationCap,
   Layers,
+  PackageOpen,
   Plus,
   Save,
   Sparkles,
@@ -292,6 +295,7 @@ const CourseBuilder = () => {
     if (type === "video") return <Video className="h-3.5 w-3.5" />;
     if (type === "iframe") return <Globe className="h-3.5 w-3.5" />;
     if (type === "file-upload") return <Upload className="h-3.5 w-3.5" />;
+    if (type === "scorm") return <PackageOpen className="h-3.5 w-3.5" />;
     return <GraduationCap className="h-3.5 w-3.5" />;
   };
 
@@ -303,6 +307,7 @@ const CourseBuilder = () => {
     if (type === "video") return "Vidéo";
     if (type === "iframe") return "Iframe";
     if (type === "file-upload") return "Dépôt de fichier";
+    if (type === "scorm") return "Package SCORM";
     return "Texte";
   };
 
@@ -342,6 +347,42 @@ const CourseBuilder = () => {
       reader.readAsDataURL(file);
     }
     e.target.value = "";
+  };
+
+  const [scormUploading, setScormUploading] = useState<string | null>(null); // lessonId currently uploading
+
+  const handleScormUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    moduleId: string,
+    lessonId: string,
+  ) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    const user = getCurrentUser();
+    if (!user) return;
+
+    const currentModule = modules.find((m) => m.id === moduleId);
+    const currentLesson = currentModule?.lessons.find((l) => l.id === lessonId);
+
+    setScormUploading(lessonId);
+    try {
+      const result = await importScormPackage(file, user.id);
+      updateLesson(moduleId, lessonId, {
+        scormPackageId: result.packageId,
+        scormVersion: result.version,
+        scormLaunchPath: result.launchPath,
+        scormTitle: result.title,
+        title: currentLesson && currentLesson.title.trim() ? currentLesson.title : result.title,
+      });
+    } catch (err) {
+      // ScormManifestError messages are hand-written and safe to show as-is;
+      // anything else (a Supabase Storage error, a network failure) carries
+      // a technical message not meant for end users.
+      toast.error(err instanceof ScormManifestError ? err.message : "Import SCORM invalide. Réessayez ou vérifiez le fichier.");
+    } finally {
+      setScormUploading(null);
+    }
   };
 
   const handleCoverImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -790,6 +831,7 @@ const CourseBuilder = () => {
                           <SelectItem value="video">Vidéo</SelectItem>
                           <SelectItem value="iframe">Iframe</SelectItem>
                           <SelectItem value="file-upload">Dépôt de fichier</SelectItem>
+                          <SelectItem value="scorm">Package SCORM</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -1043,6 +1085,75 @@ const CourseBuilder = () => {
                       <p className="ap-muted" style={{ fontSize: "12px", marginTop: "8px" }}>
                         Les apprenants pourront déposer un fichier depuis cette leçon dans le lecteur de cours.
                       </p>
+                    </div>
+                  )}
+
+                  {lesson.type === "scorm" && (
+                    <div>
+                      {fieldLabel("Package SCORM")}
+                      {lesson.scormPackageId ? (
+                        <div style={{
+                          display: "flex", alignItems: "center", gap: "10px",
+                          padding: "10px 14px",
+                          background: "var(--ap-paper-2)",
+                          border: "var(--ap-border-w) solid var(--ap-line)",
+                          borderRadius: "var(--ap-r-sm)",
+                          marginBottom: "10px",
+                        }}>
+                          <PackageOpen className="h-4 w-4 flex-shrink-0" style={{ color: "var(--ap-brand)" }} />
+                          <span style={{ flex: 1, fontSize: "13px", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {lesson.scormTitle} — SCORM {lesson.scormVersion}
+                          </span>
+                          <button
+                            onClick={() => updateLesson(moduleId, lessonId, {
+                              scormPackageId: undefined, scormVersion: undefined,
+                              scormLaunchPath: undefined, scormTitle: undefined,
+                            })}
+                            style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ap-quiz)", display: "flex", padding: "2px" }}
+                            title="Supprimer"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ) : null}
+                      <label style={{
+                        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                        gap: "8px", padding: "24px",
+                        border: "var(--ap-border-w) dashed var(--ap-line-2)",
+                        borderRadius: "var(--ap-r-sm)",
+                        cursor: scormUploading === lessonId ? "wait" : "pointer",
+                        background: "var(--ap-paper-2)",
+                        opacity: scormUploading === lessonId ? 0.6 : 1,
+                      }}>
+                        <PackageOpen className="h-5 w-5" style={{ color: "var(--ap-muted)" }} />
+                        <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--ap-muted)" }}>
+                          {scormUploading === lessonId
+                            ? "Import en cours…"
+                            : lesson.scormPackageId ? "Remplacer le package" : "Importer un package .zip"}
+                        </span>
+                        <span style={{ fontSize: "11px", color: "var(--ap-muted)" }}>SCORM 1.2 ou 2004, package single-SCO, max 100 Mo</span>
+                        <input
+                          type="file"
+                          accept=".zip"
+                          style={{ display: "none" }}
+                          disabled={scormUploading === lessonId}
+                          onChange={(e) => handleScormUpload(e, moduleId, lessonId)}
+                        />
+                      </label>
+                      {lesson.scormPackageId && courseId && (
+                        <button
+                          onClick={() => navigate(`/course/${courseId}/scorm-report/${lessonId}`)}
+                          className="cv-btn"
+                          style={{ marginTop: 10, background: "none", border: "none", cursor: "pointer", fontSize: 12.5, fontWeight: 700, color: "var(--ap-brand)" }}
+                        >
+                          Voir les résultats des apprenants →
+                        </button>
+                      )}
+                      {lesson.scormPackageId && !courseId && (
+                        <p className="ap-muted" style={{ fontSize: "11.5px", marginTop: "10px" }}>
+                          Enregistrez le cours pour accéder aux résultats des apprenants.
+                        </p>
+                      )}
                     </div>
                   )}
                 </div>
