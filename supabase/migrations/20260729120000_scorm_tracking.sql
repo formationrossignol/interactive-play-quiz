@@ -31,6 +31,9 @@ create index scorm_tracking_course_idx on public.scorm_tracking(course_id);
 alter table public.scorm_tracking enable row level security;
 
 -- Learner: full CRUD on their own row.
+-- Tier 1 scope: any authenticated user may write a row against any existing
+-- course_id — enrollment/share access-scoping on the course is deliberately
+-- deferred for v1.
 create policy scorm_tracking_owner on public.scorm_tracking
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
@@ -41,3 +44,6 @@ create policy scorm_tracking_course_owner_read on public.scorm_tracking
     exists (select 1 from public.content c
             where c.id = course_id and c.user_id = auth.uid())
   );
+
+create trigger scorm_tracking_touch before update on public.scorm_tracking
+  for each row execute function public.touch_updated_at();
