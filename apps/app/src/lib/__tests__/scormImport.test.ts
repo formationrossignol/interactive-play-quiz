@@ -1,0 +1,142 @@
+import { describe, expect, it, vi, beforeEach } from 'vitest';
+import JSZip from 'jszip';
+import { importScormPackage } from '../scormImport';
+import { supabase } from '../supabase';
+
+vi.mock('../supabase', () => ({
+  supabase: {
+    storage: {
+      from: vi.fn(() => ({
+        upload: vi.fn(async () => ({ error: null })),
+      })),
+    },
+  },
+}));
+
+const MANIFEST = `<?xml version="1.0"?>
+<manifest xmlns:adlcp="http://www.adlnet.org/xsd/adlcp_rootv1p2">
+  <metadata><schemaversion>1.2</schemaversion></metadata>
+  <organizations default="ORG1">
+    <organization identifier="ORG1"><title>Test Course</title>
+      <item identifier="ITEM1" identifierref="RES1"/>
+    </organization>
+  </organizations>
+  <resources>
+    <resource identifier="RES1" href="index.html"><file href="index.html"/></resource>
+  </resources>
+</manifest>`;
+
+function manifestWithLaunchPath(launchPath: string): string {
+  return `<?xml version="1.0"?>
+<manifest xmlns:adlcp="http://www.adlnet.org/xsd/adlcp_rootv1p2">
+  <metadata><schemaversion>1.2</schemaversion></metadata>
+  <organizations default="ORG1">
+    <organization identifier="ORG1"><title>Test Course</title>
+      <item identifier="ITEM1" identifierref="RES1"/>
+    </organization>
+  </organizations>
+  <resources>
+    <resource identifier="RES1" href="${launchPath}"><file href="${launchPath}"/></resource>
+  </resources>
+</manifest>`;
+}
+
+async function buildZip(): Promise<File> {
+  const zip = new JSZip();
+  zip.file('imsmanifest.xml', MANIFEST);
+  zip.file('index.html', '<html><body>SCO</body></html>');
+  zip.file('assets/style.css', 'body { color: red; }');
+  const buffer = await zip.generateAsync({ type: 'arraybuffer' });
+  return new File([buffer], 'course.zip', { type: 'application/zip' });
+}
+
+beforeEach(() => {
+  vi.mocked(supabase.storage.from).mockClear();
+});
+
+describe('importScormPackage', () => {
+  it('uploads every file in the zip and returns manifest info', async () => {
+    const file = await buildZip();
+    const result = await importScormPackage(file, 'user-1');
+
+    expect(result.version).toBe('1.2');
+    expect(result.launchPath).toBe('index.html');
+    expect(result.title).toBe('Test Course');
+    expect(result.packageId).toMatch(/^[a-z0-9]+$/);
+
+    const fromMock = vi.mocked(supabase.storage.from);
+    expect(fromMock).toHaveBeenCalledWith('scorm-packages');
+    // imsmanifest.xml + index.html + assets/style.css = 3 uploads
+    const uploadMock = fromMock.mock.results[0].value.upload;
+    expect(uploadMock).toHaveBeenCalledTimes(3);
+    expect(uploadMock.mock.calls.map((c: unknown[]) => c[0])).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining(`user-1/${result.packageId}/imsmanifest.xml`),
+        expect.stringContaining(`user-1/${result.packageId}/index.html`),
+        expect.stringContaining(`user-1/${result.packageId}/assets/style.css`),
+      ]),
+    );
+  });
+
+  it('rejects a zip with no imsmanifest.xml', async () => {
+    const zip = new JSZip();
+    zip.file('index.html', '<html></html>');
+    const buffer = await zip.generateAsync({ type: 'arraybuffer' });
+    const file = new File([buffer], 'bad.zip', { type: 'application/zip' });
+
+    await expect(importScormPackage(file, 'user-1')).rejects.toThrow(/imsmanifest\.xml/);
+  });
+
+  it('rejects a manifest whose launchPath traverses outside the package (../)', async () => {
+    const zip = new JSZip();
+    zip.file('imsmanifest.xml', manifestWithLaunchPath('../../other-package/secret.html'));
+    zip.file('index.html', '<html></html>');
+    const buffer = await zip.generateAsync({ type: 'arraybuffer' });
+    const file = new File([buffer], 'evil.zip', { type: 'application/zip' });
+
+    await expect(importScormPackage(file, 'user-1')).rejects.toThrow(/launchPath|href|chemin/i);
+  });
+
+  it('rejects a manifest whose launchPath is an absolute URL', async () => {
+    const zip = new JSZip();
+    zip.file('imsmanifest.xml', manifestWithLaunchPath('https://evil.example.com/phish.html'));
+    zip.file('index.html', '<html></html>');
+    const buffer = await zip.generateAsync({ type: 'arraybuffer' });
+    const file = new File([buffer], 'evil2.zip', { type: 'application/zip' });
+
+    await expect(importScormPackage(file, 'user-1')).rejects.toThrow(/launchPath|href|chemin/i);
+  });
+
+  it('rejects a manifest whose launchPath is an absolute path', async () => {
+    const zip = new JSZip();
+    zip.file('imsmanifest.xml', manifestWithLaunchPath('/etc/passwd'));
+    zip.file('index.html', '<html></html>');
+    const buffer = await zip.generateAsync({ type: 'arraybuffer' });
+    const file = new File([buffer], 'evil3.zip', { type: 'application/zip' });
+
+    await expect(importScormPackage(file, 'user-1')).rejects.toThrow(/launchPath|href|chemin/i);
+  });
+
+  it('rejects a zip containing an entry with an absolute path (zip slip)', async () => {
+    // JSZip's own file()/loadAsync round-trip normalizes away "../" segments
+    // in entry names (a literal ".." traversal never survives loading a zip
+    // built through JSZip's own API), but it does NOT normalize a literal
+    // absolute path such as "/etc/passwd" that a hand-crafted malicious zip
+    // (built by a different tool) could still carry in its central
+    // directory. Simulate that by patching the generated archive's raw
+    // bytes in place — swapping in a same-length name needs no offset/CRC
+    // recalculation — rather than going through zip.file() which would
+    // sanitize it before we could observe the defense working end-to-end.
+    const zip = new JSZip();
+    zip.file('imsmanifest.xml', MANIFEST);
+    zip.file('index.html', '<html><body>SCO</body></html>');
+    const malicious = '/etc/passwd';
+    const placeholder = 'A'.repeat(malicious.length);
+    zip.file(placeholder, 'pwned');
+    const buffer = Buffer.from(await zip.generateAsync({ type: 'nodebuffer' }));
+    const patched = Buffer.from(buffer.toString('binary').split(placeholder).join(malicious), 'binary');
+    const file = new File([patched], 'zipslip.zip', { type: 'application/zip' });
+
+    await expect(importScormPackage(file, 'user-1')).rejects.toThrow(/entr|chemin|path/i);
+  });
+});
