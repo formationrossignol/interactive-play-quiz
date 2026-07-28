@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { generateCourseFromFile } from "@/lib/courseGenerator";
 import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const ACCEPTED = [".pdf", ".docx", ".txt", ".md"];
 const ACCEPTED_MIME = [
@@ -36,16 +37,6 @@ export const CourseGeneratorModal = ({ open, onClose }: Props) => {
   const [error, setError] = useState("");
   const [dragging, setDragging] = useState(false);
 
-  // WARNING: VITE_* env vars are inlined into the public JS bundle by Vite at build time.
-  // Never set VITE_ANTHROPIC_API_KEY to a real key in a production deployment — it would be
-  // extractable by anyone visiting the site. Only the per-session pasted key (below,
-  // stored in sessionStorage) is safe for a publicly deployed instance.
-  const [apiKey, setApiKey] = useState(
-    () => import.meta.env.VITE_ANTHROPIC_API_KEY || sessionStorage.getItem("anthropic_key") || ""
-  );
-
-  const envKey = !!import.meta.env.VITE_ANTHROPIC_API_KEY;
-
   const accept = (f: File) => {
     const ok = ACCEPTED_MIME.includes(f.type) || ACCEPTED.some((e) => f.name.toLowerCase().endsWith(e));
     if (!ok) { toast.error("Format non supporté (PDF, DOCX, TXT, MD)"); return; }
@@ -61,14 +52,10 @@ export const CourseGeneratorModal = ({ open, onClose }: Props) => {
 
   const generate = async () => {
     if (!file) return;
-    const key = apiKey.trim();
-    if (!key) { setError("Clé API Anthropic requise"); return; }
-    if (!envKey) sessionStorage.setItem("anthropic_key", key);
-
     setPhase("loading"); setError("");
 
     try {
-      const courseId = await generateCourseFromFile(file, key, (msg) => setProgress(msg));
+      const courseId = await generateCourseFromFile(file, (msg) => setProgress(msg));
       setPhase("done");
       toast.success("Cours généré !");
       setTimeout(() => {
@@ -133,7 +120,7 @@ export const CourseGeneratorModal = ({ open, onClose }: Props) => {
           {/* File chips */}
           <div style={{ display:"flex", gap:6, marginBottom:20 }}>
             {FILE_CHIPS.map((c) => (
-              <span key={c.ext} style={{ fontSize:11, fontWeight:800, letterSpacing:".06em", padding:"4px 10px", borderRadius:999, color:c.color, background:c.bg }}>
+              <span key={c.ext} style={{ fontSize:11, fontWeight:800, letterSpacing:".06em", padding:"4px 10px", borderRadius:"var(--ap-r-sm)", color:c.color, background:c.bg }}>
                 {c.ext}
               </span>
             ))}
@@ -183,48 +170,16 @@ export const CourseGeneratorModal = ({ open, onClose }: Props) => {
             </div>
           )}
 
-          {/* API key input (if no env var) */}
-          {!envKey && phase === "idle" && (
-            <div style={{ marginBottom:16 }}>
-              <label style={{ display:"block", fontSize:11, fontWeight:800, letterSpacing:".08em", textTransform:"uppercase", color:"var(--ap-muted)", marginBottom:6 }}>
-                Clé API Anthropic
-              </label>
-              <input
-                type="password"
-                placeholder="sk-ant-api03-…"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                style={{
-                  width:"100%", padding:"10px 14px",
-                  fontFamily:"var(--ap-font-mono)", fontWeight:700, fontSize:13,
-                  color:"var(--ap-ink)", background:"var(--ap-paper-2)",
-                  border:"var(--ap-border-w) solid var(--ap-line)", borderRadius:"var(--ap-r-sm)",
-                  outline:"none", boxSizing:"border-box",
-                }}
-                onFocus={(e) => { e.currentTarget.style.borderColor = "var(--ap-brand)"; }}
-                onBlur={(e) => { e.currentTarget.style.borderColor = "var(--ap-line)"; }}
-              />
-              <p style={{ fontSize:11, color:"var(--ap-muted)", fontWeight:700, marginTop:5 }}>
-                Clé stockée en session uniquement. Ou ajoutez <code style={{ fontFamily:"var(--ap-font-mono)", background:"var(--ap-paper-2)", padding:"1px 5px", borderRadius:4 }}>VITE_ANTHROPIC_API_KEY</code> dans <code style={{ fontFamily:"var(--ap-font-mono)", background:"var(--ap-paper-2)", padding:"1px 5px", borderRadius:4 }}>.env.local</code>.
-              </p>
-            </div>
-          )}
-
           {/* Loading state */}
           {phase === "loading" && (
             <div style={{ padding:"32px 0", textAlign:"center" }}>
-              <div style={{ marginBottom:20 }}>
-                <svg width="48" height="48" viewBox="0 0 48 48" style={{ animation:"spin 1.2s linear infinite" }}>
-                  <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-                  <circle cx="24" cy="24" r="20" fill="none" stroke="var(--ap-line-2)" strokeWidth="4"/>
-                  <circle cx="24" cy="24" r="20" fill="none" stroke="var(--ap-brand)" strokeWidth="4"
-                    strokeDasharray="125" strokeDashoffset="90" strokeLinecap="round"/>
-                </svg>
+              <div role="status" aria-label="Génération du cours en cours">
+                <Skeleton className="mx-auto mb-5 h-14 w-14 rounded-full" />
+                <Skeleton className="mx-auto mb-3 h-6 w-52" />
+                <Skeleton className="mx-auto mb-5 h-4 w-64 max-w-full" />
+                <Skeleton className="mx-auto h-2.5 w-4/5 rounded-full" />
               </div>
-              <p style={{ fontFamily:"var(--ap-font-display)", fontWeight:600, fontSize:17, marginBottom:8 }}>
-                Génération en cours…
-              </p>
-              <p style={{ fontSize:13, fontWeight:700, color:"var(--ap-muted)" }}>{progress}</p>
+              <p style={{ fontSize:13, fontWeight:700, color:"var(--ap-muted)", marginTop:14 }}>{progress}</p>
               <p style={{ fontSize:11, color:"var(--ap-muted)", marginTop:12, fontWeight:700 }}>
                 Peut prendre 20 à 60 secondes selon la taille du document
               </p>
@@ -265,7 +220,7 @@ export const CourseGeneratorModal = ({ open, onClose }: Props) => {
                 <button
                   onClick={reset}
                   style={{
-                    flex:1, padding:"13px 0", borderRadius:999, border:"var(--ap-border-w) solid var(--ap-line)",
+                    flex:1, padding:"13px 0", borderRadius:"var(--ap-r-sm)", border:"var(--ap-border-w) solid var(--ap-line)",
                     background:"var(--ap-card)", fontFamily:"var(--ap-font-body)", fontWeight:800, fontSize:15,
                     color:"var(--ap-ink)", cursor:"pointer",
                   }}
@@ -277,7 +232,7 @@ export const CourseGeneratorModal = ({ open, onClose }: Props) => {
                 onClick={generate}
                 disabled={!file}
                 style={{
-                  flex:1, padding:"13px 0", borderRadius:999, border:"none",
+                  flex:1, padding:"13px 0", borderRadius:"var(--ap-r-sm)", border:"none",
                   background: !file ? "var(--ap-line-2)" : "var(--ap-brand)",
                   color:"#fff", fontFamily:"var(--ap-font-body)", fontWeight:800, fontSize:15,
                   cursor: !file ? "not-allowed" : "pointer",

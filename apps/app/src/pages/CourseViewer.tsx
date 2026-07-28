@@ -1,7 +1,30 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Star } from "lucide-react";
+import {
+  Award,
+  BarChart3,
+  BookOpen,
+  CalendarDays,
+  Check,
+  ChevronDown,
+  ChevronUp,
+  CirclePlay,
+  Clock3,
+  Download,
+  FileText,
+  Layers3,
+  MonitorSmartphone,
+  PlaySquare,
+  RefreshCw,
+  ScrollText,
+  Sparkles,
+  Star,
+  Trophy,
+  Upload,
+  Video,
+} from "lucide-react";
 import { Breadcrumb } from "@/components/Breadcrumb";
+import { Skeleton } from "@/components/ui/skeleton";
 import { getCurrentUser } from "@/lib/auth";
 import {
   getCourseById,
@@ -24,6 +47,8 @@ import { getQuizById } from "@/lib/quizStorage";
 import { assertSafeImportFile } from "@/lib/fileValidation";
 import { sanitizeHtml } from "@/lib/sanitizeHtml";
 import { toast } from "sonner";
+import { CourseCertificateDialog } from "@/components/CourseCertificateDialog";
+import defaultCourseOverviewImage from "@/assets/course-overview-default.jpg";
 
 /* ─── Type system ──────────────────────────────────────────────── */
 const TYPE_LABEL: Record<string, string> = {
@@ -63,17 +88,17 @@ const TYPE_LAUNCH_BG: Record<string, string> = {
   document:  "var(--ap-pres-soft)",
 };
 
-/* ─── SVG icons (type chips) ───────────────────────────────────── */
+/* ─── Lucide icons (type chips) ────────────────────────────────── */
 const TypeIcon = ({ type }: { type: string }) => {
-  const s = { width: 12, height: 12, fill: "#fff" as const };
-  if (type === "text")      return <svg viewBox="0 0 24 24" style={s}><path d="M4 4h16v3H4zM4 10h16v3H4zM4 16h10v3H4z"/></svg>;
-  if (type === "video")     return <svg viewBox="0 0 24 24" style={s}><path d="M6 4l14 8-14 8z"/></svg>;
-  if (type === "quiz")      return <svg viewBox="0 0 24 24" style={s}><path d="M12 3 22 21H2z"/></svg>;
-  if (type === "poll")      return <svg viewBox="0 0 24 24" style={s}><path d="M4 20h3V10H4v10zm6.5 0h3V4h-3v16zM17 20h3v-7h-3v7z"/></svg>;
-  if (type === "flashcard") return <svg viewBox="0 0 24 24" style={s}><rect x="3" y="5" width="13" height="15" rx="2"/><rect x="9" y="3" width="12" height="15" rx="2"/></svg>;
-  if (type === "iframe")    return <svg viewBox="0 0 24 24" style={s}><path d="M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zm0 5h16M8 14v3M12 14v3M16 14v3"/></svg>;
-  if (type === "file-upload") return <svg viewBox="0 0 24 24" style={s}><path d="M12 3v12M7 9l5-5 5 5M4 19h16"/></svg>;
-  return <svg viewBox="0 0 24 24" style={s}><path d="M9 2h6v4l4 12a2 2 0 0 1-2 3H7a2 2 0 0 1-2-3L9 6z"/></svg>;
+  const props = { width: 13, height: 13, color: "#fff", strokeWidth: 2.4 } as const;
+  if (type === "text") return <FileText {...props} />;
+  if (type === "video") return <Video {...props} />;
+  if (type === "quiz") return <BookOpen {...props} />;
+  if (type === "poll") return <BarChart3 {...props} />;
+  if (type === "flashcard") return <Layers3 {...props} />;
+  if (type === "file-upload") return <Upload {...props} />;
+  if (type === "iframe") return <MonitorSmartphone {...props} />;
+  return <Download {...props} />;
 };
 
 /* ─── Confetti ─────────────────────────────────────────────────── */
@@ -164,6 +189,19 @@ interface CourseOverviewScreenProps {
 const totalMinutes = (lessons: Array<{ lesson: Lesson }>) =>
   lessons.reduce((s, x) => s + (x.lesson.estimatedMinutes ?? 0), 0);
 
+const formatCourseDuration = (minutes: number) => {
+  if (minutes < 60) return `${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  return `${hours} h${rest ? ` ${rest} min` : ""}`;
+};
+
+const formatCourseDate = (value: string) => new Intl.DateTimeFormat("fr-FR", {
+  day: "2-digit",
+  month: "long",
+  year: "numeric",
+}).format(new Date(value));
+
 function CourseOverviewScreen({
   course, totalLessons, completedCount, progressPct, allDone, allLessons, completedIds,
   ratingSummary, reviews, myReview, reviewRatingDraft, reviewCommentDraft,
@@ -172,47 +210,124 @@ function CourseOverviewScreen({
   const started = completedCount > 0;
   const minutes = totalMinutes(allLessons);
   const ctaLabel = allDone ? "Revoir le cours" : started ? "Continuer le cours" : "Commencer le cours";
+  const [expandedModules, setExpandedModules] = useState<Set<string>>(
+    () => new Set(course.modules[0] ? [course.modules[0].id] : []),
+  );
+  const videoLessons = allLessons.filter(({ lesson }) => lesson.type === "video");
+  const downloadableLessons = allLessons.filter(({ lesson }) => lesson.type === "document");
+  const practiceLessons = allLessons.filter(({ lesson }) =>
+    ["quiz", "poll", "file-upload"].includes(lesson.type),
+  );
+  const textLessons = allLessons.filter(({ lesson }) => lesson.type === "text");
+  const videoMinutes = totalMinutes(videoLessons);
+  const allModulesExpanded = course.modules.length > 0
+    && course.modules.every((module) => expandedModules.has(module.id));
+  const courseFeatures = [
+    {
+      icon: CirclePlay,
+      label: videoLessons.length > 0
+        ? videoMinutes > 0
+          ? `${formatCourseDuration(videoMinutes)} de vidéo à la demande`
+          : `${videoLessons.length} vidéo${videoLessons.length !== 1 ? "s" : ""} à la demande`
+        : `${totalLessons} session${totalLessons !== 1 ? "s" : ""} à la demande`,
+    },
+    ...(downloadableLessons.length > 0 ? [{
+      icon: Download,
+      label: `${downloadableLessons.length} ressource${downloadableLessons.length !== 1 ? "s" : ""} téléchargeable${downloadableLessons.length !== 1 ? "s" : ""}`,
+    }] : []),
+    ...(practiceLessons.length > 0 ? [{
+      icon: BookOpen,
+      label: `${practiceLessons.length} exercice${practiceLessons.length !== 1 ? "s" : ""} pratique${practiceLessons.length !== 1 ? "s" : ""}`,
+    }] : []),
+    { icon: MonitorSmartphone, label: "Accès sur mobile et ordinateur" },
+    ...(textLessons.length > 0 ? [{
+      icon: FileText,
+      label: `${textLessons.length} article${textLessons.length !== 1 ? "s" : ""}`,
+    }] : []),
+    { icon: Award, label: "Certificat de fin de formation" },
+  ];
+
+  const toggleOverviewModule = (moduleId: string) => {
+    setExpandedModules((current) => {
+      const next = new Set(current);
+      if (next.has(moduleId)) next.delete(moduleId);
+      else next.add(moduleId);
+      return next;
+    });
+  };
+
+  const toggleAllModules = () => {
+    setExpandedModules(
+      allModulesExpanded ? new Set() : new Set(course.modules.map((module) => module.id)),
+    );
+  };
 
   return (
     <div style={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
       {/* Hero */}
       <div style={{ position: "relative", height: 300, flexShrink: 0, overflow: "hidden" }}>
-        {course.coverImage ? (
-          <img src={course.coverImage} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-        ) : (
-          <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg, var(--ap-pres-soft), var(--ap-brand-soft))" }} />
-        )}
+        <img
+          src={course.coverImage || defaultCourseOverviewImage}
+          alt=""
+          style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center" }}
+        />
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(0deg, rgba(10,8,30,.82), rgba(10,8,30,.15) 60%)" }} />
-        <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: "28px 40px", maxWidth: 900 }}>
-          {course.category && (
-            <span style={{
-              display: "inline-block", fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase",
-              padding: "5px 12px", borderRadius: 999, background: "rgba(255,255,255,.15)", color: "#fff", marginBottom: 10,
-            }}>
-              {course.category}
-            </span>
-          )}
-          <h1 style={{ fontFamily: "var(--ap-font-display)", fontWeight: 600, fontSize: "clamp(24px, 3.2vw, 34px)", color: "#fff", lineHeight: 1.15, marginBottom: 10 }}>
-            {course.title}
-          </h1>
-          {course.description && (
-            <p style={{ fontSize: 15, color: "rgba(255,255,255,.85)", maxWidth: 640, marginBottom: 12 }}>{course.description}</p>
-          )}
-          <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap", fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,.9)" }}>
-            {ratingSummary.count > 0 && (
-              <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                <Star style={{ width: 14, height: 14, color: "#f4970a" }} fill="#f4970a" /> {ratingSummary.average} ({ratingSummary.count} avis)
-              </span>
+        <div style={{ position: "absolute", left: 0, right: 0, bottom: 0 }}>
+          <div style={{ maxWidth: 1100, margin: "0 auto", padding: "28px 40px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+              {course.category && (
+                <span style={{
+                  display: "inline-block", fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase",
+                  padding: "5px 12px", borderRadius: "var(--ap-r-sm)", background: "rgba(255,255,255,.15)", color: "#fff",
+                }}>
+                  {course.category}
+                </span>
+              )}
+              {course.generatedByAI && (
+                <span
+                  title="Ce cours a été généré par IA à partir d'un document."
+                  style={{
+                    display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11.5, fontWeight: 800,
+                    padding: "5px 12px", borderRadius: "var(--ap-r-sm)", background: "rgba(255,255,255,.15)", color: "#fff",
+                  }}
+                >
+                  <Sparkles style={{ width: 12, height: 12 }} />
+                  Généré par IA
+                </span>
+              )}
+            </div>
+            <h1 style={{ fontFamily: "var(--ap-font-display)", fontWeight: 600, fontSize: "clamp(24px, 3.2vw, 34px)", color: "#fff", lineHeight: 1.15, marginBottom: 10 }}>
+              {course.title}
+            </h1>
+            {course.description && (
+              <p style={{ fontSize: 15, color: "rgba(255,255,255,.85)", maxWidth: 640, marginBottom: 12 }}>{course.description}</p>
             )}
-            <span>{course.modules.length} module{course.modules.length > 1 ? "s" : ""}</span>
-            <span>{totalLessons} leçon{totalLessons > 1 ? "s" : ""}</span>
-            {minutes > 0 && <span>{minutes} min</span>}
+            <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap", fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,.9)" }}>
+              {ratingSummary.count > 0 && (
+                <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                  <Star style={{ width: 14, height: 14, color: "#f4970a" }} fill="#f4970a" /> {ratingSummary.average} ({ratingSummary.count} avis)
+                </span>
+              )}
+              <span>{course.modules.length} module{course.modules.length > 1 ? "s" : ""}</span>
+              <span>{totalLessons} leçon{totalLessons > 1 ? "s" : ""}</span>
+              {minutes > 0 && <span>{minutes} min</span>}
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", marginTop: 11, fontSize: 12, fontWeight: 650, color: "rgba(255,255,255,.78)" }}>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                <CalendarDays style={{ width: 13, height: 13 }} />
+                Créé le {formatCourseDate(course.createdAt)}
+              </span>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                <RefreshCw style={{ width: 13, height: 13 }} />
+                Mis à jour le {formatCourseDate(course.updatedAt)}
+              </span>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Body: 2-column layout */}
-      <div style={{ display: "flex", gap: 40, maxWidth: 1100, margin: "0 auto", padding: "32px 40px 60px", alignItems: "flex-start" }}>
+      <div className="cv-body-layout" style={{ display: "flex", gap: 40, maxWidth: 1100, margin: "0 auto", padding: "32px 40px 60px", alignItems: "flex-start" }}>
         <div style={{ flex: "1 1 auto", minWidth: 0 }}>
           {course.overview && (
             <div className="cv-prose" style={{ marginBottom: 32 }} dangerouslySetInnerHTML={{ __html: sanitizeHtml(course.overview) }} />
@@ -221,10 +336,12 @@ function CourseOverviewScreen({
           {course.objectives && course.objectives.length > 0 && (
             <div style={{ marginBottom: 32 }}>
               <h3 style={{ fontFamily: "var(--ap-font-display)", fontWeight: 600, fontSize: 18, marginBottom: 12 }}>Ce que vous allez apprendre</h3>
-              <ul style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <ul className="cv-objective-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                 {course.objectives.map((obj, i) => (
                   <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 14.5, lineHeight: 1.5 }}>
-                    <span style={{ flexShrink: 0, width: 20, height: 20, borderRadius: "50%", background: "var(--ap-brand-soft)", color: "var(--ap-brand)", display: "grid", placeItems: "center", fontSize: 11, fontWeight: 800, marginTop: 1 }}>✓</span>
+                    <span style={{ flexShrink: 0, width: 20, height: 20, borderRadius: "50%", background: "var(--ap-brand-soft)", color: "var(--ap-brand)", display: "grid", placeItems: "center", marginTop: 1 }}>
+                      <Check style={{ width: 12, height: 12, strokeWidth: 3 }} />
+                    </span>
                     {obj}
                   </li>
                 ))}
@@ -232,24 +349,72 @@ function CourseOverviewScreen({
             </div>
           )}
 
-          {/* Programme */}
+          {/* Course features */}
           <div style={{ marginBottom: 32 }}>
-            <h3 style={{ fontFamily: "var(--ap-font-display)", fontWeight: 600, fontSize: 18, marginBottom: 12 }}>Programme du cours</h3>
+            <h3 style={{ fontFamily: "var(--ap-font-display)", fontWeight: 600, fontSize: 22, marginBottom: 18 }}>Ce cours comprend :</h3>
+            <div className="cv-feature-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", columnGap: 36, rowGap: 14 }}>
+              {courseFeatures.map(({ icon: Icon, label }) => (
+                <div key={label} style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+                  <Icon style={{ width: 19, height: 19, flexShrink: 0, color: "var(--ap-ink)" }} strokeWidth={1.9} />
+                  <span style={{ fontSize: 14.5, lineHeight: 1.4 }}>{label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Course content */}
+          <div style={{ marginBottom: 32 }}>
+            <h3 style={{ fontFamily: "var(--ap-font-display)", fontWeight: 600, fontSize: 22, marginBottom: 18 }}>Contenu du cours</h3>
+            <div className="cv-course-meta" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, marginBottom: 12 }}>
+              <span style={{ fontSize: 13.5, color: "var(--ap-muted)" }}>
+                {course.modules.length} section{course.modules.length !== 1 ? "s" : ""} · {totalLessons} session{totalLessons !== 1 ? "s" : ""} · {formatCourseDuration(minutes)} de durée totale
+              </span>
+              <button
+                type="button"
+                onClick={toggleAllModules}
+                style={{
+                  border: "none", background: "transparent", color: "var(--ap-brand)",
+                  fontFamily: "var(--ap-font-body)", fontSize: 13, fontWeight: 800,
+                  cursor: "pointer", whiteSpace: "nowrap", padding: 0,
+                }}
+              >
+                {allModulesExpanded ? "Réduire toutes les sections" : "Développer toutes les sections"}
+              </button>
+            </div>
             <div style={{ border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-lg)", overflow: "hidden" }}>
               {course.modules.map((mod, mi) => (
                 <div key={mod.id} style={{ borderBottom: mi < course.modules.length - 1 ? "var(--ap-border-w) solid var(--ap-line)" : "none" }}>
-                  <div style={{ padding: "12px 16px", background: "var(--ap-paper-2)", fontWeight: 800, fontSize: 13.5 }}>
-                    {mod.title} <span style={{ fontWeight: 700, color: "var(--ap-muted)", fontSize: 12 }}>· {mod.lessons.length} leçon{mod.lessons.length > 1 ? "s" : ""}</span>
-                  </div>
-                  {mod.lessons.map((l) => (
-                    <div key={l.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", borderTop: "var(--ap-border-w) solid var(--ap-line)" }}>
-                      <span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: 6, display: "grid", placeItems: "center", background: TYPE_IC_BG[l.type] ?? "var(--ap-muted)" }}>
+                  <button
+                    type="button"
+                    onClick={() => toggleOverviewModule(mod.id)}
+                    aria-expanded={expandedModules.has(mod.id)}
+                    style={{
+                      width: "100%", display: "flex", alignItems: "center", gap: 12,
+                      padding: "15px 16px", background: "var(--ap-paper-2)",
+                      border: "none", cursor: "pointer", color: "var(--ap-ink)",
+                      fontFamily: "var(--ap-font-body)", textAlign: "left",
+                    }}
+                  >
+                    {expandedModules.has(mod.id)
+                      ? <ChevronUp style={{ width: 17, height: 17, flexShrink: 0 }} />
+                      : <ChevronDown style={{ width: 17, height: 17, flexShrink: 0 }} />}
+                    <span style={{ flex: 1, minWidth: 0, fontWeight: 800, fontSize: 14 }}>{mod.title}</span>
+                    <span style={{ flexShrink: 0, color: "var(--ap-muted)", fontSize: 12.5 }}>
+                      {mod.lessons.length} session{mod.lessons.length !== 1 ? "s" : ""} · {formatCourseDuration(totalMinutes(mod.lessons.map((lesson) => ({ lesson }))))}
+                    </span>
+                  </button>
+                  {expandedModules.has(mod.id) && mod.lessons.map((l) => (
+                    <div key={l.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 16px 11px 45px", borderTop: "var(--ap-border-w) solid var(--ap-line)", background: "var(--ap-card)" }}>
+                      <span style={{ flexShrink: 0, width: 24, height: 24, borderRadius: 7, display: "grid", placeItems: "center", background: TYPE_IC_BG[l.type] ?? "var(--ap-muted)" }}>
                         <TypeIcon type={l.type} />
                       </span>
                       <span style={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{l.title}</span>
-                      {completedIds.includes(l.id) && <span style={{ color: "var(--ap-pres-deep)", fontSize: 12, fontWeight: 800 }}>✓</span>}
+                      {completedIds.includes(l.id) && <Check style={{ width: 15, height: 15, color: "var(--ap-pres-deep)", strokeWidth: 3 }} />}
                       {l.estimatedMinutes && (
-                        <span style={{ flexShrink: 0, fontFamily: "var(--ap-font-mono)", fontSize: 11, fontWeight: 700, color: "var(--ap-muted)" }}>{l.estimatedMinutes} min</span>
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 4, flexShrink: 0, fontFamily: "var(--ap-font-mono)", fontSize: 11, fontWeight: 700, color: "var(--ap-muted)" }}>
+                          <Clock3 style={{ width: 12, height: 12 }} />
+                          {l.estimatedMinutes} min
+                        </span>
                       )}
                     </div>
                   ))}
@@ -296,7 +461,7 @@ function CourseOverviewScreen({
                 style={{
                   display: "inline-flex", alignItems: "center", gap: 8,
                   fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 13.5,
-                  padding: "10px 18px", borderRadius: 999, border: "none", cursor: "pointer",
+                  padding: "10px 18px", borderRadius: "var(--ap-r-sm)", border: "none", cursor: "pointer",
                   color: "#fff", background: "var(--ap-brand)", boxShadow: "0 4px 0 var(--ap-brand-deep)",
                 }}
               >
@@ -333,8 +498,8 @@ function CourseOverviewScreen({
                   <span>{progressPct}% terminé</span>
                   <span>{completedCount}/{totalLessons}</span>
                 </div>
-                <div style={{ height: 6, background: "var(--ap-line)", borderRadius: 999 }}>
-                  <div style={{ height: "100%", width: `${progressPct}%`, background: allDone ? "var(--ap-flash)" : "var(--ap-brand)", borderRadius: 999, transition: "width .3s" }} />
+                <div style={{ height: 6, background: "var(--ap-line)", borderRadius: "var(--ap-r-sm)" }}>
+                  <div style={{ height: "100%", width: `${progressPct}%`, background: allDone ? "var(--ap-flash)" : "var(--ap-brand)", borderRadius: "var(--ap-r-sm)", transition: "width .3s" }} />
                 </div>
               </div>
             )}
@@ -344,12 +509,12 @@ function CourseOverviewScreen({
               style={{
                 width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
                 fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 15,
-                padding: "14px 20px", borderRadius: 999, border: "none", cursor: "pointer",
+                padding: "14px 20px", borderRadius: "var(--ap-r-sm)", border: "none", cursor: "pointer",
                 color: "#fff", background: "var(--ap-brand)", boxShadow: "0 4px 0 var(--ap-brand-deep)",
               }}
             >
               {ctaLabel}
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+              <PlaySquare style={{ width: 16, height: 16 }} />
             </button>
           </div>
         </div>
@@ -370,6 +535,7 @@ const CourseViewer = () => {
   const [collapsedModules, setCollapsedModules] = useState<Set<string>>(new Set());
   const [pdfObjectUrl, setPdfObjectUrl] = useState<string | null>(null);
   const [doneBtnPop, setDoneBtnPop] = useState(false);
+  const [certificateOpen, setCertificateOpen] = useState(false);
   const mainRef = useRef<HTMLDivElement>(null);
   const confettiFiredRef = useRef(false);
 
@@ -578,6 +744,12 @@ const CourseViewer = () => {
         .cv-plan::-webkit-scrollbar-thumb { background:var(--ap-line-2); border-radius:4px; }
         .cv-content::-webkit-scrollbar { width:10px; }
         .cv-content::-webkit-scrollbar-thumb { background:var(--ap-line-2); border-radius:5px; }
+        @media (max-width: 860px) {
+          .cv-body-layout { flex-direction:column; padding:24px 20px 48px !important; }
+          .cv-body-layout > div { width:100%; }
+          .cv-feature-grid, .cv-objective-grid { grid-template-columns:1fr !important; }
+          .cv-course-meta { align-items:flex-start !important; flex-direction:column; }
+        }
       `}</style>
 
       {/* ── Topbar ──────────────────────────────────────────── */}
@@ -742,13 +914,28 @@ const CourseViewer = () => {
             className={`cv-finish${allDone ? " show" : ""}`}
             style={{
               margin: "0 32px 24px", maxWidth: 720, marginLeft: "auto", marginRight: "auto",
-              background: "linear-gradient(135deg, var(--ap-flash-soft), #fff)",
-              border: "2px solid color-mix(in srgb, var(--ap-flash) 55%, transparent)",
-              borderRadius: "var(--ap-r-lg)", boxShadow: "0 5px 0 color-mix(in srgb, var(--ap-flash) 45%, transparent)",
-              padding: "20px 24px", alignItems: "center", gap: 16,
+              background: "var(--ap-card)",
+              border: "var(--ap-border-w) solid var(--ap-line)",
+              borderLeft: "5px solid var(--ap-brand)",
+              borderRadius: "var(--ap-r-lg)", boxShadow: "var(--ap-shadow-soft)",
+              padding: "20px 24px", alignItems: "center", gap: 16, flexWrap: "wrap",
             }}
           >
-            <span style={{ fontSize: 38 }} aria-hidden="true">🏆</span>
+            <span
+              aria-hidden="true"
+              style={{
+                width: 44,
+                height: 44,
+                display: "grid",
+                placeItems: "center",
+                flexShrink: 0,
+                borderRadius: "var(--ap-r-md)",
+                background: "var(--ap-brand-soft)",
+                color: "var(--ap-brand)",
+              }}
+            >
+              <Trophy size={23} />
+            </span>
             <div>
               <h3 style={{ fontFamily: "var(--ap-font-display)", fontWeight: 600, fontSize: 19 }}>Cours terminé, bravo !</h3>
               <p style={{ fontSize: 13.5, fontWeight: 700, color: "var(--ap-muted)" }}>
@@ -757,15 +944,17 @@ const CourseViewer = () => {
             </div>
             <div style={{ flex: 1 }} />
             <button
-              className="cv-btn"
+              type="button"
+              className="ap-btn ap-btn--sm"
+              onClick={() => setCertificateOpen(true)}
               style={{
                 display: "inline-flex", alignItems: "center", gap: 9,
                 fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 14.5,
-                padding: "12px 22px", borderRadius: 999, border: "none", cursor: "pointer",
-                color: "var(--ap-ink)", background: "var(--ap-flash)", boxShadow: "0 4px 0 var(--ap-flash-deep)",
+                padding: "12px 18px", cursor: "pointer",
               }}
             >
-              📜 Obtenir mon attestation
+              <ScrollText size={17} />
+              Obtenir mon attestation
             </button>
           </div>
 
@@ -778,7 +967,7 @@ const CourseViewer = () => {
                 <span style={{
                   display: "inline-flex", alignItems: "center", gap: 8,
                   fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase",
-                  padding: "5px 12px", borderRadius: 999, border: `2px solid ${kicker[2]}`,
+                  padding: "5px 12px", borderRadius: "var(--ap-r-sm)", border: `2px solid ${kicker[2]}`,
                   color: kicker[0], background: kicker[1],
                 }}>
                   {TYPE_LABEL[lesson.type] ?? lesson.type}
@@ -837,7 +1026,7 @@ const CourseViewer = () => {
                   display: "flex", alignItems: "center", gap: 20,
                 }}>
                   <span style={{
-                    flexShrink: 0, width: 64, height: 64, borderRadius: 18,
+                    flexShrink: 0, width: 64, height: 64, borderRadius: "var(--ap-r-md)",
                     display: "grid", placeItems: "center", fontSize: 30,
                     background: TYPE_LAUNCH_BG.quiz,
                   }} aria-hidden="true">🎯</span>
@@ -856,7 +1045,7 @@ const CourseViewer = () => {
                       style={{
                         display: "inline-flex", alignItems: "center", gap: 9,
                         fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 14.5,
-                        padding: "12px 22px", borderRadius: 999, border: "none", cursor: "pointer",
+                        padding: "12px 22px", borderRadius: "var(--ap-r-sm)", border: "none", cursor: "pointer",
                         color: "#fff", background: "var(--ap-brand)", boxShadow: "0 4px 0 var(--ap-brand-deep)",
                       }}
                     >
@@ -875,7 +1064,7 @@ const CourseViewer = () => {
                   display: "flex", alignItems: "center", gap: 20,
                 }}>
                   <span style={{
-                    flexShrink: 0, width: 64, height: 64, borderRadius: 18,
+                    flexShrink: 0, width: 64, height: 64, borderRadius: "var(--ap-r-md)",
                     display: "grid", placeItems: "center", fontSize: 30,
                     background: TYPE_LAUNCH_BG.poll,
                   }} aria-hidden="true">📊</span>
@@ -894,7 +1083,7 @@ const CourseViewer = () => {
                       style={{
                         display: "inline-flex", alignItems: "center", gap: 9,
                         fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 14.5,
-                        padding: "12px 22px", borderRadius: 999, border: "none", cursor: "pointer",
+                        padding: "12px 22px", borderRadius: "var(--ap-r-sm)", border: "none", cursor: "pointer",
                         color: "#fff", background: "var(--ap-poll)", boxShadow: "0 4px 0 var(--ap-poll-deep)",
                       }}
                     >
@@ -913,7 +1102,7 @@ const CourseViewer = () => {
                   display: "flex", alignItems: "center", gap: 20,
                 }}>
                   <span style={{
-                    flexShrink: 0, width: 64, height: 64, borderRadius: 18,
+                    flexShrink: 0, width: 64, height: 64, borderRadius: "var(--ap-r-md)",
                     display: "grid", placeItems: "center", fontSize: 30,
                     background: TYPE_LAUNCH_BG.flashcard,
                   }} aria-hidden="true">🃏</span>
@@ -932,7 +1121,7 @@ const CourseViewer = () => {
                       style={{
                         display: "inline-flex", alignItems: "center", gap: 9,
                         fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 14.5,
-                        padding: "12px 22px", borderRadius: 999, border: "none", cursor: "pointer",
+                        padding: "12px 22px", borderRadius: "var(--ap-r-sm)", border: "none", cursor: "pointer",
                         color: "#fff", background: "var(--ap-brand)", boxShadow: "0 4px 0 var(--ap-brand-deep)",
                       }}
                     >
@@ -951,7 +1140,7 @@ const CourseViewer = () => {
                     boxShadow: "0 5px 0 var(--ap-line)", padding: 24,
                     display: "flex", alignItems: "center", gap: 20,
                   }}>
-                    <span style={{ flexShrink: 0, width: 64, height: 64, borderRadius: 18, display: "grid", placeItems: "center", fontSize: 30, background: TYPE_LAUNCH_BG.document }}>🧪</span>
+                    <span style={{ flexShrink: 0, width: 64, height: 64, borderRadius: "var(--ap-r-md)", display: "grid", placeItems: "center", fontSize: 30, background: TYPE_LAUNCH_BG.document }}>🧪</span>
                     <p style={{ color: "var(--ap-muted)", fontWeight: 700, fontSize: 14 }}>Aucun document importé.</p>
                   </div>
                 ) : lesson.documentMimeType === "text/markdown" ? (
@@ -964,7 +1153,7 @@ const CourseViewer = () => {
                   <div style={{ borderRadius: "var(--ap-r-lg)", overflow: "hidden", border: "var(--ap-border-w) solid var(--ap-line)", boxShadow: "0 5px 0 var(--ap-line)" }}>
                     {pdfObjectUrl
                       ? <iframe src={pdfObjectUrl} title={lesson.documentName ?? "Document"} style={{ width: "100%", height: "75vh", border: "none", display: "block" }} />
-                      : <p style={{ padding: 24, color: "var(--ap-muted)", fontSize: 13, textAlign: "center" }}>Chargement…</p>
+                      : <div style={{ padding: 18 }} role="status" aria-label="Chargement du document"><Skeleton className="h-[70vh] w-full rounded-xl" /></div>
                     }
                   </div>
                 ) : (
@@ -973,7 +1162,7 @@ const CourseViewer = () => {
                     boxShadow: "0 5px 0 var(--ap-line)", padding: 24,
                     display: "flex", alignItems: "center", gap: 20,
                   }}>
-                    <span style={{ flexShrink: 0, width: 64, height: 64, borderRadius: 18, display: "grid", placeItems: "center", fontSize: 30, background: TYPE_LAUNCH_BG.document }}>🧪</span>
+                    <span style={{ flexShrink: 0, width: 64, height: 64, borderRadius: "var(--ap-r-md)", display: "grid", placeItems: "center", fontSize: 30, background: TYPE_LAUNCH_BG.document }}>🧪</span>
                     <div style={{ flex: 1 }}>
                       <h3 style={{ fontFamily: "var(--ap-font-display)", fontWeight: 600, fontSize: 18 }}>{lesson.documentName}</h3>
                       <p style={{ fontSize: 13, fontWeight: 700, color: "var(--ap-muted)", marginTop: 3 }}>Aperçu non disponible, téléchargez.</p>
@@ -984,7 +1173,7 @@ const CourseViewer = () => {
                       style={{
                         display: "inline-flex", alignItems: "center", gap: 9,
                         fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 14.5,
-                        padding: "12px 22px", borderRadius: 999, border: "none", cursor: "pointer",
+                        padding: "12px 22px", borderRadius: "var(--ap-r-sm)", border: "none", cursor: "pointer",
                         color: "var(--ap-ink)", background: "var(--ap-card)", textDecoration: "none",
                         boxShadow: "0 4px 0 var(--ap-line), inset 0 0 0 2px var(--ap-line)",
                       }}
@@ -1004,7 +1193,7 @@ const CourseViewer = () => {
                     boxShadow: "0 5px 0 var(--ap-line)", padding: 24,
                     display: "flex", alignItems: "center", gap: 20,
                   }}>
-                    <span style={{ flexShrink: 0, width: 64, height: 64, borderRadius: 18, display: "grid", placeItems: "center", fontSize: 30, background: TYPE_LAUNCH_BG.document }}>🌐</span>
+                    <span style={{ flexShrink: 0, width: 64, height: 64, borderRadius: "var(--ap-r-md)", display: "grid", placeItems: "center", fontSize: 30, background: TYPE_LAUNCH_BG.document }}>🌐</span>
                     <p style={{ color: "var(--ap-muted)", fontWeight: 700, fontSize: 14 }}>Aucune page intégrée configurée.</p>
                   </div>
                 ) : (
@@ -1030,14 +1219,14 @@ const CourseViewer = () => {
                   }}>
                     {submission ? (
                       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                        <span style={{ flexShrink: 0, width: 48, height: 48, borderRadius: 14, display: "grid", placeItems: "center", fontSize: 22, background: TYPE_LAUNCH_BG.document }}>✅</span>
+                        <span style={{ flexShrink: 0, width: 48, height: 48, borderRadius: "var(--ap-r-md)", display: "grid", placeItems: "center", fontSize: 22, background: TYPE_LAUNCH_BG.document }}>✅</span>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <p style={{ fontWeight: 700, fontSize: 14.5 }}>{submission.fileName}</p>
                           <p style={{ fontSize: 12.5, color: "var(--ap-muted)", fontWeight: 700, marginTop: 2 }}>
                             Déposé le {new Date(submission.submittedAt).toLocaleString("fr")}
                           </p>
                         </div>
-                        <label className="cv-btn" style={{ display: "inline-flex", alignItems: "center", gap: 8, fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 13.5, padding: "10px 16px", borderRadius: 999, cursor: "pointer", color: "var(--ap-ink)", background: "var(--ap-card)", boxShadow: "0 4px 0 var(--ap-line), inset 0 0 0 2px var(--ap-line)" }}>
+                        <label className="cv-btn" style={{ display: "inline-flex", alignItems: "center", gap: 8, fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 13.5, padding: "10px 16px", borderRadius: "var(--ap-r-sm)", cursor: "pointer", color: "var(--ap-ink)", background: "var(--ap-card)", boxShadow: "0 4px 0 var(--ap-line), inset 0 0 0 2px var(--ap-line)" }}>
                           Remplacer
                           <input type="file" style={{ display: "none" }} onChange={handleLessonFileUpload} />
                         </label>
@@ -1075,7 +1264,7 @@ const CourseViewer = () => {
                 style={{
                   display: "inline-flex", alignItems: "center", gap: 9,
                   fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 14.5,
-                  padding: "12px 22px", borderRadius: 999, border: "none", cursor: "pointer",
+                  padding: "12px 22px", borderRadius: "var(--ap-r-sm)", border: "none", cursor: "pointer",
                   color: isCompleted ? "var(--ap-pres-deep)" : "#fff",
                   background: isCompleted ? "var(--ap-card)" : "var(--ap-pres-deep)",
                   boxShadow: isCompleted
@@ -1096,7 +1285,7 @@ const CourseViewer = () => {
                   style={{
                     display: "inline-flex", alignItems: "center", gap: 9,
                     fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 14.5,
-                    padding: "12px 22px", borderRadius: 999, cursor: "pointer",
+                    padding: "12px 22px", borderRadius: "var(--ap-r-sm)", cursor: "pointer",
                     color: "var(--ap-ink)", background: "var(--ap-card)", border: "none",
                     boxShadow: "0 4px 0 var(--ap-line), inset 0 0 0 2px var(--ap-line)",
                   }}
@@ -1113,7 +1302,7 @@ const CourseViewer = () => {
                   style={{
                     display: "inline-flex", alignItems: "center", gap: 9,
                     fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 14.5,
-                    padding: "12px 22px", borderRadius: 999, border: "none", cursor: "pointer",
+                    padding: "12px 22px", borderRadius: "var(--ap-r-sm)", border: "none", cursor: "pointer",
                     color: "#fff", background: "var(--ap-brand)", boxShadow: "0 4px 0 var(--ap-brand-deep)",
                   }}
                 >
@@ -1127,6 +1316,14 @@ const CourseViewer = () => {
         </div>
       </div>
       )}
+      <CourseCertificateDialog
+        open={certificateOpen}
+        onOpenChange={setCertificateOpen}
+        course={course}
+        learnerName={user.username || user.email}
+        learnerId={user.id}
+        totalLessons={totalLessons}
+      />
     </div>
   );
 };

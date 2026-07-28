@@ -441,7 +441,7 @@ const RootRow = () => {
         if (!isCurrent && !isOver) e.currentTarget.style.background = 'transparent';
       }}
     >
-      <span aria-hidden>📁</span>
+      <FolderOpen style={{ width: 15, height: 15, flexShrink: 0, color: isCurrent ? 'var(--ap-brand)' : 'var(--ap-muted)' }} />
       <span style={{ flex: 1 }}>{rootLabel}</span>
       {rootCount != null && (
         <span style={{ ...badgeStyle, ...(isCurrent ? { background: 'var(--ap-card)', color: 'var(--ap-brand)' } : {}) }}>

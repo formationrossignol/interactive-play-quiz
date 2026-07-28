@@ -1,6 +1,5 @@
 import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Globe, LogOut, Shield, User } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { getCurrentUser, logout } from "@/lib/auth";
 import { getLanguage, setLanguage, t, type Language } from "@/lib/i18n";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -16,9 +15,13 @@ import {
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { GlobalSearch } from "@/components/GlobalSearch";
-import { BrandMonogram } from "@/components/BrandMonogram";
-import { BrandWordmark } from "@/components/BrandWordmark";
+import { CommandPalette } from "@/components/CommandPalette";
+import { BrandMonogram } from "ui/BrandMonogram";
+import { BrandWordmark } from "ui/BrandWordmark";
 import { Footer } from "@/components/Footer";
+import { useScrollRestoration } from "@/hooks/useScrollRestoration";
+import { NotificationCenter } from "@/components/notifications/NotificationCenter";
+import { MaterialSymbol } from "@/components/MaterialSymbol";
 
 interface AppLayoutProps {
   subtitle?: string;
@@ -35,10 +38,13 @@ interface AppLayoutProps {
 export const AppLayout = ({ subtitle, extraSection, children }: AppLayoutProps) => {
   useLanguage();
   const navigate = useNavigate();
+  const location = useLocation();
+  useScrollRestoration(`${location.pathname}${location.search}`);
   const { isAdmin } = useIsAdmin();
   const [user, setUser] = useState(getCurrentUser());
   const [currentLanguage, setCurrentLanguage] = useState<Language>(getLanguage());
   const [accountOpen, setAccountOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
   const topBarRef = useRef<HTMLElement | null>(null);
 
   const avatarInitial = (user?.username || "?").trim().charAt(0).toUpperCase();
@@ -71,8 +77,6 @@ export const AppLayout = ({ subtitle, extraSection, children }: AppLayoutProps) 
     return () => window.removeEventListener("resize", updateHeaderHeight);
   }, []);
 
-  void currentLanguage;
-
   return (
     <SidebarProvider>
       <AppSidebar user={user} extraSection={extraSection} />
@@ -89,23 +93,32 @@ export const AppLayout = ({ subtitle, extraSection, children }: AppLayoutProps) 
         >
           <SidebarTrigger />
 
-          <div
-            className="flex cursor-pointer items-center gap-3 transition-opacity hover:opacity-80"
+          <button
+            type="button"
+            className="flex cursor-pointer items-center gap-3 border-0 bg-transparent p-0 transition-opacity hover:opacity-80"
             onClick={() => (user ? navigate("/my-quizzes") : (window.location.href = "/"))}
+            title={subtitle}
+            aria-label={subtitle ? `Brivia — ${subtitle}` : "Brivia"}
           >
             <span className="ap-logo">
               <BrandMonogram size={22} />
             </span>
-            <div>
-              <BrandWordmark size={20} />
-              {subtitle && (
-                <p className="text-xs font-semibold mt-0.5" style={{ color: "var(--ap-muted)" }}>{subtitle}</p>
-              )}
-            </div>
-          </div>
+            <BrandWordmark size={20} />
+          </button>
 
           <div className="ml-auto flex items-center gap-3">
             <GlobalSearch user={user} />
+            {user && <NotificationCenter user={user} />}
+            <button
+              type="button"
+              className="ap-btn ap-btn--ghost ap-btn--sm ap-icon-btn"
+              style={{ padding: "8px 10px" }}
+              aria-label={`${t("commandPaletteOpen")} (${navigator.platform.includes("Mac") ? "⌘" : "Ctrl+"}K)`}
+              title={`${t("commandPaletteOpen")} (${navigator.platform.includes("Mac") ? "⌘K" : "Ctrl+K"})`}
+              onClick={() => setPaletteOpen(true)}
+            >
+              <MaterialSymbol name="search" size={20} />
+            </button>
             {user ? (
               <DropdownMenu open={accountOpen} onOpenChange={setAccountOpen}>
                 <DropdownMenuTrigger asChild>
@@ -133,7 +146,7 @@ export const AppLayout = ({ subtitle, extraSection, children }: AppLayoutProps) 
                     style={{ color: "var(--ap-ink)" }}
                     onSelect={() => navigate("/profile")}
                   >
-                    <User className="h-4 w-4" style={{ color: "var(--ap-muted)" }} />
+                    <MaterialSymbol name="person" size={20} style={{ color: "var(--ap-muted)" }} />
                     {t("profile")}
                   </DropdownMenuItem>
                   {isAdmin && (
@@ -142,7 +155,7 @@ export const AppLayout = ({ subtitle, extraSection, children }: AppLayoutProps) 
                       style={{ color: "var(--ap-ink)" }}
                       onSelect={() => navigate("/admin")}
                     >
-                      <Shield className="h-4 w-4" style={{ color: "var(--ap-muted)" }} />
+                      <MaterialSymbol name="admin_panel_settings" size={20} style={{ color: "var(--ap-muted)" }} />
                       {t("admin")}
                     </DropdownMenuItem>
                   )}
@@ -154,18 +167,22 @@ export const AppLayout = ({ subtitle, extraSection, children }: AppLayoutProps) 
                     {t("language")}
                   </DropdownMenuLabel>
                   <DropdownMenuItem
-                    className="rounded-md text-sm cursor-pointer"
+                    className="gap-2 rounded-md text-sm cursor-pointer"
                     style={{ color: "var(--ap-ink)" }}
                     onClick={() => handleLanguageChange("en")}
                   >
-                    🇬🇧 English
+                    <MaterialSymbol name="language" size={18} style={{ color: "var(--ap-muted)" }} />
+                    English
+                    {currentLanguage === "en" && <MaterialSymbol name="check" size={18} className="ml-auto" />}
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    className="rounded-md text-sm cursor-pointer"
+                    className="gap-2 rounded-md text-sm cursor-pointer"
                     style={{ color: "var(--ap-ink)" }}
                     onClick={() => handleLanguageChange("fr")}
                   >
-                    🇫🇷 Français
+                    <MaterialSymbol name="language" size={18} style={{ color: "var(--ap-muted)" }} />
+                    Français
+                    {currentLanguage === "fr" && <MaterialSymbol name="check" size={18} className="ml-auto" />}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator style={{ background: "var(--ap-line)" }} />
                   <DropdownMenuItem
@@ -173,7 +190,7 @@ export const AppLayout = ({ subtitle, extraSection, children }: AppLayoutProps) 
                     style={{ color: "var(--ap-ink)" }}
                     onSelect={handleLogout}
                   >
-                    <LogOut className="h-4 w-4" style={{ color: "var(--ap-muted)" }} />
+                    <MaterialSymbol name="logout" size={20} style={{ color: "var(--ap-muted)" }} />
                     {t("logout")}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -187,7 +204,7 @@ export const AppLayout = ({ subtitle, extraSection, children }: AppLayoutProps) 
                       style={{ padding: "8px 10px" }}
                       aria-label="Language"
                     >
-                      <Globe className="h-4 w-4" />
+                      <MaterialSymbol name="language" size={20} />
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent
@@ -200,23 +217,27 @@ export const AppLayout = ({ subtitle, extraSection, children }: AppLayoutProps) 
                     }}
                   >
                     <DropdownMenuItem
-                      className="rounded-md text-sm cursor-pointer"
+                      className="gap-2 rounded-md text-sm cursor-pointer"
                       style={{ color: "var(--ap-ink)" }}
                       onClick={() => handleLanguageChange("en")}
                     >
-                      🇬🇧 English
+                      <MaterialSymbol name="language" size={18} style={{ color: "var(--ap-muted)" }} />
+                      English
+                      {currentLanguage === "en" && <MaterialSymbol name="check" size={18} className="ml-auto" />}
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      className="rounded-md text-sm cursor-pointer"
+                      className="gap-2 rounded-md text-sm cursor-pointer"
                       style={{ color: "var(--ap-ink)" }}
                       onClick={() => handleLanguageChange("fr")}
                     >
-                      🇫🇷 Français
+                      <MaterialSymbol name="language" size={18} style={{ color: "var(--ap-muted)" }} />
+                      Français
+                      {currentLanguage === "fr" && <MaterialSymbol name="check" size={18} className="ml-auto" />}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
                 <button className="ap-btn ap-btn--sm" onClick={() => navigate("/auth")}>
-                  <User className="h-3.5 w-3.5" />
+                  <MaterialSymbol name="login" size={18} />
                   {t("login")}
                 </button>
               </>
@@ -229,6 +250,8 @@ export const AppLayout = ({ subtitle, extraSection, children }: AppLayoutProps) 
           <Footer />
         </div>
       </SidebarInset>
+
+      <CommandPalette user={user} open={paletteOpen} onOpenChange={setPaletteOpen} />
     </SidebarProvider>
   );
 };

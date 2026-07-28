@@ -53,7 +53,7 @@ export const QuizSessionAnswerDistribution = ({
         <div style={{
           background: 'rgba(255,255,255,0.05)',
           border: '1.5px solid rgba(255,255,255,0.1)',
-          borderRadius: 20,
+          borderRadius: "var(--ap-r-md)",
           padding: '24px 28px',
           marginBottom: 28,
           backdropFilter: 'blur(8px)',

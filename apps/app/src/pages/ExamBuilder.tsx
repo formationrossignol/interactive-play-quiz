@@ -3,11 +3,31 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { createExam, updateExam, getExamById, getHostExams, type Exam } from '@/lib/examStorage';
 import { getUserQuizzes } from '@/lib/quizStorage';
 import { getCurrentUser } from '@/lib/auth';
-import { CONTENT_CAPS, getPlan, PlanLimitError } from '@/lib/plans';
+import { CONTENT_CAPS, getPlan } from '@/lib/plans';
 import { PlanLimitBlocker } from '@/components/PlanLimitBlocker';
 import { Breadcrumb } from '@/components/Breadcrumb';
+import { MultiStepProgress } from '@/components/MultiStepProgress';
 import { upsertContentBySource } from '@/lib/content/contentRepo';
 import { toast } from 'sonner';
+import { useSaveShortcut } from '@/hooks/useSaveShortcut';
+import { showError } from '@/lib/errorTaxonomy';
+import { assertSafeImportFile } from '@/lib/fileValidation';
+import {
+  ArrowLeft,
+  ArrowRight,
+  CalendarDays,
+  Check,
+  ClipboardList,
+  Eye,
+  Link2,
+  Rocket,
+  Save,
+  Shuffle,
+  Timer,
+  Trash2,
+  Trophy,
+  Upload,
+} from 'lucide-react';
 
 const now = () => {
   const d = new Date();
@@ -35,6 +55,7 @@ function unsupportedQuestionTypes(quiz: { questions: Array<{ type: string }> }):
 interface FormState {
   title: string;
   description: string;
+  headerImage: string;
   quizId: string;
   openAt: string;
   closeAt: string;
@@ -50,9 +71,18 @@ interface FormState {
   status: Exam['status'];
 }
 
+const STEP_META = [
+  { label: 'Informations', description: 'Titre et quiz source', icon: ClipboardList },
+  { label: 'Planification', description: 'Période et durée', icon: CalendarDays },
+  { label: 'Comportement', description: 'Ordre et notation', icon: Shuffle },
+  { label: 'Résultats', description: 'Visibilité des scores', icon: Eye },
+] as const;
+const STEPS = STEP_META.map(({ label }) => label);
+
 const DEFAULTS: FormState = {
   title: '',
   description: '',
+  headerImage: '',
   quizId: '',
   openAt: now(),
   closeAt: inHours(72),
@@ -75,6 +105,7 @@ export default function ExamBuilder() {
   const presetQuizId = params.get('quizId');
 
   const [form, setForm] = useState<FormState>({ ...DEFAULTS, quizId: presetQuizId ?? '' });
+  const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState<Exam | null>(null);
   const [used, setUsed] = useState(0);
@@ -84,10 +115,19 @@ export default function ExamBuilder() {
 
   const cap = CONTENT_CAPS[getPlan(user)].exam;
   const atCap = !examId && cap !== null && used >= cap;
+  const isEditing = !!examId;
 
   useEffect(() => {
     if (user) getHostExams(user.id).then((exams) => setUsed(exams.length));
-  }, [user?.id]);
+  }, [user]);
+
+  useEffect(() => {
+    if (examId || !presetQuizId || !user) return;
+    const source = getUserQuizzes(user.id).find((quiz) => quiz.type === 'quiz' && quiz.id === presetQuizId);
+    if (source?.headerImage) {
+      setForm((current) => current.headerImage ? current : { ...current, headerImage: source.headerImage ?? '' });
+    }
+  }, [examId, presetQuizId, user]);
 
   useEffect(() => {
     if (!examId) return;
@@ -100,6 +140,7 @@ export default function ExamBuilder() {
       setForm({
         title: exam.title,
         description: exam.description,
+        headerImage: exam.headerImage ?? '',
         quizId: exam.quizId,
         openAt: openLocal.toISOString().slice(0, 16),
         closeAt: closeLocal.toISOString().slice(0, 16),
@@ -121,6 +162,48 @@ export default function ExamBuilder() {
   const set = <K extends keyof FormState>(key: K, val: FormState[K]) =>
     setForm((f) => ({ ...f, [key]: val }));
 
+  // Only the first step (title/quiz source) has fields the rest of the form
+  // depends on — later steps have no invalid state, just choices.
+  const stepError = (s: number): string | null => {
+    if (s === 0) {
+      if (!form.title.trim()) return 'Titre requis';
+      if (!form.quizId) return 'Choisir un quiz source';
+    }
+    if (s === 1 && new Date(form.closeAt) <= new Date(form.openAt)) {
+      return "La date de fermeture doit être après l'ouverture";
+    }
+    return null;
+  };
+
+  const goNext = () => {
+    const err = stepError(step);
+    if (err) { toast.error(err); return; }
+    setStep((s) => Math.min(s + 1, STEPS.length - 1));
+  };
+  const goPrev = () => setStep((s) => Math.max(s - 1, 0));
+  const goToStep = (target: number) => {
+    if (!isEditing && target > step) {
+      const err = stepError(step);
+      if (err) { toast.error(err); return; }
+    }
+    setStep(target);
+  };
+
+  const handleHeaderImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      assertSafeImportFile(file, 4 * 1024 * 1024);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Fichier invalide');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => set('headerImage', reader.result as string);
+    reader.readAsDataURL(file);
+    event.target.value = '';
+  };
+
   const handleSave = async (publish: boolean) => {
     if (!form.title.trim()) { toast.error('Titre requis'); return; }
     if (!form.quizId) { toast.error('Choisir un quiz source'); return; }
@@ -138,6 +221,7 @@ export default function ExamBuilder() {
       const payload: Omit<Exam, 'id' | 'hostId' | 'joinCode' | 'createdAt' | 'updatedAt' | 'maxParticipants'> = {
         title: form.title.trim(),
         description: form.description.trim(),
+        headerImage: form.headerImage || undefined,
         quizId: form.quizId,
         openAt: new Date(form.openAt).toISOString(),
         closeAt: new Date(form.closeAt).toISOString(),
@@ -149,7 +233,7 @@ export default function ExamBuilder() {
         showResultsPolicy: form.showResultsPolicy,
         showDetailPolicy: form.showDetailPolicy,
         scoreRetentionPolicy: form.scoreRetentionPolicy,
-        status: publish ? 'scheduled' : 'draft',
+        status: publish ? 'scheduled' : (saved?.status ?? 'draft'),
       };
 
       let exam: Exam | null;
@@ -176,18 +260,15 @@ export default function ExamBuilder() {
           await upsertContentBySource(user.id, 'quiz', quiz.id, quiz as unknown as Record<string, unknown>, !!quiz.isPublic);
         } catch (e) { console.error('[ExamBuilder] quiz mirror failed', e); }
       }
-      toast.success(publish ? 'Examen publié !' : 'Brouillon sauvegardé');
+      toast.success(publish ? 'Examen publié !' : saved ? 'Examen mis à jour' : 'Brouillon sauvegardé');
       if (publish) setTimeout(() => navigate(`/exam/${exam!.id}/admin`), 600);
     } catch (e) {
-      if (e instanceof PlanLimitError) {
-        toast.error(e.message, { action: { label: 'Passer Pro', onClick: () => { window.location.href = '/pricing'; } } });
-      } else {
-        toast.error((e as Error).message);
-      }
+      showError(e, 'ExamBuilder.save', 'Impossible d’enregistrer cet examen. Réessayez dans un instant.');
     } finally {
       setSaving(false);
     }
   };
+  useSaveShortcut(() => handleSave(false), !saving);
 
   if (!user) return null;
 
@@ -212,7 +293,12 @@ export default function ExamBuilder() {
         }
         .eb-input:focus { border-color: var(--ap-brand); }
         .eb-label { display: block; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--ap-muted); margin-bottom: 6px; }
-        .eb-section { background: var(--ap-card); border: var(--ap-border-w) solid var(--ap-line); border-radius: var(--ap-r-lg); padding: 24px; margin-bottom: 16px; }
+        .eb-shell { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 20px; align-items: start; }
+        .eb-step-nav { position: sticky; top: 84px; background: var(--ap-card); border: var(--ap-border-w) solid var(--ap-line); border-radius: var(--ap-r-lg); padding: 8px; }
+        .eb-step-btn { width: 100%; display: flex; align-items: center; gap: 10px; padding: 11px 10px; border: none; border-radius: var(--ap-r-sm); background: transparent; color: var(--ap-ink); font-family: var(--ap-font-body); text-align: left; cursor: pointer; }
+        .eb-step-btn:hover { background: var(--ap-paper-2); }
+        .eb-step-btn.on { background: var(--ap-brand-soft); color: var(--ap-brand-deep); }
+        .eb-section { background: var(--ap-card); border: var(--ap-border-w) solid var(--ap-line); border-radius: var(--ap-r-lg); padding: 22px; margin-bottom: 14px; }
         .eb-section-title { font-family: var(--ap-font-display); font-weight: 600; font-size: 16px; margin-bottom: 18px; display: flex; align-items: center; gap: 8px; }
         .eb-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
         .eb-toggle { display: flex; align-items: center; gap: 10px; cursor: pointer; }
@@ -224,7 +310,12 @@ export default function ExamBuilder() {
         .eb-radio-dot { width: 16px; height: 16px; border-radius: 50%; border: var(--ap-border-w) solid var(--ap-line); flex-shrink: 0; margin-top: 2px; transition: background .15s, border-color .15s; }
         .eb-radio.on .eb-radio-dot { background: var(--ap-brand); border-color: var(--ap-brand); }
         .eb-range { width: 100%; accent-color: var(--ap-brand); }
-        @media (max-width: 640px) { .eb-row { grid-template-columns: 1fr; } }
+        .eb-actions { position: sticky; bottom: 12px; z-index: 5; display: flex; gap: 12px; padding: 12px; margin: 0 -12px; border-radius: var(--ap-r-lg); background: color-mix(in srgb, var(--ap-paper) 92%, transparent); backdrop-filter: blur(8px); }
+        @media (max-width: 760px) {
+          .eb-shell { grid-template-columns: 1fr; }
+          .eb-step-nav { position: static; display: grid; grid-template-columns: repeat(2, 1fr); }
+          .eb-row { grid-template-columns: 1fr; }
+        }
       `}</style>
 
       {/* Topbar */}
@@ -243,7 +334,7 @@ export default function ExamBuilder() {
         <div style={{ flex: 1 }} />
         {saved && (
           <span style={{
-            fontSize: 11, fontWeight: 800, letterSpacing: '.06em', padding: '4px 10px', borderRadius: 999,
+            fontSize: 11, fontWeight: 800, letterSpacing: '.06em', padding: '4px 10px', borderRadius: "var(--ap-r-sm)",
             background: saved.status === 'draft' ? 'var(--ap-paper-2)' : 'var(--ap-pres-soft)',
             color: saved.status === 'draft' ? 'var(--ap-muted)' : 'var(--ap-pres-deep)',
           }}>
@@ -252,7 +343,7 @@ export default function ExamBuilder() {
         )}
       </div>
 
-      <div style={{ maxWidth: 700, margin: '0 auto', padding: '24px 16px' }}>
+      <div style={{ maxWidth: 980, margin: '0 auto', padding: '24px 16px' }}>
 
         {/* Join code banner */}
         {saved && saved.status !== 'draft' && (
@@ -261,7 +352,7 @@ export default function ExamBuilder() {
             borderRadius: 'var(--ap-r-lg)', padding: '16px 24px', marginBottom: 20,
             display: 'flex', alignItems: 'center', gap: 16,
           }}>
-            <div style={{ fontSize: 28 }}>🔗</div>
+            <Link2 style={{ width: 28, height: 28, color: 'var(--ap-pres-deep)', flexShrink: 0 }} />
             <div>
               <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--ap-pres-deep)', marginBottom: 2 }}>
                 Code d'accès participants
@@ -273,19 +364,78 @@ export default function ExamBuilder() {
             <button
               onClick={() => { navigate(`/exam/${saved.id}/admin`); }}
               style={{
-                marginLeft: 'auto', padding: '8px 16px', borderRadius: 999,
+                marginLeft: 'auto', padding: '8px 16px', borderRadius: "var(--ap-r-sm)",
                 background: 'var(--ap-pres)', color: '#fff', border: 'none',
                 fontFamily: 'var(--ap-font-body)', fontWeight: 800, fontSize: 13, cursor: 'pointer',
               }}
             >
-              Voir résultats →
+              Voir résultats <ArrowRight style={{ width: 14, height: 14, display: 'inline', verticalAlign: -2 }} />
             </button>
           </div>
         )}
 
-        {/* Basics */}
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
+            <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--ap-muted)' }}>
+              Rubrique {step + 1}/{STEPS.length} — {STEPS[step]}
+            </span>
+          </div>
+          <MultiStepProgress totalSteps={STEPS.length} currentStep={step} />
+        </div>
+
+        <div className="eb-shell">
+          <nav className="eb-step-nav" aria-label="Rubriques de l'examen">
+            {STEP_META.map(({ label, description, icon: Icon }, index) => (
+              <button
+                type="button"
+                key={label}
+                className={`eb-step-btn ${step === index ? 'on' : ''}`}
+                aria-current={step === index ? 'step' : undefined}
+                onClick={() => goToStep(index)}
+              >
+                <Icon style={{ width: 18, height: 18, flexShrink: 0 }} />
+                <span style={{ minWidth: 0 }}>
+                  <span style={{ display: 'block', fontSize: 13, fontWeight: 800 }}>{label}</span>
+                  <span style={{ display: 'block', fontSize: 11, color: 'var(--ap-muted)', marginTop: 1 }}>{description}</span>
+                </span>
+              </button>
+            ))}
+          </nav>
+
+          <main style={{ minWidth: 0 }}>
+
+        {step === 0 && (
         <div className="eb-section">
-          <div className="eb-section-title">📋 Informations générales</div>
+          <div className="eb-section-title"><ClipboardList style={{ width: 18, height: 18 }} /> Informations générales</div>
+          <div style={{ marginBottom: 16 }}>
+            <label className="eb-label">Image d’en-tête</label>
+            {form.headerImage ? (
+              <div style={{ position: 'relative', height: 208, overflow: 'hidden', borderRadius: 'var(--ap-r-sm)', marginBottom: 8 }}>
+                <img src={form.headerImage} alt="Aperçu de l’image d’en-tête" style={{ width: '100%', height: '100%', display: 'block', objectFit: 'cover', objectPosition: 'center' }} />
+                <button
+                  type="button"
+                  className="ap-btn ap-btn--sm ap-icon-btn"
+                  onClick={() => set('headerImage', '')}
+                  aria-label="Supprimer l’image d’en-tête"
+                  style={{ position: 'absolute', top: 8, right: 8, background: 'rgba(20,18,30,.72)', color: '#fff', borderColor: 'rgba(255,255,255,.35)' }}
+                >
+                  <Trash2 size={15} />
+                </button>
+              </div>
+            ) : (
+              <label
+                htmlFor="exam-header-image"
+                style={{
+                  height: 104, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  border: 'var(--ap-border-w) dashed var(--ap-line-2)', borderRadius: 'var(--ap-r-sm)',
+                  color: 'var(--ap-muted)', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                }}
+              >
+                <Upload size={16} /> Ajouter une image d’en-tête
+              </label>
+            )}
+            <input id="exam-header-image" type="file" accept="image/*" className="hidden" onChange={handleHeaderImageUpload} />
+          </div>
           <div style={{ marginBottom: 16 }}>
             <label className="eb-label">Titre de l'examen</label>
             <input className="eb-input" placeholder="Ex : Examen final, Module 3" value={form.title} onChange={(e) => set('title', e.target.value)} />
@@ -306,7 +456,14 @@ export default function ExamBuilder() {
             <select
               className="eb-input"
               value={form.quizId}
-              onChange={(e) => set('quizId', e.target.value)}
+              onChange={(e) => {
+                const quizId = e.target.value;
+                setForm((current) => ({
+                  ...current,
+                  quizId,
+                  headerImage: current.headerImage || quizzes.find((quiz) => quiz.id === quizId)?.headerImage || '',
+                }));
+              }}
             >
               <option value="">Choisir un quiz</option>
               {quizzes.map((q) => {
@@ -330,10 +487,13 @@ export default function ExamBuilder() {
             })()}
           </div>
         </div>
+        )}
 
+        {step === 1 && (
+        <>
         {/* Dates */}
         <div className="eb-section">
-          <div className="eb-section-title">📅 Période d'accès</div>
+          <div className="eb-section-title"><CalendarDays style={{ width: 18, height: 18 }} /> Période d'accès</div>
           <div className="eb-row">
             <div>
               <label className="eb-label">Ouverture</label>
@@ -348,7 +508,7 @@ export default function ExamBuilder() {
 
         {/* Timing & attempts */}
         <div className="eb-section">
-          <div className="eb-section-title">⏱️ Durée & tentatives</div>
+          <div className="eb-section-title"><Timer style={{ width: 18, height: 18 }} /> Durée & tentatives</div>
           <div style={{ marginBottom: 20 }}>
             <label
               className="eb-toggle"
@@ -356,7 +516,7 @@ export default function ExamBuilder() {
               onClick={() => set('hasDuration', !form.hasDuration)}
             >
               <div className={`eb-check ${form.hasDuration ? 'on' : ''}`}>
-                {form.hasDuration && <svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#fff" strokeWidth="2" fill="none" strokeLinecap="round" /></svg>}
+                {form.hasDuration && <Check style={{ width: 12, height: 12, color: '#fff', strokeWidth: 3 }} />}
               </div>
               <span style={{ fontSize: 14, fontWeight: 700 }}>Limiter la durée</span>
             </label>
@@ -388,14 +548,18 @@ export default function ExamBuilder() {
             </div>
           </div>
         </div>
+        </>
+        )}
 
+        {step === 2 && (
+        <>
         {/* Options */}
         <div className="eb-section">
-          <div className="eb-section-title">🔀 Options d'affichage</div>
+          <div className="eb-section-title"><Shuffle style={{ width: 18, height: 18 }} /> Options d'affichage</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <label className="eb-toggle" onClick={() => set('shuffleQuestions', !form.shuffleQuestions)}>
               <div className={`eb-check ${form.shuffleQuestions ? 'on' : ''}`}>
-                {form.shuffleQuestions && <svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#fff" strokeWidth="2" fill="none" strokeLinecap="round" /></svg>}
+                {form.shuffleQuestions && <Check style={{ width: 12, height: 12, color: '#fff', strokeWidth: 3 }} />}
               </div>
               <div>
                 <div style={{ fontSize: 14, fontWeight: 700 }}>Mélanger les questions</div>
@@ -404,7 +568,7 @@ export default function ExamBuilder() {
             </label>
             <label className="eb-toggle" onClick={() => set('shuffleAnswers', !form.shuffleAnswers)}>
               <div className={`eb-check ${form.shuffleAnswers ? 'on' : ''}`}>
-                {form.shuffleAnswers && <svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#fff" strokeWidth="2" fill="none" strokeLinecap="round" /></svg>}
+                {form.shuffleAnswers && <Check style={{ width: 12, height: 12, color: '#fff', strokeWidth: 3 }} />}
               </div>
               <div>
                 <div style={{ fontSize: 14, fontWeight: 700 }}>Mélanger les réponses</div>
@@ -416,7 +580,7 @@ export default function ExamBuilder() {
 
         {/* Score */}
         <div className="eb-section">
-          <div className="eb-section-title">🏆 Score & réussite</div>
+          <div className="eb-section-title"><Trophy style={{ width: 18, height: 18 }} /> Score & réussite</div>
           <div style={{ marginBottom: 20 }}>
             <label className="eb-label">Score minimal de réussite : <strong style={{ color: 'var(--ap-brand)' }}>{form.passingScore}%</strong></label>
             <input
@@ -448,10 +612,14 @@ export default function ExamBuilder() {
             </div>
           </div>
         </div>
+        </>
+        )}
 
+        {step === 3 && (
+        <>
         {/* Results policy */}
         <div className="eb-section">
-          <div className="eb-section-title">👁️ Affichage des résultats</div>
+          <div className="eb-section-title"><Eye style={{ width: 18, height: 18 }} /> Affichage des résultats</div>
           <div style={{ marginBottom: 20 }}>
             <label className="eb-label">Quand montrer les résultats</label>
             <div className="eb-radio-group">
@@ -491,36 +659,77 @@ export default function ExamBuilder() {
             </div>
           )}
         </div>
+        </>
+        )}
 
         {/* Actions */}
-        <div style={{ display: 'flex', gap: 12 }}>
-          <button
-            onClick={() => handleSave(false)}
-            disabled={saving}
-            style={{
-              flex: 1, padding: '14px 0', borderRadius: 999,
-              border: 'var(--ap-border-w) solid var(--ap-line)', background: 'var(--ap-card)',
-              fontFamily: 'var(--ap-font-body)', fontWeight: 800, fontSize: 15,
-              color: 'var(--ap-ink)', cursor: saving ? 'not-allowed' : 'pointer',
-              opacity: saving ? .6 : 1,
-            }}
-          >
-            {saving ? '…' : 'Sauvegarder brouillon'}
-          </button>
-          <button
-            onClick={() => handleSave(true)}
-            disabled={saving}
-            style={{
-              flex: 2, padding: '14px 0', borderRadius: 999, border: 'none',
-              background: 'var(--ap-brand)', color: '#fff',
-              fontFamily: 'var(--ap-font-body)', fontWeight: 800, fontSize: 15,
-              cursor: saving ? 'not-allowed' : 'pointer',
-              boxShadow: '0 4px 0 var(--ap-brand-deep)',
-              opacity: saving ? .6 : 1,
-            }}
-          >
-            {saving ? '…' : saved?.status === 'draft' ? '🚀 Publier l\'examen' : '💾 Mettre à jour'}
-          </button>
+        <div className="eb-actions">
+          {!isEditing && step > 0 && (
+            <button
+              onClick={goPrev}
+              style={{
+                flex: 1, padding: '14px 0', borderRadius: "var(--ap-r-sm)",
+                border: 'var(--ap-border-w) solid var(--ap-line)', background: 'var(--ap-card)',
+                fontFamily: 'var(--ap-font-body)', fontWeight: 800, fontSize: 15,
+                color: 'var(--ap-ink)', cursor: 'pointer',
+              }}
+            >
+              <ArrowLeft style={{ width: 16, height: 16, display: 'inline', verticalAlign: -3, marginRight: 6 }} />
+              Précédent
+            </button>
+          )}
+          {!isEditing && step < STEPS.length - 1 ? (
+            <button
+              onClick={goNext}
+              style={{
+                flex: 2, padding: '14px 0', borderRadius: "var(--ap-r-sm)", border: 'none',
+                background: 'var(--ap-brand)', color: '#fff',
+                fontFamily: 'var(--ap-font-body)', fontWeight: 800, fontSize: 15,
+                cursor: 'pointer', boxShadow: '0 4px 0 var(--ap-brand-deep)',
+              }}
+            >
+              Suivant
+              <ArrowRight style={{ width: 16, height: 16, display: 'inline', verticalAlign: -3, marginLeft: 6 }} />
+            </button>
+          ) : (
+            <>
+              <button
+                onClick={() => handleSave(false)}
+                disabled={saving}
+                style={{
+                  flex: 1, padding: '14px 0', borderRadius: "var(--ap-r-sm)",
+                  border: 'var(--ap-border-w) solid var(--ap-line)', background: 'var(--ap-card)',
+                  fontFamily: 'var(--ap-font-body)', fontWeight: 800, fontSize: 15,
+                  color: 'var(--ap-ink)', cursor: saving ? 'not-allowed' : 'pointer',
+                  opacity: saving ? .6 : 1,
+                }}
+              >
+                {saving ? '…' : (
+                  <><Save style={{ width: 16, height: 16, display: 'inline', verticalAlign: -3, marginRight: 6 }} />Sauvegarder brouillon</>
+                )}
+              </button>
+              <button
+                onClick={() => handleSave(true)}
+                disabled={saving}
+                style={{
+                  flex: 2, padding: '14px 0', borderRadius: "var(--ap-r-sm)", border: 'none',
+                  background: 'var(--ap-brand)', color: '#fff',
+                  fontFamily: 'var(--ap-font-body)', fontWeight: 800, fontSize: 15,
+                  cursor: saving ? 'not-allowed' : 'pointer',
+                  boxShadow: '0 4px 0 var(--ap-brand-deep)',
+                  opacity: saving ? .6 : 1,
+                }}
+              >
+                {saving ? '…' : saved?.status === 'draft' ? (
+                  <><Rocket style={{ width: 16, height: 16, display: 'inline', verticalAlign: -3, marginRight: 6 }} />Publier l'examen</>
+                ) : (
+                  <><Save style={{ width: 16, height: 16, display: 'inline', verticalAlign: -3, marginRight: 6 }} />Mettre à jour</>
+                )}
+              </button>
+            </>
+          )}
+        </div>
+          </main>
         </div>
       </div>
     </div>

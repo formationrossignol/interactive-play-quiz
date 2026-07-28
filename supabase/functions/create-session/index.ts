@@ -23,6 +23,8 @@ interface CreateSessionBody {
   questions: FullQuestion[];
   ambiance_id?: string;
   max_participants?: number | null;
+  live_reactions_enabled?: boolean;
+  end_chat_enabled?: boolean;
 }
 
 // Fields that must never reach the player. Anything not in this list is
@@ -52,7 +54,15 @@ Deno.serve(async (req) => {
 
   try {
     const body: CreateSessionBody = await req.json();
-    const { game_code, title, questions, ambiance_id, max_participants } = body;
+    const {
+      game_code,
+      title,
+      questions,
+      ambiance_id,
+      max_participants,
+      live_reactions_enabled,
+      end_chat_enabled,
+    } = body;
 
     if (!game_code || !Array.isArray(questions)) {
       return new Response(JSON.stringify({ error: "Missing required fields" }), {
@@ -94,6 +104,8 @@ Deno.serve(async (req) => {
       p_private_questions: questions,
       p_ambiance_id: ambiance_id ?? "arcade",
       p_max_participants: max_participants ?? null,
+      p_live_reactions_enabled: live_reactions_enabled ?? true,
+      p_end_chat_enabled: end_chat_enabled ?? true,
       p_host_user_id: hostUserId,
     });
 

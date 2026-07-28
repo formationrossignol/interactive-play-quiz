@@ -59,12 +59,12 @@ export const SITE_THEMES: SiteThemeDef[] = [
   },
   {
     id: "material",
-    name: "Material 3 Expressive",
+    name: "Material 3",
     tagline: {
-      en: "Bold and dynamic — tonal containers, pill shapes, spring motion",
-      fr: "Vif et dynamique — conteneurs tonaux, formes pilules, mouvement ressort",
+      en: "Adaptive and calm — role-based color, tonal surfaces, rounded symbols",
+      fr: "Adaptatif et calme — couleurs par rôle, surfaces tonales, symboles arrondis",
     },
-    colors: ["#FF5A36", "#2E7D6B", "#D9A400", "#D6336C"],
+    colors: ["#65558F", "#EADDFF", "#625B71", "#7D5260"],
     previewFont: "'Roboto Flex Variable', 'Roboto Flex', system-ui, sans-serif",
   },
 ];

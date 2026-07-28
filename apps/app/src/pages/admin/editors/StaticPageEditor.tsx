@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import RichTextEditor from "@/components/RichTextEditor";
 import type { StaticPage, StaticPageBlock } from "@/lib/pages/types";
+import { Plus, Trash2 } from "lucide-react";
 
 export function StaticPageEditor({ open, onOpenChange, initial, hasBlocks, onSave }: {
   open: boolean; onOpenChange: (o: boolean) => void;
@@ -20,7 +21,7 @@ export function StaticPageEditor({ open, onOpenChange, initial, hasBlocks, onSav
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent style={{ maxHeight: "88vh", overflowY: "auto" }}>
+      <DialogContent className="w-[calc(100vw-48px)] max-w-5xl" style={{ maxHeight: "90vh", overflowY: "auto" }}>
         <DialogHeader><DialogTitle>Éditer — {initial.title}</DialogTitle></DialogHeader>
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <label style={{ fontWeight: 800, fontSize: 12 }}>Titre</label>
@@ -36,15 +37,15 @@ export function StaticPageEditor({ open, onOpenChange, initial, hasBlocks, onSav
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <label style={{ fontWeight: 800, fontSize: 12 }}>Cartes</label>
               {v.blocks.map((b, i) => (
-                <div key={i} style={{ display: "flex", flexDirection: "column", gap: 6, border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: 12, padding: 10 }}>
+                <div key={i} style={{ display: "flex", flexDirection: "column", gap: 6, border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-md)", padding: 10 }}>
                   <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                     <Input placeholder="Titre de la carte" value={b.title} onChange={(e) => setBlock(i, { title: e.target.value })} />
-                    <button className="adm-iconbtn del" style={{ flex: "0 0 auto", padding: "8px 10px" }} onClick={() => removeBlock(i)}>🗑</button>
+                    <button className="adm-iconbtn del" aria-label="Supprimer la carte" style={{ flex: "0 0 auto", padding: "8px 10px" }} onClick={() => removeBlock(i)}><Trash2 size={15} /></button>
                   </div>
                   <Textarea placeholder="Description" value={b.desc} onChange={(e) => setBlock(i, { desc: e.target.value })} rows={2} />
                 </div>
               ))}
-              <button className="adm-bcol-add" onClick={addBlock}>+ Ajouter une carte</button>
+              <button className="adm-bcol-add" onClick={addBlock}><Plus size={15} /> Ajouter une carte</button>
             </div>
           )}
         </div>

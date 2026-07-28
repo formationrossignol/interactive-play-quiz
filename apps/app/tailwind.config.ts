@@ -98,8 +98,15 @@ export default {
         sm: "max(0px, calc(var(--radius) - 4px))",
       },
       boxShadow: {
-        card: "0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.06)",
-        "card-hover": "0 4px 16px rgba(99,102,241,0.15)",
+        // Theme-aware resting/hover shadow for generic shadcn surfaces
+        // (Button, Card) — mirrors the --ap-shadow-* tokens every site theme
+        // defines for .ap-btn/.ap-card, so shadows stay coherent across
+        // themed and generic components. Named "ap" (not "card") to avoid
+        // colliding with Tailwind's built-in shadow-{color} utility, which
+        // treats "card" as a color token and would otherwise win the
+        // selector in the utilities layer.
+        ap: "var(--ap-shadow-soft)",
+        "ap-hover": "var(--ap-shadow-card)",
       },
       keyframes: {
         "accordion-down": {

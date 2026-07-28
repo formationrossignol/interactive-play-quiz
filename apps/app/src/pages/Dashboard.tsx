@@ -4,21 +4,22 @@ import { KpiRow } from "@/components/dashboard/KpiRow";
 import { ActivityChart } from "@/components/dashboard/ActivityChart";
 import { CreationsByTypeChart } from "@/components/dashboard/CreationsByTypeChart";
 import { NewsModule } from "@/components/dashboard/NewsModule";
+import { RecentWorks } from "@/components/dashboard/RecentWorks";
 import { getCurrentUser } from "@/lib/auth";
 import { computeDashboardStats, computeDashboardCharts, type DashboardStats, type DashboardCharts } from "@/lib/dashboardStats";
 
 const Dashboard = () => {
+  const userId = getCurrentUser()?.id;
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [charts, setCharts] = useState<DashboardCharts | null>(null);
 
   useEffect(() => {
-    const user = getCurrentUser();
-    if (!user) return;
+    if (!userId) return;
     let cancelled = false;
-    computeDashboardStats(user.id).then((s) => { if (!cancelled) setStats(s); });
-    computeDashboardCharts(user.id).then((c) => { if (!cancelled) setCharts(c); });
+    computeDashboardStats(userId).then((s) => { if (!cancelled) setStats(s); });
+    computeDashboardCharts(userId).then((c) => { if (!cancelled) setCharts(c); });
     return () => { cancelled = true; };
-  }, []);
+  }, [userId]);
 
   return (
     <AppLayout subtitle="Tableau de bord">
@@ -33,9 +34,15 @@ const Dashboard = () => {
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "16px", marginBottom: "32px" }}>
-          <ActivityChart data={charts?.activity ?? []} />
-          <CreationsByTypeChart data={charts?.creationsByType ?? { quiz: 0, poll: 0, flashcard: 0, slide: 0, other: 0 }} />
+          <div id="dashboard-activity-chart">
+            <ActivityChart data={charts?.activity ?? []} />
+          </div>
+          <div id="dashboard-creations-chart">
+            <CreationsByTypeChart data={charts?.creationsByType ?? { quiz: 0, poll: 0, flashcard: 0, slide: 0, other: 0 }} />
+          </div>
         </div>
+
+        {userId && <RecentWorks userId={userId} />}
 
         <NewsModule />
       </div>

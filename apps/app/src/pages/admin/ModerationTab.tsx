@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Star, Sparkles, Lightbulb, MessageCircle, Ticket, Inbox } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -24,16 +25,20 @@ export const ModerationTab = () => {
     <>
       <div className="adm-panel">
         <div className="adm-panel-head">
-          <h3>⭐ Avis en attente <span className="adm-tag">{reviewRows.length}</span></h3>
+          <h3><Star className="h-4 w-4" style={{ display: "inline", verticalAlign: "-3px" }} /> Avis en attente <span className="adm-tag">{reviewRows.length}</span></h3>
         </div>
         {reviewRows.length === 0 ? (
-          <div className="adm-empty"><span className="e-emo">✨</span>Aucun avis en attente.</div>
+          <div className="adm-empty"><span className="e-emo"><Sparkles style={{ width: 30, height: 30 }} /></span>Aucun avis en attente.</div>
         ) : (
           <div className="adm-modgrid">
             {reviewRows.map((r) => (
               <div key={r.id} className="adm-modcard acc-flash">
                 <div className="m-head">
-                  <span className="m-stars">{"★".repeat(r.stars)}</span>
+                  <span className="m-stars">
+                    {Array.from({ length: r.stars }, (_, i) => (
+                      <Star key={i} className="h-3.5 w-3.5" style={{ display: "inline", fill: "currentColor" }} />
+                    ))}
+                  </span>
                   <span className="m-name">{r.author_name}</span>
                   <span className="m-role">{r.author_role}</span>
                 </div>
@@ -50,10 +55,10 @@ export const ModerationTab = () => {
 
       <div className="adm-panel">
         <div className="adm-panel-head">
-          <h3>💡 Idées en attente <span className="adm-tag">{ideaRows.length}</span></h3>
+          <h3><Lightbulb className="h-4 w-4" style={{ display: "inline", verticalAlign: "-3px" }} /> Idées en attente <span className="adm-tag">{ideaRows.length}</span></h3>
         </div>
         {ideaRows.length === 0 ? (
-          <div className="adm-empty"><span className="e-emo">💭</span>Aucune idée en attente.</div>
+          <div className="adm-empty"><span className="e-emo"><MessageCircle style={{ width: 30, height: 30 }} /></span>Aucune idée en attente.</div>
         ) : (
           <div className="adm-modgrid">
             {ideaRows.map((i) => (
@@ -71,10 +76,10 @@ export const ModerationTab = () => {
 
       <div className="adm-panel">
         <div className="adm-panel-head">
-          <h3>🎫 Tickets <span className="adm-tag">{reportRows.length}</span></h3>
+          <h3><Ticket className="h-4 w-4" style={{ display: "inline", verticalAlign: "-3px" }} /> Tickets <span className="adm-tag">{reportRows.length}</span></h3>
         </div>
         {reportRows.length === 0 ? (
-          <div className="adm-empty"><span className="e-emo">📭</span>Aucun ticket.</div>
+          <div className="adm-empty"><span className="e-emo"><Inbox style={{ width: 30, height: 30 }} /></span>Aucun ticket.</div>
         ) : (
           <div className="adm-rows">
             {reportRows.map((rep) => (

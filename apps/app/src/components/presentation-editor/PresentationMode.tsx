@@ -3,11 +3,15 @@ import { useDocStore } from "./store/useDocStore";
 import { CanvasElement } from "./elements/CanvasElement";
 import { LineArrowLayer } from "./elements/LineArrowLayer";
 import type { LineElement } from "./types/presentation";
+import { Palette, X } from "lucide-react";
+import { SlideFooter } from "./SlideFooter";
+import { PRESENTATION_FONT_OPTIONS, PRESENTATION_TEXT_COLORS } from "./templates/presentationTemplates";
 
 export function PresentationMode({ onExit }: { onExit: () => void }) {
   const presentation = useDocStore((s) => s.presentation);
   const [index, setIndex] = useState(0);
   const [scale, setScale] = useState(1);
+  const [styleOpen, setStyleOpen] = useState(false);
   const visibleSlides = (presentation?.slides ?? []).filter((s) => !s.hidden).sort((a, b) => a.order - b.order);
   const slide = visibleSlides[index];
 
@@ -46,6 +50,7 @@ export function PresentationMode({ onExit }: { onExit: () => void }) {
 
   if (!presentation || !slide) return null;
   const lines = slide.elements.filter((e): e is LineElement => e.type === "line" || e.type === "arrow");
+  const slideNumber = presentation.slides.findIndex((item) => item.id === slide.id) + 1;
 
   return (
     <div
@@ -60,7 +65,9 @@ export function PresentationMode({ onExit }: { onExit: () => void }) {
           height: presentation.height,
           transform: `scale(${scale})`,
           transformOrigin: "center center",
-          background: slide.background?.value ?? "#fff",
+          background: slide.background?.value ?? presentation.theme?.backgroundColor ?? "#fff",
+          color: presentation.theme?.textColor ?? "#24202d",
+          fontFamily: presentation.theme?.fontFamily ?? "Arial, sans-serif",
           flexShrink: 0,
         }}
       >
@@ -68,12 +75,56 @@ export function PresentationMode({ onExit }: { onExit: () => void }) {
           <CanvasElement key={element.id} slideId={slide.id} element={element} elementRef={() => {}} />
         ))}
         <LineArrowLayer lines={lines} width={presentation.width} height={presentation.height} />
+        <SlideFooter footer={presentation.footer} slideNumber={slideNumber} isTitleSlide={slideNumber === 1} />
       </div>
       <div style={{ position: "absolute", bottom: 16, right: 16, color: "#fff", fontSize: 14, fontFamily: "var(--ap-font-body)" }}>
         {index + 1} / {visibleSlides.length}
       </div>
-      <button onClick={onExit} style={{ position: "absolute", top: 16, right: 16, color: "#fff", background: "none", border: "none", fontSize: 20, cursor: "pointer" }}>
-        ✕
+      <div style={{ position: "absolute", top: 16, left: 16, color: "#fff", fontFamily: "var(--ap-font-body)" }}>
+        <button
+          type="button"
+          onClick={() => setStyleOpen((open) => !open)}
+          aria-expanded={styleOpen}
+          className="ap-btn ap-btn--sm"
+          style={{ borderColor: "rgba(255,255,255,.35)", background: "rgba(22,22,28,.72)", color: "#fff", backdropFilter: "blur(8px)" }}
+        >
+          <Palette size={16} />
+          Style
+        </button>
+        {styleOpen && (
+          <div style={{ width: 300, marginTop: 8, padding: 14, borderRadius: "var(--ap-r-md)", background: "rgba(22,22,28,.92)", border: "1px solid rgba(255,255,255,.24)", boxShadow: "0 12px 30px rgba(0,0,0,.28)", backdropFilter: "blur(12px)" }}>
+            <label style={{ display: "grid", gap: 6, marginBottom: 12, fontSize: 12, fontWeight: 800 }}>
+              Police
+              <select
+                value={presentation.theme?.fontFamily ?? PRESENTATION_FONT_OPTIONS[0].value}
+                onChange={(event) => useDocStore.getState().updateTheme({ fontFamily: event.target.value, templateId: "personnalise" })}
+                style={{ height: 36, border: "1px solid rgba(255,255,255,.32)", borderRadius: 9, background: "#fff", color: "#24202d", padding: "0 9px", fontFamily: "inherit" }}
+              >
+                {PRESENTATION_FONT_OPTIONS.map((font) => <option key={font.label} value={font.value}>{font.label}</option>)}
+              </select>
+            </label>
+            <span style={{ display: "block", marginBottom: 7, fontSize: 12, fontWeight: 800 }}>Couleur du texte</span>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {PRESENTATION_TEXT_COLORS.map((color) => (
+                <button
+                  key={color}
+                  type="button"
+                  aria-label={`Couleur ${color}`}
+                  onClick={() => useDocStore.getState().updateTheme({ textColor: color, templateId: "personnalise" })}
+                  style={{ width: 27, height: 27, borderRadius: "50%", background: color, border: presentation.theme?.textColor === color ? "3px solid #9b91ff" : "2px solid rgba(255,255,255,.5)", cursor: "pointer" }}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+      <button
+        onClick={onExit}
+        aria-label="Quitter le mode présentation"
+        title="Quitter"
+        style={{ position: "absolute", top: 16, right: 16, color: "#fff", background: "none", border: "none", cursor: "pointer", padding: 6, display: "grid", placeItems: "center" }}
+      >
+        <X size={22} aria-hidden="true" />
       </button>
     </div>
   );

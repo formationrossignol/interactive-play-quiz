@@ -38,12 +38,12 @@
   --ap-line:        #efe6d3;  /* bordures / séparateurs */
   --ap-line-2:      #d8ccb5;  /* bordures pointillées / dropzones */
 
-  /* Rayons — tout est rond */
-  --ap-r-sm: 12px;
-  --ap-r-md: 16px;
-  --ap-r-lg: 24px;
-  --ap-r-xl: 30px;
-  --ap-r-pill: 999px;
+  /* Rayons — une courbe légère et cohérente, sans effet « bulle ». */
+  --ap-r-sm: 5px;
+  --ap-r-md: 7px;
+  --ap-r-lg: 9px;
+  --ap-r-xl: 11px;
+  --ap-r-pill: 7px;
 
   /* Ombres « 3D douce » : un offset plein (la couleur) + une diffuse */
   --ap-shadow-soft:  0 4px 0 var(--ap-line);
@@ -125,7 +125,7 @@
 *::-webkit-scrollbar-track { background: transparent; }
 *::-webkit-scrollbar-thumb {
   background: var(--ap-line-2);
-  border-radius: 999px;
+  border-radius: var(--ap-r-sm);
   border: 3px solid transparent;
   background-clip: content-box;
 }
@@ -157,7 +157,11 @@ body { transition: background-color .25s ease, color .25s ease; }
 
 /* ── Route transitions ─────────────────────────────────────────── */
 @media (prefers-reduced-motion: no-preference) {
-  .ap-route-enter { animation: ap-route-in .18s ease-out both; }
+  /* Keep the entry frame before the animation starts, but do not retain its
+     transform afterwards. A forwards-filled transform makes this wrapper the
+     containing block for AppSidebar's fixed desktop panel, so the sidebar
+     scrolls away when the page is taller than the viewport. */
+  .ap-route-enter { animation: ap-route-in .18s ease-out backwards; }
 }
 @keyframes ap-route-in {
   from { opacity: 0; transform: translateY(6px); }
@@ -253,7 +257,8 @@ body { transition: background-color .25s ease, color .25s ease; }
 .ap-card--hover:hover { transform: translateY(-3px); box-shadow: var(--ap-shadow-card); }
 
 /* Drag handle: revealed on hover of the enclosing card/row only (maquette #6). */
-.ap-grip { opacity: 0; transition: opacity .12s var(--ap-ease); }
+.ap-grip { opacity: 0; cursor: grab; touch-action: none; transition: opacity .12s var(--ap-ease); }
+.ap-grip:active { cursor: grabbing; }
 .ap-card:hover .ap-grip,
 .ap-row:hover .ap-grip,
 .ap-grip:focus-visible { opacity: 1; }
@@ -500,7 +505,7 @@ body { transition: background-color .25s ease, color .25s ease; }
    9. LOGO / MARQUE
    ============================================================ */
 .ap-logo {
-  width: 46px; height: 46px; border-radius: 15px; background: var(--ap-brand);
+  width: 46px; height: 46px; border-radius: var(--ap-r-md); background: var(--ap-brand);
   display: flex; align-items: center; justify-content: center;
   box-shadow: 0 6px 0 var(--ap-brand-deep), 0 10px 18px rgba(67,56,202,.35);
   flex: 0 0 auto;

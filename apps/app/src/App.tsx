@@ -1,14 +1,14 @@
 import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
-import { initAuth } from "@/lib/auth";
+import { initAuth, getCurrentUser } from "@/lib/auth";
 import { RouteTransition } from "@/components/RouteTransition";
 import { RouteFallback } from "@/components/RouteFallback";
-import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { CookieConsentProvider } from "@/contexts/CookieConsentContext";
 import { CookieConsent } from "@/components/CookieConsent";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { FloatingChronometer } from "@/components/tools/FloatingChronometer";
 
 // Critical player path — loaded first, separate chunks from builder deps
 const JoinQuiz = lazy(() => import("./pages/JoinQuiz"));
@@ -18,11 +18,15 @@ const LiveQuizPage = lazy(() => import("./pages/LiveQuizPage"));
 const AuthPage = lazy(() => import("./pages/AuthPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
-// Marketing pages: /, features/about/contact/help/guides/pricing/reviews/
-// roadmap/report/changelog now live in apps/marketing (see
-// docs/marketing-app-decoupling.md) — no longer routed here.
+// Public community pages that belong inside the product shell.
 const Communaute = lazy(() => import("./pages/Communaute"));
 const DiscoverQuizzes = lazy(() => import("./pages/DiscoverQuizzes"));
+const Roadmap = lazy(() => import("./pages/Roadmap"));
+const Changelog = lazy(() => import("./pages/Changelog"));
+const Report = lazy(() => import("./pages/Report"));
+const HelpCenter = lazy(() => import("./pages/HelpCenter"));
+const Notifications = lazy(() => import("./pages/Notifications"));
+const History = lazy(() => import("./pages/History"));
 
 // Legal pages: mentions-legales/confidentialite/cgu now live in apps/marketing
 // (see docs/marketing-app-decoupling.md) — no longer routed here.
@@ -53,10 +57,12 @@ const PreviewPage = lazy(() => import("./pages/PreviewPage"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const Admin = lazy(() => import("./pages/admin/Admin"));
 const PresentationEditorPage = lazy(() => import("./pages/PresentationEditorPage"));
+const PresentationAudience = lazy(() => import("./pages/PresentationAudience"));
 
 // Standalone tools library — independent classroom mini-apps, no auth required
 const ToolsLibrary = lazy(() => import("./pages/ToolsLibrary"));
 const WheelTool = lazy(() => import("./pages/tools/WheelTool"));
+const ChronometerTool = lazy(() => import("./pages/tools/ChronometerTool"));
 
 const queryClient = new QueryClient();
 
@@ -71,12 +77,21 @@ const AuthGate = ({ children }: { children: ReactNode }) => {
   return <>{children}</>;
 };
 
+/** apps/app has no route of its own at "/" — in production it's reached
+ *  behind apps/marketing's fallback rewrite, whose own home page owns that
+ *  URL (see docs/marketing-app-decoupling.md). But dozens of call sites in
+ *  this app (AppLayout's logo, AuthPage post-login, "Retour à l'accueil"
+ *  buttons, breadcrumb Home buttons…) already assume window.location.href =
+ *  "/" lands somewhere real within the app itself — true for direct visits
+ *  to the app's own *.vercel.app URL, and needed as a sane fallback
+ *  regardless of the marketing split. */
+const RootRedirect = () => <Navigate to={getCurrentUser() ? "/dashboard" : "/auth"} replace />;
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <CookieConsentProvider>
       <div className="ap-app">
-        <Toaster />
         <Sonner />
         <CookieConsent />
         <AuthGate>
@@ -84,6 +99,7 @@ const App = () => (
           <Suspense fallback={<RouteFallback />}>
             <RouteTransition>
             <Routes>
+              <Route path="/" element={<RootRedirect />} />
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/builder-start" element={<QuizBuilderStart />} />
@@ -103,6 +119,12 @@ const App = () => (
               <Route path="/poll-results/:pollId" element={<PollResults />} />
               <Route path="/quiz-results/:quizId" element={<QuizResults />} />
               <Route path="/community" element={<Communaute />} />
+              <Route path="/roadmap" element={<Roadmap />} />
+              <Route path="/changelog" element={<Changelog />} />
+              <Route path="/report" element={<Report />} />
+              <Route path="/help" element={<HelpCenter />} />
+              <Route path="/notifications" element={<Notifications />} />
+              <Route path="/history" element={<History />} />
               <Route path="/preview/:quizId" element={<PreviewPage />} />
               <Route path="/quiz/:gameCode" element={<LiveQuizPage />} />
               <Route path="/join/:gameCode" element={<JoinQuiz />} />
@@ -114,14 +136,17 @@ const App = () => (
               <Route path="/exam/:attemptId/results" element={<ExamResults />} />
               <Route path="/exam/:examId/admin" element={<ExamAdmin />} />
               <Route path="/presentation-editor" element={<PresentationEditorPage />} />
+              <Route path="/presentation-audience" element={<PresentationAudience />} />
               <Route path="/tools" element={<ToolsLibrary />} />
               <Route path="/tools/wheel" element={<WheelTool />} />
+              <Route path="/tools/chronometre" element={<ChronometerTool />} />
               <Route path="/admin" element={<Admin />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
             </RouteTransition>
           </Suspense>
+          <FloatingChronometer />
         </BrowserRouter>
         </AuthGate>
       </div>

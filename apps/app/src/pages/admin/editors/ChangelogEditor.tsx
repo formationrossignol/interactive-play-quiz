@@ -30,7 +30,7 @@ export function ChangelogEditor({ open, onOpenChange, initial, onSave }: {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="w-[calc(100vw-48px)] max-w-5xl" style={{ maxHeight: "90vh", overflowY: "auto" }}>
         <DialogHeader><DialogTitle>{initial ? "Éditer" : "Nouvelle"} release</DialogTitle></DialogHeader>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           <Input placeholder="Version (ex. v1.4.0)" value={v.version} onChange={(e) => set("version", e.target.value)} />

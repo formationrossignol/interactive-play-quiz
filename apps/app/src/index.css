@@ -3,6 +3,7 @@
 @import "./theme-innov.css";
 @import "./theme-studio.css";
 @import "./theme-material.css";
+@import "./density.css";
 
 @tailwind base;
 @tailwind components;
@@ -39,7 +40,7 @@
     --input: 37 43% 88%;
     --ring: 258 100% 65%;
 
-    --radius: 1rem;
+    --radius: 0.5rem;
 
     --success: 160 79% 42%;          /* --ap-pres    #15c08a */
     --success-foreground: 0 0% 100%;
@@ -349,91 +350,91 @@
     --sidebar-border: 217 26% 20%;
   }
 
-  /* Thème « Material 3 Expressive » — miroir des tokens --ap-* de
+  /* Thème « Material 3 » — miroir des rôles --md-sys-* de
      theme-material.css pour les composants shadcn. Se combine avec .dark. */
   :root[data-theme="material"] {
-    --background: 12 100% 99%;       /* --ap-paper   #fffbfa */
-    --foreground: 20 16% 11%;        /* --ap-ink     #201a17 */
+    --background: 300 100% 99%;      /* surface #fffbfe */
+    --foreground: 300 5% 12%;        /* on-surface #1d1b20 */
 
     --card: 0 0% 100%;               /* --ap-card    #ffffff */
-    --card-foreground: 20 16% 11%;
+    --card-foreground: 300 5% 12%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 20 16% 11%;
+    --popover: 280 30% 95%;          /* surface-container #f3edf7 */
+    --popover-foreground: 300 5% 12%;
 
-    --primary: 11 100% 61%;          /* --ap-brand   #ff5a36 */
+    --primary: 256 34% 45%;          /* primary #65558f */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 21 41% 92%;         /* --ap-paper-2 #f3e8e2 */
-    --secondary-foreground: 20 16% 11%;
+    --secondary: 270 30% 92%;        /* secondary-container #e8def8 */
+    --secondary-foreground: 260 27% 13%;
 
-    --muted: 21 41% 92%;
-    --muted-foreground: 33 5% 46%;   /* --ap-muted   #7a756f */
+    --muted: 280 30% 95%;            /* surface-container #f3edf7 */
+    --muted-foreground: 270 7% 29%;  /* on-surface-variant #49454f */
 
-    --accent: 18 100% 90%;           /* --ap-brand-soft #ffdbcb */
-    --accent-foreground: 15 82% 30%;
+    --accent: 267 100% 93%;          /* primary-container #eaddff */
+    --accent-foreground: 259 100% 18%;
 
-    --destructive: 11 100% 61%;      /* --ap-quiz    #ff5a36 */
+    --destructive: 4 71% 41%;        /* error #b3261e */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 23 27% 87%;            /* --ap-line    #e7dcd5 */
-    --input: 23 27% 87%;
-    --ring: 11 100% 61%;
+    --border: 278 16% 79%;           /* outline-variant #cac4d0 */
+    --input: 278 16% 79%;
+    --ring: 256 34% 45%;
 
-    --radius: 1.25rem;                /* squircle généreux — geste M3 Expressive */
+    --radius: 0.75rem;
 
-    --success: 164 66% 31%;          /* --ap-success #1b8368 */
+    --success: 100 54% 27%;          /* custom green role #386a20 */
     --success-foreground: 0 0% 100%;
 
-    --warning: 45 100% 43%;          /* --ap-poll    #d9a400 */
+    --warning: 338 20% 41%;          /* tertiary #7d5260 */
     --warning-foreground: 0 0% 100%;
 
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 20 16% 11%;
-    --sidebar-primary: 11 100% 61%;
+    --sidebar-background: 280 30% 97%; /* surface-container-low #f7f2fa */
+    --sidebar-foreground: 300 5% 12%;
+    --sidebar-primary: 256 34% 45%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 21 41% 92%;
-    --sidebar-accent-foreground: 20 16% 11%;
-    --sidebar-border: 23 27% 87%;
-    --sidebar-ring: 11 100% 61%;
+    --sidebar-accent: 270 30% 92%;
+    --sidebar-accent-foreground: 260 27% 13%;
+    --sidebar-border: 278 16% 79%;
+    --sidebar-ring: 256 34% 45%;
 
-    --quiz-accent:      11 100% 61%; /* #ff5a36 */
-    --poll-accent:      45 100% 43%; /* #d9a400 */
-    --flashcard-accent: 339 67% 52%; /* #d6336c */
-    --slide-accent:     166 46% 34%; /* #2e7d6b */
+    --quiz-accent:      4 71% 41%;   /* #b3261e */
+    --poll-accent:      180 100% 21%;/* #006a6a */
+    --flashcard-accent: 338 20% 41%; /* #7d5260 */
+    --slide-accent:     100 54% 27%; /* #386a20 */
   }
 
   .dark[data-theme="material"] {
-    --background: 18 22% 9%;         /* --ap-paper   #1c1512 */
-    --foreground: 22 49% 92%;        /* --ap-ink     #f5e9e2 */
+    --background: 270 14% 8%;        /* surface #141218 */
+    --foreground: 278 16% 90%;       /* on-surface #e6e0e9 */
 
-    --card: 18 21% 12%;              /* --ap-card    #251c18 */
-    --card-foreground: 22 49% 92%;
+    --card: 270 19% 6%;              /* surface-container-lowest #0f0d13 */
+    --card-foreground: 278 16% 90%;
 
-    --popover: 18 21% 12%;
-    --popover-foreground: 22 49% 92%;
+    --popover: 270 10% 14%;          /* surface-container #211f26 */
+    --popover-foreground: 278 16% 90%;
 
-    --primary: 16 100% 74%;          /* --ap-brand   #ff9d78 */
-    --primary-foreground: 16 76% 10%;
+    --primary: 256 100% 87%;         /* primary #d0bcff */
+    --primary-foreground: 259 58% 28%;
 
-    --secondary: 21 20% 14%;         /* --ap-paper-2 #2a211c */
-    --secondary-foreground: 22 49% 92%;
+    --secondary: 270 13% 31%;        /* secondary-container #4a4458 */
+    --secondary-foreground: 270 30% 92%;
 
-    --muted: 21 20% 14%;
-    --muted-foreground: 22 19% 72%;  /* --ap-muted   #c4b3a9 */
+    --muted: 270 10% 14%;
+    --muted-foreground: 278 16% 79%;
 
-    --accent: 16 71% 25%;            /* --ap-brand-soft #6b2a12 */
-    --accent-foreground: 18 100% 90%;
+    --accent: 260 43% 38%;           /* primary-container #4f378b */
+    --accent-foreground: 267 100% 93%;
 
-    --border: 20 21% 20%;            /* --ap-line    #3d2f28 */
-    --input: 20 21% 20%;
-    --ring: 16 100% 74%;
+    --border: 270 7% 29%;            /* outline-variant #49454f */
+    --input: 270 7% 29%;
+    --ring: 256 100% 87%;
 
-    --sidebar-background: 18 21% 12%;
-    --sidebar-foreground: 22 49% 92%;
-    --sidebar-accent: 21 20% 14%;
-    --sidebar-accent-foreground: 22 49% 92%;
-    --sidebar-border: 20 21% 20%;
+    --sidebar-background: 300 8% 12%;
+    --sidebar-foreground: 278 16% 90%;
+    --sidebar-accent: 270 13% 31%;
+    --sidebar-accent-foreground: 270 30% 92%;
+    --sidebar-border: 270 7% 29%;
   }
 
   * {
@@ -452,10 +453,6 @@
   .card-poll      { border-left: 4px solid var(--ap-poll); }
   .card-flashcard { border-left: 4px solid var(--ap-flash); }
   .card-slide     { border-left: 4px solid var(--ap-pres); }
-
-  /* Utility — shadow tokens mapped from Arcade Pop */
-  .shadow-card       { box-shadow: var(--ap-shadow-soft); }
-  .shadow-card-hover { box-shadow: var(--ap-shadow-card); }
 }
 
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -530,3 +527,11 @@
 }
 .prose a { color: var(--ap-brand); text-decoration: underline; }
 .prose p { margin: 0.4em 0; }
+
+/* Les anciennes utilitaires Tailwind très arrondies convergent vers le même
+   rayon léger. `rounded-full` reste réservé aux vrais cercles fonctionnels. */
+.ap-app .rounded-xl,
+.ap-app .rounded-2xl,
+.ap-app .rounded-3xl {
+  border-radius: var(--ap-r-lg) !important;
+}

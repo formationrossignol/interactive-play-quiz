@@ -5,8 +5,9 @@ import { LogOut, Lightbulb, PencilLine, Flag } from "lucide-react";
 import { MultiStepProgress } from "@/components/MultiStepProgress";
 import { QRCodeGenerator } from "@/components/QRCodeGenerator";
 import { AvatarDisplay } from "@/components/BetterAvatars";
-import { BrandMonogram } from "@/components/BrandMonogram";
+import { BrandMonogram } from "ui/BrandMonogram";
 import type { SavedQuiz } from "@/lib/quizStorage";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   ensureSessionState,
   ensureSessionInSupabase,
@@ -21,6 +22,7 @@ import {
   type PollQuestionResult,
   type PollResultSession,
 } from "@/lib/pollResults";
+import { getQuestionLayout, type QuestionLayoutId } from "@/lib/contentLayouts";
 
 interface PollSessionProps {
   poll: SavedQuiz;
@@ -39,6 +41,7 @@ type PollQuestion = {
   minLabel?: string;
   maxLabel?: string;
   image?: string;
+  layout?: QuestionLayoutId;
 };
 
 const POLL_BAR_COLORS = ["#2f7bff", "#15c08a", "#ffb020", "#ff5a4d", "#7048ff", "#0ea5b7"];
@@ -267,7 +270,7 @@ export const PollSession = ({ poll }: PollSessionProps) => {
                   {sessionReady ? (
                     <QRCodeGenerator gameCode={poll.id} joinUrl={joinUrl} compact compactSize={108} />
                   ) : (
-                    <div style={{ width: 108, height: 108, display: "grid", placeItems: "center", color: "var(--ap-muted)", fontSize: 12, fontWeight: 700 }}>Chargement…</div>
+                    <Skeleton className="h-[108px] w-[108px] rounded-lg" />
                   )}
                 </div>
               </div>
@@ -298,7 +301,7 @@ export const PollSession = ({ poll }: PollSessionProps) => {
           <section aria-label="Participants connectés">
             <div style={{ display: "flex", alignItems: "baseline", gap: 12, margin: "4px 2px 16px" }}>
               <h2 style={{ fontFamily: "var(--ap-font-display)", fontWeight: 600, fontSize: 22, margin: 0 }}>Participants</h2>
-              <span style={{ fontFamily: "var(--ap-font-mono)", fontWeight: 700, fontSize: 15, fontVariantNumeric: "tabular-nums", color: "var(--ap-poll-deep)", background: "var(--ap-poll-soft)", border: "2px solid rgba(47,123,255,.4)", borderRadius: 999, padding: "4px 13px" }} role="status" aria-live="polite">
+              <span style={{ fontFamily: "var(--ap-font-mono)", fontWeight: 700, fontSize: 15, fontVariantNumeric: "tabular-nums", color: "var(--ap-poll-deep)", background: "var(--ap-poll-soft)", border: "2px solid rgba(47,123,255,.4)", borderRadius: "var(--ap-r-sm)", padding: "4px 13px" }} role="status" aria-live="polite">
                 {players.length}
               </span>
             </div>
@@ -343,12 +346,17 @@ export const PollSession = ({ poll }: PollSessionProps) => {
   const maxCount = Math.max(...counts, 1);
   const texts = Array.from(textResponsesRef.current.get(currentIndex)?.values() ?? []);
   const answeredCount = currentQuestion.type === "open-text" ? texts.length : totalVotes;
+  const questionLayout = getQuestionLayout(currentQuestion.layout ?? (currentQuestion.image ? "media-top" : "standard"));
+  const sideBySide = currentQuestion.image && (
+    questionLayout.mediaPosition === "left" || questionLayout.mediaPosition === "right"
+  );
+  const backgroundMedia = Boolean(currentQuestion.image && questionLayout.mediaPosition === "background");
 
   return (
     <div style={{ ...pageSt, paddingBottom: 110 }}>
       {/* Topbar */}
       <div style={{ ...topbarSt, position: "sticky", top: 0, zIndex: 20, background: "var(--ap-card)", borderBottom: "var(--ap-border-w) solid var(--ap-line)" }}>
-        <span style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--ap-poll-deep)", background: "var(--ap-poll-soft)", border: "2px solid rgba(47,123,255,.35)", padding: "5px 13px", borderRadius: 999 }}>
+        <span style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--ap-poll-deep)", background: "var(--ap-poll-soft)", border: "2px solid rgba(47,123,255,.35)", padding: "5px 13px", borderRadius: "var(--ap-r-sm)" }}>
           📊 Sondage en direct
         </span>
         <span style={{ fontWeight: 800, fontSize: 14, color: "var(--ap-muted)" }}>
@@ -363,7 +371,7 @@ export const PollSession = ({ poll }: PollSessionProps) => {
             fontFamily: "var(--ap-font-mono)", fontWeight: 700, fontSize: 14, fontVariantNumeric: "tabular-nums",
             color: answeredCount > 0 && answeredCount >= players.length && players.length > 0 ? "var(--ap-pres-deep)" : "var(--ap-ink)",
             background: answeredCount > 0 && answeredCount >= players.length && players.length > 0 ? "var(--ap-pres-soft)" : "var(--ap-paper-2)",
-            border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: 999, padding: "5px 13px",
+            border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-sm)", padding: "5px 13px",
           }}
         >
           <PencilLine style={{ width:14, height:14, display:"inline", verticalAlign:"-2px", marginRight:6 }} /> {answeredCount}<span style={{ color: "var(--ap-muted)" }}>/{Math.max(players.length, answeredCount)}</span> réponse{answeredCount > 1 ? "s" : ""}
@@ -375,14 +383,59 @@ export const PollSession = ({ poll }: PollSessionProps) => {
 
         {/* Question card */}
         <div className="ap-card" style={{ padding: "28px 28px 24px" }}>
-          <h1 style={{ fontFamily: "var(--ap-font-display)", fontWeight: 600, fontSize: "clamp(20px,3vw,28px)", lineHeight: 1.25, margin: "0 0 6px", textAlign: "center" }}>
-            {currentQuestion?.question || `Question ${currentIndex + 1}`}
-          </h1>
-          {currentQuestion?.image && (
-            <div style={{ margin: "14px auto 4px", maxWidth: 480, overflow: "hidden", borderRadius: "var(--ap-r-md)", border: "var(--ap-border-w) solid var(--ap-line)" }}>
-              <img src={currentQuestion.image} alt="Illustration" style={{ width: "100%", height: 220, objectFit: "cover", display: "block" }} />
-            </div>
-          )}
+          <div
+            style={{
+              position: "relative",
+              overflow: "hidden",
+              borderRadius: backgroundMedia ? "var(--ap-r-lg)" : undefined,
+              minHeight: backgroundMedia ? 260 : undefined,
+              display: "flex",
+              flexDirection: sideBySide
+                ? (questionLayout.mediaPosition === "right" ? "row-reverse" : "row")
+                : "column",
+              alignItems: "stretch",
+              gap: sideBySide ? 22 : 0,
+              background: backgroundMedia ? "var(--ap-ink)" : undefined,
+            }}
+          >
+            {currentQuestion?.image && questionLayout.mediaPosition !== "none" && (
+              <img
+                src={currentQuestion.image}
+                alt="Illustration"
+                style={{
+                  position: backgroundMedia ? "absolute" : "relative",
+                  inset: backgroundMedia ? 0 : undefined,
+                  width: sideBySide ? "45%" : "100%",
+                  height: backgroundMedia ? "100%" : sideBySide ? 210 : 220,
+                  objectFit: "cover",
+                  display: "block",
+                  borderRadius: backgroundMedia ? undefined : "var(--ap-r-md)",
+                }}
+              />
+            )}
+            {backgroundMedia && (
+              <span aria-hidden="true" style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(20,15,35,.12), rgba(20,15,35,.82))" }} />
+            )}
+            <h1 style={{
+              position: "relative",
+              zIndex: 1,
+              flex: 1,
+              display: "flex",
+              alignItems: backgroundMedia ? "flex-end" : "center",
+              justifyContent: "center",
+              fontFamily: "var(--ap-font-display)",
+              fontWeight: 600,
+              fontSize: "clamp(20px,3vw,28px)",
+              lineHeight: 1.25,
+              margin: 0,
+              padding: backgroundMedia ? 28 : sideBySide ? "18px 4px" : "0 0 14px",
+              textAlign: "center",
+              color: backgroundMedia ? "white" : "var(--ap-ink)",
+              textShadow: backgroundMedia ? "0 2px 14px rgba(0,0,0,.45)" : undefined,
+            }}>
+              {currentQuestion?.question || `Question ${currentIndex + 1}`}
+            </h1>
+          </div>
 
           <div style={{ marginTop: 22 }}>
             {options.length > 0 ? (
@@ -492,7 +545,7 @@ const topbarSt: React.CSSProperties = {
 };
 
 const logoSt: React.CSSProperties = {
-  width: 36, height: 36, borderRadius: 12, background: "var(--ap-poll)",
+  width: 36, height: 36, borderRadius: "var(--ap-r-md)", background: "var(--ap-poll)",
   display: "grid", placeItems: "center", boxShadow: "0 4px 0 var(--ap-poll-deep)",
   transform: "rotate(-6deg)", flexShrink: 0,
 };
@@ -501,7 +554,7 @@ const quitBtnSt: React.CSSProperties = {
   display: "inline-flex", alignItems: "center", gap: 8,
   fontWeight: 800, fontSize: 13, color: "var(--ap-muted)", cursor: "pointer",
   background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)",
-  borderRadius: 999, padding: "8px 15px", boxShadow: "0 3px 0 var(--ap-line)",
+  borderRadius: "var(--ap-r-sm)", padding: "8px 15px", boxShadow: "0 3px 0 var(--ap-line)",
   fontFamily: "var(--ap-font-body)",
 };
 

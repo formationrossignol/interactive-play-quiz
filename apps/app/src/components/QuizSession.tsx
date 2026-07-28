@@ -6,7 +6,20 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Users, Clock, Trophy, Settings, Download, LogOut, Flag, Gamepad2, PencilLine } from "lucide-react";
+import {
+  Braces,
+  ChartNoAxesColumnIncreasing,
+  Clock,
+  FileSpreadsheet,
+  FileText,
+  Flag,
+  Gamepad2,
+  LogOut,
+  PencilLine,
+  Settings,
+  Trophy,
+  Users,
+} from "lucide-react";
 import { QRCodeGenerator } from "./QRCodeGenerator";
 import { WordCloudQuestion } from "./WordCloudQuestion";
 import { RankingQuestion } from "./RankingQuestion";
@@ -17,7 +30,7 @@ import { ExitQuizDialog } from "./ExitQuizDialog";
 import { CircularTimer } from "./CircularTimer";
 import { QuizSessionAnswerDistribution } from "./QuizSession_AnswerDistribution";
 import { RaceLeaderboard } from "./RaceLeaderboard";
-import { BrandMonogram } from "./BrandMonogram";
+import { BrandMonogram } from "ui/BrandMonogram";
 import { Fireworks } from "./Fireworks";
 import { TransitionTimer, CountdownSplash } from "./TransitionTimer";
 import { AvatarDisplay, getAvatarRender } from "./BetterAvatars";
@@ -38,13 +51,21 @@ import {
   pushControlToSupabase,
   appendSessionHistory,
   readSessionHistory,
+  upsertPlayerInSession,
+  submitAnswerToServer,
   DEFAULT_SESSION_CONTROL,
   type SharedPlayer,
   type SessionControl,
   type SessionRun,
 } from "@/lib/sessionState";
+import { QuestionAnswerPanel } from "./QuestionAnswerPanel";
+import { recordQuizAttempt } from "@/lib/quizAttempts";
 import { supabase, supabaseUrl, supabaseKey } from "@/lib/supabase";
 import { FONT_STACKS, HOST_ANSWER_STYLES, MILLIONAIRE_ANSWER_STYLES } from "@/lib/answerVisuals";
+import { ExportMenu } from "./ExportMenu";
+import { Skeleton } from "@/components/ui/skeleton";
+import { exportLiveResults, type LiveResultsExportFormat } from "@/lib/liveResultsExport";
+import { getQuestionLayout, type QuestionLayoutId } from "@/lib/contentLayouts";
 
 interface Player {
   id: string;
@@ -70,7 +91,74 @@ interface QuizQuestion {
   points: number;
   items?: Array<{ id: string; text: string; correctPosition: number }>;
   image?: string;
+  layout?: QuestionLayoutId;
   [key: string]: unknown;
+}
+
+function QuestionMediaLayout({
+  question,
+  image,
+  layoutId,
+}: {
+  question: string;
+  image?: string;
+  layoutId?: QuestionLayoutId;
+}) {
+  const layout = getQuestionLayout(layoutId);
+  const sideBySide = Boolean(image && (layout.mediaPosition === "left" || layout.mediaPosition === "right"));
+  const background = Boolean(image && layout.mediaPosition === "background");
+
+  return (
+    <div
+      className="w-full max-w-4xl overflow-hidden"
+      style={{
+        position: "relative",
+        display: "flex",
+        flexDirection: sideBySide
+          ? (layout.mediaPosition === "right" ? "row-reverse" : "row")
+          : "column",
+        alignItems: "stretch",
+        gap: sideBySide ? 24 : 0,
+        minHeight: background ? 300 : undefined,
+        borderRadius: background ? 28 : undefined,
+        background: background ? "rgba(0,0,0,.35)" : undefined,
+      }}
+    >
+      {image && layout.mediaPosition !== "none" && (
+        <img
+          src={image}
+          alt={question}
+          style={{
+            position: background ? "absolute" : "relative",
+            inset: background ? 0 : undefined,
+            width: sideBySide ? "46%" : "100%",
+            height: background ? "100%" : sideBySide ? 260 : 220,
+            objectFit: "cover",
+            borderRadius: background ? undefined : 22,
+            border: background ? undefined : "1px solid rgba(255,255,255,.12)",
+            boxShadow: background ? undefined : "0 14px 38px rgba(0,0,0,.22)",
+          }}
+        />
+      )}
+      {background && (
+        <span aria-hidden="true" style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(0,0,0,.08), rgba(0,0,0,.82))" }} />
+      )}
+      <h1
+        className="relative z-10 flex flex-1 items-center justify-center text-center text-white drop-shadow-2xl leading-snug"
+        style={{
+          fontFamily: "var(--ap-font-display)",
+          fontSize: "clamp(1.4rem, 3.5vw, 2.6rem)",
+          fontWeight: 700,
+          padding: background ? 36 : sideBySide ? "24px 8px" : "20px 0 0",
+          margin: 0,
+          alignItems: background ? "flex-end" : "center",
+          textShadow: "0 2px 16px rgba(0,0,0,0.4)",
+        }}
+      >
+        {question}
+      </h1>
+    </div>
+  );
 }
 
 interface QuizSession {
@@ -87,11 +175,17 @@ interface QuizSession {
   font?: string;
   transitionTime?: number;
   ambianceId?: string;
+  liveReactionsEnabled?: boolean;
+  endChatEnabled?: boolean;
 }
 
 interface QuizSessionProps {
   quiz: QuizSession;
   isHost?: boolean;
+  /** Solo play: the user is both host and sole player on one merged screen —
+   *  no waiting room, no leaderboard between questions, answers submitted
+   *  directly via QuestionAnswerPanel instead of a second joined device. */
+  isSolo?: boolean;
   onExitRequest?: () => void;
   onExitHandlerReady?: (handler: () => void) => void;
 }
@@ -139,9 +233,19 @@ const PlayerSidebarItem = memo(({ player, answered, offline, onKick }: PlayerSid
   </div>
 ));
 
-export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandlerReady }: QuizSessionProps) => {
+export const QuizSession = ({ quiz, isHost = false, isSolo = false, onExitRequest, onExitHandlerReady }: QuizSessionProps) => {
+  const liveReactionsEnabled = quiz.liveReactionsEnabled ?? true;
+  const endChatEnabled = quiz.endChatEnabled ?? true;
   const [players, setPlayers] = useState<Player[]>([]);
   const [sessionReady, setSessionReady] = useState(false);
+
+  // Solo play: the host device is also the only player. selfPlayerId is stable
+  // for the lifetime of the component so repeated answers/polls resolve to the
+  // same session_state.players row.
+  const selfPlayerIdRef = useRef<string>(getCurrentUser()?.id ?? crypto.randomUUID());
+  const [soloSelectedAnswer, setSoloSelectedAnswer] = useState<number | string | null>(null);
+  const [soloHasAnswered, setSoloHasAnswered] = useState(false);
+  const soloAttemptSavedRef = useRef(false);
 
   const [gameState, setGameState] = useState<'waiting' | 'transition' | 'question-intro' | 'question' | 'answer-distribution' | 'leaderboard' | 'final'>('waiting');
 
@@ -211,6 +315,10 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
     else if (gameState === 'final') audio.playSfx('podium');
   }, [gameState, audio]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  useEffect(() => {
+    setSoloSelectedAnswer(null);
+    setSoloHasAnswered(false);
+  }, [currentQuestionIndex]);
   const [showSettings, setShowSettings] = useState(false);
   const [sessionHistory, setSessionHistory] = useState<SessionRun[]>([]);
   const [timeLeft, setTimeLeft] = useState(0);
@@ -245,6 +353,26 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
     t.push(setTimeout(() => setRevealPhase('stats'),   5100));
     return () => t.forEach(clearTimeout);
   }, [gameState]);
+
+  // Solo: save the finished run to the user's history once, when the final
+  // screen is reached. Reads the score straight from players (already kept
+  // in sync with Supabase by the polling effect above) rather than tracking
+  // a second, parallel score locally.
+  useEffect(() => {
+    if (!isSolo || gameState !== 'final' || soloAttemptSavedRef.current) return;
+    const user = getCurrentUser();
+    if (!user) return;
+    soloAttemptSavedRef.current = true;
+    const self = players.find((p) => p.id === selfPlayerIdRef.current);
+    void recordQuizAttempt({
+      userId: user.id,
+      quizId: quiz.id,
+      quizTitle: quiz.title,
+      score: self?.score ?? 0,
+      totalQuestions: quiz.questions.length,
+      correctAnswers: self?.correctAnswers ?? 0,
+    }).catch((err) => console.error('[recordQuizAttempt error]', err));
+  }, [isSolo, gameState, players, quiz.id, quiz.title, quiz.questions.length]);
 
   // Lobby join toast
   const [lastJoined, setLastJoined] = useState<{ name: string; avatar: string } | null>(null);
@@ -314,6 +442,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
   const fontFamily = quiz.font ? FONT_STACKS[quiz.font] : undefined;
 
   const questionImage = typeof currentQuestion?.image === "string" ? currentQuestion.image : undefined;
+  const questionLayout = currentQuestion?.layout ?? (questionImage ? "media-top" : "standard");
   const headerImage = typeof quiz.headerImage === "string" ? quiz.headerImage : undefined;
 
   const ThemedBackground = ({ children, className }: { children: ReactNode; className?: string }) => (
@@ -432,10 +561,23 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
         // and private (session_quiz_answers, answer key only submit-answer reads).
         const ok = await createLiveSession(
           quiz.gameCode, quiz.title, quiz.questions, quiz.ambianceId,
-          AUDIENCE_CAP[getPlan(getCurrentUser())]
+          AUDIENCE_CAP[getPlan(getCurrentUser())],
+          liveReactionsEnabled,
+          endChatEnabled,
         );
         if (!ok) {
           toast.error('Erreur Supabase lors de la réinitialisation. Vérifiez la console.');
+        }
+        if (ok && isSolo) {
+          const user = getCurrentUser();
+          upsertPlayerInSession(quiz.gameCode, {
+            id: selfPlayerIdRef.current,
+            name: user?.username ?? 'Vous',
+            avatar: '🎮',
+            score: 0,
+            correctAnswers: 0,
+            joinedAt: new Date().toISOString(),
+          }, true);
         }
       } else {
         syncFromStorage();
@@ -615,7 +757,9 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
 
   // Poll for player reactions (waiting + final screens, host-only)
   useEffect(() => {
-    if (!isHost || (gameState !== 'final' && gameState !== 'waiting')) return;
+    const lobbyReactionsActive = gameState === 'waiting' && liveReactionsEnabled;
+    const finalInteractionsActive = gameState === 'final' && (liveReactionsEnabled || endChatEnabled);
+    if (!isHost || (!lobbyReactionsActive && !finalInteractionsActive)) return;
     seenReactionKeysRef.current = new Set();
 
     const poll = async () => {
@@ -636,6 +780,8 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
 
         const reactionText = p.lastReaction!.comment || p.lastReaction!.emoji;
         const isEmoji = !p.lastReaction!.comment;
+        if (isEmoji && !liveReactionsEnabled) return;
+        if (!isEmoji && (!endChatEnabled || gameState !== 'final')) return;
 
         // Spawn floating bubble with avatar + name + content
         const floatId = `${Date.now()}-${Math.random()}`;
@@ -663,7 +809,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
     poll();
     const interval = setInterval(poll, 2000);
     return () => clearInterval(interval);
-  }, [isHost, gameState, quiz.gameCode]);
+  }, [isHost, gameState, quiz.gameCode, liveReactionsEnabled, endChatEnabled]);
 
   // Update session stats
   useEffect(() => {
@@ -676,6 +822,18 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
   }, [players, currentQuestionIndex, quiz.createdAt]);
 
   const QUESTION_READING_SECS = 3;
+
+  /** Solo answering: the host device submits its own answer directly to the
+   *  same submit-answer edge function a joined player's device would call.
+   *  The result updates session_state.players server-side; the host's own
+   *  polling effect (above) picks it up and the existing "all answered"
+   *  auto-advance fires normally — no player-count special-casing needed. */
+  const submitSoloAnswer = useCallback((answer: number | string) => {
+    if (soloHasAnswered) return;
+    setSoloHasAnswered(true);
+    setSoloSelectedAnswer(answer);
+    void submitAnswerToServer(quiz.gameCode, selfPlayerIdRef.current, currentQuestionIndex, answer);
+  }, [soloHasAnswered, quiz.gameCode, currentQuestionIndex]);
 
   const startQuiz = () => {
     if (hasStartedRef.current) return;
@@ -850,7 +1008,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
     reactionsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [reactionComments]);
 
-  const exportResults = () => {
+  const exportResults = async (format: LiveResultsExportFormat) => {
     const results = {
       quiz: quiz.title,
       gameCode: quiz.gameCode,
@@ -863,14 +1021,13 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
       })),
       stats: sessionStats
     };
-
-    const blob = new Blob([JSON.stringify(results, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `quiz-results-${quiz.gameCode}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
+    try {
+      await exportLiveResults(format, results);
+      toast.success(`Export ${format} téléchargé`);
+    } catch (error) {
+      console.error(`[QuizSession] export ${format} failed`, error);
+      toast.error(`Impossible de générer l'export ${format}`);
+    }
   };
 
   if (gameState === 'waiting') {
@@ -888,6 +1045,36 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
       }
       setTimeout(() => { setShowCountdown(false); startQuiz(); }, 3 * 900 + 800);
     };
+
+    // Solo: no code to share, no one to wait for — a single "ready" screen
+    // that still runs through the same 3-2-1 countdown (and unlocks audio via
+    // the same user gesture) as group hosting, then falls into the normal
+    // question-intro/question flow untouched.
+    if (isSolo) {
+      return (
+        <div
+          className="min-h-screen flex flex-col items-center justify-center text-center p-6"
+          style={{ background: "var(--ap-brand)", color: "#fff" }}
+        >
+          {showCountdown ? (
+            <CountdownSplash />
+          ) : (
+            <>
+              <BrandMonogram size={48} />
+              <h1 className="mt-6 mb-2" style={{ fontFamily: "var(--ap-font-display)", fontSize: "clamp(1.5rem,4vw,2.2rem)", fontWeight: 700 }}>
+                {quiz.title}
+              </h1>
+              <p className="mb-8" style={{ color: "rgba(255,255,255,0.75)" }}>
+                {quiz.questions.length} question{quiz.questions.length > 1 ? "s" : ""} · solo
+              </p>
+              <Button variant="hero" size="lg" onClick={handleStart}>
+                Jouer
+              </Button>
+            </>
+          )}
+        </div>
+      );
+    }
 
     const codeLen = quiz.gameCode.length;
     const digitSize = codeLen > 8 ? 26 : codeLen > 6 ? 34 : 44;
@@ -926,9 +1113,9 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
         `}</style>
 
         {/* Floating reactions */}
-        {floatingReactions.map((r) => (
+        {liveReactionsEnabled && floatingReactions.map((r) => (
           <div key={r.id} className="reaction-float-lobby" style={{ left:`${r.x}%`, bottom:'15%' }}>
-            <div style={{ display:'flex',alignItems:'center',gap:6,background:'rgba(0,0,0,.78)',backdropFilter:'blur(10px)',border:'1.5px solid rgba(255,255,255,.2)',borderRadius:999,padding:'6px 14px',boxShadow:'0 4px 20px rgba(0,0,0,.3)' }}>
+            <div style={{ display:'flex',alignItems:'center',gap:6,background:'rgba(0,0,0,.78)',backdropFilter:'blur(10px)',border:'1.5px solid rgba(255,255,255,.2)',borderRadius:"var(--ap-r-sm)",padding:'6px 14px',boxShadow:'0 4px 20px rgba(0,0,0,.3)' }}>
               <div style={{ flexShrink:0 }}><AvatarDisplay emoji={r.avatar} size="xs" /></div>
               <span style={{ color:'#fff',fontSize:11,fontWeight:700,flexShrink:0,fontFamily:'var(--ap-font-body)' }}>{r.playerName}</span>
               <span style={{ fontSize:r.isEmoji?'1.4rem':'12px',color:'rgba(255,255,255,.9)',fontFamily:'var(--ap-font-body)' }}>{r.text}</span>
@@ -941,7 +1128,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
           position:'fixed', top:18, left:'50%',
           transform: toastVisible ? 'translate(-50%,0)' : 'translate(-50%,-70px)',
           background:'var(--ap-ink)', color:'#fff', fontWeight:800, fontSize:14,
-          padding:'11px 20px', borderRadius:999,
+          padding:'11px 20px', borderRadius:"var(--ap-r-sm)",
           boxShadow:'0 4px 0 #16102a,0 16px 34px rgba(36,27,58,.3)',
           display:'flex', alignItems:'center', gap:9, zIndex:40,
           transition:'transform .4s cubic-bezier(.2,.7,.3,1.3)',
@@ -954,17 +1141,17 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
         {/* Topbar */}
         <div style={{ position:'relative',zIndex:2,display:'flex',alignItems:'center',gap:14,padding:'20px 32px',maxWidth:1240,margin:'0 auto',width:'100%' }}>
           <span style={{ display:'flex',alignItems:'center',gap:10,color:'#fff',fontFamily:'var(--ap-font-display)',fontWeight:600,fontSize:20 }}>
-            <span style={{ width:40,height:40,borderRadius:13,background:'rgba(255,255,255,.16)',border:'2px solid rgba(255,255,255,.35)',display:'grid',placeItems:'center',flexShrink:0 }} aria-hidden="true">
+            <span style={{ width:40,height:40,borderRadius:"var(--ap-r-md)",background:'rgba(255,255,255,.16)',border:'2px solid rgba(255,255,255,.35)',display:'grid',placeItems:'center',flexShrink:0 }} aria-hidden="true">
               <BrandMonogram size={18} diamondColor="#b4a9ff" />
             </span>
             <span style={{ fontFamily: "'Sora Variable', 'Sora', system-ui, sans-serif", letterSpacing: "-0.035em" }}>brivia</span>
           </span>
-          <span style={{ fontWeight:800,fontSize:14,color:'rgba(255,255,255,.85)',background:'rgba(255,255,255,.14)',border:'2px solid rgba(255,255,255,.25)',borderRadius:999,padding:'6px 16px' }}>
+          <span style={{ fontWeight:800,fontSize:14,color:'rgba(255,255,255,.85)',background:'rgba(255,255,255,.14)',border:'2px solid rgba(255,255,255,.25)',borderRadius:"var(--ap-r-sm)",padding:'6px 16px' }}>
             {quiz.title}
           </span>
           <div style={{ flex:1 }} />
           {(() => {
-            const toolBase: React.CSSProperties = { width:40,height:40,borderRadius:13,border:'2px solid rgba(255,255,255,.3)',color:'#fff',display:'grid',placeItems:'center',cursor:'pointer',flexShrink:0 };
+            const toolBase: React.CSSProperties = { width:40,height:40,borderRadius:"var(--ap-r-md)",border:'2px solid rgba(255,255,255,.3)',color:'#fff',display:'grid',placeItems:'center',cursor:'pointer',flexShrink:0 };
             const toolOff: React.CSSProperties = { ...toolBase, background:'rgba(255,255,255,.14)' };
             const toolOn: React.CSSProperties = { ...toolBase, background:'rgba(255,255,255,.9)', color:'var(--ap-brand-deep)', borderColor:'#fff' };
             return (
@@ -1011,7 +1198,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
                 {isHost && (
                   <button
                     onClick={() => onExitRequest?.()}
-                    style={{ display:'inline-flex',alignItems:'center',gap:8,fontWeight:800,fontSize:13,color:'#fff',cursor:'pointer',background:'rgba(255,255,255,.14)',border:'2px solid rgba(255,255,255,.3)',borderRadius:999,padding:'9px 16px' }}
+                    style={{ display:'inline-flex',alignItems:'center',gap:8,fontWeight:800,fontSize:13,color:'#fff',cursor:'pointer',background:'rgba(255,255,255,.14)',border:'2px solid rgba(255,255,255,.3)',borderRadius:"var(--ap-r-sm)",padding:'9px 16px' }}
                   >
                     <LogOut style={{ width:14, height:14 }} /> Quitter
                   </button>
@@ -1037,7 +1224,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
             {/* Big code digit boxes */}
             <div style={{ margin:'18px auto 8px',display:'flex',justifyContent:'center',gap:10,flexWrap:'wrap' }} aria-label={`Code : ${quiz.gameCode}`}>
               {quiz.gameCode.split('').map((ch, i) => (
-                <span key={i} style={{ fontFamily:'var(--ap-font-mono)',fontWeight:700,fontSize:digitSize,lineHeight:1,color:'var(--ap-ink)',background:'var(--ap-paper)',border:'var(--ap-border-w) solid var(--ap-line)',borderRadius:16,padding:'14px 10px',minWidth:digitBox,boxShadow:'0 4px 0 var(--ap-line)',fontVariantNumeric:'tabular-nums',animation:'pin-breathe 3.2s ease-in-out infinite' }}>{ch}</span>
+                <span key={i} style={{ fontFamily:'var(--ap-font-mono)',fontWeight:700,fontSize:digitSize,lineHeight:1,color:'var(--ap-ink)',background:'var(--ap-paper)',border:'var(--ap-border-w) solid var(--ap-line)',borderRadius:"var(--ap-r-md)",padding:'14px 10px',minWidth:digitBox,boxShadow:'0 4px 0 var(--ap-line)',fontVariantNumeric:'tabular-nums',animation:'pin-breathe 3.2s ease-in-out infinite' }}>{ch}</span>
               ))}
             </div>
             <p style={{ color:'var(--ap-muted)',fontWeight:800,fontSize:13,margin:'0 0 6px' }}>puis saisissez ce code</p>
@@ -1080,11 +1267,11 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
                   </div>
                 )}
               </div>
-              <div style={{ width:150,height:150,borderRadius:18,border:'var(--ap-border-w) solid var(--ap-line)',background:'#fff',boxShadow:'0 4px 0 var(--ap-line)',display:'grid',placeItems:'center' }}>
+              <div style={{ width:150,height:150,borderRadius:"var(--ap-r-md)",border:'var(--ap-border-w) solid var(--ap-line)',background:'#fff',boxShadow:'0 4px 0 var(--ap-line)',display:'grid',placeItems:'center' }}>
                 {sessionReady ? (
                   <QRCodeGenerator gameCode={quiz.gameCode} joinUrl={joinUrl} compact compactSize={128} />
                 ) : (
-                  <span style={{ color:'var(--ap-muted)',fontSize:12,fontWeight:700 }}>Chargement…</span>
+                  <Skeleton className="h-32 w-32 rounded-xl" />
                 )}
               </div>
             </div>
@@ -1096,7 +1283,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
               <div style={{ display:'flex',alignItems:'center',gap:10,color:'#fff',marginBottom:14 }}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                 <h3 style={{ fontFamily:'var(--ap-font-display)',fontWeight:600,fontSize:17,margin:0 }}>Joueurs</h3>
-                <span style={{ marginLeft:'auto',fontFamily:'var(--ap-font-mono)',fontWeight:700,fontSize:15,color:'#fff',background:'rgba(255,255,255,.18)',border:'2px solid rgba(255,255,255,.3)',borderRadius:999,padding:'4px 13px',fontVariantNumeric:'tabular-nums',animation: visiblePlayers.length > prevPlayersLenRef.current ? 'lobby-bump .35s cubic-bezier(.2,.7,.3,1.3)' : undefined }} role="status" aria-live="polite">
+                <span style={{ marginLeft:'auto',fontFamily:'var(--ap-font-mono)',fontWeight:700,fontSize:15,color:'#fff',background:'rgba(255,255,255,.18)',border:'2px solid rgba(255,255,255,.3)',borderRadius:"var(--ap-r-sm)",padding:'4px 13px',fontVariantNumeric:'tabular-nums',animation: visiblePlayers.length > prevPlayersLenRef.current ? 'lobby-bump .35s cubic-bezier(.2,.7,.3,1.3)' : undefined }} role="status" aria-live="polite">
                   {visiblePlayers.length}
                 </span>
               </div>
@@ -1105,7 +1292,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
                   <span
                     key={player.id}
                     className="pchip"
-                    style={{ display:'flex',alignItems:'center',gap:7,background:'#fff',borderRadius:999,padding:'6px 13px 6px 7px',fontWeight:800,fontSize:13,color:'var(--ap-ink)',boxShadow:'0 3px 0 rgba(20,10,60,.3)' }}
+                    style={{ display:'flex',alignItems:'center',gap:7,background:'#fff',borderRadius:"var(--ap-r-sm)",padding:'6px 13px 6px 7px',fontWeight:800,fontSize:13,color:'var(--ap-ink)',boxShadow:'0 3px 0 rgba(20,10,60,.3)' }}
                   >
                     {isHost && (
                       <button
@@ -1145,7 +1332,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
                 style={{
                   display:'inline-flex',alignItems:'center',gap:9,
                   fontFamily:'var(--ap-font-body)',fontWeight:800,fontSize:16,
-                  padding:'14px 30px',borderRadius:999,border:'none',cursor: visiblePlayers.length === 0 ? 'not-allowed' : 'pointer',
+                  padding:'14px 30px',borderRadius:"var(--ap-r-sm)",border:'none',cursor: visiblePlayers.length === 0 ? 'not-allowed' : 'pointer',
                   color:'#fff',
                   background: visiblePlayers.length === 0 ? 'var(--ap-muted)' : 'var(--ap-pres-deep)',
                   boxShadow: visiblePlayers.length === 0 ? 'none' : '0 5px 0 #076346',
@@ -1154,7 +1341,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
                 }}
               >
                 Lancer la partie
-                <span style={{ fontFamily:'var(--ap-font-mono)',fontSize:13,fontVariantNumeric:'tabular-nums',background:'rgba(255,255,255,.2)',borderRadius:999,padding:'2px 9px' }}>
+                <span style={{ fontFamily:'var(--ap-font-mono)',fontSize:13,fontVariantNumeric:'tabular-nums',background:'rgba(255,255,255,.2)',borderRadius:"var(--ap-r-sm)",padding:'2px 9px' }}>
                   {visiblePlayers.length} joueur{visiblePlayers.length > 1 ? 's' : ''}
                 </span>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 4l14 8-14 8z"/></svg>
@@ -1224,7 +1411,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
         </div>
 
         {/* Question image */}
-        {questionImage && (
+        {questionImage && isMillionnaire && (
           <div className="overflow-hidden rounded-2xl border border-white/10 bg-black/30 shadow-xl max-h-52 w-full max-w-3xl">
             <img src={questionImage} alt={currentQuestion.question} className="h-full w-full object-cover" />
           </div>
@@ -1232,18 +1419,13 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
 
         {/* Question text */}
         {isMillionnaire ? (
-          <div style={{ background: 'rgba(6,10,35,0.9)', border: '1.5px solid rgba(200,160,0,0.6)', borderRadius: 40, padding: '18px 36px', maxWidth: 720, width: '100%', boxShadow: '0 0 28px rgba(200,160,0,0.18)' }}>
+          <div style={{ background: 'rgba(6,10,35,0.9)', border: '1.5px solid rgba(200,160,0,0.6)', borderRadius: "var(--ap-r-md)", padding: '18px 36px', maxWidth: 720, width: '100%', boxShadow: '0 0 28px rgba(200,160,0,0.18)' }}>
             <h1 className="text-center text-white leading-snug m-0" style={{ fontFamily: 'var(--ap-font-display)', fontSize: 'clamp(1.3rem,3.2vw,2.4rem)', fontWeight: 700 }}>
               {currentQuestion.question}
             </h1>
           </div>
         ) : (
-          <h1
-            className="text-center text-white drop-shadow-2xl max-w-4xl leading-snug"
-            style={{ fontFamily: 'var(--ap-font-display)', fontSize: 'clamp(1.4rem, 3.5vw, 2.6rem)', fontWeight: 700, textShadow: '0 2px 16px rgba(0,0,0,0.4)' }}
-          >
-            {currentQuestion.question}
-          </h1>
+          <QuestionMediaLayout question={currentQuestion.question} image={questionImage} layoutId={questionLayout} />
         )}
 
         {/* Pulsing "answers coming" indicator */}
@@ -1251,7 +1433,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
           display: 'flex', alignItems: 'center', gap: 8,
           background: 'rgba(255,255,255,0.1)',
           border: '1px solid rgba(255,255,255,0.2)',
-          borderRadius: 999,
+          borderRadius: "var(--ap-r-sm)",
           padding: '8px 20px',
           fontFamily: 'var(--ap-font-body)',
           fontSize: '0.85rem',
@@ -1317,7 +1499,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
                   title={autoAdvance ? 'Auto-avance activé' : 'Auto-avance désactivé'}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 5,
-                    padding: '5px 10px', borderRadius: 999,
+                    padding: '5px 10px', borderRadius: "var(--ap-r-sm)",
                     border: `1.5px solid ${autoAdvance ? 'rgba(39,174,96,0.6)' : 'rgba(255,255,255,0.2)'}`,
                     background: autoAdvance ? 'rgba(39,174,96,0.2)' : 'rgba(255,255,255,0.08)',
                     color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer',
@@ -1365,7 +1547,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
               </div>
 
               {/* Question image */}
-              {questionImage && (
+              {questionImage && isMillionnaire && (
                 <div className="overflow-hidden rounded-2xl border border-white/10 bg-black/30 shadow-xl max-h-48 w-full max-w-3xl">
                   <img
                     src={questionImage}
@@ -1377,22 +1559,18 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
 
               {/* Question text */}
               {isMillionnaire ? (
-                <div style={{ background: 'rgba(6,10,35,0.9)', border: '1.5px solid rgba(200,160,0,0.6)', borderRadius: 40, padding: '18px 36px', maxWidth: 720, width: '100%', boxShadow: '0 0 28px rgba(200,160,0,0.18), inset 0 1px 0 rgba(200,160,0,0.12)' }}>
+                <div style={{ background: 'rgba(6,10,35,0.9)', border: '1.5px solid rgba(200,160,0,0.6)', borderRadius: "var(--ap-r-md)", padding: '18px 36px', maxWidth: 720, width: '100%', boxShadow: '0 0 28px rgba(200,160,0,0.18), inset 0 1px 0 rgba(200,160,0,0.12)' }}>
                   <h1 className="text-center text-white leading-snug m-0" style={{ fontFamily: 'var(--ap-font-display)', fontSize: 'clamp(1.3rem,3.2vw,2.4rem)', fontWeight: 700 }}>
                     {currentQuestion.question}
                   </h1>
                 </div>
               ) : (
-                <h1
-                  className="text-center text-white drop-shadow-2xl max-w-4xl leading-snug"
-                  style={{ fontFamily: 'var(--ap-font-display)', fontSize: 'clamp(1.4rem, 3.5vw, 2.6rem)', fontWeight: 700, textShadow: '0 2px 16px rgba(0,0,0,0.4)' }}
-                >
-                  {currentQuestion.question}
-                </h1>
+                <QuestionMediaLayout question={currentQuestion.question} image={questionImage} layoutId={questionLayout} />
               )}
 
-              {/* Word-cloud / ranking types (non-standard) */}
-              {currentQuestion.type === 'word-cloud' && (
+              {/* Word-cloud / ranking types (non-standard) — group mode only;
+                  solo answers ranking through QuestionAnswerPanel below. */}
+              {!isSolo && currentQuestion.type === 'word-cloud' && (
                 <WordCloudQuestion
                   question={currentQuestion.question}
                   timeLimit={currentQuestion.timeLimit}
@@ -1405,7 +1583,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
                   showResults={false}
                 />
               )}
-              {currentQuestion.type === 'ranking' && currentQuestion.items && (
+              {!isSolo && currentQuestion.type === 'ranking' && currentQuestion.items && (
                 <RankingQuestion
                   question={currentQuestion.question}
                   items={currentQuestion.items}
@@ -1416,71 +1594,90 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
               )}
             </div>
 
-            {/* ── Answer grid ── */}
-            {['multiple-choice', 'single-choice'].includes(currentQuestion.type) && currentQuestion.answers && (
-              <div className="grid grid-cols-2 gap-3 p-4 pt-0 flex-shrink-0">
-                {(currentQuestion.answers as string[]).map((answer, index) => (
-                  isMillionnaire ? (
-                    <div
-                      key={index}
-                      className="flex items-center gap-3 px-3 py-3 text-white font-bold text-base select-none"
-                      style={{ background: ANSWER_STYLES[index % 4].bg, border: '1.5px solid rgba(200,160,0,0.6)', borderRadius: 40, boxShadow: `0 0 20px ${ANSWER_STYLES[index % 4].shadow}, inset 0 1px 0 rgba(200,160,0,0.1)`, minHeight: '64px', fontFamily: 'var(--ap-font-body)' }}
-                    >
-                      <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'rgba(200,160,0,0.15)', border: '1.5px solid rgba(200,160,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#FFD700', fontWeight: 900, fontSize: '1rem', fontFamily: 'var(--ap-font-display)' }}>
-                        {ANSWER_STYLES[index % 4].shape}
-                      </div>
-                      <span className="leading-tight flex-1 text-center">{answer}</span>
-                    </div>
-                  ) : (
-                    <div
-                      key={index}
-                      className="flex items-center gap-4 rounded-2xl px-6 py-4 text-white font-bold text-lg select-none"
-                      style={{ background: ANSWER_STYLES[index % 4].bg, boxShadow: `0 6px 24px ${ANSWER_STYLES[index % 4].shadow}`, minHeight: '72px', fontFamily: 'var(--ap-font-body)' }}
-                    >
-                      <span className="text-2xl opacity-90 flex-shrink-0">{ANSWER_STYLES[index % 4].shape}</span>
-                      <span className="leading-tight">{answer}</span>
-                    </div>
-                  )
-                ))}
+            {/* ── Answer input ──
+                Solo: the host device is the only player, so the tiles that
+                are normally decorative (players answer on their own joined
+                device) become the actual interactive input, via the same
+                QuestionAnswerPanel PlayerView uses — covers every question
+                type PlayerView supports live, not just the 4 the group
+                host-screen bothers to visually render. */}
+            {isSolo ? (
+              <div className="px-4 pb-4 flex-shrink-0">
+                <QuestionAnswerPanel
+                  question={currentQuestion as unknown as EditableQuestion}
+                  hasAnswered={soloHasAnswered}
+                  selectedAnswer={soloSelectedAnswer}
+                  onSubmit={submitSoloAnswer}
+                />
               </div>
-            )}
-
-            {currentQuestion.type === 'true-false' && (
-              <div className="grid grid-cols-2 gap-3 p-4 pt-0 flex-shrink-0">
-                {isMillionnaire ? (
-                  <>
-                    <div className="flex items-center gap-3 px-3 py-3 text-white font-bold text-xl select-none" style={{ background: 'rgba(8,12,40,0.88)', border: '1.5px solid rgba(200,160,0,0.6)', borderRadius: 40, boxShadow: '0 0 20px rgba(200,160,0,0.2)', minHeight: '64px', fontFamily: 'var(--ap-font-display)', justifyContent: 'center' }}>
-                      <span style={{ color: '#FFD700', fontSize: '1.5rem' }}>○</span> {currentQuestion.answers?.[0] ?? 'Vrai'}
-                    </div>
-                    <div className="flex items-center gap-3 px-3 py-3 text-white font-bold text-xl select-none" style={{ background: 'rgba(8,12,40,0.88)', border: '1.5px solid rgba(200,160,0,0.6)', borderRadius: 40, boxShadow: '0 0 20px rgba(200,160,0,0.2)', minHeight: '64px', fontFamily: 'var(--ap-font-display)', justifyContent: 'center' }}>
-                      <span style={{ color: '#FFD700', fontSize: '1.5rem' }}>✕</span> {currentQuestion.answers?.[1] ?? 'Faux'}
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="flex items-center justify-center gap-3 rounded-2xl px-6 py-5 text-white font-bold text-xl select-none" style={{ background: '#27AE60', boxShadow: '0 6px 24px rgba(39,174,96,0.5)', fontFamily: 'var(--ap-font-display)' }}>
-                      <span className="text-3xl">✓</span> {currentQuestion.answers?.[0] ?? 'Vrai'}
-                    </div>
-                    <div className="flex items-center justify-center gap-3 rounded-2xl px-6 py-5 text-white font-bold text-xl select-none" style={{ background: '#E74C3C', boxShadow: '0 6px 24px rgba(231,76,60,0.5)', fontFamily: 'var(--ap-font-display)' }}>
-                      <span className="text-3xl">✗</span> {currentQuestion.answers?.[1] ?? 'Faux'}
-                    </div>
-                  </>
+            ) : (
+              <>
+                {['multiple-choice', 'single-choice'].includes(currentQuestion.type) && currentQuestion.answers && (
+                  <div className="grid grid-cols-2 gap-3 p-4 pt-0 flex-shrink-0">
+                    {(currentQuestion.answers as string[]).map((answer, index) => (
+                      isMillionnaire ? (
+                        <div
+                          key={index}
+                          className="flex items-center gap-3 px-3 py-3 text-white font-bold text-base select-none"
+                          style={{ background: ANSWER_STYLES[index % 4].bg, border: '1.5px solid rgba(200,160,0,0.6)', borderRadius: "var(--ap-r-md)", boxShadow: `0 0 20px ${ANSWER_STYLES[index % 4].shadow}, inset 0 1px 0 rgba(200,160,0,0.1)`, minHeight: '64px', fontFamily: 'var(--ap-font-body)' }}
+                        >
+                          <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'rgba(200,160,0,0.15)', border: '1.5px solid rgba(200,160,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#FFD700', fontWeight: 900, fontSize: '1rem', fontFamily: 'var(--ap-font-display)' }}>
+                            {ANSWER_STYLES[index % 4].shape}
+                          </div>
+                          <span className="leading-tight flex-1 text-center">{answer}</span>
+                        </div>
+                      ) : (
+                        <div
+                          key={index}
+                          className="flex items-center gap-4 rounded-2xl px-6 py-4 text-white font-bold text-lg select-none"
+                          style={{ background: ANSWER_STYLES[index % 4].bg, boxShadow: `0 6px 24px ${ANSWER_STYLES[index % 4].shadow}`, minHeight: '72px', fontFamily: 'var(--ap-font-body)' }}
+                        >
+                          <span className="text-2xl opacity-90 flex-shrink-0">{ANSWER_STYLES[index % 4].shape}</span>
+                          <span className="leading-tight">{answer}</span>
+                        </div>
+                      )
+                    ))}
+                  </div>
                 )}
-              </div>
-            )}
 
-            {currentQuestion.type === 'short-answer' && (
-              <div
-                className="mx-4 mb-4 rounded-2xl border-2 border-dashed border-white/30 bg-white/10 p-5 text-center text-white text-lg font-bold backdrop-blur flex-shrink-0"
-                style={{ fontFamily: 'var(--ap-font-display)' }}
-              >
-                <PencilLine style={{ width:18, height:18, display:"inline", verticalAlign:"-3px", marginRight:8 }} /> Les joueurs tapent leur réponse
-              </div>
+                {currentQuestion.type === 'true-false' && (
+                  <div className="grid grid-cols-2 gap-3 p-4 pt-0 flex-shrink-0">
+                    {isMillionnaire ? (
+                      <>
+                        <div className="flex items-center gap-3 px-3 py-3 text-white font-bold text-xl select-none" style={{ background: 'rgba(8,12,40,0.88)', border: '1.5px solid rgba(200,160,0,0.6)', borderRadius: "var(--ap-r-md)", boxShadow: '0 0 20px rgba(200,160,0,0.2)', minHeight: '64px', fontFamily: 'var(--ap-font-display)', justifyContent: 'center' }}>
+                          <span style={{ color: '#FFD700', fontSize: '1.5rem' }}>○</span> {currentQuestion.answers?.[0] ?? 'Vrai'}
+                        </div>
+                        <div className="flex items-center gap-3 px-3 py-3 text-white font-bold text-xl select-none" style={{ background: 'rgba(8,12,40,0.88)', border: '1.5px solid rgba(200,160,0,0.6)', borderRadius: "var(--ap-r-md)", boxShadow: '0 0 20px rgba(200,160,0,0.2)', minHeight: '64px', fontFamily: 'var(--ap-font-display)', justifyContent: 'center' }}>
+                          <span style={{ color: '#FFD700', fontSize: '1.5rem' }}>✕</span> {currentQuestion.answers?.[1] ?? 'Faux'}
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex items-center justify-center gap-3 rounded-2xl px-6 py-5 text-white font-bold text-xl select-none" style={{ background: '#27AE60', boxShadow: '0 6px 24px rgba(39,174,96,0.5)', fontFamily: 'var(--ap-font-display)' }}>
+                          <span className="text-3xl">✓</span> {currentQuestion.answers?.[0] ?? 'Vrai'}
+                        </div>
+                        <div className="flex items-center justify-center gap-3 rounded-2xl px-6 py-5 text-white font-bold text-xl select-none" style={{ background: '#E74C3C', boxShadow: '0 6px 24px rgba(231,76,60,0.5)', fontFamily: 'var(--ap-font-display)' }}>
+                          <span className="text-3xl">✗</span> {currentQuestion.answers?.[1] ?? 'Faux'}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {currentQuestion.type === 'short-answer' && (
+                  <div
+                    className="mx-4 mb-4 rounded-2xl border-2 border-dashed border-white/30 bg-white/10 p-5 text-center text-white text-lg font-bold backdrop-blur flex-shrink-0"
+                    style={{ fontFamily: 'var(--ap-font-display)' }}
+                  >
+                    <PencilLine style={{ width:18, height:18, display:"inline", verticalAlign:"-3px", marginRight:8 }} /> Les joueurs tapent leur réponse
+                  </div>
+                )}
+              </>
             )}
           </div>
 
           {/* ── Player sidebar (dedicated column, host only) ── */}
-          {isHost && (
+          {isHost && !isSolo && (
             <div className="w-52 border-l border-white/10 bg-black/40 backdrop-blur-md p-3 flex flex-col flex-shrink-0">
               <style>{`
                 .sidebar-player .kick-btn { opacity:0; transform:scale(.6); transition:opacity .15s,transform .15s cubic-bezier(.2,.7,.3,1.3); }
@@ -1525,7 +1722,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
         <QuizSessionAnswerDistribution
           currentQuestion={currentQuestion as unknown as EditableQuestion}
           answerDistribution={answerDistribution}
-          onNext={currentQuestionIndex >= quiz.questions.length - 1 ? nextQuestion : showLeaderboard}
+          onNext={isSolo || currentQuestionIndex >= quiz.questions.length - 1 ? nextQuestion : showLeaderboard}
           onSkipToNext={isHost && currentQuestionIndex + 1 < quiz.questions.length ? nextQuestion : undefined}
           isHost={isHost || false}
           isLastQuestion={currentQuestionIndex >= quiz.questions.length - 1}
@@ -1672,7 +1869,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
         <Fireworks />
 
         {/* Floating reaction bubbles */}
-        {(() => {
+        {(liveReactionsEnabled || endChatEnabled) && (() => {
           const fpMap: Record<string,{bg:string;border:string;nameColor:string;textColor:string}> = {};
           if (p1) fpMap[p1.name] = { bg:'linear-gradient(135deg,#FFE566,#FFCC00)', border:'#e5aa00', nameColor:'#7a4000', textColor:'#5a2e00' };
           if (p2) fpMap[p2.name] = { bg:'linear-gradient(135deg,#E8E8E8,#C0C0C0)', border:'#aaa',    nameColor:'#333',    textColor:'#222' };
@@ -1686,7 +1883,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
                   background: ps ? ps.bg : 'rgba(0,0,0,.78)',
                   backdropFilter: ps ? undefined : 'blur(10px)',
                   border: `1.5px solid ${ps ? ps.border : 'rgba(255,255,255,.2)'}`,
-                  borderRadius:999, padding:'6px 14px',
+                  borderRadius:"var(--ap-r-sm)", padding:'6px 14px',
                   boxShadow:'0 4px 20px rgba(0,0,0,.25)',
                 }}>
                   <div style={{ flexShrink:0 }}><AvatarDisplay emoji={r.avatar} size="xs" /></div>
@@ -1711,7 +1908,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
               fontSize:12.5, fontWeight:800, letterSpacing:'.1em', textTransform:'uppercase',
               color:'#ffb020', background:'rgba(255,176,32,.1)',
               border:'2px solid rgba(255,176,32,.35)',
-              padding:'6px 15px', borderRadius:999, marginBottom:18,
+              padding:'6px 15px', borderRadius:"var(--ap-r-sm)", marginBottom:18,
             }}><Flag style={{ width:13, height:13 }} /> Session terminée</span>
             <h1 style={{
               fontFamily:'var(--ap-font-display)', fontWeight:600,
@@ -1747,7 +1944,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
           </section>
 
           {/* Podium floor */}
-          <div style={{ height:10, maxWidth:760, width:'100%', background:'rgba(255,255,255,.08)', borderRadius:999 }} aria-hidden="true" />
+          <div style={{ height:10, maxWidth:760, width:'100%', background:'rgba(255,255,255,.08)', borderRadius:"var(--ap-r-sm)" }} aria-hidden="true" />
 
           {/* Stats */}
           {phaseAfter('stats') && (
@@ -1757,15 +1954,15 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
               opacity:0, transform:'translateY(16px)',
               animation:'rise .5s cubic-bezier(.2,.7,.3,1) forwards',
             }} aria-label="Statistiques de la session">
-              <div style={{ background:'rgba(255,255,255,.05)', border:'2px solid rgba(255,255,255,.1)', borderRadius:16, padding:'15px 18px', textAlign:'center' }}>
+              <div style={{ background:'rgba(255,255,255,.05)', border:'2px solid rgba(255,255,255,.1)', borderRadius:"var(--ap-r-md)", padding:'15px 18px', textAlign:'center' }}>
                 <b style={{ display:'block', fontFamily:'var(--ap-font-display)', fontWeight:600, fontSize:26, color:'#15c08a', fontVariantNumeric:'tabular-nums' }}>{avgCorrect}%</b>
                 <small style={{ fontSize:12, fontWeight:800, letterSpacing:'.06em', textTransform:'uppercase', color:'#b6aed0' }}>Réussite moyenne</small>
               </div>
-              <div style={{ background:'rgba(255,255,255,.05)', border:'2px solid rgba(255,255,255,.1)', borderRadius:16, padding:'15px 18px', textAlign:'center' }}>
+              <div style={{ background:'rgba(255,255,255,.05)', border:'2px solid rgba(255,255,255,.1)', borderRadius:"var(--ap-r-md)", padding:'15px 18px', textAlign:'center' }}>
                 <b style={{ display:'block', fontFamily:'var(--ap-font-display)', fontWeight:600, fontSize:26, fontVariantNumeric:'tabular-nums' }}>{players.length}/{players.length}</b>
                 <small style={{ fontSize:12, fontWeight:800, letterSpacing:'.06em', textTransform:'uppercase', color:'#b6aed0' }}>Participation</small>
               </div>
-              <div style={{ background:'rgba(255,255,255,.05)', border:'2px solid rgba(255,255,255,.1)', borderRadius:16, padding:'15px 18px', textAlign:'center' }}>
+              <div style={{ background:'rgba(255,255,255,.05)', border:'2px solid rgba(255,255,255,.1)', borderRadius:"var(--ap-r-md)", padding:'15px 18px', textAlign:'center' }}>
                 <b style={{ display:'block', fontFamily:'var(--ap-font-display)', fontWeight:600, fontSize:26, color:'#ffb020', fontVariantNumeric:'tabular-nums' }}>{p1?.score.toLocaleString('fr-FR') ?? '-'}</b>
                 <small style={{ fontSize:12, fontWeight:800, letterSpacing:'.06em', textTransform:'uppercase', color:'#b6aed0' }}>Meilleur score</small>
               </div>
@@ -1788,7 +1985,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
                   style={{
                     display:'flex', alignItems:'center', gap:13,
                     background:'rgba(255,255,255,.05)', border:'2px solid rgba(255,255,255,.09)',
-                    borderRadius:16, padding:'10px 15px', marginBottom:8,
+                    borderRadius:"var(--ap-r-md)", padding:'10px 15px', marginBottom:8,
                     opacity:0, transform:'translateX(-14px)',
                     animation:`night-slide .4s cubic-bezier(.2,.7,.3,1) ${i * 110}ms forwards`,
                   }}
@@ -1811,28 +2008,28 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
               opacity:0, transform:'translateY(16px)',
               animation:'rise .5s cubic-bezier(.2,.7,.3,1) .6s forwards',
             }}>
-              <button
-                onClick={exportResults}
+              <ExportMenu
+                align="center"
+                className="ap-btn ap-btn--pill"
                 style={{
-                  display:'inline-flex', alignItems:'center', gap:9,
                   fontFamily:'var(--ap-font-body)', fontWeight:800, fontSize:15,
-                  padding:'13px 24px', borderRadius:999, border:'none', cursor:'pointer',
+                  padding:'13px 24px', borderRadius:"var(--ap-r-sm)", border:'none', cursor:'pointer',
                   color:'#241b3a', background:'#ffb020',
                   boxShadow:'0 5px 0 #c98700',
-                  transition:'transform .15s,box-shadow .15s',
                 }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform='translateY(-2px)'; (e.currentTarget as HTMLElement).style.boxShadow='0 7px 0 #c98700'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform=''; (e.currentTarget as HTMLElement).style.boxShadow='0 5px 0 #c98700'; }}
-              >
-                <Download style={{ width:16, height:16 }} />
-                Exporter les résultats
-              </button>
+                options={[
+                  { id: 'pdf', label: 'PDF', icon: FileText, onSelect: () => exportResults('PDF') },
+                  { id: 'excel', label: 'Excel (.xlsx)', icon: FileSpreadsheet, onSelect: () => exportResults('Excel') },
+                  { id: 'csv', label: 'CSV', icon: ChartNoAxesColumnIncreasing, onSelect: () => exportResults('CSV') },
+                  { id: 'json', label: 'JSON', icon: Braces, onSelect: () => exportResults('JSON') },
+                ]}
+              />
               <button
                 onClick={() => window.location.href = '/'}
                 style={{
                   display:'inline-flex', alignItems:'center', gap:9,
                   fontFamily:'var(--ap-font-body)', fontWeight:800, fontSize:15,
-                  padding:'13px 24px', borderRadius:999, border:'none', cursor:'pointer',
+                  padding:'13px 24px', borderRadius:"var(--ap-r-sm)", border:'none', cursor:'pointer',
                   color:'#fff', background:'rgba(255,255,255,.08)',
                   boxShadow:'0 5px 0 rgba(0,0,0,.35),inset 0 0 0 2px rgba(255,255,255,.16)',
                   transition:'transform .15s,box-shadow .15s',
@@ -1847,7 +2044,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
         </div>
 
         {/* ── Live reactions sidebar (host only) ── */}
-        {isHost && (
+        {isHost && endChatEnabled && (
           <div style={{
             width:240, flexShrink:0,
             display:'flex', flexDirection:'column', padding:16,
@@ -1882,7 +2079,7 @@ export const QuizSession = ({ quiz, isHost = false, onExitRequest, onExitHandler
                           padding:'6px 10px',
                           background: ps ? ps.bg : 'rgba(255,255,255,.06)',
                           border: `1.5px solid ${ps ? ps.border : 'rgba(255,255,255,.12)'}`,
-                          borderRadius:12,
+                          borderRadius:"var(--ap-r-md)",
                         }}
                       >
                         <div style={{ flexShrink:0 }}><AvatarDisplay emoji={c.avatar} size="xs" /></div>

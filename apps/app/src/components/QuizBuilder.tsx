@@ -9,6 +9,16 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
@@ -17,14 +27,25 @@ import {
 import {
   Plus, Trash2, Upload, GripVertical, Settings,
   ChevronRight, ChevronDown, Eye, ImageIcon, MoreHorizontal,
-  Copy, Library, HelpCircle, Home,
+  ArrowRight, Copy, Library, HelpCircle, Home, type LucideIcon,
+  ListChecks, CircleDot, ToggleLeft, TextCursorInput, ArrowUpDown,
+  Link2, TextSelect, SlidersHorizontal, Rows3, ChartNoAxesColumn,
+  Star, MessageSquareText, Gauge, Layers3, Presentation,
 } from "lucide-react";
 import { ImportFileModal } from "./ImportFileModal";
 import { getCurrentUser } from "@/lib/auth";
-import { getPlan, isQuestionTypeLocked, PlanLimitError } from "@/lib/plans";
+import { useSaveShortcut } from "@/hooks/useSaveShortcut";
+import { getPlan, isQuestionTypeLocked } from "@/lib/plans";
+import { showError } from "@/lib/errorTaxonomy";
 import { saveQuiz, updateQuiz, getQuizById, type SavedQuiz } from "@/lib/quizStorage";
-import { getContent, upsertContentBySource } from "@/lib/content/contentRepo";
-import type { ContentType } from "@/lib/content/types";
+import {
+  getContent,
+  getContentBySource,
+  getContentBySourceAnyOwner,
+  updateCollaborativeContent,
+  upsertContentBySource,
+} from "@/lib/content/contentRepo";
+import type { ContentRow, ContentType } from "@/lib/content/types";
 import { getPollTemplate } from "@/lib/pollTemplates";
 import { getQuizTemplate } from "@/lib/quizTemplates";
 import { getFlashcardTemplate } from "@/lib/flashcardTemplates";
@@ -33,7 +54,7 @@ import { AMBIANCE_OPTIONS, DEFAULT_AMBIANCE } from "@/lib/audioManifest";
 import { hexToRgba } from "@/lib/color";
 import { toast } from "sonner";
 import { t } from "@/lib/i18n";
-import type { QuizQuestionType, PollQuestionType, EditableQuestion } from "@/lib/questionTypes";
+import { getQuestionTypeDescription, type QuizQuestionType, type PollQuestionType, type EditableQuestion } from "@/lib/questionTypes";
 import type { PollTemplate } from "@/lib/pollTemplates";
 import type { QuizTemplate } from "@/lib/quizTemplates";
 import { PollTemplateSelectorEnhanced } from "./PollTemplateSelectorEnhanced";
@@ -52,7 +73,11 @@ import {
   useSortable, verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { BrandMonogram } from "./BrandMonogram";
+import { BrandMonogram } from "ui/BrandMonogram";
+import { CollaboratorsButton } from "@/components/CollaboratorsButton";
+import { QuestionLayoutPicker } from "@/components/QuestionLayoutPicker";
+import { getQuestionLayout } from "@/lib/contentLayouts";
+import { QuestionTypeExample } from "@/components/QuestionTypeExample";
 
 // ─── Design constants ──────────────────────────────────────────────────────
 // Ordre position → couleur/forme aligné sur l'écran joueur réel
@@ -65,22 +90,22 @@ const ANSWER_CONFIGS = [
   { color: "var(--ap-flash)", shape: <path d="M12 2 22 12 12 22 2 12z" fill="white" /> },
 ] as const;
 
-const QTYPE_META: Record<string, { label: string; dot: string }> = {
-  "multiple-choice":  { label: "QCM",         dot: "var(--ap-quiz)"  },
-  "single-choice":    { label: "Choix unique", dot: "var(--ap-quiz)"  },
-  "true-false":       { label: "Vrai / Faux",  dot: "var(--ap-poll)" },
-  "short-answer":     { label: "Réponse courte", dot: "var(--ap-flash)" },
-  "ranking":          { label: "Classement",   dot: "var(--ap-pres)"  },
-  "matching":         { label: "Association",  dot: "var(--ap-quiz)"  },
-  "fill-blank":       { label: "Lacune",       dot: "var(--ap-poll)" },
-  "slider":           { label: "Curseur",      dot: "var(--ap-flash)" },
-  "likert-scale":     { label: "Likert",       dot: "var(--ap-poll)" },
-  "frequency-scale":  { label: "Fréquence",    dot: "var(--ap-poll)" },
-  "star-rating":      { label: "Étoiles",      dot: "var(--ap-flash)" },
-  "open-text":        { label: "Texte ouvert", dot: "var(--ap-pres)"  },
-  "nps-scale":        { label: "NPS",          dot: "var(--ap-brand)" },
-  "flashcard":        { label: "Carte",        dot: "var(--ap-flash)" },
-  "slide":            { label: "Slide",        dot: "var(--ap-pres)"  },
+const QTYPE_META: Record<string, { label: string; dot: string; icon: LucideIcon }> = {
+  "multiple-choice":  { label: "QCM",            dot: "var(--ap-quiz)",  icon: ListChecks },
+  "single-choice":    { label: "Choix unique",   dot: "var(--ap-quiz)",  icon: CircleDot },
+  "true-false":       { label: "Vrai / Faux",    dot: "var(--ap-poll)",  icon: ToggleLeft },
+  "short-answer":     { label: "Réponse courte", dot: "var(--ap-flash)", icon: TextCursorInput },
+  "ranking":          { label: "Classement",     dot: "var(--ap-pres)",  icon: ArrowUpDown },
+  "matching":         { label: "Association",    dot: "var(--ap-quiz)",  icon: Link2 },
+  "fill-blank":       { label: "Lacune",         dot: "var(--ap-poll)",  icon: TextSelect },
+  "slider":           { label: "Curseur",        dot: "var(--ap-flash)", icon: SlidersHorizontal },
+  "likert-scale":     { label: "Likert",         dot: "var(--ap-poll)",  icon: Rows3 },
+  "frequency-scale":  { label: "Fréquence",      dot: "var(--ap-poll)",  icon: ChartNoAxesColumn },
+  "star-rating":      { label: "Étoiles",        dot: "var(--ap-flash)", icon: Star },
+  "open-text":        { label: "Texte ouvert",   dot: "var(--ap-pres)",  icon: MessageSquareText },
+  "nps-scale":        { label: "NPS",            dot: "var(--ap-brand)", icon: Gauge },
+  "flashcard":        { label: "Carte",          dot: "var(--ap-flash)", icon: Layers3 },
+  "slide":            { label: "Slide",          dot: "var(--ap-pres)",  icon: Presentation },
 };
 
 const POINTS_OPTIONS = [
@@ -106,12 +131,15 @@ const FONT_OPTIONS = [
 
 // ─── Sub-components ────────────────────────────────────────────────────────
 
-const SaveStateIndicator = ({ state }: { state: "saved" | "saving" }) => (
+// Reflects whether there are edits since the quiz was last actually persisted
+// (via handleSaveQuiz) — it never claims "saved" for changes that only exist
+// in component state, unlike the old timer-driven version of this component.
+const SaveStateIndicator = ({ state }: { state: "saved" | "unsaved" }) => (
   <div
     style={{
       display: "flex", alignItems: "center", gap: 7,
       fontSize: 12.5, fontWeight: 700,
-      padding: "5px 12px", borderRadius: 999,
+      padding: "5px 12px", borderRadius: "var(--ap-r-sm)",
       border: `2px solid ${state === "saved" ? "color-mix(in srgb, var(--ap-pres) 35%, transparent)" : "var(--ap-line)"}`,
       background: state === "saved" ? "var(--ap-pres-soft)" : "var(--ap-paper)",
       color: state === "saved" ? "var(--ap-pres-deep)" : "var(--ap-muted)",
@@ -119,14 +147,14 @@ const SaveStateIndicator = ({ state }: { state: "saved" | "saving" }) => (
       flexShrink: 0,
     }}
   >
-    {state === "saving" ? (
-      <span style={{ width: 11, height: 11, borderRadius: "50%", border: "var(--ap-border-w) solid var(--ap-line-2)", borderTopColor: "var(--ap-brand)", display: "inline-block", animation: "spin .7s linear infinite", flexShrink: 0 }} />
+    {state === "unsaved" ? (
+      <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--ap-brand)", display: "inline-block", flexShrink: 0 }} />
     ) : (
       <svg style={{ width: 14, height: 14 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M4 12.5 10 18 20 6" />
       </svg>
     )}
-    <span>{state === "saving" ? "Enregistrement…" : "Enregistré"}</span>
+    <span>{state === "unsaved" ? "Modifications non enregistrées" : "Enregistré"}</span>
   </div>
 );
 
@@ -206,18 +234,38 @@ const PhonePreview = ({
   const pts = question.points ?? 1000;
   const answers: string[] = question.answers || [];
   const qText = question.question || "";
+  const layout = getQuestionLayout(question.layout ?? (question.image ? "media-top" : "standard"));
+  const hasMedia = Boolean(question.image);
 
   const isTF = question.type === "true-false";
-  const displayAnswers = isTF ? ["Vrai", "Faux"] : answers;
+  const displayAnswers = isTF
+    ? ["Vrai", "Faux"]
+    : question.type === "ranking"
+      ? (question.items?.length ? question.items : ["Priorité 1", "Priorité 2", "Priorité 3"])
+      : question.type === "likert-scale" || question.type === "frequency-scale"
+        ? (question.scale?.length ? question.scale : ["Jamais", "Parfois", "Toujours"])
+        : question.type === "matching"
+          ? (question.leftColumn?.map((item) => item.text || "Élément à associer") ?? ["Concept A", "Concept B"])
+          : question.type === "star-rating"
+            ? ["★  ★  ★  ★  ★"]
+            : question.type === "nps-scale"
+              ? ["0  1  2  3  4  5  6  7  8  9  10"]
+              : question.type === "slider"
+                ? [`${question.min ?? 0}   ━━━━━●━━━━   ${question.max ?? 100}`]
+                : question.type === "open-text"
+                  ? ["Écrivez librement votre réponse…"]
+                  : question.type === "short-answer" || question.type === "fill-blank"
+                    ? ["Saisissez votre réponse…"]
+                    : answers;
 
   return (
     <div style={{
       width: 258, flexShrink: 0,
-      background: "var(--ap-ink)", borderRadius: 34, padding: 9,
+      background: "var(--ap-ink)", borderRadius: "var(--ap-r-md)", padding: 9,
       boxShadow: "0 10px 0 #16102a, 0 30px 50px rgba(36,27,58,.28)",
     }}>
       <div style={{
-        background: "var(--ap-paper)", borderRadius: 26, overflow: "hidden",
+        background: "var(--ap-paper)", borderRadius: "var(--ap-r-md)", overflow: "hidden",
         display: "flex", flexDirection: "column", minHeight: 470,
       }}>
         {/* Notch */}
@@ -228,7 +276,7 @@ const PhonePreview = ({
           <span style={{
             fontFamily: "var(--ap-font-display)", fontWeight: 600, fontSize: 13,
             display: "inline-flex", alignItems: "center", gap: 5,
-            background: "white", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: 999,
+            background: "white", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-sm)",
             padding: "4px 10px",
           }}>
             <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--ap-brand)", display: "inline-block" }} />
@@ -238,19 +286,63 @@ const PhonePreview = ({
             fontSize: 11, fontWeight: 800, color: "var(--ap-flash-deep)",
             background: "var(--ap-flash-soft)",
             border: "2px solid color-mix(in srgb, var(--ap-flash) 45%, transparent)",
-            padding: "4px 9px", borderRadius: 999,
+            padding: "4px 9px", borderRadius: "var(--ap-r-sm)",
           }}>
             Q{questionIndex + 1}/{totalQuestions || 1} · {pts} pts
           </span>
         </div>
 
-        {/* Question */}
-        <p style={{
-          fontWeight: 800, fontSize: 14.5, lineHeight: 1.4,
-          padding: "8px 16px 12px", minHeight: 62, color: "var(--ap-ink)",
-        }}>
-          {qText || <span style={{ color: "var(--ap-muted)" }}>Posez votre question…</span>}
-        </p>
+        {/* Question + media layout */}
+        <div
+          style={{
+            position: "relative",
+            display: "flex",
+            flexDirection: layout.mediaPosition === "left"
+              ? "row"
+              : layout.mediaPosition === "right"
+                ? "row-reverse"
+                : "column",
+            minHeight: layout.mediaPosition === "background" && hasMedia ? 176 : 74,
+            margin: "4px 12px 10px",
+            overflow: "hidden",
+            borderRadius: "var(--ap-r-md)",
+            background: layout.mediaPosition === "background" && hasMedia ? "var(--ap-ink)" : "transparent",
+          }}
+        >
+          {hasMedia && layout.mediaPosition !== "none" && (
+            <img
+              src={question.image}
+              alt=""
+              style={{
+                position: layout.mediaPosition === "background" ? "absolute" : "relative",
+                inset: layout.mediaPosition === "background" ? 0 : undefined,
+                width: layout.mediaPosition === "left" || layout.mediaPosition === "right" ? "42%" : "100%",
+                height: layout.mediaPosition === "top" ? 104 : layout.mediaPosition === "background" ? "100%" : 112,
+                objectFit: "cover",
+                flexShrink: 0,
+              }}
+            />
+          )}
+          {layout.mediaPosition === "background" && hasMedia && (
+            <span aria-hidden="true" style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(20,15,35,.1), rgba(20,15,35,.82))" }} />
+          )}
+          <p style={{
+            position: "relative",
+            zIndex: 1,
+            flex: 1,
+            display: "flex",
+            alignItems: layout.mediaPosition === "background" ? "flex-end" : "center",
+            fontWeight: 800,
+            fontSize: layout.mediaPosition === "background" ? 17 : 14.5,
+            lineHeight: 1.35,
+            padding: "10px 12px",
+            minWidth: 0,
+            color: layout.mediaPosition === "background" && hasMedia ? "white" : "var(--ap-ink)",
+            textShadow: layout.mediaPosition === "background" && hasMedia ? "0 2px 8px rgba(0,0,0,.45)" : undefined,
+          }}>
+            {qText || <span style={{ color: "var(--ap-muted)" }}>Posez votre question…</span>}
+          </p>
+        </div>
 
         {/* Answers */}
         <div style={{ display: "grid", gap: 8, padding: "0 12px 14px", marginTop: "auto" }}>
@@ -261,7 +353,7 @@ const PhonePreview = ({
               <div key={i} style={{
                 display: "flex", alignItems: "center", gap: 9,
                 background: "white", border: "var(--ap-border-w) solid var(--ap-line)",
-                borderRadius: 13, padding: "10px 11px",
+                borderRadius: "var(--ap-r-md)", padding: "10px 11px",
                 fontWeight: 700, fontSize: 12.5,
                 boxShadow: "0 3px 0 var(--ap-line)", color: "var(--ap-ink)",
               }}>
@@ -300,7 +392,8 @@ const RailItem = ({
   onSelect: (i: number) => void; onDelete: (i: number) => void; onDuplicate: (i: number) => void;
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: question.id });
-  const meta = QTYPE_META[question.type] || { label: question.type, dot: "var(--ap-muted)" };
+  const meta = QTYPE_META[question.type] || { label: question.type, dot: "var(--ap-muted)", icon: HelpCircle };
+  const MetaIcon = meta.icon;
   const displayText =
     question.type === "slide"      ? (question.title?.trim() || "Diapositive vide")
     : question.type === "flashcard" ? (question.recto?.trim() || "Flashcard vide")
@@ -342,7 +435,7 @@ const RailItem = ({
             fontSize: 10.5, fontWeight: 800, letterSpacing: ".07em",
             textTransform: "uppercase", color: "var(--ap-muted)",
           }}>
-            <i style={{ width: 7, height: 7, borderRadius: 2, background: meta.dot, display: "inline-block", flexShrink: 0 }} />
+            <MetaIcon style={{ width: 13, height: 13, color: meta.dot, flexShrink: 0 }} aria-hidden="true" />
             {meta.label}
           </span>
           <span style={{
@@ -485,8 +578,10 @@ export const QuizBuilder = () => {
   const [headerImage, setHeaderImage] = useState("");
   const [theme, setTheme] = useState<string>(DEFAULT_THEME_ID);
   const [ambianceId, setAmbianceId] = useState<string>(isPoll ? "none" : DEFAULT_AMBIANCE);
+  const [liveReactionsEnabled, setLiveReactionsEnabled] = useState(true);
+  const [endChatEnabled, setEndChatEnabled] = useState(true);
   const [previewFont, setPreviewFont] = useState(FONT_OPTIONS[0].value);
-  const [saveState, setSaveState] = useState<"saved" | "saving">("saved");
+  const [saveState, setSaveState] = useState<"saved" | "unsaved">("saved");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
   const [activeTemplateId, setActiveTemplateId] = useState<string | null>(templateId);
@@ -494,11 +589,16 @@ export const QuizBuilder = () => {
   const [questionBankDialogOpen, setQuestionBankDialogOpen] = useState(false);
   const [importFileOpen, setImportFileOpen] = useState(false);
   const [shouldBlockNavigation, setShouldBlockNavigation] = useState(true);
+  const [pendingNavigatePath, setPendingNavigatePath] = useState<string | null>(null);
+  const [titleTouched, setTitleTouched] = useState(false);
+  const [hoveredQuestionType, setHoveredQuestionType] = useState<QuizQuestionType | PollQuestionType | null>(null);
+  const [contentRow, setContentRow] = useState<ContentRow | null>(null);
+  const titleInputRef = useRef<HTMLInputElement>(null);
 
-  const saveTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const firstRender = useRef(true);
   const questionTextareaRef = useRef<HTMLTextAreaElement>(null);
 
+  const titleError = titleTouched && !title.trim() ? t("titleRequired") : undefined;
   const activeTheme = THEMES.find(t => t.id === theme) ?? THEMES[0];
   const activeFont = FONT_OPTIONS.find(f => f.value === previewFont) ?? FONT_OPTIONS[0];
   const selectedQ = selectedIdx !== null ? questions[selectedIdx] : null;
@@ -513,13 +613,13 @@ export const QuizBuilder = () => {
     el.style.height = `${el.scrollHeight}px`;
   }, [selectedQ?.id, selectedQ?.question]);
 
-  // ── Auto-save indicator ──────────────────────────────────────────────────
+  // ── Dirty tracking ────────────────────────────────────────────────────────
+  // No autosave exists — this only flags that there are edits since the last
+  // real persist (handleSaveQuiz). Never claim "saved" without one.
   useEffect(() => {
     if (firstRender.current) { firstRender.current = false; return; }
-    setSaveState("saving");
-    clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = setTimeout(() => setSaveState("saved"), 900);
-  }, [questions, title]);
+    setSaveState("unsaved");
+  }, [questions, title, liveReactionsEnabled, endChatEnabled]);
 
   // ── Auth guard ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -546,6 +646,8 @@ export const QuizBuilder = () => {
     setHeaderImage(eq.headerImage || "");
     setTheme(THEMES.some(t => t.id === eq.theme) ? eq.theme : DEFAULT_THEME_ID);
     setAmbianceId(eq.ambianceId ?? (isPoll ? "none" : DEFAULT_AMBIANCE));
+    setLiveReactionsEnabled(eq.liveReactionsEnabled ?? true);
+    setEndChatEnabled(eq.endChatEnabled ?? true);
     setPreviewFont(FONT_OPTIONS.some(f => f.value === eq.font) ? eq.font : FONT_OPTIONS[0].value);
     const qs = eq.questions.map((q, i) => ({ id: q.id || String(Date.now()) + i, ...q, image: q.image || "" }));
     setQuestions(qs);
@@ -559,6 +661,11 @@ export const QuizBuilder = () => {
     if (eq) {
       applyLoadedQuiz(eq);
       toast.success("Quiz chargé pour édition");
+      if (user) {
+        void getContentBySource(user.id, eq.type as ContentType, eq.id)
+          .then(setContentRow)
+          .catch(() => setContentRow(null));
+      }
       return;
     }
 
@@ -571,26 +678,21 @@ export const QuizBuilder = () => {
     let cancelled = false;
     (async () => {
       try {
-        const row = await getContent(quizId);
+        const row = await getContent(quizId)
+          ?? await getContentBySourceAnyOwner(quizType as ContentType, quizId);
         if (cancelled || !row?.data) return;
-        const recovered = saveQuiz(row.data as unknown as SavedQuiz);
+        const recovered = row.data as unknown as SavedQuiz;
         if (cancelled) return;
-        const user = getCurrentUser();
-        if (user) {
-          await upsertContentBySource(user.id, recovered.type as ContentType, recovered.id, recovered as unknown as Record<string, unknown>, !!recovered.isPublic);
-        }
-        if (cancelled) return;
-        toast.success("Quiz récupéré depuis la sauvegarde cloud");
-        navigate(`/builder?type=${recovered.type}&quizId=${recovered.id}`, { replace: true });
+        setContentRow(row);
+        applyLoadedQuiz(recovered);
+        toast.success(row.user_id === user?.id ? "Création récupérée depuis le cloud" : "Création collaborative chargée");
       } catch (e) {
         if (cancelled) return;
-        if (e instanceof PlanLimitError) {
-          toast.error(e.message, { action: { label: "Passer Pro", onClick: () => { window.location.href = "/pricing"; } } });
-        }
+        showError(e, "QuizBuilder.recoverFromCloud");
       }
     })();
     return () => { cancelled = true; };
-  }, [quizId]);
+  }, [quizId, quizType, user?.id]);
 
   // ── Load template ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -630,7 +732,7 @@ export const QuizBuilder = () => {
     if (isFlashcard) return { type: "flashcard", recto: "", verso: "", rectoImage: "", versoImage: "" };
     if (isPoll) {
       const pt = type || "single-choice";
-      const base = { type: pt, question: "", image: "" };
+      const base = { type: pt, question: "", image: "", layout: "standard" as const };
       switch (pt) {
         case "single-choice": case "multiple-choice": return { ...base, answers: ["", "", "", ""], allowMultiple: pt === "multiple-choice" };
         case "likert-scale":    return { ...base, scale: ["Tout à fait d'accord", "D'accord", "Neutre", "Pas d'accord", "Pas du tout d'accord"] };
@@ -650,12 +752,16 @@ export const QuizBuilder = () => {
       ? ["single-choice", "multiple-choice", "likert-scale", "frequency-scale", "star-rating", "ranking", "open-text", "nps-scale"]
       : ["multiple-choice", "true-false", "short-answer", "ranking", "matching", "fill-blank", "slider"];
 
-  const confirmLeave = () => !shouldBlockNavigation || window.confirm(t("confirmLeaveBuilder"));
-
   const handleNavigateAway = (path: string) => {
-    if (!confirmLeave()) return;
-    setShouldBlockNavigation(false);
+    if (shouldBlockNavigation) { setPendingNavigatePath(path); return; }
     navigate(path);
+  };
+
+  const confirmPendingNavigate = () => {
+    if (!pendingNavigatePath) return;
+    setShouldBlockNavigation(false);
+    navigate(pendingNavigatePath);
+    setPendingNavigatePath(null);
   };
 
   // ── Handlers ─────────────────────────────────────────────────────────────
@@ -672,7 +778,7 @@ export const QuizBuilder = () => {
   };
 
   const handleAddQuestion = (type?: QuizQuestionType | PollQuestionType) => {
-    const newQ = { id: Date.now().toString(), ...getDefaultQuestion(type), image: "" };
+    const newQ = { id: Date.now().toString(), ...getDefaultQuestion(type), image: "", layout: "standard" as const };
     setQuestions(prev => { const updated = [...prev, newQ]; setSelectedIdx(updated.length - 1); return updated; });
   };
 
@@ -713,7 +819,12 @@ export const QuizBuilder = () => {
   };
 
   const handleSaveQuiz = async () => {
-    if (!title.trim()) { toast.error(t("titleRequired")); return; }
+    if (!title.trim()) {
+      setTitleTouched(true);
+      toast.error(t("titleRequired"));
+      titleInputRef.current?.focus();
+      return;
+    }
     if (questions.length === 0) { toast.error(t("oneQuestionRequired")); return; }
     try {
       const data = {
@@ -723,34 +834,65 @@ export const QuizBuilder = () => {
         speedBonus: isPoll ? false : speedBonus,
         transitionTime, category, type: quizType,
         headerImage, theme, font: previewFont, ambianceId,
+        liveReactionsEnabled, endChatEnabled,
       };
-      const saved = quizId ? updateQuiz(quizId, data) : saveQuiz(data);
+      let saved: SavedQuiz | null;
+      if (contentRow && user && contentRow.user_id !== user.id) {
+        const current = contentRow.data as unknown as SavedQuiz;
+        saved = {
+          ...current,
+          ...data,
+          id: current.id ?? quizId ?? contentRow.id,
+          userId: contentRow.user_id,
+          createdAt: current.createdAt ?? new Date().toISOString(),
+        };
+        const updatedRow = await updateCollaborativeContent(
+          contentRow.id,
+          saved as unknown as Record<string, unknown>,
+        );
+        setContentRow(updatedRow);
+      } else {
+        saved = quizId ? updateQuiz(quizId, data) : saveQuiz(data);
+      }
       // Mirror into the Supabase `content` table so the item appears in the
       // content-backed lists (My Quizzes/Polls/Flashcards/Slides read from
       // there, not from the legacy `saved_quizzes` localStorage store).
       // Non-blocking: a local save already succeeded, so a network hiccup
       // must not break the flow.
-      const user = getCurrentUser();
-      if (saved && user) {
+      if (saved && user && (!contentRow || contentRow.user_id === user.id)) {
         try {
           await upsertContentBySource(user.id, saved.type as ContentType, saved.id, saved as unknown as Record<string, unknown>, !!saved.isPublic);
+          const row = await getContentBySource(user.id, saved.type as ContentType, saved.id);
+          if (row) setContentRow(row);
         } catch (e) { console.error("[QuizBuilder] content mirror failed", e); }
       }
       toast.success(quizId ? (isPoll ? "Sondage mis à jour" : "Quiz mis à jour") : (isPoll ? t("pollSaved") : t("quizSaved")));
-      setShouldBlockNavigation(false);
-      navigate(isFlashcard ? "/my-flashcards" : isPoll ? "/my-polls" : "/my-quizzes");
-    } catch (e) {
-      if (e instanceof PlanLimitError) {
-        toast.error(e.message, { action: { label: "Passer Pro", onClick: () => { window.location.href = "/pricing"; } } });
-      } else {
-        toast.error("Erreur lors de l'enregistrement");
+      setSaveState("saved");
+      if (!quizId && saved) {
+        setShouldBlockNavigation(false);
+        navigate(`/builder?type=${saved.type}&quizId=${saved.id}`, { replace: true });
+        setTimeout(() => setShouldBlockNavigation(true), 0);
       }
+    } catch (e) {
+      showError(e, "QuizBuilder.save", "Erreur lors de l'enregistrement");
     }
   };
+  useSaveShortcut(handleSaveQuiz);
 
   const handlePreviewQuiz = () => {
     if (questions.length === 0) { toast.error("Ajoutez au moins une question pour prévisualiser"); return; }
-    const tmp = { id: "preview-" + Date.now(), title: title || "Mon Quiz", description, questions, type: quizType, headerImage, theme, font: previewFont };
+    const tmp = {
+      id: "preview-" + Date.now(),
+      title: title || "Mon Quiz",
+      description,
+      questions,
+      type: quizType,
+      headerImage,
+      theme,
+      font: previewFont,
+      liveReactionsEnabled,
+      endChatEnabled,
+    };
     localStorage.setItem(`quiz-${tmp.id}`, JSON.stringify(tmp));
     setShouldBlockNavigation(false);
     navigate(`/preview/${tmp.id}`);
@@ -792,7 +934,8 @@ export const QuizBuilder = () => {
 
     if (isFlashcard) return <div style={{ maxWidth: 660, margin: "0 auto" }}><FlashcardEditor flashcard={q as unknown as React.ComponentProps<typeof FlashcardEditor>["flashcard"]} onChange={upd as unknown as React.ComponentProps<typeof FlashcardEditor>["onChange"]} /></div>;
 
-    const meta = QTYPE_META[q.type] || { label: q.type, dot: "var(--ap-muted)" };
+    const meta = QTYPE_META[q.type] || { label: q.type, dot: "var(--ap-muted)", icon: HelpCircle };
+    const SelectedTypeIcon = meta.icon;
     const isMC = q.type === "multiple-choice" || q.type === "single-choice";
     const isTF = q.type === "true-false";
 
@@ -800,35 +943,38 @@ export const QuizBuilder = () => {
       <div style={{ maxWidth: 660, margin: "0 auto" }}>
 
         {/* Type chip */}
-        <DropdownMenu>
+        <DropdownMenu onOpenChange={(open) => { if (!open) setHoveredQuestionType(null); }}>
           <DropdownMenuTrigger asChild>
             <button
               style={{
                 display: "inline-flex", alignItems: "center", gap: 8,
                 fontSize: 12.5, fontWeight: 800, padding: "7px 14px",
-                borderRadius: 999, cursor: "pointer", marginBottom: 18,
+                borderRadius: "var(--ap-r-sm)", cursor: "pointer", marginBottom: 18,
                 color: meta.dot === "var(--ap-quiz)" ? "var(--ap-quiz-deep)" : meta.dot === "var(--ap-poll)" ? "var(--ap-poll-deep)" : "var(--ap-pres-deep)",
                 background: meta.dot === "var(--ap-quiz)" ? "var(--ap-quiz-soft)" : meta.dot === "var(--ap-poll)" ? "var(--ap-poll-soft)" : "var(--ap-pres-soft)",
                 border: `2px solid color-mix(in srgb, ${meta.dot} 40%, transparent)`,
                 transition: "transform .15s var(--ap-spring)",
               }}
             >
-              <i style={{ width: 8, height: 8, borderRadius: 2, background: meta.dot, display: "inline-block" }} />
+              <SelectedTypeIcon style={{ width: 15, height: 15, color: meta.dot }} aria-hidden="true" />
               {meta.label}
               <ChevronDown style={{ width: 12, height: 12, opacity: 0.6 }} />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            style={{ background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-lg)", boxShadow: "var(--ap-shadow-card)" }}
+            style={{ minWidth: 360, background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-lg)", boxShadow: "var(--ap-shadow-card)" }}
             className="z-50 p-1.5"
           >
             {getAvailableTypes().map(type => {
-              const m = QTYPE_META[type] || { label: type, dot: "var(--ap-muted)" };
+              const m = QTYPE_META[type] || { label: type, dot: "var(--ap-muted)", icon: HelpCircle };
+              const TypeIcon = m.icon;
               const locked = !isPoll && isQuestionTypeLocked(type, plan);
               return (
                 <DropdownMenuItem
                   key={type}
-                  className="gap-2 rounded-xl text-sm cursor-pointer"
+                  className="gap-3 rounded-xl text-sm cursor-pointer py-2.5"
+                  onPointerEnter={() => setHoveredQuestionType(type)}
+                  onFocus={() => setHoveredQuestionType(type)}
                   onSelect={() => {
                     if (locked) {
                       toast.error("Type de question réservé au plan Pro", {
@@ -842,10 +988,15 @@ export const QuizBuilder = () => {
                   style={locked ? { opacity: 0.5 } : undefined}
                   aria-disabled={locked}
                 >
-                  <i style={{ width: 7, height: 7, borderRadius: 2, background: m.dot, display: "inline-block", flexShrink: 0 }} />
-                  {m.label}
+                  <TypeIcon style={{ width: 18, height: 18, color: m.dot, flexShrink: 0 }} aria-hidden="true" />
+                  <span style={{ minWidth: 0 }}>
+                    <b style={{ display: "block", color: "var(--ap-ink)", lineHeight: 1.25 }}>{m.label}</b>
+                    <small style={{ display: "block", marginTop: 2, color: "var(--ap-muted)", fontSize: 11.5, lineHeight: 1.3 }}>
+                      {getQuestionTypeDescription(type)}
+                    </small>
+                  </span>
                   {locked && (
-                    <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 800, color: "var(--ap-brand)", background: "var(--ap-brand-soft)", padding: "2px 6px", borderRadius: 999 }}>
+                    <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 800, color: "var(--ap-brand)", background: "var(--ap-brand-soft)", padding: "2px 6px", borderRadius: "var(--ap-r-sm)" }}>
                       Pro
                     </span>
                   )}
@@ -854,6 +1005,19 @@ export const QuizBuilder = () => {
             })}
           </DropdownMenuContent>
         </DropdownMenu>
+
+        {hoveredQuestionType && <QuestionTypeExample type={hoveredQuestionType} />}
+
+        {!hoveredQuestionType && (
+        <>
+        {!isFlashcard && (
+          <div style={{ marginBottom: 22 }}>
+            <QuestionLayoutPicker
+              value={q.layout}
+              onChange={(layout) => upd({ layout })}
+            />
+          </div>
+        )}
 
         {/* Question textarea */}
         <div style={{ marginBottom: 18 }}>
@@ -913,7 +1077,10 @@ export const QuizBuilder = () => {
               const file = e.target.files?.[0];
               if (!file) return;
               const r = new FileReader();
-              r.onloadend = () => upd({ image: r.result as string });
+              r.onloadend = () => upd({
+                image: r.result as string,
+                layout: !q.layout || q.layout === "standard" ? "media-top" : q.layout,
+              });
               r.readAsDataURL(file);
               e.target.value = "";
             }} />
@@ -992,7 +1159,7 @@ export const QuizBuilder = () => {
                   return (
                     <button key={opt.value} onClick={() => upd({ points: opt.value })}
                       style={{
-                        flex: 1, border: "none", borderRadius: 9, padding: "9px 6px",
+                        flex: 1, border: "none", borderRadius: "var(--ap-r-md)", padding: "9px 6px",
                         background: isOn ? "var(--ap-ink)" : "transparent",
                         color: isOn ? "white" : "var(--ap-muted)",
                         fontWeight: 800, fontSize: 12.5, cursor: "pointer",
@@ -1014,7 +1181,7 @@ export const QuizBuilder = () => {
                   return (
                     <button key={opt.value} onClick={() => upd({ timeLimit: opt.value })}
                       style={{
-                        flex: 1, border: "none", borderRadius: 9, padding: "9px 6px",
+                        flex: 1, border: "none", borderRadius: "var(--ap-r-md)", padding: "9px 6px",
                         background: isOn ? "var(--ap-brand)" : "transparent",
                         color: isOn ? "white" : "var(--ap-muted)",
                         fontWeight: 700, fontSize: 12.5, cursor: "pointer",
@@ -1029,6 +1196,8 @@ export const QuizBuilder = () => {
               </div>
             </div>
           </div>
+        )}
+        </>
         )}
       </div>
     );
@@ -1108,6 +1277,20 @@ export const QuizBuilder = () => {
       );
     }
 
+    const participantPreviewQuestion = hoveredQuestionType
+      ? {
+          ...getDefaultQuestion(hoveredQuestionType),
+          id: "type-hover-preview",
+          type: hoveredQuestionType,
+          question: getQuestionTypeDescription(hoveredQuestionType),
+          answers: ["Première option", "Deuxième option", "Troisième option", "Autre réponse"],
+          items: ["Priorité principale", "Deuxième priorité", "Troisième priorité"],
+          scale: hoveredQuestionType === "frequency-scale"
+            ? ["Jamais", "Rarement", "Parfois", "Souvent", "Toujours"]
+            : ["Pas du tout", "Plutôt non", "Neutre", "Plutôt oui", "Tout à fait"],
+        } satisfies EditableQuestion
+      : selectedQ;
+
     return (
       <>
         <div style={labelStyle}>
@@ -1116,11 +1299,11 @@ export const QuizBuilder = () => {
           <span style={{ flex: 1, height: 2, background: "var(--ap-line-2)", opacity: 0.5, borderRadius: 2 }} />
         </div>
         <PhonePreview
-          question={selectedQ}
+          question={participantPreviewQuestion}
           questionIndex={selectedIdx ?? 0}
           totalQuestions={questions.length}
         />
-        {selectedQ && (
+        {participantPreviewQuestion && (
           <p style={{ marginTop: 16, fontSize: 12, fontWeight: 700, color: "var(--ap-muted)", textAlign: "center", lineHeight: 1.5 }}>
             Tout ce que vous tapez apparaît ici<br />
             <strong style={{ color: "var(--ap-ink)" }}>instantanément</strong>
@@ -1170,24 +1353,50 @@ export const QuizBuilder = () => {
             {backLabel}
           </button>
           <ChevronRight style={{ width: 15, height: 15, color: "var(--ap-line-2)", flexShrink: 0 }} />
-          <input
-            value={title}
-            onChange={e => setTitle(e.target.value)}
-            placeholder={isPoll ? "Mon Sondage" : isFlashcard ? "Mes Flashcards" : "Mon Quiz"}
-            style={{
-              fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 15.5, color: "var(--ap-ink)",
-              border: "2px solid transparent", borderRadius: "var(--ap-r-sm)", background: "transparent",
-              padding: "5px 9px", width: 280, outline: "none",
-              transition: "border-color .15s, background .15s",
-            }}
-            onFocus={e => { e.target.style.borderColor = "var(--ap-brand)"; e.target.style.background = "white"; }}
-            onBlur={e => { e.target.style.borderColor = "transparent"; e.target.style.background = "transparent"; }}
-          />
+          <div style={{ position: "relative" }}>
+            <input
+              ref={titleInputRef}
+              value={title}
+              onChange={e => setTitle(e.target.value)}
+              placeholder={isPoll ? "Mon Sondage" : isFlashcard ? "Mes Flashcards" : "Mon Quiz"}
+              aria-invalid={!!titleError}
+              aria-describedby={titleError ? "quiz-title-error" : undefined}
+              style={{
+                fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 15.5, color: "var(--ap-ink)",
+                border: `2px solid ${titleError ? "var(--ap-quiz)" : "transparent"}`, borderRadius: "var(--ap-r-sm)",
+                background: titleError ? "var(--ap-quiz-soft)" : "transparent",
+                padding: "5px 9px", width: 280, outline: "none",
+                transition: "border-color .15s, background .15s",
+              }}
+              onFocus={e => { if (!titleError) { e.target.style.borderColor = "var(--ap-brand)"; e.target.style.background = "white"; } }}
+              onBlur={e => { setTitleTouched(true); if (!titleError) { e.target.style.borderColor = "transparent"; e.target.style.background = "transparent"; } }}
+            />
+            {titleError && (
+              <p
+                id="quiz-title-error"
+                role="alert"
+                style={{
+                  position: "absolute", top: "calc(100% + 4px)", left: 0, zIndex: 30, whiteSpace: "nowrap",
+                  margin: 0, fontSize: 12, fontWeight: 800, color: "var(--ap-quiz-deep)",
+                  background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-quiz)",
+                  borderRadius: "var(--ap-r-sm)", padding: "4px 9px", boxShadow: "var(--ap-shadow-soft)",
+                }}
+              >
+                {titleError}
+              </p>
+            )}
+          </div>
         </nav>
 
         <SaveStateIndicator state={saveState} />
 
         <div style={{ flex: 1 }} />
+
+        <CollaboratorsButton
+          contentId={contentRow?.id ?? null}
+          contentTitle={title || (isPoll ? "Nouveau sondage" : isFlashcard ? "Nouvelles flashcards" : "Nouveau quiz")}
+          canManage={contentRow?.user_id === user?.id}
+        />
 
         {/* Settings */}
         <button
@@ -1204,15 +1413,28 @@ export const QuizBuilder = () => {
         </button>
 
         {/* Preview */}
-        <button
-          onClick={handlePreviewQuiz}
-          disabled={questions.length === 0}
-          className="ap-btn ap-btn--ghost"
-          style={{ padding: "10px 18px", borderRadius: 999, fontSize: 14 }}
-        >
-          <Eye style={{ width: 15, height: 15 }} />
-          Aperçu
-        </button>
+        <TooltipProvider delayDuration={180}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span style={{ display: "inline-flex", flexShrink: 0 }}>
+                <button
+                  onClick={handlePreviewQuiz}
+                  disabled={questions.length === 0}
+                  className="ap-btn ap-btn--ghost"
+                  style={{ padding: "10px 18px", borderRadius: "var(--ap-r-sm)", fontSize: 14 }}
+                >
+                  <Eye style={{ width: 15, height: 15 }} />
+                  Aperçu
+                </button>
+              </span>
+            </TooltipTrigger>
+            {questions.length === 0 && (
+              <TooltipContent side="bottom" align="end">
+                Ajoutez au moins une question pour ouvrir l’aperçu.
+              </TooltipContent>
+            )}
+          </Tooltip>
+        </TooltipProvider>
 
         {/* Save / Publish */}
         <button
@@ -1221,7 +1443,7 @@ export const QuizBuilder = () => {
           style={{ padding: "10px 18px", fontSize: 14 }}
         >
           {quizId ? "Mettre à jour" : "Publier"}
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+          <ArrowRight style={{ width: 15, height: 15 }} />
         </button>
       </div>
 
@@ -1355,7 +1577,7 @@ export const QuizBuilder = () => {
             <div>
               <Label>{t("headerImage")}</Label>
               {headerImage && (
-                <div className="relative w-full h-32 rounded-lg overflow-hidden mt-2 mb-2">
+                <div className="relative w-full h-48 rounded-lg overflow-hidden mt-2 mb-2">
                   <img src={headerImage} alt="Header" className="w-full h-full object-cover" />
                   <Button variant="ghost" size="sm" className="absolute top-2 right-2 bg-black/50 hover:bg-black/70" onClick={() => setHeaderImage("")}>
                     <Trash2 className="w-4 h-4 text-white" />
@@ -1396,8 +1618,18 @@ export const QuizBuilder = () => {
                     <Label className="cursor-pointer">{t("public")}</Label>
                     <TooltipProvider><Tooltip><TooltipTrigger asChild><button className="text-muted-foreground hover:text-foreground"><HelpCircle className="w-4 h-4" /></button></TooltipTrigger><TooltipContent><p className="max-w-xs">{t("publicTooltip")}</p></TooltipContent></Tooltip></TooltipProvider>
                   </div>
-                  <Switch checked={isPublic} onCheckedChange={setIsPublic} />
+                  <Switch
+                    checked={isPublic}
+                    onCheckedChange={setIsPublic}
+                    disabled={Boolean(contentRow && contentRow.user_id !== user?.id)}
+                    title={contentRow && contentRow.user_id !== user?.id ? "Seul le propriétaire peut modifier la visibilité" : undefined}
+                  />
                 </div>
+                {contentRow && contentRow.user_id !== user?.id && (
+                  <p className="m-0 px-3 text-xs font-semibold text-muted-foreground">
+                    Seul le propriétaire peut modifier la visibilité de cette ressource.
+                  </p>
+                )}
                 <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                   <div className="flex items-center gap-2">
                     <Label className="cursor-pointer">{t("speedBonus")}</Label>
@@ -1405,6 +1637,28 @@ export const QuizBuilder = () => {
                   </div>
                   <Switch checked={speedBonus} onCheckedChange={setSpeedBonus} />
                 </div>
+                {!isFlashcard && (
+                  <>
+                    <div className="flex items-center justify-between gap-4 p-3 bg-muted/50 rounded-lg">
+                      <div>
+                        <Label className="cursor-pointer">Réactions live</Label>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Autoriser les participants à envoyer des réactions emoji pendant le lobby et à la fin.
+                        </p>
+                      </div>
+                      <Switch checked={liveReactionsEnabled} onCheckedChange={setLiveReactionsEnabled} />
+                    </div>
+                    <div className="flex items-center justify-between gap-4 p-3 bg-muted/50 rounded-lg">
+                      <div>
+                        <Label className="cursor-pointer">Chat de fin de partie</Label>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Autoriser les participants à publier un commentaire sur l'écran final.
+                        </p>
+                      </div>
+                      <Switch checked={endChatEnabled} onCheckedChange={setEndChatEnabled} />
+                    </div>
+                  </>
+                )}
                 <div>
                   <Label>{t("transitionTime")}</Label>
                   <Input type="number" min="3" max="10" value={transitionTime} onChange={e => setTransitionTime(parseInt(e.target.value) || 5)} className="mt-2" />
@@ -1509,6 +1763,20 @@ export const QuizBuilder = () => {
 
       {/* ── Import file modal ── */}
       <ImportFileModal open={importFileOpen} onClose={() => setImportFileOpen(false)} quizType={quizType} onImport={handleImportFromFile} />
+
+      {/* ── Leave-without-saving confirmation ── */}
+      <AlertDialog open={pendingNavigatePath !== null} onOpenChange={(open) => { if (!open) setPendingNavigatePath(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("confirmLeaveBuilderTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("confirmLeaveBuilder")}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmPendingNavigate} className="bg-destructive hover:bg-destructive/90">{t("leaveBuilder")}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

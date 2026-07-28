@@ -1,5 +1,5 @@
-import { Loader2 } from "lucide-react";
 import type { ImageElement } from "../types/presentation";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function ImageElementView({ element }: { element: ImageElement }) {
   const cropStyle: React.CSSProperties = element.crop
@@ -8,8 +8,8 @@ export function ImageElementView({ element }: { element: ImageElement }) {
 
   if (!element.src) {
     return (
-      <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--ap-paper-2)", border: "1px dashed var(--ap-line)", borderRadius: element.borderRadius, color: "var(--ap-muted)" }}>
-        <Loader2 size={20} className="animate-spin" />
+      <div style={{ width: "100%", height: "100%", border: "1px dashed var(--ap-line)", borderRadius: element.borderRadius, overflow: "hidden" }}>
+        <Skeleton className="h-full w-full rounded-none" />
       </div>
     );
   }
@@ -19,7 +19,7 @@ export function ImageElementView({ element }: { element: ImageElement }) {
       src={element.src}
       alt=""
       style={{
-        width: "100%", height: "100%", objectFit: "cover",
+        width: "100%", height: "100%", objectFit: element.fit ?? "cover",
         borderRadius: element.borderRadius,
         border: element.borderWidth > 0 ? `${element.borderWidth}px solid ${element.borderColor}` : undefined,
         ...cropStyle,

@@ -4,8 +4,9 @@ import App from "./App.tsx";
 import "./index.css";
 import { getCurrentUser } from "./lib/auth";
 import { applySiteTheme, normalizeSiteTheme } from "./lib/siteTheme";
+import { applyDensity, normalizeDensity } from "./lib/density";
 
-// Apply theme (light/dark mode + site skin) on load
+// Apply theme (light/dark mode + site skin + density) on load
 const applyTheme = () => {
   const user = getCurrentUser();
   const theme = user?.theme || 'light';
@@ -17,6 +18,7 @@ const applyTheme = () => {
   }
 
   applySiteTheme(normalizeSiteTheme(user?.siteTheme));
+  applyDensity(normalizeDensity(user?.density));
 };
 
 applyTheme();

@@ -12,6 +12,7 @@ import { ModerationTab } from "./ModerationTab";
 import { SubscribersTab } from "./SubscribersTab";
 import { SettingsTab } from "./SettingsTab";
 import { AdminSidebarGroup, type AdminSection } from "./AdminSidebarGroup";
+import { PageSkeleton } from "@/components/ui/skeletons";
 import "./admin.css";
 
 type Section = AdminSection;
@@ -41,7 +42,7 @@ const Admin = () => {
     return (
       <AppLayout>
         <main className="adm">
-          <div className="adm-loading"><span className="adm-spinner" /></div>
+          <PageSkeleton />
         </main>
       </AppLayout>
     );

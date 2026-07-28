@@ -1,5 +1,5 @@
 // src/components/presentation-editor/utils/createElement.ts
-import type { ImageElement, LineElement, ShapeElement, SlideElement, TextElement, VideoElement } from "../types/presentation";
+import type { ImageElement, LineElement, ShapeElement, SlideElement, TableElement, TextElement, VideoElement } from "../types/presentation";
 import type { EditorTool } from "../store/useEditorUIStore";
 
 export type DrawableTool = Exclude<EditorTool, "select">;
@@ -17,6 +17,7 @@ const DEFAULT_SIZE: Record<DrawableTool, { width: number; height: number }> = {
   video: { width: 480, height: 270 },
   line: { width: 200, height: 0 },
   arrow: { width: 200, height: 0 },
+  table: { width: 520, height: 260 },
 };
 
 export function blankRichText(): TextElement["richText"] {
@@ -73,6 +74,22 @@ export function createElementForTool(
   }
   if (tool === "image") {
     return { ...base, type: "image", ...rect, src: "", borderRadius: 0, borderWidth: 0, borderColor: "transparent" } satisfies ImageElement;
+  }
+  if (tool === "table") {
+    return {
+      ...base,
+      type: "table",
+      ...rect,
+      rows: 3,
+      columns: 3,
+      cells: Array.from({ length: 9 }, (_, index) => index < 3 ? `En-tête ${index + 1}` : ""),
+      headerRow: true,
+      borderColor: "#c8cbd4",
+      borderWidth: 2,
+      headerFill: "#e9e7ff",
+      cellFill: "#ffffff",
+      textColor: "#24202d",
+    } satisfies TableElement;
   }
   return { ...base, type: "video", ...rect, src: "", provider: "upload" } satisfies VideoElement;
 }

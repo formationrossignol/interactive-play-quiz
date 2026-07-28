@@ -12,6 +12,7 @@ import { isLegacySlideShape, migrateLegacySlideToPresentation } from "@/componen
 import type { Presentation } from "@/components/presentation-editor/types/presentation";
 import { getQuizById, type SavedQuiz } from "@/lib/quizStorage";
 import { getCurrentUser } from "@/lib/auth";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const fallbackKeysForType = (id: string) => [
   `quiz-${id}`,
@@ -39,6 +40,8 @@ const normalizeStoredQuiz = (quiz: Partial<SavedQuiz>, fallbackId: string): Save
   theme: quiz.theme,
   font: quiz.font,
   ambianceId: quiz.ambianceId,
+  liveReactionsEnabled: quiz.liveReactionsEnabled ?? true,
+  endChatEnabled: quiz.endChatEnabled ?? true,
   rating: quiz.rating,
   ratingCount: quiz.ratingCount,
 });
@@ -50,6 +53,9 @@ const LiveQuizPage = () => {
     try { return storedPlayerRaw ? (JSON.parse(storedPlayerRaw) as { name: string; avatar: string; id: string }) : null; }
     catch { return null; }
   })();
+  // Set by DiscoverQuizzes' "Jouer seul" button, mirroring the join-flow's
+  // own sessionStorage flag — same per-tab-scoped pattern, no new routing.
+  const isSoloMode = gameCode ? sessionStorage.getItem(`quiz-solo-${gameCode}`) === "1" : false;
 
   const [loadedQuiz, setLoadedQuiz] = useState<SavedQuiz | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -115,6 +121,8 @@ const LiveQuizPage = () => {
       font: loadedQuiz.font,
       ambianceId: loadedQuiz.ambianceId,
       transitionTime: loadedQuiz.transitionTime,
+      liveReactionsEnabled: loadedQuiz.liveReactionsEnabled ?? true,
+      endChatEnabled: loadedQuiz.endChatEnabled ?? true,
     };
   }, [loadedQuiz]);
 
@@ -160,8 +168,12 @@ const LiveQuizPage = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
-        <div className="rounded-2xl bg-white/10 border border-white/20 p-8 text-center text-white max-w-md w-full">
-          <p className="text-lg text-white">Chargement de votre contenu interactif…</p>
+        <div className="rounded-2xl bg-white/10 border border-white/20 p-8 max-w-md w-full">
+          <Skeleton className="mx-auto mb-5 h-12 w-12 rounded-full bg-white/20" />
+          <Skeleton className="mx-auto mb-3 h-7 w-3/5 bg-white/20" />
+          <Skeleton className="mx-auto mb-8 h-4 w-4/5 bg-white/20" />
+          <Skeleton className="mb-3 h-12 w-full bg-white/20" />
+          <Skeleton className="h-12 w-full rounded-full bg-white/20" />
         </div>
       </div>
     );
@@ -207,6 +219,7 @@ const LiveQuizPage = () => {
           <QuizSession
             quiz={quizSession}
             isHost
+            isSolo={isSoloMode}
             onExitRequest={() => setShowExitDialog(true)}
             onExitHandlerReady={(fn) => { exitHandlerRef.current = fn; }}
           />

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { X } from "lucide-react";
+import { Eye, Pencil, X } from "lucide-react";
 import { toast } from "sonner";
 import { t } from "@/lib/i18n";
 import { getCurrentUser } from "@/lib/auth";
@@ -16,17 +16,20 @@ import {
   removeGroupMember,
   resolveContentShareByEmail,
   resolveGroupMemberByEmail,
+  updateContentSharePermission,
   usernamesByIds,
   type ContentShare,
   type Group,
   type GroupMember,
+  type SharePermission,
   type UsernameMatch,
 } from "@/lib/sharing/sharingRepo";
 
-interface ShareCourseModalProps {
+interface ShareContentModalProps {
   contentId: string | null;
-  courseTitle: string;
+  contentTitle: string;
   onClose: () => void;
+  defaultPermission?: SharePermission;
 }
 
 const overlayStyle: React.CSSProperties = {
@@ -54,7 +57,24 @@ const rowStyle: React.CSSProperties = {
 
 const errMsg = (e: unknown) => (e instanceof Error ? e.message : "Une erreur est survenue");
 
-export const ShareCourseModal = ({ contentId, courseTitle, onClose }: ShareCourseModalProps) => {
+const permissionSelectStyle: React.CSSProperties = {
+  height: 32,
+  padding: "0 28px 0 9px",
+  borderRadius: "var(--ap-r-sm)",
+  border: "var(--ap-border-w) solid var(--ap-line)",
+  background: "var(--ap-card)",
+  color: "var(--ap-ink)",
+  fontFamily: "var(--ap-font-body)",
+  fontSize: 12,
+  fontWeight: 700,
+};
+
+export const ShareContentModal = ({
+  contentId,
+  contentTitle,
+  onClose,
+  defaultPermission = "editor",
+}: ShareContentModalProps) => {
   const user = getCurrentUser();
   const [tab, setTab] = useState<"people" | "groups">("people");
   const [shares, setShares] = useState<ContentShare[]>([]);
@@ -64,6 +84,7 @@ export const ShareCourseModal = ({ contentId, courseTitle, onClose }: ShareCours
   const [expandedGroupId, setExpandedGroupId] = useState<string | null>(null);
   const [groupMembers, setGroupMembers] = useState<Record<string, GroupMember[]>>({});
   const [busy, setBusy] = useState<Set<string>>(new Set());
+  const [invitePermission, setInvitePermission] = useState<SharePermission>(defaultPermission);
 
   const setBusyKey = (key: string, value: boolean) => {
     setBusy((prev) => {
@@ -114,11 +135,11 @@ export const ShareCourseModal = ({ contentId, courseTitle, onClose }: ShareCours
 
   const handlePickUsername = (match: UsernameMatch) => {
     runBusy(`add-user-${match.id}`, () =>
-      addContentShareByUserId(contentId, match.id).then(() => reloadShares(contentId)));
+      addContentShareByUserId(contentId, match.id, invitePermission).then(() => reloadShares(contentId)));
   };
   const handleInviteEmail = (email: string) => {
     runBusy(`invite-${email}`, () =>
-      resolveContentShareByEmail(contentId, email).then(() => reloadShares(contentId)));
+      resolveContentShareByEmail(contentId, email, invitePermission).then(() => reloadShares(contentId)));
   };
   const handleRemoveShare = (shareId: string) => {
     runBusy(`share-${shareId}`, () =>
@@ -128,11 +149,16 @@ export const ShareCourseModal = ({ contentId, courseTitle, onClose }: ShareCours
   const toggleGroupShare = (group: Group, shared: boolean) => {
     runBusy(`group-${group.id}`, () => {
       if (shared) {
-        return addContentShareByGroupId(contentId, group.id).then(() => reloadShares(contentId));
+        return addContentShareByGroupId(contentId, group.id, invitePermission).then(() => reloadShares(contentId));
       }
       const share = shares.find((s) => s.shared_with_group_id === group.id);
       return share ? removeContentShare(share.id).then(() => reloadShares(contentId)) : Promise.resolve();
     });
+  };
+
+  const handlePermissionChange = (shareId: string, permission: SharePermission) => {
+    runBusy(`permission-${shareId}`, () =>
+      updateContentSharePermission(shareId, permission).then(() => reloadShares(contentId)));
   };
 
   const handleCreateGroup = () => {
@@ -163,7 +189,7 @@ export const ShareCourseModal = ({ contentId, courseTitle, onClose }: ShareCours
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
           <div>
             <h2 className="ap-h3" style={{ fontSize: 16 }}>{t("shareManageAccess")}</h2>
-            <p className="ap-muted" style={{ fontSize: 12 }}>{courseTitle}</p>
+            <p className="ap-muted" style={{ fontSize: 12 }}>{contentTitle}</p>
           </div>
           <button type="button" onClick={onClose} className="ap-btn ap-btn--ghost ap-btn--sm ap-icon-btn" aria-label="Fermer">
             <X className="h-4 w-4" />
@@ -177,6 +203,18 @@ export const ShareCourseModal = ({ contentId, courseTitle, onClose }: ShareCours
 
         {tab === "people" ? (
           <div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 10 }}>
+              <span className="ap-muted" style={{ fontSize: 12, fontWeight: 700 }}>Permission des nouvelles invitations</span>
+              <select
+                value={invitePermission}
+                onChange={(e) => setInvitePermission(e.target.value as SharePermission)}
+                style={permissionSelectStyle}
+                aria-label="Permission des nouvelles invitations"
+              >
+                <option value="editor">Peut modifier</option>
+                <option value="viewer">Lecture seule</option>
+              </select>
+            </div>
             <PersonPicker onPickUsername={handlePickUsername} onInviteEmail={handleInviteEmail} />
             <div style={{ marginTop: 16 }}>
               {shares.filter((s) => s.shared_with_user_id || s.pending_email).length === 0 ? (
@@ -194,6 +232,21 @@ export const ShareCourseModal = ({ contentId, courseTitle, onClose }: ShareCours
                       {share.pending_email && !share.shared_with_user_id && (
                         <span style={{ fontSize: 11, fontWeight: 800, color: "var(--ap-muted)" }}>{t("sharePending")}</span>
                       )}
+                      <label style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+                        {share.permission === "editor"
+                          ? <Pencil style={{ width: 13, height: 13, color: "var(--ap-brand)" }} />
+                          : <Eye style={{ width: 13, height: 13, color: "var(--ap-muted)" }} />}
+                        <select
+                          value={share.permission ?? "viewer"}
+                          disabled={busy.has(`permission-${share.id}`)}
+                          onChange={(e) => handlePermissionChange(share.id, e.target.value as SharePermission)}
+                          style={permissionSelectStyle}
+                          aria-label={`Permission de ${share.pending_email ?? usernames[share.shared_with_user_id ?? ""] ?? "ce membre"}`}
+                        >
+                          <option value="editor">Peut modifier</option>
+                          <option value="viewer">Lecture seule</option>
+                        </select>
+                      </label>
                       <button
                         type="button"
                         className="ap-btn ap-btn--ghost ap-btn--sm"
@@ -236,6 +289,22 @@ export const ShareCourseModal = ({ contentId, courseTitle, onClose }: ShareCours
                     onChange={(e) => toggleGroupShare(group, e.target.checked)}
                   />
                   <span style={{ flex: 1, fontSize: 13, fontWeight: 700 }}>{group.name}</span>
+                  {sharedGroupIds.has(group.id) && (() => {
+                    const groupShare = shares.find((share) => share.shared_with_group_id === group.id);
+                    if (!groupShare) return null;
+                    return (
+                      <select
+                        value={groupShare.permission ?? "viewer"}
+                        disabled={busy.has(`permission-${groupShare.id}`)}
+                        onChange={(e) => handlePermissionChange(groupShare.id, e.target.value as SharePermission)}
+                        style={permissionSelectStyle}
+                        aria-label={`Permission du groupe ${group.name}`}
+                      >
+                        <option value="editor">Peut modifier</option>
+                        <option value="viewer">Lecture seule</option>
+                      </select>
+                    );
+                  })()}
                   <button type="button" className="ap-btn ap-btn--ghost ap-btn--sm" onClick={() => toggleExpandGroup(group.id)}>
                     {t("shareManageMembers")}
                   </button>

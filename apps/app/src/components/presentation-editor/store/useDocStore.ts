@@ -1,6 +1,8 @@
 import { create } from "zustand";
-import type { Presentation, Slide, SlideBackground, SlideElement } from "../types/presentation";
+import type { Presentation, PresentationFooter, PresentationTheme, Slide, SlideBackground, SlideElement } from "../types/presentation";
 import { blankRichText } from "../utils/createElement";
+import { applySlideLayout, createSlideFromLayout, type SlideLayoutId } from "../layouts/slideLayouts";
+import { DEFAULT_PRESENTATION_THEME, PRESENTATION_TEMPLATES } from "../templates/presentationTemplates";
 
 interface DocState {
   presentation: Presentation | null;
@@ -9,13 +11,19 @@ interface DocState {
   exportJSON: () => string;
   importJSON: (json: string) => void;
   setTitle: (title: string) => void;
+  updateFooter: (patch: Partial<PresentationFooter>) => void;
+  updateTheme: (patch: Partial<PresentationTheme>) => void;
+  applyTemplate: (templateId: string) => void;
 
-  addSlide: () => string;
+  addSlide: (afterSlideId?: string, layoutId?: SlideLayoutId) => string;
   duplicateSlide: (slideId: string) => string;
+  insertSlideCopy: (slide: Slide, afterSlideId: string) => string;
   deleteSlide: (slideId: string) => void;
   reorderSlides: (slideId: string, toIndex: number) => void;
   toggleSlideHidden: (slideId: string) => void;
+  updateSlideNotes: (slideId: string, notes: string) => void;
   setSlideBackground: (slideId: string, background: SlideBackground | undefined) => void;
+  applySlideLayout: (slideId: string, layoutId: SlideLayoutId) => void;
 
   addElement: (slideId: string, element: SlideElement) => void;
   updateElement: (slideId: string, elementId: string, patch: Partial<SlideElement>) => void;
@@ -84,23 +92,134 @@ function sanitizePresentation(raw: Presentation): Presentation {
   };
 }
 
+function cloneSlide(source: Slide, id: string): Slide {
+  const elementIds = new Map(source.elements.map((element) => [element.id, nextId("el")]));
+  const elements = source.elements.map((element): SlideElement => {
+    const shared = {
+      ...element,
+      id: elementIds.get(element.id)!,
+      groupId: element.groupId ? elementIds.get(element.groupId) : undefined,
+    };
+    if (element.type === "group") {
+      return {
+        ...shared,
+        childIds: element.childIds.map((childId) => elementIds.get(childId) ?? childId),
+      } as SlideElement;
+    }
+    if (element.type === "table") {
+      return { ...shared, cells: [...element.cells] } as SlideElement;
+    }
+    return shared as SlideElement;
+  });
+  return { ...source, id, elements };
+}
+
+function recolorLayoutElements(elements: SlideElement[], accentColor: string): SlideElement[] {
+  return elements.map((element) => (
+    element.layoutGenerated && (element.type === "rect" || element.type === "circle")
+      ? { ...element, fill: accentColor }
+      : element
+  ));
+}
+
 export const useDocStore = create<DocState>((set, get) => ({
   presentation: null,
 
-  load: (presentation) => set({ presentation: sanitizePresentation(presentation) }),
+  load: (presentation) => set({
+    presentation: sanitizePresentation({
+      ...presentation,
+      theme: { ...DEFAULT_PRESENTATION_THEME, ...presentation.theme },
+      footer: {
+        showSlideNumber: false,
+        text: "",
+        skipTitleSlide: false,
+        alignment: "left",
+        slideNumberPosition: "right",
+        ...presentation.footer,
+      },
+    }),
+  }),
   exportJSON: () => JSON.stringify(get().presentation),
-  importJSON: (json) => set({ presentation: sanitizePresentation(JSON.parse(json) as Presentation) }),
+  importJSON: (json) => {
+    const parsed = JSON.parse(json) as Presentation;
+    get().load(parsed);
+  },
 
   setTitle: (title) => set((state) => {
     if (!state.presentation) return state;
     return { presentation: { ...state.presentation, title } };
   }),
 
-  addSlide: () => {
+  updateFooter: (patch) => set((state) => {
+    if (!state.presentation) return state;
+    const current = state.presentation.footer ?? {
+      showSlideNumber: false,
+      text: "",
+      skipTitleSlide: false,
+      alignment: "left",
+      slideNumberPosition: "right",
+    };
+    return { presentation: { ...state.presentation, footer: { ...current, ...patch } } };
+  }),
+
+  updateTheme: (patch) => set((state) => {
+    if (!state.presentation) return state;
+    const current = state.presentation.theme ?? DEFAULT_PRESENTATION_THEME;
+    return { presentation: { ...state.presentation, theme: { ...current, ...patch } } };
+  }),
+
+  applyTemplate: (templateId) => set((state) => {
+    if (!state.presentation) return state;
+    const template = PRESENTATION_TEMPLATES.find((item) => item.id === templateId);
+    if (!template) return state;
+    return {
+      presentation: {
+        ...state.presentation,
+        theme: { ...template.theme },
+        slides: state.presentation.slides.map((slide) => ({
+          ...slide,
+          background: { type: "color", value: template.theme.backgroundColor },
+          elements: recolorLayoutElements(slide.elements, template.theme.accentColor).map((element) => (
+            element.type === "table"
+              ? {
+                  ...element,
+                  headerFill: template.theme.accentColor,
+                  cellFill: template.theme.backgroundColor,
+                  textColor: template.theme.textColor,
+                }
+              : element
+          )),
+        })),
+      },
+    };
+  }),
+
+  addSlide: (afterSlideId, layoutId) => {
     const id = nextId("slide");
     set((state) => {
       if (!state.presentation) return state;
-      const slides = reindex([...state.presentation.slides, { id, order: 0, hidden: false, elements: [] }]);
+      const effectiveLayoutId = layoutId ?? state.presentation.theme?.defaultLayoutId ?? "title-body";
+      const nextSlide = createSlideFromLayout(
+        id,
+        0,
+        effectiveLayoutId,
+        state.presentation.width,
+        state.presentation.height,
+      );
+      nextSlide.elements = recolorLayoutElements(
+        nextSlide.elements,
+        state.presentation.theme?.accentColor ?? "#6c63ff",
+      );
+      const afterIndex = afterSlideId
+        ? state.presentation.slides.findIndex((slide) => slide.id === afterSlideId)
+        : -1;
+      const slides = afterIndex >= 0
+        ? reindex([
+            ...state.presentation.slides.slice(0, afterIndex + 1),
+            nextSlide,
+            ...state.presentation.slides.slice(afterIndex + 1),
+          ])
+        : reindex([...state.presentation.slides, nextSlide]);
       return { presentation: { ...state.presentation, slides } };
     });
     return id;
@@ -113,19 +232,24 @@ export const useDocStore = create<DocState>((set, get) => ({
       const idx = state.presentation.slides.findIndex((s) => s.id === slideId);
       if (idx === -1) return state;
       const source = state.presentation.slides[idx];
-      // groupId (on children) and childIds (on the group element) reference
-      // element ids within THIS slide — copying them verbatim after
-      // generating fresh ids would leave the duplicate's group pointing at
-      // ids that only exist on the source slide (ungrouping the duplicate
-      // would then match nothing and leave stale groupId on its children).
-      const idMap = new Map(source.elements.map((e) => [e.id, nextId("el")]));
-      const elements = source.elements.map((e) => {
-        const copy = { ...e, id: idMap.get(e.id)! };
-        if (copy.groupId) copy.groupId = idMap.get(copy.groupId) ?? copy.groupId;
-        if (copy.type === "group") copy.childIds = copy.childIds.map((cid) => idMap.get(cid) ?? cid);
-        return copy;
-      });
-      const copy: Slide = { ...source, id: newId, elements };
+      const copy = cloneSlide(source, newId);
+      const slides = reindex([
+        ...state.presentation.slides.slice(0, idx + 1),
+        copy,
+        ...state.presentation.slides.slice(idx + 1),
+      ]);
+      return { presentation: { ...state.presentation, slides } };
+    });
+    return newId;
+  },
+
+  insertSlideCopy: (source, afterSlideId) => {
+    const newId = nextId("slide");
+    set((state) => {
+      if (!state.presentation) return state;
+      const idx = state.presentation.slides.findIndex((slide) => slide.id === afterSlideId);
+      if (idx === -1) return state;
+      const copy = cloneSlide(source, newId);
       const slides = reindex([
         ...state.presentation.slides.slice(0, idx + 1),
         copy,
@@ -157,14 +281,36 @@ export const useDocStore = create<DocState>((set, get) => ({
     return { presentation: mapSlide(state.presentation, slideId, (s) => ({ ...s, hidden: !s.hidden })) };
   }),
 
+  updateSlideNotes: (slideId, notes) => set((state) => {
+    if (!state.presentation) return state;
+    return { presentation: mapSlide(state.presentation, slideId, (slide) => ({ ...slide, notes })) };
+  }),
+
   setSlideBackground: (slideId, background) => set((state) => {
     if (!state.presentation) return state;
     return { presentation: mapSlide(state.presentation, slideId, (s) => ({ ...s, background })) };
   }),
 
+  applySlideLayout: (slideId, layoutId) => set((state) => {
+    if (!state.presentation) return state;
+    return {
+      presentation: mapSlide(state.presentation, slideId, (slide) => (
+        applySlideLayout(slide, layoutId, state.presentation!.width, state.presentation!.height)
+      )),
+    };
+  }),
+
   addElement: (slideId, element) => set((state) => {
     if (!state.presentation) return state;
-    return { presentation: mapSlide(state.presentation, slideId, (s) => ({ ...s, elements: [...s.elements, element] })) };
+    const themedElement = element.type === "table"
+      ? {
+          ...element,
+          headerFill: state.presentation.theme?.accentColor ?? element.headerFill,
+          cellFill: state.presentation.theme?.backgroundColor ?? element.cellFill,
+          textColor: state.presentation.theme?.textColor ?? element.textColor,
+        }
+      : element;
+    return { presentation: mapSlide(state.presentation, slideId, (s) => ({ ...s, elements: [...s.elements, themedElement] })) };
   }),
 
   updateElement: (slideId, elementId, patch) => set((state) => {

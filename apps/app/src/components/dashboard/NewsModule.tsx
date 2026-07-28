@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Rocket } from "lucide-react";
 import { fetchLatestChangelog, type ChangelogRelease } from "@/lib/changelog";
+import { ListSkeleton } from "@/components/ui/skeletons";
+import { Link } from "react-router-dom";
 
 export function NewsModule() {
   const [releases, setReleases] = useState<ChangelogRelease[] | null>(null);
@@ -15,7 +17,7 @@ export function NewsModule() {
     <div className="ap-card" style={{ padding: "20px" }}>
       <h2 className="ap-h3" style={{ fontSize: "16px", marginBottom: "16px" }}>Nouveautés</h2>
       {releases === null ? (
-        <p className="ap-muted" style={{ fontSize: "13px" }}>Chargement…</p>
+        <ListSkeleton rows={3} avatarClassName="rounded-lg" />
       ) : releases.length === 0 ? (
         <p className="ap-muted" style={{ fontSize: "13px" }}>Pas de nouveautés pour l'instant.</p>
       ) : (
@@ -34,10 +36,9 @@ export function NewsModule() {
               </div>
             </div>
           ))}
-          {/* /changelog lives in apps/marketing — full navigation, not react-router Link. */}
-          <a href="/changelog" className="ap-btn ap-btn--ghost ap-btn--sm" style={{ alignSelf: "flex-start", marginTop: "4px" }}>
+          <Link to="/changelog" className="ap-btn ap-btn--ghost ap-btn--sm" style={{ alignSelf: "flex-start", marginTop: "4px" }}>
             Voir tout le changelog
-          </a>
+          </Link>
         </div>
       )}
     </div>

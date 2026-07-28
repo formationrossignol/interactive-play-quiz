@@ -9,7 +9,7 @@ import { AudioControls } from "./AudioControls";
 import { useGameAudio } from "@/hooks/useGameAudio";
 import { ExitQuizDialog } from "./ExitQuizDialog";
 import { TransitionCountdown, CountdownSplash } from "./TransitionTimer";
-import { cn } from "@/lib/utils";
+import { QuestionAnswerPanel } from "./QuestionAnswerPanel";
 import {
   ensureSessionState,
   fetchSessionStateFromSupabase,
@@ -26,8 +26,7 @@ import {
   type SessionControl,
 } from "@/lib/sessionState";
 import { supabase } from "@/lib/supabase";
-import { getPollOptions } from "@/lib/pollResults";
-import { PLAYER_ANSWER_SHAPES as answerShapes } from "@/lib/answerVisuals";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface PlayerViewProps {
   gameCode: string;
@@ -85,14 +84,8 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
   const [quizQuestions, setQuizQuestions] = useState<EditableQuestion[]>([]);
   // Poll mode: no timer, no points, neutral confirmations
   const [isPoll, setIsPoll] = useState(false);
-  const [openTextValue, setOpenTextValue] = useState('');
-
-  // Type-specific answer state
-  const [rankingOrder, setRankingOrder] = useState<string[]>([]);
-  const [blankValues, setBlankValues] = useState<string[]>([]);
-  const [sliderValue, setSliderValue] = useState<number>(0);
-  const [matchingSelectedLeft, setMatchingSelectedLeft] = useState<string | null>(null);
-  const [matchingPairs, setMatchingPairs] = useState<Record<string, string>>({});
+  const [liveReactionsEnabled, setLiveReactionsEnabled] = useState(true);
+  const [endChatEnabled, setEndChatEnabled] = useState(true);
 
   // Reactions (final screen)
   const [reactionComment, setReactionComment] = useState('');
@@ -320,6 +313,8 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
         setQuizQuestions((prev) => prev.length === 0 ? data.quiz_data.questions : prev);
         if (data.quiz_data.type === 'poll') setIsPoll(true);
         if (typeof data.quiz_data.ambianceId === 'string') setAmbianceId(data.quiz_data.ambianceId);
+        setLiveReactionsEnabled(data.quiz_data.liveReactionsEnabled !== false);
+        setEndChatEnabled(data.quiz_data.endChatEnabled !== false);
         hasQuizData = true;
       }
 
@@ -539,16 +534,6 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
     setAnswerPending(false);
     setAnswerKey(null);
   }, [currentQuestion]);
-
-  // Reset type-specific state when question or question data changes
-  useEffect(() => {
-    if (!liveQuestion) return;
-    if (liveQuestion.type === 'ranking') setRankingOrder([...(liveQuestion.items ?? [])]);
-    if (liveQuestion.type === 'fill-blank') setBlankValues((liveQuestion.blanks ?? []).map(() => ''));
-    if (liveQuestion.type === 'slider') setSliderValue(liveQuestion.min ?? 0);
-    if (liveQuestion.type === 'matching') { setMatchingSelectedLeft(null); setMatchingPairs({}); }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentQuestion, liveQuestion?.type]);
 
   // Restore answer feedback state after a page refresh
   useEffect(() => {
@@ -797,7 +782,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
           </div>
 
           {/* Reaction panel (lobby) — quiz only, the poll host has no reactions feed */}
-          {!isPoll && (
+          {!isPoll && liveReactionsEnabled && (
           <div
             className="mt-5"
             style={{
@@ -894,9 +879,10 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
             <style>{`@keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }`}</style>
           </>
         ) : (
-          <p className="text-white text-lg animate-pulse" style={{ fontFamily: 'var(--ap-font-display)' }}>
-            Chargement…
-          </p>
+          <div className="w-full max-w-xl px-6" role="status" aria-label="Chargement du résultat">
+            <Skeleton className="mx-auto mb-5 h-8 w-3/5 bg-white/20" />
+            <Skeleton className="mx-auto h-5 w-2/5 bg-white/20" />
+          </div>
         )}
       </div>
     );
@@ -908,9 +894,12 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
         className="min-h-screen flex items-center justify-center"
         style={{ background: "var(--ap-brand)" }}
       >
-        <p className="text-white text-lg animate-pulse" style={{ fontFamily: "var(--ap-font-display)" }}>
-          Chargement de la question…
-        </p>
+        <div className="w-full max-w-2xl px-6" role="status" aria-label="Chargement de la question">
+          <Skeleton className="mx-auto mb-8 h-9 w-4/5 bg-white/20" />
+          <div className="grid grid-cols-2 gap-4">
+            {[0, 1, 2, 3].map((item) => <Skeleton key={item} className="h-28 w-full rounded-2xl bg-white/20" />)}
+          </div>
+        </div>
       </div>
     );
   }
@@ -932,7 +921,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
                 style={{
                   display: "flex", alignItems: "center", gap: 4, fontWeight: 900, fontSize: 12,
                   color: "var(--ap-flash-deep)", background: "var(--ap-flash-soft)",
-                  border: "2px solid var(--ap-flash)", borderRadius: 999, padding: "3px 10px",
+                  border: "2px solid var(--ap-flash)", borderRadius: "var(--ap-r-sm)", padding: "3px 10px",
                 }}
                 aria-label={`Série de ${streak}`}
               >
@@ -946,7 +935,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
                   display: "flex", alignItems: "center", gap: 6,
                   fontFamily: "var(--ap-font-mono, var(--ap-font-display))", fontWeight: 800, fontSize: 14,
                   background: "rgba(255,255,255,0.15)", border: "2px solid rgba(255,255,255,0.25)",
-                  borderRadius: 999, padding: "5px 13px", color: "#fff",
+                  borderRadius: "var(--ap-r-sm)", padding: "5px 13px", color: "#fff",
                 }}
               >
                 <Zap className="w-3.5 h-3.5" style={{ fill: "var(--ap-flash)", color: "var(--ap-flash)" }} />
@@ -989,7 +978,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
           <div className="ap-card ap-card--floaty mb-4">
             {!isPoll && (
               <div
-                style={{ height: 8, background: "var(--ap-paper-2)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: 99, overflow: "hidden", marginBottom: 16 }}
+                style={{ height: 8, background: "var(--ap-paper-2)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-md)", overflow: "hidden", marginBottom: 16 }}
                 role="timer"
                 aria-label={`Temps restant : ${timeLeft} secondes`}
               >
@@ -998,7 +987,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
                     height: "100%",
                     width: `${Math.max(0, Math.min(100, (liveQuestion.timeLimit > 0 ? timeLeft / liveQuestion.timeLimit : 0) * 100))}%`,
                     background: timeLeft <= 5 ? "var(--ap-quiz)" : "var(--ap-brand)",
-                    borderRadius: 99,
+                    borderRadius: "var(--ap-r-md)",
                     transition: "width .3s linear, background .3s",
                   }}
                 />
@@ -1009,318 +998,13 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
               {liveQuestion.question}
             </h2>
 
-            {/* Multiple / Single Choice Answers */}
-            {['multiple-choice', 'single-choice'].includes(liveQuestion.type) && liveQuestion.answers && (
-              <div className="ap-answers">
-                {liveQuestion.answers.map((answer: string, index: number) => (
-                  <button
-                    key={index}
-                    className={cn(
-                      `ap-answer ap-answer--solid ap-answer--${(index % 4) + 1}`,
-                      selectedAnswer === index && "ap-answer--selected",
-                      hasAnswered && selectedAnswer !== index && "ap-answer--dim"
-                    )}
-                    onClick={() => submitAnswer(index)}
-                    disabled={hasAnswered}
-                  >
-                    <span className="ap-answer__shape">{answerShapes[index % 4]}</span>
-                    <span className="ap-answer__text">{answer}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* True / False */}
-            {liveQuestion.type === 'true-false' && (
-              <div className="ap-answers">
-                {[{ label: liveQuestion.answers?.[0] ?? 'Vrai', value: 'true' }, { label: liveQuestion.answers?.[1] ?? 'Faux', value: 'false' }].map(({ label, value }, index) => (
-                  <button
-                    key={value}
-                    className={cn(
-                      `ap-answer ap-answer--solid ap-answer--${index + 1}`,
-                      selectedAnswer === value && "ap-answer--selected",
-                      hasAnswered && selectedAnswer !== value && "ap-answer--dim"
-                    )}
-                    onClick={() => submitAnswer(value)}
-                    disabled={hasAnswered}
-                  >
-                    <span className="ap-answer__shape">{index === 0 ? 'V' : 'F'}</span>
-                    <span className="ap-answer__text">{label}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Short Answer */}
-            {liveQuestion.type === 'short-answer' && !hasAnswered && (
-              <form
-                className="flex flex-col gap-3 px-2"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  const input = (e.currentTarget.elements.namedItem('answer') as HTMLInputElement);
-                  if (input.value.trim()) submitAnswer(input.value.trim());
-                }}
-              >
-                <input
-                  name="answer"
-                  type="text"
-                  placeholder="Votre réponse…"
-                  className="w-full rounded-xl border-2 border-white/30 bg-white/15 p-4 text-white placeholder-white/50 text-lg outline-none focus:border-white/60"
-                  disabled={hasAnswered}
-                  autoComplete="off"
-                />
-                <button
-                  type="submit"
-                  className="ap-btn ap-btn--lg ap-btn--pill"
-                  style={{ background: "var(--ap-ink)" }}
-                >
-                  Valider
-                </button>
-              </form>
-            )}
-            {/* Slider */}
-            {liveQuestion.type === 'slider' && !hasAnswered && (
-              <div className="flex flex-col gap-4 px-2">
-                <div className="text-center text-white text-3xl font-bold">{sliderValue}</div>
-                <input
-                  type="range"
-                  min={liveQuestion.min ?? 0}
-                  max={liveQuestion.max ?? 100}
-                  step={liveQuestion.step ?? 1}
-                  value={sliderValue}
-                  onChange={(e) => setSliderValue(Number(e.target.value))}
-                  className="w-full accent-white"
-                />
-                <div className="flex justify-between text-white/60 text-sm">
-                  <span>{liveQuestion.minLabel ?? liveQuestion.min ?? 0}</span>
-                  <span>{liveQuestion.maxLabel ?? liveQuestion.max ?? 100}</span>
-                </div>
-                <button className="ap-btn ap-btn--lg ap-btn--pill" style={{ background: "var(--ap-ink)" }} onClick={() => submitAnswer(sliderValue)}>
-                  Valider
-                </button>
-              </div>
-            )}
-
-            {/* Fill in the blank */}
-            {liveQuestion.type === 'fill-blank' && !hasAnswered && (
-              <form className="flex flex-col gap-3 px-2" onSubmit={(e) => {
-                e.preventDefault();
-                if (blankValues.some(v => !v.trim())) return;
-                submitAnswer(JSON.stringify(blankValues.map(v => v.trim())));
-              }}>
-                <p className="text-white/80 text-sm text-center" style={{ fontFamily: 'var(--ap-font-body)' }}>
-                  {(liveQuestion.text ?? '').split('{{blank}}').map((segment: string, i: number, arr: string[]) => (
-                    <span key={i}>
-                      {segment}
-                      {i < arr.length - 1 && (
-                        <input
-                          className="inline-block mx-1 rounded-lg border-b-2 border-white bg-white/15 text-white px-2 py-1 text-sm w-24 outline-none focus:border-white/80"
-                          value={blankValues[i] ?? ''}
-                          onChange={(e) => setBlankValues(prev => { const next = [...prev]; next[i] = e.target.value; return next; })}
-                          autoComplete="off"
-                        />
-                      )}
-                    </span>
-                  ))}
-                </p>
-                <button type="submit" className="ap-btn ap-btn--lg ap-btn--pill" style={{ background: "var(--ap-ink)" }}>
-                  Valider
-                </button>
-              </form>
-            )}
-
-            {/* Ranking */}
-            {liveQuestion.type === 'ranking' && !hasAnswered && (
-              <div className="flex flex-col gap-2 px-2">
-                {rankingOrder.map((item, idx) => (
-                  <div key={item} className="flex items-center gap-3 rounded-xl px-4 py-3 text-white font-bold" style={{ background: 'rgba(255,255,255,0.15)', border: '2px solid rgba(255,255,255,0.2)' }}>
-                    <span className="text-white/50 w-5 text-center text-sm">{idx + 1}</span>
-                    <span className="flex-1 text-sm">{item}</span>
-                    <div className="flex flex-col gap-1">
-                      <button
-                        className="text-white/70 hover:text-white disabled:opacity-30 text-xs leading-none"
-                        disabled={idx === 0}
-                        onClick={() => setRankingOrder(prev => { const next = [...prev]; [next[idx - 1], next[idx]] = [next[idx], next[idx - 1]]; return next; })}
-                      >▲</button>
-                      <button
-                        className="text-white/70 hover:text-white disabled:opacity-30 text-xs leading-none"
-                        disabled={idx === rankingOrder.length - 1}
-                        onClick={() => setRankingOrder(prev => { const next = [...prev]; [next[idx], next[idx + 1]] = [next[idx + 1], next[idx]]; return next; })}
-                      >▼</button>
-                    </div>
-                  </div>
-                ))}
-                <button
-                  className="ap-btn ap-btn--lg ap-btn--pill mt-2"
-                  style={{ background: "var(--ap-ink)" }}
-                  onClick={() => {
-                    const originalItems: string[] = liveQuestion.items ?? [];
-                    const order = rankingOrder.map(item => originalItems.indexOf(item));
-                    submitAnswer(JSON.stringify(order));
-                  }}
-                >
-                  Valider l'ordre
-                </button>
-              </div>
-            )}
-
-            {/* Matching */}
-            {liveQuestion.type === 'matching' && !hasAnswered && (() => {
-              const left: { id?: string; text?: string }[] = liveQuestion.leftColumn ?? [];
-              const right: { id?: string; text?: string }[] = liveQuestion.rightColumn ?? [];
-              const paired = Object.keys(matchingPairs);
-              const allPaired = left.length > 0 && paired.length === left.length;
-              return (
-                <div className="flex flex-col gap-3 px-2">
-                  <p className="text-white/60 text-xs text-center" style={{ fontFamily: 'var(--ap-font-body)' }}>
-                    {matchingSelectedLeft ? 'Choisissez la correspondance →' : 'Sélectionnez un élément de gauche'}
-                  </p>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="flex flex-col gap-2">
-                      {left.map(l => (
-                        <button
-                          key={l.id}
-                          className={cn(
-                            'rounded-xl px-3 py-2 text-sm font-bold text-white text-left border-2 transition-all',
-                            matchingSelectedLeft === l.id ? 'border-white bg-white/30' : matchingPairs[l.id] ? 'border-green-400/60 bg-green-500/20' : 'border-white/20 bg-white/10'
-                          )}
-                          onClick={() => setMatchingSelectedLeft(prev => prev === l.id ? null : l.id)}
-                          disabled={!!matchingPairs[l.id]}
-                        >
-                          {l.text}
-                        </button>
-                      ))}
-                    </div>
-                    <div className="flex flex-col gap-2">
-                      {right.map(r => {
-                        const isPaired = Object.values(matchingPairs).includes(r.id);
-                        return (
-                          <button
-                            key={r.id}
-                            className={cn(
-                              'rounded-xl px-3 py-2 text-sm font-bold text-white text-left border-2 transition-all',
-                              isPaired ? 'border-green-400/60 bg-green-500/20' : matchingSelectedLeft ? 'border-white/50 bg-white/15 hover:bg-white/25' : 'border-white/20 bg-white/10 opacity-50'
-                            )}
-                            disabled={isPaired || !matchingSelectedLeft}
-                            onClick={() => {
-                              if (!matchingSelectedLeft) return;
-                              setMatchingPairs(prev => ({ ...prev, [matchingSelectedLeft]: r.id }));
-                              setMatchingSelectedLeft(null);
-                            }}
-                          >
-                            {r.text}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                  {allPaired && (
-                    <button
-                      className="ap-btn ap-btn--lg ap-btn--pill mt-2"
-                      style={{ background: "var(--ap-ink)" }}
-                      onClick={() => submitAnswer(JSON.stringify(matchingPairs))}
-                    >
-                      Valider les associations
-                    </button>
-                  )}
-                </div>
-              );
-            })()}
-
-            {/* Poll scales: Likert / frequency / star rating / NPS */}
-            {['likert-scale', 'frequency-scale', 'star-rating', 'nps-scale'].includes(liveQuestion.type) && !hasAnswered && (() => {
-              const options = getPollOptions(liveQuestion);
-              if (options.length === 0) return null;
-              if (liveQuestion.type === 'nps-scale') {
-                return (
-                  <div className="flex flex-col gap-3 px-2">
-                    <div className="flex justify-between text-white/60 text-xs font-bold">
-                      <span>{liveQuestion.minLabel ?? 'Pas du tout probable'}</span>
-                      <span>{liveQuestion.maxLabel ?? 'Très probable'}</span>
-                    </div>
-                    <div className="grid grid-cols-6 gap-2">
-                      {options.map((option, index) => (
-                        <button
-                          key={index}
-                          className="rounded-xl border-2 border-white/25 bg-white/12 py-3 text-white font-bold text-base transition-all hover:bg-white/25"
-                          style={{ background: 'rgba(255,255,255,0.12)' }}
-                          onClick={() => submitAnswer(index)}
-                        >
-                          {option}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                );
-              }
-              if (liveQuestion.type === 'star-rating') {
-                return (
-                  <div className="flex justify-center gap-2 px-2 flex-wrap">
-                    {options.map((_, index) => (
-                      <button
-                        key={index}
-                        aria-label={`${index + 1} étoile${index > 0 ? 's' : ''}`}
-                        className="text-4xl transition-transform hover:scale-125"
-                        style={{ filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.3))' }}
-                        onClick={() => submitAnswer(index)}
-                      >
-                        ⭐
-                      </button>
-                    ))}
-                  </div>
-                );
-              }
-              // Likert / frequency: vertical option list
-              return (
-                <div className="flex flex-col gap-2 px-2">
-                  {options.map((option, index) => (
-                    <button
-                      key={index}
-                      className="rounded-xl border-2 border-white/25 px-4 py-3 text-white font-bold text-sm text-left transition-all hover:bg-white/25"
-                      style={{ background: 'rgba(255,255,255,0.12)' }}
-                      onClick={() => submitAnswer(index)}
-                    >
-                      {option}
-                    </button>
-                  ))}
-                </div>
-              );
-            })()}
-
-            {/* Poll open text */}
-            {liveQuestion.type === 'open-text' && !hasAnswered && (
-              <form
-                className="flex flex-col gap-3 px-2"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (openTextValue.trim()) {
-                    submitAnswer(openTextValue.trim());
-                    setOpenTextValue('');
-                  }
-                }}
-              >
-                <textarea
-                  value={openTextValue}
-                  onChange={(e) => setOpenTextValue(e.target.value.slice(0, liveQuestion.maxLength ?? 500))}
-                  placeholder="Votre réponse…"
-                  rows={4}
-                  className="w-full rounded-xl border-2 border-white/30 bg-white/15 p-4 text-white placeholder-white/50 text-base outline-none focus:border-white/60 resize-none"
-                />
-                <div className="flex justify-between items-center">
-                  <span className="text-white/50 text-xs font-bold">
-                    {openTextValue.length}/{liveQuestion.maxLength ?? 500}
-                  </span>
-                  <button
-                    type="submit"
-                    className="ap-btn ap-btn--pill"
-                    style={{ background: "var(--ap-ink)", opacity: openTextValue.trim() ? 1 : 0.5 }}
-                    disabled={!openTextValue.trim()}
-                  >
-                    Envoyer
-                  </button>
-                </div>
-              </form>
-            )}
+            <QuestionAnswerPanel
+              question={liveQuestion}
+              isPoll={isPoll}
+              hasAnswered={hasAnswered}
+              selectedAnswer={selectedAnswer}
+              onSubmit={submitAnswer}
+            />
           </div>
 
           {/* Waiting confirmation */}
@@ -1407,7 +1091,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
                 style={{
                   display: 'inline-block',
                   fontFamily: 'var(--ap-font-mono, var(--ap-font-display))', fontWeight: 800, fontSize: 22,
-                  color: '#fff', background: 'rgba(255,255,255,0.2)', borderRadius: 999, padding: '6px 20px',
+                  color: '#fff', background: 'rgba(255,255,255,0.2)', borderRadius: "var(--ap-r-sm)", padding: '6px 20px',
                 }}
               >
                 {lastAnswerCorrect ? `+ ${lastEarnedPoints.toLocaleString('fr-FR')} pts` : '+ 0 pt'}
@@ -1745,9 +1429,9 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
           </div>
         )}
 
-        <style>{`.reaction-comment-input::placeholder { color: rgba(255,255,255,0.85); }`}</style>
-        {/* Reaction panel */}
-        <div
+        {endChatEnabled && <style>{`.reaction-comment-input::placeholder { color: rgba(255,255,255,0.85); }`}</style>}
+        {/* Reactions and end-of-game chat */}
+        {(liveReactionsEnabled || endChatEnabled) && <div
           className="mb-6"
           style={{
             background: 'rgba(255,255,255,0.12)',
@@ -1757,9 +1441,9 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
           }}
         >
           <p style={{ color: 'rgba(255,255,255,0.75)', fontWeight: 700, fontSize: '13px', marginBottom: '10px', fontFamily: 'var(--ap-font-body)' }}>
-            Réagis au quiz !
+            {liveReactionsEnabled ? 'Réagis au quiz !' : 'Partage ton commentaire'}
           </p>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
+          {liveReactionsEnabled && <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: endChatEnabled ? '12px' : 0, flexWrap: 'wrap' }}>
             {REACTION_EMOJIS.map((e) => (
               <button
                 key={e}
@@ -1778,8 +1462,8 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
                 {e}
               </button>
             ))}
-          </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
+          </div>}
+          {endChatEnabled && <div style={{ display: 'flex', gap: '8px' }}>
             <input
               value={reactionComment}
               onChange={(e) => setReactionComment(e.target.value.slice(0, 100))}
@@ -1819,8 +1503,8 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
             >
               Envoyer
             </button>
-          </div>
-        </div>
+          </div>}
+        </div>}
 
         <button
           className="ap-btn ap-btn--lg ap-btn--pill"

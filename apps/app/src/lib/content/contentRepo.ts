@@ -34,6 +34,20 @@ export async function listContent(
   return data ?? [];
 }
 
+/** Most recently edited, non-trashed creations across every content type. */
+export async function listRecentContent(userId: string, limit = 4): Promise<ContentRow[]> {
+  const { data, error } = await supabase
+    .from('content')
+    .select('*')
+    .eq('user_id', userId)
+    .order('updated_at', { ascending: false })
+    .limit(Math.max(limit * 3, 12));
+  if (error) throw error;
+  return ((data ?? []) as ContentRow[])
+    .filter((row) => !row.data?.deletedAt)
+    .slice(0, limit);
+}
+
 /**
  * List public content of a type across all users (for the "public" tab).
  * Relies on the `content_public_read` RLS policy (select allowed when
@@ -171,6 +185,23 @@ export async function updateContent(
     .update(patch)
     .eq('id', id);
   if (error) throw error;
+}
+
+/**
+ * Update only a document's JSON payload. Owners and collaborators with the
+ * `editor` role are authorized by the database RPC; metadata such as owner,
+ * folder and publication state cannot be changed through this path.
+ */
+export async function updateCollaborativeContent(
+  id: string,
+  data: Record<string, unknown>,
+): Promise<ContentRow> {
+  const { data: row, error } = await supabase.rpc('update_collaborative_content', {
+    p_content_id: id,
+    p_data: data,
+  });
+  if (error) throw error;
+  return row as ContentRow;
 }
 
 /**

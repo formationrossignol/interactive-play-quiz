@@ -17,7 +17,6 @@ import {
   ChevronRight,
   Folder as FolderIcon,
   Globe,
-  Home,
   LayoutGrid,
   List,
   Search,
@@ -26,12 +25,15 @@ import {
   Trash2,
 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
-import { PlanLimitError } from "@/lib/plans";
+import { Breadcrumb, type BreadcrumbItem } from "@/components/Breadcrumb";
+import { ShareContentModal } from "@/components/ShareContentModal";
+import { showError } from "@/lib/errorTaxonomy";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Pagination } from "@/components/Pagination";
 import { TrashView } from "@/components/TrashView";
 import { DeleteQuizDialog } from "@/components/DeleteQuizDialog";
 import { FolderExplorer } from "@/components/FolderExplorer";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useContentCollection } from "@/hooks/useContentCollection";
 import {
   applySearchSort,
@@ -45,10 +47,59 @@ import {
 } from "@/lib/content/contentView";
 import type { ContentType, FolderRow } from "@/lib/content/types";
 import type { ItemCtx } from "./GenericItem";
+import { ExplorerEmptyState } from "./ExplorerEmptyState";
 
 const PAGE_SIZE = 12;
 
 type ShortcutView = "all" | "favorites" | "public" | "trash";
+
+interface ExplorerPreferences {
+  view?: ShortcutView;
+  category?: string;
+  sort?: SortOption;
+}
+
+const readPreferences = (type: ContentType): ExplorerPreferences => {
+  try {
+    return JSON.parse(localStorage.getItem(`content-explorer-prefs-${type}`) ?? "{}") as ExplorerPreferences;
+  } catch {
+    return {};
+  }
+};
+
+function ContentSkeleton({ viewMode }: { viewMode: "grid" | "list" }) {
+  if (viewMode === "list") {
+    return (
+      <div className="ap-card overflow-hidden p-0">
+        {Array.from({ length: 6 }, (_, index) => (
+          <div key={index} className="flex items-center gap-4 px-4 py-4" style={{ borderBottom: "var(--ap-border-w) solid var(--ap-line)" }}>
+            <Skeleton className="h-8 w-8 rounded-lg" />
+            <div className="flex-1">
+              <Skeleton className="h-4 w-2/5" />
+              <Skeleton className="mt-2 h-3 w-3/5" />
+            </div>
+            <Skeleton className="h-8 w-28 rounded-full" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+  return (
+    <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+      {Array.from({ length: 6 }, (_, index) => (
+        <div key={index} className="ap-card overflow-hidden p-0">
+          <Skeleton className="h-52 w-full rounded-none" />
+          <div className="p-4">
+            <Skeleton className="h-5 w-3/4" />
+            <Skeleton className="mt-3 h-3.5 w-full" />
+            <Skeleton className="mt-2 h-3.5 w-2/3" />
+            <Skeleton className="mt-5 h-9 w-full rounded-full" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 const deleteTypeOf = (t: ContentType): "quiz" | "poll" | "flashcard" | "slide" =>
   t === "poll" ? "poll" : t === "flashcard" ? "flashcard" : t === "slide" ? "slide" : "quiz";
@@ -133,7 +184,7 @@ function ShortcutRow({
             fontSize: 11,
             fontWeight: 800,
             padding: "2px 7px",
-            borderRadius: 999,
+            borderRadius: "var(--ap-r-sm)",
             background: active ? "var(--ap-card)" : "var(--ap-paper-2)",
             color: active ? "var(--ap-brand)" : "var(--ap-muted)",
           }}
@@ -167,7 +218,7 @@ function FolderDropCard({ folder, count, onOpen }: { folder: FolderRow; count: n
         style={{
           width: 44,
           height: 44,
-          borderRadius: 13,
+          borderRadius: "var(--ap-r-md)",
           background: "var(--ap-brand-soft)",
           color: "var(--ap-brand)",
           display: "flex",
@@ -254,21 +305,26 @@ export function ContentExplorer({
     if (reloadRef) reloadRef.current = c.reload;
   }, [reloadRef, c.reload]);
 
-  const [view, setView] = useState<ShortcutView>("all");
+  const [view, setView] = useState<ShortcutView>(() => readPreferences(type).view ?? "all");
   const [viewMode, setViewModeState] = useState<"grid" | "list">(
     () => (localStorage.getItem(`view-mode-${type}`) as "grid" | "list") ?? "grid",
   );
   const [search, setSearch] = useState("");
-  const [category, setCategory] = useState("Tous");
-  const [sort, setSort] = useState<SortOption>("newest");
+  const [category, setCategory] = useState(() => readPreferences(type).category ?? "Tous");
+  const [sort, setSort] = useState<SortOption>(() => readPreferences(type).sort ?? "newest");
   const [page, setPage] = useState(1);
   const [permDeleteTarget, setPermDeleteTarget] = useState<ContentDisplay | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [manageAccessTarget, setManageAccessTarget] = useState<{ contentId: string; title: string } | null>(null);
 
   const setViewMode = (mode: "grid" | "list") => {
     setViewModeState(mode);
     localStorage.setItem(`view-mode-${type}`, mode);
   };
+
+  useEffect(() => {
+    localStorage.setItem(`content-explorer-prefs-${type}`, JSON.stringify({ view, category, sort }));
+  }, [type, view, category, sort]);
 
   const opts = useMemo(() => ({ search, category, sort }), [search, category, sort]);
 
@@ -328,32 +384,72 @@ export function ContentExplorer({
   const goFolder = (id: string | null) => { setView("all"); c.setCurrentFolderId(id); setPage(1); };
   const goShortcut = (v: ShortcutView) => { setView(v); setPage(1); };
 
+  const breadcrumbItems: BreadcrumbItem[] = useMemo(() => {
+    if (view !== "all") {
+      const label = view === "favorites" ? "Favoris" : view === "public" ? "Contenus publics" : "Corbeille";
+      return [{ label }];
+    }
+    const folders: BreadcrumbItem[] = breadcrumb.map((f) =>
+      f.id === c.currentFolderId ? { label: f.name } : { label: f.name, onClick: () => goFolder(f.id) },
+    );
+    return folders;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- goFolder is stable per render, not memoized
+  }, [view, breadcrumb, c.currentFolderId]);
+
+  // Generic per-action catches keep their existing friendly copy (it's
+  // already better than the raw error message would be) but now log the
+  // underlying error for diagnosis instead of swallowing it silently.
+  const logUnexpected = (context: string) => (e: unknown) => console.error(`[ContentExplorer.${context}]`, e);
+
   const handleMove = (rowId: string, folderId: string | null) =>
-    c.moveContent(rowId, folderId).then(() => toast.success("Déplacé")).catch(() => toast.error("Erreur lors du déplacement"));
+    c.moveContent(rowId, folderId).then(() => toast.success("Déplacé"))
+      .catch((e) => { logUnexpected("move")(e); toast.error("Erreur lors du déplacement"); });
 
   const handleFavorite = (d: ContentDisplay) =>
     c.toggleFavorite(d.id)
       .then(() => toast.success(d.isFavorite ? "Retiré des favoris" : "Ajouté aux favoris"))
-      .catch(() => toast.error("Erreur"));
+      .catch((e) => { logUnexpected("favorite")(e); toast.error("Erreur"); });
 
   const handleTrash = (rowId: string) =>
-    c.trashItem(rowId).then(() => toast.success("Mis à la corbeille")).catch(() => toast.error("Erreur"));
+    c.trashItem(rowId).then(() => toast.success("Mis à la corbeille", {
+      action: {
+        label: "Annuler",
+        onClick: () => {
+          void c.restoreItem(rowId)
+            .then(() => toast.success("Suppression annulée"))
+            .catch((e) => { logUnexpected("undoTrash")(e); toast.error("Impossible d'annuler"); });
+        },
+      },
+    }))
+      .catch((e) => { logUnexpected("trash")(e); toast.error("Erreur"); });
 
   const handleDuplicate = (rowId: string) =>
-    c.duplicateItem(rowId).then(() => toast.success("Dupliqué")).catch((e) => {
-      if (e instanceof PlanLimitError) {
-        toast.error(e.message, { action: { label: "Passer Pro", onClick: () => { window.location.href = "/pricing"; } } });
-      } else {
-        toast.error("Erreur lors de la duplication");
-      }
-    });
+    c.duplicateItem(rowId).then(() => toast.success("Dupliqué"))
+      .catch((e) => showError(e, "ContentExplorer.duplicate"));
 
   const handleRestore = (rowId: string) =>
-    c.restoreItem(rowId).then(() => toast.success("Restauré")).catch(() => toast.error("Erreur"));
+    c.restoreItem(rowId).then(() => toast.success("Restauré"))
+      .catch((e) => { logUnexpected("restore")(e); toast.error("Erreur"); });
+
+  const handleCopyLink = async (d: ContentDisplay) => {
+    const id = String((d.data.id as string | undefined) ?? d.id);
+    const path = d.type === "course" ? `/course/${id}`
+      : d.type === "exam" ? `/join-exam/${String(d.data.joinCode ?? "")}`
+      : d.type === "slide" ? `/presentation-editor?id=${id}&present=1`
+      : d.type === "flashcard" ? `/preview/${id}`
+      : `/quiz/${id}`;
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}${path}`);
+      toast.success("Lien copié !");
+    } catch {
+      toast.error("Impossible de copier le lien");
+    }
+  };
 
   const handlePermDeleteConfirm = () => {
     if (permDeleteTarget) {
-      c.removeItem(permDeleteTarget.id).then(() => toast.success("Supprimé définitivement")).catch(() => toast.error("Erreur"));
+      c.removeItem(permDeleteTarget.id).then(() => toast.success("Supprimé définitivement"))
+        .catch((e) => { logUnexpected("permDelete")(e); toast.error("Erreur"); });
     }
     setDeleteDialogOpen(false);
     setPermDeleteTarget(null);
@@ -387,6 +483,8 @@ export function ContentExplorer({
     onFavorite: () => handleFavorite(d),
     onTrash: () => handleTrash(d.id),
     onDuplicate: () => handleDuplicate(d.id),
+    onCopyLink: () => handleCopyLink(d),
+    onManageAccess: () => setManageAccessTarget({ contentId: d.id, title: d.title }),
   });
 
   // ---- item grid / list ----
@@ -401,54 +499,63 @@ export function ContentExplorer({
       </div>
     );
 
+  // Paginates any item list the same way the main library view already does
+  // (PAGE_SIZE=12) — REQ-PERF-003/TBL-009: favorites/public used to render
+  // every match unbounded, the only lists in this shell that weren't capped.
+  const paginatedBlock = (items: ContentDisplay[]) => {
+    const totalPages = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
+    const clampedPage = Math.min(page, totalPages);
+    const paginated = items.slice((clampedPage - 1) * PAGE_SIZE, clampedPage * PAGE_SIZE);
+    return (
+      <>
+        {itemsBlock(paginated)}
+        <Pagination page={clampedPage} totalPages={totalPages} onPageChange={setPage} className="mt-8" />
+      </>
+    );
+  };
+
   const emptyBox = (title: string, body: string, cs: ReactNode) => (
-    <div style={{ borderRadius: "var(--ap-r-lg)", border: "var(--ap-border-w) dashed var(--ap-line-2)", background: "var(--ap-paper-2)", padding: "48px 24px", textAlign: "center" }}>
-      <div style={{ width: 64, height: 64, margin: "0 auto 16px", borderRadius: 20, background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ap-brand)" }}>
-        {cs}
-      </div>
-      <h3 className="ap-h3" style={{ fontSize: 19, marginBottom: 6 }}>{title}</h3>
-      <p className="ap-muted" style={{ fontSize: 14, margin: "0 0 20px" }}>{body}</p>
-      {view === "all" && !searching && (
+    <ExplorerEmptyState
+      icon={cs}
+      title={title}
+      body={body}
+      action={view === "all" && !searching ? (
         <button className={`ap-btn ap-btn--sm ap-btn--pill ${accentBtn}`} onClick={cta.onClick}>{cta.label}</button>
-      )}
-      {searching && (
+      ) : searching ? (
         <button
           className="ap-btn ap-btn--ghost ap-btn--sm ap-btn--pill"
           onClick={() => { setSearch(""); setCategory("Tous"); }}
         >
           Effacer la recherche
         </button>
-      )}
-    </div>
+      ) : undefined}
+    />
   );
 
   // ---- content by view ----
   let content: ReactNode;
   if (c.loading) {
-    content = <p className="py-10 text-center text-sm text-muted-foreground">Chargement…</p>;
+    content = <ContentSkeleton viewMode={viewMode} />;
   } else if (view === "trash") {
     content = (
       <TrashView
-        items={trashed as unknown as Parameters<typeof TrashView>[0]["items"]}
+        items={trashed}
         viewMode={viewMode}
         onRestore={handleRestore}
-        onPermanentDelete={(item) => { setPermDeleteTarget(item as unknown as ContentDisplay); setDeleteDialogOpen(true); }}
+        onPermanentDelete={(item) => { setPermDeleteTarget(item); setDeleteDialogOpen(true); }}
       />
     );
   } else if (view === "favorites") {
     content = favorites.length
-      ? itemsBlock(favorites)
+      ? paginatedBlock(favorites)
       : emptyBox("Aucun favori", `Marquez un ${oneLabel} d'une étoile pour le retrouver ici.`, <Star style={{ width: 26, height: 26 }} />);
   } else if (view === "public") {
     content = publicDisplay.length
-      ? itemsBlock(publicDisplay)
+      ? paginatedBlock(publicDisplay)
       : emptyBox(`Aucun ${oneLabel} public`, "Rendez un de vos contenus public pour qu'il apparaisse ici.", <Globe style={{ width: 26, height: 26 }} />);
   } else {
     // library
     const showFolders = !searching && childFolders.length > 0;
-    const totalPages = Math.max(1, Math.ceil(libraryItems.length / PAGE_SIZE));
-    const clampedPage = Math.min(page, totalPages);
-    const paginated = libraryItems.slice((clampedPage - 1) * PAGE_SIZE, clampedPage * PAGE_SIZE);
 
     let body: ReactNode;
     if (libraryItems.length === 0 && !showFolders) {
@@ -473,8 +580,7 @@ export function ContentExplorer({
               <div style={SECTION_TITLE}>{rootLabel} — {libraryItems.length}<span style={{ flex: 1, height: 2, background: "var(--ap-line)", borderRadius: 2 }} /></div>
             </>
           )}
-          {itemsBlock(paginated)}
-          <Pagination page={clampedPage} totalPages={totalPages} onPageChange={setPage} className="mt-8" />
+          {paginatedBlock(libraryItems)}
         </>
       );
     }
@@ -564,59 +670,9 @@ export function ContentExplorer({
               {/* ===== Content ===== */}
               <main className="flex-1 min-w-0 w-full">
                 {/* Breadcrumb */}
-                {view === "all" ? (
-                  <div className="flex items-center gap-1 flex-wrap mb-4" style={{ fontSize: 14, minHeight: 28 }}>
-                    <button
-                      onClick={() => { window.location.href = "/"; }}
-                      aria-label="Accueil"
-                      style={{
-                        display: "grid", placeItems: "center", width: 28, height: 28,
-                        borderRadius: "50%", border: "var(--ap-border-w) solid var(--ap-line)",
-                        background: "var(--ap-card)", cursor: "pointer", flexShrink: 0, marginRight: 2,
-                      }}
-                    >
-                      <Home style={{ width: 13, height: 13, color: "var(--ap-ink)" }} />
-                    </button>
-                    <ChevronRight className="h-4 w-4" style={{ color: "var(--ap-muted)" }} />
-                    <button
-                      className="ap-btn ap-btn--ghost ap-btn--sm"
-                      style={{ padding: "2px 8px", fontWeight: 700 }}
-                      onClick={() => goFolder(null)}
-                    >
-                      Racine
-                    </button>
-                    {breadcrumb.map((f) => (
-                      <span key={f.id} className="flex items-center gap-1">
-                        <ChevronRight className="h-4 w-4" style={{ color: "var(--ap-muted)" }} />
-                        <button
-                          className="ap-btn ap-btn--ghost ap-btn--sm"
-                          style={{ padding: "2px 8px", fontWeight: 700, color: f.id === c.currentFolderId ? "var(--ap-brand)" : "var(--ap-ink)" }}
-                          onClick={() => goFolder(f.id)}
-                        >
-                          {f.name}
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-1 flex-wrap mb-4" style={{ fontSize: 14, minHeight: 28 }}>
-                    <button
-                      onClick={() => { window.location.href = "/"; }}
-                      aria-label="Accueil"
-                      style={{
-                        display: "grid", placeItems: "center", width: 28, height: 28,
-                        borderRadius: "50%", border: "var(--ap-border-w) solid var(--ap-line)",
-                        background: "var(--ap-card)", cursor: "pointer", flexShrink: 0, marginRight: 2,
-                      }}
-                    >
-                      <Home style={{ width: 13, height: 13, color: "var(--ap-ink)" }} />
-                    </button>
-                    <ChevronRight className="h-4 w-4" style={{ color: "var(--ap-muted)" }} />
-                    <span className="ap-h3" style={{ fontSize: 15 }}>
-                      {view === "favorites" ? "Favoris" : view === "public" ? "Contenus publics" : "Corbeille"}
-                    </span>
-                  </div>
-                )}
+                <div className="mb-4">
+                  <Breadcrumb onHome={() => { window.location.href = "/"; }} items={breadcrumbItems} />
+                </div>
 
                 {showToolbar && (
                   <div className="flex flex-col sm:flex-row gap-3 mb-5">
@@ -678,6 +734,12 @@ export function ContentExplorer({
         onConfirm={handlePermDeleteConfirm}
         title={permDeleteTarget?.title || ""}
         type={deleteTypeOf(type)}
+      />
+
+      <ShareContentModal
+        contentId={manageAccessTarget?.contentId ?? null}
+        contentTitle={manageAccessTarget?.title ?? ""}
+        onClose={() => setManageAccessTarget(null)}
       />
     </AppLayout>
   );

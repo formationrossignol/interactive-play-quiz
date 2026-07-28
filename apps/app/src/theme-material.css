@@ -1,384 +1,641 @@
 /* ============================================================
-   Brivia · Thème « Material 3 Expressive »
+   Brivia · Material 3
    ------------------------------------------------------------
-   Activé par data-theme="material" sur <html> (réglage du profil).
-   Même grammaire de tokens et de classes que Arcade Pop, mais
-   traduit le langage Material 3 Expressive de Google :
-
-     · couleur par RÔLE tonal — primary/secondary/tertiary + un 4e
-       accent « expressive », chacun décliné en paire base/container
-       (surface pastel + texte saturé dessus), jamais un aplat seul
-     · formes « squircle » généreuses et asymétriques, boutons et
-       pilules toujours en stade (999px) — le geste M3 signature
-     · pas de ressort figé Arcade Pop (translateY + ombre solide) :
-       un vrai spring overshoot (cubic-bezier back-out) sur press/hover
-     · élévation tonale — ombres teintées de la couleur primaire à
-       faible opacité, jamais de noir/violet plat
-     · Roboto Flex (axes variables) pour tout, contrastes de graisse
-       marqués entre display et corps — pas de police enfantine
-
-   Importé APRÈS arcade-pop.css : à spécificité égale ou
-   supérieure, ces règles gagnent la cascade. Se combine avec .dark.
+   A role-based Material 3 skin for the existing Brivia UI.
+   Enabled by data-theme="material" on <html>.
    ============================================================ */
 
-@import '@fontsource-variable/roboto-flex';
+@import "@fontsource-variable/roboto-flex";
+
+@font-face {
+  font-family: "Material Symbols Rounded";
+  src: url("/fonts/material-symbols/MaterialSymbolsRounded-Regular.ttf") format("truetype");
+  font-display: block;
+  font-style: normal;
+  font-weight: 400;
+}
+
+@font-face {
+  font-family: "Material Symbols Rounded Filled";
+  src: url("/fonts/material-symbols/MaterialSymbolsRounded_Filled-Regular.ttf") format("truetype");
+  font-display: block;
+  font-style: normal;
+  font-weight: 400;
+}
 
 /* ============================================================
-   1. TOKENS
+   1. COLOR, SHAPE, TYPE AND ELEVATION ROLES
    ============================================================ */
 :root[data-theme="material"] {
-  /* Couleur par TYPE de contenu — rôle tonal M3 (base + soft container + deep on-container) */
-  --ap-quiz:        #FF5A36;  --ap-quiz-deep:   #8A2C0E;  --ap-quiz-soft:  #FFDBCB;
-  --ap-pres:        #2E7D6B;  --ap-pres-deep:   #1C4F43;  --ap-pres-soft:  #D4F0E9;
-  --ap-poll:        #D9A400;  --ap-poll-deep:   #8A6900;  --ap-poll-soft:  #FFEEB8;
-  --ap-flash:       #D6336C;  --ap-flash-deep:  #8C1D4B;  --ap-flash-soft: #FFDCE8;
+  color-scheme: light;
 
-  /* Marque : seed tangerine dédiée à ce skin (pas le violet Arcade Pop) */
-  --ap-brand:       #FF5A36;  --ap-brand-deep:  #8A2C0E;  --ap-brand-soft: #FFDBCB;
-  --ap-logo-diamond: #FF5A36;
-  --ap-accent-live: #9CCC1F;  /* accent vivant M3 — lime électrique, célébrations rares */
-  --ap-success:     #1B8368;
+  --md-sys-color-primary: #65558f;
+  --md-sys-color-on-primary: #ffffff;
+  --md-sys-color-primary-container: #eaddff;
+  --md-sys-color-on-primary-container: #21005d;
+  --md-sys-color-secondary: #625b71;
+  --md-sys-color-on-secondary: #ffffff;
+  --md-sys-color-secondary-container: #e8def8;
+  --md-sys-color-on-secondary-container: #1d192b;
+  --md-sys-color-tertiary: #7d5260;
+  --md-sys-color-on-tertiary: #ffffff;
+  --md-sys-color-tertiary-container: #ffd8e4;
+  --md-sys-color-on-tertiary-container: #31111d;
+  --md-sys-color-error: #b3261e;
+  --md-sys-color-on-error: #ffffff;
+  --md-sys-color-error-container: #f9dedc;
+  --md-sys-color-on-error-container: #410e0b;
+  --md-sys-color-surface: #fffbfe;
+  --md-sys-color-surface-dim: #ded8e1;
+  --md-sys-color-surface-bright: #fffbfe;
+  --md-sys-color-surface-container-lowest: #ffffff;
+  --md-sys-color-surface-container-low: #f7f2fa;
+  --md-sys-color-surface-container: #f3edf7;
+  --md-sys-color-surface-container-high: #ece6f0;
+  --md-sys-color-surface-container-highest: #e6e0e9;
+  --md-sys-color-on-surface: #1d1b20;
+  --md-sys-color-on-surface-variant: #49454f;
+  --md-sys-color-outline: #79747e;
+  --md-sys-color-outline-variant: #cac4d0;
+  --md-sys-color-inverse-surface: #322f35;
+  --md-sys-color-inverse-on-surface: #f5eff7;
+  --md-sys-color-inverse-primary: #d0bcff;
 
-  --ap-ink:         #201A17;  /* on-surface — quasi-noir chaud */
-  --ap-muted:       #7A756F;  /* on-surface-variant */
-  --ap-paper:       #FFFBFA;  /* surface — blanc légèrement chaud, jamais pur */
-  --ap-paper-2:     #F3E8E2;  /* surface-container */
-  --ap-card:        #FFFFFF;  /* surface-container-high */
-  --ap-line:        #E7DCD5;  /* outline-variant */
-  --ap-line-2:      #D6C7BE; /* outline */
+  --md-sys-shape-corner-extra-small: 4px;
+  --md-sys-shape-corner-small: 8px;
+  --md-sys-shape-corner-medium: 12px;
+  --md-sys-shape-corner-large: 16px;
+  --md-sys-shape-corner-extra-large: 28px;
+  --md-sys-shape-corner-full: 999px;
 
-  /* Rayons — squircle généreux et asymétrique, geste M3 Expressive */
-  --ap-r-sm: 16px;
-  --ap-r-md: 24px;
-  --ap-r-lg: 32px;
-  --ap-r-xl: 40px;
-  --ap-r-pill: 999px;
+  --md-sys-elevation-1: 0 1px 2px rgb(29 27 32 / 0.3), 0 1px 3px 1px rgb(29 27 32 / 0.15);
+  --md-sys-elevation-2: 0 1px 2px rgb(29 27 32 / 0.3), 0 2px 6px 2px rgb(29 27 32 / 0.15);
+  --md-sys-elevation-3: 0 1px 3px rgb(29 27 32 / 0.3), 0 4px 8px 3px rgb(29 27 32 / 0.15);
 
-  /* Élévation tonale — teintée primaire, jamais noir/violet plat */
-  --ap-shadow-soft:  0 1px 3px rgba(255, 90, 54, .14), 0 1px 2px rgba(32, 26, 23, .06);
-  --ap-shadow-card:  0 10px 26px rgba(255, 90, 54, .16), 0 2px 6px rgba(32, 26, 23, .08);
-  --ap-shadow-float: 0 22px 50px rgba(255, 90, 54, .20), 0 6px 16px rgba(32, 26, 23, .10);
+  /* Brivia compatibility layer. */
+  --ap-brand: var(--md-sys-color-primary);
+  --ap-brand-deep: #4f378b;
+  --ap-brand-soft: var(--md-sys-color-primary-container);
+  --ap-logo-diamond: var(--md-sys-color-primary);
+  --ap-ink: var(--md-sys-color-on-surface);
+  --ap-muted: var(--md-sys-color-on-surface-variant);
+  --ap-paper: var(--md-sys-color-surface);
+  --ap-paper-2: var(--md-sys-color-surface-container);
+  --ap-card: var(--md-sys-color-surface-container-lowest);
+  --ap-line: var(--md-sys-color-outline-variant);
+  --ap-line-2: var(--md-sys-color-outline);
 
-  /* Typo — Roboto Flex partout, contraste de graisse marqué display/corps */
-  --ap-font-display: 'Roboto Flex Variable', 'Roboto Flex', system-ui, sans-serif;
-  --ap-font-body:    'Roboto Flex Variable', 'Roboto Flex', system-ui, sans-serif;
+  --ap-quiz: #b3261e;
+  --ap-quiz-deep: #7c2e29;
+  --ap-quiz-soft: #f9dedc;
+  --ap-poll: #006a6a;
+  --ap-poll-deep: #004f4f;
+  --ap-poll-soft: #9cf1f0;
+  --ap-flash: #7d5260;
+  --ap-flash-deep: #633b48;
+  --ap-flash-soft: #ffd8e4;
+  --ap-pres: #386a20;
+  --ap-pres-deep: #205107;
+  --ap-pres-soft: #b7f397;
+  --ap-success: #386a20;
 
-  /* Spring overshoot — le geste M3 Expressive, jamais un ease plat */
-  --ap-ease:   cubic-bezier(.2, 0, 0, 1);       /* emphasized decelerate */
-  --ap-spring: cubic-bezier(.34, 1.56, .64, 1); /* back-out spring */
-
-  /* Pas de trame de points — surface unie, la couleur vit dans les containers */
+  --ap-r-sm: var(--md-sys-shape-corner-small);
+  --ap-r-md: var(--md-sys-shape-corner-medium);
+  --ap-r-lg: var(--md-sys-shape-corner-large);
+  --ap-r-xl: var(--md-sys-shape-corner-extra-large);
+  --ap-r-pill: var(--md-sys-shape-corner-full);
+  /* M3 filled surfaces sit flat at rest — .ap-btn/.ap-card already encode
+     this explicitly below; this keeps generic Button/Card (shadow-card
+     utility, index.css) consistent with them instead of showing a stray
+     shadow next to otherwise-flat surfaces. Real elevation shows up on
+     hover/floaty via --ap-shadow-card/--ap-shadow-float. */
+  --ap-shadow-soft: none;
+  --ap-shadow-card: var(--md-sys-elevation-2);
+  --ap-shadow-float: var(--md-sys-elevation-3);
+  --ap-font-display: "Roboto Flex Variable", "Roboto Flex", system-ui, sans-serif;
+  --ap-font-body: "Roboto Flex Variable", "Roboto Flex", system-ui, sans-serif;
+  --ap-ease: cubic-bezier(0.2, 0, 0, 1);
+  --ap-spring: cubic-bezier(0.2, 0, 0, 1);
   --ap-texture: none;
   --ap-border-w: 1px;
 }
 
-/* ── Variante sombre — surfaces chaudes profondes, tons M3 éclaircis (pas la même teinte inversée) ── */
 .dark[data-theme="material"] {
-  --ap-paper:       #1C1512;
-  --ap-paper-2:     #2A211C;
-  --ap-card:        #251C18;
-  --ap-line:        #3D2F28;
-  --ap-line-2:      #4E3B32;
-  --ap-ink:         #F5E9E2;
-  --ap-muted:       #C4B3A9;
+  color-scheme: dark;
 
-  --ap-brand:       #FF9D78;
-  --ap-brand-deep:  #FFDBCB;
-  --ap-brand-soft:  #6B2A12;
+  --md-sys-color-primary: #d0bcff;
+  --md-sys-color-on-primary: #381e72;
+  --md-sys-color-primary-container: #4f378b;
+  --md-sys-color-on-primary-container: #eaddff;
+  --md-sys-color-secondary: #ccc2dc;
+  --md-sys-color-on-secondary: #332d41;
+  --md-sys-color-secondary-container: #4a4458;
+  --md-sys-color-on-secondary-container: #e8def8;
+  --md-sys-color-tertiary: #efb8c8;
+  --md-sys-color-on-tertiary: #492532;
+  --md-sys-color-tertiary-container: #633b48;
+  --md-sys-color-on-tertiary-container: #ffd8e4;
+  --md-sys-color-error: #f2b8b5;
+  --md-sys-color-on-error: #601410;
+  --md-sys-color-error-container: #8c1d18;
+  --md-sys-color-on-error-container: #f9dedc;
+  --md-sys-color-surface: #141218;
+  --md-sys-color-surface-dim: #141218;
+  --md-sys-color-surface-bright: #3b383e;
+  --md-sys-color-surface-container-lowest: #0f0d13;
+  --md-sys-color-surface-container-low: #1d1b20;
+  --md-sys-color-surface-container: #211f26;
+  --md-sys-color-surface-container-high: #2b2930;
+  --md-sys-color-surface-container-highest: #36343b;
+  --md-sys-color-on-surface: #e6e0e9;
+  --md-sys-color-on-surface-variant: #cac4d0;
+  --md-sys-color-outline: #938f99;
+  --md-sys-color-outline-variant: #49454f;
+  --md-sys-color-inverse-surface: #e6e0e9;
+  --md-sys-color-inverse-on-surface: #322f35;
+  --md-sys-color-inverse-primary: #65558f;
 
-  --ap-quiz:        #FF9D78;  --ap-quiz-deep:   #FFDBCB;  --ap-quiz-soft:  #6B2A12;
-  --ap-pres:        #7FD9C4; --ap-pres-deep:   #D4F0E9;  --ap-pres-soft:  #1E4A3F;
-  --ap-poll:        #F0C64B; --ap-poll-deep:   #FFEEB8;  --ap-poll-soft:  #4A3900;
-  --ap-flash:       #FF8FBC; --ap-flash-deep:  #FFDCE8;  --ap-flash-soft: #5C1030;
+  --ap-brand-deep: #b69df8;
+  --ap-quiz: #f2b8b5;
+  --ap-quiz-deep: #ffdad6;
+  --ap-quiz-soft: #8c1d18;
+  --ap-poll: #80d5d4;
+  --ap-poll-deep: #9cf1f0;
+  --ap-poll-soft: #004f4f;
+  --ap-flash: #efb8c8;
+  --ap-flash-deep: #ffd8e4;
+  --ap-flash-soft: #633b48;
+  --ap-pres: #9cd67d;
+  --ap-pres-deep: #b7f397;
+  --ap-pres-soft: #205107;
+  --ap-success: #9cd67d;
 
-  --ap-accent-live: #C4E86B;
-  --ap-success:     #6FD8B8;
-
-  --ap-shadow-soft:  0 1px 3px rgba(0, 0, 0, .35), 0 1px 2px rgba(0, 0, 0, .3);
-  --ap-shadow-card:  0 10px 26px rgba(0, 0, 0, .45), 0 2px 6px rgba(0, 0, 0, .35);
-  --ap-shadow-float: 0 22px 50px rgba(0, 0, 0, .55), 0 6px 16px rgba(0, 0, 0, .4);
+  --md-sys-elevation-1: 0 1px 2px rgb(0 0 0 / 0.5), 0 1px 3px 1px rgb(0 0 0 / 0.3);
+  --md-sys-elevation-2: 0 1px 2px rgb(0 0 0 / 0.5), 0 2px 6px 2px rgb(0 0 0 / 0.3);
+  --md-sys-elevation-3: 0 1px 3px rgb(0 0 0 / 0.5), 0 4px 8px 3px rgb(0 0 0 / 0.3);
 }
 
-/* Textes « deep » (on-container) sur fonds soft, version sombre — le rôle s'inverse, jamais figé */
-.dark[data-theme="material"] .ap-badge--quiz  { color: #FF5A36; }
-.dark[data-theme="material"] .ap-badge--pres  { color: #2E7D6B; }
-.dark[data-theme="material"] .ap-badge--poll  { color: #D9A400; }
-.dark[data-theme="material"] .ap-badge--flash { color: #D6336C; }
-.dark[data-theme="material"] .ap-badge--brand { color: #FF9D78; }
-.dark[data-theme="material"] .ap-lead { color: var(--ap-muted); }
+:root[data-theme="material"] body,
+[data-theme="material"] .ap-app {
+  font-family: var(--ap-font-body);
+  font-weight: 400;
+}
+
+[data-theme="material"] .ap-app {
+  background: var(--md-sys-color-surface);
+  background-image: none;
+}
 
 /* ============================================================
-   2. FOND & SIGNALÉTIQUE GLOBALE
+   2. MATERIAL SYMBOLS
    ============================================================ */
-[data-theme="material"] .ap-app { background-image: none; }
+.material-symbol {
+  display: inline-block;
+  flex: 0 0 auto;
+  width: var(--md-symbol-size, 24px);
+  height: var(--md-symbol-size, 24px);
+  overflow: hidden;
+  color: currentColor;
+  font-family: "Material Symbols Rounded";
+  font-size: var(--md-symbol-size, 24px);
+  font-style: normal;
+  font-weight: 400;
+  font-feature-settings: "liga";
+  letter-spacing: normal;
+  line-height: 1;
+  text-align: center;
+  text-rendering: optimizeLegibility;
+  text-transform: none;
+  white-space: nowrap;
+  word-wrap: normal;
+  -webkit-font-feature-settings: "liga";
+  -webkit-font-smoothing: antialiased;
+}
 
-[data-theme="material"] .ap-app :focus-visible {
-  outline: 3px solid var(--ap-brand);
-  outline-offset: 2px;
-  border-radius: var(--ap-r-sm);
+.material-symbol--filled {
+  font-family: "Material Symbols Rounded Filled";
 }
-[data-theme="material"] .ap-app ::selection {
-  background: var(--ap-quiz-soft);
-  color: var(--ap-quiz-deep);
-}
-
-[data-theme="material"] a:not([class]) {
-  color: var(--ap-brand);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  text-decoration-thickness: 2px;
-}
-[data-theme="material"] a:not([class]):hover { color: var(--ap-brand-deep); }
 
 /* ============================================================
-   3. TYPOGRAPHIE — Roboto Flex, écarts de graisse expressifs
+   3. TYPE SCALE AND ACCESSIBLE STATES
    ============================================================ */
 [data-theme="material"] .ap-display,
-[data-theme="material"] .ap-h1 { font-weight: 800; font-variation-settings: "wght" 800, "opsz" 144; letter-spacing: -.02em; }
-[data-theme="material"] .ap-h2 { font-weight: 700; font-variation-settings: "wght" 700, "opsz" 60; letter-spacing: -.01em; }
-[data-theme="material"] .ap-h3 { font-weight: 600; }
-[data-theme="material"] .ap-lead { color: var(--ap-muted); font-weight: 400; }
+[data-theme="material"] .ap-h1,
+[data-theme="material"] .ap-h2,
+[data-theme="material"] .ap-h3 {
+  color: var(--md-sys-color-on-surface);
+  font-family: var(--ap-font-display);
+  font-variation-settings: "opsz" 48, "wdth" 100;
+}
+
+[data-theme="material"] .ap-display,
+[data-theme="material"] .ap-h1 {
+  font-weight: 475;
+  letter-spacing: -0.02em;
+}
+
+[data-theme="material"] .ap-h2 {
+  font-weight: 500;
+  letter-spacing: -0.015em;
+}
+
+[data-theme="material"] .ap-h3 {
+  font-weight: 560;
+  letter-spacing: 0;
+}
+
+[data-theme="material"] .ap-muted,
+[data-theme="material"] .ap-lead {
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+[data-theme="material"] .ap-app :focus-visible {
+  outline: 3px solid var(--md-sys-color-primary);
+  outline-offset: 2px;
+}
+
+[data-theme="material"] .ap-app ::selection {
+  color: var(--md-sys-color-on-primary-container);
+  background: var(--md-sys-color-primary-container);
+}
 
 /* ============================================================
-   4. BOUTONS — pilules pleines (stade M3), spring overshoot
+   4. BUTTONS, ICON BUTTONS AND STATE LAYERS
    ============================================================ */
-[data-theme="material"] .ap-btn {
-  font-weight: 700;
-  border-radius: var(--ap-r-pill);
-  box-shadow: var(--ap-shadow-soft);
-  transition: transform .22s var(--ap-spring), box-shadow .22s var(--ap-ease), background-color .16s var(--ap-ease);
-}
-[data-theme="material"] .ap-btn:hover {
-  transform: translateY(-2px) scale(1.015);
-  box-shadow: var(--ap-shadow-card);
-}
-[data-theme="material"] .ap-btn:active {
-  transform: translateY(0) scale(.97);
-  box-shadow: var(--ap-shadow-soft);
+[data-theme="material"] .ap-btn,
+[data-theme="material"] .adm-btn {
+  min-height: 40px;
+  padding: 0 24px;
+  border: 0;
+  border-radius: var(--md-sys-shape-corner-full);
+  color: var(--md-sys-color-on-primary);
+  background: var(--md-sys-color-primary);
+  box-shadow: none;
+  font-family: var(--ap-font-body);
+  font-size: 14px;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  transition:
+    box-shadow 200ms var(--ap-ease),
+    filter 200ms var(--ap-ease),
+    transform 200ms var(--ap-ease);
 }
 
-[data-theme="material"] .ap-btn--lg { border-radius: var(--ap-r-pill); }
-[data-theme="material"] .ap-btn--sm { border-radius: var(--ap-r-pill); }
-[data-theme="material"] .ap-btn--pill { border-radius: var(--ap-r-pill); }
+[data-theme="material"] .ap-btn:hover,
+[data-theme="material"] .adm-btn:hover {
+  transform: none;
+  filter: brightness(1.06);
+  box-shadow: var(--md-sys-elevation-1);
+}
 
-[data-theme="material"] .ap-btn--quiz  { background: var(--ap-quiz);  box-shadow: var(--ap-shadow-soft); }
-[data-theme="material"] .ap-btn--quiz:hover  { box-shadow: var(--ap-shadow-card); }
-[data-theme="material"] .ap-btn--pres  { background: var(--ap-pres);  box-shadow: var(--ap-shadow-soft); color: #fff; }
-[data-theme="material"] .ap-btn--pres:hover  { box-shadow: var(--ap-shadow-card); }
-[data-theme="material"] .ap-btn--poll  { background: var(--ap-poll);  box-shadow: var(--ap-shadow-soft); }
-[data-theme="material"] .ap-btn--poll:hover  { box-shadow: var(--ap-shadow-card); }
-[data-theme="material"] .ap-btn--flash { background: var(--ap-flash); box-shadow: var(--ap-shadow-soft); color: #fff; }
-[data-theme="material"] .ap-btn--flash:hover  { box-shadow: var(--ap-shadow-card); }
+[data-theme="material"] .ap-btn:active,
+[data-theme="material"] .adm-btn:active {
+  transform: scale(0.98);
+  filter: brightness(0.96);
+  box-shadow: none;
+}
 
-/* Bouton « tonal » — le geste M3 : container pastel, texte saturé, pas un aplat */
+[data-theme="material"] .ap-btn--sm {
+  min-height: 40px;
+  padding: 0 16px;
+  font-size: 14px;
+}
+
+[data-theme="material"] .ap-btn--lg {
+  min-height: 56px;
+  padding: 0 32px;
+  font-size: 16px;
+}
+
 [data-theme="material"] .ap-btn--ghost {
-  background: var(--ap-brand-soft); color: var(--ap-brand-deep);
+  color: var(--md-sys-color-on-secondary-container);
+  background: var(--md-sys-color-secondary-container);
   box-shadow: none;
-  border-radius: var(--ap-r-pill);
 }
+
 [data-theme="material"] .ap-btn--ghost:hover {
-  transform: translateY(-2px) scale(1.015);
-  background: var(--ap-quiz-soft);
+  color: var(--md-sys-color-on-secondary-container);
+  background: var(--md-sys-color-secondary-container);
   box-shadow: none;
 }
-[data-theme="material"] .ap-btn--ghost:active { transform: translateY(0) scale(.97); }
 
 [data-theme="material"] .ap-icon-btn {
-  border-radius: var(--ap-r-pill);
-  transition: transform .22s var(--ap-spring), background-color .16s var(--ap-ease);
+  min-width: 40px;
+  width: 40px;
+  padding: 0 !important;
+  border-radius: 50%;
 }
-[data-theme="material"] .ap-icon-btn:hover { transform: scale(1.08) rotate(-4deg); background: var(--ap-brand-soft); }
-[data-theme="material"] .ap-icon-btn:active { transform: scale(.92) rotate(0deg); }
+
+[data-theme="material"] .ap-btn--quiz {
+  color: var(--md-sys-color-on-error);
+  background: var(--md-sys-color-error);
+}
+
+[data-theme="material"] .ap-btn--poll {
+  color: #ffffff;
+  background: var(--ap-poll);
+}
+
+[data-theme="material"] .ap-btn--flash {
+  color: var(--md-sys-color-on-tertiary);
+  background: var(--md-sys-color-tertiary);
+}
+
+[data-theme="material"] .ap-btn--pres {
+  color: #ffffff;
+  background: var(--ap-pres);
+}
+
+.dark[data-theme="material"] .ap-btn--poll,
+.dark[data-theme="material"] .ap-btn--pres {
+  color: #102010;
+}
 
 /* ============================================================
-   5. CARTES — squircle généreux, asymétrie d'angles, lift au survol
+   5. SURFACES, CARDS AND MENUS
    ============================================================ */
 [data-theme="material"] .ap-card {
-  border-width: 1px;
-  border-radius: var(--ap-r-lg);
-  box-shadow: var(--ap-shadow-soft);
-  transition: transform .24s var(--ap-spring), box-shadow .2s var(--ap-ease);
+  border: 0;
+  border-radius: var(--md-sys-shape-corner-large);
+  background: var(--md-sys-color-surface-container-low);
+  box-shadow: none;
 }
+
 [data-theme="material"] .ap-card--floaty {
-  box-shadow: var(--ap-shadow-card);
-  /* squircle asymétrique — la signature M3 Expressive, jamais 4 coins égaux */
-  border-radius: var(--ap-r-xl) var(--ap-r-xl) var(--ap-r-xl) var(--ap-r-sm);
+  border-radius: var(--md-sys-shape-corner-extra-large);
+  background: var(--md-sys-color-surface-container-lowest);
+  box-shadow: var(--md-sys-elevation-1);
 }
+
+[data-theme="material"] .ap-card--hover {
+  transition:
+    background-color 200ms var(--ap-ease),
+    box-shadow 200ms var(--ap-ease),
+    transform 200ms var(--ap-ease);
+}
+
 [data-theme="material"] .ap-card--hover:hover {
-  transform: translateY(-4px) scale(1.01);
-  box-shadow: var(--ap-shadow-float);
+  transform: translateY(-2px);
+  background: var(--md-sys-color-surface-container);
+  box-shadow: var(--md-sys-elevation-2);
 }
 
-[data-theme="material"] .ap-tile__icon { border-radius: var(--ap-r-md); }
+[data-theme="material"] .ap-tile__icon {
+  border-radius: var(--md-sys-shape-corner-medium);
+  box-shadow: none !important;
+}
+
+[data-theme="material"] .ap-mega-menu,
+[data-theme="material"] [data-radix-popper-content-wrapper] [role="menu"] {
+  border: 0 !important;
+  border-radius: var(--md-sys-shape-corner-extra-large) !important;
+  background: var(--md-sys-color-surface-container) !important;
+  box-shadow: var(--md-sys-elevation-2) !important;
+}
+
+[data-theme="material"] [role="menuitem"] {
+  min-height: 48px;
+  border-radius: var(--md-sys-shape-corner-medium) !important;
+}
+
+[data-theme="material"] [role="menuitem"]:hover,
+[data-theme="material"] [role="menuitem"]:focus {
+  background: var(--md-sys-color-secondary-container) !important;
+}
 
 /* ============================================================
-   6. RÉPONSES DE QUIZ — tuiles container tonal, spring au survol
-   ============================================================ */
-[data-theme="material"] .ap-answer {
-  font-weight: 600;
-  border-radius: var(--ap-r-lg);
-  box-shadow: var(--ap-shadow-soft);
-  transition: transform .18s var(--ap-spring), background .16s var(--ap-ease), box-shadow .16s var(--ap-ease);
-}
-[data-theme="material"] .ap-answer:hover {
-  background: var(--ap-paper-2);
-  transform: translateY(-2px) scale(1.01);
-  box-shadow: var(--ap-shadow-card);
-}
-[data-theme="material"] .ap-answer:active { transform: scale(.98); box-shadow: var(--ap-shadow-soft); }
-
-[data-theme="material"] .ap-answer__shape { border-radius: var(--ap-r-sm); }
-
-[data-theme="material"] .ap-answer--1 { background: var(--ap-quiz-soft); }
-[data-theme="material"] .ap-answer--2 { background: var(--ap-poll-soft); }
-[data-theme="material"] .ap-answer--3 { background: var(--ap-pres-soft); }
-[data-theme="material"] .ap-answer--4 { background: var(--ap-flash-soft); }
-
-[data-theme="material"] .ap-answer--1.ap-answer--selected, [data-theme="material"] .ap-answer--1.ap-answer--selected:hover {
-  box-shadow: inset 0 0 0 3px var(--ap-quiz); transform: scale(1.01);
-}
-[data-theme="material"] .ap-answer--2.ap-answer--selected, [data-theme="material"] .ap-answer--2.ap-answer--selected:hover {
-  box-shadow: inset 0 0 0 3px var(--ap-poll); transform: scale(1.01);
-}
-[data-theme="material"] .ap-answer--3.ap-answer--selected, [data-theme="material"] .ap-answer--3.ap-answer--selected:hover {
-  box-shadow: inset 0 0 0 3px var(--ap-pres); transform: scale(1.01);
-}
-[data-theme="material"] .ap-answer--4.ap-answer--selected, [data-theme="material"] .ap-answer--4.ap-answer--selected:hover {
-  box-shadow: inset 0 0 0 3px var(--ap-flash); transform: scale(1.01);
-}
-
-[data-theme="material"] .ap-answer--solid { box-shadow: var(--ap-shadow-soft); }
-[data-theme="material"] .ap-answer--solid:hover { transform: translateY(-2px) scale(1.01); }
-[data-theme="material"] .ap-answer--solid:active { transform: scale(.98); }
-
-[data-theme="material"] .ap-answer--correct,
-[data-theme="material"] .ap-answer--correct:hover,
-[data-theme="material"] .ap-answer--correct:active {
-  background: var(--ap-success);
-  color: #fff;
-  box-shadow: var(--ap-shadow-card);
-  animation: none;
-}
-[data-theme="material"] .ap-answer--wrong { animation: none; }
-
-/* ============================================================
-   7. FORMULAIRES — champs arrondis, focus ring épais
+   6. FIELDS, SEGMENTS, SWITCHES AND BADGES
    ============================================================ */
 [data-theme="material"] .ap-input,
 [data-theme="material"] .ap-textarea,
 [data-theme="material"] .ap-code {
-  border-width: 1px;
-  border-radius: var(--ap-r-md);
-  font-weight: 500;
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: var(--md-sys-shape-corner-extra-small);
+  color: var(--md-sys-color-on-surface);
+  background: var(--md-sys-color-surface-container-highest);
+  box-shadow: none;
+  font-weight: 400;
 }
-[data-theme="material"] .ap-input::placeholder,
-[data-theme="material"] .ap-textarea::placeholder { color: var(--ap-line-2); }
+
 [data-theme="material"] .ap-input:focus,
 [data-theme="material"] .ap-textarea:focus,
 [data-theme="material"] .ap-code:focus {
-  border-color: var(--ap-brand);
-  box-shadow: 0 0 0 4px var(--ap-brand-soft);
+  border: 2px solid var(--md-sys-color-primary);
+  box-shadow: none;
 }
+
 [data-theme="material"] .ap-dropzone {
-  border: 2px dashed var(--ap-line-2);
-  border-radius: var(--ap-r-lg);
-  background: var(--ap-paper-2);
+  border: 1px dashed var(--md-sys-color-outline);
+  border-radius: var(--md-sys-shape-corner-large);
+  background: var(--md-sys-color-surface-container);
 }
+
 [data-theme="material"] .ap-dropzone:hover {
-  border-color: var(--ap-brand);
-  background: var(--ap-brand-soft);
+  border-color: var(--md-sys-color-primary);
+  background: var(--md-sys-color-primary-container);
 }
 
-/* Segmented control — pilule complète, pas des coins carrés */
 [data-theme="material"] .ap-seg {
-  border-radius: var(--ap-r-pill);
-  background: var(--ap-paper-2);
+  padding: 4px;
+  border-radius: var(--md-sys-shape-corner-full);
+  background: var(--md-sys-color-surface-container-highest);
 }
-[data-theme="material"] .ap-seg button { border-radius: var(--ap-r-pill); background: transparent; }
+
+[data-theme="material"] .ap-seg button {
+  border-radius: var(--md-sys-shape-corner-full);
+  background: transparent;
+}
+
 [data-theme="material"] .ap-seg button.is-on {
-  background: var(--ap-card);
-  color: var(--ap-brand-deep);
-  box-shadow: var(--ap-shadow-soft);
+  color: var(--md-sys-color-on-secondary-container);
+  background: var(--md-sys-color-secondary-container);
+  box-shadow: none;
 }
 
-/* Interrupteur */
-[data-theme="material"] .ap-switch { background: var(--ap-line-2); box-shadow: none; border-radius: var(--ap-r-pill); }
+[data-theme="material"] .ap-switch {
+  border: 2px solid var(--md-sys-color-outline);
+  border-radius: var(--md-sys-shape-corner-full);
+  background: var(--md-sys-color-surface-container-highest);
+  box-shadow: none;
+}
+
 [data-theme="material"] .ap-switch[aria-checked="true"],
-[data-theme="material"] .ap-switch.is-on { background: var(--ap-brand); }
+[data-theme="material"] .ap-switch.is-on {
+  border-color: var(--md-sys-color-primary);
+  background: var(--md-sys-color-primary);
+}
 
-/* ============================================================
-   8. PILLS, BADGES, EYEBROW — containers tonaux, texte saturé dessus
-   ============================================================ */
 [data-theme="material"] .ap-pill,
-[data-theme="material"] .ap-badge {
-  border-radius: var(--ap-r-pill);
-  font-weight: 700;
+[data-theme="material"] .ap-badge,
+[data-theme="material"] .ap-eyebrow,
+[data-theme="material"] .ap-type-badge {
+  border-radius: var(--md-sys-shape-corner-small);
+  box-shadow: none;
+  font-weight: 600;
 }
-[data-theme="material"] .ap-badge--quiz  { background: var(--ap-quiz-soft);  color: var(--ap-quiz-deep); }
-[data-theme="material"] .ap-badge--pres  { background: var(--ap-pres-soft);  color: var(--ap-pres-deep); }
-[data-theme="material"] .ap-badge--poll  { background: var(--ap-poll-soft);  color: var(--ap-poll-deep); }
-[data-theme="material"] .ap-badge--flash { background: var(--ap-flash-soft); color: var(--ap-flash-deep); }
-[data-theme="material"] .ap-badge--brand { background: var(--ap-brand-soft); color: var(--ap-brand-deep); }
 
-[data-theme="material"] .ap-eyebrow {
-  border-radius: var(--ap-r-pill);
-  border: 1px solid var(--ap-line);
-  background: var(--ap-paper-2);
+[data-theme="material"] .ap-badge--brand {
+  color: var(--md-sys-color-on-primary-container);
+  background: var(--md-sys-color-primary-container);
 }
-[data-theme="material"] .ap-eyebrow__dot { background: var(--ap-accent-live); animation: none; }
 
-[data-theme="material"] .ap-type-badge { border-radius: var(--ap-r-sm); }
-[data-theme="material"] .ap-type-badge:hover { transform: scale(1.06); }
+[data-theme="material"] .ap-badge--quiz {
+  color: var(--md-sys-color-on-error-container);
+  background: var(--md-sys-color-error-container);
+}
+
+[data-theme="material"] .ap-badge--poll {
+  color: var(--ap-poll-deep);
+  background: var(--ap-poll-soft);
+}
+
+[data-theme="material"] .ap-badge--flash {
+  color: var(--md-sys-color-on-tertiary-container);
+  background: var(--md-sys-color-tertiary-container);
+}
+
+[data-theme="material"] .ap-badge--pres {
+  color: var(--ap-pres-deep);
+  background: var(--ap-pres-soft);
+}
 
 /* ============================================================
-   9. MARQUE & NAVIGATION — pilule flottante, spring au survol
+   7. QUIZ ANSWERS
    ============================================================ */
+[data-theme="material"] .ap-answer {
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-corner-large);
+  box-shadow: none;
+  font-weight: 500;
+  transition:
+    background-color 200ms var(--ap-ease),
+    border-color 200ms var(--ap-ease),
+    transform 200ms var(--ap-ease);
+}
+
+[data-theme="material"] .ap-answer:hover {
+  border-color: var(--md-sys-color-outline);
+  background: var(--md-sys-color-surface-container-high);
+  box-shadow: none;
+  transform: none;
+}
+
+[data-theme="material"] .ap-answer:active {
+  transform: scale(0.99);
+}
+
+[data-theme="material"] .ap-answer--selected {
+  border: 2px solid var(--md-sys-color-primary) !important;
+  background: var(--md-sys-color-primary-container) !important;
+  box-shadow: none !important;
+}
+
+[data-theme="material"] .ap-answer--correct {
+  border-color: var(--ap-pres);
+  color: var(--ap-pres-deep);
+  background: var(--ap-pres-soft);
+  box-shadow: none;
+}
+
+/* ============================================================
+   8. APP SHELL — M3 TOP APP BAR + NAVIGATION DRAWER
+   ============================================================ */
+[data-theme="material"] header.sticky {
+  min-height: 64px;
+  border-bottom: 0 !important;
+  background: color-mix(in srgb, var(--md-sys-color-surface) 94%, transparent) !important;
+  box-shadow: none;
+  backdrop-filter: blur(16px);
+}
+
 [data-theme="material"] .ap-logo {
-  border-radius: var(--ap-r-md);
+  border-radius: var(--md-sys-shape-corner-medium);
+  background: var(--md-sys-color-primary-container);
   box-shadow: none;
-  transition: transform .22s var(--ap-spring);
-}
-[data-theme="material"] .ap-logo:hover { transform: rotate(-4deg) scale(1.05); }
-
-[data-theme="material"] .ap-nav-pill {
-  border-radius: var(--ap-r-pill);
-  border-width: 1px;
-  box-shadow: var(--ap-shadow-soft);
-  background: var(--ap-card);
-}
-[data-theme="material"] .ap-nav-pill__item {
-  border-radius: var(--ap-r-pill);
-  transition: transform .18s var(--ap-spring), background-color .16s var(--ap-ease), color .16s var(--ap-ease);
-}
-[data-theme="material"] .ap-nav-pill__item:hover,
-[data-theme="material"] .ap-nav-pill__item[aria-current="page"] {
-  color: var(--ap-brand-deep);
-  background: var(--ap-brand-soft);
-  transform: scale(1.03);
 }
 
-[data-theme="material"] .ap-mega-menu {
-  border-radius: var(--ap-r-xl) var(--ap-r-xl) var(--ap-r-xl) var(--ap-r-sm);
-  box-shadow: var(--ap-shadow-float);
+[data-theme="material"] [data-sidebar="sidebar"] {
+  border-color: transparent !important;
+  background: var(--md-sys-color-surface-container-low) !important;
 }
-[data-theme="material"] .ap-mega-menu__close { border-radius: var(--ap-r-pill); }
+
+[data-theme="material"] [data-sidebar="group-label"] {
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+
+[data-theme="material"] [data-sidebar="menu-button"],
+[data-theme="material"] [data-sidebar="menu-sub-button"] {
+  min-height: 48px;
+  border-radius: var(--md-sys-shape-corner-full);
+  color: var(--md-sys-color-on-surface-variant);
+  font-weight: 550;
+  transition:
+    color 200ms var(--ap-ease),
+    background-color 200ms var(--ap-ease);
+}
+
+[data-theme="material"] [data-sidebar="menu-button"]:hover,
+[data-theme="material"] [data-sidebar="menu-sub-button"]:hover {
+  color: var(--md-sys-color-on-surface);
+  background: var(--md-sys-color-surface-container-highest);
+}
+
+[data-theme="material"] [data-sidebar="menu-button"][data-active="true"],
+[data-theme="material"] [data-sidebar="menu-sub-button"][data-active="true"] {
+  color: var(--md-sys-color-on-secondary-container);
+  background: var(--md-sys-color-secondary-container);
+  font-weight: 650;
+}
+
+[data-theme="material"] [data-sidebar="menu-button"][data-active="true"] .material-symbol,
+[data-theme="material"] [data-sidebar="menu-sub-button"][data-active="true"] .material-symbol {
+  font-family: "Material Symbols Rounded Filled";
+}
+
+[data-theme="material"] [data-sidebar="trigger"] {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  color: var(--md-sys-color-on-surface);
+}
+
+[data-theme="material"] .ap-avatar-btn {
+  color: var(--md-sys-color-on-primary-container);
+  background: var(--md-sys-color-primary-container);
+  box-shadow: none;
+}
 
 /* ============================================================
-   10. MOUVEMENT — spring vivant sur les moments clés, jamais figé
+   9. MOTION
    ============================================================ */
-[data-theme="material"] .ap-float-pill { animation-timing-function: var(--ap-spring); }
-[data-theme="material"] .ap-score-pill {
-  border-radius: var(--ap-r-pill);
-  animation-timing-function: var(--ap-spring);
+@media (prefers-reduced-motion: no-preference) {
+  [data-theme="material"] .ap-route-enter {
+    animation: md-route-in 280ms var(--ap-ease) backwards;
+  }
 }
 
-/* ============================================================
-   11. CONSOLE ADMIN
-   ============================================================ */
-[data-theme="material"] .adm-btn {
-  border-radius: var(--ap-r-pill);
-  box-shadow: none;
-  transition: transform .18s var(--ap-spring), filter .16s var(--ap-ease);
+@keyframes md-route-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
-[data-theme="material"] .adm-btn:hover { transform: translateY(-1px) scale(1.02); box-shadow: none; filter: brightness(1.04); }
-[data-theme="material"] .adm-btn:active { transform: scale(.97); box-shadow: none; filter: brightness(.96); }
+
+@media (prefers-reduced-motion: reduce) {
+  [data-theme="material"] *,
+  [data-theme="material"] *::before,
+  [data-theme="material"] *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

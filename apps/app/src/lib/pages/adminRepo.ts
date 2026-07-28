@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import type {
   RoadmapAdminRow, GuideAdminRow, FaqAdminRow, ReleaseAdminRow, ChangelogItemAdminRow,
-  PendingReview, ReviewAdminRow, IdeaRow, AdminReportRow, SubscriberRow, StaticPage,
+  PendingReview, ReviewAdminRow, IdeaRow, AdminReportRow, SubscriberRow, StaticPage, FaqSectionAdminRow,
   Status, ReportStatus,
 } from './types';
 
@@ -37,6 +37,7 @@ async function listAll<T>(table: string): Promise<T[]> {
 export const listRoadmap = () => listAll<RoadmapAdminRow>('roadmap_items');
 export const listGuides = () => listAll<GuideAdminRow>('guides');
 export const listFaq = () => listAll<FaqAdminRow>('faq_items');
+export const listFaqSections = () => listAll<FaqSectionAdminRow>('faq_sections');
 export const listReleases = () => listAll<ReleaseAdminRow>('changelog_releases');
 
 export async function listReleaseItems(releaseId: string): Promise<ChangelogItemAdminRow[]> {
@@ -62,6 +63,18 @@ export async function deleteRow(table: string, id: string): Promise<void> {
   if (error) throw error;
 }
 export const setStatus = (table: string, id: string, status: Status) => updateRow(table, id, { status });
+
+export async function updateFaqStructure(
+  sections: Pick<FaqSectionAdminRow, 'id' | 'title' | 'sort'>[],
+  items: Pick<FaqAdminRow, 'id' | 'category' | 'sort'>[],
+): Promise<void> {
+  const results = await Promise.all([
+    ...sections.map((section) => supabase.from('faq_sections').update({ title: section.title, sort: section.sort }).eq('id', section.id)),
+    ...items.map((item) => supabase.from('faq_items').update({ category: item.category, sort: item.sort }).eq('id', item.id)),
+  ]);
+  const failed = results.find((result) => result.error);
+  if (failed?.error) throw failed.error;
+}
 
 // ── Moderation ───────────────────────────────────────────────────────────────
 export async function listReviews(status = 'pending'): Promise<PendingReview[]> {

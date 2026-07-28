@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Trash2, Plus } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   fetchSocialLinks,
   saveSocialLinks,
@@ -61,7 +62,7 @@ const SocialLinksPanel = () => {
         Laissez un champ vide pour masquer le réseau.
       </p>
       {loading ? (
-        <div style={{ opacity: .5, fontWeight: 700 }}>Chargement…</div>
+        <SettingsFormSkeleton />
       ) : (
         <div style={{ display: "grid", gap: 14, gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
           {SOCIAL_NETWORKS.map(({ id, label, placeholder }) => (
@@ -139,7 +140,7 @@ const PartnersPanel = () => {
         Laissez la liste vide pour masquer le bandeau.
       </p>
       {loading ? (
-        <div style={{ opacity: .5, fontWeight: 700 }}>Chargement…</div>
+        <SettingsFormSkeleton rows={3} />
       ) : (
         <>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -200,6 +201,17 @@ const PartnersPanel = () => {
     </section>
   );
 };
+
+const SettingsFormSkeleton = ({ rows = 4 }: { rows?: number }) => (
+  <div className="grid gap-4 md:grid-cols-2" role="status" aria-label="Chargement des réglages">
+    {Array.from({ length: rows }, (_, index) => (
+      <div key={index}>
+        <Skeleton className="mb-2 h-3 w-24" />
+        <Skeleton className="h-11 w-full rounded-xl" />
+      </div>
+    ))}
+  </div>
+);
 
 export const SettingsTab = () => (
   <>

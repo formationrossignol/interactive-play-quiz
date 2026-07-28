@@ -49,11 +49,11 @@
   --ap-line-2:      #d3d7e2;  /* bordures pointillées / dropzones */
 
   /* Rayons — modernes, pas ludiques */
-  --ap-r-sm: 8px;
-  --ap-r-md: 10px;
-  --ap-r-lg: 14px;
-  --ap-r-xl: 16px;
-  --ap-r-pill: 999px;
+  --ap-r-sm: 5px;
+  --ap-r-md: 7px;
+  --ap-r-lg: 9px;
+  --ap-r-xl: 11px;
+  --ap-r-pill: 7px;
 
   /* Ombres plates — jamais d'offset 3D coloré */
   --ap-shadow-soft:  0 1px 2px rgba(23, 32, 51, .08);

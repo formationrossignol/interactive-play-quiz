@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { AvatarSelector } from "@/components/AvatarSelector";
-import { AlertTriangle, Loader2, Lock } from "lucide-react";
+import { AlertTriangle, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { normalizeControl } from "@/lib/sessionState";
 import { t } from "@/lib/i18n";
+import { Skeleton } from "@/components/ui/skeleton";
 
 /** Read the host's control state (room lock etc.) for a session. */
 const fetchRoomLocked = async (gameCode: string): Promise<boolean> => {
@@ -227,11 +228,12 @@ const JoinQuiz = () => {
   if (quizExists === null) {
     return (
       <div style={{ minHeight: "100vh", background: "var(--ap-brand)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div className="text-center">
-          <Loader2 className="w-12 h-12 mx-auto mb-4 animate-spin text-white" />
-          <p className="text-white font-bold text-lg" style={{ fontFamily: "var(--ap-font-display)" }}>
-            {t("checkingCode")}
-          </p>
+        <div className="w-full max-w-md rounded-3xl border border-white/20 bg-white/10 p-8" role="status" aria-label={t("checkingCode")}>
+          <Skeleton className="mx-auto mb-5 h-14 w-14 rounded-full bg-white/20" />
+          <Skeleton className="mx-auto mb-8 h-7 w-3/5 bg-white/20" />
+          <Skeleton className="mb-3 h-12 w-full bg-white/20" />
+          <Skeleton className="mb-6 h-12 w-full bg-white/20" />
+          <Skeleton className="h-12 w-full rounded-full bg-white/20" />
         </div>
       </div>
     );

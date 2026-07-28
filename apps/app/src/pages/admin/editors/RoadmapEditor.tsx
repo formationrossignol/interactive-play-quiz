@@ -27,7 +27,7 @@ export function RoadmapEditor({ open, onOpenChange, initial, onSave }: {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="w-[calc(100vw-48px)] max-w-5xl" style={{ maxHeight: "90vh", overflowY: "auto" }}>
         <DialogHeader><DialogTitle>{initial ? "Éditer" : "Nouvelle"} carte roadmap</DialogTitle></DialogHeader>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           <Select value={v.col} onValueChange={(x) => set("col", x as Values["col"])}>

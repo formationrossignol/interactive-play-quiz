@@ -8,6 +8,7 @@ import { getPollOptions } from "@/lib/pollResults";
 import { Trophy, LogOut, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Play, X, RotateCcw } from "lucide-react";
 import type { SavedQuiz } from "@/lib/quizStorage";
 import type { EditableQuestion } from "@/lib/questionTypes";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface ParticipantPreviewProps {
   question: EditableQuestion;
@@ -97,7 +98,7 @@ const ParticipantPreview = ({ question, questionIndex, totalQuestions, isPoll }:
       style={{
         marginTop: 20, display: "inline-flex", alignItems: "center", gap: 6,
         background: "rgba(255,255,255,0.15)", border: "2px solid rgba(255,255,255,0.3)",
-        borderRadius: 999, color: "#fff", fontFamily: "var(--ap-font-body)",
+        borderRadius: "var(--ap-r-sm)", color: "#fff", fontFamily: "var(--ap-font-body)",
         fontWeight: 700, fontSize: 12, padding: "7px 16px", cursor: "pointer",
       }}
     >
@@ -383,8 +384,14 @@ const PreviewPage = () => {
   }, [quizId]);
 
   if (!quiz) return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#0f172a", color: "#fff" }}>
-      Chargement…
+    <div style={{ minHeight: "100vh", padding: 24, background: "#0f172a" }} role="status" aria-label="Chargement de l’aperçu">
+      <div style={{ maxWidth: 760, margin: "8vh auto 0" }}>
+        <Skeleton className="mx-auto mb-5 h-5 w-32 bg-white/20" />
+        <Skeleton className="mx-auto mb-8 h-10 w-4/5 bg-white/20" />
+        <Skeleton className="mb-4 h-24 w-full rounded-2xl bg-white/20" />
+        <Skeleton className="mb-4 h-24 w-full rounded-2xl bg-white/20" />
+        <Skeleton className="h-24 w-full rounded-2xl bg-white/20" />
+      </div>
     </div>
   );
 
@@ -440,7 +447,7 @@ const PreviewPage = () => {
             style={{
               width: "100%",
               aspectRatio: "16/9",
-              borderRadius: 14,
+              borderRadius: "var(--ap-r-md)",
               overflow: "hidden",
               boxShadow: "0 8px 40px rgba(0,0,0,.6)",
               border: "2px solid rgba(255,255,255,.1)",
@@ -469,12 +476,12 @@ const PreviewPage = () => {
             style={{
               width: 300,
               background: "var(--ap-ink)",
-              borderRadius: 38,
+              borderRadius: "var(--ap-r-md)",
               padding: 10,
               boxShadow: "0 10px 0 #16102a, 0 30px 50px rgba(0,0,0,.55)",
             }}
           >
-            <div style={{ borderRadius: 28, overflow: "hidden", height: 560, position: "relative" }}>
+            <div style={{ borderRadius: "var(--ap-r-md)", overflow: "hidden", height: 560, position: "relative" }}>
               {/* Notch */}
               <div style={{ position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)", width: 88, height: 20, background: "var(--ap-ink)", borderRadius: "0 0 13px 13px", zIndex: 20 }} />
               <ParticipantPreview
@@ -538,7 +545,7 @@ const PreviewPage = () => {
             gap: 8,
             background: "var(--ap-brand)",
             border: "none",
-            borderRadius: 999,
+            borderRadius: "var(--ap-r-sm)",
             color: "#fff",
             fontFamily: "var(--ap-font-display)",
             fontWeight: 800,

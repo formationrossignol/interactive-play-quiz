@@ -17,12 +17,15 @@ import {
   FolderOpen,
   GripVertical,
   Layers,
+  Link2,
   ListChecks,
   MoreHorizontal,
+  Pencil,
   Play,
   Presentation,
   Star,
   Trash2,
+  Users,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -39,6 +42,8 @@ import {
 import type { ContentDisplay } from "@/lib/content/contentView";
 import type { FolderRow } from "@/lib/content/types";
 import { readSessionHistory } from "@/lib/sessionState";
+import { t } from "@/lib/i18n";
+import { ContentCardHeader, ContentRowThumbnail } from "@/components/content/ContentCardHeader";
 
 type NavigateFn = ReturnType<typeof useNavigate>;
 
@@ -49,6 +54,10 @@ export interface ItemCtx {
   onFavorite: () => void;
   onTrash: () => void;
   onDuplicate: () => void;
+  onCopyLink: () => void;
+  /** Opens the shared access-management modal for this item — REQ-UX-001:
+   *  sharing used to be a courses-only, 4-click action. */
+  onManageAccess: () => void;
 }
 
 /** Static per-type behaviour for the generic renderers. */
@@ -147,6 +156,9 @@ function ItemMenu({
         <DropdownMenuItem onSelect={ctx.onDuplicate} className="flex items-center gap-2 cursor-pointer text-sm">
           <Copy className="h-3.5 w-3.5" /> Dupliquer
         </DropdownMenuItem>
+        <DropdownMenuItem onSelect={ctx.onCopyLink} className="flex items-center gap-2 cursor-pointer text-sm">
+          <Link2 className="h-3.5 w-3.5" /> Copier le lien
+        </DropdownMenuItem>
         {ctx.folders.length > 0 && (
           <DropdownMenuSub>
             <DropdownMenuSubTrigger className="flex items-center gap-2 cursor-pointer text-sm">
@@ -158,7 +170,7 @@ function ItemMenu({
                   onSelect={() => ctx.onMove(null)}
                   className="flex items-center gap-2 cursor-pointer text-sm"
                 >
-                  <FolderOpen className="h-3.5 w-3.5" /> Racine
+                  <FolderOpen className="h-3.5 w-3.5" /> Hors dossier
                 </DropdownMenuItem>
               )}
               {ctx.folders.map((f) => (
@@ -174,6 +186,9 @@ function ItemMenu({
             </DropdownMenuSubContent>
           </DropdownMenuSub>
         )}
+        <DropdownMenuItem onSelect={ctx.onManageAccess} className="flex items-center gap-2 cursor-pointer text-sm">
+          <Users className="h-3.5 w-3.5" /> {t("shareManageAccess")}
+        </DropdownMenuItem>
         <DropdownMenuItem onSelect={ctx.onFavorite} className="flex items-center gap-2 cursor-pointer text-sm">
           <Star className="h-3.5 w-3.5" style={d.isFavorite ? { fill: "#fbbf24", color: "#fbbf24" } : {}} />
           {d.isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
@@ -250,47 +265,25 @@ export function GenericCard(props: GenericItemProps) {
   return (
     <div
       ref={setNodeRef}
-      className="ap-card ap-card--hover flex h-full cursor-pointer flex-col overflow-hidden"
-      style={{ opacity: isDragging ? 0.4 : 1 }}
+      className="ap-card ap-card--hover flex h-full cursor-pointer flex-col overflow-hidden p-0"
+      style={{ opacity: isDragging ? 0.4 : 1, padding: 0 }}
       onClick={() => navigate(config.editRoute(id))}
     >
-      {img ? (
-        <div className="relative h-40 w-full overflow-hidden flex-shrink-0">
-          <img src={img} alt={d.title} className="h-full w-full object-cover" />
-          <button
-            type="button"
-            {...attributes}
-            {...listeners}
-            onClick={(e) => e.stopPropagation()}
-            style={gripOverlayStyle}
-            className="ap-grip"
-            title="Déplacer"
-            aria-label={`Déplacer ${d.title}`}
-          >
-            <GripVertical style={{ width: 14, height: 14 }} />
-          </button>
-        </div>
-      ) : (
-        <div
-          className="relative h-40 w-full overflow-hidden flex-shrink-0 flex items-center justify-center"
-          style={{ background: `color-mix(in srgb, var(${accentVar}) 14%, var(--ap-paper-2))` }}
+      <ContentCardHeader image={img} alt={d.title} icon={DefaultHeaderIcon} accent={`var(${accentVar})`}>
+        <button
+          type="button"
+          {...attributes}
+          {...listeners}
+          onClick={(e) => e.stopPropagation()}
+          style={gripOverlayStyle}
+          className="ap-grip"
+          title="Déplacer"
+          aria-label={`Déplacer ${d.title}`}
         >
-          <DefaultHeaderIcon style={{ width: 40, height: 40, color: `var(${accentVar})`, opacity: 0.8 }} />
-          <button
-            type="button"
-            {...attributes}
-            {...listeners}
-            onClick={(e) => e.stopPropagation()}
-            style={gripOverlayStyle}
-            className="ap-grip"
-            title="Déplacer"
-            aria-label={`Déplacer ${d.title}`}
-          >
-            <GripVertical style={{ width: 14, height: 14 }} />
-          </button>
-        </div>
-      )}
-      <div className="flex flex-1 flex-col gap-2.5" style={{ padding: "14px 16px 12px" }}>
+          <GripVertical style={{ width: 14, height: 14 }} />
+        </button>
+      </ContentCardHeader>
+      <div className="flex flex-1 flex-col gap-2.5" style={{ padding: "var(--density-card-pad, 14px 16px 12px)" }}>
         <div className="flex items-start gap-2">
           <div className="flex-1 min-w-0">
             <h3 className="ap-h3 line-clamp-2" style={{ fontSize: "15.5px", lineHeight: 1.25 }}>{d.title}</h3>
@@ -329,12 +322,17 @@ export function GenericRow(props: GenericItemProps) {
   const img = headerImage(d);
   const n = config.countOf(d);
   const id = itemId(d);
+  const accentVar = accentVarOf(config.accentBtn);
+  const DefaultHeaderIcon = defaultHeaderIcon[config.accentBtn] ?? ListChecks;
 
   return (
     <div
       ref={setNodeRef}
-      className="ap-row flex items-center gap-4 cursor-pointer px-4 py-3 transition-colors"
-      style={{ borderBottom: "var(--ap-border-w) solid var(--ap-line)", opacity: isDragging ? 0.4 : 1 }}
+      className="ap-row group flex items-center gap-4 cursor-pointer px-4 transition-colors"
+      style={{
+        borderBottom: "var(--ap-border-w) solid var(--ap-line)", opacity: isDragging ? 0.4 : 1,
+        paddingTop: "var(--density-row-pad-y, 12px)", paddingBottom: "var(--density-row-pad-y, 12px)",
+      }}
       onClick={() => navigate(config.editRoute(id))}
       onMouseEnter={(e) => (e.currentTarget.style.background = "var(--ap-paper-2)")}
       onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
@@ -351,7 +349,7 @@ export function GenericRow(props: GenericItemProps) {
       >
         <GripVertical style={{ width: 14, height: 14 }} />
       </button>
-      {img && <img src={img} alt={d.title} className="w-12 h-12 rounded object-cover flex-shrink-0" />}
+      <ContentRowThumbnail image={img} alt={d.title} icon={DefaultHeaderIcon} accent={`var(${accentVar})`} />
       <div className="flex-1 min-w-0">
         <p className="ap-h3 truncate" style={{ fontSize: "14px", marginBottom: "2px" }}>{d.title}</p>
         {d.description && <p className="ap-muted truncate" style={{ fontSize: "12px" }}>{d.description}</p>}
@@ -364,9 +362,36 @@ export function GenericRow(props: GenericItemProps) {
         )}
         <span className="ap-pill" style={{ fontSize: "11px", padding: "2px 8px" }}>{config.countLabel(n)}</span>
       </div>
-      <div className="flex items-center gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+      <div className="ap-hover-actions flex items-center gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+        <button
+          type="button"
+          className="ap-btn ap-btn--ghost ap-btn--sm ap-icon-btn"
+          title="Modifier"
+          aria-label={`Modifier ${d.title}`}
+          onClick={() => navigate(config.editRoute(id))}
+        >
+          <Pencil className="h-3.5 w-3.5" />
+        </button>
+        <button
+          type="button"
+          className="ap-btn ap-btn--ghost ap-btn--sm ap-icon-btn"
+          title="Copier le lien"
+          aria-label={`Copier le lien de ${d.title}`}
+          onClick={ctx.onCopyLink}
+        >
+          <Link2 className="h-3.5 w-3.5" />
+        </button>
+        <button
+          type="button"
+          className="ap-btn ap-btn--ghost ap-btn--sm ap-icon-btn"
+          style={{ color: "var(--ap-quiz)" }}
+          title="Mettre à la corbeille"
+          aria-label={`Mettre ${d.title} à la corbeille`}
+          onClick={ctx.onTrash}
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
         <ItemMenu d={d} ctx={ctx} config={config} navigate={navigate} />
-        {primaryButton(props, { text: "12px", pad: "6px 12px" })}
       </div>
     </div>
   );

@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { useSEO } from "@/hooks/useSEO";
-import { ChevronUp, MessageCircle } from "lucide-react";
+import { ChevronUp, MessageCircle, Megaphone, Handshake, Gift, Lightbulb, Heart, Trophy, Hammer, Calendar, Eye, CheckCircle2 } from "lucide-react";
 import "./community-pages.css";
 
 const CATS = [
-  { emoji: "📣", bg: "--ap-brand-soft", title: "Annonces", sub: "Nouveautés produit · 34 sujets" },
-  { emoji: "🤝", bg: "--ap-pres-soft", title: "Entraide", sub: "Questions & réponses · 612 sujets" },
-  { emoji: "🎁", bg: "--ap-quiz-soft", title: "Partage de quiz", sub: "Vos créations publiques · 287 sujets" },
-  { emoji: "💡", bg: "--ap-flash-soft", title: "Idées & votes", sub: "La feuille de route, décidée avec vous · 96 idées" },
+  { icon: Megaphone, bg: "--ap-brand-soft", title: "Annonces", sub: "Nouveautés produit · 34 sujets" },
+  { icon: Handshake, bg: "--ap-pres-soft", title: "Entraide", sub: "Questions & réponses · 612 sujets" },
+  { icon: Gift, bg: "--ap-quiz-soft", title: "Partage de quiz", sub: "Vos créations publiques · 287 sujets" },
+  { icon: Lightbulb, bg: "--ap-flash-soft", title: "Idées & votes", sub: "La feuille de route, décidée avec vous · 96 idées" },
 ];
 
 const THREADS = [
@@ -20,9 +20,9 @@ const THREADS = [
 ];
 
 const IDEAS = [
-  { base: 142, title: "Mode équipes (scores cumulés par table)", sub: "Pour les ateliers en sous-groupes", st: "idst--dev", stLabel: "🔨 En développement" },
-  { base: 98, title: "Intégration Moodle / LMS (export SCORM)", sub: "Pour les établissements", st: "idst--plan", stLabel: "🗓 Planifié — T4 2026" },
-  { base: 64, title: "Questions avec images et schémas", sub: "Indispensable en sciences et technique", st: "idst--new", stLabel: "👀 À l'étude" },
+  { base: 142, title: "Mode équipes (scores cumulés par table)", sub: "Pour les ateliers en sous-groupes", st: "idst--dev", stIcon: Hammer, stLabel: "En développement" },
+  { base: 98, title: "Intégration Moodle / LMS (export SCORM)", sub: "Pour les établissements", st: "idst--plan", stIcon: Calendar, stLabel: "Planifié — T4 2026" },
+  { base: 64, title: "Questions avec images et schémas", sub: "Indispensable en sciences et technique", st: "idst--new", stIcon: Eye, stLabel: "À l'étude" },
 ];
 
 const TOP = [
@@ -40,19 +40,21 @@ const Communaute = () => {
   });
 
   return (
-    <AppLayout>
+    <AppLayout subtitle="Communauté">
       <main className="lq" style={{ flex: 1 }}>
         <div className="wrap">
           <div className="page-hero">
             <span className="eyebrow">Communauté</span>
-            <h1>2 400 formateurs qui s'entraident.</h1>
+            <h1 className="ap-h2">2 400 formateurs qui s'entraident.</h1>
             <p className="lead">Posez vos questions, partagez vos quiz, votez pour les prochaines fonctionnalités.</p>
           </div>
 
           <div className="ccats">
             {CATS.map((c) => (
               <div className="card ccat" key={c.title}>
-                <span className="cemo" style={{ background: `var(${c.bg})` }}>{c.emoji}</span>
+                <span className="cemo" style={{ background: `var(${c.bg})` }}>
+                  <c.icon style={{ width: 20, height: 20, color: `var(${c.bg.replace("-soft", "")})` }} />
+                </span>
                 <div>
                   <b>{c.title}</b>
                   <small>{c.sub}</small>
@@ -67,7 +69,7 @@ const Communaute = () => {
                 <h3 style={{ fontSize: "16px" }}>Discussions récentes</h3>
                 <span style={{ flex: 1 }} />
                 {/* /contact now lives in apps/marketing — full navigation. */}
-                <button className="btn btn--sm" onClick={() => { window.location.href = "/contact"; }}>Nouveau sujet</button>
+                <button className="ap-btn ap-btn--sm ap-btn--pill" onClick={() => { window.location.href = "/contact"; }}>Nouveau sujet</button>
               </div>
               {THREADS.map((th, i) => (
                 <div className="threadrow" key={i}>
@@ -76,9 +78,9 @@ const Communaute = () => {
                     <b>{th.title}</b>
                     <small>{th.meta}</small>
                   </div>
-                  {th.solved && <span className="solved">✓ Résolu</span>}
+                  {th.solved && <span className="solved"><CheckCircle2 size={11} strokeWidth={2.6} /> Résolu</span>}
                   <div className="tstats">
-                    {th.likes != null && <span>❤ {th.likes}</span>}
+                    {th.likes != null && <span><Heart size={12} strokeWidth={2.4} style={{ display: "inline", verticalAlign: "-1px" }} /> {th.likes}</span>}
                     <span><MessageCircle size={12} strokeWidth={2.4} />{th.replies}</span>
                   </div>
                 </div>
@@ -87,7 +89,7 @@ const Communaute = () => {
 
             <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
               <div className="card" style={{ padding: "16px 18px", position: "relative" }}>
-                <h3 style={{ fontSize: "15px", marginBottom: "8px" }}>💡 Idées les plus votées</h3>
+                <h3 style={{ fontSize: "15px", marginBottom: "8px", display: "flex", alignItems: "center", gap: 6 }}><Lightbulb className="h-4 w-4" /> Idées les plus votées</h3>
                 {IDEAS.map((idea, i) => {
                   const on = !!voted[i];
                   return (
@@ -103,7 +105,7 @@ const Communaute = () => {
                       <div className="it">
                         <b>{idea.title}</b>
                         <small>{idea.sub}</small>
-                        <span className={`idst ${idea.st}`}>{idea.stLabel}</span>
+                        <span className={`idst ${idea.st}`}><idea.stIcon size={11} strokeWidth={2.6} /> {idea.stLabel}</span>
                       </div>
                     </div>
                   );
@@ -117,7 +119,7 @@ const Communaute = () => {
               </div>
 
               <div className="card" style={{ padding: "16px 18px" }}>
-                <h3 style={{ fontSize: "15px", marginBottom: "6px" }}>🏆 Top contributeurs du mois</h3>
+                <h3 style={{ fontSize: "15px", marginBottom: "6px", display: "flex", alignItems: "center", gap: 6 }}><Trophy className="h-4 w-4" /> Top contributeurs du mois</h3>
                 {TOP.map((c) => (
                   <div className="toprow" key={c.rank}>
                     <span className="rank">{c.rank}</span>{c.who}

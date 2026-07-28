@@ -27,7 +27,7 @@ export function GuideEditor({ open, onOpenChange, initial, onSave }: {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="w-[calc(100vw-48px)] max-w-5xl" style={{ maxHeight: "90vh", overflowY: "auto" }}>
         <DialogHeader><DialogTitle>{initial ? "Éditer" : "Nouveau"} guide</DialogTitle></DialogHeader>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           <Input placeholder="Emoji" value={v.emoji} onChange={(e) => set("emoji", e.target.value)} />

@@ -98,6 +98,14 @@ export const deleteQuestionBankItem = (id: string, userId: string): boolean => {
   return true;
 };
 
+export const restoreQuestionBankItem = (item: QuestionBankItem): boolean => {
+  const items = getStoredQuestionBank();
+  if (items.some((entry) => entry.id === item.id)) return false;
+  items.push(item);
+  persistQuestionBank(items);
+  return true;
+};
+
 export const duplicateQuestionBankItem = (id: string, userId: string): QuestionBankItem | null => {
   const items = getStoredQuestionBank();
   const item = items.find((entry) => entry.id === id && entry.userId === userId);

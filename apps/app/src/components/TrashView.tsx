@@ -1,13 +1,14 @@
 import { useState } from "react";
-import { Clock, RotateCcw, Trash2 } from "lucide-react";
+import { BarChart2, Clock, FileCheck2, GraduationCap, Layers3, ListChecks, Presentation, RotateCcw, Trash2, type LucideIcon } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { SavedQuiz } from "@/lib/quizStorage";
+import type { ContentDisplay } from "@/lib/content/contentView";
+import { ExplorerEmptyState } from "@/components/content/ExplorerEmptyState";
 
 interface TrashViewProps {
-  items: SavedQuiz[];
+  items: ContentDisplay[];
   viewMode: "grid" | "list";
   onRestore: (id: string) => void;
-  onPermanentDelete: (item: SavedQuiz) => void;
+  onPermanentDelete: (item: ContentDisplay) => void;
 }
 
 type TrashSort = "newest" | "oldest" | "az";
@@ -28,6 +29,47 @@ const triggerStyle = {
   height: "42px",
 };
 
+const typeVisual: Record<ContentDisplay["type"], { Icon: LucideIcon; color: string }> = {
+  quiz: { Icon: ListChecks, color: "var(--ap-quiz)" },
+  poll: { Icon: BarChart2, color: "var(--ap-poll)" },
+  flashcard: { Icon: Layers3, color: "var(--ap-flash)" },
+  slide: { Icon: Presentation, color: "var(--ap-pres)" },
+  course: { Icon: GraduationCap, color: "var(--ap-pres)" },
+  exam: { Icon: FileCheck2, color: "var(--ap-quiz)" },
+};
+
+const headerImageOf = (item: ContentDisplay): string | undefined => {
+  const image = item.data.headerImage ?? item.data.coverImage;
+  return typeof image === "string" && image ? image : undefined;
+};
+
+function TrashHeader({ item, compact = false }: { item: ContentDisplay; compact?: boolean }) {
+  const image = headerImageOf(item);
+  const visual = typeVisual[item.type];
+  if (image) {
+    return (
+      <img
+        src={image}
+        alt=""
+        className={compact ? "h-20 w-28 flex-shrink-0 object-cover" : "h-52 w-full object-cover"}
+        style={compact ? { borderRadius: "var(--ap-r-md)" } : undefined}
+      />
+    );
+  }
+  const Icon = visual.Icon;
+  return (
+    <div
+      className={compact ? "h-20 w-28 flex-shrink-0 grid place-items-center" : "h-52 w-full grid place-items-center"}
+      style={{
+        background: `color-mix(in srgb, ${visual.color} 14%, var(--ap-paper-2))`,
+        ...(compact ? { borderRadius: "var(--ap-r-md)" } : {}),
+      }}
+    >
+      <Icon style={{ width: compact ? 28 : 48, height: compact ? 28 : 48, color: visual.color, opacity: 0.72 }} />
+    </div>
+  );
+}
+
 export const TrashView = ({ items, viewMode, onRestore, onPermanentDelete }: TrashViewProps) => {
   const [sort, setSort] = useState<TrashSort>("newest");
 
@@ -39,18 +81,11 @@ export const TrashView = ({ items, viewMode, onRestore, onPermanentDelete }: Tra
 
   if (items.length === 0) {
     return (
-      <div
-        style={{
-          borderRadius: "var(--ap-r-lg)",
-          border: "var(--ap-border-w) dashed var(--ap-line-2)",
-          background: "var(--ap-paper-2)",
-          padding: "48px 24px",
-          textAlign: "center",
-        }}
-      >
-        <Trash2 className="h-10 w-10 mx-auto mb-3" style={{ color: "var(--ap-muted)" }} />
-        <p className="ap-muted" style={{ fontSize: "14px" }}>La corbeille est vide.</p>
-      </div>
+      <ExplorerEmptyState
+        icon={<Trash2 style={{ width: 26, height: 26 }} />}
+        title="La corbeille est vide"
+        body="Les contenus supprimés apparaîtront ici pendant 30 jours avant leur suppression définitive."
+      />
     );
   }
 
@@ -89,9 +124,11 @@ export const TrashView = ({ items, viewMode, onRestore, onPermanentDelete }: Tra
             return (
               <div
                 key={item.id}
-                className="ap-card flex flex-col"
-                style={{ opacity: 0.8 }}
+                className="ap-card flex flex-col overflow-hidden p-0"
+                style={{ opacity: 0.8, padding: 0 }}
               >
+                <TrashHeader item={item} />
+                <div className="flex flex-1 flex-col p-4">
                 <div className="flex-1 mb-3">
                   <h3 className="ap-h3 truncate" style={{ fontSize: "15px" }}>
                     {item.title}
@@ -128,6 +165,7 @@ export const TrashView = ({ items, viewMode, onRestore, onPermanentDelete }: Tra
                     </button>
                   </div>
                 </div>
+                </div>
               </div>
             );
           })}
@@ -142,6 +180,7 @@ export const TrashView = ({ items, viewMode, onRestore, onPermanentDelete }: Tra
                 className="flex items-center gap-4 px-4 py-3"
                 style={{ borderBottom: "var(--ap-border-w) solid var(--ap-line)", opacity: 0.85 }}
               >
+                <TrashHeader item={item} compact />
                 <div className="flex-1 min-w-0">
                   <p className="ap-h3 truncate" style={{ fontSize: "14px", marginBottom: "2px" }}>
                     {item.title}

@@ -5,14 +5,28 @@ import { useDraggable } from '@dnd-kit/core';
 import { toast } from 'sonner';
 import { computeExamStats, computeExamStatus, duplicateExam, type Exam, type ExamStats, type ExamStatus } from '@/lib/examStorage';
 import { getCurrentUser } from '@/lib/auth';
-import { PlanLimitError } from '@/lib/plans';
+import { showError } from '@/lib/errorTaxonomy';
 import { createContent } from '@/lib/content/contentRepo';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ClipboardCheck, GripVertical, Star } from 'lucide-react';
+import {
+  ArrowRight,
+  BarChart3,
+  CalendarDays,
+  CheckCircle2,
+  ClipboardCheck,
+  Clock3,
+  GripVertical,
+  Link2,
+  Pencil,
+  Star,
+  Trash2,
+  UserRound,
+} from 'lucide-react';
 import { ContentExplorer } from '@/components/content/ContentExplorer';
 import type { ItemCtx } from '@/components/content/GenericItem';
 import { ExamContextMenu } from '@/components/ExamContextMenu';
 import type { ContentDisplay } from '@/lib/content/contentView';
+import { ContentCardHeader, ContentRowThumbnail } from '@/components/content/ContentCardHeader';
 
 const STATUS_LABEL: Record<string, { label: string; color: string; bg: string }> = {
   draft:     { label: 'Brouillon',  color: '#6d6288', bg: '#f3ecdd' },
@@ -49,24 +63,57 @@ const statusBadge = (liveStatus: string) => {
   return (
     <span style={{
       fontSize: 11, fontWeight: 800, letterSpacing: '.05em', padding: '2px 8px',
-      borderRadius: 999, color: badge.color, background: badge.bg,
+      borderRadius: "var(--ap-r-sm)", color: badge.color, background: badge.bg,
     }}>
       {badge.label}
     </span>
   );
 };
 
+const metaItemStyle: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 5,
+};
+
+const metaIconStyle: React.CSSProperties = {
+  width: 14,
+  height: 14,
+  flexShrink: 0,
+};
+
 const renderMeta = (exam: Exam, stats: ExamStats) => (
   <>
-    <span>
-      📅 {new Date(exam.openAt).toLocaleDateString('fr')} → {new Date(exam.closeAt).toLocaleDateString('fr')}
+    <span style={metaItemStyle}>
+      <CalendarDays aria-hidden="true" style={metaIconStyle} />
+      {new Date(exam.openAt).toLocaleDateString('fr')}
+      <ArrowRight aria-hidden="true" style={{ ...metaIconStyle, width: 12, height: 12 }} />
+      {new Date(exam.closeAt).toLocaleDateString('fr')}
     </span>
-    {exam.durationMinutes && <span>⏱️ {exam.durationMinutes} min</span>}
+    {exam.durationMinutes && (
+      <span style={metaItemStyle}>
+        <Clock3 aria-hidden="true" style={metaIconStyle} />
+        {exam.durationMinutes} min
+      </span>
+    )}
     {stats.completedAttempts > 0 && (
       <>
-        <span>👤 {stats.completedAttempts} réponse{stats.completedAttempts > 1 ? 's' : ''}</span>
-        {stats.avgScore !== null && <span>📊 moy. {stats.avgScore}%</span>}
-        {stats.passRate !== null && <span>✅ {stats.passRate}% réussite</span>}
+        <span style={metaItemStyle}>
+          <UserRound aria-hidden="true" style={metaIconStyle} />
+          {stats.completedAttempts} réponse{stats.completedAttempts > 1 ? 's' : ''}
+        </span>
+        {stats.avgScore !== null && (
+          <span style={metaItemStyle}>
+            <BarChart3 aria-hidden="true" style={metaIconStyle} />
+            moy. {stats.avgScore}%
+          </span>
+        )}
+        {stats.passRate !== null && (
+          <span style={metaItemStyle}>
+            <CheckCircle2 aria-hidden="true" style={metaIconStyle} />
+            {stats.passRate}% réussite
+          </span>
+        )}
       </>
     )}
   </>
@@ -98,7 +145,8 @@ const primaryButton = (exam: Exam, navigate: ReturnType<typeof useNavigate>, siz
     className="ap-btn ap-btn--sm ap-btn--pill"
     style={{ fontSize: size.text, padding: size.pad }}
   >
-    Résultats →
+    Résultats
+    <ArrowRight aria-hidden="true" className="h-4 w-4" />
   </button>
 );
 
@@ -110,15 +158,11 @@ function ExamCard({ d, ctx, navigate, onDuplicate }: ExamItemProps) {
   return (
     <div
       ref={setNodeRef}
-      className="ap-card ap-card--hover flex h-full cursor-pointer flex-col overflow-hidden"
-      style={{ opacity: isDragging ? 0.4 : 1 }}
+      className="ap-card ap-card--hover flex h-full cursor-pointer flex-col overflow-hidden p-0"
+      style={{ opacity: isDragging ? 0.4 : 1, padding: 0 }}
       onClick={() => navigate(`/exam/${exam.id}/admin`)}
     >
-      <div
-        className="relative h-40 w-full overflow-hidden flex-shrink-0 flex items-center justify-center"
-        style={{ background: `color-mix(in srgb, var(--ap-brand) 14%, var(--ap-paper-2))` }}
-      >
-        <ClipboardCheck style={{ width: 40, height: 40, color: 'var(--ap-brand)', opacity: 0.8 }} />
+      <ContentCardHeader image={exam.headerImage} alt={exam.title} icon={ClipboardCheck} accent="var(--ap-brand)">
         <button
           type="button"
           {...attributes}
@@ -131,7 +175,7 @@ function ExamCard({ d, ctx, navigate, onDuplicate }: ExamItemProps) {
         >
           <GripVertical style={{ width: 14, height: 14 }} />
         </button>
-      </div>
+      </ContentCardHeader>
       <div className="flex flex-1 flex-col gap-2.5" style={{ padding: '14px 16px 12px' }}>
         <div className="flex items-start gap-2">
           <div className="flex-1 min-w-0">
@@ -162,6 +206,7 @@ function ExamCard({ d, ctx, navigate, onDuplicate }: ExamItemProps) {
             onEdit={() => navigate(`/exam-builder?examId=${exam.id}`)}
             onDuplicate={() => onDuplicate(d)}
             onToggleFavorite={ctx.onFavorite}
+            onManageAccess={ctx.onManageAccess}
             onTrash={ctx.onTrash}
           />
           <div onClick={(e) => e.stopPropagation()}>{primaryButton(exam, navigate, { text: '13px', pad: '8px 15px' })}</div>
@@ -179,13 +224,14 @@ function ExamRow({ d, ctx, navigate, onDuplicate }: ExamItemProps) {
   return (
     <div
       ref={setNodeRef}
-      className="ap-row"
+      className="ap-row group"
       style={{ padding: '18px 22px', display: 'flex', alignItems: 'center', gap: 16, cursor: 'pointer', opacity: isDragging ? 0.4 : 1 }}
       onClick={() => navigate(`/exam/${exam.id}/admin`)}
     >
       <button type="button" {...attributes} {...listeners} style={gripStyle} onClick={(e) => e.stopPropagation()} aria-label={`Déplacer ${exam.title}`}>
         <GripVertical className="h-4 w-4" />
       </button>
+      <ContentRowThumbnail image={exam.headerImage} alt={exam.title} icon={ClipboardCheck} accent="var(--ap-brand)" />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
           <span style={{ fontFamily: 'var(--ap-font-display)', fontWeight: 600, fontSize: 16 }}>
@@ -202,15 +248,24 @@ function ExamRow({ d, ctx, navigate, onDuplicate }: ExamItemProps) {
           {renderMeta(exam, stats)}
         </div>
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
+      <div className="ap-hover-actions" style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
+        <button className="ap-btn ap-btn--ghost ap-btn--sm ap-icon-btn" title="Modifier" aria-label={`Modifier ${exam.title}`} onClick={() => navigate(`/exam-builder?examId=${exam.id}`)}>
+          <Pencil className="h-3.5 w-3.5" />
+        </button>
+        <button className="ap-btn ap-btn--ghost ap-btn--sm ap-icon-btn" title="Copier le lien" aria-label={`Copier le lien de ${exam.title}`} onClick={ctx.onCopyLink}>
+          <Link2 className="h-3.5 w-3.5" />
+        </button>
+        <button className="ap-btn ap-btn--ghost ap-btn--sm ap-icon-btn" style={{ color: 'var(--ap-quiz)' }} title="Mettre à la corbeille" aria-label={`Mettre ${exam.title} à la corbeille`} onClick={ctx.onTrash}>
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
         <ExamContextMenu
           isFavorite={d.isFavorite}
           onEdit={() => navigate(`/exam-builder?examId=${exam.id}`)}
           onDuplicate={() => onDuplicate(d)}
           onToggleFavorite={ctx.onFavorite}
+          onManageAccess={ctx.onManageAccess}
           onTrash={ctx.onTrash}
         />
-        {primaryButton(exam, navigate, { text: '12px', pad: '6px 12px' })}
       </div>
     </div>
   );
@@ -219,8 +274,14 @@ function ExamRow({ d, ctx, navigate, onDuplicate }: ExamItemProps) {
 export default function MyExams() {
   const navigate = useNavigate();
   const user = getCurrentUser();
-  const [status, setStatus] = useState<'Tous' | ExamStatus>('Tous');
+  const [status, setStatus] = useState<'Tous' | ExamStatus>(
+    () => (localStorage.getItem('my-exams-status-filter') as 'Tous' | ExamStatus | null) ?? 'Tous',
+  );
   const reloadRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    localStorage.setItem('my-exams-status-filter', status);
+  }, [status]);
 
   const handleDuplicate = async (d: ContentDisplay) => {
     if (!user) return;
@@ -232,11 +293,7 @@ export default function MyExams() {
       toast.success('Examen dupliqué');
       reloadRef.current?.();
     } catch (e) {
-      if (e instanceof PlanLimitError) {
-        toast.error(e.message, { action: { label: 'Passer Pro', onClick: () => { window.location.href = '/pricing'; } } });
-      } else {
-        toast.error((e as Error).message || 'Erreur lors de la duplication');
-      }
+      showError(e, 'MyExams.duplicate', 'Impossible de dupliquer cet examen. Réessayez dans un instant.');
     }
   };
 

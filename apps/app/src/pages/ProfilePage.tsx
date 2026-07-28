@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getCurrentUser, updateProfile, User as AuthUser, type Theme, type Language } from "@/lib/auth";
@@ -8,8 +8,10 @@ import { openBillingPortal, pollForPlanUpgrade } from "@/lib/billing";
 import { getUserQuizzes } from "@/lib/quizStorage";
 import { setLanguage as setI18nLanguage, getLanguage, t } from "@/lib/i18n";
 import { SITE_THEMES, applySiteTheme, normalizeSiteTheme, type SiteTheme } from "@/lib/siteTheme";
+import { DENSITIES, applyDensity, normalizeDensity, type Density } from "@/lib/density";
 import { AppLayout } from "@/components/AppLayout";
 import { SecuritySection } from "@/components/SecuritySection";
+import { MaterialSymbol } from "@/components/MaterialSymbol";
 import { Save, Trophy, BookOpen, Clock, Sun, Moon, Zap, Building2, User } from "lucide-react";
 import { toast } from "sonner";
 
@@ -102,9 +104,12 @@ const ProfilePage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [username, setUsername] = useState("");
+  const [usernameTouched, setUsernameTouched] = useState(false);
+  const usernameRef = useRef<HTMLInputElement>(null);
   const [email, setEmail] = useState("");
   const [theme, setTheme] = useState<Theme>("light");
   const [siteTheme, setSiteTheme] = useState<SiteTheme>("arcade");
+  const [density, setDensity] = useState<Density>("standard");
   const [language, setLanguage] = useState<Language>("en");
   const [plan, setPlan] = useState<Plan>("starter");
   const [stats, setStats] = useState({ totalQuizzes: 0, publicQuizzes: 0, totalQuestions: 0 });
@@ -118,6 +123,7 @@ const ProfilePage = () => {
     setEmail(currentUser.email);
     setTheme(currentUser.theme || "light");
     setSiteTheme(normalizeSiteTheme(currentUser.siteTheme));
+    setDensity(normalizeDensity(currentUser.density));
     setLanguage(currentUser.language || "en");
     setPlan(currentUser.plan || "starter");
     getContentUsage(currentUser.id, currentUser.plan || "starter").then(setUsage);
@@ -160,15 +166,23 @@ const ProfilePage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
+  const usernameError = usernameTouched && !username.trim() ? t("usernameRequired") : undefined;
+
   const handleSave = async () => {
     if (!user) return;
-    if (!username.trim()) { toast.error(t("usernameRequired")); return; }
-    const updatedUser = await updateProfile({ username: username.trim(), theme, siteTheme, language });
+    if (!username.trim()) {
+      setUsernameTouched(true);
+      toast.error(t("usernameRequired"));
+      usernameRef.current?.focus();
+      return;
+    }
+    const updatedUser = await updateProfile({ username: username.trim(), theme, siteTheme, density, language });
     if (!updatedUser) { toast.error(t("loginError")); return; }
     setUser(updatedUser);
     setI18nLanguage(language);
     document.documentElement.classList.toggle("dark", theme === "dark");
     applySiteTheme(siteTheme);
+    applyDensity(density);
     toast.success(t("profileUpdated"));
     setTimeout(() => window.location.reload(), 500);
   };
@@ -262,7 +276,7 @@ const ProfilePage = () => {
                       display: "inline-flex", alignItems: "center", gap: "6px",
                       background: `var(${meta.color})`, color: "#fff",
                       fontFamily: "var(--ap-font-display)", fontWeight: 700,
-                      fontSize: "13px", padding: "5px 14px", borderRadius: "999px",
+                      fontSize: "13px", padding: "5px 14px", borderRadius: "var(--ap-r-sm)",
                       boxShadow: `0 3px 0 var(${meta.colorDeep})`,
                     }}
                   >
@@ -292,8 +306,8 @@ const ProfilePage = () => {
                             <span>{CONTENT_KIND_LABELS[kind]}</span>
                             <span>{used} / {cap}</span>
                           </div>
-                          <div style={{ height: "6px", borderRadius: "999px", background: "var(--ap-line)", overflow: "hidden" }}>
-                            <div style={{ height: "100%", width: `${pct}%`, background: used >= cap ? "var(--ap-flash)" : "var(--ap-brand)", borderRadius: "999px" }} />
+                          <div style={{ height: "6px", borderRadius: "var(--ap-r-sm)", background: "var(--ap-line)", overflow: "hidden" }}>
+                            <div style={{ height: "100%", width: `${pct}%`, background: used >= cap ? "var(--ap-flash)" : "var(--ap-brand)", borderRadius: "var(--ap-r-sm)" }} />
                           </div>
                         </div>
                       );
@@ -332,13 +346,26 @@ const ProfilePage = () => {
             <h2 className="ap-h3" style={{ marginBottom: "20px" }}>{t("profileInfo")}</h2>
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               <div>
-                <label style={labelStyle}>{t("username")}</label>
+                <label style={labelStyle} htmlFor="profile-username">{t("username")}</label>
                 <input
-                  style={inputStyle}
+                  id="profile-username"
+                  ref={usernameRef}
+                  style={{ ...inputStyle, borderColor: usernameError ? "var(--ap-quiz)" : "var(--ap-line)" }}
                   value={username}
+                  aria-invalid={!!usernameError}
+                  aria-describedby={usernameError ? "profile-username-error" : undefined}
                   onChange={(e) => setUsername(e.target.value)}
-                  onFocus={onFocus} onBlur={onBlur}
+                  onFocus={(e) => { if (!usernameError) onFocus(e); }}
+                  onBlur={(e) => { setUsernameTouched(true); if (!usernameError) onBlur(e); }}
                 />
+                {usernameError && (
+                  <p id="profile-username-error" role="alert" style={{ margin: "8px 0 0", fontSize: "12.5px", fontWeight: 800, color: "var(--ap-quiz-deep)", display: "flex", alignItems: "center", gap: "6px" }}>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="9" /><path d="M12 8v5M12 16h.01" />
+                    </svg>
+                    {usernameError}
+                  </p>
+                )}
               </div>
               <div>
                 <label style={labelStyle}>{t("email")}</label>
@@ -391,7 +418,7 @@ const ProfilePage = () => {
                             color: "#fff", background: def.colors[0],
                           }}
                         >
-                          Aa
+                          {def.id === "material" ? <MaterialSymbol name="palette" size={24} filled /> : "Aa"}
                         </span>
                         <span style={{ minWidth: 0 }}>
                           <span style={{ display: "block", fontWeight: 800, fontSize: "14px", color: "var(--ap-ink)" }}>
@@ -439,6 +466,28 @@ const ProfilePage = () => {
                     </SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div>
+                <label style={labelStyle}>{t("density")}</label>
+                <Select
+                  value={density}
+                  onValueChange={(v: Density) => {
+                    setDensity(v);
+                    // Aperçu instantané — persisté définitivement au clic sur Enregistrer
+                    applyDensity(v);
+                  }}
+                >
+                  <SelectTrigger style={{ ...triggerStyle, marginTop: "8px" }}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent style={{ background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-md)" }}>
+                    {DENSITIES.map((d) => (
+                      <SelectItem key={d.id} value={d.id}>{d.label[getLanguage()]}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="ap-muted" style={{ fontSize: "11px", marginTop: "6px" }}>{t("densityHint")}</p>
               </div>
 
               <div>

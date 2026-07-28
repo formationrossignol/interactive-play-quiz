@@ -1,19 +1,54 @@
+import { useState } from "react";
 import { DndContext, closestCenter, useSensor, useSensors, PointerSensor, KeyboardSensor, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { useDocStore } from "./store/useDocStore";
 import { useEditorUIStore } from "./store/useEditorUIStore";
 import { useHistoryStore } from "./store/useHistoryStore";
 import { SlideThumbnail } from "./SlideThumbnail";
+import type { Slide } from "./types/presentation";
+import {
+  ClipboardCopy,
+  ClipboardPaste,
+  CopyPlus,
+  Eye,
+  EyeOff,
+  MoreHorizontal,
+  Plus,
+  Trash2,
+  LayoutTemplate,
+} from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { SLIDE_LAYOUTS, type SlideLayoutId } from "./layouts/slideLayouts";
+
+function snapshotSlide(slide: Slide): Slide {
+  return {
+    ...slide,
+    elements: slide.elements.map((element) => (
+      element.type === "group"
+        ? { ...element, childIds: [...element.childIds] }
+        : element.type === "table"
+          ? { ...element, cells: [...element.cells] }
+        : { ...element }
+    )),
+  };
+}
 
 export function SlideNavigator() {
   const presentation = useDocStore((s) => s.presentation);
   const activeSlideId = useEditorUIStore((s) => s.activeSlideId);
   const setActiveSlideId = useEditorUIStore((s) => s.setActiveSlideId);
+  const [copiedSlide, setCopiedSlide] = useState<Slide | null>(null);
 
   // Hooks must run unconditionally on every render (Rules of Hooks) — call
   // this before the early return below.
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
@@ -32,18 +67,68 @@ export function SlideNavigator() {
     void reordered; // ordering is recomputed by reorderSlides itself; kept for clarity
   }
 
+  function addSlide(afterSlideId?: string, layoutId: SlideLayoutId = "title-body") {
+    useHistoryStore.getState().commit();
+    const id = useDocStore.getState().addSlide(afterSlideId, layoutId);
+    setActiveSlideId(id);
+  }
+
+  function duplicateSlide(slideId: string) {
+    useHistoryStore.getState().commit();
+    const id = useDocStore.getState().duplicateSlide(slideId);
+    setActiveSlideId(id);
+  }
+
+  function pasteSlide(afterSlideId: string) {
+    if (!copiedSlide) return;
+    useHistoryStore.getState().commit();
+    const id = useDocStore.getState().insertSlideCopy(copiedSlide, afterSlideId);
+    setActiveSlideId(id);
+  }
+
+  function deleteSlide(slideId: string) {
+    if (slides.length <= 1) return;
+    const index = slides.findIndex((slide) => slide.id === slideId);
+    const fallbackId = slides[index + 1]?.id ?? slides[index - 1]?.id ?? null;
+    useHistoryStore.getState().commit();
+    useDocStore.getState().deleteSlide(slideId);
+    if (activeSlideId === slideId) setActiveSlideId(fallbackId);
+  }
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: 12, overflowY: "auto", width: 184 }}>
-      <button
-        className="ap-btn ap-btn--sm ap-btn--pill"
-        onClick={() => {
-          useHistoryStore.getState().commit();
-          const id = useDocStore.getState().addSlide();
-          setActiveSlideId(id);
-        }}
-      >
-        + Diapositive
-      </button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button className="ap-btn ap-btn--sm ap-btn--pill">
+            <Plus size={17} aria-hidden="true" />
+            Diapositive
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          align="start"
+          style={{
+            minWidth: 250,
+            background: "var(--ap-card)",
+            border: "var(--ap-border-w) solid var(--ap-line)",
+            borderRadius: "var(--ap-r-md)",
+            boxShadow: "var(--ap-shadow-card)",
+          }}
+        >
+          {SLIDE_LAYOUTS.map((layout) => (
+            <DropdownMenuItem
+              key={layout.id}
+              className="flex items-start gap-2 cursor-pointer text-sm"
+              onSelect={() => addSlide(activeSlideId ?? undefined, layout.id)}
+            >
+              <LayoutTemplate className="mt-0.5 h-4 w-4" />
+              <span>
+                <b style={{ display: "block" }}>{layout.label}</b>
+                <small style={{ color: "var(--ap-muted)" }}>{layout.description}</small>
+              </span>
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={ids} strategy={verticalListSortingStrategy}>
           {slides.map((slide, i) => (
@@ -53,46 +138,92 @@ export function SlideNavigator() {
                 index={i}
                 presentationWidth={presentation.width}
                 presentationHeight={presentation.height}
+                footer={presentation.footer}
+                theme={presentation.theme}
                 isActive={slide.id === activeSlideId}
                 isSelected={false}
-                onSelect={() => setActiveSlideId(slide.id)}
+                onSelect={() => {
+                  setActiveSlideId(slide.id);
+                  useEditorUIStore.getState().clearSelection();
+                }}
               />
-              <div style={{ display: "flex", gap: 4, justifyContent: "center" }}>
-                <button
-                  className="ap-btn ap-btn--ghost ap-btn--sm"
-                  title="Dupliquer"
-                  onClick={() => { useHistoryStore.getState().commit(); useDocStore.getState().duplicateSlide(slide.id); }}
-                >
-                  ⧉
-                </button>
-                <button
-                  className="ap-btn ap-btn--ghost ap-btn--sm"
-                  title={slide.hidden ? "Afficher" : "Masquer"}
-                  onClick={() => { useHistoryStore.getState().commit(); useDocStore.getState().toggleSlideHidden(slide.id); }}
-                >
-                  {slide.hidden ? "👁" : "🚫"}
-                </button>
-                <button
-                  className="ap-btn ap-btn--ghost ap-btn--sm"
-                  title="Supprimer"
-                  disabled={slides.length <= 1}
-                  onClick={() => {
-                    useHistoryStore.getState().commit();
-                    useDocStore.getState().deleteSlide(slide.id);
-                    // SlideCanvas defensively falls back to slides[0] when
-                    // activeSlideId points at a deleted slide, but
-                    // EditorToolbar/PropertiesPanel don't — left dangling,
-                    // they'd silently target a slide id that no longer
-                    // exists (e.g. a background-color edit becoming a no-op).
-                    if (activeSlideId === slide.id) {
-                      const remaining = slides.filter((s) => s.id !== slide.id);
-                      const next = remaining[i] ?? remaining[i - 1] ?? null;
-                      setActiveSlideId(next?.id ?? null);
-                    }
-                  }}
-                >
-                  🗑
-                </button>
+              <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      className="ap-btn ap-btn--ghost ap-btn--sm"
+                      style={{ padding: "5px 8px" }}
+                      title="Actions de la diapositive"
+                      aria-label={`Actions de la diapositive ${i + 1}`}
+                    >
+                      <MoreHorizontal size={17} aria-hidden="true" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="start"
+                    side="right"
+                    style={{
+                      minWidth: 220,
+                      background: "var(--ap-card)",
+                      border: "var(--ap-border-w) solid var(--ap-line)",
+                      borderRadius: "var(--ap-r-md)",
+                      boxShadow: "var(--ap-shadow-card)",
+                    }}
+                  >
+                    <DropdownMenuItem
+                      className="flex items-center gap-2 cursor-pointer text-sm"
+                      onSelect={() => setCopiedSlide(snapshotSlide(slide))}
+                    >
+                      <ClipboardCopy className="h-4 w-4" /> Copier
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="flex items-center gap-2 cursor-pointer text-sm"
+                      onSelect={() => duplicateSlide(slide.id)}
+                    >
+                      <CopyPlus className="h-4 w-4" /> Dupliquer
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="flex items-center gap-2 cursor-pointer text-sm"
+                      disabled={!copiedSlide}
+                      onSelect={() => pasteSlide(slide.id)}
+                    >
+                      <ClipboardPaste className="h-4 w-4" />
+                      <span>Coller</span>
+                      {!copiedSlide && <span className="ml-auto text-xs">Copiez d’abord une slide</span>}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      className="flex items-center gap-2 cursor-pointer text-sm"
+                      onSelect={() => addSlide(slide.id)}
+                    >
+                      <Plus className="h-4 w-4" /> Nouvelle diapositive
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="flex items-center gap-2 cursor-pointer text-sm"
+                      onSelect={() => {
+                        useHistoryStore.getState().commit();
+                        useDocStore.getState().toggleSlideHidden(slide.id);
+                      }}
+                    >
+                      {slide.hidden
+                        ? <Eye className="h-4 w-4" />
+                        : <EyeOff className="h-4 w-4" />}
+                      {slide.hidden ? "Afficher la diapositive" : "Ignorer la diapositive"}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      className="flex items-center gap-2 cursor-pointer text-sm"
+                      style={{ color: "var(--ap-quiz)" }}
+                      disabled={slides.length <= 1}
+                      onSelect={() => deleteSlide(slide.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      <span>Supprimer</span>
+                      {slides.length <= 1 && <span className="ml-auto text-xs">Une slide minimum</span>}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
           ))}

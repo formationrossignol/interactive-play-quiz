@@ -5,8 +5,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AppLayout } from "@/components/AppLayout";
 import { Pagination } from "@/components/Pagination";
 import { RatingStars } from "@/components/RatingStars";
+import { ExplorerEmptyState } from "@/components/content/ExplorerEmptyState";
 import { getPublicQuizzes, rateQuiz } from "@/lib/quizStorage";
-import { Search, Play, Clock, Users } from "lucide-react";
+import { BarChart2, Compass, ListChecks, Search, Play, Clock, Users } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { toast } from "sonner";
 import { t } from "@/lib/i18n";
@@ -23,6 +24,37 @@ const triggerStyle = {
   border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-sm)",
   background: "var(--ap-card)", color: "var(--ap-ink)", height: "42px",
 };
+
+function PublicQuizHeader({ quiz }: { quiz: ReturnType<typeof getPublicQuizzes>[number] }) {
+  const isPoll = quiz.type === "poll";
+  const HeaderIcon = isPoll ? BarChart2 : ListChecks;
+  const accent = isPoll ? "--ap-poll" : "--ap-quiz";
+
+  return (
+    <div
+      style={{
+        height: 220,
+        overflow: "hidden",
+        position: "relative",
+        flexShrink: 0,
+        display: "grid",
+        placeItems: "center",
+        background: `color-mix(in srgb, var(${accent}) 14%, var(--ap-paper-2))`,
+        borderBottom: "var(--ap-border-w) solid var(--ap-line)",
+      }}
+    >
+      <HeaderIcon aria-hidden="true" style={{ width: 44, height: 44, color: `var(${accent})`, opacity: 0.8 }} />
+      {quiz.headerImage && (
+        <img
+          src={quiz.headerImage}
+          alt=""
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+          onError={(event) => { event.currentTarget.style.display = "none"; }}
+        />
+      )}
+    </div>
+  );
+}
 
 const DiscoverQuizzes = () => {
   const navigate = useNavigate();
@@ -66,28 +98,35 @@ const DiscoverQuizzes = () => {
     if (quiz) { localStorage.setItem("current-quiz", JSON.stringify(quiz)); navigate(`/quiz/${quizId}`); }
   };
 
+  const playQuizSolo = (quizId: string) => {
+    const quiz = publicQuizzes.find((q) => q.id === quizId);
+    if (!quiz) return;
+    localStorage.setItem("current-quiz", JSON.stringify(quiz));
+    sessionStorage.setItem(`quiz-solo-${quizId}`, "1");
+    navigate(`/quiz/${quizId}`);
+  };
+
   const handleRateQuiz = (quizId: string, rating: number) => {
     if (rateQuiz(quizId, rating)) { toast.success("Merci pour votre note !"); window.location.reload(); }
   };
 
   return (
     <AppLayout subtitle={t("discoverPublic")}>
-      <div className="mx-auto max-w-7xl px-6 py-10">
+      <div className="mx-auto max-w-6xl px-6 py-10">
 
         {/* Page header */}
-        <div style={{ textAlign: "center", marginBottom: "36px" }}>
-          <h1 className="ap-h1" style={{ fontSize: "clamp(32px,5vw,48px)", marginBottom: "12px" }}>
+        <div style={{ marginBottom: "30px" }}>
+          <h1 className="ap-h2" style={{ fontSize: "26px", marginBottom: "4px" }}>
             {t("discoverPublic")}
           </h1>
-          <p className="ap-lead" style={{ fontSize: "16px" }}>
-            Explorez les quiz et sondages publics
+          <p className="ap-muted" style={{ fontSize: "14px" }}>
+            Explorez les quiz et sondages publics créés par la communauté.
           </p>
         </div>
 
         {/* Filter bar */}
         <div
-          className="ap-card"
-          style={{ marginBottom: "28px", padding: "20px 24px", display: "flex", flexDirection: "column", gap: "14px" }}
+          style={{ marginBottom: "28px", display: "flex", flexDirection: "column", gap: "14px" }}
         >
           <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
             {/* search */}
@@ -166,9 +205,26 @@ const DiscoverQuizzes = () => {
 
         {/* Cards grid */}
         {filteredQuizzes.length === 0 ? (
-          <div style={{ borderRadius: "var(--ap-r-lg)", border: "var(--ap-border-w) dashed var(--ap-line-2)", background: "var(--ap-paper-2)", padding: "64px 24px", textAlign: "center" }}>
-            <p className="ap-muted" style={{ fontSize: "16px" }}>Aucun résultat trouvé</p>
-          </div>
+          <ExplorerEmptyState
+            icon={<Compass size={27} />}
+            title={publicQuizzes.length === 0 ? "Aucun quiz ou sondage public" : "Aucun résultat trouvé"}
+            body={publicQuizzes.length === 0
+              ? "Les contenus rendus publics par la communauté apparaîtront ici."
+              : "Modifiez votre recherche ou réinitialisez les filtres pour afficher davantage de contenus."}
+            action={publicQuizzes.length > 0 ? (
+              <button
+                className="ap-btn ap-btn--ghost ap-btn--sm"
+                onClick={() => {
+                  setSearchQuery("");
+                  setSelectedCategory("Tous");
+                  setSelectedTag(null);
+                  setTypeFilter("all");
+                }}
+              >
+                Réinitialiser les filtres
+              </button>
+            ) : undefined}
+          />
         ) : (
           <div style={{ display: "grid", gap: "20px", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))" }}>
             {paginatedQuizzes.map((quiz) => (
@@ -177,16 +233,7 @@ const DiscoverQuizzes = () => {
                 className="ap-card ap-card--hover"
                 style={{ display: "flex", flexDirection: "column", overflow: "hidden", padding: 0 }}
               >
-                {/* header image */}
-                {quiz.headerImage && (
-                  <div style={{ height: 180, overflow: "hidden" }}>
-                    <img
-                      src={quiz.headerImage}
-                      alt={quiz.title}
-                      style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform .3s", display: "block" }}
-                    />
-                  </div>
-                )}
+                <PublicQuizHeader quiz={quiz} />
 
                 <div style={{ padding: "20px", display: "flex", flexDirection: "column", flex: 1, gap: "10px" }}>
                   {/* title + type badge */}
@@ -243,14 +290,35 @@ const DiscoverQuizzes = () => {
                   )}
 
                   {/* CTA */}
-                  <button
-                    className={quiz.type === "poll" ? "ap-btn ap-btn--pill ap-btn--poll" : "ap-btn ap-btn--pill ap-btn--quiz"}
-                    style={{ width: "100%", marginTop: "auto", gap: "8px" }}
-                    onClick={() => playQuiz(quiz.id)}
-                  >
-                    <Play style={{ width: 14, height: 14 }} />
-                    {quiz.type === "poll" ? "Répondre" : "Jouer"}
-                  </button>
+                  {quiz.type === "poll" ? (
+                    <button
+                      className="ap-btn ap-btn--pill ap-btn--poll"
+                      style={{ width: "100%", marginTop: "auto", gap: "8px" }}
+                      onClick={() => playQuiz(quiz.id)}
+                    >
+                      <Play style={{ width: 14, height: 14 }} />
+                      Répondre
+                    </button>
+                  ) : (
+                    <div style={{ display: "flex", gap: 8, marginTop: "auto" }}>
+                      <button
+                        className="ap-btn ap-btn--pill ap-btn--quiz"
+                        style={{ flex: 1, gap: "8px" }}
+                        onClick={() => playQuizSolo(quiz.id)}
+                      >
+                        <Play style={{ width: 14, height: 14 }} />
+                        Seul
+                      </button>
+                      <button
+                        className="ap-btn ap-btn--pill ap-btn--ghost"
+                        style={{ flex: 1, gap: "8px" }}
+                        onClick={() => playQuiz(quiz.id)}
+                      >
+                        <Users style={{ width: 14, height: 14 }} />
+                        À plusieurs
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

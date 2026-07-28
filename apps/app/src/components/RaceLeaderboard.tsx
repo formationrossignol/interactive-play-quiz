@@ -265,7 +265,7 @@ export const RaceLeaderboard = ({
                 {/* Rank badge */}
                 <div style={{
                   position: 'relative', zIndex: 1,
-                  flex: 'none', width: 40, height: 40, borderRadius: 12,
+                  flex: 'none', width: 40, height: 40, borderRadius: "var(--ap-r-md)",
                   display: 'grid', placeItems: 'center',
                   fontFamily: 'var(--ap-font-display)', fontWeight: 600, fontSize: 19,
                   background: MEDAL_BG[rank] ?? PAPER_2,

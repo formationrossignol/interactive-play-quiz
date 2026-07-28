@@ -7,7 +7,14 @@
 set local lock_timeout = '2s';
 alter table session_state add column if not exists host_user_id uuid;
 
-drop function if exists create_session_atomic(text, text, jsonb, jsonb, text, int);
+-- Drops the 8-param signature from 20260726170000_session_interaction_
+-- settings.sql (the actual current signature at this point in migration
+-- history) — not the older 6-param one, which no longer exists by the time
+-- this migration runs. Dropping the wrong signature would silently no-op
+-- (DROP ... IF EXISTS) and CREATE OR REPLACE would then add a second,
+-- overloaded version of this function instead of replacing it, leaving two
+-- ambiguous create_session_atomic definitions live at once.
+drop function if exists create_session_atomic(text, text, jsonb, jsonb, text, int, boolean, boolean);
 
 create or replace function create_session_atomic(
   p_game_code text,
@@ -16,6 +23,8 @@ create or replace function create_session_atomic(
   p_private_questions jsonb,
   p_ambiance_id text default 'arcade',
   p_max_participants int default null,
+  p_live_reactions_enabled boolean default true,
+  p_end_chat_enabled boolean default true,
   p_host_user_id uuid default null
 ) returns void
 language plpgsql
@@ -48,8 +57,12 @@ begin
     p_game_code, '[]'::jsonb, 'waiting', 0,
     0, null,
     jsonb_build_object(
-      'title', p_title, 'questions', p_public_questions,
-      'ambianceId', p_ambiance_id, 'maxParticipants', p_max_participants
+      'title', p_title,
+      'questions', p_public_questions,
+      'ambianceId', p_ambiance_id,
+      'maxParticipants', p_max_participants,
+      'liveReactionsEnabled', p_live_reactions_enabled,
+      'endChatEnabled', p_end_chat_enabled
     ),
     '{}'::jsonb,
     p_host_user_id,

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { DisabledReason } from "@/components/ui/disabled-reason";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -123,7 +124,7 @@ export const QuestionBank = ({ onSelectQuestion }: QuestionBankProps) => {
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center">
             <Database className="w-5 h-5 mr-2" />
-            Banque de Questions ({savedQuestions.length})
+            Banque de questions ({savedQuestions.length})
           </CardTitle>
           <div className="flex gap-2">
             <label htmlFor="import-file">
@@ -141,9 +142,21 @@ export const QuestionBank = ({ onSelectQuestion }: QuestionBankProps) => {
               onChange={handleFileImport}
               className="hidden"
             />
-            <Button variant="outline" size="sm" onClick={exportToExcel} disabled={savedQuestions.length === 0}>
-              Exporter
-            </Button>
+            <DisabledReason
+              reason={savedQuestions.length === 0 ? "Ajoutez au moins une question pour exporter." : undefined}
+            >
+              {(descriptionId) => (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={exportToExcel}
+                  disabled={savedQuestions.length === 0}
+                  aria-describedby={descriptionId}
+                >
+                  Exporter
+                </Button>
+              )}
+            </DisabledReason>
           </div>
         </div>
       </CardHeader>

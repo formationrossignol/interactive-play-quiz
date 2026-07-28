@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { RotateCw, Trash2, X } from "lucide-react";
+import { Dices, RotateCw, Trash2, X } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { SpinWheel } from "@/components/tools/SpinWheel";
+import { ToolHeader } from "@/components/tools/ToolHeader";
 import { useSEO } from "@/hooks/useSEO";
 
 const overlayStyle: React.CSSProperties = {
@@ -81,12 +82,12 @@ const WheelTool = () => {
   return (
     <AppLayout subtitle="Roue de tirage au sort">
       <div className="mx-auto max-w-4xl px-6 py-10">
-        <div style={{ marginBottom: "32px" }}>
-          <h1 className="ap-h2" style={{ fontSize: "26px", marginBottom: "4px" }}>Roue de tirage au sort</h1>
-          <p className="ap-muted" style={{ fontSize: "14px" }}>
-            Un nom ou une option par ligne, puis lancez la roue.
-          </p>
-        </div>
+        <ToolHeader
+          icon={Dices}
+          title="Roue de tirage au sort"
+          description="Un nom ou une option par ligne, puis lancez la roue."
+          accent="var(--ap-quiz)"
+        />
 
         <div style={{ display: "grid", gridTemplateColumns: "minmax(240px, 320px) 1fr", gap: "32px", alignItems: "start" }}>
           <div className="ap-card" style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "10px" }}>

@@ -73,7 +73,7 @@ export const QuizPreview = ({
 
   const QuestionTitle = ({ text }: { text: string }) =>
     isMillionnaire ? (
-      <div style={{ background: 'rgba(6,10,35,0.9)', border: '1.5px solid rgba(200,160,0,0.6)', borderRadius: 40, padding: '14px 28px', maxWidth: 720, width: '100%', boxShadow: '0 0 28px rgba(200,160,0,0.18), inset 0 1px 0 rgba(200,160,0,0.12)' }}>
+      <div style={{ background: 'rgba(6,10,35,0.9)', border: '1.5px solid rgba(200,160,0,0.6)', borderRadius: "var(--ap-r-md)", padding: '14px 28px', maxWidth: 720, width: '100%', boxShadow: '0 0 28px rgba(200,160,0,0.18), inset 0 1px 0 rgba(200,160,0,0.12)' }}>
         <h1 className="text-center text-white leading-snug m-0" style={{ fontFamily: 'var(--ap-font-display)', fontSize: 'clamp(1.1rem,2.4vw,1.9rem)', fontWeight: 700 }}>
           {text}
         </h1>
@@ -115,7 +115,7 @@ export const QuizPreview = ({
               <div
                 key={index}
                 className="flex items-center gap-3 px-3 py-3 text-white font-bold text-sm select-none"
-                style={{ background: ANSWER_STYLES[index % 4].bg, border: '1.5px solid rgba(200,160,0,0.6)', borderRadius: 40, boxShadow: `0 0 20px ${ANSWER_STYLES[index % 4].shadow}, inset 0 1px 0 rgba(200,160,0,0.1)`, minHeight: 56, fontFamily: 'var(--ap-font-body)' }}
+                style={{ background: ANSWER_STYLES[index % 4].bg, border: '1.5px solid rgba(200,160,0,0.6)', borderRadius: "var(--ap-r-md)", boxShadow: `0 0 20px ${ANSWER_STYLES[index % 4].shadow}, inset 0 1px 0 rgba(200,160,0,0.1)`, minHeight: 56, fontFamily: 'var(--ap-font-body)' }}
               >
                 <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(200,160,0,0.15)', border: '1.5px solid rgba(200,160,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#FFD700', fontWeight: 900, fontSize: '0.9rem', fontFamily: 'var(--ap-font-display)' }}>
                   {ANSWER_STYLES[index % 4].shape}
@@ -142,10 +142,10 @@ export const QuizPreview = ({
         <div className="grid grid-cols-2 gap-3 w-full">
           {isMillionnaire ? (
             <>
-              <div className="flex items-center justify-center gap-3 px-3 py-3 text-white font-bold text-lg select-none" style={{ background: 'rgba(8,12,40,0.88)', border: '1.5px solid rgba(200,160,0,0.6)', borderRadius: 40, boxShadow: '0 0 20px rgba(200,160,0,0.2)', minHeight: 56, fontFamily: 'var(--ap-font-display)' }}>
+              <div className="flex items-center justify-center gap-3 px-3 py-3 text-white font-bold text-lg select-none" style={{ background: 'rgba(8,12,40,0.88)', border: '1.5px solid rgba(200,160,0,0.6)', borderRadius: "var(--ap-r-md)", boxShadow: '0 0 20px rgba(200,160,0,0.2)', minHeight: 56, fontFamily: 'var(--ap-font-display)' }}>
                 <span style={{ color: '#FFD700', fontSize: '1.3rem' }}>○</span> {questionToShow.answers?.[0] ?? 'Vrai'}
               </div>
-              <div className="flex items-center justify-center gap-3 px-3 py-3 text-white font-bold text-lg select-none" style={{ background: 'rgba(8,12,40,0.88)', border: '1.5px solid rgba(200,160,0,0.6)', borderRadius: 40, boxShadow: '0 0 20px rgba(200,160,0,0.2)', minHeight: 56, fontFamily: 'var(--ap-font-display)' }}>
+              <div className="flex items-center justify-center gap-3 px-3 py-3 text-white font-bold text-lg select-none" style={{ background: 'rgba(8,12,40,0.88)', border: '1.5px solid rgba(200,160,0,0.6)', borderRadius: "var(--ap-r-md)", boxShadow: '0 0 20px rgba(200,160,0,0.2)', minHeight: 56, fontFamily: 'var(--ap-font-display)' }}>
                 <span style={{ color: '#FFD700', fontSize: '1.3rem' }}>✕</span> {questionToShow.answers?.[1] ?? 'Faux'}
               </div>
             </>

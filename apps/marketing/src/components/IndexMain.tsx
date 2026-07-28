@@ -8,6 +8,7 @@ import { DemoShowcase } from "@/components/landing/DemoShowcase";
 import { LandingTestimonials } from "@/components/landing/LandingTestimonials";
 import { TrustSection } from "@/components/landing/TrustSection";
 import { LandingFaq } from "@/components/landing/LandingFaq";
+import { CompetitorComparison } from "@/components/landing/CompetitorComparison";
 import { useLiveVisitors } from "@/lib/useLiveVisitors";
 import type { Review } from "@/lib/types";
 
@@ -383,6 +384,21 @@ export function IndexMain({ reviews, avgRating }: { reviews: Review[]; avgRating
           <h2 className="ap-h2" style={{ marginBottom: 8 }}>Voir une session en direct.</h2>
         </div>
         <DemoShowcase />
+      </section>
+
+      {/* ═══ COMPARATIF ═══ */}
+      <section id="comparatif" style={{ padding: "0 0 80px" }}>
+        <div style={{ textAlign: "center", maxWidth: 650, margin: "0 auto 32px" }}>
+          <div className="ap-eyebrow" style={{ display: "inline-flex", marginBottom: 14 }}>
+            <span className="ap-eyebrow__dot" aria-hidden="true" />
+            Comparatif 2026
+          </div>
+          <h2 className="ap-h2" style={{ marginBottom: 10 }}>Brivia face aux outils du marché.</h2>
+          <p className="ap-muted" style={{ lineHeight: 1.55 }}>
+            Quiz, présentations, révisions et évaluations : comparez ce que chaque plateforme réunit réellement.
+          </p>
+        </div>
+        <CompetitorComparison />
       </section>
 
       {/* ═══ TÉMOIGNAGES ═══ */}

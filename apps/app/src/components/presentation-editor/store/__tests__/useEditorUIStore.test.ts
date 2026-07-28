@@ -34,6 +34,17 @@ describe("zoom", () => {
     store.setZoom(1.5);
     expect(useEditorUIStore.getState().zoom).toBe(1.5);
   });
+
+  it("uses fit zoom as the editor 100% reference", () => {
+    const store = useEditorUIStore.getState();
+    store.setFitZoom(.62);
+    expect(useEditorUIStore.getState()).toMatchObject({ fitZoom: .62, zoom: .62, isZoomFit: true });
+    store.setZoom(.8);
+    store.setFitZoom(.5);
+    expect(useEditorUIStore.getState()).toMatchObject({ fitZoom: .5, zoom: .8, isZoomFit: false });
+    useEditorUIStore.getState().fitToCanvas();
+    expect(useEditorUIStore.getState()).toMatchObject({ zoom: .5, isZoomFit: true });
+  });
 });
 
 describe("tool and drag flags", () => {
@@ -46,5 +57,17 @@ describe("tool and drag flags", () => {
     expect(state.activeTool).toBe("rect");
     expect(state.isDragging).toBe(true);
     expect([...state.selectedIds]).toEqual(["a"]);
+  });
+});
+
+describe("canvas guides", () => {
+  it("toggles grid and rulers independently", () => {
+    const store = useEditorUIStore.getState();
+    expect(store.showGrid).toBe(false);
+    expect(store.showRulers).toBe(true);
+    store.toggleGrid();
+    store.toggleRulers();
+    expect(useEditorUIStore.getState().showGrid).toBe(true);
+    expect(useEditorUIStore.getState().showRulers).toBe(false);
   });
 });
