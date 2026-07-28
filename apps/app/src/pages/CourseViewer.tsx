@@ -14,6 +14,7 @@ import {
   FileText,
   Layers3,
   MonitorSmartphone,
+  PackageOpen,
   PlaySquare,
   RefreshCw,
   ScrollText,
@@ -48,12 +49,13 @@ import { assertSafeImportFile } from "@/lib/fileValidation";
 import { sanitizeHtml } from "@/lib/sanitizeHtml";
 import { toast } from "sonner";
 import { CourseCertificateDialog } from "@/components/CourseCertificateDialog";
+import { ScormPlayer } from "@/components/ScormPlayer";
 import defaultCourseOverviewImage from "@/assets/course-overview-default.jpg";
 
 /* ─── Type system ──────────────────────────────────────────────── */
 const TYPE_LABEL: Record<string, string> = {
   text: "Leçon", video: "Vidéo", quiz: "Quiz", poll: "Sondage", flashcard: "Flashcards",
-  document: "Document", iframe: "Iframe", "file-upload": "Dépôt de fichier",
+  document: "Document", iframe: "Iframe", "file-upload": "Dépôt de fichier", scorm: "SCORM",
 };
 
 // Background color for the small square icon chip
@@ -86,6 +88,7 @@ const TYPE_LAUNCH_BG: Record<string, string> = {
   poll:      "var(--ap-poll-soft)",
   flashcard: "var(--ap-flash-soft)",
   document:  "var(--ap-pres-soft)",
+  scorm:     "var(--ap-pres-soft)",
 };
 
 /* ─── Lucide icons (type chips) ────────────────────────────────── */
@@ -98,6 +101,7 @@ const TypeIcon = ({ type }: { type: string }) => {
   if (type === "flashcard") return <Layers3 {...props} />;
   if (type === "file-upload") return <Upload {...props} />;
   if (type === "iframe") return <MonitorSmartphone {...props} />;
+  if (type === "scorm") return <PackageOpen {...props} />;
   return <Download {...props} />;
 };
 
@@ -1202,6 +1206,32 @@ const CourseViewer = () => {
                       src={lesson.iframeUrl}
                       title={lesson.title}
                       style={{ width: "100%", height: "70vh", border: "none", display: "block" }}
+                    />
+                  </div>
+                )
+              )}
+
+              {/* ── SCORM ── */}
+              {lesson.type === "scorm" && (
+                !lesson.scormPackageId || !course ? (
+                  <div style={{
+                    background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-lg)",
+                    boxShadow: "0 5px 0 var(--ap-line)", padding: 24,
+                    display: "flex", alignItems: "center", gap: 20,
+                  }}>
+                    <span style={{ flexShrink: 0, width: 64, height: 64, borderRadius: "var(--ap-r-md)", display: "grid", placeItems: "center", fontSize: 30, background: TYPE_LAUNCH_BG.scorm }}>📦</span>
+                    <p style={{ color: "var(--ap-muted)", fontWeight: 700, fontSize: 14 }}>Aucun package SCORM importé.</p>
+                  </div>
+                ) : (
+                  <div style={{ borderRadius: "var(--ap-r-lg)", overflow: "hidden", border: "var(--ap-border-w) solid var(--ap-line)", boxShadow: "0 5px 0 var(--ap-line)" }}>
+                    <ScormPlayer
+                      userId={course.userId}
+                      localCourseId={course.id}
+                      lessonId={lesson.id}
+                      scormVersion={lesson.scormVersion ?? "1.2"}
+                      packageId={lesson.scormPackageId}
+                      launchPath={lesson.scormLaunchPath ?? ""}
+                      initialState={{}}
                     />
                   </div>
                 )
