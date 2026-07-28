@@ -7,8 +7,21 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { CookieConsentProvider } from "@/contexts/CookieConsentContext";
 import { CookieConsent } from "@/components/CookieConsent";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { FloatingChronometer } from "@/components/tools/FloatingChronometer";
+import { posthog, isPostHogEnabled } from "@/lib/monitoring";
+
+/** Fires a PostHog $pageview on every route change — capture_pageview is off
+ *  in monitoring.ts's init() specifically so this is the only trigger,
+ *  avoiding the double-count PostHog's own history-API autocapture would
+ *  otherwise produce in an SPA. No-ops when PostHog isn't configured. */
+const PostHogPageview = () => {
+  const location = useLocation();
+  useEffect(() => {
+    if (isPostHogEnabled()) posthog.capture('$pageview');
+  }, [location.pathname, location.search]);
+  return null;
+};
 
 // Critical player path — loaded first, separate chunks from builder deps
 const JoinQuiz = lazy(() => import("./pages/JoinQuiz"));
@@ -96,6 +109,7 @@ const App = () => (
         <CookieConsent />
         <AuthGate>
         <BrowserRouter>
+          <PostHogPageview />
           <Suspense fallback={<RouteFallback />}>
             <RouteTransition>
             <Routes>

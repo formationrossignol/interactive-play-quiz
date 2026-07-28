@@ -35,19 +35,34 @@ export interface SavedQuiz {
 
 export const QUIZ_STORAGE_KEY = 'saved_quizzes';
 
+/** 6-char game code, same non-ambiguous alphabet as examStorage.ts's
+ *  genJoinCode (excludes I/O/0/1) — replaces the old 6-digit-numeric-only
+ *  format (900,000 combinations, enumerable) with ~1.07 billion. Existing
+ *  numeric ids already stored keep working: they're a subset of validGameCode
+ *  below, so nothing forces a re-migration of quizzes created before this
+ *  changed. */
+const GAME_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+export function genGameCode(): string {
+  let code = '';
+  for (let i = 0; i < 6; i++) code += GAME_CODE_ALPHABET[Math.floor(Math.random() * GAME_CODE_ALPHABET.length)];
+  return code;
+}
+const validGameCode = /^[A-Z0-9]{6}$/;
+
 export const getSavedQuizzes = (): SavedQuiz[] => {
   try {
     const quizzesStr = localStorage.getItem(QUIZ_STORAGE_KEY);
     const quizzes: SavedQuiz[] = quizzesStr ? (JSON.parse(quizzesStr) as SavedQuiz[]) : [];
 
-    // Migrate legacy non-6-digit IDs to proper game codes
-    const valid6 = /^\d{6}$/;
-    const existing = new Set(quizzes.filter(q => valid6.test(q.id)).map(q => q.id));
+    // Migrate legacy ids that don't even look like a game code (free-form
+    // strings predating game codes entirely) — anything already 6 alphanumeric
+    // chars, digits-only or not, is left as-is.
+    const existing = new Set(quizzes.filter(q => validGameCode.test(q.id)).map(q => q.id));
     let didMigrate = false;
     const migrated = quizzes.map(q => {
-      if (valid6.test(q.id)) return q;
+      if (validGameCode.test(q.id)) return q;
       let newId: string;
-      do { newId = (Math.floor(Math.random() * 900000) + 100000).toString(); }
+      do { newId = genGameCode(); }
       while (existing.has(newId));
       existing.add(newId);
       didMigrate = true;
@@ -128,7 +143,7 @@ export const saveQuiz = (
     id: (() => {
       const existing = new Set(getSavedQuizzes().map((q) => q.id));
       let candidate: string;
-      do { candidate = (Math.floor(Math.random() * 900000) + 100000).toString(); }
+      do { candidate = genGameCode(); }
       while (existing.has(candidate));
       return candidate;
     })(),
@@ -266,7 +281,7 @@ export const duplicateQuiz = (id: string): SavedQuiz | null => {
 
   const existing = new Set(getSavedQuizzes().map((q) => q.id));
   let newId: string;
-  do { newId = (Math.floor(Math.random() * 900000) + 100000).toString(); }
+  do { newId = genGameCode(); }
   while (existing.has(newId));
 
   const copy: SavedQuiz = {

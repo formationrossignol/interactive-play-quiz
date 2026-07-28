@@ -1,41 +1,76 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getAttemptById, getExamById, type Attempt, type Exam } from '@/lib/examStorage';
-import { getContentBySource } from '@/lib/content/contentRepo';
-import type { SavedQuiz } from '@/lib/quizStorage';
+import { supabase } from '@/lib/supabase';
+import { parseFunctionsError } from '@/lib/functionsError';
+import { getParticipant } from '@/lib/examParticipant';
 import { Skeleton } from '@/components/ui/skeleton';
+
+interface AttemptView {
+  timeUsedSeconds: number;
+  percentage: number | null;
+  passed: boolean | null;
+  answers: Record<string, number | string | null>;
+  questionOrder: string[];
+}
+
+interface ExamView {
+  title: string;
+  passingScore: number;
+  showDetailPolicy: string;
+  showResultsPolicy: string;
+}
+
+type QuestionView = { id: string; type: string; question: string; answers?: string[] };
+type CorrectionView = { id: string; correctAnswer: unknown };
 
 export default function ExamResults() {
   const { attemptId } = useParams<{ attemptId: string }>();
   const navigate = useNavigate();
 
-  const [attempt, setAttempt] = useState<Attempt | null>(null);
-  const [exam, setExam] = useState<Exam | null>(null);
-  const [quiz, setQuiz] = useState<SavedQuiz | null>(null);
+  const [attempt, setAttempt] = useState<AttemptView | null>(null);
+  const [exam, setExam] = useState<ExamView | null>(null);
+  const [questions, setQuestions] = useState<QuestionView[] | null>(null);
+  const [correction, setCorrection] = useState<CorrectionView[] | null>(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
     if (!attemptId) { setError('Tentative introuvable'); return; }
+    const participant = getParticipant();
+    if (!participant) { setError('Tentative introuvable'); return; }
     let cancelled = false;
     (async () => {
-      const att = await getAttemptById(attemptId);
+      const { data, error: invokeError } = await supabase.functions.invoke('get-attempt-result', {
+        body: { attemptId, participantId: participant.id },
+      });
       if (cancelled) return;
-      if (!att) { setError('Tentative introuvable'); return; }
-      const e = await getExamById(att.examId);
-      if (cancelled) return;
-      if (!e) { setError('Examen introuvable'); return; }
-
-      if (e.showResultsPolicy === 'never') { setError('Les résultats ne sont pas disponibles pour cet examen.'); return; }
-      if (e.showResultsPolicy === 'after-close' && new Date(e.closeAt) > new Date()) {
-        setError(`Résultats disponibles après le ${new Date(e.closeAt).toLocaleString('fr')}`);
+      if (invokeError) {
+        const { body } = await parseFunctionsError(invokeError);
+        if (cancelled) return;
+        if (body.error === 'results_not_available') {
+          setError('Les résultats ne sont pas disponibles pour cet examen.');
+        } else if (body.error === 'results_after_close') {
+          setError(`Résultats disponibles après le ${new Date(body.closeAt as string).toLocaleString('fr')}`);
+        } else {
+          setError('Tentative introuvable');
+        }
         return;
       }
-
-      const quizRow = await getContentBySource(e.hostId, 'quiz', e.quizId);
-      if (cancelled) return;
-      setAttempt(att);
-      setExam(e);
-      setQuiz((quizRow?.data as unknown as SavedQuiz) ?? null);
+      const result = data as {
+        attempt: { time_used_seconds: number; percentage: number | null; passed: boolean | null; answers: Record<string, number | string | null>; question_order: string[] };
+        exam: ExamView;
+        questionsPublic: QuestionView[];
+        correction?: CorrectionView[];
+      };
+      setAttempt({
+        timeUsedSeconds: result.attempt.time_used_seconds,
+        percentage: result.attempt.percentage,
+        passed: result.attempt.passed,
+        answers: result.attempt.answers,
+        questionOrder: result.attempt.question_order ?? [],
+      });
+      setExam(result.exam);
+      setQuestions(result.questionsPublic ?? []);
+      setCorrection(result.correction ?? null);
     })();
     return () => { cancelled = true; };
   }, [attemptId]);
@@ -47,18 +82,19 @@ export default function ExamResults() {
     </div>
   );
 
-  if (!attempt || !exam || !quiz) return (
+  if (!attempt || !exam || !questions) return (
     <ExamResultsSkeleton />
   );
 
   const passed = attempt.passed;
   const pct = attempt.percentage ?? 0;
   const showAnswers = exam.showDetailPolicy !== 'score-only';
-  const showCorrection = exam.showDetailPolicy === 'score-correction';
+  const showCorrection = exam.showDetailPolicy === 'score-correction' && correction;
+  const correctionById = new Map((correction ?? []).map((c) => [c.id, c]));
 
   const orderedQs = attempt.questionOrder
-    .map((id) => quiz.questions.find((q: { id: string }) => q.id === id))
-    .filter(Boolean);
+    .map((id) => questions.find((q) => q.id === id))
+    .filter(Boolean) as QuestionView[];
 
   return (
     <div style={{ minHeight: '100vh', paddingBottom: 80 }}>
@@ -96,7 +132,7 @@ export default function ExamResults() {
           <div style={{ display: 'flex', justifyContent: 'center', gap: 20, flexWrap: 'wrap' }}>
             <Stat label="Seuil" value={`${exam.passingScore}%`} />
             <Stat label="Temps" value={`${Math.round(attempt.timeUsedSeconds / 60)} min`} />
-            <Stat label="Répondu" value={`${Object.keys(attempt.answers).length}/${quiz.questions.length}`} />
+            <Stat label="Répondu" value={`${Object.keys(attempt.answers).length}/${questions.length}`} />
           </div>
         </div>
 
@@ -118,9 +154,10 @@ export default function ExamResults() {
                 </tr>
               </thead>
               <tbody>
-                {orderedQs.map((q: { id: string; type: string; question: string; answers: string[]; correctAnswer: unknown }, idx: number) => {
+                {orderedQs.map((q, idx) => {
                   const given = attempt.answers[q.id];
-                  const isCorrect = showCorrection ? checkCorrect(q, given) : null;
+                  const correctAnswer = correctionById.get(q.id)?.correctAnswer;
+                  const isCorrect = showCorrection ? checkCorrect(q, given, correctAnswer) : null;
                   return (
                     <tr key={q.id} style={{ borderTop: '1px solid var(--ap-line)' }}>
                       <ResultCell style={{ color: 'var(--ap-muted)', fontWeight: 800 }}>Q{idx + 1}</ResultCell>
@@ -132,7 +169,7 @@ export default function ExamResults() {
                       </ResultCell>
                       {showCorrection && (
                         <ResultCell>
-                          <AnswerPill tone="success">{formatCorrect(q)}</AnswerPill>
+                          <AnswerPill tone="success">{formatCorrect(q, correctAnswer)}</AnswerPill>
                         </ResultCell>
                       )}
                       {showCorrection && (
@@ -208,11 +245,11 @@ function ExamResultsSkeleton() {
   );
 }
 
-function checkCorrect(q: { type: string; correctAnswer: unknown }, given: number | string | null | undefined): boolean {
+function checkCorrect(q: { type: string }, given: number | string | null | undefined, correctAnswer: unknown): boolean {
   if (given === null || given === undefined || given === '') return false;
-  if (q.type === 'true-false') return String(given).toLowerCase() === String(q.correctAnswer).toLowerCase();
-  if (q.type === 'short-answer') return String(given).trim().toLowerCase() === String(q.correctAnswer).trim().toLowerCase();
-  return given === q.correctAnswer;
+  if (q.type === 'true-false') return String(given).toLowerCase() === String(correctAnswer).toLowerCase();
+  if (q.type === 'short-answer') return String(given).trim().toLowerCase() === String(correctAnswer).trim().toLowerCase();
+  return given === correctAnswer;
 }
 
 function formatAnswer(q: { type: string; answers?: string[] }, given: number | string | null | undefined): string {
@@ -223,11 +260,11 @@ function formatAnswer(q: { type: string; answers?: string[] }, given: number | s
   return String(given);
 }
 
-function formatCorrect(q: { type: string; answers?: string[]; correctAnswer: unknown }): string {
-  if (q.type === 'true-false') return q.correctAnswer === 'true' ? 'Vrai' : 'Faux';
-  if (q.type === 'short-answer') return String(q.correctAnswer);
-  if (typeof q.correctAnswer === 'number' && q.answers) return q.answers[q.correctAnswer] ?? String(q.correctAnswer);
-  return String(q.correctAnswer);
+function formatCorrect(q: { type: string; answers?: string[] }, correctAnswer: unknown): string {
+  if (q.type === 'true-false') return correctAnswer === 'true' ? 'Vrai' : 'Faux';
+  if (q.type === 'short-answer') return String(correctAnswer);
+  if (typeof correctAnswer === 'number' && q.answers) return q.answers[correctAnswer] ?? String(correctAnswer);
+  return String(correctAnswer);
 }
 
 function Stat({ label, value }: { label: string; value: string }) {

@@ -1,7 +1,7 @@
 import { supabase } from './supabase';
 import { getCurrentUser } from './auth';
-import { getContentBySource } from './content/contentRepo';
-import { CONTENT_CAPS, AUDIENCE_CAP, getPlan, PlanLimitError, AudienceCapError } from './plans';
+import { PlanLimitError, AudienceCapError, type Plan } from './plans';
+import { parseFunctionsError } from './functionsError';
 
 /* ══ Types ══════════════════════════════════════════════════════ */
 
@@ -40,6 +40,11 @@ export interface Exam {
   /** Host's plan-derived audience cap, baked in at creation (host has no
    *  Supabase-synced session to re-check plan against at attempt time). */
   maxParticipants: number | null;
+  /** Correct-answer-stripped question snapshot, taken at save time — what
+   *  ExamRoom renders from. Never contains correctAnswer/correctOrder/
+   *  correctMatches/correctValue (see supabase/functions/_shared/examScoring.ts
+   *  stripAnswerKey). */
+  questionsPublic: Record<string, unknown>[];
   createdAt: string;
   updatedAt: string;
 }
@@ -78,7 +83,13 @@ export interface ExamMessage {
    `exams`/`exam_attempts` are dedicated Supabase tables (source of truth
    for the join/take/admin flow — see supabase/migrations/20260721120000_
    exam_tables.sql), separate from the generic `content` mirror the host's
-   library view (MyExams.tsx) reads. */
+   library view (MyExams.tsx) reads.
+
+   Tier 2 (supabase/migrations/20260728010000_exam_scoring_tier2.sql): exam
+   CRUD, attempt start/submit, and every participant-side attempt read now go
+   through service-role Edge Functions instead of direct table access — see
+   docs/exam-scoring-hardening-tier2.md. The functions below keep the exact
+   same exported signatures ExamBuilder/ExamRoom/ExamResults already call. */
 
 interface ExamRow {
   id: string; host_id: string; quiz_id: string; title: string; description: string;
@@ -87,6 +98,7 @@ interface ExamRow {
   shuffle_questions: boolean; shuffle_answers: boolean; passing_score: number;
   show_results_policy: string; show_detail_policy: string; score_retention_policy: string;
   status: string; join_code: string; max_participants: number | null;
+  questions_public: Record<string, unknown>[] | null;
   created_at: string; updated_at: string;
 }
 
@@ -111,6 +123,7 @@ function examFromRow(r: ExamRow): Exam {
     status: r.status as ExamStatus,
     joinCode: r.join_code,
     maxParticipants: r.max_participants,
+    questionsPublic: r.questions_public ?? [],
     createdAt: r.created_at,
     updatedAt: r.updated_at,
   };
@@ -160,39 +173,6 @@ function attemptFromRow(r: AttemptRow): Attempt {
   };
 }
 
-/* ══ Helpers ════════════════════════════════════════════════════ */
-
-export const genExamId = (): string =>
-  crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-
-function genJoinCode(): string {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let code = '';
-  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
-  return code;
-}
-
-/**
- * Insert a new exams row with a fresh random join_code, retrying on a unique
- * constraint conflict (join_code is unique across ALL hosts, so a per-host
- * check isn't enough — the DB constraint is the actual source of truth).
- */
-async function insertExamWithUniqueJoinCode(
-  row: Omit<ExamRow, 'join_code' | 'created_at' | 'updated_at'>,
-  maxAttempts = 5,
-): Promise<ExamRow> {
-  for (let i = 0; i < maxAttempts; i++) {
-    const { data, error } = await supabase
-      .from('exams')
-      .insert({ ...row, join_code: genJoinCode() })
-      .select()
-      .single();
-    if (!error) return data;
-    if (error.code !== '23505') throw error; // not a unique-violation, real error
-  }
-  throw new Error('Impossible de générer un code unique, réessayez');
-}
-
 /* ══ Exam CRUD ═══════════════════════════════════════════════════ */
 
 export const getExamById = async (id: string): Promise<Exam | null> => {
@@ -201,10 +181,15 @@ export const getExamById = async (id: string): Promise<Exam | null> => {
   return examFromRow(data);
 };
 
+/** Participant-side lookup by join code — goes through the get-exam-by-code
+ *  Edge Function now that exams_public_read (`using (true)`, which let an
+ *  anon key select every exam in the table) has been dropped. */
 export const getExamByJoinCode = async (code: string): Promise<Exam | null> => {
-  const { data, error } = await supabase.from('exams').select('*').eq('join_code', code.toUpperCase()).maybeSingle();
-  if (error || !data) return null;
-  return examFromRow(data);
+  const { data, error } = await supabase.functions.invoke('get-exam-by-code', {
+    body: { joinCode: code },
+  });
+  if (error || !(data as { exam?: ExamRow })?.exam) return null;
+  return examFromRow((data as { exam: ExamRow }).exam);
 };
 
 export const getHostExams = async (hostId: string): Promise<Exam[]> => {
@@ -213,40 +198,26 @@ export const getHostExams = async (hostId: string): Promise<Exam[]> => {
   return data.map(examFromRow);
 };
 
-export const createExam = async (
-  data: Omit<Exam, 'id' | 'hostId' | 'joinCode' | 'createdAt' | 'updatedAt' | 'maxParticipants'>,
-): Promise<Exam> => {
+type ExamPayload = Omit<Exam, 'id' | 'hostId' | 'joinCode' | 'createdAt' | 'updatedAt' | 'maxParticipants' | 'questionsPublic'>;
+
+async function invokeSaveExam(examId: string | undefined, data: ExamPayload): Promise<Exam> {
+  const { data: result, error } = await supabase.functions.invoke('save-exam', {
+    body: { examId, ...data },
+  });
+  if (error) {
+    const { body } = await parseFunctionsError(error);
+    if (body.error === 'plan_limit') {
+      throw new PlanLimitError('exam', body.cap as number, (body.plan as Plan) ?? 'starter');
+    }
+    throw new Error(body.error === 'quiz_not_found' ? 'Quiz introuvable' : 'Échec de sauvegarde');
+  }
+  return examFromRow((result as { exam: ExamRow }).exam);
+}
+
+export const createExam = async (data: ExamPayload): Promise<Exam> => {
   const user = getCurrentUser();
   if (!user) throw new Error('Not authenticated');
-
-  const plan = getPlan(user);
-  const cap = CONTENT_CAPS[plan].exam;
-  if (cap !== null) {
-    const existing = await getHostExams(user.id);
-    if (existing.length >= cap) throw new PlanLimitError('exam', cap, plan);
-  }
-
-  const row = await insertExamWithUniqueJoinCode({
-    id: genExamId(),
-    host_id: user.id,
-    quiz_id: data.quizId,
-    title: data.title,
-    description: data.description,
-    header_image: data.headerImage ?? null,
-    open_at: data.openAt,
-    close_at: data.closeAt,
-    duration_minutes: data.durationMinutes,
-    max_attempts: data.maxAttempts,
-    shuffle_questions: data.shuffleQuestions,
-    shuffle_answers: data.shuffleAnswers,
-    passing_score: data.passingScore,
-    show_results_policy: data.showResultsPolicy,
-    show_detail_policy: data.showDetailPolicy,
-    score_retention_policy: data.scoreRetentionPolicy,
-    status: data.status,
-    max_participants: AUDIENCE_CAP[plan],
-  });
-  return examFromRow(row);
+  return invokeSaveExam(undefined, data);
 };
 
 const examUpdatesToRow = (updates: Partial<Exam>): Partial<ExamRow> => {
@@ -254,7 +225,6 @@ const examUpdatesToRow = (updates: Partial<Exam>): Partial<ExamRow> => {
   if (updates.title !== undefined) patch.title = updates.title;
   if (updates.description !== undefined) patch.description = updates.description;
   if (updates.headerImage !== undefined) patch.header_image = updates.headerImage || null;
-  if (updates.quizId !== undefined) patch.quiz_id = updates.quizId;
   if (updates.openAt !== undefined) patch.open_at = updates.openAt;
   if (updates.closeAt !== undefined) patch.close_at = updates.closeAt;
   if (updates.durationMinutes !== undefined) patch.duration_minutes = updates.durationMinutes;
@@ -266,13 +236,29 @@ const examUpdatesToRow = (updates: Partial<Exam>): Partial<ExamRow> => {
   if (updates.showDetailPolicy !== undefined) patch.show_detail_policy = updates.showDetailPolicy;
   if (updates.scoreRetentionPolicy !== undefined) patch.score_retention_policy = updates.scoreRetentionPolicy;
   if (updates.status !== undefined) patch.status = updates.status;
-  if (updates.maxParticipants !== undefined) patch.max_participants = updates.maxParticipants;
   return patch;
 };
 
+/**
+ * Two distinct call patterns share this export: ExamBuilder always sends a
+ * complete payload (including quizId, possibly changed) — that goes through
+ * save-exam so questions_public/exam_answer_keys stay derived from whatever
+ * quiz the exam ends up pointing at. ExamAdmin/archiveExam send a bare
+ * `{ status }` patch — no quiz re-derivation needed, stays a direct
+ * authenticated table write under exams_owner_update (unchanged by Tier 2).
+ */
 export const updateExam = async (id: string, updates: Partial<Exam>): Promise<Exam | null> => {
   const user = getCurrentUser();
   if (!user) return null;
+
+  if (updates.quizId !== undefined) {
+    try {
+      return await invokeSaveExam(id, updates as ExamPayload);
+    } catch {
+      return null;
+    }
+  }
+
   const { data, error } = await supabase
     .from('exams')
     .update(examUpdatesToRow(updates))
@@ -295,34 +281,27 @@ export const duplicateExam = async (id: string): Promise<Exam | null> => {
   const original = await getExamById(id);
   if (!original || original.hostId !== user.id) return null;
 
-  const plan = getPlan(user);
-  const cap = CONTENT_CAPS[plan].exam;
-  if (cap !== null) {
-    const existing = await getHostExams(user.id);
-    if (existing.length >= cap) throw new PlanLimitError('exam', cap, plan);
+  try {
+    return await invokeSaveExam(undefined, {
+      quizId: original.quizId,
+      title: `Copie de ${original.title}`,
+      description: original.description,
+      headerImage: original.headerImage,
+      openAt: original.openAt,
+      closeAt: original.closeAt,
+      durationMinutes: original.durationMinutes,
+      maxAttempts: original.maxAttempts,
+      shuffleQuestions: original.shuffleQuestions,
+      shuffleAnswers: original.shuffleAnswers,
+      passingScore: original.passingScore,
+      showResultsPolicy: original.showResultsPolicy,
+      showDetailPolicy: original.showDetailPolicy,
+      scoreRetentionPolicy: original.scoreRetentionPolicy,
+      status: 'draft',
+    });
+  } catch {
+    return null;
   }
-
-  const row = await insertExamWithUniqueJoinCode({
-    id: genExamId(),
-    host_id: user.id,
-    quiz_id: original.quizId,
-    title: `Copie de ${original.title}`,
-    description: original.description,
-    header_image: original.headerImage ?? null,
-    open_at: original.openAt,
-    close_at: original.closeAt,
-    duration_minutes: original.durationMinutes,
-    max_attempts: original.maxAttempts,
-    shuffle_questions: original.shuffleQuestions,
-    shuffle_answers: original.shuffleAnswers,
-    passing_score: original.passingScore,
-    show_results_policy: original.showResultsPolicy,
-    show_detail_policy: original.showDetailPolicy,
-    score_retention_policy: original.scoreRetentionPolicy,
-    status: 'draft',
-    max_participants: original.maxParticipants,
-  });
-  return examFromRow(row);
 };
 
 /* ══ Computed exam status ═══════════════════════════════════════ */
@@ -343,6 +322,8 @@ export function isExamOpen(exam: Exam): boolean {
 
 /* ══ Attempt CRUD ═══════════════════════════════════════════════ */
 
+/** Host-only direct read (RLS: exam_attempts_host_read) — used by cancelAttempt
+ *  and the admin dashboard, both already authenticated as the exam's host. */
 export const getAttemptById = async (id: string): Promise<Attempt | null> => {
   const { data, error } = await supabase.from('exam_attempts').select('*').eq('id', id).maybeSingle();
   if (error || !data) return null;
@@ -355,21 +336,24 @@ export const getAttemptsForExam = async (examId: string): Promise<Attempt[]> => 
   return data.map(attemptFromRow);
 };
 
-export const getAttemptsForParticipant = async (examId: string, participantId: string): Promise<Attempt[]> => {
-  const { data, error } = await supabase
-    .from('exam_attempts').select('*')
-    .eq('exam_id', examId).eq('participant_id', participantId);
-  if (error || !data) return [];
-  return data.map(attemptFromRow);
-};
+/** Participant-side reads (no auth session) go through get-participant-attempts,
+ *  filtered server-side by participantId — the thing RLS could never do for
+ *  an anonymous caller (see exam_attempts_read_published's removal in
+ *  20260728010000_exam_scoring_tier2.sql). */
+async function fetchParticipantAttempts(examId: string, participantId: string): Promise<Attempt[]> {
+  const { data, error } = await supabase.functions.invoke('get-participant-attempts', {
+    body: { examId, participantId },
+  });
+  if (error || !(data as { attempts?: AttemptRow[] })?.attempts) return [];
+  return (data as { attempts: AttemptRow[] }).attempts.map(attemptFromRow);
+}
+
+export const getAttemptsForParticipant = async (examId: string, participantId: string): Promise<Attempt[]> =>
+  fetchParticipantAttempts(examId, participantId);
 
 export const getActiveAttempt = async (examId: string, participantId: string): Promise<Attempt | null> => {
-  const { data, error } = await supabase
-    .from('exam_attempts').select('*')
-    .eq('exam_id', examId).eq('participant_id', participantId).eq('status', 'in-progress')
-    .maybeSingle();
-  if (error || !data) return null;
-  return attemptFromRow(data);
+  const attempts = await fetchParticipantAttempts(examId, participantId);
+  return attempts.find((a) => a.status === 'in-progress') ?? null;
 };
 
 export const startAttempt = async (
@@ -378,61 +362,33 @@ export const startAttempt = async (
   participantName: string,
   participantEmail: string,
 ): Promise<Attempt> => {
-  const quizRow = await getContentBySource(exam.hostId, 'quiz', exam.quizId);
-  if (!quizRow) throw new Error('Quiz introuvable');
-  const quiz = quizRow.data as unknown as { questions: Array<{ id: string }> };
+  const { data, error } = await supabase.functions.invoke('start-exam-attempt', {
+    body: { examId: exam.id, participantId, participantName, participantEmail },
+  });
+  if (error) throw new Error('Impossible de démarrer la tentative');
 
-  const existing = await getAttemptsForParticipant(exam.id, participantId);
-  const completed = existing.filter((a) => a.status !== 'in-progress');
-  if (completed.length >= exam.maxAttempts) throw new Error('Nombre maximum de tentatives atteint');
-
-  const active = existing.find((a) => a.status === 'in-progress');
-  if (active) return active; // resume existing
-
-  if (exam.maxParticipants !== null && existing.length === 0) {
-    const all = await getAttemptsForExam(exam.id);
-    const distinctParticipants = new Set(all.map((a) => a.participantId));
-    if (distinctParticipants.size >= exam.maxParticipants) throw new AudienceCapError();
-  }
-
-  let qIds = quiz.questions.map((q) => q.id);
-  if (exam.shuffleQuestions) qIds = shuffle(qIds);
-
-  const now = new Date().toISOString();
-  const { data, error } = await supabase
-    .from('exam_attempts')
-    .insert({
-      exam_id: exam.id,
-      participant_id: participantId,
-      participant_name: participantName,
-      participant_email: participantEmail,
-      question_order: qIds,
-      answers: {},
-      status: 'in-progress',
-      logs: [{ event: 'started', timestamp: now }],
-    })
-    .select()
-    .single();
-  if (error) throw error;
-  return attemptFromRow(data);
+  const result = data as { outcome: 'resumed' | 'started' | 'exhausted' | 'full'; attempt?: AttemptRow };
+  if (result.outcome === 'exhausted') throw new Error('Nombre maximum de tentatives atteint');
+  if (result.outcome === 'full') throw new AudienceCapError();
+  if (!result.attempt) throw new Error('Impossible de démarrer la tentative');
+  return attemptFromRow(result.attempt);
 };
 
+/** Autosave: goes through the save_exam_answers RPC (SQL does the
+ *  read-modify-write for the logs append in one statement) rather than a
+ *  client-side read-then-update — there is no SELECT policy left on
+ *  exam_attempts for an anonymous caller to read the current row first. */
 export const saveAnswers = async (
   attemptId: string,
   answers: Record<string, number | string | null>,
   timeUsedSeconds: number,
 ): Promise<boolean> => {
-  const current = await getAttemptById(attemptId);
-  if (!current || current.status !== 'in-progress') return false;
-  const { error } = await supabase
-    .from('exam_attempts')
-    .update({
-      answers,
-      time_used_seconds: timeUsedSeconds,
-      logs: [...current.logs, { event: 'saved', timestamp: new Date().toISOString() }],
-    })
-    .eq('id', attemptId);
-  return !error;
+  const { data, error } = await supabase.rpc('save_exam_answers', {
+    p_attempt_id: attemptId,
+    p_answers: answers,
+    p_time_used_seconds: timeUsedSeconds,
+  });
+  return !error && data === true;
 };
 
 export const submitAttempt = async (
@@ -441,39 +397,12 @@ export const submitAttempt = async (
   timeUsedSeconds: number,
   mode: SubmissionMode = 'manual',
 ): Promise<Attempt | null> => {
-  const current = await getAttemptById(attemptId);
-  if (!current) return null;
-  if (current.status !== 'in-progress') return current; // already submitted
-
-  const exam = await getExamById(current.examId);
-  const quizRow = exam ? await getContentBySource(exam.hostId, 'quiz', exam.quizId) : null;
-  const quiz = quizRow?.data as unknown as
-    | { questions: Array<{ id: string; type: string; correctAnswer: unknown; points?: number }> }
-    | undefined;
-  const { score, percentage, passed } = quiz && exam
-    ? calculateScore(answers, quiz.questions, exam.passingScore)
-    : { score: null, percentage: null, passed: null };
-
-  const now = new Date().toISOString();
-  const status = mode === 'manual' ? 'submitted' : 'auto-submitted';
-  const { data, error } = await supabase
-    .from('exam_attempts')
-    .update({
-      answers,
-      time_used_seconds: timeUsedSeconds,
-      submitted_at: now,
-      score,
-      percentage,
-      passed,
-      submission_mode: mode,
-      status,
-      logs: [...current.logs, { event: status, timestamp: now }],
-    })
-    .eq('id', attemptId)
-    .select()
-    .single();
-  if (error) throw error;
-  return attemptFromRow(data);
+  const { data, error } = await supabase.functions.invoke('submit-exam-attempt', {
+    body: { attemptId, answers, timeUsedSeconds, mode },
+  });
+  if (error) throw new Error('Échec de la soumission');
+  const result = (data as { attempt?: AttemptRow }).attempt;
+  return result ? attemptFromRow(result) : null;
 };
 
 /** Host-side removal: excludes an attempt from the live view and stats,
@@ -515,40 +444,10 @@ export const sendMessage = async (
   return messageFromRow(data);
 };
 
-/* ══ Score calculation ═══════════════════════════════════════════ */
-
-export function calculateScore(
-  answers: Record<string, number | string | null>,
-  questions: Array<{ id: string; type: string; correctAnswer: unknown; points?: number }>,
-  passingScore: number,
-): { score: number; percentage: number; passed: boolean } {
-  const totalPossible = questions.reduce((s, q) => s + (q.points ?? 100), 0);
-  let earned = 0;
-
-  for (const q of questions) {
-    const answer = answers[q.id];
-    if (answer === null || answer === undefined || answer === '') continue;
-
-    let correct = false;
-    if (q.type === 'true-false') {
-      correct = String(answer).toLowerCase() === String(q.correctAnswer).toLowerCase();
-    } else if (q.type === 'short-answer') {
-      correct = String(answer).trim().toLowerCase() === String(q.correctAnswer).trim().toLowerCase();
-    } else {
-      correct = answer === q.correctAnswer;
-    }
-
-    if (correct) earned += q.points ?? 100;
-  }
-
-  const percentage = totalPossible > 0 ? Math.round((earned / totalPossible) * 100) : 0;
-  return { score: earned, percentage, passed: percentage >= passingScore };
-}
-
 /* ══ Best score for participant ════════════════════════════════ */
 
 export async function getRetainedAttempt(exam: Exam, participantId: string): Promise<Attempt | null> {
-  const done = (await getAttemptsForParticipant(exam.id, participantId))
+  const done = (await fetchParticipantAttempts(exam.id, participantId))
     .filter((a) => a.status === 'submitted' || a.status === 'auto-submitted');
   if (!done.length) return null;
   if (exam.scoreRetentionPolicy === 'last') return done[done.length - 1];
@@ -717,16 +616,3 @@ export async function exportJSON(exam: Exam): Promise<void> {
   link.click();
   URL.revokeObjectURL(url);
 }
-
-/* ══ Utils ══════════════════════════════════════════════════════ */
-
-function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
-export { shuffle };

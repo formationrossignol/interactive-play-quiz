@@ -7,35 +7,18 @@ import {
   getRetainedAttempt, getMessagesForAttempt, sendMessage,
   type Exam, type Attempt, type ExamMessage,
 } from '@/lib/examStorage';
-import { getContentBySource } from '@/lib/content/contentRepo';
-import type { SavedQuiz } from '@/lib/quizStorage';
+import { genParticipantId, getParticipant, setParticipant, type Participant } from '@/lib/examParticipant';
 import { AudienceCapError } from '@/lib/plans';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { Map as MapIcon, Flag, MessageCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
-const PART_KEY = 'exam_participant';
-
 function loadFlags(attemptId: string): Set<string> {
   try {
     const raw = sessionStorage.getItem(`exam_flags_${attemptId}`);
     return raw ? new Set(JSON.parse(raw) as string[]) : new Set();
   } catch { return new Set(); }
-}
-
-interface Participant { id: string; name: string; email: string; }
-
-function genId() {
-  return crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-}
-
-function getParticipant(): Participant | null {
-  try { return JSON.parse(sessionStorage.getItem(PART_KEY) ?? 'null'); } catch { return null; }
-}
-
-function setParticipant(p: Participant) {
-  sessionStorage.setItem(PART_KEY, JSON.stringify(p));
 }
 
 function getAnswerOrder(attemptId: string, questionId: string, count: number): number[] {
@@ -61,7 +44,6 @@ export default function ExamRoom() {
 
   const [phase, setPhase] = useState<Phase>('loading');
   const [exam, setExam] = useState<Exam | null>(null);
-  const [quiz, setQuiz] = useState<SavedQuiz | null>(null);
   const [attempt, setAttempt] = useState<Attempt | null>(null);
   const [participant, setParticipantState] = useState<Participant | null>(null);
   const [nameInput, setNameInput] = useState('');
@@ -105,10 +87,6 @@ export default function ExamRoom() {
         setPhase('not-open');
         return;
       }
-
-      const quizRow = await getContentBySource(e.hostId, 'quiz', e.quizId);
-      if (cancelled) return;
-      setQuiz((quizRow?.data as unknown as SavedQuiz) ?? null);
 
       const part = getParticipant();
       if (part) {
@@ -326,7 +304,7 @@ export default function ExamRoom() {
   const handleIdentify = () => {
     if (!nameInput.trim()) { setIdentError('Nom requis'); return; }
     const part: Participant = {
-      id: genId(),
+      id: genParticipantId(),
       name: nameInput.trim(),
       email: emailInput.trim(),
     };
@@ -388,11 +366,11 @@ export default function ExamRoom() {
     </Screen>
   );
 
-  if (exam && !quiz) return (
+  if (exam && exam.questionsPublic.length === 0) return (
     <Screen>
       <BigIcon>⚠️</BigIcon>
       <Title>Quiz introuvable</Title>
-      <Sub>Le contenu associé à cet examen n'est pas disponible sur cet appareil. Contactez l'organisateur.</Sub>
+      <Sub>Le contenu associé à cet examen n'est pas disponible. Contactez l'organisateur.</Sub>
     </Screen>
   );
 
@@ -425,7 +403,7 @@ export default function ExamRoom() {
     </Screen>
   );
 
-  if (phase === 'ready' && exam && quiz) return (
+  if (phase === 'ready' && exam) return (
     <Screen maxWidth={520}>
       <div style={{
         background: 'var(--ap-card)', border: 'var(--ap-border-w) solid var(--ap-line)',
@@ -441,7 +419,7 @@ export default function ExamRoom() {
           </p>
         )}
         <div style={{ display: 'flex', justifyContent: 'center', gap: 16, flexWrap: 'wrap', marginBottom: 24 }}>
-          <Info icon="❓" label={`${quiz.questions.length} questions`} />
+          <Info icon="❓" label={`${exam.questionsPublic.length} questions`} />
           {exam.durationMinutes && <Info icon="⏱️" label={`${exam.durationMinutes} min`} />}
           <Info icon="🔄" label={`${exam.maxAttempts} tentative${exam.maxAttempts > 1 ? 's' : ''}`} />
           <Info icon="🏆" label={`Seuil : ${exam.passingScore}%`} />
@@ -497,10 +475,10 @@ export default function ExamRoom() {
   }
 
   /* ── Taking phase ─────────────────────────────────────────────── */
-  if (phase === 'taking' && attempt && quiz && exam) {
+  if (phase === 'taking' && attempt && exam) {
     const orderedQs = attempt.questionOrder
-      .map((id) => quiz.questions.find((q: { id: string }) => q.id === id))
-      .filter(Boolean);
+      .map((id) => exam.questionsPublic.find((q) => (q as { id: string }).id === id))
+      .filter(Boolean) as { id: string; type: string; question: string; answers: string[]; correctAnswer: unknown }[];
     const answered = orderedQs.filter((q: { id: string }) => answers[q.id] !== null && answers[q.id] !== undefined).length;
     const minutesLeft = secondsLeft !== null ? Math.ceil(secondsLeft / 60) : null;
 

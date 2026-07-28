@@ -19,6 +19,7 @@ const AuthPage = () => {
   const [forgotEmail, setForgotEmail] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
+  const [acceptTerms, setAcceptTerms] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const loginEmailRef = useRef<HTMLInputElement>(null);
@@ -26,6 +27,7 @@ const AuthPage = () => {
   const registerEmailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
   const forgotEmailRef = useRef<HTMLInputElement>(null);
+  const termsRef = useRef<HTMLInputElement>(null);
 
   const clearFieldError = (field: string) =>
     setFieldErrors((prev) => {
@@ -105,12 +107,14 @@ const AuthPage = () => {
     const usernameErr = usernameError(registerData.username);
     const emailErr = emailError(registerData.email);
     const pwErr = passwordError(registerData.password, true);
+    const termsErr = acceptTerms ? undefined : t("termsRequired");
     if (usernameErr) errors.registerUsername = usernameErr;
     if (emailErr) errors.registerEmail = emailErr;
     if (pwErr) errors.password = pwErr;
-    if (usernameErr || emailErr || pwErr) {
+    if (termsErr) errors.terms = termsErr;
+    if (usernameErr || emailErr || pwErr || termsErr) {
       setFieldErrors(errors);
-      (usernameErr ? registerUsernameRef : emailErr ? registerEmailRef : passwordRef).current?.focus();
+      (usernameErr ? registerUsernameRef : emailErr ? registerEmailRef : pwErr ? passwordRef : termsRef).current?.focus();
       return;
     }
     setFieldErrors({});
@@ -467,6 +471,26 @@ const AuthPage = () => {
             <FieldError id="register-email-error" message={fieldErrors.registerEmail} />
           </div>
           {passwordField}
+          <div>
+            <label style={{ display: "flex", alignItems: "flex-start", gap: "8px", cursor: "pointer", fontSize: "13px", fontWeight: 700, color: "var(--ap-ink)", lineHeight: 1.5 }}>
+              <input
+                ref={termsRef}
+                type="checkbox"
+                checked={acceptTerms}
+                aria-invalid={!!fieldErrors.terms}
+                aria-describedby={fieldErrors.terms ? "register-terms-error" : undefined}
+                onChange={(e) => { setAcceptTerms(e.target.checked); clearFieldError("terms"); }}
+                style={{ width: "16px", height: "16px", marginTop: "2px", flexShrink: 0, accentColor: "var(--ap-brand)", cursor: "pointer" }}
+              />
+              <span>
+                J'accepte les{" "}
+                <a href="/cgu" target="_blank" rel="noopener noreferrer" style={{ color: "var(--ap-brand)", fontWeight: 800 }}>CGU</a>{" "}
+                et la{" "}
+                <a href="/confidentialite" target="_blank" rel="noopener noreferrer" style={{ color: "var(--ap-brand)", fontWeight: 800 }}>politique de confidentialité</a>
+              </span>
+            </label>
+            <FieldError id="register-terms-error" message={fieldErrors.terms} />
+          </div>
           <button type="submit" className="ap-btn ap-btn--pill" disabled={busy} style={{ width: "100%", marginTop: "4px" }}>
             S'inscrire
           </button>
@@ -543,7 +567,7 @@ const AuthPage = () => {
         </div>
       )}
 
-      {(view === "login" || view === "register") && (
+      {view === "login" && (
         <p style={{ marginTop: "20px", textAlign: "center", fontSize: "12px", fontWeight: 700, color: "var(--ap-muted)", lineHeight: 1.55 }}>
           Données hébergées en Europe · conforme RGPD.
           <br />
@@ -551,6 +575,12 @@ const AuthPage = () => {
           <a href="/cgu" style={{ color: "var(--ap-brand)", fontWeight: 800 }}>CGU</a>{" "}
           et la{" "}
           <a href="/confidentialite" style={{ color: "var(--ap-brand)", fontWeight: 800 }}>politique de confidentialité</a>.
+        </p>
+      )}
+
+      {view === "register" && (
+        <p style={{ marginTop: "20px", textAlign: "center", fontSize: "12px", fontWeight: 700, color: "var(--ap-muted)", lineHeight: 1.55 }}>
+          Données hébergées en Europe · conforme RGPD.
         </p>
       )}
     </div>

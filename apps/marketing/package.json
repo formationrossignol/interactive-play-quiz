@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@sentry/nextjs": "^10.68.0",
     "@supabase/supabase-js": "^2.106.2",
     "isomorphic-dompurify": "^2.20.0",
     "lucide-react": "^0.462.0",

@@ -21,9 +21,10 @@ const baseQuiz = (overrides: Partial<SavedQuiz> = {}): Omit<SavedQuiz, 'id' | 'c
   ...overrides,
 });
 
-// IDs must be 6-digit strings — getSavedQuizzes() silently migrates any
-// non-6-digit id to a random 6-digit code on first read, which would
-// otherwise invalidate the ids seeded here before a test can reference them.
+// IDs must look like a 6-char game code (letters and/or digits) —
+// getSavedQuizzes() silently migrates anything else to a fresh code on first
+// read, which would otherwise invalidate the ids seeded here before a test
+// can reference them. Plain digit strings still satisfy the check.
 const seedQuizzes = (n: number, type: SavedQuiz['type'] = 'quiz') => {
   const quizzes: SavedQuiz[] = Array.from({ length: n }, (_, i) => ({
     ...baseQuiz({ type }),
