@@ -5,7 +5,7 @@ export interface Lesson {
   id: string;
   title: string;
   content: string;
-  type: 'text' | 'quiz' | 'poll' | 'flashcard' | 'document' | 'video' | 'iframe' | 'file-upload';
+  type: 'text' | 'quiz' | 'poll' | 'flashcard' | 'document' | 'video' | 'iframe' | 'file-upload' | 'scorm';
   linkedItemId?: string; // quiz/poll/flashcard: id of the linked saved_quizzes item
   estimatedMinutes?: number;
   documentName?: string;
@@ -13,6 +13,10 @@ export interface Lesson {
   videoUrl?: string;
   videoType?: 'youtube' | 'url';
   iframeUrl?: string; // iframe: embedded page URL
+  scormPackageId?: string;   // scorm: storage path segment under scorm-packages/<user_id>/<packageId>
+  scormVersion?: '1.2' | '2004';
+  scormLaunchPath?: string;  // scorm: relative path to the launch file inside the package
+  scormTitle?: string;       // scorm: title read from imsmanifest.xml
 }
 
 export interface Module {
