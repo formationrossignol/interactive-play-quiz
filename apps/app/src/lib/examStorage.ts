@@ -198,7 +198,7 @@ export const getHostExams = async (hostId: string): Promise<Exam[]> => {
   return data.map(examFromRow);
 };
 
-type ExamPayload = Omit<Exam, 'id' | 'hostId' | 'joinCode' | 'createdAt' | 'updatedAt' | 'maxParticipants' | 'questionsPublic'>;
+export type ExamPayload = Omit<Exam, 'id' | 'hostId' | 'joinCode' | 'createdAt' | 'updatedAt' | 'maxParticipants' | 'questionsPublic'>;
 
 async function invokeSaveExam(examId: string | undefined, data: ExamPayload): Promise<Exam> {
   const { data: result, error } = await supabase.functions.invoke('save-exam', {

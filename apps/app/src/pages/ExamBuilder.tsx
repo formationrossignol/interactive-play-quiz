@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { createExam, updateExam, getExamById, getHostExams, type Exam } from '@/lib/examStorage';
+import { createExam, updateExam, getExamById, getHostExams, type Exam, type ExamPayload } from '@/lib/examStorage';
 import { getUserQuizzes } from '@/lib/quizStorage';
 import { getCurrentUser } from '@/lib/auth';
 import { CONTENT_CAPS, getPlan } from '@/lib/plans';
@@ -218,7 +218,7 @@ export default function ExamBuilder() {
     }
     setSaving(true);
     try {
-      const payload: Omit<Exam, 'id' | 'hostId' | 'joinCode' | 'createdAt' | 'updatedAt' | 'maxParticipants'> = {
+      const payload: ExamPayload = {
         title: form.title.trim(),
         description: form.description.trim(),
         headerImage: form.headerImage || undefined,
