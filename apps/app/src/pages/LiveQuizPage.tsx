@@ -11,6 +11,7 @@ import { useDocStore } from "@/components/presentation-editor/store/useDocStore"
 import { isLegacySlideShape, migrateLegacySlideToPresentation } from "@/components/presentation-editor/utils/migrateLegacySlide";
 import type { Presentation } from "@/components/presentation-editor/types/presentation";
 import { getQuizById, type SavedQuiz } from "@/lib/quizStorage";
+import { getCurrentUser } from "@/lib/auth";
 
 const fallbackKeysForType = (id: string) => [
   `quiz-${id}`,
@@ -142,7 +143,17 @@ const LiveQuizPage = () => {
     );
   }
 
-  if (storedPlayer && gameCode) {
+  // A stale sessionStorage entry from a previous test-join (e.g. a host
+  // trying out their own quiz as a player) would otherwise unconditionally
+  // route to PlayerView even when this same browser is now hosting a
+  // session that happens to reuse/collide with that game_code, silently
+  // showing the player screen instead of the host console. getQuizById is a
+  // synchronous local lookup, so this doesn't cost the loading screen that
+  // routing players through it unconditionally was written to avoid.
+  const currentUser = getCurrentUser();
+  const isCurrentUserHost = !!currentUser && getQuizById(gameCode ?? "")?.userId === currentUser.id;
+
+  if (storedPlayer && gameCode && !isCurrentUserHost) {
     return <PlayerView gameCode={gameCode} playerName={storedPlayer.name} />;
   }
 

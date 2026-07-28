@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { Presentation, Slide, SlideBackground, SlideElement } from "../types/presentation";
+import { blankRichText } from "../utils/createElement";
 
 interface DocState {
   presentation: Presentation | null;
@@ -40,12 +41,55 @@ function nextId(prefix: string): string {
   return `${prefix}-${Date.now()}-${uid}`;
 }
 
+function num(v: unknown, fallback: number): number {
+  return typeof v === "number" && Number.isFinite(v) ? v : fallback;
+}
+
+function isValidRichText(v: unknown): boolean {
+  return !!v && typeof v === "object" && (v as { type?: unknown }).type === "doc" && Array.isArray((v as { content?: unknown }).content);
+}
+
+/** Defends against malformed data reaching the store — from an imported
+ *  .json file with no schema of its own, or a legacy/hand-edited Supabase
+ *  content row. Missing/non-finite geometry becomes 0 rather than NaN
+ *  propagating into style props and layout math elsewhere (drag, marquee
+ *  intersection, group bounding box); invalid richText (the actual crash
+ *  site — see TextElementView) becomes a blank doc instead of whatever
+ *  garbage was stored. Elements with no id/type at all are dropped.
+ */
+function sanitizePresentation(raw: Presentation): Presentation {
+  return {
+    ...raw,
+    slides: (raw.slides ?? []).map((slide) => ({
+      ...slide,
+      elements: (slide.elements ?? [])
+        .filter((el): el is SlideElement => !!el && typeof el === "object" && typeof el.id === "string" && typeof el.type === "string")
+        .map((el) => {
+          const base = {
+            ...el,
+            x: num(el.x, 0),
+            y: num(el.y, 0),
+            width: num(el.width, 100),
+            height: num(el.height, 100),
+            rotation: num(el.rotation, 0),
+            zIndex: num(el.zIndex, 0),
+            opacity: typeof el.opacity === "number" && Number.isFinite(el.opacity) ? el.opacity : 1,
+          };
+          if (base.type === "text" && !isValidRichText(base.richText)) {
+            return { ...base, richText: blankRichText() };
+          }
+          return base;
+        }),
+    })),
+  };
+}
+
 export const useDocStore = create<DocState>((set, get) => ({
   presentation: null,
 
-  load: (presentation) => set({ presentation }),
+  load: (presentation) => set({ presentation: sanitizePresentation(presentation) }),
   exportJSON: () => JSON.stringify(get().presentation),
-  importJSON: (json) => set({ presentation: JSON.parse(json) as Presentation }),
+  importJSON: (json) => set({ presentation: sanitizePresentation(JSON.parse(json) as Presentation) }),
 
   setTitle: (title) => set((state) => {
     if (!state.presentation) return state;
@@ -69,11 +113,19 @@ export const useDocStore = create<DocState>((set, get) => ({
       const idx = state.presentation.slides.findIndex((s) => s.id === slideId);
       if (idx === -1) return state;
       const source = state.presentation.slides[idx];
-      const copy: Slide = {
-        ...source,
-        id: newId,
-        elements: source.elements.map((e) => ({ ...e, id: nextId("el") })),
-      };
+      // groupId (on children) and childIds (on the group element) reference
+      // element ids within THIS slide — copying them verbatim after
+      // generating fresh ids would leave the duplicate's group pointing at
+      // ids that only exist on the source slide (ungrouping the duplicate
+      // would then match nothing and leave stale groupId on its children).
+      const idMap = new Map(source.elements.map((e) => [e.id, nextId("el")]));
+      const elements = source.elements.map((e) => {
+        const copy = { ...e, id: idMap.get(e.id)! };
+        if (copy.groupId) copy.groupId = idMap.get(copy.groupId) ?? copy.groupId;
+        if (copy.type === "group") copy.childIds = copy.childIds.map((cid) => idMap.get(cid) ?? cid);
+        return copy;
+      });
+      const copy: Slide = { ...source, id: newId, elements };
       const slides = reindex([
         ...state.presentation.slides.slice(0, idx + 1),
         copy,

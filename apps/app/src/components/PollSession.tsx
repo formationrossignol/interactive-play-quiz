@@ -157,9 +157,19 @@ export const PollSession = ({ poll }: PollSessionProps) => {
     if (phase === "live") saveResults();
   }, [currentIndex, phase, saveResults]);
 
+  // Kept fresh every render so the unmount cleanup below (which must stay a
+  // mount-only effect to only run its patchSessionState once) always calls
+  // the current saveResults — not the one captured at mount time with
+  // players.length === 0, which silently dropped the real participant count
+  // on host mid-poll exit.
+  const saveResultsRef = useRef(saveResults);
+  useEffect(() => {
+    saveResultsRef.current = saveResults;
+  }, [saveResults]);
+
   useEffect(() => {
     return () => {
-      saveResults();
+      saveResultsRef.current();
       if (!finishedRef.current) {
         patchSessionState(poll.id, { gameState: "abandoned" });
       }

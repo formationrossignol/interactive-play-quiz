@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getAttemptById, getExamById, type Attempt, type Exam } from '@/lib/examStorage';
+import { getAttemptById, getExamById, isAnswerCorrect, type Attempt, type Exam } from '@/lib/examStorage';
 import { getContentBySource } from '@/lib/content/contentRepo';
 import type { SavedQuiz } from '@/lib/quizStorage';
 
@@ -165,11 +165,9 @@ export default function ExamResults() {
   );
 }
 
-function checkCorrect(q: { type: string; correctAnswer: unknown }, given: number | string | null | undefined): boolean {
+function checkCorrect(q: { type: string; correctAnswer: unknown }, given: unknown): boolean {
   if (given === null || given === undefined || given === '') return false;
-  if (q.type === 'true-false') return String(given).toLowerCase() === String(q.correctAnswer).toLowerCase();
-  if (q.type === 'short-answer') return String(given).trim().toLowerCase() === String(q.correctAnswer).trim().toLowerCase();
-  return given === q.correctAnswer;
+  return isAnswerCorrect(given, q);
 }
 
 function formatAnswer(q: { type: string; answers?: string[] }, given: number | string | null | undefined): string {

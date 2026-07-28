@@ -66,12 +66,13 @@ export const addQuestionToBank = (
 
 export const updateQuestionBankItem = (
   id: string,
+  userId: string,
   updates: Partial<Omit<QuestionBankItem, "id" | "userId" | "createdAt">>
 ): QuestionBankItem | null => {
   const items = getStoredQuestionBank();
   const index = items.findIndex((item) => item.id === id);
 
-  if (index === -1) return null;
+  if (index === -1 || items[index].userId !== userId) return null;
 
   const updatedItem: QuestionBankItem = {
     ...items[index],
@@ -85,9 +86,9 @@ export const updateQuestionBankItem = (
   return updatedItem;
 };
 
-export const deleteQuestionBankItem = (id: string): boolean => {
+export const deleteQuestionBankItem = (id: string, userId: string): boolean => {
   const items = getStoredQuestionBank();
-  const filtered = items.filter((item) => item.id !== id);
+  const filtered = items.filter((item) => !(item.id === id && item.userId === userId));
 
   if (filtered.length === items.length) {
     return false;
@@ -97,9 +98,9 @@ export const deleteQuestionBankItem = (id: string): boolean => {
   return true;
 };
 
-export const duplicateQuestionBankItem = (id: string): QuestionBankItem | null => {
+export const duplicateQuestionBankItem = (id: string, userId: string): QuestionBankItem | null => {
   const items = getStoredQuestionBank();
-  const item = items.find((entry) => entry.id === id);
+  const item = items.find((entry) => entry.id === id && entry.userId === userId);
 
   if (!item) {
     return null;
@@ -119,9 +120,9 @@ export const duplicateQuestionBankItem = (id: string): QuestionBankItem | null =
   return clone;
 };
 
-export const getQuestionBankItemById = (id: string): QuestionBankItem | null => {
+export const getQuestionBankItemById = (id: string, userId: string): QuestionBankItem | null => {
   const items = getStoredQuestionBank();
-  return items.find((item) => item.id === id) ?? null;
+  return items.find((item) => item.id === id && item.userId === userId) ?? null;
 };
 
 export const sanitizeQuestionForBank = (question: Record<string, unknown> | null | undefined) => {

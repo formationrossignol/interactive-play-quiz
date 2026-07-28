@@ -236,6 +236,10 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
   }, [syncFromSession]);
 
   useEffect(() => {
+    // Kicked players are shown a terminal screen (line ~705) — don't keep an
+    // open realtime subscription running behind it indefinitely.
+    if (isKicked) return;
+
     const handleStorage = (event: StorageEvent) => {
       if (event.key === getSessionStorageKey(gameCode)) {
         syncRef.current();
@@ -269,13 +273,17 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
       window.removeEventListener('storage', handleStorage);
       channel.unsubscribe();
     };
-  }, [gameCode]); // stable — only recreated if gameCode changes
+  }, [gameCode, isKicked]);
 
   // Poll Supabase directly and update React state — bypasses localStorage chain.
   // Runs every 2s as fallback when realtime is unavailable (e.g. mobile background throttle).
   // Skips the round-trip when Supabase Realtime fired within the last 4s to avoid redundant reads.
   // quiz_data (all questions) is fetched once then excluded from subsequent polls to save bandwidth.
   useEffect(() => {
+    // Kicked players are shown a terminal screen (line ~705) — don't keep
+    // polling Supabase every 2s behind it indefinitely.
+    if (isKicked) return;
+
     let prevUpdatedAt = '';
     let hasQuizData = false;
     // The control column may not be deployed yet — degrade gracefully if so.
@@ -401,11 +409,11 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
     poll(); // immediate first fetch
     const interval = setInterval(poll, 2000);
     return () => clearInterval(interval);
-  }, [gameCode, playerId, shouldApplyPhase]);
+  }, [gameCode, playerId, shouldApplyPhase, isKicked]);
 
   // Timer countdown — Date.now()-based interval, no drift, smooth 250ms updates
   useEffect(() => {
-    const isActive = (gameState === 'question' && !hasAnswered) || gameState === 'transition';
+    const isActive = !isKicked && ((gameState === 'question' && !hasAnswered) || gameState === 'transition');
     if (!isActive) return;
     const interval = setInterval(() => {
       if (timerEndRef.current === null) return;
@@ -413,7 +421,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
       setTimeLeft(remaining);
     }, 250);
     return () => clearInterval(interval);
-  }, [gameState, hasAnswered, currentQuestion]);
+  }, [gameState, hasAnswered, currentQuestion, isKicked]);
 
   // Heartbeat: signals liveness to host every 5s so disconnects can be detected.
   // Only sent during 'question' — the only phase where the host checks for disconnects.

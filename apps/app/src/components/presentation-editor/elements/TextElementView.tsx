@@ -19,7 +19,17 @@ export const TIPTAP_EXTENSIONS = [
 ];
 
 export function TextElementView({ element }: { element: TextElement }) {
-  const html = generateHTML(element.richText, TIPTAP_EXTENSIONS);
+  // richText can arrive from an imported .json presentation file with no
+  // schema validation (see importPresentationFromFile) — ProseMirror throws
+  // on a malformed doc shape, and there's no app-wide ErrorBoundary, so an
+  // uncaught throw here white-screens the whole editor. Degrade to empty
+  // content instead of crashing.
+  let html: string;
+  try {
+    html = generateHTML(element.richText, TIPTAP_EXTENSIONS);
+  } catch {
+    html = "";
+  }
   return (
     <div
       style={{ width: "100%", height: "100%", overflow: "hidden" }}

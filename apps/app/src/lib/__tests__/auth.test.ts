@@ -19,6 +19,7 @@ vi.mock('../supabase', () => ({
       },
     },
   },
+  setAuthPersistence: vi.fn(),
 }));
 
 // login() also runs migrateLegacyLocalData as a side effect; stub it so the

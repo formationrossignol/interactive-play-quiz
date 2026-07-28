@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ChevronRight, Home } from "lucide-react";
 import { toast } from "sonner";
 import { useDocStore } from "./store/useDocStore";
+import { useHistoryStore } from "./store/useHistoryStore";
 import { useEditorUIStore } from "./store/useEditorUIStore";
 import { useAutosave } from "./hooks/useAutosave";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
@@ -40,6 +41,10 @@ export function PresentationEditor({ contentId, userId, initialPresenting = fals
 
   useEffect(() => {
     let cancelled = false;
+    // Undo/redo history is a module-level store, not scoped per document —
+    // without this it leaks across presentations: switching from A to B then
+    // pressing Ctrl+Z in B would load a stale snapshot from A.
+    useHistoryStore.getState().reset();
     async function init() {
       if (!contentId) {
         const blank = createBlankPresentation(`new-${Date.now()}`);

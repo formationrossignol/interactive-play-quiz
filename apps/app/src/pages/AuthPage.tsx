@@ -27,7 +27,7 @@ const AuthPage = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
-    const result = await login(loginData.email, loginData.password);
+    const result = await login(loginData.email, loginData.password, rememberMe);
     setBusy(false);
     if (result.status === "ok") {
       toast.success(t("loginSuccess"));

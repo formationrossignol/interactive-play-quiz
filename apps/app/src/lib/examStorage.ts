@@ -408,6 +408,33 @@ export const startAttempt = async (
     .select()
     .single();
   if (error) throw error;
+
+  // The maxParticipants check above is read-then-write, not atomic — two
+  // concurrent starts (double-click, two tabs) can both pass it before
+  // either insert lands. Without a DB-side unique constraint or RPC (out of
+  // scope here — see docs/exam-scoring-hardening-tier2.md for the broader
+  // atomic-attempt-start plan), re-check after inserting and roll back this
+  // attempt if it pushed the room over capacity, rather than letting a small
+  // overshoot silently stand. Only applies to a genuinely new participant —
+  // `existing` (fetched before the insert) already excludes this attempt.
+  const isNewParticipant = existing.length === 0;
+  if (exam.maxParticipants !== null && isNewParticipant) {
+    const all = await getAttemptsForExam(exam.id);
+    const distinctParticipants = new Set(all.map((a) => a.participantId));
+    if (distinctParticipants.size > exam.maxParticipants) {
+      await supabase.from('exam_attempts').delete().eq('id', data.id);
+      throw new AudienceCapError();
+    }
+  }
+
+  // Same race for maxAttempts (this participant double-clicking / two tabs).
+  const freshCompleted = (await getAttemptsForParticipant(exam.id, participantId))
+    .filter((a) => a.status !== 'in-progress' && a.id !== data.id);
+  if (freshCompleted.length >= exam.maxAttempts) {
+    await supabase.from('exam_attempts').delete().eq('id', data.id);
+    throw new Error('Nombre maximum de tentatives atteint');
+  }
+
   return attemptFromRow(data);
 };
 
@@ -416,17 +443,27 @@ export const saveAnswers = async (
   answers: Record<string, number | string | null>,
   timeUsedSeconds: number,
 ): Promise<boolean> => {
-  const current = await getAttemptById(attemptId);
-  if (!current || current.status !== 'in-progress') return false;
-  const { error } = await supabase
+  // `.eq('status', 'in-progress')` makes the guard atomic with the write
+  // itself (was: a separate getAttemptById read, then an unconditional
+  // update — a TOCTOU window where a submit landing in between would get
+  // silently overwritten by this stale save).
+  const { data, error } = await supabase
     .from('exam_attempts')
-    .update({
-      answers,
-      time_used_seconds: timeUsedSeconds,
-      logs: [...current.logs, { event: 'saved', timestamp: new Date().toISOString() }],
-    })
-    .eq('id', attemptId);
-  return !error;
+    .update({ answers, time_used_seconds: timeUsedSeconds })
+    .eq('id', attemptId)
+    .eq('status', 'in-progress')
+    .select('id');
+  if (error || !data || data.length === 0) return false;
+
+  // Logged via an atomic DB-side append (see 20260728150000_append_exam_
+  // attempt_log.sql) rather than read-current-logs-then-overwrite-whole-
+  // array — that pattern let a concurrent submitAttempt's 'submitted' log
+  // entry get silently clobbered by a stale autosave landing after it.
+  const { error: logError } = await supabase.rpc('append_exam_attempt_log', {
+    p_attempt_id: attemptId,
+    p_entry: { event: 'saved', timestamp: new Date().toISOString() },
+  });
+  return !logError;
 };
 
 export const submitAttempt = async (
@@ -450,6 +487,14 @@ export const submitAttempt = async (
 
   const now = new Date().toISOString();
   const status = mode === 'manual' ? 'submitted' : 'auto-submitted';
+  // Append the terminal log entry first, while status is still 'in-progress'
+  // (required by exam_attempts_update_own's RLS), then flip status — see
+  // saveAnswers for why this is an atomic DB-side append rather than a
+  // read-then-overwrite of the whole logs array.
+  await supabase.rpc('append_exam_attempt_log', {
+    p_attempt_id: attemptId,
+    p_entry: { event: status, timestamp: now },
+  });
   const { data, error } = await supabase
     .from('exam_attempts')
     .update({
@@ -461,7 +506,6 @@ export const submitAttempt = async (
       passed,
       submission_mode: mode,
       status,
-      logs: [...current.logs, { event: status, timestamp: now }],
     })
     .eq('id', attemptId)
     .select()
@@ -511,8 +555,57 @@ export const sendMessage = async (
 
 /* ══ Score calculation ═══════════════════════════════════════════ */
 
+/** Structural correctness check shared by calculateScore and ExamResults'
+ *  checkCorrect. `correctAnswer` is `unknown` because the same field carries
+ *  wildly different shapes per question type (string, number[], {leftId,
+ *  rightId}[], {id,correctAnswer}[]) — a plain `===` only ever works for the
+ *  primitive types, so array/object-shaped answers (ranking, matching,
+ *  fill-blank) would otherwise always score wrong regardless of what was
+ *  submitted. ExamRoom doesn't currently render input for these types
+ *  (ExamBuilder's quiz picker blocks them at the source, see
+ *  unsupportedQuestionTypes in ExamBuilder.tsx), but this keeps scoring
+ *  correct for any exam created before that guard shipped, or if UI support
+ *  is added later.
+ */
+export function isAnswerCorrect(
+  answer: unknown,
+  q: { type: string; correctAnswer?: unknown },
+): boolean {
+  if (q.type === 'true-false') {
+    return String(answer).toLowerCase() === String(q.correctAnswer).toLowerCase();
+  }
+  if (q.type === 'short-answer') {
+    return String(answer).trim().toLowerCase() === String(q.correctAnswer).trim().toLowerCase();
+  }
+  if (q.type === 'ranking') {
+    const order = q.correctAnswer as number[] | undefined;
+    if (!Array.isArray(order) || !Array.isArray(answer)) return false;
+    return order.length === answer.length && order.every((v, i) => v === answer[i]);
+  }
+  if (q.type === 'matching') {
+    const matches = q.correctAnswer as { leftId: string; rightId: string }[] | undefined;
+    if (!Array.isArray(matches) || !Array.isArray(answer)) return false;
+    if (matches.length !== answer.length) return false;
+    const expected = new Map(matches.map((m) => [m.leftId, m.rightId]));
+    return (answer as { leftId: string; rightId: string }[]).every(
+      (m) => expected.get(m.leftId) === m.rightId
+    );
+  }
+  if (q.type === 'fill-blank') {
+    const blanks = q.correctAnswer as { id: string; correctAnswer: string; acceptableAnswers?: string[] }[] | undefined;
+    if (!Array.isArray(blanks) || typeof answer !== 'object' || answer === null) return false;
+    const given = answer as Record<string, string>;
+    return blanks.every((b) => {
+      const submitted = String(given[b.id] ?? '').trim().toLowerCase();
+      const accepted = [b.correctAnswer, ...(b.acceptableAnswers ?? [])].map((a) => a.trim().toLowerCase());
+      return accepted.includes(submitted);
+    });
+  }
+  return answer === q.correctAnswer;
+}
+
 export function calculateScore(
-  answers: Record<string, number | string | null>,
+  answers: Record<string, unknown>,
   questions: Array<{ id: string; type: string; correctAnswer: unknown; points?: number }>,
   passingScore: number,
 ): { score: number; percentage: number; passed: boolean } {
@@ -523,16 +616,7 @@ export function calculateScore(
     const answer = answers[q.id];
     if (answer === null || answer === undefined || answer === '') continue;
 
-    let correct = false;
-    if (q.type === 'true-false') {
-      correct = String(answer).toLowerCase() === String(q.correctAnswer).toLowerCase();
-    } else if (q.type === 'short-answer') {
-      correct = String(answer).trim().toLowerCase() === String(q.correctAnswer).trim().toLowerCase();
-    } else {
-      correct = answer === q.correctAnswer;
-    }
-
-    if (correct) earned += q.points ?? 100;
+    if (isAnswerCorrect(answer, q)) earned += q.points ?? 100;
   }
 
   const percentage = totalPossible > 0 ? Math.round((earned / totalPossible) * 100) : 0;

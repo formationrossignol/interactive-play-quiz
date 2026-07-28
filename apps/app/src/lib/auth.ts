@@ -1,5 +1,5 @@
 import type { Session, User as SupabaseUser } from '@supabase/supabase-js';
-import { supabase } from './supabase';
+import { supabase, setAuthPersistence } from './supabase';
 import { migrateLegacyLocalData } from './authMigration';
 import { migrateLocalToSupabase, backfillQuizMirrors } from './content/migrateLocalToSupabase';
 import type { SiteTheme } from './siteTheme';
@@ -140,7 +140,8 @@ export type LoginResult =
   | { status: 'email_not_confirmed' }
   | { status: 'error'; message: string };
 
-export const login = async (email: string, password: string): Promise<LoginResult> => {
+export const login = async (email: string, password: string, rememberMe = true): Promise<LoginResult> => {
+  setAuthPersistence(rememberMe);
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) {
     if (error.code === 'email_not_confirmed') return { status: 'email_not_confirmed' };

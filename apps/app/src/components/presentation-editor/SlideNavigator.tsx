@@ -76,7 +76,20 @@ export function SlideNavigator() {
                   className="ap-btn ap-btn--ghost ap-btn--sm"
                   title="Supprimer"
                   disabled={slides.length <= 1}
-                  onClick={() => { useHistoryStore.getState().commit(); useDocStore.getState().deleteSlide(slide.id); }}
+                  onClick={() => {
+                    useHistoryStore.getState().commit();
+                    useDocStore.getState().deleteSlide(slide.id);
+                    // SlideCanvas defensively falls back to slides[0] when
+                    // activeSlideId points at a deleted slide, but
+                    // EditorToolbar/PropertiesPanel don't — left dangling,
+                    // they'd silently target a slide id that no longer
+                    // exists (e.g. a background-color edit becoming a no-op).
+                    if (activeSlideId === slide.id) {
+                      const remaining = slides.filter((s) => s.id !== slide.id);
+                      const next = remaining[i] ?? remaining[i - 1] ?? null;
+                      setActiveSlideId(next?.id ?? null);
+                    }
+                  }}
                 >
                   🗑
                 </button>

@@ -6,7 +6,29 @@ import type {
 } from './types';
 
 // ── Generic content list / status / delete ──────────────────────────────────
+// Allowlist of tables the admin UI is actually allowed to touch through the
+// generic list/create/update/delete helpers below. RLS is the last line of
+// defense, but this keeps an app-level guard against an arbitrary table name
+// reaching Supabase (e.g. via a bug or a compromised admin-page prop).
+const ADMIN_TABLE_ALLOWLIST = new Set([
+  'roadmap_items',
+  'guides',
+  'faq_items',
+  'changelog_releases',
+  'reviews',
+  'static_pages',
+  'roadmap_ideas',
+  'reports',
+]);
+
+function assertAllowedTable(table: string): void {
+  if (!ADMIN_TABLE_ALLOWLIST.has(table)) {
+    throw new Error(`Table "${table}" is not in the admin allowlist`);
+  }
+}
+
 async function listAll<T>(table: string): Promise<T[]> {
+  assertAllowedTable(table);
   const { data, error } = await supabase.from(table).select('*').order('sort', { ascending: true });
   if (error) throw error;
   return (data ?? []) as T[];
@@ -25,14 +47,17 @@ export async function listReleaseItems(releaseId: string): Promise<ChangelogItem
 }
 
 export async function createRow(table: string, values: Record<string, unknown>): Promise<void> {
+  assertAllowedTable(table);
   const { error } = await supabase.from(table).insert(values);
   if (error) throw error;
 }
 export async function updateRow(table: string, id: string, patch: Record<string, unknown>): Promise<void> {
+  assertAllowedTable(table);
   const { error } = await supabase.from(table).update(patch).eq('id', id);
   if (error) throw error;
 }
 export async function deleteRow(table: string, id: string): Promise<void> {
+  assertAllowedTable(table);
   const { error } = await supabase.from(table).delete().eq('id', id);
   if (error) throw error;
 }
