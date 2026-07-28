@@ -13,6 +13,12 @@ import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { Map as MapIcon, Flag, MessageCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  ProctoringPreflight,
+  type ProctoringStreams,
+} from '@/components/proctoring/ProctoringPreflight';
+import { ProctoringMonitor } from '@/components/proctoring/ProctoringMonitor';
+import { recordProctoringEvent } from '@/lib/proctoring';
 
 function loadFlags(attemptId: string): Set<string> {
   try {
@@ -64,9 +70,11 @@ export default function ExamRoom() {
   const [chatText, setChatText] = useState('');
   const [chatSending, setChatSending] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [proctoringStreams, setProctoringStreams] = useState<ProctoringStreams>({ camera: null, screen: null });
 
   const autoSaveRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const autoSubmittingRef = useRef(false);
   const elapsedRef = useRef(0);
   const answersRef = useRef(answers);
   answersRef.current = answers;
@@ -107,7 +115,7 @@ export default function ExamRoom() {
       setFlagged(loadFlags(active.id));
       elapsedRef.current = active.timeUsedSeconds;
       setElapsed(active.timeUsedSeconds);
-      setPhase('taking');
+      setPhase(e.proctoring.enabled ? 'ready' : 'taking');
       return;
     }
     const done = (await getAttemptsForParticipant(e.id, part.id)).filter(
@@ -132,6 +140,25 @@ export default function ExamRoom() {
       setPhase(e instanceof AudienceCapError ? 'full' : 'exhausted');
     }
   };
+
+  const stopProctoringStreams = useCallback(() => {
+    proctoringStreams.camera?.getTracks().forEach((track) => track.stop());
+    proctoringStreams.screen?.getTracks().forEach((track) => track.stop());
+    setProctoringStreams({ camera: null, screen: null });
+    if (document.fullscreenElement) void document.exitFullscreen().catch(() => undefined);
+  }, [proctoringStreams.camera, proctoringStreams.screen]);
+
+  const recordExamFinished = useCallback(() => {
+    if (!exam?.proctoring.enabled || !attempt || !participant) return Promise.resolve();
+    return recordProctoringEvent({
+      examId: exam.id,
+      attemptId: attempt.id,
+      participantId: participant.id,
+      type: 'exam_finished',
+      severity: 'info',
+      details: {},
+    });
+  }, [attempt, exam, participant]);
 
   /* ── Timer ────────────────────────────────────────────────────── */
   useEffect(() => {
@@ -237,31 +264,38 @@ export default function ExamRoom() {
 
   /* ── Auto-submit ──────────────────────────────────────────────── */
   const handleAutoSubmit = useCallback(() => {
-    if (!attempt) return;
+    if (!attempt || autoSubmittingRef.current) return;
+    autoSubmittingRef.current = true;
     // Don't clear timerRef/autoSaveRef or flip phase until the write actually
     // succeeds — on failure (network blip) the attempt stays 'in-progress'
     // server-side, so autosave must keep running rather than optimistically
     // showing a success screen the DB doesn't back up (see handleSubmit).
-    submitAttempt(attempt.id, answersRef.current, elapsedRef.current, 'auto')
+    recordExamFinished()
+      .catch(() => undefined)
+      .then(() => submitAttempt(attempt.id, answersRef.current, elapsedRef.current, 'auto'))
       .then(() => {
+        stopProctoringStreams();
         if (timerRef.current) clearInterval(timerRef.current);
         if (autoSaveRef.current) clearInterval(autoSaveRef.current);
         setPhase('submitted');
       })
       .catch(() => {
+        autoSubmittingRef.current = false;
         toast.error("Échec de l'envoi automatique — nouvelle tentative en cours…", { duration: 8000 });
         // Time is already up; retry shortly rather than leaving the
         // participant stuck on an expired timer with no way to submit.
         setTimeout(() => handleAutoSubmit(), 5000);
       });
-  }, [attempt]);
+  }, [attempt, recordExamFinished, stopProctoringStreams]);
 
   /* ── Manual submit ────────────────────────────────────────────── */
   const handleSubmit = async () => {
     if (!attempt) return;
     setSubmitting(true);
     try {
+      await recordExamFinished();
       const result = await submitAttempt(attempt.id, answersRef.current, elapsedRef.current, 'manual');
+      stopProctoringStreams();
       if (timerRef.current) clearInterval(timerRef.current);
       if (autoSaveRef.current) clearInterval(autoSaveRef.current);
       setAttempt(result);
@@ -424,6 +458,16 @@ export default function ExamRoom() {
 
   if (phase === 'ready' && exam) return (
     <Screen maxWidth={520}>
+      {exam.proctoring.enabled && participant ? (
+        <ProctoringPreflight
+          exam={exam}
+          participant={participant}
+          onReady={(streams) => {
+            setProctoringStreams(streams);
+            void handleStart();
+          }}
+        />
+      ) : (
       <div style={{
         background: 'var(--ap-card)', border: 'var(--ap-border-w) solid var(--ap-line)',
         borderRadius: 'var(--ap-r-lg)', padding: '28px 28px', width: '100%', textAlign: 'center',
@@ -453,6 +497,7 @@ export default function ExamRoom() {
         </div>
         <button style={primaryBtnSt} onClick={handleStart}>Commencer l'examen →</button>
       </div>
+      )}
     </Screen>
   );
 
@@ -503,6 +548,15 @@ export default function ExamRoom() {
 
     return (
       <div style={{ minHeight: '100vh', paddingBottom: 100 }}>
+        {exam.proctoring.enabled && participant && (
+          <ProctoringMonitor
+            exam={exam}
+            attempt={attempt}
+            participant={participant}
+            streams={proctoringStreams}
+            onAutoSubmit={handleAutoSubmit}
+          />
+        )}
         <style>{`
           .er-opt { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border: var(--ap-border-w) solid var(--ap-line); border-radius: var(--ap-r-sm); cursor: pointer; transition: border-color .15s, background .15s; margin-bottom: 8px; font-weight: 700; font-size: 14px; color: var(--ap-ink); background: var(--ap-paper); }
           .er-opt:hover { border-color: var(--ap-brand); background: var(--ap-brand-soft); }

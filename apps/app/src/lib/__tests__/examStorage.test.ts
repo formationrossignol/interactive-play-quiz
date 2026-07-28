@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getCurrentUser } from '../auth';
 import { createExam, startAttempt, type Exam } from '../examStorage';
 import { PlanLimitError, AudienceCapError } from '../plans';
+import { DEFAULT_PROCTORING_CONFIG } from '../proctoring';
 
 vi.mock('../auth', () => ({ getCurrentUser: vi.fn() }));
 vi.mock('../supabase', () => ({ supabase: { functions: { invoke: vi.fn() } } }));
@@ -23,6 +24,7 @@ const examPayload = (): Omit<Exam, 'id' | 'hostId' | 'joinCode' | 'createdAt' | 
   shuffleQuestions: false, shuffleAnswers: false, passingScore: 70,
   showResultsPolicy: 'immediately', showDetailPolicy: 'score-only',
   scoreRetentionPolicy: 'best', status: 'draft',
+  proctoring: DEFAULT_PROCTORING_CONFIG,
 });
 
 const makeExam = (maxParticipants: number | null): Exam => ({
@@ -32,6 +34,7 @@ const makeExam = (maxParticipants: number | null): Exam => ({
   showResultsPolicy: 'immediately', showDetailPolicy: 'score-only', scoreRetentionPolicy: 'best',
   status: 'open', joinCode: 'ABC123', createdAt: '2026-01-01T00:00:00Z',
   updatedAt: '2026-01-01T00:00:00Z', maxParticipants, questionsPublic: [],
+  proctoring: DEFAULT_PROCTORING_CONFIG,
 });
 
 function httpError(status: number, body: Record<string, unknown>) {
