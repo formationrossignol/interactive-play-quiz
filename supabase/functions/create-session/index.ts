@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders, handleCorsPreflight } from "../_shared/cors.ts";
+import { getCallerUserId } from "../_shared/auth.ts";
 
 interface FullQuestion {
   id: string;
@@ -70,6 +71,17 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Every function in config.toml defaults to verify_jwt = true, so a valid
+    // Authorization bearer is already guaranteed by the platform gateway —
+    // this only fails if the request somehow arrived without one.
+    const hostUserId = getCallerUserId(req);
+    if (!hostUserId) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
@@ -94,13 +106,20 @@ Deno.serve(async (req) => {
       p_max_participants: max_participants ?? null,
       p_live_reactions_enabled: live_reactions_enabled ?? true,
       p_end_chat_enabled: end_chat_enabled ?? true,
+      p_host_user_id: hostUserId,
     });
 
     if (rpcError) {
-      return new Response(JSON.stringify({ error: "Failed to create session" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      // errcode 42501 (insufficient_privilege) is what create_session_atomic
+      // raises when this game_code already belongs to a different host.
+      const isOwnershipConflict = rpcError.code === "42501";
+      return new Response(
+        JSON.stringify({ error: isOwnershipConflict ? "Session owned by a different host" : "Failed to create session" }),
+        {
+          status: isOwnershipConflict ? 403 : 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
     }
 
     return new Response(JSON.stringify({ ok: true }), {

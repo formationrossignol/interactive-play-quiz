@@ -41,6 +41,17 @@ const inHours = (n: number) => {
   return d.toISOString().slice(0, 16);
 };
 
+// ExamRoom only renders an answerable UI for these types (true-false,
+// single/multiple-choice, short-answer) — a quiz containing ranking/
+// matching/fill-blank/drag-drop/hotspot/slider questions would silently
+// render no input at all for those, and they'd never score correctly either
+// (calculateScore's structural comparison only covers these same types).
+const EXAM_SUPPORTED_TYPES = new Set(['true-false', 'single-choice', 'multiple-choice', 'short-answer']);
+
+function unsupportedQuestionTypes(quiz: { questions: Array<{ type: string }> }): string[] {
+  return [...new Set(quiz.questions.filter((q) => !EXAM_SUPPORTED_TYPES.has(q.type)).map((q) => q.type))];
+}
+
 interface FormState {
   title: string;
   description: string;
@@ -196,6 +207,11 @@ export default function ExamBuilder() {
   const handleSave = async (publish: boolean) => {
     if (!form.title.trim()) { toast.error('Titre requis'); return; }
     if (!form.quizId) { toast.error('Choisir un quiz source'); return; }
+    const sourceQuiz = quizzes.find((q) => q.id === form.quizId);
+    if (sourceQuiz && unsupportedQuestionTypes(sourceQuiz).length > 0) {
+      toast.error('Ce quiz contient des types de questions non pris en charge par les examens (classement, appariement, texte à trous…)');
+      return;
+    }
     if (new Date(form.closeAt) <= new Date(form.openAt)) {
       toast.error('La date de fermeture doit être après l\'ouverture');
       return;
@@ -450,10 +466,25 @@ export default function ExamBuilder() {
               }}
             >
               <option value="">Choisir un quiz</option>
-              {quizzes.map((q) => (
-                <option key={q.id} value={q.id}>{q.title} ({q.questions.length} questions)</option>
-              ))}
+              {quizzes.map((q) => {
+                const unsupported = unsupportedQuestionTypes(q);
+                return (
+                  <option key={q.id} value={q.id} disabled={unsupported.length > 0}>
+                    {q.title} ({q.questions.length} questions)
+                    {unsupported.length > 0 ? ' — types non supportés par les examens' : ''}
+                  </option>
+                );
+              })}
             </select>
+            {form.quizId && (() => {
+              const selected = quizzes.find((q) => q.id === form.quizId);
+              const unsupported = selected ? unsupportedQuestionTypes(selected) : [];
+              return unsupported.length > 0 ? (
+                <p className="eb-hint" style={{ color: 'var(--ap-danger, #d33)' }}>
+                  Ce quiz contient des questions de type {unsupported.join(', ')}, non prises en charge par les examens.
+                </p>
+              ) : null;
+            })()}
           </div>
         </div>
         )}

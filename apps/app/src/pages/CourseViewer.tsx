@@ -544,7 +544,7 @@ const CourseViewer = () => {
     if (!courseId) { navigate("/my-courses"); return; }
 
     const local = getCourseById(courseId);
-    if (local) {
+    if (local && (local.userId === user.id || local.isPublic)) {
       setCourse(local);
       setProgress(getCourseProgress(courseId, user.id));
       // No auto-select: land on the course overview first (like Udemy/Coursera/edX),

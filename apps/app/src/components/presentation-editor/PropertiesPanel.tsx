@@ -163,7 +163,15 @@ export function PropertiesPanel({ slideId }: { slideId: string }) {
 
   return (
     <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 12, width: 240 }}>
-      <div key={el.id} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+      {/* NumberField is an uncontrolled input (defaultValue) — remounting on
+         every geometry change, not just el.id, keeps these fields in sync
+         when the element is dragged/resized on canvas. Safe against
+         clobbering in-progress typing here: dragging requires pointer focus
+         on the canvas, which already blurs any input in this panel. */}
+      <div
+        key={`${el.id}-${el.x}-${el.y}-${el.width}-${el.height}-${el.rotation}-${el.opacity}`}
+        style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}
+      >
         <NumberField label="X" value={el.x} onCommit={(x) => commit({ x })} />
         <NumberField label="Y" value={el.y} onCommit={(y) => commit({ y })} />
         <NumberField label="Largeur" value={el.width} onCommit={(width) => commit({ width })} />

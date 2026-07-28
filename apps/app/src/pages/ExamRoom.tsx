@@ -260,21 +260,40 @@ export default function ExamRoom() {
   /* ── Auto-submit ──────────────────────────────────────────────── */
   const handleAutoSubmit = useCallback(() => {
     if (!attempt) return;
-    void submitAttempt(attempt.id, answersRef.current, elapsedRef.current, 'auto');
-    setPhase('submitted');
+    // Don't clear timerRef/autoSaveRef or flip phase until the write actually
+    // succeeds — on failure (network blip) the attempt stays 'in-progress'
+    // server-side, so autosave must keep running rather than optimistically
+    // showing a success screen the DB doesn't back up (see handleSubmit).
+    submitAttempt(attempt.id, answersRef.current, elapsedRef.current, 'auto')
+      .then(() => {
+        if (timerRef.current) clearInterval(timerRef.current);
+        if (autoSaveRef.current) clearInterval(autoSaveRef.current);
+        setPhase('submitted');
+      })
+      .catch(() => {
+        toast.error("Échec de l'envoi automatique — nouvelle tentative en cours…", { duration: 8000 });
+        // Time is already up; retry shortly rather than leaving the
+        // participant stuck on an expired timer with no way to submit.
+        setTimeout(() => handleAutoSubmit(), 5000);
+      });
   }, [attempt]);
 
   /* ── Manual submit ────────────────────────────────────────────── */
   const handleSubmit = async () => {
     if (!attempt) return;
     setSubmitting(true);
-    if (timerRef.current) clearInterval(timerRef.current);
-    if (autoSaveRef.current) clearInterval(autoSaveRef.current);
-    const result = await submitAttempt(attempt.id, answersRef.current, elapsedRef.current, 'manual');
-    setAttempt(result);
-    setPhase('submitted');
-    setSubmitting(false);
-    setConfirmSubmit(false);
+    try {
+      const result = await submitAttempt(attempt.id, answersRef.current, elapsedRef.current, 'manual');
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (autoSaveRef.current) clearInterval(autoSaveRef.current);
+      setAttempt(result);
+      setPhase('submitted');
+      setConfirmSubmit(false);
+    } catch {
+      toast.error("Échec de l'envoi. Vérifiez votre connexion et réessayez.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   /* ── Retained attempt (for the exhausted/submitted screens) ──────── */

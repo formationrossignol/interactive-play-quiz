@@ -297,7 +297,14 @@ export function SlideCanvas({ userId }: { userId: string }) {
             }}
           />
         ))}
-        <LineArrowLayer lines={lines} width={presentation.width} height={presentation.height} />
+        <LineArrowLayer
+          lines={lines}
+          width={presentation.width}
+          height={presentation.height}
+          selectedIds={selectedIds}
+          activeTool={activeTool}
+          onSelect={(id, additive) => { if (additive) toggleSelect(id); else select([id]); }}
+        />
         <SelectionOverlay slideId={slide.id} elements={selectable} selectedIds={selectedIds} zoom={zoom} />
         {selectedIds.size === 1 && (() => {
           const onlyId = [...selectedIds][0];
