@@ -16,6 +16,7 @@ import {
   Upload,
 } from "lucide-react";
 import { useDocStore } from "./store/useDocStore";
+import { useHistoryStore } from "./store/useHistoryStore";
 import { useEditorUIStore } from "./store/useEditorUIStore";
 import { useAutosave } from "./hooks/useAutosave";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
@@ -30,6 +31,7 @@ import { isLegacySlideShape, migrateLegacySlideToPresentation } from "./utils/mi
 import { createBlankPresentation, type Presentation } from "./types/presentation";
 import { CollaboratorsButton } from "@/components/CollaboratorsButton";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Separator } from "@/components/ui/separator";
 import { showError } from "@/lib/errorTaxonomy";
 import { PresentationImportDialog } from "./import/PresentationImportDialog";
 import { createSlideFromLayout } from "./layouts/slideLayouts";
@@ -76,6 +78,10 @@ export function PresentationEditor({ contentId, userId, initialPresenting = fals
 
   useEffect(() => {
     let cancelled = false;
+    // Undo/redo history is a module-level store, not scoped per document —
+    // without this it leaks across presentations: switching from A to B then
+    // pressing Ctrl+Z in B would load a stale snapshot from A.
+    useHistoryStore.getState().reset();
     async function init() {
       if (!contentId) {
         const blank = createBlankPresentation(`new-${Date.now()}`);
@@ -192,7 +198,7 @@ export function PresentationEditor({ contentId, userId, initialPresenting = fals
           </span>
         )}
         </nav>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ fontSize: 12, color: "var(--ap-muted)" }}>
             {status === "saving" ? "Enregistrement…" : status === "saved" ? "Enregistré" : status === "error" ? "Erreur d'enregistrement" : ""}
           </span>
@@ -201,6 +207,9 @@ export function PresentationEditor({ contentId, userId, initialPresenting = fals
             contentTitle={presentation.title}
             canManage={contentOwnerId === userId}
           />
+
+          <Separator orientation="vertical" className="mx-1 h-6 bg-[var(--ap-line)]" />
+
           <button
             className="ap-btn ap-btn--sm ap-btn--ghost ap-icon-btn"
             aria-label="Réduire le zoom"
@@ -218,6 +227,9 @@ export function PresentationEditor({ contentId, userId, initialPresenting = fals
           >
             <Plus size={16} aria-hidden="true" />
           </button>
+
+          <Separator orientation="vertical" className="mx-1 h-6 bg-[var(--ap-line)]" />
+
           <button className="ap-btn ap-btn--sm ap-btn--ghost" onClick={fitToCanvas}>
             <Scan size={15} aria-hidden="true" />
             Ajuster
@@ -226,36 +238,46 @@ export function PresentationEditor({ contentId, userId, initialPresenting = fals
             <Grid2X2 size={15} aria-hidden="true" />
             Toutes les slides
           </button>
+
+          <Separator orientation="vertical" className="mx-1 h-6 bg-[var(--ap-line)]" />
+
           <PresentationExportMenu presentation={presentation} activeSlideId={activeSlideId} />
           <button className="ap-btn ap-btn--sm ap-btn--ghost" onClick={() => setImportOpen(true)}>
             <Upload size={15} aria-hidden="true" />
             Importer
           </button>
-          <button className="ap-btn ap-btn--sm ap-btn--pill" onClick={() => setPresenting(true)}>
-            <Play size={15} aria-hidden="true" />
-            Présenter
-          </button>
+
+          <Separator orientation="vertical" className="mx-1 h-6 bg-[var(--ap-line)]" />
+
           <button className="ap-btn ap-btn--sm ap-btn--ghost" onClick={() => setPresenterMode(true)}>
             <PresenterIcon size={15} aria-hidden="true" />
             Mode présentateur
+          </button>
+          <button className="ap-btn ap-btn--sm ap-btn--pill" onClick={() => setPresenting(true)}>
+            <Play size={15} aria-hidden="true" />
+            Présenter
           </button>
         </div>
       </div>
       <EditorToolbar slideId={activeSlideId} />
       <div style={{ flex: 1, display: "flex", overflow: "hidden", position: "relative" }}>
         {leftPanelOpen ? (
-          <div style={{ position: "relative", flexShrink: 0, borderRight: "var(--ap-border-w) solid var(--ap-line)", background: "var(--ap-card)" }}>
-            <SlideNavigator />
-            <button
-              type="button"
-              className="ap-btn ap-btn--ghost ap-icon-btn"
-              aria-label="Rétracter les miniatures"
-              title="Rétracter les miniatures"
-              onClick={() => setLeftPanelOpen(false)}
-              style={{ position: "absolute", top: 8, right: -14, zIndex: 6, width: 30, height: 30, background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)" }}
-            >
-              <PanelLeftClose size={16} />
-            </button>
+          <div style={{ display: "flex", flexDirection: "column", flexShrink: 0, borderRight: "var(--ap-border-w) solid var(--ap-line)", background: "var(--ap-card)" }}>
+            <div style={{ display: "flex", justifyContent: "flex-end", padding: "6px 6px 0" }}>
+              <button
+                type="button"
+                className="ap-btn ap-btn--ghost ap-icon-btn"
+                aria-label="Rétracter les miniatures"
+                title="Rétracter les miniatures"
+                onClick={() => setLeftPanelOpen(false)}
+                style={{ width: 26, height: 26 }}
+              >
+                <PanelLeftClose size={15} />
+              </button>
+            </div>
+            <div style={{ flex: 1, minHeight: 0 }}>
+              <SlideNavigator />
+            </div>
           </div>
         ) : (
           <button
@@ -270,18 +292,22 @@ export function PresentationEditor({ contentId, userId, initialPresenting = fals
         )}
         <SlideCanvas userId={userId} />
         {rightPanelOpen ? (
-          <div style={{ position: "relative", flexShrink: 0, borderLeft: "var(--ap-border-w) solid var(--ap-line)", background: "var(--ap-card)", overflowY: "auto" }}>
-            <button
-              type="button"
-              className="ap-btn ap-btn--ghost ap-icon-btn"
-              aria-label="Rétracter les propriétés"
-              title="Rétracter les propriétés"
-              onClick={() => setRightPanelOpen(false)}
-              style={{ position: "absolute", top: 8, left: -14, zIndex: 6, width: 30, height: 30, background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)" }}
-            >
-              <PanelRightClose size={16} />
-            </button>
-            <PropertiesPanel slideId={activeSlideId} />
+          <div style={{ display: "flex", flexDirection: "column", flexShrink: 0, borderLeft: "var(--ap-border-w) solid var(--ap-line)", background: "var(--ap-card)" }}>
+            <div style={{ display: "flex", justifyContent: "flex-start", padding: "6px 6px 0" }}>
+              <button
+                type="button"
+                className="ap-btn ap-btn--ghost ap-icon-btn"
+                aria-label="Rétracter les propriétés"
+                title="Rétracter les propriétés"
+                onClick={() => setRightPanelOpen(false)}
+                style={{ width: 26, height: 26 }}
+              >
+                <PanelRightClose size={15} />
+              </button>
+            </div>
+            <div style={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
+              <PropertiesPanel slideId={activeSlideId} />
+            </div>
           </div>
         ) : (
           <button

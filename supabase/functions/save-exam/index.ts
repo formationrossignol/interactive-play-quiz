@@ -1,6 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders, handleCorsPreflight } from "../_shared/cors.ts";
-import { getAuthenticatedUser } from "../_shared/auth.ts";
+import { getCallerUserId } from "../_shared/auth.ts";
 import { stripAnswerKey } from "../_shared/examScoring.ts";
 import { AUDIENCE_CAP, EXAM_CAP, normalizePlan } from "../_shared/plans.ts";
 
@@ -45,8 +45,8 @@ Deno.serve(async (req) => {
   if (preflight) return preflight;
 
   try {
-    const user = await getAuthenticatedUser(req);
-    if (!user) return jsonResponse({ error: "not_authenticated" }, 401);
+    const userId = getCallerUserId(req);
+    if (!userId) return jsonResponse({ error: "not_authenticated" }, 401);
 
     const body: SaveExamBody = await req.json();
     if (!body.title?.trim() || !body.quizId) {
@@ -64,23 +64,23 @@ Deno.serve(async (req) => {
       const { data: existing, error: existingError } = await supabaseAdmin
         .from("exams").select("host_id").eq("id", body.examId).maybeSingle();
       if (existingError || !existing) return jsonResponse({ error: "not_found" }, 404);
-      if (existing.host_id !== user.id) return jsonResponse({ error: "forbidden" }, 403);
+      if (existing.host_id !== userId) return jsonResponse({ error: "forbidden" }, 403);
     } else {
       const { data: profile } = await supabaseAdmin
-        .from("profiles").select("plan").eq("id", user.id).maybeSingle();
+        .from("profiles").select("plan").eq("id", userId).maybeSingle();
       const plan = normalizePlan(profile?.plan);
       const cap = EXAM_CAP[plan];
       if (cap !== null) {
         const { count } = await supabaseAdmin
           .from("exams").select("id", { count: "exact", head: true })
-          .eq("host_id", user.id).neq("status", "archived");
+          .eq("host_id", userId).neq("status", "archived");
         if ((count ?? 0) >= cap) return jsonResponse({ error: "plan_limit", cap, plan }, 409);
       }
     }
 
     const { data: quizRow, error: quizError } = await supabaseAdmin
       .from("content").select("data")
-      .eq("type", "quiz").eq("source_id", body.quizId).eq("user_id", user.id)
+      .eq("type", "quiz").eq("source_id", body.quizId).eq("user_id", userId)
       .maybeSingle();
     if (quizError || !quizRow) return jsonResponse({ error: "quiz_not_found" }, 404);
 
@@ -119,7 +119,7 @@ Deno.serve(async (req) => {
       if (keyError) throw keyError;
     } else {
       const { data: profile } = await supabaseAdmin
-        .from("profiles").select("plan").eq("id", user.id).maybeSingle();
+        .from("profiles").select("plan").eq("id", userId).maybeSingle();
       const plan = normalizePlan(profile?.plan);
       const examId = genExamId();
 
@@ -128,7 +128,7 @@ Deno.serve(async (req) => {
         const { data, error } = await supabaseAdmin
           .from("exams")
           .insert({
-            id: examId, host_id: user.id, join_code: genJoinCode(),
+            id: examId, host_id: userId, join_code: genJoinCode(),
             max_participants: AUDIENCE_CAP[plan], ...rowPatch,
           })
           .select().single();

@@ -1,4 +1,21 @@
-import type { BaseElement, Rect } from "../types/presentation";
+import type { BaseElement, Rect, SlideElement } from "../types/presentation";
+
+/** Lines/arrows render from `points` (absolute slide coords), not x/y/width/
+ *  height — those stay a derived bounding box (see createElement.ts). Any
+ *  code that moves an element by translating x/y (nudge, duplicate, paste,
+ *  group-drag) must translate `points` by the same delta or the line
+ *  desyncs from its own bounding box and silently stops moving on screen. */
+export function translatedElement(el: SlideElement, dx: number, dy: number): SlideElement {
+  if (el.type === "line" || el.type === "arrow") {
+    return {
+      ...el,
+      x: el.x + dx,
+      y: el.y + dy,
+      points: el.points.map(([px, py]) => [px + dx, py + dy]),
+    };
+  }
+  return { ...el, x: el.x + dx, y: el.y + dy };
+}
 
 export function rectsIntersect(a: Rect, b: Rect): boolean {
   return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;

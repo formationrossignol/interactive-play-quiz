@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { ChevronDown, Download, FileArchive, FileImage, FileText, LoaderCircle, Presentation, type LucideIcon } from "lucide-react";
+import { ChevronDown, Download, FileArchive, FileImage, FileText, Presentation, type LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { ButtonShimmerLabel } from "@/components/ui/skeleton";
 import type { Presentation as PresentationDocument } from "../types/presentation";
 import { exportPresentation, type PresentationExportFormat } from "./presentationExport";
 
@@ -35,10 +36,12 @@ export function PresentationExportMenu({ presentation, activeSlideId }: { presen
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="ap-btn ap-btn--sm ap-btn--ghost" disabled={busy}>
-          {busy ? <LoaderCircle size={15} className="animate-spin" /> : <Download size={15} aria-hidden="true" />}
-          Exporter
-          <ChevronDown size={12} aria-hidden="true" />
+        <button className="ap-btn ap-btn--sm ap-btn--ghost" disabled={busy} aria-busy={busy || undefined}>
+          <ButtonShimmerLabel loading={busy}>
+            <Download size={15} aria-hidden="true" />
+            Exporter
+            <ChevronDown size={12} aria-hidden="true" />
+          </ButtonShimmerLabel>
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" style={{ minWidth: 360, padding: 7, background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-md)", boxShadow: "var(--ap-shadow-card)" }}>

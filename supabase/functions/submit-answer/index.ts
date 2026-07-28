@@ -82,13 +82,25 @@ Deno.serve(async (req) => {
 
     const { data: stateRow, error: stateError } = await supabase
       .from("session_state")
-      .select("players, question_started_at, current_question_index")
+      .select("players, question_started_at, current_question_index, control")
       .eq("game_code", game_code)
       .single();
 
     if (stateError || !stateRow) {
       return new Response(JSON.stringify({ error: "Session not found" }), {
         status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Host-authoritative kick list: a removed player has no row left in
+    // `players`, so without this check a kicked client's retry would fall
+    // through to the "new player" branch below and get silently re-upserted,
+    // defeating the kick.
+    const kickedIds = (stateRow.control as { kickedIds?: unknown } | null)?.kickedIds;
+    if (Array.isArray(kickedIds) && kickedIds.includes(player_id)) {
+      return new Response(JSON.stringify({ error: "You have been removed from this session" }), {
+        status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -138,7 +150,18 @@ Deno.serve(async (req) => {
       ...(existingPlayer ?? { id: player_id, name: "", avatar: "", score: 0, joinedAt: new Date().toISOString() }),
       score: (existingPlayer?.score ?? 0) + earnedPoints,
       correctAnswers: (existingPlayer?.correctAnswers ?? 0) + (correct ? 1 : 0),
-      lastAnswer: typeof answer === "number" ? answer : undefined,
+      // true-false answers arrive as the strings 'true'/'false' (see
+      // PlayerView.tsx); map them to the 0/1 index QuizSession's answer-
+      // distribution screen expects, matching PlayerView's own optimistic
+      // local mapping (line ~620) so host and player agree on the shape.
+      lastAnswer:
+        typeof answer === "number"
+          ? answer
+          : answer === "true"
+          ? 0
+          : answer === "false"
+          ? 1
+          : undefined,
       lastAnswerText:
         typeof answer === "string" && (question.type === "short-answer" || question.type === "open-text")
           ? answer.slice(0, 500)

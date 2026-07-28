@@ -43,6 +43,7 @@ const WheelTool = () => {
   const [items, setItems] = useState<string[]>(loadItems);
   const [draft, setDraft] = useState(items.join("\n"));
   const [winner, setWinner] = useState<string | null>(null);
+  const [winnerIndex, setWinnerIndex] = useState<number | null>(null);
 
   useEffect(() => {
     if (!winner) return;
@@ -61,15 +62,20 @@ const WheelTool = () => {
     if (next.length === 0) return;
     setItems(next);
     setWinner(null);
+    setWinnerIndex(null);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
   };
 
   const removeWinnerFromList = () => {
-    if (!winner) return;
-    const next = items.filter((item) => item !== winner);
+    if (winnerIndex === null) return;
+    // Filter by the drawn index, not the text value — items can contain
+    // intentional duplicates (weighting the wheel), and removing by value
+    // would delete every occurrence instead of just the one drawn.
+    const next = items.filter((_, idx) => idx !== winnerIndex);
     setItems(next);
     setDraft(next.join("\n"));
     setWinner(null);
+    setWinnerIndex(null);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
   };
 
@@ -114,17 +120,17 @@ const WheelTool = () => {
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "20px" }}>
-            <SpinWheel items={items} onResult={(item) => setWinner(item)} />
+            <SpinWheel items={items} onResult={(item, index) => { setWinner(item); setWinnerIndex(index); }} />
           </div>
         </div>
       </div>
 
       {winner && (
-        <div style={overlayStyle} onClick={() => setWinner(null)}>
+        <div style={overlayStyle} onClick={() => { setWinner(null); setWinnerIndex(null); }}>
           <div style={panelStyle} onClick={(e) => e.stopPropagation()}>
             <button
               type="button"
-              onClick={() => setWinner(null)}
+              onClick={() => { setWinner(null); setWinnerIndex(null); }}
               className="ap-btn ap-btn--ghost ap-btn--sm ap-icon-btn"
               aria-label="Fermer"
               style={{ position: "absolute", top: 12, right: 12 }}
@@ -141,7 +147,7 @@ const WheelTool = () => {
             </p>
 
             <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
-              <button type="button" className="ap-btn ap-btn--sm" onClick={() => setWinner(null)}>
+              <button type="button" className="ap-btn ap-btn--sm" onClick={() => { setWinner(null); setWinnerIndex(null); }}>
                 <RotateCw className="h-3.5 w-3.5" />
                 Rejouer
               </button>

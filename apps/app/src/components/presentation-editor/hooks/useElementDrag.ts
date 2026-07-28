@@ -2,7 +2,7 @@ import { useRef, useCallback } from "react";
 import { useDocStore } from "../store/useDocStore";
 import { useEditorUIStore } from "../store/useEditorUIStore";
 import { useHistoryStore } from "../store/useHistoryStore";
-import { snapDelta } from "../utils/geometry";
+import { snapDelta, translatedElement } from "../utils/geometry";
 import type { BaseElement } from "../types/presentation";
 
 interface DragTarget {
@@ -26,7 +26,18 @@ export function useElementDrag(slideId: string, nodesRef: React.MutableRefObject
     const ui = useEditorUIStore.getState();
     const slide = doc.presentation!.slides.find((s) => s.id === slideId)!;
 
-    const activeIds = ui.selectedIds.has(draggedId) ? [...ui.selectedIds] : [draggedId];
+    const rawActiveIds = ui.selectedIds.has(draggedId) ? [...ui.selectedIds] : [draggedId];
+    // A group is a virtual selection container with no visible content of
+    // its own (GroupElementView renders null) — dragging its (invisible)
+    // bounding-box node alone moved nothing on screen. Expand any selected
+    // group into its childIds so they're what actually gets dragged.
+    const activeIdSet = new Set<string>();
+    for (const id of rawActiveIds) {
+      const el = slide.elements.find((x) => x.id === id);
+      activeIdSet.add(id);
+      if (el?.type === "group") for (const childId of el.childIds) activeIdSet.add(childId);
+    }
+    const activeIds = [...activeIdSet];
 
     const targets: DragTarget[] = activeIds
       .map((id) => {
@@ -90,7 +101,16 @@ export function useElementDrag(slideId: string, nodesRef: React.MutableRefObject
         useHistoryStore.getState().commit();
         useDocStore.getState().updateElements(
           slideId,
-          targets.map((t) => ({ id: t.id, patch: { x: t.startX + dx, y: t.startY + dy } })),
+          targets.map((t) => {
+            const el = slide.elements.find((x) => x.id === t.id);
+            if (el && (el.type === "line" || el.type === "arrow")) {
+              const moved = translatedElement({ ...el, x: t.startX, y: t.startY }, dx, dy);
+              return moved.type === "line" || moved.type === "arrow"
+                ? { id: t.id, patch: { x: moved.x, y: moved.y, points: moved.points } }
+                : { id: t.id, patch: { x: t.startX + dx, y: t.startY + dy } };
+            }
+            return { id: t.id, patch: { x: t.startX + dx, y: t.startY + dy } };
+          }),
         );
       }
       // clear the imperative transform now that the store holds the real position (or never changed)

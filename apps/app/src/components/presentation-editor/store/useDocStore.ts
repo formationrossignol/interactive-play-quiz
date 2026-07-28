@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { Presentation, PresentationFooter, PresentationTheme, Slide, SlideBackground, SlideElement } from "../types/presentation";
+import { blankRichText } from "../utils/createElement";
 import { applySlideLayout, createSlideFromLayout, type SlideLayoutId } from "../layouts/slideLayouts";
 import { DEFAULT_PRESENTATION_THEME, PRESENTATION_TEMPLATES } from "../templates/presentationTemplates";
 
@@ -48,6 +49,49 @@ function nextId(prefix: string): string {
   return `${prefix}-${Date.now()}-${uid}`;
 }
 
+function num(v: unknown, fallback: number): number {
+  return typeof v === "number" && Number.isFinite(v) ? v : fallback;
+}
+
+function isValidRichText(v: unknown): boolean {
+  return !!v && typeof v === "object" && (v as { type?: unknown }).type === "doc" && Array.isArray((v as { content?: unknown }).content);
+}
+
+/** Defends against malformed data reaching the store — from an imported
+ *  .json file with no schema of its own, or a legacy/hand-edited Supabase
+ *  content row. Missing/non-finite geometry becomes 0 rather than NaN
+ *  propagating into style props and layout math elsewhere (drag, marquee
+ *  intersection, group bounding box); invalid richText (the actual crash
+ *  site — see TextElementView) becomes a blank doc instead of whatever
+ *  garbage was stored. Elements with no id/type at all are dropped.
+ */
+function sanitizePresentation(raw: Presentation): Presentation {
+  return {
+    ...raw,
+    slides: (raw.slides ?? []).map((slide) => ({
+      ...slide,
+      elements: (slide.elements ?? [])
+        .filter((el): el is SlideElement => !!el && typeof el === "object" && typeof el.id === "string" && typeof el.type === "string")
+        .map((el) => {
+          const base = {
+            ...el,
+            x: num(el.x, 0),
+            y: num(el.y, 0),
+            width: num(el.width, 100),
+            height: num(el.height, 100),
+            rotation: num(el.rotation, 0),
+            zIndex: num(el.zIndex, 0),
+            opacity: typeof el.opacity === "number" && Number.isFinite(el.opacity) ? el.opacity : 1,
+          };
+          if (base.type === "text" && !isValidRichText(base.richText)) {
+            return { ...base, richText: blankRichText() };
+          }
+          return base;
+        }),
+    })),
+  };
+}
+
 function cloneSlide(source: Slide, id: string): Slide {
   const elementIds = new Map(source.elements.map((element) => [element.id, nextId("el")]));
   const elements = source.elements.map((element): SlideElement => {
@@ -82,7 +126,7 @@ export const useDocStore = create<DocState>((set, get) => ({
   presentation: null,
 
   load: (presentation) => set({
-    presentation: {
+    presentation: sanitizePresentation({
       ...presentation,
       theme: { ...DEFAULT_PRESENTATION_THEME, ...presentation.theme },
       footer: {
@@ -93,7 +137,7 @@ export const useDocStore = create<DocState>((set, get) => ({
         slideNumberPosition: "right",
         ...presentation.footer,
       },
-    },
+    }),
   }),
   exportJSON: () => JSON.stringify(get().presentation),
   importJSON: (json) => {

@@ -10,6 +10,20 @@
 --   - exam_attempts_read_published allowing anyone holding an exam's
 --     internal uuid to read every participant's name/email/answers/score,
 --     for as long as the exam stays published
+--
+-- Sequenced after 20260728140000_exams_public_read_exclude_drafts.sql (a
+-- narrower same-day fix from a separate branch that scoped exams_public_read
+-- to `host_id = auth.uid() or status <> 'draft'` — better than the original
+-- `using (true)` but still lets anyone enumerate every non-draft exam across
+-- every host). That migration's own comment explicitly deferred the fuller
+-- fix to this project. This migration's RLS section below supersedes it:
+-- exams_public_read is dropped entirely, not narrowed, since participant
+-- lookup no longer needs table-level access at all (get-exam-by-code).
+-- Also supersedes 20260728150000_append_exam_attempt_log.sql's RPC, which
+-- exam_attempts_update_own's tightened check (below) would otherwise still
+-- allow — save_exam_answers replaces its only caller (saveAnswers) in one
+-- atomic statement instead of two round trips. append_exam_attempt_log
+-- itself is left in place (unused, harmless) rather than dropped here.
 
 -- ── exam_answer_keys: private, service-role-only answer key ────────────────
 -- Mirrors session_quiz_answers (20260712120000_session_quiz_answers.sql):
@@ -172,7 +186,7 @@ $$;
 -- join_code as the original comment intended. Participant lookup-by-code now
 -- goes through the get-exam-by-code Edge Function (service-role, filters by
 -- the supplied code); the only remaining table-level read is the host's own.
-drop policy exams_public_read on public.exams;
+drop policy if exists exams_public_read on public.exams;
 create policy exams_owner_read on public.exams for select using (host_id = auth.uid());
 
 -- ── RLS: exam_attempts ──────────────────────────────────────────────────

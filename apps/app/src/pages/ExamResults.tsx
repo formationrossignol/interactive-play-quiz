@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { parseFunctionsError } from '@/lib/functionsError';
 import { getParticipant } from '@/lib/examParticipant';
+import { isAnswerCorrect } from '@/lib/examStorage';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface AttemptView {
@@ -245,11 +246,9 @@ function ExamResultsSkeleton() {
   );
 }
 
-function checkCorrect(q: { type: string }, given: number | string | null | undefined, correctAnswer: unknown): boolean {
+function checkCorrect(q: { type: string }, given: unknown, correctAnswer: unknown): boolean {
   if (given === null || given === undefined || given === '') return false;
-  if (q.type === 'true-false') return String(given).toLowerCase() === String(correctAnswer).toLowerCase();
-  if (q.type === 'short-answer') return String(given).trim().toLowerCase() === String(correctAnswer).trim().toLowerCase();
-  return given === correctAnswer;
+  return isAnswerCorrect(given, { type: q.type, correctAnswer });
 }
 
 function formatAnswer(q: { type: string; answers?: string[] }, given: number | string | null | undefined): string {

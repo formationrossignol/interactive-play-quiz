@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { useDocStore } from "../store/useDocStore";
 import { useEditorUIStore } from "../store/useEditorUIStore";
 import { useHistoryStore } from "../store/useHistoryStore";
+import { translatedElement } from "../utils/geometry";
 import type { SlideElement } from "../types/presentation";
 
 const NUDGE = 1;
@@ -49,7 +50,7 @@ export function useKeyboardShortcuts(slideId: string, disabled = false) {
         const newIds: string[] = [];
         for (const el of clipboardRef.current) {
           const id = `${el.id}-copy-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-          doc.addElement(slideId, { ...el, id, x: el.x + 20, y: el.y + 20 } as SlideElement);
+          doc.addElement(slideId, { ...translatedElement(el, 20, 20), id } as SlideElement);
           newIds.push(id);
         }
         ui.select(newIds);
@@ -62,7 +63,7 @@ export function useKeyboardShortcuts(slideId: string, disabled = false) {
         const newIds: string[] = [];
         for (const el of selected) {
           const id = `${el.id}-dup-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-          doc.addElement(slideId, { ...el, id, x: el.x + 20, y: el.y + 20 } as SlideElement);
+          doc.addElement(slideId, { ...translatedElement(el, 20, 20), id } as SlideElement);
           newIds.push(id);
         }
         ui.select(newIds);
@@ -86,7 +87,12 @@ export function useKeyboardShortcuts(slideId: string, disabled = false) {
         const now = Date.now();
         if (now - lastNudgeAtRef.current > 400) history.commit();
         lastNudgeAtRef.current = now;
-        doc.updateElements(slideId, selected.map((el) => ({ id: el.id, patch: { x: el.x + dx * step, y: el.y + dy * step } })));
+        doc.updateElements(slideId, selected.map((el) => {
+          const moved = translatedElement(el, dx * step, dy * step);
+          return moved.type === "line" || moved.type === "arrow"
+            ? { id: el.id, patch: { x: moved.x, y: moved.y, points: moved.points } }
+            : { id: el.id, patch: { x: moved.x, y: moved.y } };
+        }));
         return;
       }
     }

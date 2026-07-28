@@ -206,14 +206,15 @@ const QuestionBank = () => {
       question: { ...sanitizeQuestionForBank(currentQuestion as Record<string, unknown>), type: questionType, explanation: description.trim() || undefined },
     };
     try {
-      if (editingItem) { updateQuestionBankItem(editingItem.id, payload); toast.success(t("questionBankUpdated")); }
+      if (editingItem) { updateQuestionBankItem(editingItem.id, user.id, payload); toast.success(t("questionBankUpdated")); }
       else { addQuestionToBank(payload); toast.success(t("questionBankAdded")); }
       setDialogOpen(false); resetForm(); refreshItems();
     } catch { toast.error(t("questionBankSaveError")); }
   };
 
   const handleDelete = (item: QuestionBankItem) => {
-    if (!deleteQuestionBankItem(item.id)) return;
+    if (!user) return;
+    if (!deleteQuestionBankItem(item.id, user.id)) return;
     refreshItems();
     toast.success(t("questionBankDeleted"), {
       action: {
@@ -227,7 +228,8 @@ const QuestionBank = () => {
     });
   };
   const handleDuplicate = (item: QuestionBankItem) => {
-    if (duplicateQuestionBankItem(item.id)) { toast.success(t("questionBankDuplicated")); refreshItems(); }
+    if (!user) return;
+    if (duplicateQuestionBankItem(item.id, user.id)) { toast.success(t("questionBankDuplicated")); refreshItems(); }
   };
   const handleTypeChange = (value: QuizQuestionType) => {
     setQuestionType(value);

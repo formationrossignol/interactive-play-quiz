@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders, handleCorsPreflight } from "../_shared/cors.ts";
+import { getCallerUserId } from "../_shared/auth.ts";
 
 interface AdvanceQuestionBody {
   game_code: string;
@@ -23,10 +24,47 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Every function in config.toml defaults to verify_jwt = true, so a valid
+    // Authorization bearer is already guaranteed by the platform gateway —
+    // this only fails if the request somehow arrived without one.
+    const callerUserId = getCallerUserId(req);
+    if (!callerUserId) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
+
+    // game_code alone is not an authorization credential — it's a public,
+    // low-entropy, client-displayed value. Only the user session_state is
+    // bound to (see 20260728120000_session_host_ownership.sql) may advance
+    // it. A NULL host_user_id (session created before that migration) is
+    // treated as unclaimed and allowed through, rather than locking out
+    // in-flight games.
+    const { data: hostRow, error: hostError } = await supabase
+      .from("session_state")
+      .select("host_user_id")
+      .eq("game_code", game_code)
+      .single();
+
+    if (hostError || !hostRow) {
+      return new Response(JSON.stringify({ error: "Session not found" }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (hostRow.host_user_id && hostRow.host_user_id !== callerUserId) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const now = new Date().toISOString();
     const questionStartedAt = game_state === "question" ? now : null;

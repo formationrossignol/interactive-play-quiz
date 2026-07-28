@@ -1,24 +1,21 @@
-import { createClient } from "npm:@supabase/supabase-js@2";
+// verify_jwt = true (the default for every function in config.toml except
+// stripe-webhook) means the platform gateway has already validated the
+// Authorization bearer token's signature and expiry before our code ever
+// runs — so decoding the JWT payload here to read `sub` is safe and avoids
+// an extra network round-trip to GoTrue that `auth.getUser()` would cost.
+export function getCallerUserId(req: Request): string | null {
+  const authHeader = req.headers.get("Authorization") ?? req.headers.get("authorization");
+  if (!authHeader?.startsWith("Bearer ")) return null;
 
-export interface AuthenticatedUser {
-  id: string;
-  email?: string;
-}
+  const token = authHeader.slice("Bearer ".length);
+  const parts = token.split(".");
+  if (parts.length !== 3) return null;
 
-/** Resolves the calling user from the forwarded Authorization header, the
- *  same two-client pattern every host-authenticated function already used
- *  inline (anon-key client just to run auth.getUser(), separate service-role
- *  client for the actual privileged work) — extracted here since save-exam
- *  is the second caller of this exact shape (create-checkout-session was the
- *  first, see supabase/functions/create-checkout-session/index.ts). */
-export async function getAuthenticatedUser(req: Request): Promise<AuthenticatedUser | null> {
-  const authHeader = req.headers.get("Authorization") ?? "";
-  const supabaseUser = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_ANON_KEY")!,
-    { global: { headers: { Authorization: authHeader } } },
-  );
-  const { data, error } = await supabaseUser.auth.getUser();
-  if (error || !data.user) return null;
-  return { id: data.user.id, email: data.user.email };
+  try {
+    const payloadJson = atob(parts[1].replace(/-/g, "+").replace(/_/g, "/").padEnd(parts[1].length + ((4 - (parts[1].length % 4)) % 4), "="));
+    const payload = JSON.parse(payloadJson) as { sub?: string };
+    return payload.sub ?? null;
+  } catch {
+    return null;
+  }
 }

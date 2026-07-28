@@ -444,6 +444,56 @@ export const sendMessage = async (
   return messageFromRow(data);
 };
 
+/* ══ Answer correctness (client-side display only — scoring itself now
+   happens server-side, see supabase/functions/_shared/examScoring.ts) ══ */
+
+/** Structural correctness check used by ExamResults' checkCorrect to render
+ *  the ✓/✕ per-question status against the correction the server already
+ *  computed. `correctAnswer` is `unknown` because the same field carries
+ *  wildly different shapes per question type (string, number[], {leftId,
+ *  rightId}[], {id,correctAnswer}[]) — a plain `===` only ever works for the
+ *  primitive types, so array/object-shaped answers (ranking, matching,
+ *  fill-blank) would otherwise always display wrong regardless of what was
+ *  submitted. Mirrors the equivalent structural fix in
+ *  supabase/functions/_shared/examScoring.ts's calculateScore — keep both in
+ *  sync (browser vs Deno runtime, can't share the module directly). */
+export function isAnswerCorrect(
+  answer: unknown,
+  q: { type: string; correctAnswer?: unknown },
+): boolean {
+  if (q.type === 'true-false') {
+    return String(answer).toLowerCase() === String(q.correctAnswer).toLowerCase();
+  }
+  if (q.type === 'short-answer') {
+    return String(answer).trim().toLowerCase() === String(q.correctAnswer).trim().toLowerCase();
+  }
+  if (q.type === 'ranking') {
+    const order = q.correctAnswer as number[] | undefined;
+    if (!Array.isArray(order) || !Array.isArray(answer)) return false;
+    return order.length === answer.length && order.every((v, i) => v === answer[i]);
+  }
+  if (q.type === 'matching') {
+    const matches = q.correctAnswer as { leftId: string; rightId: string }[] | undefined;
+    if (!Array.isArray(matches) || !Array.isArray(answer)) return false;
+    if (matches.length !== answer.length) return false;
+    const expected = new Map(matches.map((m) => [m.leftId, m.rightId]));
+    return (answer as { leftId: string; rightId: string }[]).every(
+      (m) => expected.get(m.leftId) === m.rightId
+    );
+  }
+  if (q.type === 'fill-blank') {
+    const blanks = q.correctAnswer as { id: string; correctAnswer: string; acceptableAnswers?: string[] }[] | undefined;
+    if (!Array.isArray(blanks) || typeof answer !== 'object' || answer === null) return false;
+    const given = answer as Record<string, string>;
+    return blanks.every((b) => {
+      const submitted = String(given[b.id] ?? '').trim().toLowerCase();
+      const accepted = [b.correctAnswer, ...(b.acceptableAnswers ?? [])].map((a) => a.trim().toLowerCase());
+      return accepted.includes(submitted);
+    });
+  }
+  return answer === q.correctAnswer;
+}
+
 /* ══ Best score for participant ════════════════════════════════ */
 
 export async function getRetainedAttempt(exam: Exam, participantId: string): Promise<Attempt | null> {

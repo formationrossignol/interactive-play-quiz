@@ -3,6 +3,7 @@ import { FileUp, Link2, LoaderCircle, Presentation, Upload } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { importGoogleSlidesPresentation, importPresentationFile } from "./presentationImport";
 import type { Presentation as PresentationDocument } from "../types/presentation";
+import { ButtonShimmerLabel } from "@/components/ui/skeleton";
 
 interface ImportProgressState {
   message: string;
@@ -136,9 +137,10 @@ export function PresentationImportDialog({
                 type="button"
                 className="ap-btn ap-btn--pill ap-btn--sm"
                 disabled={!googleUrl.trim() || busy}
+                aria-busy={busy || undefined}
                 onClick={() => void run(() => importGoogleSlidesPresentation(googleUrl, (message, current, total) => setProgress({ message, current, total })))}
               >
-                {busy ? <LoaderCircle className="h-4 w-4 animate-spin" /> : "Importer"}
+                <ButtonShimmerLabel loading={busy}>Importer</ButtonShimmerLabel>
               </button>
             </div>
             <p style={{ margin: "12px 0 0", padding: 12, borderRadius: "var(--ap-r-md)", background: "var(--ap-brand-soft)", color: "var(--ap-brand-deep)", fontSize: 12.5, fontWeight: 650, lineHeight: 1.45 }}>
