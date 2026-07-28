@@ -78,6 +78,25 @@ describe('importScormPackage', () => {
     );
   });
 
+  it('guesses text/html for an uppercase-extension entry (INDEX.HTML)', async () => {
+    const zip = new JSZip();
+    zip.file('imsmanifest.xml', MANIFEST);
+    zip.file('index.html', '<html><body>SCO</body></html>');
+    zip.file('assets/INDEX.HTML', '<html><body>Upper</body></html>');
+    const buffer = await zip.generateAsync({ type: 'arraybuffer' });
+    const file = new File([buffer], 'uppercase.zip', { type: 'application/zip' });
+
+    const result = await importScormPackage(file, 'user-1');
+
+    const fromMock = vi.mocked(supabase.storage.from);
+    const uploadMock = fromMock.mock.results[0].value.upload;
+    const uppercaseCall = uploadMock.mock.calls.find((c: unknown[]) =>
+      (c[0] as string).includes(`user-1/${result.packageId}/assets/INDEX.HTML`),
+    );
+    expect(uppercaseCall).toBeDefined();
+    expect(uppercaseCall![2]).toMatchObject({ contentType: 'text/html' });
+  });
+
   it('rejects a zip with no imsmanifest.xml', async () => {
     const zip = new JSZip();
     zip.file('index.html', '<html></html>');
@@ -135,6 +154,27 @@ describe('importScormPackage', () => {
     const file = new File([buffer], 'evil5.zip', { type: 'application/zip' });
 
     await expect(importScormPackage(file, 'user-1')).rejects.toThrow(/launchPath|href|chemin/i);
+  });
+
+  it('rejects a manifest whose launchPath is double percent-encoded traversal (%252e%252e%252f)', async () => {
+    const zip = new JSZip();
+    zip.file('imsmanifest.xml', manifestWithLaunchPath('%252e%252e%252fescape.html'));
+    zip.file('index.html', '<html></html>');
+    const buffer = await zip.generateAsync({ type: 'arraybuffer' });
+    const file = new File([buffer], 'evil6.zip', { type: 'application/zip' });
+
+    await expect(importScormPackage(file, 'user-1')).rejects.toThrow(/launchPath|href|chemin/i);
+  });
+
+  it('rejects a zip containing an entry whose name is double percent-encoded traversal (%252e%252e%252f)', async () => {
+    const zip = new JSZip();
+    zip.file('imsmanifest.xml', MANIFEST);
+    zip.file('index.html', '<html><body>SCO</body></html>');
+    zip.file('%252e%252e%252fescape.html', 'pwned');
+    const buffer = await zip.generateAsync({ type: 'arraybuffer' });
+    const file = new File([buffer], 'evil7.zip', { type: 'application/zip' });
+
+    await expect(importScormPackage(file, 'user-1')).rejects.toThrow(/entr|chemin|path/i);
   });
 
   it('rejects a zip containing an entry with an absolute path (zip slip)', async () => {

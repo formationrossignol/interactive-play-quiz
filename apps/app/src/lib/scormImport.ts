@@ -13,17 +13,18 @@ export interface ScormImportResult {
 }
 
 function guessContentType(path: string): string {
-  if (path.endsWith('.html') || path.endsWith('.htm')) return 'text/html';
-  if (path.endsWith('.js')) return 'application/javascript';
-  if (path.endsWith('.css')) return 'text/css';
-  if (path.endsWith('.xml')) return 'application/xml';
-  if (path.endsWith('.json')) return 'application/json';
-  if (path.endsWith('.png')) return 'image/png';
-  if (path.endsWith('.jpg') || path.endsWith('.jpeg')) return 'image/jpeg';
-  if (path.endsWith('.gif')) return 'image/gif';
-  if (path.endsWith('.svg')) return 'image/svg+xml';
-  if (path.endsWith('.mp3')) return 'audio/mpeg';
-  if (path.endsWith('.mp4')) return 'video/mp4';
+  const lower = path.toLowerCase();
+  if (lower.endsWith('.html') || lower.endsWith('.htm')) return 'text/html';
+  if (lower.endsWith('.js')) return 'application/javascript';
+  if (lower.endsWith('.css')) return 'text/css';
+  if (lower.endsWith('.xml')) return 'application/xml';
+  if (lower.endsWith('.json')) return 'application/json';
+  if (lower.endsWith('.png')) return 'image/png';
+  if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'image/jpeg';
+  if (lower.endsWith('.gif')) return 'image/gif';
+  if (lower.endsWith('.svg')) return 'image/svg+xml';
+  if (lower.endsWith('.mp3')) return 'audio/mpeg';
+  if (lower.endsWith('.mp4')) return 'video/mp4';
   return 'application/octet-stream';
 }
 
@@ -61,18 +62,33 @@ function isUnsafeRelativePath(path: string): boolean {
 
   if (looksUnsafeRaw(path)) return true;
 
-  // Percent-encoded traversal (e.g. "..%2Fescape.html"): decode and re-run
-  // the same checks against the decoded form. A malformed encoding can't be
-  // proven safe, so treat decode failure as unsafe-by-default.
-  let decoded: string;
-  try {
-    decoded = decodeURIComponent(path);
-  } catch {
-    return true;
+  // Percent-encoded (possibly multiple times, e.g. "%252e%252e%252f" is
+  // "../" encoded twice) traversal: decode repeatedly until the string
+  // stops changing, then re-run the same checks against the fully-decoded
+  // form. A malformed encoding can't be proven safe, so treat decode
+  // failure as unsafe-by-default. Cap the number of iterations so a
+  // pathological input (e.g. deeply nested encoding) can't be used as a
+  // decode-bomb DoS; if the string is STILL changing once the cap is hit,
+  // it can't be proven safe either, so reject it the same way.
+  const MAX_DECODE_ITERATIONS = 5;
+  let current = path;
+  for (let i = 0; i < MAX_DECODE_ITERATIONS; i++) {
+    let decoded: string;
+    try {
+      decoded = decodeURIComponent(current);
+    } catch {
+      return true;
+    }
+    if (decoded === current) {
+      // Fully decoded (fixed point reached before hitting the cap).
+      if (current !== path && looksUnsafeRaw(current)) return true;
+      return false;
+    }
+    current = decoded;
   }
-  if (decoded !== path && looksUnsafeRaw(decoded)) return true;
-
-  return false;
+  // Still changing after MAX_DECODE_ITERATIONS passes — can't prove this is
+  // safe, so reject by default (same posture as a decode throw above).
+  return true;
 }
 
 /** Parses a SCORM .zip, uploads every contained file to the scorm-packages
