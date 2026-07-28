@@ -6,7 +6,7 @@ import { MultiStepProgress } from "@/components/MultiStepProgress";
 import { PLAYER_ANSWER_SHAPES } from "@/lib/answerVisuals";
 import { getPollOptions } from "@/lib/pollResults";
 import { Trophy, LogOut, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Play, X, RotateCcw } from "lucide-react";
-import type { SavedQuiz } from "@/lib/quizStorage";
+import { genGameCode, type SavedQuiz } from "@/lib/quizStorage";
 import type { EditableQuestion } from "@/lib/questionTypes";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -404,10 +404,10 @@ const PreviewPage = () => {
 
   const launchDemo = () => {
     // Les aperçus portent un id "preview-<timestamp>" : on génère un vrai
-    // code de partie à 6 chiffres pour que le lobby affiche un code propre
-    // et scannable, comme pour un quiz sauvegardé.
+    // code de partie pour que le lobby affiche un code propre et scannable,
+    // comme pour un quiz sauvegardé.
     if (quizId?.startsWith("preview-")) {
-      const gameCode = (Math.floor(Math.random() * 900000) + 100000).toString();
+      const gameCode = genGameCode();
       localStorage.setItem(`quiz-${gameCode}`, JSON.stringify({ ...quiz, id: gameCode }));
       navigate(`/quiz/${gameCode}`);
       return;

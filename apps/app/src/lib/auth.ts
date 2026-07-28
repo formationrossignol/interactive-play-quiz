@@ -184,6 +184,15 @@ export const register = async (
     if (error.code === 'user_already_exists') return { status: 'email_in_use' };
     return { status: 'error', message: error.message };
   }
+
+  // Fire-and-forget, same convention as ExamRoom's auto-submit — a failed or
+  // slow welcome email should never block or delay registration finishing.
+  if (data.user) {
+    void supabase.functions.invoke('send-welcome-email', {
+      body: { userId: data.user.id, email, username },
+    });
+  }
+
   if (!data.session) return { status: 'confirm_email' };
   const user = await mapUserWithPlan(data.user!);
   setCache(user);

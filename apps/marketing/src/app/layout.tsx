@@ -1,12 +1,24 @@
 import type { Metadata } from "next";
 import { Toaster } from "sonner";
+import { SITE_URL } from "@/lib/siteUrl";
 import "ui/tokens.css";
 import "ui/components.css";
 import "./globals.css";
 
+const description = "Quiz multijoueurs, sondages live, flashcards et présentations interactives.";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: { default: "Brivia", template: "%s | Brivia" },
-  description: "Quiz multijoueurs, sondages live, flashcards et présentations interactives.",
+  description,
+  robots: { index: true, follow: true },
+  openGraph: {
+    type: "website",
+    siteName: "Brivia",
+    title: "Brivia",
+    description,
+    url: "/",
+  },
 };
 
 export default function RootLayout({
