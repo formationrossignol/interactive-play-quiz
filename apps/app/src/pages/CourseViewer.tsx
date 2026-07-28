@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   Award,
   BarChart3,
@@ -527,6 +527,8 @@ function CourseOverviewScreen({
 const CourseViewer = () => {
   const navigate = useNavigate();
   const { courseId } = useParams<{ courseId: string }>();
+  const [searchParams] = useSearchParams();
+  const learningPathId = searchParams.get("pathId");
   const user = getCurrentUser();
 
   const [course, setCourse] = useState<ReturnType<typeof getCourseById>>(null);
@@ -761,7 +763,9 @@ const CourseViewer = () => {
         <Breadcrumb
           onHome={() => { window.location.href = "/"; }}
           items={[
-            { label: "Mes cours", onClick: () => navigate("/my-courses") },
+            learningPathId
+              ? { label: "Parcours", onClick: () => navigate(`/learning-path/${learningPathId}`) }
+              : { label: "Mes cours", onClick: () => navigate("/my-courses") },
             { label: course.title },
           ]}
         />
