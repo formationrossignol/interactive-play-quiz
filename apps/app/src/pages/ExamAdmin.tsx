@@ -29,6 +29,7 @@ import { getContentBySource } from '@/lib/content/contentRepo';
 import type { SavedQuiz } from '@/lib/quizStorage';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
+import { ProctoringDashboard } from '@/components/proctoring/ProctoringDashboard';
 
 const STATUS_LABEL: Record<string, { label: string; color: string; bg: string }> = {
   draft:          { label: 'Brouillon',          color: '#6d6288', bg: '#f3ecdd' },
@@ -445,6 +446,10 @@ export default function ExamAdmin() {
               </div>
             )}
           </div>
+        )}
+
+        {exam.proctoring.enabled && (
+          <ProctoringDashboard exam={exam} attempts={attempts} />
         )}
       </div>
 

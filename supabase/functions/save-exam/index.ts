@@ -21,6 +21,9 @@ interface SaveExamBody {
   showDetailPolicy: string;
   scoreRetentionPolicy: string;
   status: string;
+  proctoring: Record<string, unknown>;
+  sebBrowserExamKey?: string;
+  sebConfigKey?: string;
 }
 
 const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -104,6 +107,7 @@ Deno.serve(async (req) => {
       score_retention_policy: body.scoreRetentionPolicy,
       status: body.status,
       questions_public: questionsPublic,
+      proctoring_config: body.proctoring ?? { enabled: false, level: "none" },
     };
 
     let examRow: Record<string, unknown> | null = null;
@@ -117,6 +121,21 @@ Deno.serve(async (req) => {
         .from("exam_answer_keys")
         .upsert({ exam_id: body.examId, questions }, { onConflict: "exam_id" });
       if (keyError) throw keyError;
+      if (body.sebBrowserExamKey?.trim() || body.sebConfigKey?.trim()) {
+        const { error: proctoringSecretError } = await supabaseAdmin
+          .from("exam_proctoring_secrets")
+          .upsert({
+            exam_id: body.examId,
+            browser_exam_keys: body.sebBrowserExamKey?.trim() ? [body.sebBrowserExamKey.trim()] : [],
+            config_keys: body.sebConfigKey?.trim() ? [body.sebConfigKey.trim()] : [],
+          }, { onConflict: "exam_id" });
+        if (proctoringSecretError) throw proctoringSecretError;
+        await supabaseAdmin
+          .from("exams")
+          .update({ proctoring_config: { ...body.proctoring, sebKeyConfigured: true } })
+          .eq("id", body.examId);
+        (examRow as Record<string, unknown>).proctoring_config = { ...body.proctoring, sebKeyConfigured: true };
+      }
     } else {
       const { data: profile } = await supabaseAdmin
         .from("profiles").select("plan").eq("id", userId).maybeSingle();
@@ -141,6 +160,21 @@ Deno.serve(async (req) => {
       const { error: keyError } = await supabaseAdmin
         .from("exam_answer_keys").insert({ exam_id: examId, questions });
       if (keyError) throw keyError;
+      if (body.sebBrowserExamKey?.trim() || body.sebConfigKey?.trim()) {
+        const { error: proctoringSecretError } = await supabaseAdmin
+          .from("exam_proctoring_secrets")
+          .insert({
+            exam_id: examId,
+            browser_exam_keys: body.sebBrowserExamKey?.trim() ? [body.sebBrowserExamKey.trim()] : [],
+            config_keys: body.sebConfigKey?.trim() ? [body.sebConfigKey.trim()] : [],
+          });
+        if (proctoringSecretError) throw proctoringSecretError;
+        await supabaseAdmin
+          .from("exams")
+          .update({ proctoring_config: { ...body.proctoring, sebKeyConfigured: true } })
+          .eq("id", examId);
+        (examRow as Record<string, unknown>).proctoring_config = { ...body.proctoring, sebKeyConfigured: true };
+      }
     }
 
     return jsonResponse({ exam: examRow });

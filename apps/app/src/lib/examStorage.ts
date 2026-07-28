@@ -2,6 +2,10 @@ import { supabase } from './supabase';
 import { getCurrentUser } from './auth';
 import { PlanLimitError, AudienceCapError, type Plan } from './plans';
 import { parseFunctionsError } from './functionsError';
+import {
+  normalizeProctoringConfig,
+  type ProctoringConfig,
+} from './proctoring';
 
 /* ══ Types ══════════════════════════════════════════════════════ */
 
@@ -40,6 +44,7 @@ export interface Exam {
   /** Host's plan-derived audience cap, baked in at creation (host has no
    *  Supabase-synced session to re-check plan against at attempt time). */
   maxParticipants: number | null;
+  proctoring: ProctoringConfig;
   /** Correct-answer-stripped question snapshot, taken at save time — what
    *  ExamRoom renders from. Never contains correctAnswer/correctOrder/
    *  correctMatches/correctValue (see supabase/functions/_shared/examScoring.ts
@@ -99,6 +104,7 @@ interface ExamRow {
   show_results_policy: string; show_detail_policy: string; score_retention_policy: string;
   status: string; join_code: string; max_participants: number | null;
   questions_public: Record<string, unknown>[] | null;
+  proctoring_config: Partial<ProctoringConfig> | null;
   created_at: string; updated_at: string;
 }
 
@@ -123,6 +129,7 @@ function examFromRow(r: ExamRow): Exam {
     status: r.status as ExamStatus,
     joinCode: r.join_code,
     maxParticipants: r.max_participants,
+    proctoring: normalizeProctoringConfig(r.proctoring_config),
     questionsPublic: r.questions_public ?? [],
     createdAt: r.created_at,
     updatedAt: r.updated_at,
@@ -198,7 +205,12 @@ export const getHostExams = async (hostId: string): Promise<Exam[]> => {
   return data.map(examFromRow);
 };
 
-export type ExamPayload = Omit<Exam, 'id' | 'hostId' | 'joinCode' | 'createdAt' | 'updatedAt' | 'maxParticipants' | 'questionsPublic'>;
+export type ExamPayload = Omit<Exam, 'id' | 'hostId' | 'joinCode' | 'createdAt' | 'updatedAt' | 'maxParticipants' | 'questionsPublic'> & {
+  /** Raw SEB keys are write-only. The save function stores them outside the
+   * public exam row and never sends them back to a candidate. */
+  sebBrowserExamKey?: string;
+  sebConfigKey?: string;
+};
 
 async function invokeSaveExam(examId: string | undefined, data: ExamPayload): Promise<Exam> {
   const { data: result, error } = await supabase.functions.invoke('save-exam', {
@@ -236,6 +248,7 @@ const examUpdatesToRow = (updates: Partial<Exam>): Partial<ExamRow> => {
   if (updates.showDetailPolicy !== undefined) patch.show_detail_policy = updates.showDetailPolicy;
   if (updates.scoreRetentionPolicy !== undefined) patch.score_retention_policy = updates.scoreRetentionPolicy;
   if (updates.status !== undefined) patch.status = updates.status;
+  if (updates.proctoring !== undefined) patch.proctoring_config = updates.proctoring;
   return patch;
 };
 
@@ -298,6 +311,7 @@ export const duplicateExam = async (id: string): Promise<Exam | null> => {
       showDetailPolicy: original.showDetailPolicy,
       scoreRetentionPolicy: original.scoreRetentionPolicy,
       status: 'draft',
+      proctoring: original.proctoring,
     });
   } catch {
     return null;
