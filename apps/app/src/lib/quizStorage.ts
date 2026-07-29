@@ -18,6 +18,8 @@ export interface SavedQuiz {
   tags: string[];
   speedBonus: boolean;
   transitionTime: number;
+  /** Pause (seconds) before the answer countdown starts, so players can read the question. Quiz only. */
+  readingTime?: number;
   category: string;
   type: 'quiz' | 'poll' | 'flashcard' | 'slide';
   headerImage?: string;

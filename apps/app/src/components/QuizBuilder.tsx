@@ -574,6 +574,7 @@ export const QuizBuilder = () => {
   const [isPublic, setIsPublic] = useState(false);
   const [speedBonus, setSpeedBonus] = useState(true);
   const [transitionTime, setTransitionTime] = useState(5);
+  const [readingTime, setReadingTime] = useState(3);
   const [category, setCategory] = useState("Autre");
   const [tags, setTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState("");
@@ -644,6 +645,7 @@ export const QuizBuilder = () => {
     setIsPublic(eq.isPublic);
     setSpeedBonus(eq.speedBonus);
     setTransitionTime(eq.transitionTime);
+    setReadingTime(eq.readingTime ?? 3);
     setTags(eq.tags || []);
     setHeaderImage(eq.headerImage || "");
     setTheme(THEMES.some(t => t.id === eq.theme) ? eq.theme : DEFAULT_THEME_ID);
@@ -834,7 +836,7 @@ export const QuizBuilder = () => {
         isPublic: isPoll ? false : isPublic,
         isFavorite: false, tags,
         speedBonus: isPoll ? false : speedBonus,
-        transitionTime, category, type: quizType,
+        transitionTime, readingTime, category, type: quizType,
         headerImage, theme, font: previewFont, ambianceId,
         liveReactionsEnabled, endChatEnabled,
       };
@@ -1717,6 +1719,15 @@ export const QuizBuilder = () => {
                   <Label>{t("transitionTime")}</Label>
                   <Input type="number" min="3" max="10" value={transitionTime} onChange={e => setTransitionTime(parseInt(e.target.value) || 5)} className="mt-2" />
                 </div>
+                {!isFlashcard && (
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <Label>Temps de lecture</Label>
+                      <TooltipProvider><Tooltip><TooltipTrigger asChild><button className="text-muted-foreground hover:text-foreground"><HelpCircle className="w-4 h-4" /></button></TooltipTrigger><TooltipContent><p className="max-w-xs">Pause avant le lancement du chronomètre, pour laisser le temps de lire la question.</p></TooltipContent></Tooltip></TooltipProvider>
+                    </div>
+                    <Input type="number" min="0" max="15" value={readingTime} onChange={e => setReadingTime(parseInt(e.target.value) || 0)} className="mt-2" />
+                  </div>
+                )}
               </>
             )}
             <div>
