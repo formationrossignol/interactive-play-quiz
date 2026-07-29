@@ -1,5 +1,6 @@
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { t } from "@/lib/i18n";
 import type { User as AuthUser } from "@/lib/auth";
 import { MaterialSymbol } from "@/components/MaterialSymbol";
@@ -55,24 +56,33 @@ export const CREATIONS_ITEMS = [
   { label: t("creationTypeExam"), path: "/my-exams" },
 ];
 
-// Discovery/social — secondary to the Dashboard + Mes créations workflow,
-// grouped under its own labelled section per sidebar UX best practices
-// (group related items, keep primary actions visually distinct).
-export const EXPLORE_ITEMS = [
-  { label: t("navSharedWithMe"), icon: "group_share", path: "/shared-with-me", requiresAuth: true },
-  { label: t("navGroups"), icon: "groups", path: "/groups", requiresAuth: true },
-  { label: t("navSignatures"), icon: "draw", path: "/signatures", requiresAuth: true },
-  { label: t("navManualGrading"), icon: "edit_note", path: "/grading", requiresAuth: true },
-  { label: t("navMyGrades"), icon: "grading", path: "/my-grades", requiresAuth: true },
-  { label: t("questionBank"), icon: "library_books", path: "/question-bank", requiresAuth: true },
+// Collaboration/grading tools — niche, auth-only workflows split out of the
+// old single "Explore" group so they can collapse away for users who never
+// touch groups/signatures/grading (was 9 items deep, always expanded).
+export const COLLAB_ITEMS = [
+  { label: t("navSharedWithMe"), icon: "group_share", path: "/shared-with-me" },
+  { label: t("navGroups"), icon: "groups", path: "/groups" },
+  { label: t("navSignatures"), icon: "draw", path: "/signatures" },
+  { label: t("navManualGrading"), icon: "edit_note", path: "/grading" },
+  { label: t("navMyGrades"), icon: "grading", path: "/my-grades" },
+  { label: t("questionBank"), icon: "library_books", path: "/question-bank" },
+];
+
+// Public discovery — no auth required, kept short and always visible.
+export const DISCOVER_ITEMS = [
   { label: t("discoverPublic"), icon: "explore", path: "/discover", requiresAuth: false },
   { label: t("footerCommunity"), icon: "groups", path: "/community", requiresAuth: false },
   { label: t("navTools"), icon: "casino", path: "/tools", requiresAuth: false },
 ];
 
-export const PRODUCT_ITEMS = [
-  { label: "Notifications", icon: "notifications", path: "/notifications", requiresAuth: true },
-  { label: "Historique", icon: "history", path: "/history", requiresAuth: true },
+// Personal account shortcuts — was bundled with Support under one "Produit"
+// label; split so each group name matches what it actually contains.
+export const ACCOUNT_ITEMS = [
+  { label: "Notifications", icon: "notifications", path: "/notifications" },
+  { label: "Historique", icon: "history", path: "/history" },
+];
+
+export const SUPPORT_ITEMS = [
   { label: "Centre d’aide", icon: "help", path: "/help", requiresAuth: false },
   { label: "Roadmap", icon: "map", path: "/roadmap", requiresAuth: false },
   { label: "Nouveautés", icon: "campaign", path: "/changelog", requiresAuth: false },
@@ -99,14 +109,20 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
   const [creationsOpen, setCreationsOpen] = useState(
     () => CREATIONS_ITEMS.some((item) => item.path === location.pathname),
   );
-  const [isOrgAdmin, setIsOrgAdmin] = useState(false);
-
-  useEffect(() => {
-    if (!user) return;
-    myOrgMemberships()
-      .then((memberships) => setIsOrgAdmin(memberships.some((m) => m.role === "admin")))
-      .catch(() => setIsOrgAdmin(false));
-  }, [user]);
+  // Collaboration is niche (groups/signatures/grading) — collapsed by default
+  // unless the current route already lives inside it.
+  const [collabOpen, setCollabOpen] = useState(
+    () => COLLAB_ITEMS.some((item) => item.path === location.pathname),
+  );
+  // React Query caches this across route changes — AppSidebar remounts on
+  // every navigation (see AppLayout), so a plain useEffect was refetching
+  // org memberships on every single page load.
+  const { data: orgMemberships } = useQuery({
+    queryKey: ["org", "memberships", user?.id],
+    queryFn: myOrgMemberships,
+    enabled: Boolean(user),
+  });
+  const isOrgAdmin = orgMemberships?.some((m) => m.role === "admin") ?? false;
 
   return (
     <Sidebar collapsible="icon">
@@ -235,31 +251,65 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
           </SidebarMenu>
         </SidebarGroup>
 
+        {user && (
+          <SidebarGroup>
+            <Collapsible open={collabOpen || collapsedIcon} onOpenChange={setCollabOpen}>
+              <SidebarGroupLabel asChild>
+                <CollapsibleTrigger className="flex w-full items-center justify-between cursor-pointer">
+                  <span>{t("navGroupCollab")}</span>
+                  {!collapsedIcon && (
+                    <MaterialSymbol
+                      name="keyboard_arrow_down"
+                      size={16}
+                      className="chevron-icon"
+                      style={{ transform: collabOpen ? "rotate(180deg)" : undefined }}
+                    />
+                  )}
+                </CollapsibleTrigger>
+              </SidebarGroupLabel>
+              <CollapsibleContent>
+                <SidebarMenu>
+                  {COLLAB_ITEMS.map((item) => (
+                    <SidebarMenuItem key={item.path}>
+                      <SidebarMenuButton
+                        isActive={location.pathname === item.path}
+                        onClick={() => navigate(item.path)}
+                        tooltip={item.label}
+                      >
+                        <MaterialSymbol name={item.icon} size={20} />
+                        <span>{item.label}</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </CollapsibleContent>
+            </Collapsible>
+          </SidebarGroup>
+        )}
+
         <SidebarGroup>
-          <SidebarGroupLabel>{t("navGroupExplore")}</SidebarGroupLabel>
+          <SidebarGroupLabel>{t("navGroupDiscover")}</SidebarGroupLabel>
           <SidebarMenu>
-            {EXPLORE_ITEMS.filter((item) => (item.requiresAuth ? Boolean(user) : true)).map((item) => {
-              return (
-                <SidebarMenuItem key={item.path}>
-                  <SidebarMenuButton
-                    isActive={location.pathname === item.path}
-                    onClick={() => navigate(item.path)}
-                    tooltip={item.label}
-                  >
-                    <MaterialSymbol name={item.icon} size={20} />
-                    <span>{item.label}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              );
-            })}
+            {DISCOVER_ITEMS.map((item) => (
+              <SidebarMenuItem key={item.path}>
+                <SidebarMenuButton
+                  isActive={location.pathname === item.path}
+                  onClick={() => navigate(item.path)}
+                  tooltip={item.label}
+                >
+                  <MaterialSymbol name={item.icon} size={20} />
+                  <span>{item.label}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
           </SidebarMenu>
         </SidebarGroup>
 
-        <SidebarGroup>
-          <SidebarGroupLabel>Produit</SidebarGroupLabel>
-          <SidebarMenu>
-            {PRODUCT_ITEMS.filter((item) => (item.requiresAuth ? Boolean(user) : true)).map((item) => {
-              return (
+        {user && (
+          <SidebarGroup>
+            <SidebarGroupLabel>{t("navGroupAccount")}</SidebarGroupLabel>
+            <SidebarMenu>
+              {ACCOUNT_ITEMS.map((item) => (
                 <SidebarMenuItem key={item.path}>
                   <SidebarMenuButton
                     isActive={location.pathname === item.path}
@@ -270,8 +320,26 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
                     <span>{item.label}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-              );
-            })}
+              ))}
+            </SidebarMenu>
+          </SidebarGroup>
+        )}
+
+        <SidebarGroup>
+          <SidebarGroupLabel>{t("navGroupSupport")}</SidebarGroupLabel>
+          <SidebarMenu>
+            {SUPPORT_ITEMS.map((item) => (
+              <SidebarMenuItem key={item.path}>
+                <SidebarMenuButton
+                  isActive={location.pathname === item.path}
+                  onClick={() => navigate(item.path)}
+                  tooltip={item.label}
+                >
+                  <MaterialSymbol name={item.icon} size={20} />
+                  <span>{item.label}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
           </SidebarMenu>
         </SidebarGroup>
 

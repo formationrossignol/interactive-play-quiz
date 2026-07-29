@@ -11,7 +11,14 @@ import {
 } from "@/components/ui/command";
 import { t } from "@/lib/i18n";
 import type { User as AuthUser } from "@/lib/auth";
-import { CREATE_ITEMS, CREATIONS_ITEMS, EXPLORE_ITEMS, PRODUCT_ITEMS } from "@/components/AppSidebar";
+import {
+  ACCOUNT_ITEMS,
+  COLLAB_ITEMS,
+  CREATE_ITEMS,
+  CREATIONS_ITEMS,
+  DISCOVER_ITEMS,
+  SUPPORT_ITEMS,
+} from "@/components/AppSidebar";
 import { TYPE_META } from "@/components/GlobalSearch";
 import { getSearchResultRoute, searchContent, type SearchResult } from "@/lib/content/searchContent";
 import { MaterialSymbol } from "@/components/MaterialSymbol";
@@ -82,13 +89,7 @@ export const CommandPalette = ({ user, open, onOpenChange: setOpen }: CommandPal
                 <span className="ml-6">{item.label}</span>
               </CommandItem>
             ))}
-            {EXPLORE_ITEMS.filter((item) => (item.requiresAuth ? Boolean(user) : true)).map((item) => (
-              <CommandItem key={item.path} value={item.label} onSelect={() => go(item.path)}>
-                <MaterialSymbol name={item.icon} size={20} className="mr-2" />
-                {item.label}
-              </CommandItem>
-            ))}
-            {PRODUCT_ITEMS.map((item) => (
+            {[...COLLAB_ITEMS, ...DISCOVER_ITEMS, ...ACCOUNT_ITEMS, ...SUPPORT_ITEMS].map((item) => (
               <CommandItem key={item.path} value={item.label} onSelect={() => go(item.path)}>
                 <MaterialSymbol name={item.icon} size={20} className="mr-2" />
                 {item.label}
