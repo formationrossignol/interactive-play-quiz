@@ -50,6 +50,34 @@ describe('duplicateCourse cap enforcement', () => {
   });
 });
 
+describe('scorm lesson fields round-trip through a course', () => {
+  it('persists scorm-specific fields on a lesson', () => {
+    const created = createCourse({
+      ...coursePayload(),
+      modules: [{
+        id: 'm1',
+        title: 'Module 1',
+        lessons: [{
+          id: 'l1',
+          title: 'SCORM lesson',
+          content: '',
+          type: 'scorm',
+          scormPackageId: 'pkg-1',
+          scormVersion: '1.2',
+          scormLaunchPath: 'index_lms.html',
+          scormTitle: 'Imported Course',
+        }],
+      }],
+    });
+    const lesson = getUserCourses(USER_ID)[0].modules[0].lessons[0];
+    expect(lesson.type).toBe('scorm');
+    expect(lesson.scormPackageId).toBe('pkg-1');
+    expect(lesson.scormVersion).toBe('1.2');
+    expect(lesson.scormLaunchPath).toBe('index_lms.html');
+    expect(created.modules[0].lessons[0].scormTitle).toBe('Imported Course');
+  });
+});
+
 describe('H5P lesson persistence', () => {
   it('keeps package metadata when a course is stored and duplicated', () => {
     vi.mocked(getCurrentUser).mockReturnValue({

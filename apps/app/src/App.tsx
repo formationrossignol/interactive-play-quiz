@@ -63,6 +63,7 @@ const MySlides = lazy(() => import("./pages/MySlides"));
 const MyCourses = lazy(() => import("./pages/MyCourses"));
 const CourseBuilder = lazy(() => import("./pages/CourseBuilder"));
 const CourseViewer = lazy(() => import("./pages/CourseViewer"));
+const CourseScormReport = lazy(() => import("./pages/CourseScormReport"));
 const MyLearningPaths = lazy(() => import("./pages/MyLearningPaths"));
 const LearningPathBuilder = lazy(() => import("./pages/LearningPathBuilder"));
 const LearningPathViewer = lazy(() => import("./pages/LearningPathViewer"));
@@ -144,6 +145,7 @@ const App = () => (
               <Route path="/my-courses" element={<MyCourses />} />
               <Route path="/course-builder" element={<CourseBuilder />} />
               <Route path="/course/:courseId" element={<CourseViewer />} />
+              <Route path="/course/:courseId/scorm-report/:lessonId" element={<CourseScormReport />} />
               <Route path="/my-learning-paths" element={<MyLearningPaths />} />
               <Route path="/learning-path-builder" element={<LearningPathBuilder />} />
               <Route path="/learning-path/:pathId" element={<LearningPathViewer />} />
