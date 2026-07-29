@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { Course } from "@/lib/courseStorage";
+import { certificateNumberFor } from "@/lib/certificates";
 
 interface CourseCertificateDialogProps {
   open: boolean;
@@ -40,17 +41,26 @@ export const createLinkedInPostDraft = (course: Course) => {
   return `Je suis heureux·se de partager l’obtention de mon attestation pour la formation « ${course.title} » sur Brivia.${skills}\n\nUne nouvelle étape dans mon parcours d’apprentissage continu.\n\n#FormationContinue #Apprentissage #DeveloppementProfessionnel`;
 };
 
-async function createCertificatePdf({
-  course,
+export interface CertificatePdfParams {
+  courseId: string;
+  courseTitle: string;
+  learnerName: string;
+  learnerId: string;
+  totalLessons: number;
+}
+
+export async function createCertificatePdf({
+  courseId,
+  courseTitle,
   learnerName,
   learnerId,
   totalLessons,
-}: Omit<CourseCertificateDialogProps, "open" | "onOpenChange">) {
+}: CertificatePdfParams) {
   const { jsPDF } = await import("jspdf");
   const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
   const width = pdf.internal.pageSize.getWidth();
   const height = pdf.internal.pageSize.getHeight();
-  const certificateId = `BRV-${course.id.slice(0, 6).toUpperCase()}-${learnerId.slice(0, 6).toUpperCase()}`;
+  const certificateId = certificateNumberFor(courseId, learnerId);
 
   pdf.setFillColor(255, 252, 247);
   pdf.rect(0, 0, width, height, "F");
@@ -84,7 +94,7 @@ async function createCertificatePdf({
   pdf.setFont("helvetica", "bold");
   pdf.setFontSize(20);
   pdf.setTextColor(67, 56, 202);
-  const titleLines = pdf.splitTextToSize(course.title, 190) as string[];
+  const titleLines = pdf.splitTextToSize(courseTitle, 190) as string[];
   pdf.text(titleLines, width / 2, 126, { align: "center" });
 
   const metaY = 150 + Math.max(0, titleLines.length - 1) * 7;
@@ -124,7 +134,7 @@ export function CourseCertificateDialog({
   const download = async () => {
     setBusy("download");
     try {
-      const blob = await createCertificatePdf({ course, learnerName, learnerId, totalLessons });
+      const blob = await createCertificatePdf({ courseId: course.id, courseTitle: course.title, learnerName, learnerId, totalLessons });
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
@@ -142,7 +152,7 @@ export function CourseCertificateDialog({
   const share = async () => {
     setBusy("share");
     try {
-      const blob = await createCertificatePdf({ course, learnerName, learnerId, totalLessons });
+      const blob = await createCertificatePdf({ courseId: course.id, courseTitle: course.title, learnerName, learnerId, totalLessons });
       const file = new File([blob], fileName, { type: "application/pdf" });
       if (navigator.share && navigator.canShare?.({ files: [file] })) {
         await navigator.share({

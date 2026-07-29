@@ -80,6 +80,7 @@ export const DISCOVER_ITEMS = [
 export const ACCOUNT_ITEMS = [
   { label: "Notifications", icon: "notifications", path: "/notifications" },
   { label: "Historique", icon: "history", path: "/history" },
+  { label: "Mes certificats", icon: "workspace_premium", path: "/certificates" },
 ];
 
 export const SUPPORT_ITEMS = [
