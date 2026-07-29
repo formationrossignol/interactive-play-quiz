@@ -8,6 +8,7 @@ export interface ContentDisplay {
   tags: string[];
   category: string;
   isFavorite: boolean;
+  isTemplate: boolean;
   isPublic: boolean;
   rating: number;
   deletedAt: string | null;
@@ -31,6 +32,7 @@ export function toDisplay(row: ContentRow): ContentDisplay {
     tags: asStringArray(d.tags),
     category: asString(d.category),
     isFavorite: !!d.isFavorite,
+    isTemplate: !!d.isTemplate,
     isPublic: row.is_public,
     rating: typeof d.rating === 'number' ? d.rating : 0,
     deletedAt: typeof d.deletedAt === 'string' ? d.deletedAt : null,
@@ -45,6 +47,8 @@ export const filterActive = (items: ContentDisplay[]) => items.filter((i) => !i.
 export const filterTrashed = (items: ContentDisplay[]) => items.filter((i) => i.deletedAt);
 export const filterFavorites = (items: ContentDisplay[]) =>
   items.filter((i) => i.isFavorite && !i.deletedAt);
+export const filterTemplates = (items: ContentDisplay[]) =>
+  items.filter((i) => i.isTemplate && !i.deletedAt);
 export const filterByFolder = (items: ContentDisplay[], folderId: string | null) =>
   items.filter((i) => i.folderId === folderId);
 

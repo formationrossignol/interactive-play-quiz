@@ -13,6 +13,8 @@ export interface SavedQuiz {
   userId: string;
   isPublic: boolean;
   isFavorite: boolean;
+  /** Marks this item as a reusable starting point rather than live content — surfaced in the "Mes modèles" shortcut. */
+  isTemplate?: boolean;
   tags: string[];
   speedBonus: boolean;
   transitionTime: number;
@@ -290,6 +292,7 @@ export const duplicateQuiz = (id: string): SavedQuiz | null => {
     title: `Copie de ${original.title}`,
     createdAt: new Date().toISOString(),
     isFavorite: false,
+    isTemplate: false,
     rating: undefined,
     ratingCount: undefined,
     folderId: original.folderId ?? null,
@@ -299,4 +302,45 @@ export const duplicateQuiz = (id: string): SavedQuiz | null => {
   quizzes.push(copy);
   localStorage.setItem(QUIZ_STORAGE_KEY, JSON.stringify(quizzes));
   return copy;
+};
+
+/** Clones `id` into a new item flagged `isTemplate: true` — the "Enregistrer
+ *  comme template" action in the builder. Reuses "Dupliquer" (already resets
+ *  isTemplate on its own copies) so instantiating a template back into
+ *  regular content is just the existing duplicate flow. */
+export const saveQuizAsTemplate = (id: string): SavedQuiz | null => {
+  const user = getCurrentUser();
+  if (!user) return null;
+  const original = getQuizById(id);
+  if (!original || original.userId !== user.id) return null;
+
+  const plan = getPlan(user);
+  const cap = CONTENT_CAPS[plan][original.type as ContentKind];
+  if (cap !== null) {
+    const used = getUserQuizzes(user.id).filter((q) => q.type === original.type).length;
+    if (used >= cap) throw new PlanLimitError(original.type as ContentKind, cap, plan);
+  }
+
+  const existing = new Set(getSavedQuizzes().map((q) => q.id));
+  let newId: string;
+  do { newId = genGameCode(); }
+  while (existing.has(newId));
+
+  const template: SavedQuiz = {
+    ...original,
+    id: newId,
+    title: `Modèle : ${original.title}`,
+    createdAt: new Date().toISOString(),
+    isFavorite: false,
+    isTemplate: true,
+    isPublic: false,
+    rating: undefined,
+    ratingCount: undefined,
+    folderId: null,
+  };
+
+  const quizzes = getSavedQuizzes();
+  quizzes.push(template);
+  localStorage.setItem(QUIZ_STORAGE_KEY, JSON.stringify(quizzes));
+  return template;
 };

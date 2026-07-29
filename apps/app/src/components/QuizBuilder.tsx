@@ -30,14 +30,14 @@ import {
   ArrowRight, Copy, Library, HelpCircle, Home, type LucideIcon,
   ListChecks, CircleDot, ToggleLeft, TextCursorInput, ArrowUpDown,
   Link2, TextSelect, SlidersHorizontal, Rows3, ChartNoAxesColumn,
-  Star, MessageSquareText, Gauge, Layers3, Presentation,
+  Star, MessageSquareText, Gauge, Layers3, Presentation, LayoutTemplate,
 } from "lucide-react";
 import { ImportFileModal } from "./ImportFileModal";
 import { getCurrentUser } from "@/lib/auth";
 import { useSaveShortcut } from "@/hooks/useSaveShortcut";
 import { getPlan, isQuestionTypeLocked } from "@/lib/plans";
 import { showError } from "@/lib/errorTaxonomy";
-import { saveQuiz, updateQuiz, getQuizById, type SavedQuiz } from "@/lib/quizStorage";
+import { saveQuiz, updateQuiz, getQuizById, saveQuizAsTemplate, type SavedQuiz } from "@/lib/quizStorage";
 import {
   getContent,
   getContentBySource,
@@ -879,6 +879,18 @@ export const QuizBuilder = () => {
   };
   useSaveShortcut(handleSaveQuiz);
 
+  const handleSaveAsTemplate = async () => {
+    if (!quizId || !user) { toast.error("Enregistrez d'abord ce contenu avant d'en faire un modèle."); return; }
+    try {
+      const template = saveQuizAsTemplate(quizId);
+      if (!template) { toast.error("Impossible de créer le modèle."); return; }
+      await upsertContentBySource(user.id, template.type as ContentType, template.id, template as unknown as Record<string, unknown>, false);
+      toast.success("Modèle enregistré — retrouvez-le dans « Mes modèles ».");
+    } catch (e) {
+      showError(e, "QuizBuilder.saveAsTemplate", "Erreur lors de la création du modèle");
+    }
+  };
+
   const handlePreviewQuiz = () => {
     if (questions.length === 0) { toast.error("Ajoutez au moins une question pour prévisualiser"); return; }
     const tmp = {
@@ -1411,6 +1423,34 @@ export const QuizBuilder = () => {
         >
           <Settings style={{ width: 15, height: 15, color: "var(--ap-muted)" }} />
         </button>
+
+        {/* Save as template */}
+        <TooltipProvider delayDuration={180}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span style={{ display: "inline-flex", flexShrink: 0 }}>
+                <button
+                  onClick={() => void handleSaveAsTemplate()}
+                  disabled={!quizId}
+                  title="Enregistrer comme template"
+                  style={{
+                    display: "grid", placeItems: "center", width: 36, height: 36,
+                    borderRadius: "var(--ap-r-sm)", border: "var(--ap-border-w) solid var(--ap-line)",
+                    background: "var(--ap-card)", cursor: quizId ? "pointer" : "not-allowed",
+                    boxShadow: "0 3px 0 var(--ap-line)", flexShrink: 0, opacity: quizId ? 1 : 0.5,
+                  }}
+                >
+                  <LayoutTemplate style={{ width: 15, height: 15, color: "var(--ap-muted)" }} />
+                </button>
+              </span>
+            </TooltipTrigger>
+            {!quizId && (
+              <TooltipContent side="bottom" align="end">
+                Enregistrez d’abord ce contenu pour pouvoir en faire un modèle.
+              </TooltipContent>
+            )}
+          </Tooltip>
+        </TooltipProvider>
 
         {/* Preview */}
         <TooltipProvider delayDuration={180}>
