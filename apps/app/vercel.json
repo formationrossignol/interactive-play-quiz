@@ -43,6 +43,10 @@
       "source": "/scorm-content/:userId/:packageId/(.*)",
       "destination": "https://lwwfgdebmggxjuvlazwf.supabase.co/storage/v1/object/public/scorm-packages/:userId/:packageId/$1"
     },
+    {
+      "source": "/h5p-content/:path*",
+      "destination": "https://lwwfgdebmggxjuvlazwf.supabase.co/storage/v1/object/public/h5p-packages/:path*"
+    },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

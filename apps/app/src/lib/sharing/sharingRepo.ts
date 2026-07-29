@@ -54,7 +54,7 @@ export async function usernamesByIds(ids: string[]): Promise<UsernameMatch[]> {
 
 export async function listGroups(ownerId: string): Promise<Group[]> {
   const { data, error } = await supabase
-    .from('groups')
+    .from('share_groups')
     .select('*')
     .eq('owner_id', ownerId)
     .order('created_at', { ascending: false });
@@ -64,7 +64,7 @@ export async function listGroups(ownerId: string): Promise<Group[]> {
 
 export async function createGroup(ownerId: string, name: string): Promise<Group> {
   const { data, error } = await supabase
-    .from('groups')
+    .from('share_groups')
     .insert({ owner_id: ownerId, name })
     .select()
     .single();
@@ -73,13 +73,13 @@ export async function createGroup(ownerId: string, name: string): Promise<Group>
 }
 
 export async function deleteGroup(groupId: string): Promise<void> {
-  const { error } = await supabase.from('groups').delete().eq('id', groupId);
+  const { error } = await supabase.from('share_groups').delete().eq('id', groupId);
   if (error) throw error;
 }
 
 export async function listGroupMembers(groupId: string): Promise<GroupMember[]> {
   const { data, error } = await supabase
-    .from('group_members')
+    .from('share_group_members')
     .select('*')
     .eq('group_id', groupId)
     .order('created_at', { ascending: false });
@@ -89,7 +89,7 @@ export async function listGroupMembers(groupId: string): Promise<GroupMember[]> 
 
 export async function addGroupMemberByUserId(groupId: string, userId: string): Promise<GroupMember> {
   const { data, error } = await supabase
-    .from('group_members')
+    .from('share_group_members')
     .insert({ group_id: groupId, user_id: userId })
     .select()
     .single();
@@ -106,7 +106,7 @@ export async function resolveGroupMemberByEmail(groupId: string, email: string):
 }
 
 export async function removeGroupMember(memberId: string): Promise<void> {
-  const { error } = await supabase.from('group_members').delete().eq('id', memberId);
+  const { error } = await supabase.from('share_group_members').delete().eq('id', memberId);
   if (error) throw error;
 }
 
@@ -200,7 +200,7 @@ export async function listSharedWithMe(userId: string): Promise<SharedContentRow
   if (directError) throw directError;
 
   const { data: myGroups, error: groupsError } = await supabase
-    .from('group_members')
+    .from('share_group_members')
     .select('group_id')
     .eq('user_id', userId);
   if (groupsError) throw groupsError;

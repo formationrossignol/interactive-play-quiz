@@ -13,6 +13,11 @@ import { useSaveShortcut } from '@/hooks/useSaveShortcut';
 import { showError } from '@/lib/errorTaxonomy';
 import { assertSafeImportFile } from '@/lib/fileValidation';
 import {
+  DEFAULT_PROCTORING_CONFIG,
+  type ProctoringConfig,
+} from '@/lib/proctoring';
+import { ProctoringSettings } from '@/components/proctoring/ProctoringSettings';
+import {
   ArrowLeft,
   ArrowRight,
   CalendarDays,
@@ -22,6 +27,7 @@ import {
   Link2,
   Rocket,
   Save,
+  ShieldCheck,
   Shuffle,
   Timer,
   Trash2,
@@ -69,6 +75,7 @@ interface FormState {
   showDetailPolicy: Exam['showDetailPolicy'];
   scoreRetentionPolicy: Exam['scoreRetentionPolicy'];
   status: Exam['status'];
+  proctoring: ProctoringConfig;
 }
 
 const STEP_META = [
@@ -76,6 +83,7 @@ const STEP_META = [
   { label: 'Planification', description: 'Période et durée', icon: CalendarDays },
   { label: 'Comportement', description: 'Ordre et notation', icon: Shuffle },
   { label: 'Résultats', description: 'Visibilité des scores', icon: Eye },
+  { label: 'Surveillance', description: 'Proctoring et vie privée', icon: ShieldCheck },
 ] as const;
 const STEPS = STEP_META.map(({ label }) => label);
 
@@ -96,6 +104,7 @@ const DEFAULTS: FormState = {
   showDetailPolicy: 'score-correction',
   scoreRetentionPolicy: 'best',
   status: 'draft',
+  proctoring: DEFAULT_PROCTORING_CONFIG,
 };
 
 export default function ExamBuilder() {
@@ -109,6 +118,8 @@ export default function ExamBuilder() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState<Exam | null>(null);
   const [used, setUsed] = useState(0);
+  const [sebBrowserExamKey, setSebBrowserExamKey] = useState('');
+  const [sebConfigKey, setSebConfigKey] = useState('');
   const user = getCurrentUser();
 
   const quizzes = user ? getUserQuizzes(user.id).filter((q) => q.type === 'quiz') : [];
@@ -154,6 +165,7 @@ export default function ExamBuilder() {
         showDetailPolicy: exam.showDetailPolicy,
         scoreRetentionPolicy: exam.scoreRetentionPolicy,
         status: exam.status,
+        proctoring: exam.proctoring,
       });
       setSaved(exam);
     });
@@ -216,6 +228,17 @@ export default function ExamBuilder() {
       toast.error('La date de fermeture doit être après l\'ouverture');
       return;
     }
+    if (
+      form.proctoring.enabled
+      && form.proctoring.sebRequired
+      && !form.proctoring.sebKeyConfigured
+      && !sebBrowserExamKey.trim()
+      && !sebConfigKey.trim()
+    ) {
+      toast.error('Ajoutez au moins une Browser Exam Key ou Config Key pour rendre SEB obligatoire');
+      setStep(STEPS.length - 1);
+      return;
+    }
     setSaving(true);
     try {
       const payload: ExamPayload = {
@@ -234,6 +257,9 @@ export default function ExamBuilder() {
         showDetailPolicy: form.showDetailPolicy,
         scoreRetentionPolicy: form.scoreRetentionPolicy,
         status: publish ? 'scheduled' : (saved?.status ?? 'draft'),
+        proctoring: form.proctoring,
+        sebBrowserExamKey: sebBrowserExamKey.trim() || undefined,
+        sebConfigKey: sebConfigKey.trim() || undefined,
       };
 
       let exam: Exam | null;
@@ -660,6 +686,17 @@ export default function ExamBuilder() {
           )}
         </div>
         </>
+        )}
+
+        {step === 4 && (
+          <ProctoringSettings
+            value={form.proctoring}
+            onChange={(proctoring) => set('proctoring', proctoring)}
+            browserExamKey={sebBrowserExamKey}
+            configKey={sebConfigKey}
+            onBrowserExamKeyChange={setSebBrowserExamKey}
+            onConfigKeyChange={setSebConfigKey}
+          />
         )}
 
         {/* Actions */}

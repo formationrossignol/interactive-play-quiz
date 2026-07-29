@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   Award,
   BarChart3,
@@ -50,12 +50,14 @@ import { sanitizeHtml } from "@/lib/sanitizeHtml";
 import { toast } from "sonner";
 import { CourseCertificateDialog } from "@/components/CourseCertificateDialog";
 import { ScormPlayer } from "@/components/ScormPlayer";
+import { H5pPlayer } from "@/components/h5p/H5pPlayer";
+import type { H5pTrackingRecord } from "@/lib/h5pTracking";
 import defaultCourseOverviewImage from "@/assets/course-overview-default.jpg";
 
 /* ─── Type system ──────────────────────────────────────────────── */
 const TYPE_LABEL: Record<string, string> = {
   text: "Leçon", video: "Vidéo", quiz: "Quiz", poll: "Sondage", flashcard: "Flashcards",
-  document: "Document", iframe: "Iframe", "file-upload": "Dépôt de fichier", scorm: "SCORM",
+  document: "Document", iframe: "Iframe", "file-upload": "Dépôt de fichier", scorm: "SCORM", h5p: "Activité H5P",
 };
 
 // Background color for the small square icon chip
@@ -68,6 +70,8 @@ const TYPE_IC_BG: Record<string, string> = {
   document:  "var(--ap-pres)",
   iframe:    "var(--ap-pres)",
   "file-upload": "var(--ap-brand)",
+  scorm:     "var(--ap-pres)",
+  h5p:       "var(--ap-brand)",
 };
 
 // Kicker pill: [text color, bg, border]
@@ -80,6 +84,8 @@ const TYPE_KICKER: Record<string, [string, string, string]> = {
   document:  ["var(--ap-pres-deep)", "var(--ap-pres-soft)", "rgba(21,192,138,.4)"],
   iframe:    ["var(--ap-pres-deep)", "var(--ap-pres-soft)", "rgba(21,192,138,.4)"],
   "file-upload": ["var(--ap-brand-deep)", "var(--ap-brand-soft)", "rgba(112,72,255,.4)"],
+  scorm:     ["var(--ap-pres-deep)", "var(--ap-pres-soft)", "rgba(21,192,138,.4)"],
+  h5p:       ["var(--ap-brand-deep)", "var(--ap-brand-soft)", "rgba(112,72,255,.4)"],
 };
 
 // Big icon background for launch cards
@@ -102,6 +108,7 @@ const TypeIcon = ({ type }: { type: string }) => {
   if (type === "file-upload") return <Upload {...props} />;
   if (type === "iframe") return <MonitorSmartphone {...props} />;
   if (type === "scorm") return <PackageOpen {...props} />;
+  if (type === "h5p") return <PackageOpen {...props} />;
   return <Download {...props} />;
 };
 
@@ -220,7 +227,7 @@ function CourseOverviewScreen({
   const videoLessons = allLessons.filter(({ lesson }) => lesson.type === "video");
   const downloadableLessons = allLessons.filter(({ lesson }) => lesson.type === "document");
   const practiceLessons = allLessons.filter(({ lesson }) =>
-    ["quiz", "poll", "file-upload"].includes(lesson.type),
+    ["quiz", "poll", "file-upload", "h5p"].includes(lesson.type),
   );
   const textLessons = allLessons.filter(({ lesson }) => lesson.type === "text");
   const videoMinutes = totalMinutes(videoLessons);
@@ -531,6 +538,8 @@ function CourseOverviewScreen({
 const CourseViewer = () => {
   const navigate = useNavigate();
   const { courseId } = useParams<{ courseId: string }>();
+  const [searchParams] = useSearchParams();
+  const learningPathId = searchParams.get("pathId");
   const user = getCurrentUser();
 
   const [course, setCourse] = useState<ReturnType<typeof getCourseById>>(null);
@@ -694,6 +703,14 @@ const CourseViewer = () => {
     }
   };
 
+  const handleH5pTrackingChange = (record: H5pTrackingRecord) => {
+    if (!user || !course || !currentLessonId) return;
+    if (!["passed", "completed"].includes(record.status)) return;
+    if (progress?.completedLessonIds.includes(currentLessonId)) return;
+    markLessonComplete(course.id, currentLessonId, user.id);
+    setProgress(getCourseProgress(course.id, user.id));
+  };
+
   const toggleModule = (id: string) => {
     setCollapsedModules((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   };
@@ -765,7 +782,9 @@ const CourseViewer = () => {
         <Breadcrumb
           onHome={() => { window.location.href = "/"; }}
           items={[
-            { label: "Mes cours", onClick: () => navigate("/my-courses") },
+            learningPathId
+              ? { label: "Parcours", onClick: () => navigate(`/learning-path/${learningPathId}`) }
+              : { label: "Mes cours", onClick: () => navigate("/my-courses") },
             { label: course.title },
           ]}
         />
@@ -1134,6 +1153,47 @@ const CourseViewer = () => {
                     </button>
                   )}
                 </div>
+              )}
+
+              {/* ── H5P interactive activity ── */}
+              {lesson.type === "h5p" && (
+                lesson.h5pPackageId && lesson.h5pOwnerId ? (
+                  <H5pPlayer
+                    key={`${lesson.id}-${lesson.h5pPackageId}`}
+                    ownerId={lesson.h5pOwnerId}
+                    packageId={lesson.h5pPackageId}
+                    lessonId={lesson.id}
+                    courseId={course.id}
+                    user={user}
+                    onTrackingChange={handleH5pTrackingChange}
+                  />
+                ) : (
+                  <div style={{
+                    background: "var(--ap-card)",
+                    border: "var(--ap-border-w) solid var(--ap-line)",
+                    borderRadius: "var(--ap-r-lg)",
+                    boxShadow: "0 5px 0 var(--ap-line)",
+                    padding: 24,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 20,
+                  }}>
+                    <span style={{
+                      flexShrink: 0,
+                      width: 64,
+                      height: 64,
+                      borderRadius: "var(--ap-r-md)",
+                      display: "grid",
+                      placeItems: "center",
+                      background: "var(--ap-brand-soft)",
+                    }}>
+                      <PackageOpen size={30} color="var(--ap-brand)" />
+                    </span>
+                    <p style={{ color: "var(--ap-muted)", fontWeight: 700, fontSize: 14 }}>
+                      Aucun paquet H5P n’est associé à cette leçon.
+                    </p>
+                  </div>
+                )
               )}
 
               {/* ── Document ── */}

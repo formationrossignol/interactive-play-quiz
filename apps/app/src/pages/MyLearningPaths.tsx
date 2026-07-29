@@ -1,0 +1,209 @@
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  BookOpen,
+  CheckCircle2,
+  Copy,
+  GitBranch,
+  Pencil,
+  Plus,
+  Route,
+  Trash2,
+} from "lucide-react";
+import { toast } from "sonner";
+import { AppLayout } from "@/components/AppLayout";
+import { Breadcrumb } from "@/components/Breadcrumb";
+import { getCurrentUser } from "@/lib/auth";
+import {
+  deleteLearningPath,
+  duplicateLearningPath,
+  evaluateLearningPath,
+  getUserLearningPaths,
+  type LearningPath,
+} from "@/lib/learningPathStorage";
+
+export default function MyLearningPaths() {
+  const navigate = useNavigate();
+  const user = getCurrentUser();
+  const [paths, setPaths] = useState<LearningPath[]>([]);
+
+  const reload = () => {
+    if (user) setPaths(getUserLearningPaths(user.id));
+  };
+
+  useEffect(() => {
+    if (!user) {
+      navigate("/auth");
+      return;
+    }
+    setPaths(getUserLearningPaths(user.id));
+  }, [navigate, user]);
+
+  const progressByPath = useMemo(
+    () => new Map(paths.map((path) => [path.id, evaluateLearningPath(path, user?.id ?? "")])),
+    [paths, user?.id],
+  );
+
+  const handleDuplicate = (path: LearningPath) => {
+    const copy = duplicateLearningPath(path.id);
+    if (!copy) {
+      toast.error("Impossible de dupliquer ce parcours");
+      return;
+    }
+    reload();
+    toast.success("Parcours dupliqué");
+  };
+
+  const handleDelete = (path: LearningPath) => {
+    if (!window.confirm(`Supprimer définitivement « ${path.title} » ?`)) return;
+    if (!deleteLearningPath(path.id)) {
+      toast.error("Impossible de supprimer ce parcours");
+      return;
+    }
+    reload();
+    toast.success("Parcours supprimé");
+  };
+
+  if (!user) return null;
+
+  return (
+    <AppLayout subtitle="Mes parcours">
+      <div style={{ minHeight: "calc(100vh - var(--app-header-height, 64px))", padding: "24px clamp(20px, 4vw, 52px) 48px" }}>
+        <div style={{ maxWidth: 1180, margin: "0 auto" }}>
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <Breadcrumb
+              onHome={() => navigate("/dashboard")}
+              items={[{ label: "Mes parcours" }]}
+            />
+            <button
+              className="ap-btn ap-btn--pill"
+              style={{ background: "var(--ap-brand)", color: "#fff", border: "none", display: "inline-flex", gap: 8 }}
+              onClick={() => navigate("/learning-path-builder")}
+            >
+              <Plus className="h-4 w-4" />
+              Créer un parcours
+            </button>
+          </div>
+
+          <header style={{ margin: "34px 0 24px" }}>
+            <p className="ap-muted" style={{ fontSize: 13, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".08em" }}>
+              Formation structurée
+            </p>
+            <h1 className="ap-h1" style={{ fontSize: "clamp(28px, 4vw, 42px)", marginTop: 4 }}>Mes parcours</h1>
+            <p className="ap-muted" style={{ fontSize: 15, marginTop: 8 }}>
+              Assemblez vos cours, imposez des prérequis et pilotez la progression étape par étape.
+            </p>
+          </header>
+
+          {paths.length === 0 ? (
+            <div
+              className="ap-card"
+              style={{ padding: "52px 24px", textAlign: "center", borderStyle: "dashed", maxWidth: 720, margin: "48px auto 0" }}
+            >
+              <div style={{
+                width: 64, height: 64, borderRadius: "50%", margin: "0 auto 18px",
+                display: "grid", placeItems: "center", background: "color-mix(in srgb, var(--ap-brand) 12%, transparent)",
+              }}>
+                <Route style={{ width: 30, height: 30, color: "var(--ap-brand)" }} />
+              </div>
+              <h2 className="ap-h2" style={{ fontSize: 22 }}>Créez votre premier parcours</h2>
+              <p className="ap-muted" style={{ maxWidth: 480, margin: "8px auto 22px", lineHeight: 1.6 }}>
+                Sélectionnez plusieurs cours, définissez leur ordre et choisissez les conditions nécessaires pour débloquer chaque étape.
+              </p>
+              <button
+                className="ap-btn ap-btn--pill"
+                style={{ background: "var(--ap-brand)", color: "#fff", border: "none", display: "inline-flex", gap: 8 }}
+                onClick={() => navigate("/learning-path-builder")}
+              >
+                <Plus className="h-4 w-4" />
+                Créer un parcours
+              </button>
+            </div>
+          ) : (
+            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+              {paths.map((path) => {
+                const progress = progressByPath.get(path.id);
+                return (
+                  <article
+                    key={path.id}
+                    className="ap-card ap-card--hover flex flex-col"
+                    style={{ minHeight: 260, padding: 0, overflow: "hidden" }}
+                  >
+                    <div style={{
+                      minHeight: 94,
+                      padding: "20px 20px 16px",
+                      background: "linear-gradient(135deg, color-mix(in srgb, var(--ap-brand) 18%, var(--ap-card)), color-mix(in srgb, var(--ap-pres) 12%, var(--ap-card)))",
+                      borderBottom: "var(--ap-border-w) solid var(--ap-line)",
+                    }}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div style={{ width: 42, height: 42, borderRadius: "var(--ap-r-md)", display: "grid", placeItems: "center", background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)" }}>
+                          <Route style={{ width: 22, height: 22, color: "var(--ap-brand)" }} />
+                        </div>
+                        <span className="ap-pill" style={{ fontSize: 11 }}>
+                          {path.isSequential ? "Séquentiel" : "Flexible"}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-1 flex-col" style={{ padding: "18px 20px" }}>
+                      <h2 className="ap-h3" style={{ fontSize: 18 }}>{path.title}</h2>
+                      {path.description && (
+                        <p className="ap-muted line-clamp-2" style={{ fontSize: 13, lineHeight: 1.55, marginTop: 5 }}>{path.description}</p>
+                      )}
+
+                      <div className="flex flex-wrap gap-2" style={{ marginTop: 14 }}>
+                        <span className="ap-pill" style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11 }}>
+                          <BookOpen className="h-3 w-3" />
+                          {path.steps.length} étape{path.steps.length !== 1 ? "s" : ""}
+                        </span>
+                        <span className="ap-pill" style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11 }}>
+                          {path.isSequential ? <GitBranch className="h-3 w-3" /> : <Route className="h-3 w-3" />}
+                          {path.isSequential ? "Ordre imposé" : "Ordre libre"}
+                        </span>
+                      </div>
+
+                      <div style={{ marginTop: "auto", paddingTop: 18 }}>
+                        <div className="flex items-center justify-between" style={{ fontSize: 12, fontWeight: 700 }}>
+                          <span className="ap-muted">Progression</span>
+                          <span>{progress?.progressPercentage ?? 0}%</span>
+                        </div>
+                        <div style={{ height: 6, background: "var(--ap-line)", borderRadius: 999, overflow: "hidden", marginTop: 7 }}>
+                          <div style={{
+                            height: "100%",
+                            width: `${progress?.progressPercentage ?? 0}%`,
+                            background: progress?.isComplete ? "var(--ap-pres)" : "var(--ap-brand)",
+                            borderRadius: 999,
+                          }} />
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2" style={{ borderTop: "var(--ap-border-w) solid var(--ap-line)", marginTop: 16, paddingTop: 14 }}>
+                        <button className="ap-btn ap-btn--sm ap-btn--ghost ap-icon-btn" title="Modifier" onClick={(event) => { event.stopPropagation(); navigate(`/learning-path-builder?pathId=${path.id}`); }}>
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button className="ap-btn ap-btn--sm ap-btn--ghost ap-icon-btn" title="Dupliquer" onClick={(event) => { event.stopPropagation(); handleDuplicate(path); }}>
+                          <Copy className="h-4 w-4" />
+                        </button>
+                        <button className="ap-btn ap-btn--sm ap-btn--ghost ap-icon-btn" style={{ color: "var(--ap-quiz)" }} title="Supprimer" onClick={(event) => { event.stopPropagation(); handleDelete(path); }}>
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                        <button
+                          className="ap-btn ap-btn--sm ap-btn--pill"
+                          style={{ marginLeft: "auto", display: "inline-flex", gap: 6 }}
+                          onClick={(event) => { event.stopPropagation(); navigate(`/learning-path/${path.id}`); }}
+                        >
+                          {progress?.isComplete ? <CheckCircle2 className="h-4 w-4" /> : <BookOpen className="h-4 w-4" />}
+                          {progress && progress.completedSteps > 0 ? "Continuer" : "Commencer"}
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </AppLayout>
+  );
+}

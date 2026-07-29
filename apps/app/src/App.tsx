@@ -29,6 +29,9 @@ const LiveQuizPage = lazy(() => import("./pages/LiveQuizPage"));
 
 // Auth — loaded on first visit
 const AuthPage = lazy(() => import("./pages/AuthPage"));
+const OnboardingOrgPage = lazy(() => import("./pages/OnboardingOrgPage"));
+const InvitePage = lazy(() => import("./pages/InvitePage"));
+const OrgInvitations = lazy(() => import("./pages/OrgInvitations"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Public community pages that belong inside the product shell.
@@ -49,6 +52,10 @@ const QuizBuilder = lazy(() => import("./pages/QuizBuilder"));
 const QuizBuilderStart = lazy(() => import("./pages/QuizBuilderStart"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const SharedWithMe = lazy(() => import("./pages/SharedWithMe"));
+const Groups = lazy(() => import("./pages/Groups"));
+const Signatures = lazy(() => import("./pages/Signatures"));
+const ManualGrading = lazy(() => import("./pages/ManualGrading"));
+const MyGrades = lazy(() => import("./pages/MyGrades"));
 const MyQuizzes = lazy(() => import("./pages/MyQuizzes"));
 const MyPolls = lazy(() => import("./pages/MyPolls"));
 const MyFlashcards = lazy(() => import("./pages/MyFlashcards"));
@@ -57,6 +64,9 @@ const MyCourses = lazy(() => import("./pages/MyCourses"));
 const CourseBuilder = lazy(() => import("./pages/CourseBuilder"));
 const CourseViewer = lazy(() => import("./pages/CourseViewer"));
 const CourseScormReport = lazy(() => import("./pages/CourseScormReport"));
+const MyLearningPaths = lazy(() => import("./pages/MyLearningPaths"));
+const LearningPathBuilder = lazy(() => import("./pages/LearningPathBuilder"));
+const LearningPathViewer = lazy(() => import("./pages/LearningPathViewer"));
 const MyExams = lazy(() => import("./pages/MyExams"));
 const ExamBuilder = lazy(() => import("./pages/ExamBuilder"));
 const ExamRoom = lazy(() => import("./pages/ExamRoom"));
@@ -116,11 +126,18 @@ const App = () => (
             <Routes>
               <Route path="/" element={<RootRedirect />} />
               <Route path="/auth" element={<AuthPage />} />
+              <Route path="/onboarding/org" element={<OnboardingOrgPage />} />
+              <Route path="/invite/:token" element={<InvitePage />} />
+              <Route path="/org/invitations" element={<OrgInvitations />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/builder-start" element={<QuizBuilderStart />} />
               <Route path="/builder" element={<QuizBuilder />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/shared-with-me" element={<SharedWithMe />} />
+              <Route path="/groups" element={<Groups />} />
+              <Route path="/signatures" element={<Signatures />} />
+              <Route path="/grading" element={<ManualGrading />} />
+              <Route path="/my-grades" element={<MyGrades />} />
               <Route path="/my-quizzes" element={<MyQuizzes />} />
               <Route path="/my-polls" element={<MyPolls />} />
               <Route path="/my-flashcards" element={<MyFlashcards />} />
@@ -128,7 +145,13 @@ const App = () => (
               <Route path="/my-courses" element={<MyCourses />} />
               <Route path="/course-builder" element={<CourseBuilder />} />
               <Route path="/course/:courseId" element={<CourseViewer />} />
+<<<<<<< HEAD
               <Route path="/course/:courseId/scorm-report/:lessonId" element={<CourseScormReport />} />
+=======
+              <Route path="/my-learning-paths" element={<MyLearningPaths />} />
+              <Route path="/learning-path-builder" element={<LearningPathBuilder />} />
+              <Route path="/learning-path/:pathId" element={<LearningPathViewer />} />
+>>>>>>> origin/main
               <Route path="/discover" element={<DiscoverQuizzes />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/question-bank" element={<QuestionBank />} />

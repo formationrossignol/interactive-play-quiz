@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { t } from "@/lib/i18n";
 import type { User as AuthUser } from "@/lib/auth";
 import { MaterialSymbol } from "@/components/MaterialSymbol";
+import { OrgSwitcher } from "@/components/org/OrgSwitcher";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,6 +38,7 @@ export const CREATE_ITEMS = [
   { label: t("createFlashcards"), icon: "style", path: "/builder-start?type=flashcard" },
   { label: t("createSlides"), icon: "co_present", path: "/builder-start?type=slide" },
   { label: t("createCourse"), icon: "school", path: "/course-builder" },
+  { label: t("createLearningPath"), icon: "route", path: "/learning-path-builder" },
   { label: t("createExam"), icon: "assignment", path: "/exam-builder" },
 ];
 
@@ -48,6 +50,7 @@ export const CREATIONS_ITEMS = [
   { label: t("creationTypeFlashcard"), path: "/my-flashcards" },
   { label: t("creationTypeSlide"), path: "/my-slides" },
   { label: t("creationTypeCourse"), path: "/my-courses" },
+  { label: t("creationTypeLearningPath"), path: "/my-learning-paths" },
   { label: t("creationTypeExam"), path: "/my-exams" },
 ];
 
@@ -56,6 +59,10 @@ export const CREATIONS_ITEMS = [
 // (group related items, keep primary actions visually distinct).
 export const EXPLORE_ITEMS = [
   { label: t("navSharedWithMe"), icon: "group_share", path: "/shared-with-me", requiresAuth: true },
+  { label: t("navGroups"), icon: "groups", path: "/groups", requiresAuth: true },
+  { label: t("navSignatures"), icon: "draw", path: "/signatures", requiresAuth: true },
+  { label: t("navManualGrading"), icon: "edit_note", path: "/grading", requiresAuth: true },
+  { label: t("navMyGrades"), icon: "grading", path: "/my-grades", requiresAuth: true },
   { label: t("questionBank"), icon: "library_books", path: "/question-bank", requiresAuth: true },
   { label: t("discoverPublic"), icon: "explore", path: "/discover", requiresAuth: false },
   { label: t("footerCommunity"), icon: "groups", path: "/community", requiresAuth: false },
@@ -266,6 +273,7 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
         <SidebarFooter>
           <SidebarSeparator />
           <SidebarMenu>
+            <OrgSwitcher />
             <SidebarMenuItem>
               <SidebarMenuButton
                 isActive={location.pathname === "/profile"}

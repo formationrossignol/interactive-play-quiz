@@ -33,6 +33,8 @@ import type { ContentRow } from "@/lib/content/types";
 import { toast } from "sonner";
 import { useSaveShortcut } from "@/hooks/useSaveShortcut";
 import { showError } from "@/lib/errorTaxonomy";
+import { importH5pPackage } from "@/lib/h5pImport";
+import { H5pPlayer } from "@/components/h5p/H5pPlayer";
 import {
   BarChart2,
   BookOpen,
@@ -48,6 +50,8 @@ import {
   Sparkles,
   Trash2,
   Info,
+  Loader2,
+  PackageOpen,
   Upload,
   Video,
   X,
@@ -116,6 +120,7 @@ const CourseBuilder = () => {
   const [selected, setSelected] = useState<SelectedItem>({ type: "info" });
   const [saving, setSaving] = useState(false);
   const [contentRow, setContentRow] = useState<ContentRow | null>(null);
+  const [h5pImports, setH5pImports] = useState<Record<string, { busy: boolean; percent: number }>>({});
 
   const userQuizzes = user ? getUserQuizzes(user.id).filter((q) => q.type === "quiz") : [];
   const userPolls = user ? getUserQuizzes(user.id).filter((q) => q.type === "poll") : [];
@@ -296,6 +301,7 @@ const CourseBuilder = () => {
     if (type === "iframe") return <Globe className="h-3.5 w-3.5" />;
     if (type === "file-upload") return <Upload className="h-3.5 w-3.5" />;
     if (type === "scorm") return <PackageOpen className="h-3.5 w-3.5" />;
+    if (type === "h5p") return <PackageOpen className="h-3.5 w-3.5" />;
     return <GraduationCap className="h-3.5 w-3.5" />;
   };
 
@@ -308,6 +314,7 @@ const CourseBuilder = () => {
     if (type === "iframe") return "Iframe";
     if (type === "file-upload") return "Dépôt de fichier";
     if (type === "scorm") return "Package SCORM";
+    if (type === "h5p") return "Activité H5P";
     return "Texte";
   };
 
@@ -382,6 +389,46 @@ const CourseBuilder = () => {
       toast.error(err instanceof ScormManifestError ? err.message : "Import SCORM invalide. Réessayez ou vérifiez le fichier.");
     } finally {
       setScormUploading(null);
+    }
+  };
+
+  const handleH5pUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    moduleId: string,
+    lessonId: string,
+  ) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !user) return;
+
+    setH5pImports((current) => ({
+      ...current,
+      [lessonId]: { busy: true, percent: 0 },
+    }));
+    try {
+      const imported = await importH5pPackage(file, user.id, ({ percent }) => {
+        setH5pImports((current) => ({
+          ...current,
+          [lessonId]: { busy: true, percent },
+        }));
+      });
+      updateLesson(moduleId, lessonId, {
+        title: selectedLesson?.title === "Nouvelle leçon" ? imported.title : selectedLesson?.title,
+        h5pPackageId: imported.packageId,
+        h5pOwnerId: imported.ownerId,
+        h5pTitle: imported.title,
+        h5pMainLibrary: imported.mainLibrary,
+        h5pOriginalName: imported.originalName,
+        h5pImportedAt: imported.importedAt,
+      });
+      toast.success("Activité H5P importée. Vous pouvez la prévisualiser ci-dessous.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Impossible d’importer ce fichier H5P.");
+    } finally {
+      setH5pImports((current) => ({
+        ...current,
+        [lessonId]: { busy: false, percent: 0 },
+      }));
     }
   };
 
@@ -832,6 +879,7 @@ const CourseBuilder = () => {
                           <SelectItem value="iframe">Iframe</SelectItem>
                           <SelectItem value="file-upload">Dépôt de fichier</SelectItem>
                           <SelectItem value="scorm">Package SCORM</SelectItem>
+                          <SelectItem value="h5p">Activité H5P</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -1072,6 +1120,103 @@ const CourseBuilder = () => {
                           />
                         </div>
                       )}
+                    </div>
+                  )}
+
+                  {lesson.type === "h5p" && (
+                    <div style={{ display: "grid", gap: 14 }}>
+                      {fieldLabel("Paquet H5P")}
+                      {lesson.h5pPackageId && lesson.h5pOwnerId ? (
+                        <>
+                          <div style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 12,
+                            padding: "12px 14px",
+                            background: "var(--ap-paper-2)",
+                            border: "var(--ap-border-w) solid var(--ap-line)",
+                            borderRadius: "var(--ap-r-sm)",
+                          }}>
+                            <PackageOpen className="h-5 w-5 flex-shrink-0" style={{ color: "var(--ap-brand)" }} />
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <p style={{ fontSize: 13.5, fontWeight: 800 }}>{lesson.h5pTitle || lesson.title}</p>
+                              <p style={{ fontSize: 11.5, color: "var(--ap-muted)", marginTop: 2 }}>
+                                {lesson.h5pMainLibrary} · {lesson.h5pOriginalName}
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => updateLesson(moduleId, lessonId, {
+                                h5pPackageId: undefined,
+                                h5pOwnerId: undefined,
+                                h5pTitle: undefined,
+                                h5pMainLibrary: undefined,
+                                h5pOriginalName: undefined,
+                                h5pImportedAt: undefined,
+                              })}
+                              title="Retirer de la leçon"
+                              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ap-quiz)", padding: 4 }}
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          </div>
+                          <div>
+                            <p style={{ fontSize: 12, fontWeight: 800, marginBottom: 8, color: "var(--ap-muted)", textTransform: "uppercase", letterSpacing: ".04em" }}>
+                              Prévisualisation
+                            </p>
+                            <H5pPlayer
+                              key={lesson.h5pPackageId}
+                              ownerId={lesson.h5pOwnerId}
+                              packageId={lesson.h5pPackageId}
+                              lessonId={lesson.id}
+                              user={user}
+                              preview
+                            />
+                          </div>
+                        </>
+                      ) : (
+                        <div style={{
+                          padding: "12px 14px",
+                          borderRadius: "var(--ap-r-sm)",
+                          background: "var(--ap-brand-soft)",
+                          color: "var(--ap-brand-deep)",
+                          fontSize: 12.5,
+                          fontWeight: 700,
+                        }}>
+                          Importez un paquet complet contenant h5p.json, content/content.json et ses bibliothèques.
+                        </div>
+                      )}
+
+                      <label style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 8,
+                        padding: 24,
+                        border: "var(--ap-border-w) dashed var(--ap-line-2)",
+                        borderRadius: "var(--ap-r-sm)",
+                        cursor: h5pImports[lessonId]?.busy ? "wait" : "pointer",
+                        background: "var(--ap-paper-2)",
+                        opacity: h5pImports[lessonId]?.busy ? .75 : 1,
+                      }}>
+                        {h5pImports[lessonId]?.busy
+                          ? <Loader2 className="h-5 w-5 animate-spin" style={{ color: "var(--ap-brand)" }} />
+                          : <PackageOpen className="h-5 w-5" style={{ color: "var(--ap-muted)" }} />}
+                        <span style={{ fontSize: 13, fontWeight: 700, color: "var(--ap-muted)" }}>
+                          {h5pImports[lessonId]?.busy
+                            ? `Import en cours… ${h5pImports[lessonId].percent}%`
+                            : lesson.h5pPackageId ? "Remplacer le paquet .h5p" : "Importer un fichier .h5p"}
+                        </span>
+                        <span style={{ fontSize: 11, color: "var(--ap-muted)" }}>Paquet H5P complet, max 100 Mo</span>
+                        <input
+                          type="file"
+                          accept=".h5p,application/zip"
+                          disabled={h5pImports[lessonId]?.busy}
+                          style={{ display: "none" }}
+                          onChange={(event) => void handleH5pUpload(event, moduleId, lessonId)}
+                        />
+                      </label>
                     </div>
                   )}
 
