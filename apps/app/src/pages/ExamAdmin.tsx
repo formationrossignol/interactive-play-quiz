@@ -532,7 +532,7 @@ function ResultsTable({
             const isChatOpen = chatWithId === att.id;
             return (
               <Fragment key={att.id}>
-                <tr className="ap-row" style={{ borderTop: '1px solid var(--ap-line)', background: isExpanded ? 'var(--ap-paper)' : 'transparent' }}>
+                <tr className="ap-tr-hover" style={{ borderTop: '1px solid var(--ap-line)', background: isExpanded ? 'var(--ap-paper)' : 'transparent' }}>
                   <ResultsCell>
                     <button
                       type="button"
