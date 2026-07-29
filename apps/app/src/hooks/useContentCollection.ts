@@ -73,7 +73,12 @@ export function useContentCollection(type: ContentType): UseContentCollection {
       setTree(buildTree(folderRows));
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      const message = err instanceof Error
+        ? err.message
+        : (err && typeof err === 'object' && 'message' in err
+          ? String((err as { message: unknown }).message)
+          : String(err));
+      setError(message);
     } finally {
       setLoading(false);
     }
