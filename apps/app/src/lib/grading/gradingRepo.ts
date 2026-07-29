@@ -95,7 +95,7 @@ export async function createManualEvaluation(input: CreateManualEvaluationInput)
 export async function listEvaluationRoster(groupIds: string[]): Promise<RosterMember[]> {
   if (groupIds.length === 0) return [];
   const { data, error } = await supabase
-    .from("group_members")
+    .from("share_group_members")
     .select("group_id, user_id")
     .in("group_id", groupIds)
     .not("user_id", "is", null);

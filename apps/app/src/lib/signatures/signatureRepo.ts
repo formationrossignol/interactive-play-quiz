@@ -103,7 +103,7 @@ export async function listVisibleSignatureRequests(): Promise<SignatureRequest[]
 export async function listSignatureRecipients(groupIds: string[]): Promise<SignatureRecipient[]> {
   if (groupIds.length === 0) return [];
   const { data, error } = await supabase
-    .from("group_members")
+    .from("share_group_members")
     .select("group_id, user_id, pending_email")
     .in("group_id", groupIds);
   if (error) throw error;
