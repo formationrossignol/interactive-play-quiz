@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useSEO } from "@/hooks/useSEO";
 import { login, register, requestPasswordReset, verifyMfaLogin, getCurrentUser } from "@/lib/auth";
+import { acceptOrgInvitation, myOrgMemberships } from "@/lib/org/orgRepo";
 import { toast } from "sonner";
 import { t } from "@/lib/i18n";
 import { BrandMonogram } from "ui/BrandMonogram";
@@ -89,6 +90,14 @@ const AuthPage = () => {
     setBusy(false);
     if (result.status === "ok") {
       toast.success(t("loginSuccess"));
+      const inviteToken = new URLSearchParams(window.location.search).get("invite");
+      if (inviteToken) {
+        try {
+          await acceptOrgInvitation(inviteToken);
+        } catch {
+          // stale/expired invite — user is still logged in, proceed
+        }
+      }
       window.location.href = "/";
     } else if (result.status === "mfa_required") {
       setView("mfa");
@@ -123,7 +132,25 @@ const AuthPage = () => {
     setBusy(false);
     if (result.status === "ok") {
       toast.success(t("registerSuccess"));
-      window.location.href = "/";
+      const inviteToken = new URLSearchParams(window.location.search).get("invite");
+      if (inviteToken) {
+        try {
+          await acceptOrgInvitation(inviteToken);
+        } catch {
+          // Invitation may be stale/expired; the user still has an account —
+          // fall through to onboarding rather than blocking signup on it.
+        }
+        window.location.href = "/";
+        return;
+      }
+      let hasOrg = true;
+      try {
+        hasOrg = (await myOrgMemberships()).length > 0;
+      } catch {
+        // If the check itself fails, don't strand the user — send them
+        // through the normal path rather than blocking on onboarding.
+      }
+      window.location.href = hasOrg ? "/" : "/onboarding/org";
     } else if (result.status === "confirm_email") {
       setView("confirm-email");
     } else if (result.status === "email_in_use") {

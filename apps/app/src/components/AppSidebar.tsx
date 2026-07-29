@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { t } from "@/lib/i18n";
 import type { User as AuthUser } from "@/lib/auth";
 import { MaterialSymbol } from "@/components/MaterialSymbol";
+import { OrgSwitcher } from "@/components/org/OrgSwitcher";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -60,6 +61,8 @@ export const EXPLORE_ITEMS = [
   { label: t("navSharedWithMe"), icon: "group_share", path: "/shared-with-me", requiresAuth: true },
   { label: t("navGroups"), icon: "groups", path: "/groups", requiresAuth: true },
   { label: t("navSignatures"), icon: "draw", path: "/signatures", requiresAuth: true },
+  { label: t("navManualGrading"), icon: "edit_note", path: "/grading", requiresAuth: true },
+  { label: t("navMyGrades"), icon: "grading", path: "/my-grades", requiresAuth: true },
   { label: t("questionBank"), icon: "library_books", path: "/question-bank", requiresAuth: true },
   { label: t("discoverPublic"), icon: "explore", path: "/discover", requiresAuth: false },
   { label: t("footerCommunity"), icon: "groups", path: "/community", requiresAuth: false },
@@ -270,6 +273,7 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
         <SidebarFooter>
           <SidebarSeparator />
           <SidebarMenu>
+            <OrgSwitcher />
             <SidebarMenuItem>
               <SidebarMenuButton
                 isActive={location.pathname === "/profile"}
