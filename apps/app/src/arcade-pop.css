@@ -264,6 +264,31 @@ body { transition: background-color .25s ease, color .25s ease; }
 .ap-grip:focus-visible { opacity: 1; }
 @media (hover: none) { .ap-grip { opacity: 1; } }
 
+/* Contextual row actions: quiet by default, immediately available on hover,
+   keyboard focus, and touch devices. .ap-tr-hover is the table-safe variant
+   (no display:flex, since .ap-row would break <tr> layout). */
+.ap-hover-actions {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(6px);
+  transition: opacity .14s var(--ap-ease), transform .14s var(--ap-ease);
+}
+.ap-row:hover .ap-hover-actions,
+.ap-row:focus-within .ap-hover-actions,
+.ap-tr-hover:hover .ap-hover-actions,
+.ap-tr-hover:focus-within .ap-hover-actions {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(0);
+}
+@media (hover: none) {
+  .ap-hover-actions {
+    opacity: 1;
+    pointer-events: auto;
+    transform: none;
+  }
+}
+
 /* Carte « type de contenu » avec blob décoratif d'angle */
 .ap-tile { position: relative; overflow: hidden; }
 .ap-tile__blob {
