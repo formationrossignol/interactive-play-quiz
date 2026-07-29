@@ -69,11 +69,8 @@ export default function MyLearningPaths() {
 
   return (
     <AppLayout subtitle="Mes parcours">
-      <main className="mx-auto w-full max-w-6xl px-5 py-8 md:px-8">
+      <div className="mx-auto max-w-6xl px-6 py-10">
         <PageHeader
-          onHome={() => navigate("/dashboard")}
-          breadcrumbItems={[{ label: "Mes parcours" }]}
-          eyebrow="Formation structurée"
           title="Mes parcours"
           description="Assemblez vos cours, imposez des prérequis et pilotez la progression étape par étape."
           action={(
@@ -187,7 +184,7 @@ export default function MyLearningPaths() {
               })}
             </div>
           )}
-      </main>
+      </div>
     </AppLayout>
   );
 }

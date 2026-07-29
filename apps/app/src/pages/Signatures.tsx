@@ -201,11 +201,8 @@ export default function Signatures() {
 
   return (
     <AppLayout subtitle="Signatures">
-      <main className="mx-auto w-full max-w-6xl px-5 py-8 md:px-8">
+      <div className="mx-auto max-w-6xl px-6 py-10">
         <PageHeader
-          onHome={() => navigate("/dashboard")}
-          breadcrumbItems={[{ label: "Signatures" }]}
-          eyebrow="Validation collective"
           title="Signatures de groupe"
           description="Faites signer une charte, un règlement ou une validation à tous les membres d’un ou plusieurs groupes."
           action={(
@@ -361,7 +358,7 @@ export default function Signatures() {
             </section>
           </div>
         )}
-      </main>
+      </div>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl" style={{ background: "var(--ap-card)", color: "var(--ap-ink)", borderColor: "var(--ap-line)" }}>

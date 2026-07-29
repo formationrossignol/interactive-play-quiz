@@ -89,11 +89,8 @@ export default function ManualGrading() {
 
   return (
     <AppLayout subtitle="Saisie des notes">
-      <main className="mx-auto w-full max-w-[1500px] px-5 py-8 md:px-8">
+      <div className="mx-auto max-w-6xl px-6 py-10">
         <PageHeader
-          onHome={() => navigate("/dashboard")}
-          breadcrumbItems={[{ label: "Saisie des notes" }]}
-          eyebrow="Évaluation manuelle"
           title="Saisie et gestion des notes"
           description="Notez les devoirs, TP, projets, soutenances et activités en présentiel, puis publiez les résultats au moment choisi."
           action={(
@@ -196,7 +193,7 @@ export default function ManualGrading() {
             )}
           </div>
         )}
-      </main>
+      </div>
 
       <CreateManualEvaluationDialog
         open={createOpen}

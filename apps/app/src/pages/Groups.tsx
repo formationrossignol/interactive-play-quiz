@@ -144,11 +144,8 @@ export default function Groups() {
 
   return (
     <AppLayout subtitle="Groupes">
-      <main className="mx-auto w-full max-w-6xl px-5 py-8 md:px-8">
+      <div className="mx-auto max-w-6xl px-6 py-10">
         <PageHeader
-          onHome={() => navigate("/dashboard")}
-          breadcrumbItems={[{ label: "Groupes" }]}
-          eyebrow="Contacts réutilisables"
           title="Mes groupes"
           description="Une seule liste de membres pour vos partages de cours et vos demandes de signature."
         />
@@ -273,7 +270,7 @@ export default function Groups() {
             )}
           </section>
         </div>
-      </main>
+      </div>
     </AppLayout>
   );
 }

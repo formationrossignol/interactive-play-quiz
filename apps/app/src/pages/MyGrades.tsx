@@ -100,11 +100,8 @@ export default function MyGrades() {
 
   return (
     <AppLayout subtitle="Mes notes">
-      <main className="mx-auto w-full max-w-5xl px-5 py-8 md:px-8">
+      <div className="mx-auto max-w-6xl px-6 py-10">
         <PageHeader
-          onHome={() => navigate("/dashboard")}
-          breadcrumbItems={[{ label: "Mes notes" }]}
-          eyebrow="Résultats publiés"
           title="Mes notes"
           description="Retrouvez vos résultats, barèmes, coefficients et appréciations. Les brouillons restent invisibles."
         />
@@ -193,7 +190,7 @@ export default function MyGrades() {
             </div>
           </>
         )}
-      </main>
+      </div>
 
       <Dialog open={Boolean(historyGrade)} onOpenChange={(open) => { if (!open) setHistoryGrade(null); }}>
         <DialogContent className="max-h-[80vh] overflow-y-auto sm:max-w-lg" style={{ background: "var(--ap-card)", color: "var(--ap-ink)", borderColor: "var(--ap-line)" }}>
