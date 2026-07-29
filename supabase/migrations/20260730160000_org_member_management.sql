@@ -23,7 +23,7 @@ begin
   return query
   select
     r.user_id,
-    u.email,
+    u.email::text,
     p.username,
     array_agg(r.role order by r.role),
     min(r.created_at)

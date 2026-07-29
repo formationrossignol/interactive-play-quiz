@@ -31,6 +31,13 @@ const roleOptions: { value: OrgRole; label: string }[] = [
 
 const roleLabel = (role: OrgRole): string => roleOptions.find((r) => r.value === role)?.label ?? role;
 
+/** Postgrest errors are plain {code,message,...} objects, not `instanceof Error`. */
+function errorMessage(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (err && typeof err === "object" && "message" in err) return String((err as { message: unknown }).message);
+  return String(err);
+}
+
 function MemberRoster({ orgId, isAdmin }: { orgId: string; isAdmin: boolean }) {
   const [members, setMembers] = useState<OrgMember[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,7 +68,7 @@ function MemberRoster({ orgId, isAdmin }: { orgId: string; isAdmin: boolean }) {
       await revokeOrgRole(orgId, userId, role);
       setMembers((prev) => prev.map((m) => (m.user_id === userId ? { ...m, roles: m.roles.filter((r) => r !== role) } : m)));
     } catch (err) {
-      if (err instanceof Error && err.message.includes("last_admin")) {
+      if (errorMessage(err).includes("last_admin")) {
         toast.error("Impossible de retirer le dernier administrateur de l'organisation.");
       } else {
         showError(err);
@@ -75,7 +82,7 @@ function MemberRoster({ orgId, isAdmin }: { orgId: string; isAdmin: boolean }) {
       await removeOrgMember(orgId, userId);
       setMembers((prev) => prev.filter((m) => m.user_id !== userId));
     } catch (err) {
-      if (err instanceof Error && err.message.includes("last_admin")) {
+      if (errorMessage(err).includes("last_admin")) {
         toast.error("Impossible de retirer le dernier administrateur de l'organisation.");
       } else {
         showError(err);
