@@ -25,6 +25,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
+import { t, tVars } from "@/lib/i18n";
 import { Breadcrumb, type BreadcrumbItem } from "@/components/Breadcrumb";
 import { ShareContentModal } from "@/components/ShareContentModal";
 import { showError } from "@/lib/errorTaxonomy";
@@ -104,13 +105,16 @@ function ContentSkeleton({ viewMode }: { viewMode: "grid" | "list" }) {
 const deleteTypeOf = (t: ContentType): "quiz" | "poll" | "flashcard" | "slide" =>
   t === "poll" ? "poll" : t === "flashcard" ? "flashcard" : t === "slide" ? "slide" : "quiz";
 
-const PUBLIC_LABELS: Record<ContentType, string> = {
-  quiz: "Quiz publics",
-  poll: "Sondages publics",
-  flashcard: "Paquets publics",
-  slide: "Présentations publiques",
-  course: "Cours publics",
-  exam: "Examens publics",
+// A function (not a module-scope map) so it re-reads the active language on
+// every render — a module-scope literal would freeze to whichever language
+// was active the first time this module loaded.
+const publicLabelFor = (type: ContentType): string => {
+  if (type === "quiz") return t("explorerPublicLabelQuiz");
+  if (type === "poll") return t("explorerPublicLabelPoll");
+  if (type === "flashcard") return t("explorerPublicLabelFlashcard");
+  if (type === "slide") return t("explorerPublicLabelSlide");
+  if (type === "course") return t("explorerPublicLabelCourse");
+  return t("explorerPublicLabelExam");
 };
 
 const toggleBtnStyle = (active: boolean): React.CSSProperties => ({
@@ -232,7 +236,7 @@ function FolderDropCard({ folder, count, onOpen }: { folder: FolderRow; count: n
       <div style={{ minWidth: 0, flex: 1 }}>
         <b className="ap-h3" style={{ fontSize: 15, display: "block" }}>{folder.name}</b>
         <small className="ap-muted" style={{ fontWeight: 700, fontSize: 12 }}>
-          {count} élément{count !== 1 ? "s" : ""}
+          {count} {count === 1 ? t("explorerElementSingular") : t("explorerElementPlural")}
         </small>
       </div>
       <ChevronRight style={{ width: 16, height: 16, color: "var(--ap-line-2)" }} />
@@ -386,7 +390,7 @@ export function ContentExplorer({
 
   const breadcrumbItems: BreadcrumbItem[] = useMemo(() => {
     if (view !== "all") {
-      const label = view === "favorites" ? "Favoris" : view === "public" ? "Contenus publics" : "Corbeille";
+      const label = view === "favorites" ? t("favorites") : view === "public" ? t("explorerPublicContent") : t("explorerTrash");
       return [{ label }];
     }
     const folders: BreadcrumbItem[] = breadcrumb.map((f) =>
@@ -402,34 +406,34 @@ export function ContentExplorer({
   const logUnexpected = (context: string) => (e: unknown) => console.error(`[ContentExplorer.${context}]`, e);
 
   const handleMove = (rowId: string, folderId: string | null) =>
-    c.moveContent(rowId, folderId).then(() => toast.success("Déplacé"))
-      .catch((e) => { logUnexpected("move")(e); toast.error("Erreur lors du déplacement"); });
+    c.moveContent(rowId, folderId).then(() => toast.success(t("toastMoved")))
+      .catch((e) => { logUnexpected("move")(e); toast.error(t("toastMoveError")); });
 
   const handleFavorite = (d: ContentDisplay) =>
     c.toggleFavorite(d.id)
-      .then(() => toast.success(d.isFavorite ? "Retiré des favoris" : "Ajouté aux favoris"))
-      .catch((e) => { logUnexpected("favorite")(e); toast.error("Erreur"); });
+      .then(() => toast.success(d.isFavorite ? t("toastFavRemoved") : t("toastFavAdded")))
+      .catch((e) => { logUnexpected("favorite")(e); toast.error(t("toastGenericError")); });
 
   const handleTrash = (rowId: string) =>
-    c.trashItem(rowId).then(() => toast.success("Mis à la corbeille", {
+    c.trashItem(rowId).then(() => toast.success(t("toastTrashed"), {
       action: {
-        label: "Annuler",
+        label: t("toastUndo"),
         onClick: () => {
           void c.restoreItem(rowId)
-            .then(() => toast.success("Suppression annulée"))
-            .catch((e) => { logUnexpected("undoTrash")(e); toast.error("Impossible d'annuler"); });
+            .then(() => toast.success(t("toastUndoSuccess")))
+            .catch((e) => { logUnexpected("undoTrash")(e); toast.error(t("toastUndoError")); });
         },
       },
     }))
-      .catch((e) => { logUnexpected("trash")(e); toast.error("Erreur"); });
+      .catch((e) => { logUnexpected("trash")(e); toast.error(t("toastGenericError")); });
 
   const handleDuplicate = (rowId: string) =>
-    c.duplicateItem(rowId).then(() => toast.success("Dupliqué"))
+    c.duplicateItem(rowId).then(() => toast.success(t("toastDuplicated")))
       .catch((e) => showError(e, "ContentExplorer.duplicate"));
 
   const handleRestore = (rowId: string) =>
-    c.restoreItem(rowId).then(() => toast.success("Restauré"))
-      .catch((e) => { logUnexpected("restore")(e); toast.error("Erreur"); });
+    c.restoreItem(rowId).then(() => toast.success(t("toastRestored")))
+      .catch((e) => { logUnexpected("restore")(e); toast.error(t("toastGenericError")); });
 
   const handleCopyLink = async (d: ContentDisplay) => {
     const id = String((d.data.id as string | undefined) ?? d.id);
@@ -440,16 +444,16 @@ export function ContentExplorer({
       : `/quiz/${id}`;
     try {
       await navigator.clipboard.writeText(`${window.location.origin}${path}`);
-      toast.success("Lien copié !");
+      toast.success(t("toastLinkCopied"));
     } catch {
-      toast.error("Impossible de copier le lien");
+      toast.error(t("toastLinkCopyError"));
     }
   };
 
   const handlePermDeleteConfirm = () => {
     if (permDeleteTarget) {
-      c.removeItem(permDeleteTarget.id).then(() => toast.success("Supprimé définitivement"))
-        .catch((e) => { logUnexpected("permDelete")(e); toast.error("Erreur"); });
+      c.removeItem(permDeleteTarget.id).then(() => toast.success(t("toastDeletedPermanently")))
+        .catch((e) => { logUnexpected("permDelete")(e); toast.error(t("toastGenericError")); });
     }
     setDeleteDialogOpen(false);
     setPermDeleteTarget(null);
@@ -469,8 +473,8 @@ export function ContentExplorer({
     if (activeId.startsWith("movefolder:")) {
       const folderId = activeId.slice("movefolder:".length);
       c.moveFolder(folderId, target).catch((err) => {
-        if (err instanceof Error && err.message === "cycle") toast.error("Déplacement impossible (cycle)");
-        else toast.error("Erreur lors du déplacement");
+        if (err instanceof Error && err.message === "cycle") toast.error(t("toastMoveFolderCycle"));
+        else toast.error(t("toastMoveError"));
       });
     } else {
       handleMove(activeId, target);
@@ -526,7 +530,7 @@ export function ContentExplorer({
           className="ap-btn ap-btn--ghost ap-btn--sm ap-btn--pill"
           onClick={() => { setSearch(""); setCategory("Tous"); }}
         >
-          Effacer la recherche
+          {t("explorerClearSearch")}
         </button>
       ) : undefined}
     />
@@ -548,11 +552,11 @@ export function ContentExplorer({
   } else if (view === "favorites") {
     content = favorites.length
       ? paginatedBlock(favorites)
-      : emptyBox("Aucun favori", `Marquez un ${oneLabel} d'une étoile pour le retrouver ici.`, <Star style={{ width: 26, height: 26 }} />);
+      : emptyBox(t("explorerNoFavoritesTitle"), tVars("explorerNoFavoritesBody", { item: oneLabel }), <Star style={{ width: 26, height: 26 }} />);
   } else if (view === "public") {
     content = publicDisplay.length
       ? paginatedBlock(publicDisplay)
-      : emptyBox(`Aucun ${oneLabel} public`, "Rendez un de vos contenus public pour qu'il apparaisse ici.", <Globe style={{ width: 26, height: 26 }} />);
+      : emptyBox(tVars("explorerNoPublicTitle", { item: oneLabel }), t("explorerNoPublicBody"), <Globe style={{ width: 26, height: 26 }} />);
   } else {
     // library
     const showFolders = !searching && childFolders.length > 0;
@@ -560,18 +564,18 @@ export function ContentExplorer({
     let body: ReactNode;
     if (libraryItems.length === 0 && !showFolders) {
       if (searching) {
-        body = emptyBox(`Aucun résultat pour « ${search || category} »`, "Vérifiez l'orthographe ou élargissez le filtre de catégorie.", <Search style={{ width: 26, height: 26 }} />);
+        body = emptyBox(tVars("explorerNoResultsTitle", { query: search || category }), t("explorerNoResultsBody"), <Search style={{ width: 26, height: 26 }} />);
       } else if (inFolder) {
-        body = emptyBox("Ce dossier est vide", `Glissez-déposez des ${oneLabel}s ici depuis « Tous », ou créez-en un directement.`, <FolderIcon style={{ width: 26, height: 26 }} />);
+        body = emptyBox(t("explorerEmptyFolderTitle"), tVars("explorerEmptyFolderBody", { item: oneLabel }), <FolderIcon style={{ width: 26, height: 26 }} />);
       } else {
-        body = emptyBox(`Créez votre premier ${oneLabel}`, "Partez d'un modèle, importez un fichier, ou générez-le par IA depuis vos supports.", <Sparkles style={{ width: 26, height: 26 }} />);
+        body = emptyBox(tVars("explorerFirstItemTitle", { item: oneLabel }), t("explorerFirstItemBody"), <Sparkles style={{ width: 26, height: 26 }} />);
       }
     } else {
       body = (
         <>
           {showFolders && (
             <>
-              <div style={SECTION_TITLE}>Dossiers<span style={{ flex: 1, height: 2, background: "var(--ap-line)", borderRadius: 2 }} /></div>
+              <div style={SECTION_TITLE}>{t("explorerFolders")}<span style={{ flex: 1, height: 2, background: "var(--ap-line)", borderRadius: 2 }} /></div>
               <div className="grid gap-4 mb-6" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(260px,1fr))" }}>
                 {childFolders.map((f) => (
                   <FolderDropCard key={f.id} folder={f} count={folderCounts[f.id] ?? 0} onOpen={() => goFolder(f.id)} />
@@ -625,31 +629,31 @@ export function ContentExplorer({
                     overflowY: "auto",
                   }}
                 >
-                  <div style={SIDE_LABEL}>Raccourcis</div>
+                  <div style={SIDE_LABEL}>{t("explorerShortcuts")}</div>
                   <ShortcutRow
                     icon={<Star style={{ width: 16, height: 16 }} />}
-                    label="Favoris"
+                    label={t("favorites")}
                     count={filterFavorites(display).length}
                     active={view === "favorites"}
                     onClick={() => goShortcut("favorites")}
                   />
                   <ShortcutRow
                     icon={<Globe style={{ width: 16, height: 16 }} />}
-                    label={PUBLIC_LABELS[type]}
+                    label={publicLabelFor(type)}
                     count={c.publicItems.length}
                     active={view === "public"}
                     onClick={() => goShortcut("public")}
                   />
                   <ShortcutRow
                     icon={<Trash2 style={{ width: 16, height: 16 }} />}
-                    label="Corbeille"
+                    label={t("explorerTrash")}
                     count={trashed.length}
                     active={view === "trash"}
                     onClick={() => goShortcut("trash")}
                   />
 
                   <div style={{ borderTop: "var(--ap-border-w) solid var(--ap-line)", margin: "10px 0 8px" }} />
-                  <div style={SIDE_LABEL}>Bibliothèque</div>
+                  <div style={SIDE_LABEL}>{t("explorerLibrary")}</div>
                   <FolderExplorer
                     tree={c.tree}
                     currentFolderId={c.currentFolderId}
@@ -679,7 +683,7 @@ export function ContentExplorer({
                     <div className="relative flex-1">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: "var(--ap-muted)" }} />
                       <input
-                        placeholder="Rechercher…"
+                        placeholder={t("explorerSearchPlaceholder")}
                         value={search}
                         onChange={(e) => { setSearch(e.target.value); setPage(1); }}
                         style={{
@@ -695,28 +699,28 @@ export function ContentExplorer({
                     </div>
                     <Select value={category} onValueChange={(v) => { setCategory(v); setPage(1); }}>
                       <SelectTrigger className="w-[180px]" style={triggerStyle}>
-                        <SelectValue placeholder="Catégorie" />
+                        <SelectValue placeholder={t("explorerCategoryPlaceholder")} />
                       </SelectTrigger>
                       <SelectContent style={selectContentStyle}>
                         {derivedCategories.map((cat) => (
-                          <SelectItem key={cat} value={cat}>{cat === "Tous" ? "Toutes catégories" : cat}</SelectItem>
+                          <SelectItem key={cat} value={cat}>{cat === "Tous" ? t("explorerAllCategories") : cat}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                     {extraToolbar}
                     <Select value={sort} onValueChange={(v) => setSort(v as SortOption)}>
                       <SelectTrigger className="w-[150px]" style={triggerStyle}>
-                        <SelectValue placeholder="Trier" />
+                        <SelectValue placeholder={t("explorerSortPlaceholder")} />
                       </SelectTrigger>
                       <SelectContent style={selectContentStyle}>
-                        <SelectItem value="newest">Plus récent</SelectItem>
-                        <SelectItem value="oldest">Plus ancien</SelectItem>
-                        <SelectItem value="az">A → Z</SelectItem>
+                        <SelectItem value="newest">{t("explorerSortNewest")}</SelectItem>
+                        <SelectItem value="oldest">{t("explorerSortOldest")}</SelectItem>
+                        <SelectItem value="az">{t("explorerSortAZ")}</SelectItem>
                       </SelectContent>
                     </Select>
                     <div className="flex gap-1 flex-shrink-0">
-                      <button onClick={() => setViewMode("grid")} style={toggleBtnStyle(viewMode === "grid")} title="Vue grille"><LayoutGrid className="w-4 h-4" /></button>
-                      <button onClick={() => setViewMode("list")} style={toggleBtnStyle(viewMode === "list")} title="Vue liste"><List className="w-4 h-4" /></button>
+                      <button onClick={() => setViewMode("grid")} style={toggleBtnStyle(viewMode === "grid")} title={t("explorerGridView")}><LayoutGrid className="w-4 h-4" /></button>
+                      <button onClick={() => setViewMode("list")} style={toggleBtnStyle(viewMode === "list")} title={t("explorerListView")}><List className="w-4 h-4" /></button>
                     </div>
                   </div>
                 )}

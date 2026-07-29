@@ -35,8 +35,8 @@ const MyQuizzes = () => {
       accentBtn="ap-btn--quiz"
       headerTitle={t("myQuizzes")}
       headerSubtitle={t("myQuizzesSubtitle")}
-      rootLabel="Tous les quiz"
-      oneLabel="quiz"
+      rootLabel={t("explorerRootQuiz")}
+      oneLabel={t("explorerOneQuiz")}
       cta={{ label: t("createQuizCta"), onClick: () => navigate("/builder-start?type=quiz") }}
       headerExtras={
         <button

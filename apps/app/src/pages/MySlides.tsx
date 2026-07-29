@@ -32,9 +32,9 @@ const MySlides = () => {
         accentBtn="ap-btn--pres"
         headerTitle={t("mySlides")}
         headerSubtitle={t("mySlidesSubtitle")}
-        rootLabel="Toutes les présentations"
-        oneLabel="présentation"
-        cta={{ label: "Créer une présentation", onClick: () => navigate("/presentation-editor") }}
+        rootLabel={t("explorerRootSlide")}
+        oneLabel={t("explorerOneSlide")}
+        cta={{ label: t("createSlideCta"), onClick: () => navigate("/presentation-editor") }}
         headerExtras={(
           <button className="ap-btn ap-btn--sm ap-btn--ghost" onClick={() => setImportOpen(true)}>
             <Upload size={15} aria-hidden="true" />

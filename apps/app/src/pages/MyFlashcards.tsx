@@ -19,8 +19,8 @@ const MyFlashcards = () => {
       accentBtn="ap-btn--flash"
       headerTitle={t("myFlashcards")}
       headerSubtitle={t("myFlashcardsSubtitle")}
-      rootLabel="Tous les paquets"
-      oneLabel="paquet"
+      rootLabel={t("explorerRootFlashcard")}
+      oneLabel={t("explorerOneFlashcard")}
       cta={{ label: t("createFlashcardSet"), onClick: () => navigate("/builder-start?type=flashcard") }}
       renderCard={(d, ctx) => <GenericCard d={d} ctx={ctx} config={config} navigate={navigate} />}
       renderRow={(d, ctx) => <GenericRow d={d} ctx={ctx} config={config} navigate={navigate} />}

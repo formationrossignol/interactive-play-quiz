@@ -12,6 +12,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { getCourseProgress, type Course } from "@/lib/courseStorage";
 import type { ContentDisplay } from "@/lib/content/contentView";
 import { ContentCardHeader, ContentRowThumbnail } from "@/components/content/ContentCardHeader";
+import { t } from "@/lib/i18n";
 
 const CATEGORIES = ["Tous", "Informatique", "Langues", "Sciences", "Histoire", "Arts", "Business", "Santé", "Autre"];
 
@@ -191,12 +192,12 @@ const MyCourses = () => {
         type="course"
         reloadRef={reloadRef}
         accentBtn="ap-btn--pres"
-        headerTitle="Mes cours"
-        headerSubtitle="Construisez et suivez vos supports interactifs"
-        rootLabel="Tous les cours"
-        oneLabel="cours"
+        headerTitle={t("myCourses")}
+        headerSubtitle={t("myCoursesSubtitle")}
+        rootLabel={t("explorerRootCourse")}
+        oneLabel={t("explorerOneCourse")}
         categories={CATEGORIES}
-        cta={{ label: "Créer un cours", onClick: () => navigate("/course-builder") }}
+        cta={{ label: t("createCourseCta"), onClick: () => navigate("/course-builder") }}
         headerExtras={
           <button
             onClick={() => setGeneratorOpen(true)}
