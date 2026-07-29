@@ -863,40 +863,68 @@ const CourseBuilder = () => {
                       onBlur={(e) => { e.currentTarget.style.borderColor = "var(--ap-line)"; }}
                     />
                   </div>
-                  <div className="flex gap-3 flex-wrap">
-                    <div style={{ flex: "1 1 140px" }}>
-                      {fieldLabel("Type")}
-                      <Select
-                        value={lesson.type}
-                        onValueChange={(v) => updateLesson(moduleId, lessonId, { type: v as Lesson["type"], linkedItemId: undefined })}
-                      >
-                        <SelectTrigger style={{ ...selectStyle, height: "40px" }}><SelectValue /></SelectTrigger>
-                        <SelectContent style={{ background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-md)" }}>
-                          {LESSON_TYPES.map(({ value, label, description, icon: Icon }) => (
-                            <SelectItem
-                              key={value}
-                              value={value}
-                              icon={<Icon className="h-4 w-4" style={{ color: "var(--ap-muted)" }} />}
-                              description={description}
-                            >
+                  <div>
+                    {fieldLabel("Type")}
+                    <div
+                      role="radiogroup"
+                      aria-label="Type de leçon"
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))",
+                        gap: 8,
+                      }}
+                    >
+                      {LESSON_TYPES.map(({ value, label, description, icon: Icon }) => {
+                        const isSelected = lesson.type === value;
+                        return (
+                          <button
+                            key={value}
+                            type="button"
+                            role="radio"
+                            aria-checked={isSelected}
+                            onClick={() => updateLesson(moduleId, lessonId, { type: value, linkedItemId: undefined })}
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              alignItems: "flex-start",
+                              gap: 6,
+                              padding: "10px 12px",
+                              borderRadius: "var(--ap-r-md)",
+                              border: `2px solid ${isSelected ? "var(--ap-brand)" : "var(--ap-line)"}`,
+                              background: isSelected ? "var(--ap-brand-soft)" : "var(--ap-card)",
+                              textAlign: "left",
+                              cursor: "pointer",
+                              fontFamily: "inherit",
+                            }}
+                          >
+                            <Icon
+                              size={18}
+                              aria-hidden="true"
+                              style={{ color: isSelected ? "var(--ap-brand-deep)" : "var(--ap-muted)" }}
+                            />
+                            <span style={{ fontSize: "12.5px", fontWeight: 800, color: isSelected ? "var(--ap-brand-deep)" : "var(--ap-ink)" }}>
                               {label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                            </span>
+                            <span style={{ fontSize: "11px", fontWeight: 600, lineHeight: 1.3, color: "var(--ap-muted)" }}>
+                              {description}
+                            </span>
+                          </button>
+                        );
+                      })}
                     </div>
-                    <div style={{ flex: "0 1 100px" }}>
-                      {fieldLabel("Durée (min)")}
-                      <input
-                        type="number"
-                        min={1}
-                        value={lesson.estimatedMinutes ?? ""}
-                        onChange={(e) => updateLesson(moduleId, lessonId, { estimatedMinutes: parseInt(e.target.value) || undefined })}
-                        style={{ ...inputStyle, width: "100%" }}
-                        onFocus={(e) => { e.currentTarget.style.borderColor = "var(--ap-brand)"; }}
-                        onBlur={(e) => { e.currentTarget.style.borderColor = "var(--ap-line)"; }}
-                      />
-                    </div>
+                  </div>
+
+                  <div style={{ maxWidth: "160px" }}>
+                    {fieldLabel("Durée (min)")}
+                    <input
+                      type="number"
+                      min={1}
+                      value={lesson.estimatedMinutes ?? ""}
+                      onChange={(e) => updateLesson(moduleId, lessonId, { estimatedMinutes: parseInt(e.target.value) || undefined })}
+                      style={{ ...inputStyle, width: "100%" }}
+                      onFocus={(e) => { e.currentTarget.style.borderColor = "var(--ap-brand)"; }}
+                      onBlur={(e) => { e.currentTarget.style.borderColor = "var(--ap-line)"; }}
+                    />
                   </div>
 
                   {lesson.type === "text" && (
