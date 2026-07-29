@@ -51,7 +51,6 @@ import {
   Trash2,
   Info,
   Loader2,
-  PackageOpen,
   Upload,
   Video,
   X,
