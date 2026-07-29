@@ -145,13 +145,10 @@ const App = () => (
               <Route path="/my-courses" element={<MyCourses />} />
               <Route path="/course-builder" element={<CourseBuilder />} />
               <Route path="/course/:courseId" element={<CourseViewer />} />
-<<<<<<< HEAD
               <Route path="/course/:courseId/scorm-report/:lessonId" element={<CourseScormReport />} />
-=======
               <Route path="/my-learning-paths" element={<MyLearningPaths />} />
               <Route path="/learning-path-builder" element={<LearningPathBuilder />} />
               <Route path="/learning-path/:pathId" element={<LearningPathViewer />} />
->>>>>>> origin/main
               <Route path="/discover" element={<DiscoverQuizzes />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/question-bank" element={<QuestionBank />} />
