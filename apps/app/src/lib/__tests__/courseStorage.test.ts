@@ -49,3 +49,37 @@ describe('duplicateCourse cap enforcement', () => {
     expect(() => duplicateCourse(created.id)).toThrow(PlanLimitError);
   });
 });
+
+describe('H5P lesson persistence', () => {
+  it('keeps package metadata when a course is stored and duplicated', () => {
+    vi.mocked(getCurrentUser).mockReturnValue({
+      id: USER_ID, email: 'a@b.com', username: 'A', createdAt: '2026-01-01T00:00:00Z', plan: 'pro',
+    });
+    const created = createCourse({
+      ...coursePayload(),
+      modules: [{
+        id: 'module-1',
+        title: 'Module',
+        lessons: [{
+          id: 'lesson-1',
+          title: 'Activité interactive',
+          content: '',
+          type: 'h5p',
+          h5pPackageId: 'package-1',
+          h5pOwnerId: USER_ID,
+          h5pTitle: 'Questionnaire',
+          h5pMainLibrary: 'H5P.MultiChoice',
+          h5pOriginalName: 'questionnaire.h5p',
+        }],
+      }],
+    });
+
+    const duplicated = duplicateCourse(created.id);
+    expect(duplicated?.modules[0].lessons[0]).toMatchObject({
+      type: 'h5p',
+      h5pPackageId: 'package-1',
+      h5pOwnerId: USER_ID,
+      h5pMainLibrary: 'H5P.MultiChoice',
+    });
+  });
+});

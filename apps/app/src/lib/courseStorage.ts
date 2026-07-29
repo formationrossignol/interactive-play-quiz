@@ -5,7 +5,7 @@ export interface Lesson {
   id: string;
   title: string;
   content: string;
-  type: 'text' | 'quiz' | 'poll' | 'flashcard' | 'document' | 'video' | 'iframe' | 'file-upload';
+  type: 'text' | 'quiz' | 'poll' | 'flashcard' | 'document' | 'video' | 'iframe' | 'file-upload' | 'h5p';
   linkedItemId?: string; // quiz/poll/flashcard: id of the linked saved_quizzes item
   estimatedMinutes?: number;
   documentName?: string;
@@ -13,6 +13,12 @@ export interface Lesson {
   videoUrl?: string;
   videoType?: 'youtube' | 'url';
   iframeUrl?: string; // iframe: embedded page URL
+  h5pPackageId?: string; // h5p: package path segment under h5p-packages/<owner>/<package>
+  h5pOwnerId?: string; // h5p: uploader id, retained for collaborative courses
+  h5pTitle?: string; // h5p: title read from h5p.json
+  h5pMainLibrary?: string; // h5p: content type machine name
+  h5pOriginalName?: string;
+  h5pImportedAt?: string;
 }
 
 export interface Module {
