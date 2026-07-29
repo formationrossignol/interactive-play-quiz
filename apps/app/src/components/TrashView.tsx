@@ -177,7 +177,7 @@ export const TrashView = ({ items, viewMode, onRestore, onPermanentDelete }: Tra
             return (
               <div
                 key={item.id}
-                className="flex items-center gap-4 px-4 py-3"
+                className="ap-row flex items-center gap-4 px-4 py-3"
                 style={{ borderBottom: "var(--ap-border-w) solid var(--ap-line)", opacity: 0.85 }}
               >
                 <TrashHeader item={item} compact />
@@ -197,7 +197,7 @@ export const TrashView = ({ items, viewMode, onRestore, onPermanentDelete }: Tra
                 >
                   {days === 0 ? "Expire aujourd'hui" : `${days}j restants`}
                 </span>
-                <div className="flex items-center gap-1 flex-shrink-0">
+                <div className="ap-hover-actions flex items-center gap-1 flex-shrink-0">
                   <button
                     onClick={() => onRestore(item.id)}
                     className="ap-btn ap-btn--ghost ap-btn--sm"

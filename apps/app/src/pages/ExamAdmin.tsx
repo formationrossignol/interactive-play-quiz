@@ -342,7 +342,7 @@ export default function ExamAdmin() {
         {/* Submissions */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
           <h2 style={{ fontFamily: 'var(--ap-font-display)', fontWeight: 600, fontSize: 18 }}>
-            Résultats ({completed.length} soumis{completed.length > 1 ? 's' : ''})
+            Résultats ({completed.length} soumis)
           </h2>
           <ExportMenu
             style={{ ...outlineBtn, fontSize: 12 }}
@@ -532,7 +532,7 @@ function ResultsTable({
             const isChatOpen = chatWithId === att.id;
             return (
               <Fragment key={att.id}>
-                <tr style={{ borderTop: '1px solid var(--ap-line)', background: isExpanded ? 'var(--ap-paper)' : 'transparent' }}>
+                <tr className="ap-row" style={{ borderTop: '1px solid var(--ap-line)', background: isExpanded ? 'var(--ap-paper)' : 'transparent' }}>
                   <ResultsCell>
                     <button
                       type="button"
@@ -575,7 +575,7 @@ function ResultsTable({
                     {att.submittedAt ? new Date(att.submittedAt).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }) : '—'}
                   </ResultsCell>
                   <ResultsCell style={{ textAlign: 'right' }}>
-                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <div className="ap-hover-actions" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                       <button
                         type="button"
                         onClick={() => onToggleChat(att.id)}
@@ -602,7 +602,7 @@ function ResultsTable({
                 {isChatOpen && (
                   <tr style={{ borderTop: '1px solid var(--ap-line)' }}>
                     <td colSpan={7}>
-                      <AttemptChat examId={exam.id} attemptId={att.id} participantName={att.participantName} />
+                      <AttemptChat examId={exam.id} attemptId={att.id} participantName={att.participantName} isSubmitted={att.status === 'submitted' || att.status === 'auto-submitted'} />
                     </td>
                   </tr>
                 )}
@@ -649,7 +649,7 @@ function AttemptRow({
   return (
     <div className="ea-attempt">
       <div
-        className="ea-attempt-header"
+        className="ea-attempt-header ap-row"
         onClick={onToggleExpand}
         style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', cursor: 'pointer', transition: 'background .15s', background: isExpanded ? 'var(--ap-paper)' : 'transparent' }}
       >
@@ -709,20 +709,22 @@ function AttemptRow({
         </span>
 
         {/* Host actions */}
-        <button
-          onClick={(e) => { e.stopPropagation(); onToggleChat(); }}
-          title="Discussion avec ce participant"
-          style={{ ...rowIconBtn, color: isChatOpen ? 'var(--ap-brand)' : 'var(--ap-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-        >
-          <MessageCircle className="h-4 w-4" />
-        </button>
-        <button
-          onClick={(e) => { e.stopPropagation(); onRemove(); }}
-          title="Retirer ce participant"
-          style={{ ...rowIconBtn, color: '#ff5a4d', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-        >
-          <Trash2 className="h-4 w-4" />
-        </button>
+        <div className="ap-hover-actions" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <button
+            onClick={(e) => { e.stopPropagation(); onToggleChat(); }}
+            title="Discussion avec ce participant"
+            style={{ ...rowIconBtn, color: isChatOpen ? 'var(--ap-brand)' : 'var(--ap-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          >
+            <MessageCircle className="h-4 w-4" />
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); onRemove(); }}
+            title="Retirer ce participant"
+            style={{ ...rowIconBtn, color: '#ff5a4d', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </div>
 
         <ChevronDown style={{ width: 14, height: 14, color: 'var(--ap-muted)', transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }} />
       </div>
@@ -730,7 +732,7 @@ function AttemptRow({
       {/* Persistent chat thread */}
       {isChatOpen && (
         <div onClick={(e) => e.stopPropagation()} style={{ borderTop: 'var(--ap-border-w) solid var(--ap-line)' }}>
-          <AttemptChat examId={exam.id} attemptId={att.id} participantName={att.participantName} />
+          <AttemptChat examId={exam.id} attemptId={att.id} participantName={att.participantName} isSubmitted={att.status === 'submitted' || att.status === 'auto-submitted'} />
         </div>
       )}
 
@@ -742,7 +744,7 @@ function AttemptRow({
   );
 }
 
-function AttemptChat({ examId, attemptId, participantName }: { examId: string; attemptId: string; participantName: string }) {
+function AttemptChat({ examId, attemptId, participantName, isSubmitted }: { examId: string; attemptId: string; participantName: string; isSubmitted: boolean }) {
   const [messages, setMessages] = useState<ExamMessage[]>([]);
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
@@ -770,7 +772,7 @@ function AttemptChat({ examId, attemptId, participantName }: { examId: string; a
 
   const handleSend = async () => {
     const body = text.trim();
-    if (!body || sending) return;
+    if (!body || sending || isSubmitted) return;
     setSending(true);
     try {
       const sent = await sendMessage(examId, attemptId, 'host', body);
@@ -807,20 +809,26 @@ function AttemptChat({ examId, attemptId, participantName }: { examId: string; a
           </div>
         ))}
       </div>
-      <div style={{ display: 'flex', gap: 8 }}>
-        <input
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') void handleSend(); }}
-          placeholder={`Message à ${participantName}…`}
-          style={{
-            flex: 1, padding: '9px 12px', fontFamily: 'var(--ap-font-body)', fontWeight: 700, fontSize: 13,
-            color: 'var(--ap-ink)', background: 'var(--ap-paper-2)', border: 'var(--ap-border-w) solid var(--ap-line)',
-            borderRadius: 'var(--ap-r-sm)', outline: 'none',
-          }}
-        />
-        <button onClick={() => void handleSend()} disabled={sending} style={{ ...outlineBtn, fontSize: 12 }}>Envoyer</button>
-      </div>
+      {isSubmitted ? (
+        <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--ap-muted)', margin: 0 }}>
+          {participantName} a déjà soumis son examen — impossible de lui envoyer un nouveau message.
+        </p>
+      ) : (
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') void handleSend(); }}
+            placeholder={`Message à ${participantName}…`}
+            style={{
+              flex: 1, padding: '9px 12px', fontFamily: 'var(--ap-font-body)', fontWeight: 700, fontSize: 13,
+              color: 'var(--ap-ink)', background: 'var(--ap-paper-2)', border: 'var(--ap-border-w) solid var(--ap-line)',
+              borderRadius: 'var(--ap-r-sm)', outline: 'none',
+            }}
+          />
+          <button onClick={() => void handleSend()} disabled={sending} style={{ ...outlineBtn, fontSize: 12 }}>Envoyer</button>
+        </div>
+      )}
     </div>
   );
 }
