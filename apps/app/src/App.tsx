@@ -51,6 +51,8 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const SharedWithMe = lazy(() => import("./pages/SharedWithMe"));
 const Groups = lazy(() => import("./pages/Groups"));
 const Signatures = lazy(() => import("./pages/Signatures"));
+const ManualGrading = lazy(() => import("./pages/ManualGrading"));
+const MyGrades = lazy(() => import("./pages/MyGrades"));
 const MyQuizzes = lazy(() => import("./pages/MyQuizzes"));
 const MyPolls = lazy(() => import("./pages/MyPolls"));
 const MyFlashcards = lazy(() => import("./pages/MyFlashcards"));
@@ -127,6 +129,8 @@ const App = () => (
               <Route path="/shared-with-me" element={<SharedWithMe />} />
               <Route path="/groups" element={<Groups />} />
               <Route path="/signatures" element={<Signatures />} />
+              <Route path="/grading" element={<ManualGrading />} />
+              <Route path="/my-grades" element={<MyGrades />} />
               <Route path="/my-quizzes" element={<MyQuizzes />} />
               <Route path="/my-polls" element={<MyPolls />} />
               <Route path="/my-flashcards" element={<MyFlashcards />} />

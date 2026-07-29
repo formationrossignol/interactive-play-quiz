@@ -60,6 +60,8 @@ export const EXPLORE_ITEMS = [
   { label: t("navSharedWithMe"), icon: "group_share", path: "/shared-with-me", requiresAuth: true },
   { label: t("navGroups"), icon: "groups", path: "/groups", requiresAuth: true },
   { label: t("navSignatures"), icon: "draw", path: "/signatures", requiresAuth: true },
+  { label: t("navManualGrading"), icon: "edit_note", path: "/grading", requiresAuth: true },
+  { label: t("navMyGrades"), icon: "grading", path: "/my-grades", requiresAuth: true },
   { label: t("questionBank"), icon: "library_books", path: "/question-bank", requiresAuth: true },
   { label: t("discoverPublic"), icon: "explore", path: "/discover", requiresAuth: false },
   { label: t("footerCommunity"), icon: "groups", path: "/community", requiresAuth: false },
