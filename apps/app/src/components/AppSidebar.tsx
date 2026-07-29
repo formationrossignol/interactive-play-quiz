@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { t } from "@/lib/i18n";
 import type { User as AuthUser } from "@/lib/auth";
 import { MaterialSymbol } from "@/components/MaterialSymbol";
+import { OrgSwitcher } from "@/components/org/OrgSwitcher";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -272,6 +273,7 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
         <SidebarFooter>
           <SidebarSeparator />
           <SidebarMenu>
+            <OrgSwitcher />
             <SidebarMenuItem>
               <SidebarMenuButton
                 isActive={location.pathname === "/profile"}
