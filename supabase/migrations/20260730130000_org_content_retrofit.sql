@@ -3,25 +3,11 @@
 -- application code (or security-definer function) needs to change to keep
 -- inserting rows: today every user has exactly one org (Brivia), so the
 -- fallback always resolves correctly.
---
--- DEVIATION FROM PLAN: the implementation plan's actor_tables list also
--- names manual_evaluations, manual_evaluation_groups and manual_grades
--- (feat/manual-grading, supabase/migrations/20260729120000_manual_grading.sql).
--- That migration is NOT present on this branch — feat/org-rbac-foundation
--- forked from main before feat/manual-grading merged, so those three tables
--- do not exist here (verified: no `create table public.manual_*` anywhere
--- under supabase/migrations/ in this branch). Altering a non-existent table
--- would abort this whole migration, so they're deliberately omitted below.
--- Once feat/manual-grading is merged into this branch's ancestry, add a
--- follow-up migration that: (a) adds org_id + the set_default_org_id()
--- trigger to those three tables the same way, and (b) revisits Task 3's
--- rename migration, whose create_manual_evaluation()/submit_manual_grade()
--- redefinitions assume those tables/functions already exist.
 
 -- set_default_org_id: for rows inserted by an authenticated *actor* acting
--- for themself (content, folders, exams, quiz_attempts, content_shares).
--- Falls back to the caller's first (oldest) org membership when org_id
--- isn't supplied.
+-- for themself (content, folders, exams, quiz_attempts, content_shares,
+-- manual_evaluations, manual_evaluation_groups, manual_grades). Falls back
+-- to the caller's first (oldest) org membership when org_id isn't supplied.
 create or replace function public.set_default_org_id()
 returns trigger
 language plpgsql
@@ -84,7 +70,8 @@ declare
   brivia_id uuid;
   t text;
   actor_tables text[] := array[
-    'content', 'folders', 'exams', 'quiz_attempts', 'content_shares'
+    'content', 'folders', 'exams', 'quiz_attempts', 'content_shares',
+    'manual_evaluations', 'manual_evaluation_groups', 'manual_grades'
   ];
   target_user_tables text[] := array['notifications', 'notification_preferences'];
 begin
