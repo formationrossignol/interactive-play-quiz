@@ -30,7 +30,7 @@ import {
   ArrowRight, Copy, Library, HelpCircle, Home, type LucideIcon,
   ListChecks, CircleDot, ToggleLeft, TextCursorInput, ArrowUpDown,
   Link2, TextSelect, SlidersHorizontal, Rows3, ChartNoAxesColumn,
-  Star, MessageSquareText, Gauge, Layers3, Presentation, LayoutTemplate,
+  Star, MessageSquareText, Gauge, Layers3, Presentation, LayoutTemplate, BarChart2,
 } from "lucide-react";
 import { ImportFileModal } from "./ImportFileModal";
 import { getCurrentUser } from "@/lib/auth";
@@ -38,6 +38,7 @@ import { useSaveShortcut } from "@/hooks/useSaveShortcut";
 import { getPlan, isQuestionTypeLocked } from "@/lib/plans";
 import { showError } from "@/lib/errorTaxonomy";
 import { saveQuiz, updateQuiz, getQuizById, saveQuizAsTemplate, type SavedQuiz } from "@/lib/quizStorage";
+import { readSessionHistory } from "@/lib/sessionState";
 import {
   getContent,
   getContentBySource,
@@ -563,6 +564,7 @@ export const QuizBuilder = () => {
 
   const isPoll = quizType === "poll";
   const isFlashcard = quizType === "flashcard";
+  const hasHistory = !isFlashcard && !!quizId && readSessionHistory(quizId).length > 0;
 
   // ── State ────────────────────────────────────────────────────────────────
   const [title, setTitle] = useState("");
@@ -1451,6 +1453,18 @@ export const QuizBuilder = () => {
             )}
           </Tooltip>
         </TooltipProvider>
+
+        {/* Results */}
+        {hasHistory && (
+          <button
+            onClick={() => navigate(isPoll ? `/poll-results/${quizId}` : `/quiz-results/${quizId}`)}
+            className="ap-btn ap-btn--ghost"
+            style={{ padding: "10px 18px", borderRadius: "var(--ap-r-sm)", fontSize: 14 }}
+          >
+            <BarChart2 style={{ width: 15, height: 15 }} />
+            Résultats
+          </button>
+        )}
 
         {/* Preview */}
         <TooltipProvider delayDuration={180}>
