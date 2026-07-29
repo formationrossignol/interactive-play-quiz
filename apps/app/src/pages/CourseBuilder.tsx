@@ -42,18 +42,20 @@ import {
   ChevronRight,
   FileText,
   Globe,
-  GraduationCap,
   Layers,
   PackageOpen,
   Plus,
+  Puzzle,
   Save,
   Sparkles,
   Trash2,
   Info,
   Loader2,
+  Type as TypeIcon,
   Upload,
   Video,
   X,
+  type LucideIcon,
 } from "lucide-react";
 import { CollaboratorsButton } from "@/components/CollaboratorsButton";
 
@@ -63,6 +65,28 @@ const extractYouTubeId = (url: string): string | null => {
 };
 
 const CATEGORIES = ["Autre", "Informatique", "Langues", "Sciences", "Histoire", "Arts", "Business", "Santé"];
+
+interface LessonTypeMeta {
+  value: Lesson["type"];
+  label: string;
+  description: string;
+  icon: LucideIcon;
+}
+
+const LESSON_TYPES: LessonTypeMeta[] = [
+  { value: "text", label: "Texte", description: "Paragraphes, mise en forme, images.", icon: TypeIcon },
+  { value: "quiz", label: "Quiz", description: "Questions à choix multiples notées automatiquement.", icon: BookOpen },
+  { value: "poll", label: "Sondage", description: "Question d'opinion, sans bonne réponse.", icon: BarChart2 },
+  { value: "flashcard", label: "Flashcards", description: "Cartes recto-verso pour la mémorisation.", icon: Layers },
+  { value: "document", label: "Document", description: "PDF ou fichier à consulter en ligne.", icon: FileText },
+  { value: "video", label: "Vidéo", description: "Lecture d'une vidéo YouTube ou hébergée.", icon: Video },
+  { value: "iframe", label: "Iframe", description: "Contenu web externe intégré dans la leçon.", icon: Globe },
+  { value: "file-upload", label: "Dépôt de fichier", description: "Les apprenants déposent un fichier à rendre.", icon: Upload },
+  { value: "scorm", label: "Package SCORM", description: "Module e-learning importé au format SCORM.", icon: PackageOpen },
+  { value: "h5p", label: "Activité H5P", description: "Activité interactive H5P : exercice, jeu, simulation.", icon: Puzzle },
+];
+
+const lessonTypeMeta = (type: Lesson["type"]) => LESSON_TYPES.find((t) => t.value === type) ?? LESSON_TYPES[0];
 
 const inputStyle: React.CSSProperties = {
   width: "100%",
@@ -292,29 +316,8 @@ const CourseBuilder = () => {
   };
 
   const lessonTypeIcon = (type: Lesson["type"]) => {
-    if (type === "quiz") return <BookOpen className="h-3.5 w-3.5" />;
-    if (type === "poll") return <BarChart2 className="h-3.5 w-3.5" />;
-    if (type === "flashcard") return <Layers className="h-3.5 w-3.5" />;
-    if (type === "document") return <FileText className="h-3.5 w-3.5" />;
-    if (type === "video") return <Video className="h-3.5 w-3.5" />;
-    if (type === "iframe") return <Globe className="h-3.5 w-3.5" />;
-    if (type === "file-upload") return <Upload className="h-3.5 w-3.5" />;
-    if (type === "scorm") return <PackageOpen className="h-3.5 w-3.5" />;
-    if (type === "h5p") return <PackageOpen className="h-3.5 w-3.5" />;
-    return <GraduationCap className="h-3.5 w-3.5" />;
-  };
-
-  const lessonTypeLabel = (type: Lesson["type"]) => {
-    if (type === "quiz") return "Quiz";
-    if (type === "poll") return "Sondage";
-    if (type === "flashcard") return "Flashcards";
-    if (type === "document") return "Document";
-    if (type === "video") return "Vidéo";
-    if (type === "iframe") return "Iframe";
-    if (type === "file-upload") return "Dépôt de fichier";
-    if (type === "scorm") return "Package SCORM";
-    if (type === "h5p") return "Activité H5P";
-    return "Texte";
+    const Icon = lessonTypeMeta(type).icon;
+    return <Icon className="h-3.5 w-3.5" />;
   };
 
   const handleFileUpload = (
@@ -869,16 +872,16 @@ const CourseBuilder = () => {
                       >
                         <SelectTrigger style={{ ...selectStyle, height: "40px" }}><SelectValue /></SelectTrigger>
                         <SelectContent style={{ background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-md)" }}>
-                          <SelectItem value="text">Texte</SelectItem>
-                          <SelectItem value="quiz">Quiz</SelectItem>
-                          <SelectItem value="poll">Sondage</SelectItem>
-                          <SelectItem value="flashcard">Flashcards</SelectItem>
-                          <SelectItem value="document">Document</SelectItem>
-                          <SelectItem value="video">Vidéo</SelectItem>
-                          <SelectItem value="iframe">Iframe</SelectItem>
-                          <SelectItem value="file-upload">Dépôt de fichier</SelectItem>
-                          <SelectItem value="scorm">Package SCORM</SelectItem>
-                          <SelectItem value="h5p">Activité H5P</SelectItem>
+                          {LESSON_TYPES.map(({ value, label, description, icon: Icon }) => (
+                            <SelectItem
+                              key={value}
+                              value={value}
+                              icon={<Icon className="h-4 w-4" style={{ color: "var(--ap-muted)" }} />}
+                              description={description}
+                            >
+                              {label}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
