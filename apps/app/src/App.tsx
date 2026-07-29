@@ -31,6 +31,7 @@ const LiveQuizPage = lazy(() => import("./pages/LiveQuizPage"));
 const AuthPage = lazy(() => import("./pages/AuthPage"));
 const OnboardingOrgPage = lazy(() => import("./pages/OnboardingOrgPage"));
 const InvitePage = lazy(() => import("./pages/InvitePage"));
+const OrgInvitations = lazy(() => import("./pages/OrgInvitations"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Public community pages that belong inside the product shell.
@@ -126,6 +127,7 @@ const App = () => (
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/onboarding/org" element={<OnboardingOrgPage />} />
               <Route path="/invite/:token" element={<InvitePage />} />
+              <Route path="/org/invitations" element={<OrgInvitations />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/builder-start" element={<QuizBuilderStart />} />
               <Route path="/builder" element={<QuizBuilder />} />
