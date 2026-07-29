@@ -10,14 +10,14 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-indigo-600 text-white shadow-ap hover:bg-indigo-700 hover:shadow-ap-hover",
+        default: "bg-ap-brand text-white shadow-ap hover:bg-ap-brand-deep hover:shadow-ap-hover",
         destructive: "bg-destructive text-destructive-foreground shadow-ap hover:bg-destructive/90 hover:shadow-ap-hover",
         outline: "border-2 border-primary bg-background text-primary hover:bg-primary/5 hover:border-primary/80",
-        secondary: "bg-indigo-100 text-indigo-700 shadow-ap hover:bg-indigo-200",
+        secondary: "bg-ap-brand-soft text-ap-brand-deep shadow-ap hover:bg-ap-brand-soft/70",
         success: "bg-emerald-600 text-white shadow-ap hover:bg-emerald-700",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline hover:text-primary/80",
-        hero: "bg-indigo-600 text-white text-lg font-bold hover:bg-indigo-700 transition-colors",
+        hero: "bg-ap-brand text-white text-lg font-bold hover:bg-ap-brand-deep transition-colors",
         quiz: "bg-white/10 backdrop-blur-sm border border-white/20 text-white hover:bg-white/20 hover:border-white/30",
       },
       size: {

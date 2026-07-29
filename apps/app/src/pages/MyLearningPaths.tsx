@@ -12,7 +12,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { AppLayout } from "@/components/AppLayout";
-import { Breadcrumb } from "@/components/Breadcrumb";
+import { PageHeader } from "@/components/ui/page-header";
+import { Button } from "@/components/ui/button";
 import { getCurrentUser } from "@/lib/auth";
 import {
   deleteLearningPath,
@@ -68,32 +69,20 @@ export default function MyLearningPaths() {
 
   return (
     <AppLayout subtitle="Mes parcours">
-      <div style={{ minHeight: "calc(100vh - var(--app-header-height, 64px))", padding: "24px clamp(20px, 4vw, 52px) 48px" }}>
-        <div style={{ maxWidth: 1180, margin: "0 auto" }}>
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <Breadcrumb
-              onHome={() => navigate("/dashboard")}
-              items={[{ label: "Mes parcours" }]}
-            />
-            <button
-              className="ap-btn ap-btn--pill"
-              style={{ background: "var(--ap-brand)", color: "#fff", border: "none", display: "inline-flex", gap: 8 }}
-              onClick={() => navigate("/learning-path-builder")}
-            >
+      <main className="mx-auto w-full max-w-6xl px-5 py-8 md:px-8">
+        <PageHeader
+          onHome={() => navigate("/dashboard")}
+          breadcrumbItems={[{ label: "Mes parcours" }]}
+          eyebrow="Formation structurée"
+          title="Mes parcours"
+          description="Assemblez vos cours, imposez des prérequis et pilotez la progression étape par étape."
+          action={(
+            <Button onClick={() => navigate("/learning-path-builder")}>
               <Plus className="h-4 w-4" />
               Créer un parcours
-            </button>
-          </div>
-
-          <header style={{ margin: "34px 0 24px" }}>
-            <p className="ap-muted" style={{ fontSize: 13, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".08em" }}>
-              Formation structurée
-            </p>
-            <h1 className="ap-h1" style={{ fontSize: "clamp(28px, 4vw, 42px)", marginTop: 4 }}>Mes parcours</h1>
-            <p className="ap-muted" style={{ fontSize: 15, marginTop: 8 }}>
-              Assemblez vos cours, imposez des prérequis et pilotez la progression étape par étape.
-            </p>
-          </header>
+            </Button>
+          )}
+        />
 
           {paths.length === 0 ? (
             <div
@@ -110,14 +99,10 @@ export default function MyLearningPaths() {
               <p className="ap-muted" style={{ maxWidth: 480, margin: "8px auto 22px", lineHeight: 1.6 }}>
                 Sélectionnez plusieurs cours, définissez leur ordre et choisissez les conditions nécessaires pour débloquer chaque étape.
               </p>
-              <button
-                className="ap-btn ap-btn--pill"
-                style={{ background: "var(--ap-brand)", color: "#fff", border: "none", display: "inline-flex", gap: 8 }}
-                onClick={() => navigate("/learning-path-builder")}
-              >
+              <Button onClick={() => navigate("/learning-path-builder")}>
                 <Plus className="h-4 w-4" />
                 Créer un parcours
-              </button>
+              </Button>
             </div>
           ) : (
             <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
@@ -202,8 +187,7 @@ export default function MyLearningPaths() {
               })}
             </div>
           )}
-        </div>
-      </div>
+      </main>
     </AppLayout>
   );
 }

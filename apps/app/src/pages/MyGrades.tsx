@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout";
-import { Breadcrumb } from "@/components/Breadcrumb";
+import { PageHeader } from "@/components/ui/page-header";
 import {
   Dialog,
   DialogContent,
@@ -101,15 +101,13 @@ export default function MyGrades() {
   return (
     <AppLayout subtitle="Mes notes">
       <main className="mx-auto w-full max-w-5xl px-5 py-8 md:px-8">
-        <Breadcrumb onHome={() => navigate("/dashboard")} items={[{ label: "Mes notes" }]} />
-
-        <header className="mb-7 mt-7">
-          <p className="ap-muted text-xs font-extrabold uppercase tracking-[.08em]">Résultats publiés</p>
-          <h1 className="ap-h1 mt-1 text-3xl md:text-4xl">Mes notes</h1>
-          <p className="ap-muted mt-2 max-w-2xl text-sm">
-            Retrouvez vos résultats, barèmes, coefficients et appréciations. Les brouillons restent invisibles.
-          </p>
-        </header>
+        <PageHeader
+          onHome={() => navigate("/dashboard")}
+          breadcrumbItems={[{ label: "Mes notes" }]}
+          eyebrow="Résultats publiés"
+          title="Mes notes"
+          description="Retrouvez vos résultats, barèmes, coefficients et appréciations. Les brouillons restent invisibles."
+        />
 
         {loading ? (
           <section className="ap-card p-5"><ListSkeleton rows={6} /></section>

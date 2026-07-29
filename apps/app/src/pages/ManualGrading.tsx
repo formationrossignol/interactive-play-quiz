@@ -9,10 +9,10 @@ import {
 } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout";
-import { Breadcrumb } from "@/components/Breadcrumb";
 import { CreateManualEvaluationDialog } from "@/components/grading/CreateManualEvaluationDialog";
 import { ManualGradebook } from "@/components/grading/ManualGradebook";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
 import { ListSkeleton, PageSkeleton } from "@/components/ui/skeletons";
 import { getCurrentUser } from "@/lib/auth";
 import { showError } from "@/lib/errorTaxonomy";
@@ -90,21 +90,19 @@ export default function ManualGrading() {
   return (
     <AppLayout subtitle="Saisie des notes">
       <main className="mx-auto w-full max-w-[1500px] px-5 py-8 md:px-8">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <Breadcrumb onHome={() => navigate("/dashboard")} items={[{ label: "Saisie des notes" }]} />
-          <Button onClick={() => setCreateOpen(true)}>
-            <Plus />
-            Nouvelle évaluation
-          </Button>
-        </div>
-
-        <header className="mb-7 mt-7">
-          <p className="ap-muted text-xs font-extrabold uppercase tracking-[.08em]">Évaluation manuelle</p>
-          <h1 className="ap-h1 mt-1 text-3xl md:text-4xl">Saisie et gestion des notes</h1>
-          <p className="ap-muted mt-2 max-w-3xl text-sm">
-            Notez les devoirs, TP, projets, soutenances et activités en présentiel, puis publiez les résultats au moment choisi.
-          </p>
-        </header>
+        <PageHeader
+          onHome={() => navigate("/dashboard")}
+          breadcrumbItems={[{ label: "Saisie des notes" }]}
+          eyebrow="Évaluation manuelle"
+          title="Saisie et gestion des notes"
+          description="Notez les devoirs, TP, projets, soutenances et activités en présentiel, puis publiez les résultats au moment choisi."
+          action={(
+            <Button onClick={() => setCreateOpen(true)}>
+              <Plus />
+              Nouvelle évaluation
+            </Button>
+          )}
+        />
 
         {evaluations.length === 0 ? (
           <section className="ap-card mx-auto max-w-2xl border-dashed px-6 py-14 text-center">
