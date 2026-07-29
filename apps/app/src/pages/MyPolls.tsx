@@ -32,8 +32,8 @@ const MyPolls = () => {
       accentBtn="ap-btn--poll"
       headerTitle={t("myPolls")}
       headerSubtitle={t("myPollsSubtitle")}
-      rootLabel="Tous les sondages"
-      oneLabel="sondage"
+      rootLabel={t("explorerRootPoll")}
+      oneLabel={t("explorerOnePoll")}
       cta={{ label: t("createPollCta"), onClick: () => navigate("/builder-start?type=poll") }}
       renderCard={(d, ctx) => <GenericCard d={d} ctx={ctx} config={config} navigate={navigate} />}
       renderRow={(d, ctx) => <GenericRow d={d} ctx={ctx} config={config} navigate={navigate} />}

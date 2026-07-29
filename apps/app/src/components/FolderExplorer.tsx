@@ -37,6 +37,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { t, tVars } from '@/lib/i18n';
 import type { FolderNode } from '@/lib/content/foldersRepo';
 
 export interface FolderExplorerProps {
@@ -188,10 +189,10 @@ const NameInput = ({
         onClick={(e) => e.stopPropagation()}
         style={inlineInputStyle}
       />
-      <button type="button" style={{ ...iconBtn, color: 'var(--ap-brand)' }} title="Valider" onClick={commit}>
+      <button type="button" style={{ ...iconBtn, color: 'var(--ap-brand)' }} title={t('folderValidate')} onClick={commit}>
         <Check style={{ width: 15, height: 15 }} />
       </button>
-      <button type="button" style={iconBtn} title="Annuler" onClick={onCancel}>
+      <button type="button" style={iconBtn} title={t('cancel')} onClick={onCancel}>
         <X style={{ width: 15, height: 15 }} />
       </button>
     </div>
@@ -272,9 +273,9 @@ const NodeRow = ({ node, depth }: { node: FolderNode; depth: number }) => {
             ref={setDragRef}
             {...attributes}
             {...listeners}
-            title="Déplacer le dossier"
+            title={t('folderMoveTooltip')}
             style={{ ...iconBtn, cursor: 'grab', touchAction: 'none' }}
-            aria-label={`Déplacer ${node.name}`}
+            aria-label={tVars('folderMoveAria', { name: node.name })}
           >
             <GripVertical style={{ width: 13, height: 13 }} />
           </button>
@@ -283,7 +284,7 @@ const NodeRow = ({ node, depth }: { node: FolderNode; depth: number }) => {
             <button
               type="button"
               style={iconBtn}
-              title={isExpanded ? 'Réduire' : 'Développer'}
+              title={isExpanded ? t('folderCollapse') : t('folderExpand')}
               onClick={(e) => {
                 e.stopPropagation();
                 toggle(node.id);
@@ -326,11 +327,11 @@ const NodeRow = ({ node, depth }: { node: FolderNode; depth: number }) => {
 
           {isConfirming ? (
             <span style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
-              <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--ap-quiz)' }}>Confirmer ?</span>
+              <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--ap-quiz)' }}>{t('folderConfirmDelete')}</span>
               <button
                 type="button"
                 style={{ ...iconBtn, color: 'var(--ap-quiz)' }}
-                title="Confirmer la suppression"
+                title={t('folderConfirmDeleteTooltip')}
                 onClick={(e) => {
                   e.stopPropagation();
                   onDelete(node.id);
@@ -342,7 +343,7 @@ const NodeRow = ({ node, depth }: { node: FolderNode; depth: number }) => {
               <button
                 type="button"
                 style={iconBtn}
-                title="Annuler"
+                title={t('cancel')}
                 onClick={(e) => {
                   e.stopPropagation();
                   setConfirmingId(null);
@@ -358,7 +359,7 @@ const NodeRow = ({ node, depth }: { node: FolderNode; depth: number }) => {
               )}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                  <button type="button" style={iconBtn} title="Actions">
+                  <button type="button" style={iconBtn} title={t('folderActions')}>
                     <MoreHorizontal style={{ width: 15, height: 15 }} />
                   </button>
                 </DropdownMenuTrigger>
@@ -374,13 +375,13 @@ const NodeRow = ({ node, depth }: { node: FolderNode; depth: number }) => {
                       setSubfolderParentId(node.id);
                     }}
                   >
-                    <FolderPlus className="h-3.5 w-3.5" /> Nouveau sous-dossier
+                    <FolderPlus className="h-3.5 w-3.5" /> {t('folderNewSubfolder')}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     className="flex items-center gap-2 cursor-pointer text-sm"
                     onSelect={() => setRenamingId(node.id)}
                   >
-                    <Pencil className="h-3.5 w-3.5" /> Renommer
+                    <Pencil className="h-3.5 w-3.5" /> {t('folderRename')}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
@@ -388,7 +389,7 @@ const NodeRow = ({ node, depth }: { node: FolderNode; depth: number }) => {
                     style={{ color: 'var(--ap-quiz)' }}
                     onSelect={() => setConfirmingId(node.id)}
                   >
-                    <Trash2 className="h-3.5 w-3.5" /> Supprimer
+                    <Trash2 className="h-3.5 w-3.5" /> {t('delete')}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -400,7 +401,7 @@ const NodeRow = ({ node, depth }: { node: FolderNode; depth: number }) => {
       {subfolderParentId === node.id && (
         <NameInput
           initial=""
-          placeholder="Nom du sous-dossier"
+          placeholder={t('folderSubNamePlaceholder')}
           indent={12 + (depth + 1) * 16}
           onSubmit={(name) => {
             onCreate(node.id, name);
@@ -457,7 +458,7 @@ export const FolderExplorer = ({
   currentFolderId,
   counts,
   storageKey,
-  rootLabel = 'Tous',
+  rootLabel = t('folderRootDefault'),
   rootCount,
   rootActive,
   onNavigate,
@@ -536,7 +537,7 @@ export const FolderExplorer = ({
 
   return (
     <Ctx.Provider value={ctx}>
-      <nav aria-label="Dossiers" style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+      <nav aria-label={t('explorerFolders')} style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
         <RootRow />
 
         {tree.map((node) => (
@@ -546,7 +547,7 @@ export const FolderExplorer = ({
         {creatingRoot ? (
           <NameInput
             initial=""
-            placeholder="Nom du dossier"
+            placeholder={t('folderNamePlaceholder')}
             indent={12}
             onSubmit={(name) => {
               onCreate(currentFolderId, name);
@@ -574,7 +575,7 @@ export const FolderExplorer = ({
               cursor: 'pointer',
             }}
           >
-            <FolderPlus style={{ width: 15, height: 15 }} /> Nouveau dossier
+            <FolderPlus style={{ width: 15, height: 15 }} /> {t('folderNewFolder')}
           </button>
         )}
       </nav>

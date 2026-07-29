@@ -461,6 +461,93 @@ export const translations = {
     noDescription: "No description",
     noQuestionText: "No question text",
     noQuestionsYet: "No questions added yet",
+
+    // MyCourses / MySlides — missing header/cta keys
+    myCoursesSubtitle: "Build and track your interactive materials",
+    createCourseCta: "Create a course",
+    createSlideCta: "Create a presentation",
+
+    // ContentExplorer — per-type root/one labels
+    explorerRootQuiz: "All quizzes",
+    explorerRootPoll: "All polls",
+    explorerRootFlashcard: "All flashcard sets",
+    explorerRootSlide: "All presentations",
+    explorerRootCourse: "All courses",
+    explorerOneQuiz: "quiz",
+    explorerOnePoll: "poll",
+    explorerOneFlashcard: "flashcard set",
+    explorerOneSlide: "presentation",
+    explorerOneCourse: "course",
+
+    // ContentExplorer — shell chrome
+    explorerShortcuts: "Shortcuts",
+    explorerTrash: "Trash",
+    explorerLibrary: "Library",
+    explorerFolders: "Folders",
+    explorerSearchPlaceholder: "Search…",
+    explorerCategoryPlaceholder: "Category",
+    explorerAllCategories: "All categories",
+    explorerSortPlaceholder: "Sort",
+    explorerSortNewest: "Newest",
+    explorerSortOldest: "Oldest",
+    explorerSortAZ: "A → Z",
+    explorerGridView: "Grid view",
+    explorerListView: "List view",
+    explorerPublicContent: "Public content",
+    explorerClearSearch: "Clear search",
+    explorerElementSingular: "item",
+    explorerElementPlural: "items",
+    explorerPublicLabelQuiz: "Public quizzes",
+    explorerPublicLabelPoll: "Public polls",
+    explorerPublicLabelFlashcard: "Public flashcard sets",
+    explorerPublicLabelSlide: "Public presentations",
+    explorerPublicLabelCourse: "Public courses",
+    explorerPublicLabelExam: "Public exams",
+
+    // ContentExplorer — empty states ({item} is interpolated via tVars)
+    explorerNoFavoritesTitle: "No favorites",
+    explorerNoFavoritesBody: "Star a {item} to find it here.",
+    explorerNoPublicTitle: "No public {item}",
+    explorerNoPublicBody: "Make one of your items public so it shows up here.",
+    explorerNoResultsTitle: "No results for “{query}”",
+    explorerNoResultsBody: "Check the spelling or widen the category filter.",
+    explorerEmptyFolderTitle: "This folder is empty",
+    explorerEmptyFolderBody: "Drag {item}s here from “All”, or create one directly.",
+    explorerFirstItemTitle: "Create your first {item}",
+    explorerFirstItemBody: "Start from a template, import a file, or generate it with AI from your materials.",
+
+    // ContentExplorer — toasts
+    toastMoved: "Moved",
+    toastMoveError: "Error while moving",
+    toastFavAdded: "Added to favorites",
+    toastFavRemoved: "Removed from favorites",
+    toastGenericError: "Error",
+    toastTrashed: "Moved to trash",
+    toastUndo: "Undo",
+    toastUndoSuccess: "Undo successful",
+    toastUndoError: "Couldn't undo",
+    toastDuplicated: "Duplicated",
+    toastRestored: "Restored",
+    toastLinkCopied: "Link copied!",
+    toastLinkCopyError: "Couldn't copy the link",
+    toastDeletedPermanently: "Permanently deleted",
+    toastMoveFolderCycle: "Can't move (cycle)",
+
+    // FolderExplorer
+    folderMoveTooltip: "Move folder",
+    folderMoveAria: "Move {name}",
+    folderCollapse: "Collapse",
+    folderExpand: "Expand",
+    folderConfirmDelete: "Confirm?",
+    folderConfirmDeleteTooltip: "Confirm delete",
+    folderNewSubfolder: "New subfolder",
+    folderRename: "Rename",
+    folderActions: "Actions",
+    folderNewFolder: "New folder",
+    folderNamePlaceholder: "Folder name",
+    folderSubNamePlaceholder: "Subfolder name",
+    folderValidate: "Confirm",
+    folderRootDefault: "All",
   },
   fr: {
     // Navigation & Common
@@ -921,6 +1008,93 @@ export const translations = {
     noDescription: "Aucune description",
     noQuestionText: "Aucun texte de question",
     noQuestionsYet: "Aucune question ajoutée",
+
+    // MyCourses / MySlides — missing header/cta keys
+    myCoursesSubtitle: "Construisez et suivez vos supports interactifs",
+    createCourseCta: "Créer un cours",
+    createSlideCta: "Créer une présentation",
+
+    // ContentExplorer — per-type root/one labels
+    explorerRootQuiz: "Tous les quiz",
+    explorerRootPoll: "Tous les sondages",
+    explorerRootFlashcard: "Tous les paquets",
+    explorerRootSlide: "Toutes les présentations",
+    explorerRootCourse: "Tous les cours",
+    explorerOneQuiz: "quiz",
+    explorerOnePoll: "sondage",
+    explorerOneFlashcard: "paquet",
+    explorerOneSlide: "présentation",
+    explorerOneCourse: "cours",
+
+    // ContentExplorer — shell chrome
+    explorerShortcuts: "Raccourcis",
+    explorerTrash: "Corbeille",
+    explorerLibrary: "Bibliothèque",
+    explorerFolders: "Dossiers",
+    explorerSearchPlaceholder: "Rechercher…",
+    explorerCategoryPlaceholder: "Catégorie",
+    explorerAllCategories: "Toutes catégories",
+    explorerSortPlaceholder: "Trier",
+    explorerSortNewest: "Plus récent",
+    explorerSortOldest: "Plus ancien",
+    explorerSortAZ: "A → Z",
+    explorerGridView: "Vue grille",
+    explorerListView: "Vue liste",
+    explorerPublicContent: "Contenus publics",
+    explorerClearSearch: "Effacer la recherche",
+    explorerElementSingular: "élément",
+    explorerElementPlural: "éléments",
+    explorerPublicLabelQuiz: "Quiz publics",
+    explorerPublicLabelPoll: "Sondages publics",
+    explorerPublicLabelFlashcard: "Paquets publics",
+    explorerPublicLabelSlide: "Présentations publiques",
+    explorerPublicLabelCourse: "Cours publics",
+    explorerPublicLabelExam: "Examens publics",
+
+    // ContentExplorer — empty states ({item} est interpolé via tVars)
+    explorerNoFavoritesTitle: "Aucun favori",
+    explorerNoFavoritesBody: "Marquez un {item} d'une étoile pour le retrouver ici.",
+    explorerNoPublicTitle: "Aucun {item} public",
+    explorerNoPublicBody: "Rendez un de vos contenus public pour qu'il apparaisse ici.",
+    explorerNoResultsTitle: "Aucun résultat pour « {query} »",
+    explorerNoResultsBody: "Vérifiez l'orthographe ou élargissez le filtre de catégorie.",
+    explorerEmptyFolderTitle: "Ce dossier est vide",
+    explorerEmptyFolderBody: "Glissez-déposez des {item}s ici depuis « Tous », ou créez-en un directement.",
+    explorerFirstItemTitle: "Créez votre premier {item}",
+    explorerFirstItemBody: "Partez d'un modèle, importez un fichier, ou générez-le par IA depuis vos supports.",
+
+    // ContentExplorer — toasts
+    toastMoved: "Déplacé",
+    toastMoveError: "Erreur lors du déplacement",
+    toastFavAdded: "Ajouté aux favoris",
+    toastFavRemoved: "Retiré des favoris",
+    toastGenericError: "Erreur",
+    toastTrashed: "Mis à la corbeille",
+    toastUndo: "Annuler",
+    toastUndoSuccess: "Suppression annulée",
+    toastUndoError: "Impossible d'annuler",
+    toastDuplicated: "Dupliqué",
+    toastRestored: "Restauré",
+    toastLinkCopied: "Lien copié !",
+    toastLinkCopyError: "Impossible de copier le lien",
+    toastDeletedPermanently: "Supprimé définitivement",
+    toastMoveFolderCycle: "Déplacement impossible (cycle)",
+
+    // FolderExplorer
+    folderMoveTooltip: "Déplacer le dossier",
+    folderMoveAria: "Déplacer {name}",
+    folderCollapse: "Réduire",
+    folderExpand: "Développer",
+    folderConfirmDelete: "Confirmer ?",
+    folderConfirmDeleteTooltip: "Confirmer la suppression",
+    folderNewSubfolder: "Nouveau sous-dossier",
+    folderRename: "Renommer",
+    folderActions: "Actions",
+    folderNewFolder: "Nouveau dossier",
+    folderNamePlaceholder: "Nom du dossier",
+    folderSubNamePlaceholder: "Nom du sous-dossier",
+    folderValidate: "Valider",
+    folderRootDefault: "Tous",
   }
 };
 
@@ -940,3 +1114,10 @@ export const t = (key: keyof typeof translations.en): string => {
   const language = getLanguage();
   return translations[language][key] || translations.en[key] || key;
 };
+
+/** t() plus `{placeholder}` substitution, for strings with an embedded
+ *  dynamic noun (e.g. explorerNoFavoritesBody: "Star a {item}…") — word
+ *  order differs per language, so the placeholder must live inside the
+ *  translated string rather than being concatenated around it. */
+export const tVars = (key: keyof typeof translations.en, vars: Record<string, string>): string =>
+  Object.entries(vars).reduce((s, [k, v]) => s.replaceAll(`{${k}}`, v), t(key));
