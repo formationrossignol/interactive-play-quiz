@@ -90,6 +90,14 @@ const AuthPage = () => {
     setBusy(false);
     if (result.status === "ok") {
       toast.success(t("loginSuccess"));
+      const inviteToken = new URLSearchParams(window.location.search).get("invite");
+      if (inviteToken) {
+        try {
+          await acceptOrgInvitation(inviteToken);
+        } catch {
+          // stale/expired invite — user is still logged in, proceed
+        }
+      }
       window.location.href = "/";
     } else if (result.status === "mfa_required") {
       setView("mfa");
