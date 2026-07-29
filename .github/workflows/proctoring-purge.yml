@@ -1,0 +1,32 @@
+name: Proctoring purge
+
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  purge-expired:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Call proctoring-api purge-expired
+        env:
+          SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx3d2ZnZGVibWdneGp1dmxhendmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTAyODIsImV4cCI6MjA5NTU2NjI4Mn0.ShYHAY7Us_NTHwyqjaIRUo1NHVgUaWYEWFsTgGLGTsI
+          PROCTORING_CLEANUP_SECRET: ${{ secrets.PROCTORING_CLEANUP_SECRET }}
+        run: |
+          status=$(curl -sS -o /tmp/purge-response.json -w '%{http_code}' -X POST \
+            "https://lwwfgdebmggxjuvlazwf.supabase.co/functions/v1/proctoring-api" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
+            -H "apikey: ${SUPABASE_ANON_KEY}" \
+            -H "X-Proctoring-Cleanup-Secret: ${PROCTORING_CLEANUP_SECRET}" \
+            -d '{"action":"purge-expired"}')
+          cat /tmp/purge-response.json
+          if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then
+            echo "purge-expired failed with HTTP $status"
+            exit 1
+          fi
