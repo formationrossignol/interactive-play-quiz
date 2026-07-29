@@ -3,10 +3,10 @@ import { Plus, Trash2, UserRoundPlus, UsersRound, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { AppLayout } from "@/components/AppLayout";
-import { Breadcrumb } from "@/components/Breadcrumb";
 import { PersonPicker } from "@/components/sharing/PersonPicker";
 import { ListSkeleton } from "@/components/ui/skeletons";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
 import { getCurrentUser } from "@/lib/auth";
 import { showError } from "@/lib/errorTaxonomy";
 import {
@@ -144,16 +144,11 @@ export default function Groups() {
 
   return (
     <AppLayout subtitle="Groupes">
-      <main className="mx-auto w-full max-w-6xl px-5 py-8 md:px-8">
-        <Breadcrumb onHome={() => navigate("/dashboard")} items={[{ label: "Groupes" }]} />
-
-        <header className="mb-7 mt-7">
-          <p className="ap-muted text-xs font-extrabold uppercase tracking-[.08em]">Contacts réutilisables</p>
-          <h1 className="ap-h1 mt-1 text-3xl md:text-4xl">Mes groupes</h1>
-          <p className="ap-muted mt-2 max-w-2xl text-sm">
-            Une seule liste de membres pour vos partages de cours et vos demandes de signature.
-          </p>
-        </header>
+      <div className="mx-auto max-w-6xl px-6 py-10">
+        <PageHeader
+          title="Mes groupes"
+          description="Une seule liste de membres pour vos partages de cours et vos demandes de signature."
+        />
 
         <div className="grid gap-5 lg:grid-cols-[320px_minmax(0,1fr)]">
           <section className="ap-card overflow-hidden p-0">
@@ -275,7 +270,7 @@ export default function Groups() {
             )}
           </section>
         </div>
-      </main>
+      </div>
     </AppLayout>
   );
 }
