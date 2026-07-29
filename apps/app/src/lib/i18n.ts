@@ -1120,4 +1120,4 @@ export const t = (key: keyof typeof translations.en): string => {
  *  order differs per language, so the placeholder must live inside the
  *  translated string rather than being concatenated around it. */
 export const tVars = (key: keyof typeof translations.en, vars: Record<string, string>): string =>
-  Object.entries(vars).reduce((s, [k, v]) => s.replaceAll(`{${k}}`, v), t(key));
+  Object.entries(vars).reduce((s, [k, v]) => s.split(`{${k}}`).join(v), t(key));
