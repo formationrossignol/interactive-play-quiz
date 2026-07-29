@@ -1,9 +1,10 @@
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { t } from "@/lib/i18n";
 import type { User as AuthUser } from "@/lib/auth";
 import { MaterialSymbol } from "@/components/MaterialSymbol";
 import { OrgSwitcher } from "@/components/org/OrgSwitcher";
+import { myOrgMemberships } from "@/lib/org/orgRepo";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -98,6 +99,14 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
   const [creationsOpen, setCreationsOpen] = useState(
     () => CREATIONS_ITEMS.some((item) => item.path === location.pathname),
   );
+  const [isOrgAdmin, setIsOrgAdmin] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    myOrgMemberships()
+      .then((memberships) => setIsOrgAdmin(memberships.some((m) => m.role === "admin")))
+      .catch(() => setIsOrgAdmin(false));
+  }, [user]);
 
   return (
     <Sidebar collapsible="icon">
@@ -274,6 +283,18 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
           <SidebarSeparator />
           <SidebarMenu>
             <OrgSwitcher />
+            {isOrgAdmin && (
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  isActive={location.pathname === "/org/invitations"}
+                  onClick={() => navigate("/org/invitations")}
+                  tooltip="Organisation"
+                >
+                  <MaterialSymbol name="domain" size={20} />
+                  <span>Organisation</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )}
             <SidebarMenuItem>
               <SidebarMenuButton
                 isActive={location.pathname === "/profile"}

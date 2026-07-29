@@ -36,6 +36,14 @@ export interface InvitationPreview {
   status: string;
 }
 
+export interface OrgMember {
+  user_id: string;
+  email: string;
+  username: string | null;
+  roles: OrgRole[];
+  joined_at: string;
+}
+
 /** Pure: turn a display name into a URL/DB-safe slug candidate. No I/O. */
 export function slugify(input: string): string {
   return input
@@ -113,4 +121,29 @@ export async function getInvitationPreview(token: string): Promise<InvitationPre
   const { data, error } = await supabase.rpc('get_invitation_preview', { p_token: token });
   if (error) throw error;
   return data?.[0] ?? null;
+}
+
+/** Full member roster for an org — admin-only (enforced server-side). */
+export async function listOrgMembers(orgId: string): Promise<OrgMember[]> {
+  const { data, error } = await supabase.rpc('list_org_members', { p_org_id: orgId });
+  if (error) throw error;
+  return data ?? [];
+}
+
+/** Adds a role to an existing member (cumulative — doesn't remove others). */
+export async function grantOrgRole(orgId: string, userId: string, role: OrgRole): Promise<void> {
+  const { error } = await supabase.rpc('admin_grant_org_role', { p_org_id: orgId, p_user_id: userId, p_role: role });
+  if (error) throw error;
+}
+
+/** Throws 'last_admin' if this would leave the org without an admin. */
+export async function revokeOrgRole(orgId: string, userId: string, role: OrgRole): Promise<void> {
+  const { error } = await supabase.rpc('admin_revoke_org_role', { p_org_id: orgId, p_user_id: userId, p_role: role });
+  if (error) throw error;
+}
+
+/** Removes every role the user holds in the org. Throws 'last_admin' if they're the sole admin. */
+export async function removeOrgMember(orgId: string, userId: string): Promise<void> {
+  const { error } = await supabase.rpc('admin_remove_org_member', { p_org_id: orgId, p_user_id: userId });
+  if (error) throw error;
 }
