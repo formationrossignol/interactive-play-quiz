@@ -12,10 +12,10 @@ import {
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { AppLayout } from "@/components/AppLayout";
-import { Breadcrumb } from "@/components/Breadcrumb";
 import { SignaturePad } from "@/components/signatures/SignaturePad";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { PageHeader } from "@/components/ui/page-header";
 import {
   Dialog,
   DialogContent,
@@ -202,21 +202,19 @@ export default function Signatures() {
   return (
     <AppLayout subtitle="Signatures">
       <main className="mx-auto w-full max-w-6xl px-5 py-8 md:px-8">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <Breadcrumb onHome={() => navigate("/dashboard")} items={[{ label: "Signatures" }]} />
-          <Button onClick={() => setCreateOpen(true)}>
-            <Plus />
-            Nouvelle demande
-          </Button>
-        </div>
-
-        <header className="mb-7 mt-7">
-          <p className="ap-muted text-xs font-extrabold uppercase tracking-[.08em]">Validation collective</p>
-          <h1 className="ap-h1 mt-1 text-3xl md:text-4xl">Signatures de groupe</h1>
-          <p className="ap-muted mt-2 max-w-2xl text-sm">
-            Faites signer une charte, un règlement ou une validation à tous les membres d’un ou plusieurs groupes.
-          </p>
-        </header>
+        <PageHeader
+          onHome={() => navigate("/dashboard")}
+          breadcrumbItems={[{ label: "Signatures" }]}
+          eyebrow="Validation collective"
+          title="Signatures de groupe"
+          description="Faites signer une charte, un règlement ou une validation à tous les membres d’un ou plusieurs groupes."
+          action={(
+            <Button onClick={() => setCreateOpen(true)}>
+              <Plus />
+              Nouvelle demande
+            </Button>
+          )}
+        />
 
         <div className="mb-7 grid gap-3 sm:grid-cols-3">
           {[
