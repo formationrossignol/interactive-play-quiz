@@ -142,12 +142,23 @@ Deno.serve(async (req) => {
       const plan = normalizePlan(profile?.plan);
       const examId = genExamId();
 
+      // exams.org_id is NOT NULL and normally auto-filled by the
+      // set_default_org_id trigger from auth.uid() — but this insert runs
+      // through the service-role client (no auth.uid() in that session), so
+      // the trigger would leave it null and violate the constraint. Resolve
+      // the caller's org explicitly instead (see
+      // supabase/migrations/20260730130000_org_content_retrofit.sql).
+      const { data: orgRole } = await supabaseAdmin
+        .from("user_org_roles").select("org_id")
+        .eq("user_id", userId).order("created_at").limit(1).maybeSingle();
+      if (!orgRole?.org_id) return jsonResponse({ error: "no_organization" }, 400);
+
       let inserted: Record<string, unknown> | null = null;
       for (let i = 0; i < 5 && !inserted; i++) {
         const { data, error } = await supabaseAdmin
           .from("exams")
           .insert({
-            id: examId, host_id: userId, join_code: genJoinCode(),
+            id: examId, host_id: userId, join_code: genJoinCode(), org_id: orgRole.org_id,
             max_participants: AUDIENCE_CAP[plan], ...rowPatch,
           })
           .select().single();
