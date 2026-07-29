@@ -569,8 +569,11 @@ as $$
 declare
   evaluation_name text;
 begin
+  -- CASE must be parenthesized here: PL/pgSQL can't parse a bare CASE as an
+  -- IF condition (its own THEN/END collide with the IF's) — fails at
+  -- creation with "syntax error at end of input" otherwise.
   if new.workflow_status = 'published'
-     and case
+     and (case
        when tg_op = 'INSERT' then true
        else (
          old.workflow_status <> 'published'
@@ -578,7 +581,7 @@ begin
          or old.validation_value is distinct from new.validation_value
          or old.appreciation is distinct from new.appreciation
        )
-     end
+     end)
      and public.notification_category_enabled(new.learner_id, 'system') then
     select name into evaluation_name
     from public.manual_evaluations where id = new.evaluation_id;
