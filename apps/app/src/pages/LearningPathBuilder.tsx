@@ -303,7 +303,7 @@ export default function LearningPathBuilder() {
                           <button className="ap-btn ap-btn--ghost ap-btn--sm ap-icon-btn" disabled={index === steps.length - 1} title="Descendre" onClick={() => moveStep(index, 1)}>
                             <ArrowDown className="h-4 w-4" />
                           </button>
-                          <button className="ap-btn ap-btn--ghost ap-btn--sm ap-icon-btn" style={{ color: "var(--ap-quiz)" }} title="Retirer" onClick={() => removeStep(step.id)}>
+                          <button className="ap-btn ap-btn--ghost ap-btn--sm ap-icon-btn" style={{ color: "var(--ap-danger)" }} title="Retirer" onClick={() => removeStep(step.id)}>
                             <Trash2 className="h-4 w-4" />
                           </button>
                         </div>

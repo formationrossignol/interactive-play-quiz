@@ -74,7 +74,7 @@ export function KpiRow({ stats }: { stats: DashboardStats | null }) {
       onClick: scrollToChart("dashboard-creations-chart"),
     },
     {
-      icon: <MaterialSymbol name="bar_chart" size={20} style={{ color: "var(--ap-quiz)" }} />,
+      icon: <MaterialSymbol name="bar_chart" size={20} style={{ color: "var(--ap-brand-deep)" }} />,
       label: "Sessions totales", value: s.totalSessions,
       deltaPct: s.trends.sessions.deltaPct,
       onClick: scrollToChart("dashboard-activity-chart"),

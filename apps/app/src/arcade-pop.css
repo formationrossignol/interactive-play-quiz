@@ -26,6 +26,10 @@
   --ap-poll:        #2f7bff;  --ap-poll-deep:   #1d55c0;  --ap-poll-soft:  #eef4ff;
   --ap-flash:       #ffb020;  --ap-flash-deep:  #a86e00;  --ap-flash-soft: #fff7e6;
 
+  /* Danger/destructive — deliberately distinct hue from --ap-quiz (crimson vs
+     coral) so delete/error UI never reads as "quiz-branded" by coincidence. */
+  --ap-danger:      #e11d48;  --ap-danger-deep: #9f1239;  --ap-danger-soft: #fff1f3;
+
   /* Marque + neutres chauds — indigo Brivia (CTA plein) */
   --ap-brand:       #4338ca;  --ap-brand-deep:  #312e81;  --ap-brand-soft: #ecebfe;
   /* Diamant du logo : indigo sur fond clair, lavande sur fond encre (.dark). */
@@ -98,6 +102,7 @@
   --ap-pres-soft:   #10322a;
   --ap-poll-soft:   #182a4d;
   --ap-flash-soft:  #3a2c10;
+  --ap-danger-soft: #3a1420;
 
   --ap-shadow-soft:  0 4px 0 rgba(0,0,0,.35);
   --ap-shadow-card:  0 30px 60px rgba(0,0,0,.45), 0 4px 0 rgba(0,0,0,.35);
@@ -106,7 +111,8 @@
 
 /* Les textes « deep » sur fonds soft doivent s'éclaircir en sombre.
    (Les --ap-*-deep restent inchangés : ils servent d'ombre 3D aux boutons.) */
-.dark .ap-badge--quiz  { color: #ff9d94; }
+.dark .ap-badge--quiz   { color: #ff9d94; }
+.dark .ap-badge--danger { color: #ff8fa3; }
 .dark .ap-badge--pres  { color: #4fe0b0; }
 .dark .ap-badge--poll  { color: #8db4ff; }
 .dark .ap-badge--flash { color: #ffc861; }
@@ -297,6 +303,7 @@ body { transition: background-color .25s ease, color .25s ease; }
 .ap-badge--poll  { background: var(--ap-poll-soft);  color: var(--ap-poll-deep); }
 .ap-badge--flash { background: var(--ap-flash-soft); color: var(--ap-flash-deep); }
 .ap-badge--brand { background: var(--ap-brand-soft); color: var(--ap-brand-deep); }
+.ap-badge--danger { background: var(--ap-danger-soft); color: var(--ap-danger-deep); }
 
 /* Pastille couleur (swatch) */
 .ap-dot { width: 11px; height: 11px; border-radius: 50%; display: inline-block; flex: 0 0 auto; }

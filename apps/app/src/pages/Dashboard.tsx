@@ -15,7 +15,7 @@ function DashboardSectionError({ message, onRetry }: { message: string; onRetry:
     <div
       role="alert"
       className="ap-card"
-      style={{ padding: 24, textAlign: "center", color: "var(--ap-quiz-deep)" }}
+      style={{ padding: 24, textAlign: "center", color: "var(--ap-danger-deep)" }}
     >
       <MaterialSymbol name="warning" size={24} style={{ margin: "0 auto 8px" }} />
       <p style={{ fontWeight: 700, fontSize: 14 }}>{message}</p>

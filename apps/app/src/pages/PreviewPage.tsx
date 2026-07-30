@@ -126,7 +126,7 @@ const ParticipantPreview = ({ question, questionIndex, totalQuestions, isPoll }:
     return (
       <div
         className="flex h-full flex-col items-center justify-center p-4 text-center overflow-y-auto"
-        style={{ background: isCorrect ? "var(--ap-pres)" : "var(--ap-quiz-deep)" }}
+        style={{ background: isCorrect ? "var(--ap-pres)" : "var(--ap-danger-deep)" }}
       >
         <div className="text-6xl mb-3 drop-shadow-xl">{isCorrect ? "✅" : "❌"}</div>
         <h2 className="text-white" style={{ fontFamily: "var(--ap-font-display)", fontWeight: 600, fontSize: 24 }}>

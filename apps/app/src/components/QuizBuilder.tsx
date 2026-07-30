@@ -1363,8 +1363,8 @@ export const QuizBuilder = () => {
               aria-describedby={titleError ? "quiz-title-error" : undefined}
               style={{
                 fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 15.5, color: "var(--ap-ink)",
-                border: `2px solid ${titleError ? "var(--ap-quiz)" : "transparent"}`, borderRadius: "var(--ap-r-sm)",
-                background: titleError ? "var(--ap-quiz-soft)" : "transparent",
+                border: `2px solid ${titleError ? "var(--ap-danger)" : "transparent"}`, borderRadius: "var(--ap-r-sm)",
+                background: titleError ? "var(--ap-danger-soft)" : "transparent",
                 padding: "5px 9px", width: 280, outline: "none",
                 transition: "border-color .15s, background .15s",
               }}
@@ -1377,8 +1377,8 @@ export const QuizBuilder = () => {
                 role="alert"
                 style={{
                   position: "absolute", top: "calc(100% + 4px)", left: 0, zIndex: 30, whiteSpace: "nowrap",
-                  margin: 0, fontSize: 12, fontWeight: 800, color: "var(--ap-quiz-deep)",
-                  background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-quiz)",
+                  margin: 0, fontSize: 12, fontWeight: 800, color: "var(--ap-danger-deep)",
+                  background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-danger)",
                   borderRadius: "var(--ap-r-sm)", padding: "4px 9px", boxShadow: "var(--ap-shadow-soft)",
                 }}
               >

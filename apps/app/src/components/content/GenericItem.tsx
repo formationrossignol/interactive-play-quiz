@@ -197,7 +197,7 @@ function ItemMenu({
         <DropdownMenuItem
           onSelect={ctx.onTrash}
           className="flex items-center gap-2 cursor-pointer text-sm"
-          style={{ color: "var(--ap-quiz)" }}
+          style={{ color: "var(--ap-danger)" }}
         >
           <Trash2 className="h-3.5 w-3.5" /> Mettre à la corbeille
         </DropdownMenuItem>
@@ -384,7 +384,7 @@ export function GenericRow(props: GenericItemProps) {
         <button
           type="button"
           className="ap-btn ap-btn--ghost ap-btn--sm ap-icon-btn"
-          style={{ color: "var(--ap-quiz)" }}
+          style={{ color: "var(--ap-danger)" }}
           title="Mettre à la corbeille"
           aria-label={`Mettre ${d.title} à la corbeille`}
           onClick={ctx.onTrash}

@@ -85,9 +85,16 @@
   --ap-line: var(--md-sys-color-outline-variant);
   --ap-line-2: var(--md-sys-color-outline);
 
-  --ap-quiz: #b3261e;
-  --ap-quiz-deep: #7c2e29;
-  --ap-quiz-soft: #f9dedc;
+  /* --ap-quiz used to sit on the error role (--md-sys-color-error), which
+     made every quiz-tagged card read as an error/warning by coincidence.
+     Content-type colors get the secondary role instead — real error UI
+     (--ap-danger, below) keeps the actual Material error role. */
+  --ap-quiz: var(--md-sys-color-secondary);
+  --ap-quiz-deep: #4a4458;
+  --ap-quiz-soft: var(--md-sys-color-secondary-container);
+  --ap-danger: var(--md-sys-color-error);
+  --ap-danger-deep: #7c2e29;
+  --ap-danger-soft: var(--md-sys-color-error-container);
   --ap-poll: #006a6a;
   --ap-poll-deep: #004f4f;
   --ap-poll-soft: #9cf1f0;
@@ -156,9 +163,12 @@
   --md-sys-color-inverse-primary: #65558f;
 
   --ap-brand-deep: #b69df8;
-  --ap-quiz: #f2b8b5;
-  --ap-quiz-deep: #ffdad6;
-  --ap-quiz-soft: #8c1d18;
+  --ap-quiz: var(--md-sys-color-secondary);
+  --ap-quiz-deep: #e8def8;
+  --ap-quiz-soft: var(--md-sys-color-secondary-container);
+  --ap-danger: var(--md-sys-color-error);
+  --ap-danger-deep: #ffdad6;
+  --ap-danger-soft: var(--md-sys-color-error-container);
   --ap-poll: #80d5d4;
   --ap-poll-deep: #9cf1f0;
   --ap-poll-soft: #004f4f;
@@ -480,6 +490,11 @@
 }
 
 [data-theme="material"] .ap-badge--quiz {
+  color: var(--md-sys-color-on-secondary-container);
+  background: var(--md-sys-color-secondary-container);
+}
+
+[data-theme="material"] .ap-badge--danger {
   color: var(--md-sys-color-on-error-container);
   background: var(--md-sys-color-error-container);
 }

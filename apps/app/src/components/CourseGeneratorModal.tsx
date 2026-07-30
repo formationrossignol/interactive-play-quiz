@@ -200,17 +200,17 @@ export const CourseGeneratorModal = ({ open, onClose }: Props) => {
           {/* Error */}
           {phase === "error" && (
             <div style={{
-              background:"var(--ap-quiz-soft)", border:"2px solid rgba(255,90,77,.4)",
+              background:"var(--ap-danger-soft)", border:"2px solid rgba(255,90,77,.4)",
               borderRadius:"var(--ap-r-md)", padding:"14px 16px", marginBottom:16,
             }}>
-              <p style={{ fontSize:13, fontWeight:800, color:"var(--ap-quiz-deep)", marginBottom:4 }}>Erreur</p>
-              <p style={{ fontSize:12, fontWeight:700, color:"var(--ap-quiz-deep)", wordBreak:"break-all" }}>{error}</p>
+              <p style={{ fontSize:13, fontWeight:800, color:"var(--ap-danger-deep)", marginBottom:4 }}>Erreur</p>
+              <p style={{ fontSize:12, fontWeight:700, color:"var(--ap-danger-deep)", wordBreak:"break-all" }}>{error}</p>
             </div>
           )}
 
           {/* Error inline (validation) */}
           {error && phase === "idle" && (
-            <p style={{ fontSize:12, fontWeight:800, color:"var(--ap-quiz-deep)", marginBottom:12 }}>{error}</p>
+            <p style={{ fontSize:12, fontWeight:800, color:"var(--ap-danger-deep)", marginBottom:12 }}>{error}</p>
           )}
 
           {/* Actions */}

@@ -248,7 +248,7 @@ const AuthPage = () => {
   const FieldError = ({ id, message }: { id: string; message?: string }) => {
     if (!message) return null;
     return (
-      <p id={id} role="alert" style={{ margin: "8px 0 0", fontSize: "12.5px", fontWeight: 800, color: "var(--ap-quiz-deep)", display: "flex", alignItems: "center", gap: "6px" }}>
+      <p id={id} role="alert" style={{ margin: "8px 0 0", fontSize: "12.5px", fontWeight: 800, color: "var(--ap-danger-deep)", display: "flex", alignItems: "center", gap: "6px" }}>
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="12" cy="12" r="9" /><path d="M12 8v5M12 16h.01" />
         </svg>
@@ -337,7 +337,7 @@ const AuthPage = () => {
           style={{
             ...inputStyle,
             paddingRight: "46px",
-            borderColor: passwordHasError ? "var(--ap-quiz)" : "var(--ap-line)",
+            borderColor: passwordHasError ? "var(--ap-danger)" : "var(--ap-line)",
           }}
           placeholder="••••••••"
           onFocus={(e) => {
@@ -379,7 +379,7 @@ const AuthPage = () => {
         </button>
       </div>
       {showPwHint ? (
-        <p id="auth-password-error" role="alert" style={{ margin: "8px 0 0", fontSize: "12.5px", fontWeight: 800, color: "var(--ap-quiz-deep)", display: "flex", alignItems: "center", gap: "6px" }}>
+        <p id="auth-password-error" role="alert" style={{ margin: "8px 0 0", fontSize: "12.5px", fontWeight: 800, color: "var(--ap-danger-deep)", display: "flex", alignItems: "center", gap: "6px" }}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="9" /><path d="M12 8v5M12 16h.01" />
           </svg>
@@ -431,7 +431,7 @@ const AuthPage = () => {
               aria-invalid={!!fieldErrors.loginEmail}
               aria-describedby={fieldErrors.loginEmail ? "login-email-error" : undefined}
               onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
-              style={{ ...inputStyle, borderColor: fieldErrors.loginEmail ? "var(--ap-quiz)" : "var(--ap-line)" }}
+              style={{ ...inputStyle, borderColor: fieldErrors.loginEmail ? "var(--ap-danger)" : "var(--ap-line)" }}
               placeholder="votre@email.com"
               onFocus={onFocus}
               onBlur={(e) => { onBlur(e); runFieldValidation("loginEmail", e.target.value, emailError); }}
@@ -472,7 +472,7 @@ const AuthPage = () => {
               aria-invalid={!!fieldErrors.registerUsername}
               aria-describedby={fieldErrors.registerUsername ? "register-username-error" : undefined}
               onChange={(e) => setRegisterData({ ...registerData, username: e.target.value })}
-              style={{ ...inputStyle, borderColor: fieldErrors.registerUsername ? "var(--ap-quiz)" : "var(--ap-line)" }}
+              style={{ ...inputStyle, borderColor: fieldErrors.registerUsername ? "var(--ap-danger)" : "var(--ap-line)" }}
               placeholder="JohnDoe"
               onFocus={onFocus}
               onBlur={(e) => { onBlur(e); runFieldValidation("registerUsername", e.target.value, usernameError); }}
@@ -490,7 +490,7 @@ const AuthPage = () => {
               aria-invalid={!!fieldErrors.registerEmail}
               aria-describedby={fieldErrors.registerEmail ? "register-email-error" : undefined}
               onChange={(e) => { setRegisterData({ ...registerData, email: e.target.value }); clearFieldError("registerEmail"); }}
-              style={{ ...inputStyle, borderColor: fieldErrors.registerEmail ? "var(--ap-quiz)" : "var(--ap-line)" }}
+              style={{ ...inputStyle, borderColor: fieldErrors.registerEmail ? "var(--ap-danger)" : "var(--ap-line)" }}
               placeholder="votre@email.com"
               onFocus={onFocus}
               onBlur={(e) => { onBlur(e); runFieldValidation("registerEmail", e.target.value, emailError); }}
@@ -568,7 +568,7 @@ const AuthPage = () => {
               aria-invalid={!!fieldErrors.forgotEmail}
               aria-describedby={fieldErrors.forgotEmail ? "forgot-email-error" : undefined}
               onChange={(e) => setForgotEmail(e.target.value)}
-              style={{ ...inputStyle, borderColor: fieldErrors.forgotEmail ? "var(--ap-quiz)" : "var(--ap-line)" }}
+              style={{ ...inputStyle, borderColor: fieldErrors.forgotEmail ? "var(--ap-danger)" : "var(--ap-line)" }}
               placeholder="votre@email.com"
               onFocus={onFocus}
               onBlur={(e) => { onBlur(e); runFieldValidation("forgotEmail", e.target.value, emailError); }}

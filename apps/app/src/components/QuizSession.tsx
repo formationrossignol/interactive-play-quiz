@@ -1299,7 +1299,7 @@ export const QuizSession = ({ quiz, isHost = false, isSolo = false, onExitReques
                         className="kick-btn"
                         onClick={() => kickPlayer(player.id)}
                         aria-label={`Retirer ${player.name}`}
-                        style={{ position:'absolute',top:-7,right:-7,width:22,height:22,borderRadius:'50%',border:'2px solid var(--ap-brand)',background:'var(--ap-quiz)',color:'#fff',fontWeight:800,fontSize:11,lineHeight:1,cursor:'pointer',display:'grid',placeItems:'center',boxShadow:'0 2px 0 var(--ap-quiz-deep)' }}
+                        style={{ position:'absolute',top:-7,right:-7,width:22,height:22,borderRadius:'50%',border:'2px solid var(--ap-brand)',background:'var(--ap-danger)',color:'#fff',fontWeight:800,fontSize:11,lineHeight:1,cursor:'pointer',display:'grid',placeItems:'center',boxShadow:'0 2px 0 var(--ap-danger-deep)' }}
                       >✕</button>
                     )}
                     <span style={{ display:'flex',flexShrink:0 }}><AvatarDisplay emoji={player.avatar} size="xs" /></span>

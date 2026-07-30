@@ -506,7 +506,7 @@ export function ManualGradebook({ evaluation, groups }: ManualGradebookProps) {
                             <span className="font-bold">/{evaluation.maximum_score}</span>
                           </div>
                           {errors[member.userId] && (
-                            <span className="mt-1 flex max-w-52 items-start gap-1 text-[11px]" style={{ color: "var(--ap-quiz)" }}>
+                            <span className="mt-1 flex max-w-52 items-start gap-1 text-[11px]" style={{ color: "var(--ap-danger)" }}>
                               <TriangleAlert className="mt-0.5 h-3 w-3 shrink-0" />
                               {errors[member.userId]}
                             </span>

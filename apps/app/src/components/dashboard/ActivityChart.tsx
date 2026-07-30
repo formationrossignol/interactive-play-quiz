@@ -3,7 +3,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLe
 import type { ActivityPoint } from "@/lib/dashboardStats";
 
 const chartConfig = {
-  sessions: { label: "Sessions", color: "var(--ap-quiz)" },
+  sessions: { label: "Sessions", color: "var(--ap-brand-deep)" },
   participants: { label: "Participants", color: "var(--ap-poll)" },
 } satisfies ChartConfig;
 

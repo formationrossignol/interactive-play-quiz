@@ -350,7 +350,7 @@ const ProfilePage = () => {
                 <input
                   id="profile-username"
                   ref={usernameRef}
-                  style={{ ...inputStyle, borderColor: usernameError ? "var(--ap-quiz)" : "var(--ap-line)" }}
+                  style={{ ...inputStyle, borderColor: usernameError ? "var(--ap-danger)" : "var(--ap-line)" }}
                   value={username}
                   aria-invalid={!!usernameError}
                   aria-describedby={usernameError ? "profile-username-error" : undefined}
@@ -359,7 +359,7 @@ const ProfilePage = () => {
                   onBlur={(e) => { setUsernameTouched(true); if (!usernameError) onBlur(e); }}
                 />
                 {usernameError && (
-                  <p id="profile-username-error" role="alert" style={{ margin: "8px 0 0", fontSize: "12.5px", fontWeight: 800, color: "var(--ap-quiz-deep)", display: "flex", alignItems: "center", gap: "6px" }}>
+                  <p id="profile-username-error" role="alert" style={{ margin: "8px 0 0", fontSize: "12.5px", fontWeight: 800, color: "var(--ap-danger-deep)", display: "flex", alignItems: "center", gap: "6px" }}>
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                       <circle cx="12" cy="12" r="9" /><path d="M12 8v5M12 16h.01" />
                     </svg>

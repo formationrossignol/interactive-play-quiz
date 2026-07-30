@@ -162,7 +162,7 @@ export default function ExamAdmin() {
 
   if (error) return (
     <div style={wrapSt}>
-      <div style={{ marginBottom: 12 }}><XCircle style={{ width: 52, height: 52, color: 'var(--ap-quiz)' }} /></div>
+      <div style={{ marginBottom: 12 }}><XCircle style={{ width: 52, height: 52, color: 'var(--ap-danger)' }} /></div>
       <h1 style={{ fontFamily: 'var(--ap-font-display)', fontWeight: 700, fontSize: 22 }}>{error}</h1>
     </div>
   );

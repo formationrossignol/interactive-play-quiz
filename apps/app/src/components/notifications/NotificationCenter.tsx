@@ -35,7 +35,7 @@ export function NotificationCenter({ user }: { user: User }) {
             <span
               style={{
                 position: "absolute", top: -4, right: -4, minWidth: 18, height: 18, padding: "0 4px",
-                display: "grid", placeItems: "center", borderRadius: 9, background: "var(--ap-quiz)",
+                display: "grid", placeItems: "center", borderRadius: 9, background: "var(--ap-danger)",
                 color: "#fff", fontSize: 9.5, fontWeight: 900, border: "2px solid var(--ap-paper)",
               }}
             >

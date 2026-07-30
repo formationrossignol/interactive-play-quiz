@@ -143,7 +143,7 @@ export const TrashView = ({ items, viewMode, onRestore, onPermanentDelete }: Tra
                 >
                   <span
                     className="text-xs font-semibold"
-                    style={{ color: days <= 3 ? "var(--ap-quiz)" : "var(--ap-muted)" }}
+                    style={{ color: days <= 3 ? "var(--ap-danger)" : "var(--ap-muted)" }}
                   >
                     {days === 0 ? "Expire aujourd'hui" : `${days}j restants`}
                   </span>
@@ -158,7 +158,7 @@ export const TrashView = ({ items, viewMode, onRestore, onPermanentDelete }: Tra
                     <button
                       onClick={() => onPermanentDelete(item)}
                       className="ap-btn ap-btn--ghost ap-btn--sm"
-                      style={{ color: "var(--ap-quiz)", padding: "5px 7px" }}
+                      style={{ color: "var(--ap-danger)", padding: "5px 7px" }}
                       title="Supprimer définitivement"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
@@ -193,7 +193,7 @@ export const TrashView = ({ items, viewMode, onRestore, onPermanentDelete }: Tra
                 </div>
                 <span
                   className="text-xs font-semibold flex-shrink-0"
-                  style={{ color: days <= 3 ? "var(--ap-quiz)" : "var(--ap-muted)" }}
+                  style={{ color: days <= 3 ? "var(--ap-danger)" : "var(--ap-muted)" }}
                 >
                   {days === 0 ? "Expire aujourd'hui" : `${days}j restants`}
                 </span>
@@ -208,7 +208,7 @@ export const TrashView = ({ items, viewMode, onRestore, onPermanentDelete }: Tra
                   <button
                     onClick={() => onPermanentDelete(item)}
                     className="ap-btn ap-btn--ghost ap-btn--sm"
-                    style={{ color: "var(--ap-quiz)", padding: "5px" }}
+                    style={{ color: "var(--ap-danger)", padding: "5px" }}
                     title="Supprimer définitivement"
                   >
                     <Trash2 className="h-3.5 w-3.5" />

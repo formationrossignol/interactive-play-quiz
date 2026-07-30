@@ -6,7 +6,7 @@ import { ArrowLeft, BarChart2, Users, Calendar, ChevronDown, ChevronUp } from "l
 import { getPollResults, type PollResultsStore, type PollResultSession, type PollQuestionResult } from "@/lib/pollResults";
 import { getQuizById } from "@/lib/quizStorage";
 
-const COLORS = ["var(--ap-brand)", "var(--ap-poll)", "var(--ap-flash)", "var(--ap-quiz)", "#22c55e", "#8b5cf6", "#ec4899", "#f97316"];
+const COLORS = ["var(--ap-brand)", "var(--ap-poll)", "var(--ap-flash)", "var(--ap-danger)", "#22c55e", "#8b5cf6", "#ec4899", "#f97316"];
 
 const formatDate = (iso: string) => {
   try {

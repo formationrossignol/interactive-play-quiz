@@ -33,7 +33,7 @@
     --accent: 258 100% 96%;          /* --ap-brand-soft #efe9ff */
     --accent-foreground: 258 100% 65%;
 
-    --destructive: 3 100% 65%;       /* --ap-quiz    #ff5a4d */
+    --destructive: 347 77% 50%;      /* --ap-danger  #e11d48 */
     --destructive-foreground: 0 0% 100%;
 
     --border: 37 43% 88%;            /* --ap-line    #efe6d3 */
@@ -119,7 +119,7 @@
     --accent: 230 46% 95%;           /* --ap-brand-soft #eceef8 */
     --accent-foreground: 234 64% 25%;
 
-    --destructive: 5 55% 43%;        /* --ap-quiz    #a93a31 */
+    --destructive: 345 67% 37%;      /* --ap-danger  #9c1f3f */
     --destructive-foreground: 0 0% 100%;
 
     --border: 224 22% 90%;           /* --ap-line    #e1e4ec */
@@ -203,7 +203,7 @@
     --accent: 172 63% 92%;           /* --ap-brand-soft #e0f7f4 */
     --accent-foreground: 175 100% 26%;
 
-    --destructive: 355 78% 56%;      /* --ap-quiz    #e63946 */
+    --destructive: 348 83% 38%;      /* --ap-danger  #b0102f */
     --destructive-foreground: 0 0% 100%;
 
     --border: 0 0% 90%;              /* --ap-line    #e6e6e6 */
@@ -287,7 +287,7 @@
     --accent: 243 65% 95%;           /* --ap-brand-soft #ecebfc */
     --accent-foreground: 244 76% 46%;
 
-    --destructive: 11 53% 52%;       /* --ap-quiz    #d3654f */
+    --destructive: 348 51% 46%;      /* --ap-danger  #b23a52 */
     --destructive-foreground: 0 0% 100%;
 
     --border: 226 30% 92%;           /* --ap-line    #e5e7ef */
@@ -374,7 +374,7 @@
     --accent: 267 100% 93%;          /* primary-container #eaddff */
     --accent-foreground: 259 100% 18%;
 
-    --destructive: 4 71% 41%;        /* error #b3261e */
+    --destructive: 4 71% 41%;        /* --ap-danger  #b3261e (Material error role) */
     --destructive-foreground: 0 0% 100%;
 
     --border: 278 16% 79%;           /* outline-variant #cac4d0 */

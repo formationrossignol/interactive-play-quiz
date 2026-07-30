@@ -626,7 +626,7 @@ const CourseBuilder = () => {
                     </button>
                     <button
                       onClick={() => removeModule(mod.id)}
-                      style={{ background: "none", border: "none", cursor: "pointer", padding: "2px", color: "var(--ap-quiz)", flexShrink: 0, display: "flex" }}
+                      style={{ background: "none", border: "none", cursor: "pointer", padding: "2px", color: "var(--ap-danger)", flexShrink: 0, display: "flex" }}
                       title="Supprimer le module"
                     >
                       <Trash2 className="h-3 w-3" />
@@ -664,7 +664,7 @@ const CourseBuilder = () => {
                         <span className="ap-muted" style={{ fontSize: "10px", flexShrink: 0 }}>{lIdx + 1}</span>
                         <button
                           onClick={(e) => { e.stopPropagation(); removeLesson(mod.id, lesson.id); }}
-                          style={{ background: "none", border: "none", cursor: "pointer", padding: "2px", color: "var(--ap-quiz)", flexShrink: 0, display: "flex", opacity: 0.6 }}
+                          style={{ background: "none", border: "none", cursor: "pointer", padding: "2px", color: "var(--ap-danger)", flexShrink: 0, display: "flex", opacity: 0.6 }}
                         >
                           <Trash2 className="h-3 w-3" />
                         </button>
@@ -791,7 +791,7 @@ const CourseBuilder = () => {
                             <span style={{ flex: 1 }}>{obj}</span>
                             <button
                               onClick={() => setObjectives(objectives.filter((_, j) => j !== i))}
-                              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ap-quiz)", display: "flex", padding: "2px" }}
+                              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ap-danger)", display: "flex", padding: "2px" }}
                               aria-label="Supprimer cet objectif"
                             >
                               <X className="h-3.5 w-3.5" />
@@ -1081,7 +1081,7 @@ const CourseBuilder = () => {
                           </span>
                           <button
                             onClick={() => updateLesson(moduleId, lessonId, { content: "", documentName: undefined, documentMimeType: undefined })}
-                            style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ap-quiz)", display: "flex", padding: "2px" }}
+                            style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ap-danger)", display: "flex", padding: "2px" }}
                             title="Supprimer"
                           >
                             <X className="h-4 w-4" />
@@ -1185,7 +1185,7 @@ const CourseBuilder = () => {
                                 h5pImportedAt: undefined,
                               })}
                               title="Retirer de la leçon"
-                              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ap-quiz)", padding: 4 }}
+                              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ap-danger)", padding: 4 }}
                             >
                               <X className="h-4 w-4" />
                             </button>
@@ -1284,7 +1284,7 @@ const CourseBuilder = () => {
                               scormPackageId: undefined, scormVersion: undefined,
                               scormLaunchPath: undefined, scormTitle: undefined,
                             })}
-                            style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ap-quiz)", display: "flex", padding: "2px" }}
+                            style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ap-danger)", display: "flex", padding: "2px" }}
                             title="Supprimer"
                           >
                             <X className="h-4 w-4" />

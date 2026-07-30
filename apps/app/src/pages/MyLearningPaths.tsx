@@ -166,7 +166,7 @@ export default function MyLearningPaths() {
                         <button className="ap-btn ap-btn--sm ap-btn--ghost ap-icon-btn" title="Dupliquer" onClick={(event) => { event.stopPropagation(); handleDuplicate(path); }}>
                           <Copy className="h-4 w-4" />
                         </button>
-                        <button className="ap-btn ap-btn--sm ap-btn--ghost ap-icon-btn" style={{ color: "var(--ap-quiz)" }} title="Supprimer" onClick={(event) => { event.stopPropagation(); handleDelete(path); }}>
+                        <button className="ap-btn ap-btn--sm ap-btn--ghost ap-icon-btn" style={{ color: "var(--ap-danger)" }} title="Supprimer" onClick={(event) => { event.stopPropagation(); handleDelete(path); }}>
                           <Trash2 className="h-4 w-4" />
                         </button>
                         <button

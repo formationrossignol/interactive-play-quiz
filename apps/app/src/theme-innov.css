@@ -33,6 +33,9 @@
   --ap-poll:        #2d7dd2;  --ap-poll-deep:   #1d5a9e;  --ap-poll-soft:  #eaf2fb;
   --ap-flash:       #f5a800;  --ap-flash-deep:  #b37b00;  --ap-flash-soft: #fef5e0;
 
+  /* Danger/destructive — a deeper wine-red, distinct from --ap-quiz's bold campus red. */
+  --ap-danger:      #b0102f;  --ap-danger-deep: #7a0a20;  --ap-danger-soft: #fbe7ea;
+
   /* Marque : turquoise interactif sur base noir & blanc */
   --ap-brand:       #00b8a9;  --ap-brand-deep:  #00857a;  --ap-brand-soft: #e0f7f4;
   --ap-ink:         #000000;
@@ -85,6 +88,7 @@
   --ap-pres-soft:   #0d2b1b;
   --ap-poll-soft:   #12253c;
   --ap-flash-soft:  #332608;
+  --ap-danger-soft: #33101a;
 
   --ap-shadow-soft:  0 2px 8px rgba(0, 0, 0, .5);
   --ap-shadow-card:  0 12px 28px rgba(0, 0, 0, .6);
@@ -92,7 +96,8 @@
 }
 
 /* Textes « deep » sur fonds soft, version sombre */
-.dark[data-theme="innov"] .ap-badge--quiz  { color: #f2848c; }
+.dark[data-theme="innov"] .ap-badge--quiz   { color: #f2848c; }
+.dark[data-theme="innov"] .ap-badge--danger { color: #f2808f; }
 .dark[data-theme="innov"] .ap-badge--pres  { color: #5ed695; }
 .dark[data-theme="innov"] .ap-badge--poll  { color: #7fb3e8; }
 .dark[data-theme="innov"] .ap-badge--flash { color: #ffd066; }

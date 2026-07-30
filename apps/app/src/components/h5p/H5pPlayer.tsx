@@ -268,7 +268,7 @@ export function H5pPlayer({
           {tracking.status === 'passed'
             ? <CheckCircle2 size={17} color="var(--ap-pres-deep)" />
             : tracking.status === 'failed'
-              ? <AlertTriangle size={17} color="var(--ap-quiz-deep)" />
+              ? <AlertTriangle size={17} color="var(--ap-danger-deep)" />
               : <Clock3 size={17} color="var(--ap-brand)" />}
           <span>{statusLabel[tracking.status]}</span>
           <span style={{ color: 'var(--ap-muted)' }}>Progression {tracking.progress}%</span>
@@ -320,7 +320,7 @@ export function H5pPlayer({
               placeItems: 'center',
               padding: 24,
               textAlign: 'center',
-              color: 'var(--ap-quiz-deep)',
+              color: 'var(--ap-danger-deep)',
               fontWeight: 700,
             }}
           >

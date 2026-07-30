@@ -986,7 +986,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
                   style={{
                     height: "100%",
                     width: `${Math.max(0, Math.min(100, (liveQuestion.timeLimit > 0 ? timeLeft / liveQuestion.timeLimit : 0) * 100))}%`,
-                    background: timeLeft <= 5 ? "var(--ap-quiz)" : "var(--ap-brand)",
+                    background: timeLeft <= 5 ? "var(--ap-danger)" : "var(--ap-brand)",
                     borderRadius: "var(--ap-r-md)",
                     transition: "width .3s linear, background .3s",
                   }}
@@ -1071,7 +1071,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
     return (
       <div
         className="min-h-screen flex items-center justify-center p-4"
-        style={{ background: answerPending ? "var(--ap-brand)" : (lastAnswerCorrect ? "var(--ap-pres)" : "var(--ap-quiz-deep)") }}
+        style={{ background: answerPending ? "var(--ap-brand)" : (lastAnswerCorrect ? "var(--ap-pres)" : "var(--ap-danger-deep)") }}
       >
         <div className="max-w-md w-full text-center">
           {answerPending ? (

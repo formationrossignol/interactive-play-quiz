@@ -48,7 +48,7 @@ const dateFormatter = new Intl.DateTimeFormat("fr-FR", {
 
 function requestState(request: SignatureRequest) {
   if (request.status === "closed") return { label: "Clôturée", color: "var(--ap-muted)" };
-  if (!isSignatureRequestActionable(request)) return { label: "Échéance dépassée", color: "var(--ap-quiz)" };
+  if (!isSignatureRequestActionable(request)) return { label: "Échéance dépassée", color: "var(--ap-danger)" };
   return { label: "Ouverte", color: "var(--ap-pres)" };
 }
 

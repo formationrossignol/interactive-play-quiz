@@ -34,6 +34,9 @@
   --ap-poll:        #3b7dd8;  --ap-poll-deep:   #2b5ea8;  --ap-poll-soft:  #eaf2fb;
   --ap-flash:       #c98a2e;  --ap-flash-deep:  #97661c;  --ap-flash-soft: #f8f0e2;
 
+  /* Danger/destructive — desaturated crimson, distinct from --ap-quiz's terracotta. */
+  --ap-danger:      #b23a52;  --ap-danger-deep: #832a3c;  --ap-danger-soft: #faedf0;
+
   /* Marque : indigo unique, accent vivant réservé aux moments rares */
   --ap-brand:       #5b4fe9;  --ap-brand-deep:  #4438c2;  --ap-brand-soft: #ecebfc;
   --ap-logo-diamond: #5b4fe9;
@@ -91,6 +94,7 @@
   --ap-pres-soft:   #201c47;
   --ap-poll-soft:   #172538;
   --ap-flash-soft:  #332608;
+  --ap-danger-soft: #33141c;
 
   --ap-shadow-soft:  0 1px 2px rgba(0, 0, 0, .35);
   --ap-shadow-card:  0 4px 12px rgba(0, 0, 0, .4);
@@ -98,7 +102,8 @@
 }
 
 /* Textes « deep » sur fonds soft, version sombre */
-.dark[data-theme="studio"] .ap-badge--quiz  { color: #e8a396; }
+.dark[data-theme="studio"] .ap-badge--quiz   { color: #e8a396; }
+.dark[data-theme="studio"] .ap-badge--danger { color: #e8909e; }
 .dark[data-theme="studio"] .ap-badge--pres  { color: #b3a9f5; }
 .dark[data-theme="studio"] .ap-badge--poll  { color: #93bdec; }
 .dark[data-theme="studio"] .ap-badge--flash { color: #e0b567; }

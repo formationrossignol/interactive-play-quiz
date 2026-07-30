@@ -97,7 +97,7 @@ export function NotificationItem({
           onClick={onDelete}
           title="Supprimer"
           aria-label="Supprimer la notification"
-          style={{ width: 30, height: 30, minHeight: 30, padding: 0, color: "var(--ap-quiz)" }}
+          style={{ width: 30, height: 30, minHeight: 30, padding: 0, color: "var(--ap-danger)" }}
         >
           <Trash2 size={14} />
         </button>
