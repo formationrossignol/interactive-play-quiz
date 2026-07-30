@@ -5,6 +5,7 @@ import { parseFunctionsError } from '@/lib/functionsError';
 import { getParticipant } from '@/lib/examParticipant';
 import { isAnswerCorrect } from '@/lib/examStorage';
 import { Skeleton } from '@/components/ui/skeleton';
+import { MaterialSymbol } from '@/components/MaterialSymbol';
 
 interface AttemptView {
   timeUsedSeconds: number;
@@ -78,7 +79,7 @@ export default function ExamResults() {
 
   if (error) return (
     <div style={wrapSt}>
-      <div style={{ fontSize: 52, marginBottom: 16 }}>🔒</div>
+      <div style={{ marginBottom: 16, color: 'var(--ap-muted)' }}><MaterialSymbol name="lock" size={48} /></div>
       <h1 style={titleSt}>{error}</h1>
     </div>
   );
@@ -106,8 +107,12 @@ export default function ExamResults() {
       }}>
         <button
           onClick={() => navigate(-1)}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ap-muted)', fontSize: 20, padding: 4 }}
-        >←</button>
+          style={{
+            flexShrink: 0, width: 32, height: 32, borderRadius: '50%', border: 'none',
+            background: 'transparent', cursor: 'pointer', color: 'var(--ap-muted)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        ><MaterialSymbol name="arrow_back" size={20} /></button>
         <span style={{ fontFamily: 'var(--ap-font-display)', fontWeight: 600, fontSize: 18 }}>
           {exam.title} : Résultats
         </span>
@@ -115,20 +120,26 @@ export default function ExamResults() {
 
       <div style={{ maxWidth: 1120, margin: '0 auto', padding: '28px 16px' }}>
         {/* Score card */}
-        <div style={{
-          background: passed ? 'linear-gradient(135deg, #e8faf3, #d0f4e6)' : 'linear-gradient(135deg, #fff3f0, #ffe5e2)',
-          border: `2px solid ${passed ? '#4dd9a0' : '#ff9e96'}`,
-          borderRadius: 'var(--ap-r-lg)', padding: '28px 24px', textAlign: 'center', marginBottom: 24,
+        <div className="ap-card" style={{
+          background: passed ? 'var(--ap-pres-soft)' : 'var(--ap-quiz-soft)',
+          borderColor: passed ? 'var(--ap-pres)' : 'var(--ap-quiz)',
+          padding: '28px 24px', textAlign: 'center', marginBottom: 24,
         }}>
-          <div style={{ fontSize: 52, marginBottom: 12 }}>{passed ? '🎉' : '📚'}</div>
+          <div style={{ marginBottom: 12, color: passed ? 'var(--ap-pres)' : 'var(--ap-quiz)' }}>
+            <MaterialSymbol name={passed ? 'celebration' : 'menu_book'} size={44} />
+          </div>
           <div style={{
             fontFamily: 'var(--ap-font-display)', fontWeight: 800, fontSize: 52,
-            color: passed ? '#15c08a' : '#ff5a4d', lineHeight: 1, marginBottom: 8,
+            color: passed ? 'var(--ap-pres)' : 'var(--ap-quiz)', lineHeight: 1, marginBottom: 8,
           }}>
             {pct}%
           </div>
-          <div style={{ fontWeight: 800, fontSize: 18, color: passed ? '#15c08a' : '#ff5a4d', marginBottom: 16 }}>
-            {passed ? '✅ Réussi' : '❌ Non réussi'}
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+            fontWeight: 800, fontSize: 18, color: passed ? 'var(--ap-pres)' : 'var(--ap-quiz)', marginBottom: 16,
+          }}>
+            <MaterialSymbol name={passed ? 'check_circle' : 'cancel'} size={20} />
+            {passed ? 'Réussi' : 'Non réussi'}
           </div>
           <div style={{ display: 'flex', justifyContent: 'center', gap: 20, flexWrap: 'wrap' }}>
             <Stat label="Seuil" value={`${exam.passingScore}%`} />
@@ -138,12 +149,7 @@ export default function ExamResults() {
         </div>
 
         {showAnswers && (
-          <div style={{
-            overflowX: 'auto',
-            background: 'var(--ap-card)',
-            border: 'var(--ap-border-w) solid var(--ap-line)',
-            borderRadius: 'var(--ap-r-lg)',
-          }}>
+          <div className="ap-card" style={{ overflowX: 'auto', padding: 0 }}>
             <table style={{ width: '100%', minWidth: 760, borderCollapse: 'collapse', textAlign: 'left' }}>
               <thead>
                 <tr style={{ background: 'var(--ap-paper)' }}>
@@ -177,9 +183,10 @@ export default function ExamResults() {
                         <ResultCell>
                           <span style={{
                             display: 'inline-flex', alignItems: 'center', gap: 6,
-                            color: isCorrect ? '#0d8f68' : '#d83d34', fontWeight: 800, fontSize: 13,
+                            color: isCorrect ? 'var(--ap-pres-deep)' : 'var(--ap-quiz-deep)', fontWeight: 800, fontSize: 13,
                           }}>
-                            {isCorrect ? '✓ Correct' : '✕ Incorrect'}
+                            <MaterialSymbol name={isCorrect ? 'check' : 'close'} size={15} />
+                            {isCorrect ? 'Correct' : 'Incorrect'}
                           </span>
                         </ResultCell>
                       )}
@@ -212,8 +219,8 @@ function ResultCell({ children, style }: { children: React.ReactNode; style?: Re
 
 function AnswerPill({ children, tone }: { children: React.ReactNode; tone: 'success' | 'error' | 'neutral' }) {
   const tones = {
-    success: { background: '#e8faf3', color: '#0d8f68', border: '#9ce7ca' },
-    error: { background: '#fff3f0', color: '#d83d34', border: '#ffc1bc' },
+    success: { background: 'var(--ap-pres-soft)', color: 'var(--ap-pres-deep)', border: 'var(--ap-pres)' },
+    error: { background: 'var(--ap-quiz-soft)', color: 'var(--ap-quiz-deep)', border: 'var(--ap-quiz)' },
     neutral: { background: 'var(--ap-paper)', color: 'var(--ap-ink)', border: 'var(--ap-line)' },
   };
   const colors = tones[tone];
