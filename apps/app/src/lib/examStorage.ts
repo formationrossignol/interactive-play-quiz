@@ -550,6 +550,37 @@ export async function computeExamStats(examId: string): Promise<ExamStats> {
   };
 }
 
+export interface HostExamStats extends ExamStats {
+  totalExams: number;
+}
+
+/** Cross-exam aggregate for a trainer's overview (analytics phase A) — same
+ *  pass/score/time math as computeExamStats, rolled up across every exam
+ *  they host. N attempt queries (one per exam) rather than a single join:
+ *  reuses getAttemptsForExam as-is instead of a new RLS-sensitive query, and
+ *  a trainer's exam count is small enough that this stays cheap. */
+export async function computeHostExamStats(hostId: string): Promise<HostExamStats> {
+  const exams = await getHostExams(hostId);
+  const attemptLists = await Promise.all(exams.map((e) => getAttemptsForExam(e.id)));
+  const attempts = attemptLists.flat();
+  const completed = attempts.filter((a) => a.status === 'submitted' || a.status === 'auto-submitted');
+  const passed = completed.filter((a) => a.passed === true).length;
+  const avgPct = completed.length
+    ? Math.round(completed.reduce((s, a) => s + (a.percentage ?? 0), 0) / completed.length)
+    : null;
+  const avgTime = completed.length
+    ? Math.round(completed.reduce((s, a) => s + a.timeUsedSeconds, 0) / completed.length / 60)
+    : null;
+  return {
+    totalExams: exams.length,
+    totalAttempts: attempts.length,
+    completedAttempts: completed.length,
+    passRate: completed.length ? Math.round((passed / completed.length) * 100) : null,
+    avgScore: avgPct,
+    avgTimeMinutes: avgTime,
+  };
+}
+
 /* ══ Results exports ═══════════════════════════════════════════ */
 
 const EXAM_EXPORT_HEADERS = [

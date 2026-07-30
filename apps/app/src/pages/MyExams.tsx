@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { toast } from 'sonner';
-import { computeExamStats, computeExamStatus, duplicateExam, type Exam, type ExamStats, type ExamStatus } from '@/lib/examStorage';
+import { computeExamStats, computeExamStatus, computeHostExamStats, duplicateExam, type Exam, type ExamStats, type ExamStatus, type HostExamStats } from '@/lib/examStorage';
 import { getCurrentUser } from '@/lib/auth';
 import { showError } from '@/lib/errorTaxonomy';
 import { createContent } from '@/lib/content/contentRepo';
@@ -20,6 +20,7 @@ import {
   Pencil,
   Star,
   Trash2,
+  Trophy,
   UserRound,
 } from 'lucide-react';
 import { ContentExplorer } from '@/components/content/ContentExplorer';
@@ -120,6 +121,46 @@ const renderMeta = (exam: Exam, stats: ExamStats) => (
 );
 
 const EMPTY_STATS: ExamStats = { totalAttempts: 0, completedAttempts: 0, passRate: null, avgScore: null, avgTimeMinutes: null };
+const EMPTY_HOST_STATS: HostExamStats = { ...EMPTY_STATS, totalExams: 0 };
+
+function useHostExamStats(hostId: string): HostExamStats {
+  const [stats, setStats] = useState<HostExamStats>(EMPTY_HOST_STATS);
+  useEffect(() => {
+    let cancelled = false;
+    computeHostExamStats(hostId).then((s) => { if (!cancelled) setStats(s); });
+    return () => { cancelled = true; };
+  }, [hostId]);
+  return stats;
+}
+
+function HostStatTile({ icon: Icon, label, value }: { icon: typeof Trophy; label: string; value: string }) {
+  return (
+    <div style={{
+      background: 'var(--ap-card)', border: 'var(--ap-border-w) solid var(--ap-line)',
+      borderRadius: 'var(--ap-r-lg)', padding: '14px 18px', textAlign: 'center', flex: 1, minWidth: 120,
+    }}>
+      <div style={{ marginBottom: 6, display: 'flex', justifyContent: 'center' }}><Icon style={{ width: 18, height: 18, color: 'var(--ap-muted)' }} /></div>
+      <div style={{ fontFamily: 'var(--ap-font-display)', fontWeight: 800, fontSize: 20, color: 'var(--ap-ink)', marginBottom: 2 }}>{value}</div>
+      <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--ap-muted)' }}>{label}</div>
+    </div>
+  );
+}
+
+/** Cross-exam overview — analytics phase A "formateur" persona: a trainer's
+ *  global success rate/score/time across every exam they host, not just one. */
+function HostStatsRow({ hostId }: { hostId: string }) {
+  const stats = useHostExamStats(hostId);
+  if (stats.totalExams === 0 || stats.completedAttempts === 0) return null;
+  return (
+    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 20 }}>
+      <HostStatTile icon={ClipboardCheck} label="Examens" value={String(stats.totalExams)} />
+      <HostStatTile icon={UserRound} label="Tentatives" value={String(stats.completedAttempts)} />
+      <HostStatTile icon={Trophy} label="Taux de réussite" value={stats.passRate !== null ? `${stats.passRate}%` : '-'} />
+      <HostStatTile icon={BarChart3} label="Score moyen" value={stats.avgScore !== null ? `${stats.avgScore}%` : '-'} />
+      <HostStatTile icon={Clock3} label="Durée moy." value={stats.avgTimeMinutes !== null ? `${stats.avgTimeMinutes} min` : '-'} />
+    </div>
+  );
+}
 
 function useExamStats(examId: string): ExamStats {
   const [stats, setStats] = useState<ExamStats>(EMPTY_STATS);
@@ -309,6 +350,7 @@ export default function MyExams() {
       rootLabel="Tous les examens"
       oneLabel="examen"
       cta={{ label: '+ Nouvel examen', onClick: () => navigate('/exam-builder') }}
+      statsRow={<HostStatsRow hostId={user.id} />}
       extraFilter={(d) => status === 'Tous' || computeExamStatus(d.data as unknown as Exam) === status}
       extraToolbar={
         <Select value={status} onValueChange={(v) => setStatus(v as 'Tous' | ExamStatus)}>
