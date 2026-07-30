@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { toast } from 'sonner';
-import { computeExamStats, computeExamStatus, duplicateExam, type Exam, type ExamStats, type ExamStatus } from '@/lib/examStorage';
+import { computeExamStats, computeExamStatus, computeHostExamStats, duplicateExam, listExamStatsForHost, type Exam, type ExamStats, type ExamStatsRow, type ExamStatus, type HostExamStats } from '@/lib/examStorage';
 import { getCurrentUser } from '@/lib/auth';
 import { showError } from '@/lib/errorTaxonomy';
 import { createContent } from '@/lib/content/contentRepo';
+import { listGroups, listGroupMembers, type Group } from '@/lib/sharing/sharingRepo';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
+  AlertTriangle,
   ArrowRight,
   BarChart3,
   CalendarDays,
@@ -20,6 +22,7 @@ import {
   Pencil,
   Star,
   Trash2,
+  Trophy,
   UserRound,
 } from 'lucide-react';
 import { ContentExplorer } from '@/components/content/ContentExplorer';
@@ -120,6 +123,227 @@ const renderMeta = (exam: Exam, stats: ExamStats) => (
 );
 
 const EMPTY_STATS: ExamStats = { totalAttempts: 0, completedAttempts: 0, passRate: null, avgScore: null, avgTimeMinutes: null };
+const EMPTY_HOST_STATS: HostExamStats = { ...EMPTY_STATS, totalExams: 0 };
+
+/** Fetches the trainer's groups once — the "Promotion" filter's option list. */
+function useOwnedGroups(hostId: string): Group[] {
+  const [groups, setGroups] = useState<Group[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    listGroups(hostId).then((g) => { if (!cancelled) setGroups(g); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [hostId]);
+  return groups;
+}
+
+/** Resolves a group's email-invited members (share_group_members.pending_email)
+ *  into the lowercased Set computeHostExamStats filters attempts against —
+ *  see that function's docstring for why user_id-only members can't join here. */
+function useGroupEmailFilter(groupId: string | null): Set<string> | undefined {
+  const [emails, setEmails] = useState<Set<string> | undefined>(undefined);
+  useEffect(() => {
+    if (!groupId) { setEmails(undefined); return; }
+    let cancelled = false;
+    listGroupMembers(groupId).then((members) => {
+      if (cancelled) return;
+      const set = new Set(
+        members.map((m) => m.pending_email?.toLowerCase()).filter((e): e is string => !!e),
+      );
+      setEmails(set);
+    }).catch(() => { if (!cancelled) setEmails(new Set()); });
+    return () => { cancelled = true; };
+  }, [groupId]);
+  return emails;
+}
+
+function useHostExamStats(hostId: string, emailFilter?: Set<string>): HostExamStats {
+  const [stats, setStats] = useState<HostExamStats>(EMPTY_HOST_STATS);
+  useEffect(() => {
+    let cancelled = false;
+    computeHostExamStats(hostId, emailFilter).then((s) => { if (!cancelled) setStats(s); });
+    return () => { cancelled = true; };
+  }, [hostId, emailFilter]);
+  return stats;
+}
+
+interface GroupComparisonRow {
+  group: Group;
+  stats: HostExamStats;
+}
+
+/** "Comparaison entre promotions" (responsable pédagogique) — same
+ *  computeHostExamStats + email-join already used for the single-group
+ *  filter above, just run for every group at once instead of one at a
+ *  time, so they can be read side by side instead of switched between. */
+function usePromotionComparison(hostId: string, groups: Group[]): GroupComparisonRow[] {
+  const [rows, setRows] = useState<GroupComparisonRow[]>([]);
+  useEffect(() => {
+    if (groups.length < 2) { setRows([]); return; }
+    let cancelled = false;
+    Promise.all(groups.map(async (group) => {
+      const members = await listGroupMembers(group.id).catch(() => []);
+      const emails = new Set(members.map((m) => m.pending_email?.toLowerCase()).filter((e): e is string => !!e));
+      const stats = await computeHostExamStats(hostId, emails);
+      return { group, stats };
+    })).then((r) => { if (!cancelled) setRows(r); });
+    return () => { cancelled = true; };
+  }, [hostId, groups]);
+  return rows;
+}
+
+function PromotionComparisonPanel({ hostId }: { hostId: string }) {
+  const groups = useOwnedGroups(hostId);
+  const rows = usePromotionComparison(hostId, groups);
+  if (rows.length < 2) return null;
+
+  return (
+    <div className="ap-card" style={{ padding: 0, marginBottom: 20, overflowX: 'auto' }}>
+      <div style={{ padding: '14px 20px 10px' }}>
+        <h3 style={{ fontFamily: 'var(--ap-font-display)', fontWeight: 600, fontSize: 15, margin: 0 }}>
+          Comparaison des promotions
+        </h3>
+      </div>
+      <table style={{ width: '100%', minWidth: 520, borderCollapse: 'collapse', textAlign: 'left' }}>
+        <thead>
+          <tr style={{ background: 'var(--ap-paper)' }}>
+            <th style={{ padding: '10px 20px', fontSize: 11, fontWeight: 800, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--ap-muted)' }}>Promotion</th>
+            <th style={{ padding: '10px 16px', fontSize: 11, fontWeight: 800, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--ap-muted)' }}>Tentatives</th>
+            <th style={{ padding: '10px 16px', fontSize: 11, fontWeight: 800, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--ap-muted)' }}>Taux de réussite</th>
+            <th style={{ padding: '10px 16px', fontSize: 11, fontWeight: 800, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--ap-muted)' }}>Score moyen</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(({ group, stats }) => (
+            <tr key={group.id} style={{ borderTop: '1px solid var(--ap-line)' }}>
+              <td style={{ padding: '10px 20px', fontSize: 13, fontWeight: 700 }}>{group.name}</td>
+              <td style={{ padding: '10px 16px', fontSize: 13, fontWeight: 700, color: 'var(--ap-muted)' }}>{stats.completedAttempts}</td>
+              <td style={{ padding: '10px 16px', fontSize: 13, fontWeight: 800 }}>{stats.passRate !== null ? `${stats.passRate}%` : '-'}</td>
+              <td style={{ padding: '10px 16px', fontSize: 13, fontWeight: 800 }}>{stats.avgScore !== null ? `${stats.avgScore}%` : '-'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function HostStatTile({ icon: Icon, label, value }: { icon: typeof Trophy; label: string; value: string }) {
+  return (
+    <div style={{
+      background: 'var(--ap-card)', border: 'var(--ap-border-w) solid var(--ap-line)',
+      borderRadius: 'var(--ap-r-lg)', padding: '14px 18px', textAlign: 'center', flex: 1, minWidth: 120,
+    }}>
+      <div style={{ marginBottom: 6, display: 'flex', justifyContent: 'center' }}><Icon style={{ width: 18, height: 18, color: 'var(--ap-muted)' }} /></div>
+      <div style={{ fontFamily: 'var(--ap-font-display)', fontWeight: 800, fontSize: 20, color: 'var(--ap-ink)', marginBottom: 2 }}>{value}</div>
+      <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--ap-muted)' }}>{label}</div>
+    </div>
+  );
+}
+
+/** Cross-exam overview — analytics phase A "formateur" persona: a trainer's
+ *  global success rate/score/time across every exam they host, not just one.
+ *  Phase B adds an optional "Promotion" filter (groups from Partage), scoping
+ *  the same stats to attempts whose participant email matches a group
+ *  member invited by email — see computeHostExamStats' docstring. */
+function HostStatsRow({ hostId }: { hostId: string }) {
+  const groups = useOwnedGroups(hostId);
+  const [groupId, setGroupId] = useState<string | null>(null);
+  const emailFilter = useGroupEmailFilter(groupId);
+  const stats = useHostExamStats(hostId, emailFilter);
+
+  if (groups.length === 0 && stats.totalExams === 0) return null;
+
+  return (
+    <div style={{ marginBottom: 20 }}>
+      {groups.length > 0 && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+          <Select value={groupId ?? 'all'} onValueChange={(v) => setGroupId(v === 'all' ? null : v)}>
+            <SelectTrigger className="w-[200px]" style={triggerStyle}>
+              <SelectValue placeholder="Promotion" />
+            </SelectTrigger>
+            <SelectContent style={selectContentStyle}>
+              <SelectItem value="all">Toutes les promotions</SelectItem>
+              {groups.map((g) => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          {groupId && (
+            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--ap-muted)' }}>
+              Rapproché par email d'invitation — les participants sans email ou ajoutés par pseudo ne sont pas comptés.
+            </span>
+          )}
+        </div>
+      )}
+      {(stats.totalExams > 0 || groupId) && (
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <HostStatTile icon={ClipboardCheck} label="Examens" value={String(stats.totalExams)} />
+          <HostStatTile icon={UserRound} label="Tentatives" value={String(stats.completedAttempts)} />
+          <HostStatTile icon={Trophy} label="Taux de réussite" value={stats.passRate !== null ? `${stats.passRate}%` : '-'} />
+          <HostStatTile icon={BarChart3} label="Score moyen" value={stats.avgScore !== null ? `${stats.avgScore}%` : '-'} />
+          <HostStatTile icon={Clock3} label="Durée moy." value={stats.avgTimeMinutes !== null ? `${stats.avgTimeMinutes} min` : '-'} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+const PROBLEM_THRESHOLD_PCT = 50;
+
+/** "Identification des modules problématiques" (responsable pédagogique) —
+ *  same per-exam computeExamStats already shown on each exam's own admin
+ *  page, just ranked worst-pass-rate-first across the trainer's whole
+ *  portfolio instead of read one exam at a time. */
+function useExamStatsRows(hostId: string): ExamStatsRow[] {
+  const [rows, setRows] = useState<ExamStatsRow[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    listExamStatsForHost(hostId).then((r) => { if (!cancelled) setRows(r); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [hostId]);
+  return rows;
+}
+
+function ProblemModulesPanel({ hostId, navigate }: { hostId: string; navigate: ReturnType<typeof useNavigate> }) {
+  const rows = useExamStatsRows(hostId);
+  const problematic = rows
+    .filter((r) => r.stats.completedAttempts > 0 && r.stats.passRate !== null && r.stats.passRate < PROBLEM_THRESHOLD_PCT)
+    .slice(0, 5);
+
+  if (problematic.length === 0) return null;
+
+  return (
+    <div className="ap-card" style={{ padding: '16px 20px', marginBottom: 20 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+        <AlertTriangle className="h-4 w-4" style={{ color: 'var(--ap-quiz)' }} />
+        <h3 style={{ fontFamily: 'var(--ap-font-display)', fontWeight: 600, fontSize: 15, margin: 0 }}>
+          Modules problématiques
+        </h3>
+        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--ap-muted)' }}>
+          Taux de réussite &lt; {PROBLEM_THRESHOLD_PCT}%
+        </span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {problematic.map(({ exam, stats }) => (
+          <div
+            key={exam.id}
+            onClick={() => navigate(`/exam/${exam.id}/admin`)}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+              padding: '10px 12px', borderRadius: 'var(--ap-r-sm)', background: 'var(--ap-quiz-soft)',
+              cursor: 'pointer',
+            }}
+          >
+            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--ap-ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {exam.title}
+            </span>
+            <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--ap-quiz-deep)', flexShrink: 0 }}>
+              {stats.passRate}% réussite · {stats.completedAttempts} tentative{stats.completedAttempts > 1 ? 's' : ''}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function useExamStats(examId: string): ExamStats {
   const [stats, setStats] = useState<ExamStats>(EMPTY_STATS);
@@ -309,6 +533,11 @@ export default function MyExams() {
       rootLabel="Tous les examens"
       oneLabel="examen"
       cta={{ label: '+ Nouvel examen', onClick: () => navigate('/exam-builder') }}
+      statsRow={<>
+        <HostStatsRow hostId={user.id} />
+        <PromotionComparisonPanel hostId={user.id} />
+        <ProblemModulesPanel hostId={user.id} navigate={navigate} />
+      </>}
       extraFilter={(d) => status === 'Tous' || computeExamStatus(d.data as unknown as Exam) === status}
       extraToolbar={
         <Select value={status} onValueChange={(v) => setStatus(v as 'Tous' | ExamStatus)}>

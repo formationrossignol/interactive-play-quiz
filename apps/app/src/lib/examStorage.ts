@@ -550,6 +550,68 @@ export async function computeExamStats(examId: string): Promise<ExamStats> {
   };
 }
 
+export interface HostExamStats extends ExamStats {
+  totalExams: number;
+}
+
+/** Cross-exam aggregate for a trainer's overview (analytics phase A) — same
+ *  pass/score/time math as computeExamStats, rolled up across every exam
+ *  they host. N attempt queries (one per exam) rather than a single join:
+ *  reuses getAttemptsForExam as-is instead of a new RLS-sensitive query, and
+ *  a trainer's exam count is small enough that this stays cheap.
+ *
+ *  `emailFilter` (phase B, "réussite par promotion") narrows to attempts
+ *  whose participant email matches — case-insensitively — an email in the
+ *  set. Exam participants have no account, so the only join key available
+ *  is the free-text email they optionally typed in; attempts with no email,
+ *  or a group member added by username search rather than email invite
+ *  (share_group_members.user_id, no pending_email on file), simply won't
+ *  match. Callers surface that as a documented gap, not a bug. */
+export async function computeHostExamStats(hostId: string, emailFilter?: Set<string>): Promise<HostExamStats> {
+  const exams = await getHostExams(hostId);
+  const attemptLists = await Promise.all(exams.map((e) => getAttemptsForExam(e.id)));
+  let attempts = attemptLists.flat();
+  if (emailFilter) {
+    attempts = attempts.filter((a) => a.participantEmail && emailFilter.has(a.participantEmail.toLowerCase()));
+  }
+  const completed = attempts.filter((a) => a.status === 'submitted' || a.status === 'auto-submitted');
+  const passed = completed.filter((a) => a.passed === true).length;
+  const avgPct = completed.length
+    ? Math.round(completed.reduce((s, a) => s + (a.percentage ?? 0), 0) / completed.length)
+    : null;
+  const avgTime = completed.length
+    ? Math.round(completed.reduce((s, a) => s + a.timeUsedSeconds, 0) / completed.length / 60)
+    : null;
+  return {
+    totalExams: exams.length,
+    totalAttempts: attempts.length,
+    completedAttempts: completed.length,
+    passRate: completed.length ? Math.round((passed / completed.length) * 100) : null,
+    avgScore: avgPct,
+    avgTimeMinutes: avgTime,
+  };
+}
+
+export interface ExamStatsRow {
+  exam: Exam;
+  stats: ExamStats;
+}
+
+/** Per-exam breakdown across a trainer's whole portfolio, sorted worst
+ *  pass-rate first — "identification des modules problématiques"
+ *  (responsable pédagogique). Exams with no completed attempts (passRate
+ *  null) sort last, since there's nothing to flag as problematic yet. */
+export async function listExamStatsForHost(hostId: string): Promise<ExamStatsRow[]> {
+  const exams = await getHostExams(hostId);
+  const rows = await Promise.all(exams.map(async (exam) => ({ exam, stats: await computeExamStats(exam.id) })));
+  return rows.sort((a, b) => {
+    if (a.stats.passRate === null && b.stats.passRate === null) return 0;
+    if (a.stats.passRate === null) return 1;
+    if (b.stats.passRate === null) return -1;
+    return a.stats.passRate - b.stats.passRate;
+  });
+}
+
 /* ══ Results exports ═══════════════════════════════════════════ */
 
 const EXAM_EXPORT_HEADERS = [

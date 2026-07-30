@@ -22,8 +22,39 @@ interface ExamView {
   showResultsPolicy: string;
 }
 
-type QuestionView = { id: string; type: string; question: string; answers?: string[] };
+type QuestionView = { id: string; type: string; question: string; answers?: string[]; skills?: string[] };
 type CorrectionView = { id: string; correctAnswer: unknown };
+
+interface SkillMastery {
+  skill: string;
+  correct: number;
+  total: number;
+}
+
+/** Per-attempt skill mastery (analytics phase C, apprenant persona) — no
+ *  cross-attempt aggregation, so no identity-linking problem: everything
+ *  needed is already on the attempt the learner is looking at. */
+function computeSkillMastery(
+  orderedQs: QuestionView[],
+  answers: Record<string, number | string | null>,
+  correctionById: Map<string, CorrectionView>,
+): SkillMastery[] {
+  const bySkill = new Map<string, SkillMastery>();
+  for (const q of orderedQs) {
+    if (!q.skills?.length) continue;
+    const given = answers[q.id];
+    const correctAnswer = correctionById.get(q.id)?.correctAnswer;
+    const isCorrect = given !== null && given !== undefined && given !== ''
+      && isAnswerCorrect(given, { type: q.type, correctAnswer });
+    for (const skill of q.skills) {
+      const acc = bySkill.get(skill) ?? { skill, correct: 0, total: 0 };
+      acc.total += 1;
+      if (isCorrect) acc.correct += 1;
+      bySkill.set(skill, acc);
+    }
+  }
+  return [...bySkill.values()].sort((a, b) => (a.correct / a.total) - (b.correct / b.total));
+}
 
 export default function ExamResults() {
   const { attemptId } = useParams<{ attemptId: string }>();
@@ -97,6 +128,7 @@ export default function ExamResults() {
   const orderedQs = attempt.questionOrder
     .map((id) => questions.find((q) => q.id === id))
     .filter(Boolean) as QuestionView[];
+  const skillMastery = showCorrection ? computeSkillMastery(orderedQs, attempt.answers, correctionById) : [];
 
   return (
     <div style={{ minHeight: '100vh', paddingBottom: 80 }}>
@@ -147,6 +179,36 @@ export default function ExamResults() {
             <Stat label="Répondu" value={`${Object.keys(attempt.answers).length}/${questions.length}`} />
           </div>
         </div>
+
+        {skillMastery.length > 0 && (
+          <div className="ap-card" style={{ padding: '20px 24px', marginBottom: 24 }}>
+            <h3 style={{ fontFamily: 'var(--ap-font-display)', fontWeight: 600, fontSize: 15, marginBottom: 14 }}>
+              Vos compétences
+            </h3>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {skillMastery.map((sm) => {
+                const mastered = sm.correct === sm.total;
+                return (
+                  <span
+                    key={sm.skill}
+                    title={`${sm.correct}/${sm.total} bonne${sm.correct > 1 ? 's' : ''} réponse${sm.correct > 1 ? 's' : ''}`}
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 6,
+                      padding: '7px 12px', borderRadius: 'var(--ap-r-sm)',
+                      border: `1px solid ${mastered ? 'var(--ap-pres)' : 'var(--ap-quiz)'}`,
+                      background: mastered ? 'var(--ap-pres-soft)' : 'var(--ap-quiz-soft)',
+                      color: mastered ? 'var(--ap-pres-deep)' : 'var(--ap-quiz-deep)',
+                      fontWeight: 700, fontSize: 13,
+                    }}
+                  >
+                    <MaterialSymbol name={mastered ? 'check_circle' : 'trending_up'} size={15} />
+                    {sm.skill}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {showAnswers && (
           <div className="ap-card" style={{ overflowX: 'auto', padding: 0 }}>

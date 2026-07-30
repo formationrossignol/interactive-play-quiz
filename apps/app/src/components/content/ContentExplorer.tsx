@@ -255,6 +255,8 @@ export interface ContentExplorerProps {
   oneLabel: string; // "quiz", "sondage", "paquet", "cours"
   cta: { label: string; onClick: () => void };
   headerExtras?: ReactNode; // e.g. Examens button (quiz), Générer par IA (course)
+  /** Full-width row rendered between the page head and the toolbar/sidebar grid — e.g. a cross-item stats summary. */
+  statsRow?: ReactNode;
   /** Fixed category list; when omitted, derived from the items' categories. */
   categories?: string[];
   /** Receives the collection's reload fn so the page can refresh after external mutations. */
@@ -297,6 +299,7 @@ export function ContentExplorer({
   oneLabel,
   cta,
   headerExtras,
+  statsRow,
   categories: fixedCategories,
   reloadRef,
   extraFilter,
@@ -616,6 +619,8 @@ export function ContentExplorer({
             <button className={`ap-btn ap-btn--sm ap-btn--pill ${accentBtn}`} onClick={cta.onClick}>{cta.label}</button>
           </div>
         </div>
+
+        {statsRow}
 
         {c.error && (
           <div style={{ borderRadius: "var(--ap-r-md)", border: "2px solid var(--ap-quiz)", background: "var(--ap-paper-2)", padding: "16px", marginBottom: "16px", color: "var(--ap-quiz)", fontWeight: 700 }}>

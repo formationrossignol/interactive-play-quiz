@@ -28,6 +28,8 @@ export interface BaseQuestion {
   points?: number;
   image?: string;
   layout?: import("@/lib/contentLayouts").QuestionLayoutId;
+  /** Free-text skill/competency labels — aggregated into "compétences les moins maîtrisées" analytics. */
+  skills?: string[];
 }
 
 export interface MultipleChoiceQuestion extends BaseQuestion {
@@ -229,4 +231,5 @@ export interface EditableQuestion {
   correctOrder?: number[];
   correctMatches?: { leftId: string; rightId: string }[];
   blanks?: { id?: string; correctAnswer?: string; acceptableAnswers?: string[] }[];
+  skills?: string[];
 }

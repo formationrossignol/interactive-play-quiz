@@ -578,6 +578,7 @@ export const QuizBuilder = () => {
   const [category, setCategory] = useState("Autre");
   const [tags, setTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState("");
+  const [newSkill, setNewSkill] = useState("");
   const [headerImage, setHeaderImage] = useState("");
   const [theme, setTheme] = useState<string>(DEFAULT_THEME_ID);
   const [ambianceId, setAmbianceId] = useState<string>(isPoll ? "none" : DEFAULT_AMBIANCE);
@@ -1210,6 +1211,44 @@ export const QuizBuilder = () => {
                   );
                 })}
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Compétences — free-text skill tags, aggregated by ExamAdmin's
+            "compétences les moins maîtrisées" panel once an exam runs. */}
+        {!isPoll && (
+          <div style={{ marginTop: 18 }}>
+            <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".09em", textTransform: "uppercase", color: "var(--ap-muted)", marginBottom: 9 }}>Compétences</div>
+            <div className="flex gap-2">
+              <Input
+                placeholder="Ajouter une compétence"
+                value={newSkill}
+                onChange={e => setNewSkill(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    const v = newSkill.trim();
+                    if (v && !(q.skills ?? []).includes(v)) { upd({ skills: [...(q.skills ?? []), v] }); setNewSkill(""); }
+                  }
+                }}
+              />
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const v = newSkill.trim();
+                  if (v && !(q.skills ?? []).includes(v)) { upd({ skills: [...(q.skills ?? []), v] }); setNewSkill(""); }
+                }}
+              >
+                <Plus className="w-4 h-4" />
+              </Button>
+            </div>
+            <div className="flex flex-wrap gap-2 mt-2">
+              {(q.skills ?? []).map(skill => (
+                <Badge key={skill} variant="secondary" className="cursor-pointer" onClick={() => upd({ skills: (q.skills ?? []).filter(s => s !== skill) })}>
+                  {skill} ×
+                </Badge>
+              ))}
             </div>
           </div>
         )}
