@@ -7,6 +7,7 @@ import { computeExamStats, computeExamStatus, computeHostExamStats, duplicateExa
 import { getCurrentUser } from '@/lib/auth';
 import { showError } from '@/lib/errorTaxonomy';
 import { createContent } from '@/lib/content/contentRepo';
+import { listGroups, listGroupMembers, type Group } from '@/lib/sharing/sharingRepo';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   ArrowRight,
@@ -123,13 +124,44 @@ const renderMeta = (exam: Exam, stats: ExamStats) => (
 const EMPTY_STATS: ExamStats = { totalAttempts: 0, completedAttempts: 0, passRate: null, avgScore: null, avgTimeMinutes: null };
 const EMPTY_HOST_STATS: HostExamStats = { ...EMPTY_STATS, totalExams: 0 };
 
-function useHostExamStats(hostId: string): HostExamStats {
+/** Fetches the trainer's groups once — the "Promotion" filter's option list. */
+function useOwnedGroups(hostId: string): Group[] {
+  const [groups, setGroups] = useState<Group[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    listGroups(hostId).then((g) => { if (!cancelled) setGroups(g); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [hostId]);
+  return groups;
+}
+
+/** Resolves a group's email-invited members (share_group_members.pending_email)
+ *  into the lowercased Set computeHostExamStats filters attempts against —
+ *  see that function's docstring for why user_id-only members can't join here. */
+function useGroupEmailFilter(groupId: string | null): Set<string> | undefined {
+  const [emails, setEmails] = useState<Set<string> | undefined>(undefined);
+  useEffect(() => {
+    if (!groupId) { setEmails(undefined); return; }
+    let cancelled = false;
+    listGroupMembers(groupId).then((members) => {
+      if (cancelled) return;
+      const set = new Set(
+        members.map((m) => m.pending_email?.toLowerCase()).filter((e): e is string => !!e),
+      );
+      setEmails(set);
+    }).catch(() => { if (!cancelled) setEmails(new Set()); });
+    return () => { cancelled = true; };
+  }, [groupId]);
+  return emails;
+}
+
+function useHostExamStats(hostId: string, emailFilter?: Set<string>): HostExamStats {
   const [stats, setStats] = useState<HostExamStats>(EMPTY_HOST_STATS);
   useEffect(() => {
     let cancelled = false;
-    computeHostExamStats(hostId).then((s) => { if (!cancelled) setStats(s); });
+    computeHostExamStats(hostId, emailFilter).then((s) => { if (!cancelled) setStats(s); });
     return () => { cancelled = true; };
-  }, [hostId]);
+  }, [hostId, emailFilter]);
   return stats;
 }
 
@@ -147,17 +179,47 @@ function HostStatTile({ icon: Icon, label, value }: { icon: typeof Trophy; label
 }
 
 /** Cross-exam overview — analytics phase A "formateur" persona: a trainer's
- *  global success rate/score/time across every exam they host, not just one. */
+ *  global success rate/score/time across every exam they host, not just one.
+ *  Phase B adds an optional "Promotion" filter (groups from Partage), scoping
+ *  the same stats to attempts whose participant email matches a group
+ *  member invited by email — see computeHostExamStats' docstring. */
 function HostStatsRow({ hostId }: { hostId: string }) {
-  const stats = useHostExamStats(hostId);
-  if (stats.totalExams === 0 || stats.completedAttempts === 0) return null;
+  const groups = useOwnedGroups(hostId);
+  const [groupId, setGroupId] = useState<string | null>(null);
+  const emailFilter = useGroupEmailFilter(groupId);
+  const stats = useHostExamStats(hostId, emailFilter);
+
+  if (groups.length === 0 && stats.totalExams === 0) return null;
+
   return (
-    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 20 }}>
-      <HostStatTile icon={ClipboardCheck} label="Examens" value={String(stats.totalExams)} />
-      <HostStatTile icon={UserRound} label="Tentatives" value={String(stats.completedAttempts)} />
-      <HostStatTile icon={Trophy} label="Taux de réussite" value={stats.passRate !== null ? `${stats.passRate}%` : '-'} />
-      <HostStatTile icon={BarChart3} label="Score moyen" value={stats.avgScore !== null ? `${stats.avgScore}%` : '-'} />
-      <HostStatTile icon={Clock3} label="Durée moy." value={stats.avgTimeMinutes !== null ? `${stats.avgTimeMinutes} min` : '-'} />
+    <div style={{ marginBottom: 20 }}>
+      {groups.length > 0 && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+          <Select value={groupId ?? 'all'} onValueChange={(v) => setGroupId(v === 'all' ? null : v)}>
+            <SelectTrigger className="w-[200px]" style={triggerStyle}>
+              <SelectValue placeholder="Promotion" />
+            </SelectTrigger>
+            <SelectContent style={selectContentStyle}>
+              <SelectItem value="all">Toutes les promotions</SelectItem>
+              {groups.map((g) => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          {groupId && (
+            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--ap-muted)' }}>
+              Rapproché par email d'invitation — les participants sans email ou ajoutés par pseudo ne sont pas comptés.
+            </span>
+          )}
+        </div>
+      )}
+      {(stats.totalExams > 0 || groupId) && (
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <HostStatTile icon={ClipboardCheck} label="Examens" value={String(stats.totalExams)} />
+          <HostStatTile icon={UserRound} label="Tentatives" value={String(stats.completedAttempts)} />
+          <HostStatTile icon={Trophy} label="Taux de réussite" value={stats.passRate !== null ? `${stats.passRate}%` : '-'} />
+          <HostStatTile icon={BarChart3} label="Score moyen" value={stats.avgScore !== null ? `${stats.avgScore}%` : '-'} />
+          <HostStatTile icon={Clock3} label="Durée moy." value={stats.avgTimeMinutes !== null ? `${stats.avgTimeMinutes} min` : '-'} />
+        </div>
+      )}
     </div>
   );
 }

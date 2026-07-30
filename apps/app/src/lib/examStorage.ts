@@ -558,11 +558,22 @@ export interface HostExamStats extends ExamStats {
  *  pass/score/time math as computeExamStats, rolled up across every exam
  *  they host. N attempt queries (one per exam) rather than a single join:
  *  reuses getAttemptsForExam as-is instead of a new RLS-sensitive query, and
- *  a trainer's exam count is small enough that this stays cheap. */
-export async function computeHostExamStats(hostId: string): Promise<HostExamStats> {
+ *  a trainer's exam count is small enough that this stays cheap.
+ *
+ *  `emailFilter` (phase B, "réussite par promotion") narrows to attempts
+ *  whose participant email matches — case-insensitively — an email in the
+ *  set. Exam participants have no account, so the only join key available
+ *  is the free-text email they optionally typed in; attempts with no email,
+ *  or a group member added by username search rather than email invite
+ *  (share_group_members.user_id, no pending_email on file), simply won't
+ *  match. Callers surface that as a documented gap, not a bug. */
+export async function computeHostExamStats(hostId: string, emailFilter?: Set<string>): Promise<HostExamStats> {
   const exams = await getHostExams(hostId);
   const attemptLists = await Promise.all(exams.map((e) => getAttemptsForExam(e.id)));
-  const attempts = attemptLists.flat();
+  let attempts = attemptLists.flat();
+  if (emailFilter) {
+    attempts = attempts.filter((a) => a.participantEmail && emailFilter.has(a.participantEmail.toLowerCase()));
+  }
   const completed = attempts.filter((a) => a.status === 'submitted' || a.status === 'auto-submitted');
   const passed = completed.filter((a) => a.passed === true).length;
   const avgPct = completed.length
