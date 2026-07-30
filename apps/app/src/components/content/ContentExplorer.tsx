@@ -18,6 +18,7 @@ import {
   Folder as FolderIcon,
   Globe,
   LayoutGrid,
+  LayoutTemplate,
   List,
   Search,
   Sparkles,
@@ -41,6 +42,7 @@ import {
   filterActive,
   filterByFolder,
   filterFavorites,
+  filterTemplates,
   filterTrashed,
   toDisplay,
   type ContentDisplay,
@@ -52,7 +54,7 @@ import { ExplorerEmptyState } from "./ExplorerEmptyState";
 
 const PAGE_SIZE = 12;
 
-type ShortcutView = "all" | "favorites" | "public" | "trash";
+type ShortcutView = "all" | "favorites" | "templates" | "public" | "trash";
 
 interface ExplorerPreferences {
   view?: ShortcutView;
@@ -339,6 +341,7 @@ export function ContentExplorer({
   );
   const trashed = useMemo(() => filterTrashed(display), [display]);
   const favorites = useMemo(() => applySearchSort(filterFavorites(display), opts), [display, opts]);
+  const templates = useMemo(() => applySearchSort(filterTemplates(display), opts), [display, opts]);
   const publicDisplay = useMemo(() => applySearchSort(c.publicItems.map(toDisplay), opts), [c.publicItems, opts]);
 
   // Direct active-item count per folderId (badges).
@@ -390,7 +393,9 @@ export function ContentExplorer({
 
   const breadcrumbItems: BreadcrumbItem[] = useMemo(() => {
     if (view !== "all") {
-      const label = view === "favorites" ? t("favorites") : view === "public" ? t("explorerPublicContent") : t("explorerTrash");
+      const label = view === "favorites" ? t("favorites")
+        : view === "templates" ? t("explorerTemplates")
+        : view === "public" ? t("explorerPublicContent") : t("explorerTrash");
       return [{ label }];
     }
     const folders: BreadcrumbItem[] = breadcrumb.map((f) =>
@@ -553,6 +558,10 @@ export function ContentExplorer({
     content = favorites.length
       ? paginatedBlock(favorites)
       : emptyBox(t("explorerNoFavoritesTitle"), tVars("explorerNoFavoritesBody", { item: oneLabel }), <Star style={{ width: 26, height: 26 }} />);
+  } else if (view === "templates") {
+    content = templates.length
+      ? paginatedBlock(templates)
+      : emptyBox(t("explorerNoTemplatesTitle"), tVars("explorerNoTemplatesBody", { item: oneLabel }), <LayoutTemplate style={{ width: 26, height: 26 }} />);
   } else if (view === "public") {
     content = publicDisplay.length
       ? paginatedBlock(publicDisplay)
@@ -636,6 +645,13 @@ export function ContentExplorer({
                     count={filterFavorites(display).length}
                     active={view === "favorites"}
                     onClick={() => goShortcut("favorites")}
+                  />
+                  <ShortcutRow
+                    icon={<LayoutTemplate style={{ width: 16, height: 16 }} />}
+                    label={t("explorerTemplates")}
+                    count={filterTemplates(display).length}
+                    active={view === "templates"}
+                    onClick={() => goShortcut("templates")}
                   />
                   <ShortcutRow
                     icon={<Globe style={{ width: 16, height: 16 }} />}

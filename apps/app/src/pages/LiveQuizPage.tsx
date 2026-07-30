@@ -34,6 +34,7 @@ const normalizeStoredQuiz = (quiz: Partial<SavedQuiz>, fallbackId: string): Save
   tags: quiz.tags ?? [],
   speedBonus: quiz.speedBonus ?? true,
   transitionTime: quiz.transitionTime ?? 5,
+  readingTime: quiz.readingTime ?? 3,
   category: quiz.category ?? "",
   type: (quiz.type as SavedQuiz["type"]) ?? "quiz",
   headerImage: quiz.headerImage,
@@ -121,6 +122,7 @@ const LiveQuizPage = () => {
       font: loadedQuiz.font,
       ambianceId: loadedQuiz.ambianceId,
       transitionTime: loadedQuiz.transitionTime,
+      readingTime: loadedQuiz.readingTime,
       liveReactionsEnabled: loadedQuiz.liveReactionsEnabled ?? true,
       endChatEnabled: loadedQuiz.endChatEnabled ?? true,
     };

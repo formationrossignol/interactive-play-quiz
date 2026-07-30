@@ -297,6 +297,9 @@ export function GenericCard(props: GenericItemProps) {
           </button>
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
+          {d.isTemplate && (
+            <span className="ap-pill" style={{ fontSize: "11px", padding: "3px 9px", color: "var(--ap-brand)" }}>Modèle</span>
+          )}
           {d.category && (
             <Badge variant="outline" className="rounded-full text-xs border-border text-muted-foreground">
               {d.category}
@@ -355,6 +358,9 @@ export function GenericRow(props: GenericItemProps) {
         {d.description && <p className="ap-muted truncate" style={{ fontSize: "12px" }}>{d.description}</p>}
       </div>
       <div className="hidden sm:flex items-center gap-1.5 flex-shrink-0">
+        {d.isTemplate && (
+          <span className="ap-pill" style={{ fontSize: "11px", padding: "2px 8px", color: "var(--ap-brand)" }}>Modèle</span>
+        )}
         {d.category && (
           <Badge variant="outline" className="rounded-full text-xs border-border text-muted-foreground">
             {d.category}

@@ -31,6 +31,7 @@ const display = (over: Partial<ContentDisplay>): ContentDisplay => ({
   tags: [],
   category: '',
   isFavorite: false,
+  isTemplate: false,
   isPublic: false,
   rating: 0,
   deletedAt: null,
