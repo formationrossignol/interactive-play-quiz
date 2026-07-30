@@ -1,4 +1,5 @@
 import { Line, LineChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import { useNavigate } from "react-router-dom";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent, type ChartConfig } from "@/components/ui/chart";
 import type { ActivityPoint } from "@/lib/dashboardStats";
 
@@ -12,7 +13,8 @@ const formatDay = (iso: string) => {
   return d.toLocaleDateString("fr-FR", { day: "numeric", month: "short", timeZone: "UTC" });
 };
 
-export function ActivityChart({ data }: { data: ActivityPoint[] }) {
+export function ActivityChart({ data, hasCreations }: { data: ActivityPoint[]; hasCreations: boolean }) {
+  const navigate = useNavigate();
   const hasActivity = data.some((point) => point.sessions > 0 || point.participants > 0);
 
   return (
@@ -42,6 +44,7 @@ export function ActivityChart({ data }: { data: ActivityPoint[] }) {
               strokeWidth={2}
               dot={{ r: 3, fill: "var(--color-sessions)", strokeWidth: 0 }}
               activeDot={{ r: 5 }}
+              isAnimationActive={false}
             />
             <Line
               dataKey="participants"
@@ -50,12 +53,22 @@ export function ActivityChart({ data }: { data: ActivityPoint[] }) {
               strokeWidth={2}
               dot={{ r: 3, fill: "var(--color-participants)", strokeWidth: 0 }}
               activeDot={{ r: 5 }}
+              isAnimationActive={false}
             />
           </LineChart>
         </ChartContainer>
       ) : (
-        <div style={{ height: 220, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ height: 220, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10 }}>
           <p className="ap-muted" style={{ fontSize: "13px" }}>Pas encore de session sur les 14 derniers jours.</p>
+          {hasCreations && (
+            <button
+              type="button"
+              className="ap-btn ap-btn--sm"
+              onClick={() => navigate("/my-quizzes")}
+            >
+              Lancer une session
+            </button>
+          )}
         </div>
       )}
     </div>

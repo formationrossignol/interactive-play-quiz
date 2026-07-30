@@ -36,7 +36,7 @@ export function CreationsByTypeChart({ data }: { data: CreationsByType }) {
               width={92}
             />
             <ChartTooltip content={<ChartTooltipContent hideLabel />} />
-            <Bar dataKey="count" radius={4}>
+            <Bar dataKey="count" radius={4} isAnimationActive={false}>
               {rows.map((row) => (
                 <Cell key={row.type} fill={`var(--color-${row.type})`} />
               ))}

@@ -87,11 +87,14 @@
 
   /* --ap-quiz used to sit on the error role (--md-sys-color-error), which
      made every quiz-tagged card read as an error/warning by coincidence.
-     Content-type colors get the secondary role instead — real error UI
-     (--ap-danger, below) keeps the actual Material error role. */
-  --ap-quiz: var(--md-sys-color-secondary);
-  --ap-quiz-deep: #4a4458;
-  --ap-quiz-soft: var(--md-sys-color-secondary-container);
+     The secondary role (#625b71) was tried as a content-type replacement
+     but sits at ~1.4:1 contrast against --ap-muted (#49454f) — the two
+     were visually indistinguishable in solid-fill contexts (chart bars,
+     icons). Hand-tuned amber instead, matching how --ap-poll/--ap-pres
+     already use bespoke hex rather than a raw system role in this file. */
+  --ap-quiz: #7a5900;
+  --ap-quiz-deep: #5c4300;
+  --ap-quiz-soft: #f6e8c8;
   --ap-danger: var(--md-sys-color-error);
   --ap-danger-deep: #7c2e29;
   --ap-danger-soft: var(--md-sys-color-error-container);
@@ -163,9 +166,9 @@
   --md-sys-color-inverse-primary: #65558f;
 
   --ap-brand-deep: #b69df8;
-  --ap-quiz: var(--md-sys-color-secondary);
-  --ap-quiz-deep: #e8def8;
-  --ap-quiz-soft: var(--md-sys-color-secondary-container);
+  --ap-quiz: #dcc274;
+  --ap-quiz-deep: #f2ddb0;
+  --ap-quiz-soft: #4a3800;
   --ap-danger: var(--md-sys-color-error);
   --ap-danger-deep: #ffdad6;
   --ap-danger-soft: var(--md-sys-color-error-container);
@@ -490,8 +493,8 @@
 }
 
 [data-theme="material"] .ap-badge--quiz {
-  color: var(--md-sys-color-on-secondary-container);
-  background: var(--md-sys-color-secondary-container);
+  color: var(--ap-quiz-deep);
+  background: var(--ap-quiz-soft);
 }
 
 [data-theme="material"] .ap-badge--danger {

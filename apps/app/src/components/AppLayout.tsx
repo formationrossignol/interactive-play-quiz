@@ -111,13 +111,23 @@ export const AppLayout = ({ subtitle, extraSection, children }: AppLayoutProps) 
             {user && <NotificationCenter user={user} />}
             <button
               type="button"
-              className="ap-btn ap-btn--ghost ap-btn--sm ap-icon-btn"
-              style={{ padding: "8px 10px" }}
+              className="ap-btn ap-btn--ghost ap-btn--sm"
+              style={{ padding: "8px 10px", display: "inline-flex", alignItems: "center", gap: 6 }}
               aria-label={`${t("commandPaletteOpen")} (${navigator.platform.includes("Mac") ? "⌘" : "Ctrl+"}K)`}
               title={`${t("commandPaletteOpen")} (${navigator.platform.includes("Mac") ? "⌘K" : "Ctrl+K"})`}
               onClick={() => setPaletteOpen(true)}
             >
-              <MaterialSymbol name="search" size={20} />
+              <MaterialSymbol name="bolt" size={20} />
+              <span
+                aria-hidden="true"
+                style={{
+                  fontSize: 11, fontWeight: 700, color: "var(--ap-muted)",
+                  border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-sm)",
+                  padding: "1px 5px", lineHeight: 1.4,
+                }}
+              >
+                {navigator.platform.includes("Mac") ? "⌘K" : "Ctrl+K"}
+              </span>
             </button>
             {user ? (
               <DropdownMenu open={accountOpen} onOpenChange={setAccountOpen}>
