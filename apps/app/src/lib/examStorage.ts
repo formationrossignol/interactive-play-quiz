@@ -592,6 +592,26 @@ export async function computeHostExamStats(hostId: string, emailFilter?: Set<str
   };
 }
 
+export interface ExamStatsRow {
+  exam: Exam;
+  stats: ExamStats;
+}
+
+/** Per-exam breakdown across a trainer's whole portfolio, sorted worst
+ *  pass-rate first — "identification des modules problématiques"
+ *  (responsable pédagogique). Exams with no completed attempts (passRate
+ *  null) sort last, since there's nothing to flag as problematic yet. */
+export async function listExamStatsForHost(hostId: string): Promise<ExamStatsRow[]> {
+  const exams = await getHostExams(hostId);
+  const rows = await Promise.all(exams.map(async (exam) => ({ exam, stats: await computeExamStats(exam.id) })));
+  return rows.sort((a, b) => {
+    if (a.stats.passRate === null && b.stats.passRate === null) return 0;
+    if (a.stats.passRate === null) return 1;
+    if (b.stats.passRate === null) return -1;
+    return a.stats.passRate - b.stats.passRate;
+  });
+}
+
 /* ══ Results exports ═══════════════════════════════════════════ */
 
 const EXAM_EXPORT_HEADERS = [

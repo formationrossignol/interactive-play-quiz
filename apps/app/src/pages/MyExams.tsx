@@ -3,13 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { toast } from 'sonner';
-import { computeExamStats, computeExamStatus, computeHostExamStats, duplicateExam, type Exam, type ExamStats, type ExamStatus, type HostExamStats } from '@/lib/examStorage';
+import { computeExamStats, computeExamStatus, computeHostExamStats, duplicateExam, listExamStatsForHost, type Exam, type ExamStats, type ExamStatsRow, type ExamStatus, type HostExamStats } from '@/lib/examStorage';
 import { getCurrentUser } from '@/lib/auth';
 import { showError } from '@/lib/errorTaxonomy';
 import { createContent } from '@/lib/content/contentRepo';
 import { listGroups, listGroupMembers, type Group } from '@/lib/sharing/sharingRepo';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
+  AlertTriangle,
   ArrowRight,
   BarChart3,
   CalendarDays,
@@ -224,6 +225,65 @@ function HostStatsRow({ hostId }: { hostId: string }) {
   );
 }
 
+const PROBLEM_THRESHOLD_PCT = 50;
+
+/** "Identification des modules problématiques" (responsable pédagogique) —
+ *  same per-exam computeExamStats already shown on each exam's own admin
+ *  page, just ranked worst-pass-rate-first across the trainer's whole
+ *  portfolio instead of read one exam at a time. */
+function useExamStatsRows(hostId: string): ExamStatsRow[] {
+  const [rows, setRows] = useState<ExamStatsRow[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    listExamStatsForHost(hostId).then((r) => { if (!cancelled) setRows(r); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [hostId]);
+  return rows;
+}
+
+function ProblemModulesPanel({ hostId, navigate }: { hostId: string; navigate: ReturnType<typeof useNavigate> }) {
+  const rows = useExamStatsRows(hostId);
+  const problematic = rows
+    .filter((r) => r.stats.completedAttempts > 0 && r.stats.passRate !== null && r.stats.passRate < PROBLEM_THRESHOLD_PCT)
+    .slice(0, 5);
+
+  if (problematic.length === 0) return null;
+
+  return (
+    <div className="ap-card" style={{ padding: '16px 20px', marginBottom: 20 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+        <AlertTriangle className="h-4 w-4" style={{ color: 'var(--ap-quiz)' }} />
+        <h3 style={{ fontFamily: 'var(--ap-font-display)', fontWeight: 600, fontSize: 15, margin: 0 }}>
+          Modules problématiques
+        </h3>
+        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--ap-muted)' }}>
+          Taux de réussite &lt; {PROBLEM_THRESHOLD_PCT}%
+        </span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {problematic.map(({ exam, stats }) => (
+          <div
+            key={exam.id}
+            onClick={() => navigate(`/exam/${exam.id}/admin`)}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+              padding: '10px 12px', borderRadius: 'var(--ap-r-sm)', background: 'var(--ap-quiz-soft)',
+              cursor: 'pointer',
+            }}
+          >
+            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--ap-ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {exam.title}
+            </span>
+            <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--ap-quiz-deep)', flexShrink: 0 }}>
+              {stats.passRate}% réussite · {stats.completedAttempts} tentative{stats.completedAttempts > 1 ? 's' : ''}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function useExamStats(examId: string): ExamStats {
   const [stats, setStats] = useState<ExamStats>(EMPTY_STATS);
   useEffect(() => {
@@ -412,7 +472,7 @@ export default function MyExams() {
       rootLabel="Tous les examens"
       oneLabel="examen"
       cta={{ label: '+ Nouvel examen', onClick: () => navigate('/exam-builder') }}
-      statsRow={<HostStatsRow hostId={user.id} />}
+      statsRow={<><HostStatsRow hostId={user.id} /><ProblemModulesPanel hostId={user.id} navigate={navigate} /></>}
       extraFilter={(d) => status === 'Tous' || computeExamStatus(d.data as unknown as Exam) === status}
       extraToolbar={
         <Select value={status} onValueChange={(v) => setStatus(v as 'Tous' | ExamStatus)}>
