@@ -1,0 +1,111 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-31T01:10:00Z",
+  "title": "Design System: Brivia — Material 3",
+  "extensions": {
+    "colorMeta": {
+      "primary":     { "role": "primary",   "displayName": "Muted Scholar's Violet", "canonical": "#65558f", "tonalRamp": ["#21005d", "#381e72", "#4f378b", "#65558f", "#7c6ba6", "#9481bd", "#c3b6e3", "#eaddff"] },
+      "secondary":   { "role": "secondary", "displayName": "Quiet Plum",              "canonical": "#625b71", "tonalRamp": ["#1d192b", "#332d41", "#4a4458", "#625b71", "#7a7288", "#93899f", "#ccc2dc", "#e8def8"] },
+      "tertiary":    { "role": "tertiary",  "displayName": "Dusted Rose",             "canonical": "#7d5260", "tonalRamp": ["#31111d", "#492532", "#633b48", "#7d5260", "#96687a", "#b17f91", "#efb8c8", "#ffd8e4"] },
+      "danger":      { "role": "error",     "displayName": "Signal Red",              "canonical": "#b3261e", "tonalRamp": ["#410e0b", "#601410", "#8c1d18", "#b3261e", "#c8493f", "#dd7269", "#f2b8b5", "#f9dedc"] },
+      "quiz":        { "role": "content-type", "displayName": "Burnished Amber",      "canonical": "#7a5900", "tonalRamp": ["#5c4300", "#7a5900", "#9c7500", "#b8935a", "#c9a876", "#dcc274", "#ecd9a8", "#f6e8c8"] },
+      "poll":        { "role": "content-type", "displayName": "Deep Teal",            "canonical": "#006a6a", "tonalRamp": ["#004f4f", "#006a6a", "#0d8a89", "#3aa5a4", "#5fbcbb", "#80d5d4", "#b8e8e7", "#e8faf9"] },
+      "pres":        { "role": "content-type", "displayName": "Field Green",          "canonical": "#386a20", "tonalRamp": ["#205107", "#386a20", "#4f8332", "#6b9d48", "#86b662", "#9cd67d", "#c3ecab", "#e8faf3"] }
+    },
+    "typographyMeta": {
+      "display":  { "displayName": "Display",  "purpose": "Hero numbers, scores — the single biggest figure on a page." },
+      "headline": { "displayName": "Headline", "purpose": "Page titles." },
+      "title":    { "displayName": "Title",    "purpose": "Section headings, card titles, strong labels." },
+      "body":     { "displayName": "Body",     "purpose": "Running text, descriptions. Not a single formalized class; set per component in the 13-15px range." },
+      "label":    { "displayName": "Label",    "purpose": "Uppercase field labels, eyebrow text, badge text." }
+    },
+    "shadows": [
+      { "name": "elevation-1", "value": "0 1px 2px rgba(29,27,32,0.3), 0 1px 3px 1px rgba(29,27,32,0.15)", "purpose": "Button hover." },
+      { "name": "elevation-2", "value": "0 1px 2px rgba(29,27,32,0.3), 0 2px 6px 2px rgba(29,27,32,0.15)", "purpose": "Card hover, open menus and dropdowns." },
+      { "name": "elevation-3", "value": "0 1px 3px rgba(29,27,32,0.3), 0 4px 8px 3px rgba(29,27,32,0.15)", "purpose": "Floaty cards (.ap-card--floaty)." }
+    ],
+    "motion": [
+      { "name": "ease-standard", "value": "cubic-bezier(0.2, 0, 0, 1)", "purpose": "The only easing curve in this skin — decelerate-only, no overshoot. Used for both --ap-ease and --ap-spring; Material 3 has no bounce equivalent." },
+      { "name": "route-enter", "value": "280ms cubic-bezier(0.2, 0, 0, 1)", "purpose": "Page/route entrance: opacity 0->1, translateY(8px)->0." }
+    ],
+    "breakpoints": []
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one saturated CTA in the system — primary actions only.",
+      "html": "<button class=\"ds-btn-primary\">Enregistrer</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 0 24px; border: 0; border-radius: 999px; color: #ffffff; background: #65558f; font-family: 'Roboto Flex Variable', 'Roboto Flex', system-ui, sans-serif; font-size: 14px; font-weight: 650; letter-spacing: 0.01em; box-shadow: none; transition: box-shadow 200ms cubic-bezier(0.2,0,0,1), filter 200ms cubic-bezier(0.2,0,0,1), transform 200ms cubic-bezier(0.2,0,0,1); } .ds-btn-primary:hover { filter: brightness(1.06); box-shadow: 0 1px 2px rgba(29,27,32,0.3), 0 1px 3px 1px rgba(29,27,32,0.15); } .ds-btn-primary:active { transform: scale(0.98); filter: brightness(0.96); } .ds-btn-primary:focus-visible { outline: 3px solid #65558f; outline-offset: 2px; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Secondary action — tonal fill, never a bare outline.",
+      "html": "<button class=\"ds-btn-ghost\">Annuler</button>",
+      "css": ".ds-btn-ghost { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 0 24px; border: 0; border-radius: 999px; color: #1d192b; background: #e8def8; font-family: 'Roboto Flex Variable', 'Roboto Flex', system-ui, sans-serif; font-size: 14px; font-weight: 650; box-shadow: none; transition: filter 200ms cubic-bezier(0.2,0,0,1); } .ds-btn-ghost:hover { filter: brightness(0.98); } .ds-btn-ghost:focus-visible { outline: 3px solid #65558f; outline-offset: 2px; }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Flat at rest; tonal step and elevation-2 on hover, never a border.",
+      "html": "<div class=\"ds-card\"><strong class=\"ds-card__title\">Score moyen</strong><p class=\"ds-card__body\">82 pts</p></div>",
+      "css": ".ds-card { padding: 20px; border-radius: 16px; background: #f7f2fa; box-shadow: none; transition: background-color 200ms cubic-bezier(0.2,0,0,1), box-shadow 200ms cubic-bezier(0.2,0,0,1), transform 200ms cubic-bezier(0.2,0,0,1); } .ds-card:hover { background: #f3edf7; box-shadow: 0 1px 2px rgba(29,27,32,0.3), 0 2px 6px 2px rgba(29,27,32,0.15); transform: translateY(-2px); } .ds-card__title { display: block; font-family: 'Roboto Flex Variable', 'Roboto Flex', system-ui, sans-serif; font-size: 20px; font-weight: 560; color: #1d1b20; } .ds-card__body { margin: 4px 0 0; font-size: 15px; color: #49454f; }"
+    },
+    {
+      "name": "Input Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "The tightest radius in the system — inputs read as precise.",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"Rechercher\" />",
+      "css": ".ds-input { border: 1px solid #79747e; border-radius: 4px; color: #1d1b20; background: #ece6f0; padding: 12px 16px; font-family: 'Roboto Flex Variable', 'Roboto Flex', system-ui, sans-serif; font-size: 15px; font-weight: 400; } .ds-input:focus { outline: none; border: 2px solid #65558f; padding: 11px 15px; } .ds-input::placeholder { color: #49454f; }"
+    },
+    {
+      "name": "Quiz Badge",
+      "kind": "chip",
+      "refersTo": "badge-quiz",
+      "description": "Soft-tone background paired with deep-tone text — the content-type pairing pattern every badge follows.",
+      "html": "<span class=\"ds-badge-quiz\">Quiz</span>",
+      "css": ".ds-badge-quiz { display: inline-flex; align-items: center; padding: 4px 11px; border-radius: 8px; background: #f6e8c8; color: #5c4300; font-family: 'Roboto Flex Variable', 'Roboto Flex', system-ui, sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; }"
+    },
+    {
+      "name": "Sidebar Nav Item",
+      "kind": "nav",
+      "refersTo": "nav-item",
+      "description": "Pill-shaped, 48px tall. Active state fills with the secondary-container tone.",
+      "html": "<button class=\"ds-nav-item ds-nav-item--active\">Tableau de bord</button>",
+      "css": ".ds-nav-item { display: flex; align-items: center; width: 100%; min-height: 48px; padding: 0 16px; border: 0; border-radius: 999px; background: transparent; color: #49454f; font-family: 'Roboto Flex Variable', 'Roboto Flex', system-ui, sans-serif; font-size: 14px; font-weight: 550; text-align: left; transition: color 200ms cubic-bezier(0.2,0,0,1), background-color 200ms cubic-bezier(0.2,0,0,1); } .ds-nav-item:hover { color: #1d1b20; background: #ece6f0; } .ds-nav-item--active { color: #1d192b; background: #e8def8; font-weight: 650; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Calm Instructor",
+    "overview": "Brivia ships five selectable visual skins; Arcade Pop (sticker-shadow buttons, dot-texture backgrounds, playful bounce) is the code default that live quiz sessions run in. Material 3 is a different register entirely — the skin for the correction, grading, and administration side of the product, and the one the team has confirmed as canonical design authority for future work. Where Arcade Pop performs energy for a room full of players, Material 3 is built for one person at a desk, working through a queue: grading submissions, reviewing exam results, managing an organization. It should never borrow Arcade Pop's vocabulary — no offset drop-shadows, no dotted texture, no elastic overshoot. Everything here is tonal, flat at rest, and quiet until touched.\n\nThe system runs on real Material 3 role tokens (primary/secondary/tertiary/surface/error), not a reskinned copy of Arcade Pop's four-color content system. Content-type colors (quiz/poll/flashcard/course) are deliberately not mapped onto Material's semantic roles — that coupling previously caused two real bugs (quiz content reading as an error state, then as visually identical to muted gray) — so they're hand-tuned hex values that coexist with, but never borrow meaning from, the role system.",
+    "keyCharacteristics": [
+      "One type family (Roboto Flex) carries every role; hierarchy is weight and optical size, not a family switch.",
+      "Flat at rest. Elevation is something that happens in response to interaction, not a resting state.",
+      "Full-radius (pill) buttons and navigation items; large-radius (16-28px) cards and menus. Nothing sharp-cornered.",
+      "Role tokens for chrome and structure; hand-tuned hex for content-type identity. The two systems never share a token."
+    ],
+    "rules": [
+      { "name": "The Role Discipline Rule", "body": "Material's semantic roles (primary/secondary/tertiary/error) style chrome, structure, and system state. Content-type identity (quiz/poll/flashcard/slide) is a separate, hand-tuned palette. The two must never alias to the same token — that coupling has caused two shipped bugs already.", "section": "colors" },
+      { "name": "The Danger Is Not Content Rule", "body": "--ap-danger (#b3261e, the real Material error role) is reserved for destructive actions, validation failures, and load errors. It is never reused as a content-type color, even when a content color happens to also be reddish elsewhere in the system.", "section": "colors" },
+      { "name": "The Single Family Rule", "body": "Every text role uses Roboto Flex. If a new role is needed, adjust weight and optical size before reaching for a second font family — a family switch is an Arcade Pop move, not a Material 3 one.", "section": "typography" },
+      { "name": "The Flat-Until-Touched Rule", "body": "Every filled surface is flat at rest. A shadow appearing on a surface that isn't being hovered, focused, or actively open is a bug, not a stylistic choice.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do keep every filled surface flat at rest; earn elevation only through hover, focus, or an open state.",
+      "Do use full pill radius on every button and active navigation row — it's the single most consistent shape signal in this skin.",
+      "Do pair a soft-tone background with its matching deep-tone text for any badge/chip (never a flat saturated fill with white text, except on primary/danger buttons).",
+      "Do keep content-type colors (quiz/poll/flash/pres) hand-tuned and independent from Material's semantic roles."
+    ],
+    "donts": [
+      "Don't borrow Arcade Pop's vocabulary — no offset/sticker shadows, no dot-texture backgrounds, no elastic/bounce easing. Material's motion is a single cubic-bezier(0.2, 0, 0, 1) curve, decelerate-only, no overshoot.",
+      "Don't alias a content-type color to a Material system role (see .ap-btn--quiz's lingering use of the error role — a known exception to fix, not a pattern to repeat).",
+      "Don't add a border where a tonal surface step would do the job — this skin separates content by color value, not by line.",
+      "Don't introduce a second type family. Every role runs on Roboto Flex; reach for weight and optical size before reaching for a new face."
+    ]
+  }
+}
