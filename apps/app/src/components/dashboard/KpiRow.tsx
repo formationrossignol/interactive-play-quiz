@@ -9,6 +9,9 @@ interface Tile {
   label: string;
   value: string | number;
   deltaPct: number | null;
+  /** Shown instead of TrendBadge when deltaPct is null and the value itself
+   *  needs explaining (e.g. a bare "-" reads as broken, not "no data yet"). */
+  emptyHint?: string;
   /** Where this KPI's detailed breakdown lives — REQ-DB-004. */
   onClick: () => void;
 }
@@ -89,13 +92,14 @@ export function KpiRow({ stats }: { stats: DashboardStats | null }) {
       icon: <MaterialSymbol name="target" size={20} style={{ color: "#f59e0b" }} />,
       label: "Score moyen (quiz)", value: s.avgScore != null ? `${s.avgScore} pts` : "-",
       deltaPct: scoreDeltaPct,
+      emptyHint: s.avgScore == null ? "Pas encore de score" : undefined,
       onClick: () => navigate("/my-quizzes"),
     },
   ];
 
   return (
     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px" }}>
-      {tiles.map(({ icon, label, value, deltaPct, onClick }) => (
+      {tiles.map(({ icon, label, value, deltaPct, emptyHint, onClick }) => (
         <button
           key={label}
           type="button"
@@ -115,7 +119,9 @@ export function KpiRow({ stats }: { stats: DashboardStats | null }) {
               <div className="ap-muted" style={{ fontSize: "12px" }}>{label}</div>
             </div>
           </div>
-          <TrendBadge deltaPct={deltaPct} />
+          {deltaPct !== null
+            ? <TrendBadge deltaPct={deltaPct} />
+            : emptyHint && <span className="ap-muted" style={{ fontSize: 11 }}>{emptyHint}</span>}
         </button>
       ))}
     </div>

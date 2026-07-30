@@ -117,7 +117,7 @@ export const AppLayout = ({ subtitle, extraSection, children }: AppLayoutProps) 
               title={`${t("commandPaletteOpen")} (${navigator.platform.includes("Mac") ? "⌘K" : "Ctrl+K"})`}
               onClick={() => setPaletteOpen(true)}
             >
-              <MaterialSymbol name="bolt" size={20} />
+              <MaterialSymbol name="terminal" size={20} />
               <span
                 aria-hidden="true"
                 style={{
