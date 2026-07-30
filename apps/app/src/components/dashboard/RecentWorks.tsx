@@ -1,18 +1,18 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, BarChart2, BookOpen, ClipboardCheck, GraduationCap, Layers, Presentation } from "lucide-react";
 import { CardSkeleton } from "@/components/ui/skeletons";
+import { MaterialSymbol } from "@/components/MaterialSymbol";
 import { listRecentContent } from "@/lib/content/contentRepo";
 import { getSearchResultRoute } from "@/lib/content/searchContent";
 import type { ContentRow, ContentType } from "@/lib/content/types";
 
-const META: Record<ContentType, { label: string; color: string; icon: typeof BookOpen }> = {
-  quiz: { label: "Quiz", color: "var(--ap-quiz)", icon: BookOpen },
-  poll: { label: "Sondage", color: "var(--ap-poll)", icon: BarChart2 },
-  flashcard: { label: "Flashcards", color: "var(--ap-flash)", icon: Layers },
-  slide: { label: "Présentation", color: "var(--ap-pres)", icon: Presentation },
-  course: { label: "Cours", color: "var(--ap-pres)", icon: GraduationCap },
-  exam: { label: "Examen", color: "var(--ap-brand)", icon: ClipboardCheck },
+const META: Record<ContentType, { label: string; color: string; icon: string }> = {
+  quiz: { label: "Quiz", color: "var(--ap-quiz)", icon: "menu_book" },
+  poll: { label: "Sondage", color: "var(--ap-poll)", icon: "bar_chart" },
+  flashcard: { label: "Flashcards", color: "var(--ap-flash)", icon: "layers" },
+  slide: { label: "Présentation", color: "var(--ap-pres)", icon: "slideshow" },
+  course: { label: "Cours", color: "var(--ap-pres)", icon: "school" },
+  exam: { label: "Examen", color: "var(--ap-brand)", icon: "fact_check" },
 };
 
 const itemId = (row: ContentRow) => String((row.data?.id as string | undefined) ?? row.source_id ?? row.id);
@@ -63,7 +63,7 @@ export function RecentWorks({ userId }: { userId: string }) {
           className="ap-btn ap-btn--ghost ap-btn--sm ap-btn--pill"
           onClick={() => navigate("/my-quizzes")}
         >
-          Voir tout <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          Voir tout <MaterialSymbol name="arrow_forward" size={16} />
         </button>
       </div>
 
@@ -71,7 +71,6 @@ export function RecentWorks({ userId }: { userId: string }) {
         <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
           {rows.map((row) => {
             const meta = META[row.type];
-            const Icon = meta.icon;
             const image = imageOf(row);
             const title = String(row.data?.title ?? "Sans titre");
             return (
@@ -92,7 +91,7 @@ export function RecentWorks({ userId }: { userId: string }) {
                 >
                   {image
                     ? <img src={image} alt="" className="h-full w-full object-cover" />
-                    : <Icon className="h-9 w-9" style={{ color: meta.color, opacity: .82 }} aria-hidden="true" />}
+                    : <MaterialSymbol name={meta.icon} size={36} style={{ color: meta.color, opacity: .82 }} />}
                 </span>
                 <span className="mt-3 block truncate font-bold" style={{ fontFamily: "var(--ap-font-display)", fontSize: 14.5 }}>
                   {title}

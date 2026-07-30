@@ -9,7 +9,10 @@ import { myOrgMemberships } from "@/lib/org/orgRepo";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -33,15 +36,27 @@ import {
 } from "@/components/ui/sidebar";
 
 // "+ Créer" jumps straight into a builder's start flow — moved here from the
-// old Header.tsx pill nav, not duplicated.
-export const CREATE_ITEMS = [
-  { label: t("navCreateQuiz"), icon: "quiz", path: "/builder-start?type=quiz" },
-  { label: t("navCreatePoll"), icon: "poll", path: "/builder-start?type=poll" },
-  { label: t("createFlashcards"), icon: "style", path: "/builder-start?type=flashcard" },
-  { label: t("createSlides"), icon: "co_present", path: "/builder-start?type=slide" },
-  { label: t("createCourse"), icon: "school", path: "/course-builder" },
-  { label: t("createLearningPath"), icon: "route", path: "/learning-path-builder" },
-  { label: t("createExam"), icon: "assignment", path: "/exam-builder" },
+// old Header.tsx pill nav, not duplicated. Grouped into "Évaluer" (tests
+// a learner) vs "Former" (teaches/informs a learner) — 7 flat choices
+// exceeded the ~4-item working-memory guideline at a first-decision point.
+export const CREATE_GROUPS = [
+  {
+    label: t("createGroupAssess"),
+    items: [
+      { label: t("navCreateQuiz"), icon: "quiz", path: "/builder-start?type=quiz" },
+      { label: t("navCreatePoll"), icon: "poll", path: "/builder-start?type=poll" },
+      { label: t("createExam"), icon: "assignment", path: "/exam-builder" },
+    ],
+  },
+  {
+    label: t("createGroupTrain"),
+    items: [
+      { label: t("createFlashcards"), icon: "style", path: "/builder-start?type=flashcard" },
+      { label: t("createSlides"), icon: "co_present", path: "/builder-start?type=slide" },
+      { label: t("createCourse"), icon: "school", path: "/course-builder" },
+      { label: t("createLearningPath"), icon: "route", path: "/learning-path-builder" },
+    ],
+  },
 ];
 
 // Same 6 routes ContentExplorer.tsx's (now-removed) TYPE_TABS used to link to
@@ -169,19 +184,28 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
               >
                 <MaterialSymbol name="close" size={20} />
               </button>
-              {CREATE_ITEMS.map((item) => {
-                return (
-                  <DropdownMenuItem
-                    key={item.label}
-                    className="gap-2 rounded-md text-sm cursor-pointer"
-                    style={{ color: "var(--ap-ink)", fontFamily: "var(--ap-font-body)" }}
-                    onSelect={() => navigate(item.path)}
+              {CREATE_GROUPS.map((group, groupIndex) => (
+                <DropdownMenuGroup key={group.label}>
+                  {groupIndex > 0 && <DropdownMenuSeparator style={{ background: "var(--ap-line)" }} />}
+                  <DropdownMenuLabel
+                    className="text-xs font-bold uppercase tracking-wide"
+                    style={{ color: "var(--ap-muted)" }}
                   >
-                    <MaterialSymbol name={item.icon} size={20} style={{ color: "var(--ap-muted)" }} />
-                    {item.label}
-                  </DropdownMenuItem>
-                );
-              })}
+                    {group.label}
+                  </DropdownMenuLabel>
+                  {group.items.map((item) => (
+                    <DropdownMenuItem
+                      key={item.label}
+                      className="gap-2 rounded-md text-sm cursor-pointer"
+                      style={{ color: "var(--ap-ink)", fontFamily: "var(--ap-font-body)" }}
+                      onSelect={() => navigate(item.path)}
+                    >
+                      <MaterialSymbol name={item.icon} size={20} style={{ color: "var(--ap-muted)" }} />
+                      {item.label}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuGroup>
+              ))}
             </DropdownMenuContent>
           </DropdownMenu>
         </SidebarHeader>

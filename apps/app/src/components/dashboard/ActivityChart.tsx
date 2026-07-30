@@ -17,7 +17,7 @@ export function ActivityChart({ data }: { data: ActivityPoint[] }) {
 
   return (
     <div className="ap-card" style={{ padding: "20px" }}>
-      <h3 className="ap-h3" style={{ fontSize: "15px", marginBottom: "4px" }}>Activité (14 derniers jours)</h3>
+      <h2 className="ap-h3" style={{ fontSize: "15px", marginBottom: "4px" }}>Activité (14 derniers jours)</h2>
       <p className="ap-muted" style={{ fontSize: "12px", marginBottom: "12px" }}>Sessions lancées et participants, par jour.</p>
 
       {hasActivity ? (

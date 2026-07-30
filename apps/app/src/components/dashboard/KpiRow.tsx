@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowDown, ArrowUp, BarChart2, Minus, Sparkles, Target, Users } from "lucide-react";
 import type { DashboardStats } from "@/lib/dashboardStats";
 import { Skeleton } from "@/components/ui/skeleton";
+import { MaterialSymbol } from "@/components/MaterialSymbol";
 
 interface Tile {
   icon: ReactNode;
@@ -14,16 +14,18 @@ interface Tile {
 }
 
 /** Small up/down/flat indicator — never color-only (REQ-COL-004): the arrow
- *  direction and the "vs 14 j précédents" caption carry the meaning too. */
+ *  direction and the "vs 14 j précédents" caption carry the meaning too.
+ *  Renders nothing without a baseline: repeating "no comparison available"
+ *  identically across all 4 tiles was noise, not information. */
 function TrendBadge({ deltaPct }: { deltaPct: number | null }) {
-  if (deltaPct === null) return <span className="ap-muted" style={{ fontSize: 11 }}>Pas de comparaison disponible</span>;
+  if (deltaPct === null) return null;
   const flat = deltaPct === 0;
   const positive = deltaPct > 0;
-  const Icon = flat ? Minus : positive ? ArrowUp : ArrowDown;
+  const symbolName = flat ? "remove" : positive ? "arrow_upward" : "arrow_downward";
   const color = flat ? "var(--ap-muted)" : positive ? "#15c08a" : "#ff5a4d";
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 11, fontWeight: 800, color }}>
-      <Icon style={{ width: 11, height: 11 }} />
+      <MaterialSymbol name={symbolName} size={11} />
       {flat ? "stable" : `${positive ? "+" : ""}${deltaPct}%`}
       <span className="ap-muted" style={{ fontWeight: 700 }}>vs 14j préc.</span>
     </span>
@@ -66,25 +68,25 @@ export function KpiRow({ stats }: { stats: DashboardStats | null }) {
 
   const tiles: Tile[] = [
     {
-      icon: <Sparkles style={{ width: 20, height: 20, color: "var(--ap-brand)" }} />,
+      icon: <MaterialSymbol name="auto_awesome" size={20} style={{ color: "var(--ap-brand)" }} />,
       label: "Créations", value: s.totalCreations,
       deltaPct: s.trends.creations.deltaPct,
       onClick: scrollToChart("dashboard-creations-chart"),
     },
     {
-      icon: <BarChart2 style={{ width: 20, height: 20, color: "var(--ap-quiz)" }} />,
+      icon: <MaterialSymbol name="bar_chart" size={20} style={{ color: "var(--ap-quiz)" }} />,
       label: "Sessions totales", value: s.totalSessions,
       deltaPct: s.trends.sessions.deltaPct,
       onClick: scrollToChart("dashboard-activity-chart"),
     },
     {
-      icon: <Users style={{ width: 20, height: 20, color: "var(--ap-poll)" }} />,
+      icon: <MaterialSymbol name="group" size={20} style={{ color: "var(--ap-poll)" }} />,
       label: "Participants totaux", value: s.totalParticipants,
       deltaPct: s.trends.participants.deltaPct,
       onClick: scrollToChart("dashboard-activity-chart"),
     },
     {
-      icon: <Target style={{ width: 20, height: 20, color: "#f59e0b" }} />,
+      icon: <MaterialSymbol name="target" size={20} style={{ color: "#f59e0b" }} />,
       label: "Score moyen (quiz)", value: s.avgScore != null ? `${s.avgScore} pts` : "-",
       deltaPct: scoreDeltaPct,
       onClick: () => navigate("/my-quizzes"),
