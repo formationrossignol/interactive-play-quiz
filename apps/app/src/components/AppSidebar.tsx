@@ -130,13 +130,11 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
   const [creationsOpen, setCreationsOpen] = useState(
     () => CREATIONS_ITEMS.some((item) => item.path === location.pathname),
   );
-  // Collaboration and Correction are both niche — collapsed by default
-  // unless the current route already lives inside one of them.
+  // Collaboration is niche — collapsed by default unless the current route
+  // already lives inside it. Correction (2 items) renders flat: too small
+  // a group for progressive disclosure to earn its click.
   const [collabOpen, setCollabOpen] = useState(
     () => COLLAB_ITEMS.some((item) => item.path === location.pathname),
-  );
-  const [correctionOpen, setCorrectionOpen] = useState(
-    () => CORRECTION_ITEMS.some((item) => item.path === location.pathname),
   );
   // React Query caches this across route changes — AppSidebar remounts on
   // every navigation (see AppLayout), so a plain useEffect was refetching
@@ -322,37 +320,21 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
 
         {user && (
           <SidebarGroup>
-            <Collapsible open={correctionOpen || collapsedIcon} onOpenChange={setCorrectionOpen}>
-              <SidebarGroupLabel asChild>
-                <CollapsibleTrigger className="flex w-full items-center justify-between cursor-pointer">
-                  <span>{t("navGroupCorrection")}</span>
-                  {!collapsedIcon && (
-                    <MaterialSymbol
-                      name="keyboard_arrow_down"
-                      size={16}
-                      className="chevron-icon"
-                      style={{ transform: correctionOpen ? "rotate(180deg)" : undefined }}
-                    />
-                  )}
-                </CollapsibleTrigger>
-              </SidebarGroupLabel>
-              <CollapsibleContent>
-                <SidebarMenu>
-                  {CORRECTION_ITEMS.map((item) => (
-                    <SidebarMenuItem key={item.path}>
-                      <SidebarMenuButton
-                        isActive={location.pathname === item.path}
-                        onClick={() => navigate(item.path)}
-                        tooltip={item.label}
-                      >
-                        <MaterialSymbol name={item.icon} size={20} />
-                        <span>{item.label}</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </CollapsibleContent>
-            </Collapsible>
+            <SidebarGroupLabel>{t("navGroupCorrection")}</SidebarGroupLabel>
+            <SidebarMenu>
+              {CORRECTION_ITEMS.map((item) => (
+                <SidebarMenuItem key={item.path}>
+                  <SidebarMenuButton
+                    isActive={location.pathname === item.path}
+                    onClick={() => navigate(item.path)}
+                    tooltip={item.label}
+                  >
+                    <MaterialSymbol name={item.icon} size={20} />
+                    <span>{item.label}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
           </SidebarGroup>
         )}
 

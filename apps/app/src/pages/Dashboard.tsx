@@ -3,8 +3,10 @@ import { AppLayout } from "@/components/AppLayout";
 import { KpiRow } from "@/components/dashboard/KpiRow";
 import { ActivityChart } from "@/components/dashboard/ActivityChart";
 import { CreationsByTypeChart } from "@/components/dashboard/CreationsByTypeChart";
+import { ScoreChart } from "@/components/dashboard/ScoreChart";
 import { NewsModule } from "@/components/dashboard/NewsModule";
 import { RecentWorks } from "@/components/dashboard/RecentWorks";
+import { NeedsAttentionModule } from "@/components/dashboard/NeedsAttentionModule";
 import { MaterialSymbol } from "@/components/MaterialSymbol";
 import { getCurrentUser } from "@/lib/auth";
 import { computeDashboardStats, computeDashboardCharts, type DashboardStats, type DashboardCharts } from "@/lib/dashboardStats";
@@ -71,6 +73,8 @@ const Dashboard = () => {
           <p className="ap-muted" style={{ fontSize: "14px" }}>Vue d'ensemble de vos créations et de l'actualité du produit.</p>
         </div>
 
+        {userId && <NeedsAttentionModule userId={userId} />}
+
         <div style={{ marginBottom: "32px" }}>
           {statsError ? (
             <DashboardSectionError
@@ -93,6 +97,9 @@ const Dashboard = () => {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "16px", marginBottom: "32px" }}>
             <div id="dashboard-activity-chart">
               <ActivityChart data={charts?.activity ?? []} hasCreations={(stats?.totalCreations ?? 0) > 0} />
+            </div>
+            <div id="dashboard-score-chart">
+              <ScoreChart data={charts?.scoreByDay ?? []} />
             </div>
             <div id="dashboard-creations-chart">
               <CreationsByTypeChart data={charts?.creationsByType ?? { quiz: 0, poll: 0, flashcard: 0, slide: 0, other: 0 }} />

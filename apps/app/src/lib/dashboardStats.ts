@@ -159,9 +159,17 @@ export interface ActivityPoint {
   participants: number;
 }
 
+export interface ScorePoint {
+  /** yyyy-MM-dd, UTC. */
+  date: string;
+  /** null when no quiz session ran that day — distinct from a real 0 score. */
+  avgScore: number | null;
+}
+
 export interface DashboardCharts {
   creationsByType: CreationsByType;
   activity: ActivityPoint[];
+  scoreByDay: ScorePoint[];
 }
 
 const ACTIVITY_WINDOW_DAYS = TREND_WINDOW_DAYS;
@@ -188,11 +196,14 @@ export async function computeDashboardCharts(userId: string): Promise<DashboardC
   };
 
   const buckets = new Map<string, { sessions: number; participants: number }>();
+  const scoreBuckets = new Map<string, { sum: number; count: number }>();
   const today = new Date();
   for (let i = ACTIVITY_WINDOW_DAYS - 1; i >= 0; i--) {
     const d = new Date(today);
     d.setUTCDate(d.getUTCDate() - i);
-    buckets.set(d.toISOString().slice(0, 10), { sessions: 0, participants: 0 });
+    const key = d.toISOString().slice(0, 10);
+    buckets.set(key, { sessions: 0, participants: 0 });
+    scoreBuckets.set(key, { sum: 0, count: 0 });
   }
 
   const bump = (isoDate: string, participants: number) => {
@@ -205,6 +216,12 @@ export async function computeDashboardCharts(userId: string): Promise<DashboardC
   for (const quiz of quizItems) {
     for (const run of readSessionHistory(quiz.id)) {
       bump(run.date, run.players.length);
+      const scoreBucket = scoreBuckets.get(run.date.slice(0, 10));
+      if (!scoreBucket) continue; // outside the trailing window
+      for (const player of run.players) {
+        scoreBucket.sum += player.score;
+        scoreBucket.count += 1;
+      }
     }
   }
   for (const poll of pollItems) {
@@ -216,6 +233,10 @@ export async function computeDashboardCharts(userId: string): Promise<DashboardC
   }
 
   const activity: ActivityPoint[] = Array.from(buckets.entries()).map(([date, counts]) => ({ date, ...counts }));
+  const scoreByDay: ScorePoint[] = Array.from(scoreBuckets.entries()).map(([date, { sum, count }]) => ({
+    date,
+    avgScore: count > 0 ? Math.round(sum / count) : null,
+  }));
 
-  return { creationsByType, activity };
+  return { creationsByType, activity, scoreByDay };
 }

@@ -23,7 +23,7 @@ const imageOf = (row: ContentRow) => {
 
 function RecentWorksSkeleton() {
   return (
-    <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "20px" }}>
       {Array.from({ length: 4 }, (_, index) => (
         <CardSkeleton key={index} withAction={false} mediaClassName="h-36 w-full rounded-xl" />
       ))}
@@ -50,7 +50,7 @@ export function RecentWorks({ userId }: { userId: string }) {
   return (
     <section
       className="ap-card"
-      style={{ padding: "26px 28px", marginBottom: 32, boxShadow: "0 5px 0 var(--ap-line)" }}
+      style={{ padding: "20px", marginBottom: 32 }}
       aria-labelledby="recent-works-title"
     >
       <div className="mb-6 flex items-center justify-between gap-4">
@@ -68,7 +68,7 @@ export function RecentWorks({ userId }: { userId: string }) {
       </div>
 
       {loading ? <RecentWorksSkeleton /> : (
-        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "20px" }}>
           {rows.map((row) => {
             const meta = META[row.type];
             const image = imageOf(row);

@@ -65,7 +65,7 @@ export function NotificationItem({
       <button
         type="button"
         onClick={onOpen}
-        aria-label={`Ouvrir la notification : ${notification.title}`}
+        aria-label={`Ouvrir la notification : ${notification.body || notification.title}`}
         style={{ display: "contents", color: "inherit", cursor: "pointer" }}
       >
         <span style={{ width: 36, height: 36, display: "grid", placeItems: "center", borderRadius: "var(--ap-r-md)", background: meta.soft, color: meta.color }}>

@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { useNavigate } from "react-router-dom";
 import type { DashboardStats } from "@/lib/dashboardStats";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MaterialSymbol } from "@/components/MaterialSymbol";
@@ -36,8 +35,6 @@ function TrendBadge({ deltaPct }: { deltaPct: number | null }) {
 }
 
 export function KpiRow({ stats }: { stats: DashboardStats | null }) {
-  const navigate = useNavigate();
-
   if (!stats) {
     return (
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
@@ -93,7 +90,7 @@ export function KpiRow({ stats }: { stats: DashboardStats | null }) {
       label: "Score moyen (quiz)", value: s.avgScore != null ? `${s.avgScore} pts` : "-",
       deltaPct: scoreDeltaPct,
       emptyHint: s.avgScore == null ? "Pas encore de score" : undefined,
-      onClick: () => navigate("/my-quizzes"),
+      onClick: scrollToChart("dashboard-score-chart"),
     },
   ];
 
