@@ -64,6 +64,38 @@ interface QuestionStat {
   totalResponded: number;
   correctCount: number;
   pctCorrect: number;
+  skills: string[];
+}
+
+interface SkillStat {
+  skill: string;
+  totalResponded: number;
+  correctCount: number;
+  pctCorrect: number;
+}
+
+/** Rolls per-question stats up by skill tag (a question can carry several
+ *  skills, so it contributes to each one's totals) — "compétences les moins
+ *  maîtrisées". Untagged questions are excluded; this panel only appears
+ *  once at least one question has a skill. */
+function computeSkillStats(questionStats: QuestionStat[]): SkillStat[] {
+  const bySkill = new Map<string, { totalResponded: number; correctCount: number }>();
+  for (const qs of questionStats) {
+    for (const skill of qs.skills) {
+      const acc = bySkill.get(skill) ?? { totalResponded: 0, correctCount: 0 };
+      acc.totalResponded += qs.totalResponded;
+      acc.correctCount += qs.correctCount;
+      bySkill.set(skill, acc);
+    }
+  }
+  return [...bySkill.entries()]
+    .map(([skill, acc]) => ({
+      skill,
+      totalResponded: acc.totalResponded,
+      correctCount: acc.correctCount,
+      pctCorrect: acc.totalResponded > 0 ? Math.round((acc.correctCount / acc.totalResponded) * 100) : 0,
+    }))
+    .sort((a, b) => a.pctCorrect - b.pctCorrect);
 }
 
 export default function ExamAdmin() {
@@ -77,6 +109,7 @@ export default function ExamAdmin() {
   const [stats, setStats] = useState<ExamStats>({ totalAttempts: 0, completedAttempts: 0, passRate: null, avgScore: null, avgTimeMinutes: null });
   const [expanded, setExpanded] = useState<string | null>(null);
   const [showQuestionStats, setShowQuestionStats] = useState(false);
+  const [showSkillStats, setShowSkillStats] = useState(false);
   const [error, setError] = useState('');
   const [now, setNow] = useState(() => Date.now());
   const [chatWithId, setChatWithId] = useState<string | null>(null);
@@ -178,7 +211,7 @@ export default function ExamAdmin() {
   const finished = attempts.filter((a) => a.status !== 'in-progress');
 
   const questionStats: QuestionStat[] = quiz
-    ? quiz.questions.map((q: { id: string; question: string; type: string; correctAnswer: unknown }) => {
+    ? quiz.questions.map((q: { id: string; question: string; type: string; correctAnswer: unknown; skills?: string[] }) => {
         const responded = completed.filter((a) => {
           const given = a.answers[q.id];
           return given !== null && given !== undefined && given !== '';
@@ -191,9 +224,11 @@ export default function ExamAdmin() {
           totalResponded: responded.length,
           correctCount: correct.length,
           pctCorrect: pct,
+          skills: q.skills ?? [],
         };
       })
     : [];
+  const skillStats = computeSkillStats(questionStats);
 
   return (
     <div style={{ minHeight: '100vh', paddingBottom: 80 }}>
@@ -446,6 +481,58 @@ export default function ExamAdmin() {
                       </div>
                     </div>
                   ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Compétences les moins maîtrisées — analytics phase C, opt-in per question */}
+        {skillStats.length > 0 && (
+          <div style={{ marginTop: 24 }}>
+            <button
+              onClick={() => setShowSkillStats((s) => !s)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12,
+                background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                fontFamily: 'var(--ap-font-display)', fontWeight: 600, fontSize: 18,
+                color: 'var(--ap-ink)',
+              }}
+            >
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Trophy className="h-4 w-4" /> Compétences les moins maîtrisées</span>
+              <ChevronDown style={{ width: 14, height: 14, color: 'var(--ap-muted)', transform: showSkillStats ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }} />
+            </button>
+
+            {showSkillStats && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {skillStats.map((ss) => (
+                  <div key={ss.skill} style={{
+                    background: 'var(--ap-card)', border: '2px solid var(--ap-line)',
+                    borderRadius: 'var(--ap-r-lg)', padding: '14px 18px',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                      <p style={{ fontSize: 13, fontWeight: 700, margin: 0, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {ss.skill}
+                      </p>
+                      <span style={{
+                        fontSize: 14, fontWeight: 800, flexShrink: 0,
+                        color: ss.pctCorrect >= 70 ? '#15c08a' : ss.pctCorrect >= 40 ? '#f4970a' : '#ff5a4d',
+                      }}>
+                        {ss.pctCorrect}%
+                      </span>
+                    </div>
+                    <div style={{ height: 6, background: 'var(--ap-line)', borderRadius: "var(--ap-r-sm)", overflow: 'hidden' }}>
+                      <div style={{
+                        height: '100%', borderRadius: "var(--ap-r-sm)",
+                        width: `${ss.pctCorrect}%`,
+                        background: ss.pctCorrect >= 70 ? '#15c08a' : ss.pctCorrect >= 40 ? '#f4970a' : '#ff5a4d',
+                        transition: 'width .4s',
+                      }} />
+                    </div>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--ap-muted)', marginTop: 6 }}>
+                      {ss.correctCount}/{ss.totalResponded} bonne{ss.correctCount !== 1 ? 's' : ''} réponse{ss.correctCount !== 1 ? 's' : ''}
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
