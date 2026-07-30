@@ -39,7 +39,7 @@ export const AdminSidebarGroup = ({ section, setSection, nav }: AdminSidebarGrou
               <span>{item.label}</span>
             </SidebarMenuButton>
             {item.key !== "settings" && (
-              <SidebarMenuBadge style={item.alert && section !== item.key ? { color: "var(--ap-quiz)" } : undefined}>
+              <SidebarMenuBadge style={item.alert && section !== item.key ? { color: "var(--ap-danger)" } : undefined}>
                 {item.count}
               </SidebarMenuBadge>
             )}

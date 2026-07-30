@@ -143,7 +143,7 @@ export default function HelpCenter() {
             <span className="ap-muted" style={{ fontSize: 12.5 }}>Échangez avec les autres utilisateurs.</span>
           </button>
           <button className="ap-card ap-card--hover" onClick={() => navigate("/report")} style={{ padding: 18, color: "inherit", textAlign: "left", cursor: "pointer" }}>
-            <LifeBuoy size={19} style={{ color: "var(--ap-quiz)", marginBottom: 10 }} />
+            <LifeBuoy size={19} style={{ color: "var(--ap-flash)", marginBottom: 10 }} />
             <strong style={{ display: "block", marginBottom: 4 }}>Contacter le support</strong>
             <span className="ap-muted" style={{ fontSize: 12.5 }}>Créez et suivez une demande d’assistance.</span>
           </button>

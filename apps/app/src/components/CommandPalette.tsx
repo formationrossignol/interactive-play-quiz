@@ -14,7 +14,8 @@ import type { User as AuthUser } from "@/lib/auth";
 import {
   ACCOUNT_ITEMS,
   COLLAB_ITEMS,
-  CREATE_ITEMS,
+  CORRECTION_ITEMS,
+  CREATE_GROUPS,
   CREATIONS_ITEMS,
   DISCOVER_ITEMS,
   SUPPORT_ITEMS,
@@ -89,7 +90,7 @@ export const CommandPalette = ({ user, open, onOpenChange: setOpen }: CommandPal
                 <span className="ml-6">{item.label}</span>
               </CommandItem>
             ))}
-            {[...COLLAB_ITEMS, ...DISCOVER_ITEMS, ...ACCOUNT_ITEMS, ...SUPPORT_ITEMS].map((item) => (
+            {[...COLLAB_ITEMS, ...CORRECTION_ITEMS, ...DISCOVER_ITEMS, ...ACCOUNT_ITEMS, ...SUPPORT_ITEMS].map((item) => (
               <CommandItem key={item.path} value={item.label} onSelect={() => go(item.path)}>
                 <MaterialSymbol name={item.icon} size={20} className="mr-2" />
                 {item.label}
@@ -106,7 +107,7 @@ export const CommandPalette = ({ user, open, onOpenChange: setOpen }: CommandPal
           <>
             <CommandSeparator />
             <CommandGroup heading={t("commandPaletteCreateGroup")}>
-              {CREATE_ITEMS.map((item) => {
+              {CREATE_GROUPS.flatMap((group) => group.items).map((item) => {
                 return (
                   <CommandItem key={item.path} value={item.label} onSelect={() => go(item.path)}>
                     <MaterialSymbol name="add" size={18} className="mr-2 opacity-50" />

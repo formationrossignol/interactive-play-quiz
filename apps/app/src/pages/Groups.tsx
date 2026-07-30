@@ -214,7 +214,7 @@ export default function Groups() {
                     <h2 className="ap-h2 text-xl">{selectedGroup.name}</h2>
                     <p className="ap-muted mt-1 text-xs">{members.length} membre{members.length !== 1 ? "s" : ""} ou invitation{members.length !== 1 ? "s" : ""}</p>
                   </div>
-                  <button className="ap-btn ap-btn--ghost ap-btn--sm" style={{ color: "var(--ap-quiz)" }} onClick={() => void handleDeleteGroup()}>
+                  <button className="ap-btn ap-btn--ghost ap-btn--sm" style={{ color: "var(--ap-danger)" }} onClick={() => void handleDeleteGroup()}>
                     <Trash2 className="h-4 w-4" />
                     Supprimer le groupe
                   </button>

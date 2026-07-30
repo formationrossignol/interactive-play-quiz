@@ -214,7 +214,7 @@ export function SlideNavigator() {
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       className="flex items-center gap-2 cursor-pointer text-sm"
-                      style={{ color: "var(--ap-quiz)" }}
+                      style={{ color: "var(--ap-danger)" }}
                       disabled={slides.length <= 1}
                       onSelect={() => deleteSlide(slide.id)}
                     >

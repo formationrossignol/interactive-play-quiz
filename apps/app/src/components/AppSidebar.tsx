@@ -9,7 +9,10 @@ import { myOrgMemberships } from "@/lib/org/orgRepo";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -33,15 +36,27 @@ import {
 } from "@/components/ui/sidebar";
 
 // "+ Créer" jumps straight into a builder's start flow — moved here from the
-// old Header.tsx pill nav, not duplicated.
-export const CREATE_ITEMS = [
-  { label: t("navCreateQuiz"), icon: "quiz", path: "/builder-start?type=quiz" },
-  { label: t("navCreatePoll"), icon: "poll", path: "/builder-start?type=poll" },
-  { label: t("createFlashcards"), icon: "style", path: "/builder-start?type=flashcard" },
-  { label: t("createSlides"), icon: "co_present", path: "/builder-start?type=slide" },
-  { label: t("createCourse"), icon: "school", path: "/course-builder" },
-  { label: t("createLearningPath"), icon: "route", path: "/learning-path-builder" },
-  { label: t("createExam"), icon: "assignment", path: "/exam-builder" },
+// old Header.tsx pill nav, not duplicated. Grouped into "Évaluer" (tests
+// a learner) vs "Former" (teaches/informs a learner) — 7 flat choices
+// exceeded the ~4-item working-memory guideline at a first-decision point.
+export const CREATE_GROUPS = [
+  {
+    label: t("createGroupAssess"),
+    items: [
+      { label: t("navCreateQuiz"), icon: "quiz", path: "/builder-start?type=quiz" },
+      { label: t("navCreatePoll"), icon: "poll", path: "/builder-start?type=poll" },
+      { label: t("createExam"), icon: "assignment", path: "/exam-builder" },
+    ],
+  },
+  {
+    label: t("createGroupTrain"),
+    items: [
+      { label: t("createFlashcards"), icon: "style", path: "/builder-start?type=flashcard" },
+      { label: t("createSlides"), icon: "co_present", path: "/builder-start?type=slide" },
+      { label: t("createCourse"), icon: "school", path: "/course-builder" },
+      { label: t("createLearningPath"), icon: "route", path: "/learning-path-builder" },
+    ],
+  },
 ];
 
 // Same 6 routes ContentExplorer.tsx's (now-removed) TYPE_TABS used to link to
@@ -58,14 +73,19 @@ export const CREATIONS_ITEMS = [
 
 // Collaboration/grading tools — niche, auth-only workflows split out of the
 // old single "Explore" group so they can collapse away for users who never
-// touch groups/signatures/grading (was 9 items deep, always expanded).
+// touch groups/signatures/grading (was 9 items deep, always expanded). Split
+// again into Collaboration vs Correction — 6 flat items in one group broke
+// the same ≤4-item rule CREATE_GROUPS was split for.
 export const COLLAB_ITEMS = [
   { label: t("navSharedWithMe"), icon: "group_share", path: "/shared-with-me" },
   { label: t("navGroups"), icon: "groups", path: "/groups" },
   { label: t("navSignatures"), icon: "draw", path: "/signatures" },
+  { label: t("questionBank"), icon: "library_books", path: "/question-bank" },
+];
+
+export const CORRECTION_ITEMS = [
   { label: t("navManualGrading"), icon: "edit_note", path: "/grading" },
   { label: t("navMyGrades"), icon: "grading", path: "/my-grades" },
-  { label: t("questionBank"), icon: "library_books", path: "/question-bank" },
 ];
 
 // Public discovery — no auth required, kept short and always visible.
@@ -110,10 +130,13 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
   const [creationsOpen, setCreationsOpen] = useState(
     () => CREATIONS_ITEMS.some((item) => item.path === location.pathname),
   );
-  // Collaboration is niche (groups/signatures/grading) — collapsed by default
-  // unless the current route already lives inside it.
+  // Collaboration and Correction are both niche — collapsed by default
+  // unless the current route already lives inside one of them.
   const [collabOpen, setCollabOpen] = useState(
     () => COLLAB_ITEMS.some((item) => item.path === location.pathname),
+  );
+  const [correctionOpen, setCorrectionOpen] = useState(
+    () => CORRECTION_ITEMS.some((item) => item.path === location.pathname),
   );
   // React Query caches this across route changes — AppSidebar remounts on
   // every navigation (see AppLayout), so a plain useEffect was refetching
@@ -170,19 +193,28 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
               >
                 <MaterialSymbol name="close" size={20} />
               </button>
-              {CREATE_ITEMS.map((item) => {
-                return (
-                  <DropdownMenuItem
-                    key={item.label}
-                    className="gap-2 rounded-md text-sm cursor-pointer"
-                    style={{ color: "var(--ap-ink)", fontFamily: "var(--ap-font-body)" }}
-                    onSelect={() => navigate(item.path)}
+              {CREATE_GROUPS.map((group, groupIndex) => (
+                <DropdownMenuGroup key={group.label}>
+                  {groupIndex > 0 && <DropdownMenuSeparator style={{ background: "var(--ap-line)" }} />}
+                  <DropdownMenuLabel
+                    className="text-xs font-bold uppercase tracking-wide"
+                    style={{ color: "var(--ap-muted)" }}
                   >
-                    <MaterialSymbol name={item.icon} size={20} style={{ color: "var(--ap-muted)" }} />
-                    {item.label}
-                  </DropdownMenuItem>
-                );
-              })}
+                    {group.label}
+                  </DropdownMenuLabel>
+                  {group.items.map((item) => (
+                    <DropdownMenuItem
+                      key={item.label}
+                      className="gap-2 rounded-md text-sm cursor-pointer"
+                      style={{ color: "var(--ap-ink)", fontFamily: "var(--ap-font-body)" }}
+                      onSelect={() => navigate(item.path)}
+                    >
+                      <MaterialSymbol name={item.icon} size={20} style={{ color: "var(--ap-muted)" }} />
+                      {item.label}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuGroup>
+              ))}
             </DropdownMenuContent>
           </DropdownMenu>
         </SidebarHeader>
@@ -271,6 +303,42 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
               <CollapsibleContent>
                 <SidebarMenu>
                   {COLLAB_ITEMS.map((item) => (
+                    <SidebarMenuItem key={item.path}>
+                      <SidebarMenuButton
+                        isActive={location.pathname === item.path}
+                        onClick={() => navigate(item.path)}
+                        tooltip={item.label}
+                      >
+                        <MaterialSymbol name={item.icon} size={20} />
+                        <span>{item.label}</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </CollapsibleContent>
+            </Collapsible>
+          </SidebarGroup>
+        )}
+
+        {user && (
+          <SidebarGroup>
+            <Collapsible open={correctionOpen || collapsedIcon} onOpenChange={setCorrectionOpen}>
+              <SidebarGroupLabel asChild>
+                <CollapsibleTrigger className="flex w-full items-center justify-between cursor-pointer">
+                  <span>{t("navGroupCorrection")}</span>
+                  {!collapsedIcon && (
+                    <MaterialSymbol
+                      name="keyboard_arrow_down"
+                      size={16}
+                      className="chevron-icon"
+                      style={{ transform: correctionOpen ? "rotate(180deg)" : undefined }}
+                    />
+                  )}
+                </CollapsibleTrigger>
+              </SidebarGroupLabel>
+              <CollapsibleContent>
+                <SidebarMenu>
+                  {CORRECTION_ITEMS.map((item) => (
                     <SidebarMenuItem key={item.path}>
                       <SidebarMenuButton
                         isActive={location.pathname === item.path}

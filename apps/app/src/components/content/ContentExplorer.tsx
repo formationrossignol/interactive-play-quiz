@@ -623,7 +623,7 @@ export function ContentExplorer({
         {statsRow}
 
         {c.error && (
-          <div style={{ borderRadius: "var(--ap-r-md)", border: "2px solid var(--ap-quiz)", background: "var(--ap-paper-2)", padding: "16px", marginBottom: "16px", color: "var(--ap-quiz)", fontWeight: 700 }}>
+          <div style={{ borderRadius: "var(--ap-r-md)", border: "2px solid var(--ap-danger)", background: "var(--ap-paper-2)", padding: "16px", marginBottom: "16px", color: "var(--ap-danger)", fontWeight: 700 }}>
             {c.error}
           </div>
         )}

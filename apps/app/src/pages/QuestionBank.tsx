@@ -435,7 +435,7 @@ const QuestionBank = () => {
                         <button className="ap-btn ap-btn--ghost ap-btn--sm" style={{ padding: "7px 10px" }} onClick={() => openEditDialog(item)} title={t("edit")}>
                           <Edit className="h-3.5 w-3.5" />
                         </button>
-                        <button className="ap-btn ap-btn--ghost ap-btn--sm" style={{ padding: "7px 10px", color: "var(--ap-quiz)" }} onClick={() => handleDelete(item)} title={t("delete")}>
+                        <button className="ap-btn ap-btn--ghost ap-btn--sm" style={{ padding: "7px 10px", color: "var(--ap-danger)" }} onClick={() => handleDelete(item)} title={t("delete")}>
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
                       </div>
@@ -502,7 +502,7 @@ const QuestionBank = () => {
                         </button>
                         <button
                           className="ap-btn ap-btn--ghost ap-btn--sm"
-                          style={{ padding: "7px 10px", color: "var(--ap-quiz)" }}
+                          style={{ padding: "7px 10px", color: "var(--ap-danger)" }}
                           onClick={() => handleDelete(item)}
                           title={t("delete")}
                         >

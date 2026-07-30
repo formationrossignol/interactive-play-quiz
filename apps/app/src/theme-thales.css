@@ -27,6 +27,9 @@
   --ap-poll:        #3cc2d2;  --ap-poll-deep:   #1e8a99;  --ap-poll-soft:  #e8f7f9;
   --ap-flash:       #b07a1e;  --ap-flash-deep:  #7d5613;  --ap-flash-soft: #f8f1e4;
 
+  /* Danger/destructive — a distinct crimson, sober register, apart from --ap-quiz. */
+  --ap-danger:      #9c1f3f;  --ap-danger-deep: #6e152c;  --ap-danger-soft: #f7e9ed;
+
   /* Marque + neutres froids — blanc dominant, bleu profond */
   --ap-brand:       #171f69;  --ap-brand-deep:  #0c0d29;  --ap-brand-soft: #eceef8;
   --ap-ink:         #0c0d29;
@@ -81,6 +84,7 @@
   --ap-pres-soft:   #10302c;
   --ap-poll-soft:   #0f2e36;
   --ap-flash-soft:  #33280f;
+  --ap-danger-soft: #341521;
 
   --ap-shadow-soft:  none;
   --ap-shadow-card:  0 12px 32px rgba(0, 0, 0, .5);
@@ -88,7 +92,8 @@
 }
 
 /* Textes « deep » sur fonds soft, version sombre */
-.dark[data-theme="thales"] .ap-badge--quiz  { color: #e58b84; }
+.dark[data-theme="thales"] .ap-badge--quiz   { color: #e58b84; }
+.dark[data-theme="thales"] .ap-badge--danger { color: #e0838f; }
 .dark[data-theme="thales"] .ap-badge--pres  { color: #6fcdad; }
 .dark[data-theme="thales"] .ap-badge--poll  { color: #7bd8e4; }
 .dark[data-theme="thales"] .ap-badge--flash { color: #d9a85c; }

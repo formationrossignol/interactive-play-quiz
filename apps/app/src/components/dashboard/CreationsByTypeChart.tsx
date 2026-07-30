@@ -20,7 +20,7 @@ export function CreationsByTypeChart({ data }: { data: CreationsByType }) {
 
   return (
     <div className="ap-card" style={{ padding: "20px" }}>
-      <h3 className="ap-h3" style={{ fontSize: "15px", marginBottom: "4px" }}>Créations par type</h3>
+      <h2 className="ap-h3" style={{ fontSize: "15px", marginBottom: "4px" }}>Créations par type</h2>
       <p className="ap-muted" style={{ fontSize: "12px", marginBottom: "12px" }}>Répartition de vos {total} création{total > 1 ? "s" : ""}.</p>
 
       {total > 0 ? (

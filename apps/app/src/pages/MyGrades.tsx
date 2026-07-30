@@ -143,7 +143,7 @@ export default function MyGrades() {
                         <div className="flex flex-wrap items-center gap-2">
                           <h2 className="ap-h2 text-xl">{grade.evaluation.name}</h2>
                           {isPassed !== null && (
-                            <span className="ap-pill inline-flex items-center gap-1 text-xs" style={{ color: isPassed ? "var(--ap-pres)" : "var(--ap-quiz)" }}>
+                            <span className="ap-pill inline-flex items-center gap-1 text-xs" style={{ color: isPassed ? "var(--ap-pres)" : "var(--ap-danger)" }}>
                               <CheckCircle2 className="h-3.5 w-3.5" />
                               {isPassed ? "Réussi" : "À renforcer"}
                             </span>

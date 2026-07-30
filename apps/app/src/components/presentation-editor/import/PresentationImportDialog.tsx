@@ -183,7 +183,7 @@ export function PresentationImportDialog({
         )}
 
         {error && (
-          <p role="alert" style={{ margin: 0, padding: "10px 12px", borderRadius: 10, background: "var(--ap-quiz-soft)", color: "var(--ap-quiz-deep)", fontSize: 13, fontWeight: 750 }}>
+          <p role="alert" style={{ margin: 0, padding: "10px 12px", borderRadius: 10, background: "var(--ap-danger-soft)", color: "var(--ap-danger-deep)", fontSize: 13, fontWeight: 750 }}>
             {error}
           </p>
         )}

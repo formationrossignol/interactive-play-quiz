@@ -327,10 +327,10 @@ const NodeRow = ({ node, depth }: { node: FolderNode; depth: number }) => {
 
           {isConfirming ? (
             <span style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
-              <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--ap-quiz)' }}>{t('folderConfirmDelete')}</span>
+              <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--ap-danger)' }}>{t('folderConfirmDelete')}</span>
               <button
                 type="button"
-                style={{ ...iconBtn, color: 'var(--ap-quiz)' }}
+                style={{ ...iconBtn, color: 'var(--ap-danger)' }}
                 title={t('folderConfirmDeleteTooltip')}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -386,7 +386,7 @@ const NodeRow = ({ node, depth }: { node: FolderNode; depth: number }) => {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     className="flex items-center gap-2 cursor-pointer text-sm"
-                    style={{ color: 'var(--ap-quiz)' }}
+                    style={{ color: 'var(--ap-danger)' }}
                     onSelect={() => setConfirmingId(node.id)}
                   >
                     <Trash2 className="h-3.5 w-3.5" /> {t('delete')}

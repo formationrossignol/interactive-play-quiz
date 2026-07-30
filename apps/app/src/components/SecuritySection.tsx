@@ -143,7 +143,7 @@ export const SecuritySection = () => {
       <div style={{ borderTop: "var(--ap-border-w) solid var(--ap-line)", paddingTop: "24px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px" }}>
           {mfaEnabled
-            ? <ShieldCheck style={{ width: 18, height: 18, color: "var(--ap-quiz)" }} />
+            ? <ShieldCheck style={{ width: 18, height: 18, color: "var(--ap-pres)" }} />
             : <Shield style={{ width: 18, height: 18, color: "var(--ap-muted)" }} />}
           <span style={{ fontFamily: "var(--ap-font-display)", fontWeight: 700, fontSize: "15px", color: "var(--ap-ink)" }}>{t("mfaTitle")}</span>
         </div>

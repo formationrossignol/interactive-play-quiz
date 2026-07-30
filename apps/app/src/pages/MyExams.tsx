@@ -479,7 +479,7 @@ function ExamRow({ d, ctx, navigate, onDuplicate }: ExamItemProps) {
         <button className="ap-btn ap-btn--ghost ap-btn--sm ap-icon-btn" title="Copier le lien" aria-label={`Copier le lien de ${exam.title}`} onClick={ctx.onCopyLink}>
           <Link2 className="h-3.5 w-3.5" />
         </button>
-        <button className="ap-btn ap-btn--ghost ap-btn--sm ap-icon-btn" style={{ color: 'var(--ap-quiz)' }} title="Mettre à la corbeille" aria-label={`Mettre ${exam.title} à la corbeille`} onClick={ctx.onTrash}>
+        <button className="ap-btn ap-btn--ghost ap-btn--sm ap-icon-btn" style={{ color: 'var(--ap-danger)' }} title="Mettre à la corbeille" aria-label={`Mettre ${exam.title} à la corbeille`} onClick={ctx.onTrash}>
           <Trash2 className="h-3.5 w-3.5" />
         </button>
         <ExamContextMenu
