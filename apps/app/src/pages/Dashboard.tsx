@@ -92,7 +92,7 @@ const Dashboard = () => {
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "16px", marginBottom: "32px" }}>
             <div id="dashboard-activity-chart">
-              <ActivityChart data={charts?.activity ?? []} />
+              <ActivityChart data={charts?.activity ?? []} hasCreations={(stats?.totalCreations ?? 0) > 0} />
             </div>
             <div id="dashboard-creations-chart">
               <CreationsByTypeChart data={charts?.creationsByType ?? { quiz: 0, poll: 0, flashcard: 0, slide: 0, other: 0 }} />
