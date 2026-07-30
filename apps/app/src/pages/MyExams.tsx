@@ -166,6 +166,67 @@ function useHostExamStats(hostId: string, emailFilter?: Set<string>): HostExamSt
   return stats;
 }
 
+interface GroupComparisonRow {
+  group: Group;
+  stats: HostExamStats;
+}
+
+/** "Comparaison entre promotions" (responsable pédagogique) — same
+ *  computeHostExamStats + email-join already used for the single-group
+ *  filter above, just run for every group at once instead of one at a
+ *  time, so they can be read side by side instead of switched between. */
+function usePromotionComparison(hostId: string, groups: Group[]): GroupComparisonRow[] {
+  const [rows, setRows] = useState<GroupComparisonRow[]>([]);
+  useEffect(() => {
+    if (groups.length < 2) { setRows([]); return; }
+    let cancelled = false;
+    Promise.all(groups.map(async (group) => {
+      const members = await listGroupMembers(group.id).catch(() => []);
+      const emails = new Set(members.map((m) => m.pending_email?.toLowerCase()).filter((e): e is string => !!e));
+      const stats = await computeHostExamStats(hostId, emails);
+      return { group, stats };
+    })).then((r) => { if (!cancelled) setRows(r); });
+    return () => { cancelled = true; };
+  }, [hostId, groups]);
+  return rows;
+}
+
+function PromotionComparisonPanel({ hostId }: { hostId: string }) {
+  const groups = useOwnedGroups(hostId);
+  const rows = usePromotionComparison(hostId, groups);
+  if (rows.length < 2) return null;
+
+  return (
+    <div className="ap-card" style={{ padding: 0, marginBottom: 20, overflowX: 'auto' }}>
+      <div style={{ padding: '14px 20px 10px' }}>
+        <h3 style={{ fontFamily: 'var(--ap-font-display)', fontWeight: 600, fontSize: 15, margin: 0 }}>
+          Comparaison des promotions
+        </h3>
+      </div>
+      <table style={{ width: '100%', minWidth: 520, borderCollapse: 'collapse', textAlign: 'left' }}>
+        <thead>
+          <tr style={{ background: 'var(--ap-paper)' }}>
+            <th style={{ padding: '10px 20px', fontSize: 11, fontWeight: 800, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--ap-muted)' }}>Promotion</th>
+            <th style={{ padding: '10px 16px', fontSize: 11, fontWeight: 800, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--ap-muted)' }}>Tentatives</th>
+            <th style={{ padding: '10px 16px', fontSize: 11, fontWeight: 800, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--ap-muted)' }}>Taux de réussite</th>
+            <th style={{ padding: '10px 16px', fontSize: 11, fontWeight: 800, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--ap-muted)' }}>Score moyen</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(({ group, stats }) => (
+            <tr key={group.id} style={{ borderTop: '1px solid var(--ap-line)' }}>
+              <td style={{ padding: '10px 20px', fontSize: 13, fontWeight: 700 }}>{group.name}</td>
+              <td style={{ padding: '10px 16px', fontSize: 13, fontWeight: 700, color: 'var(--ap-muted)' }}>{stats.completedAttempts}</td>
+              <td style={{ padding: '10px 16px', fontSize: 13, fontWeight: 800 }}>{stats.passRate !== null ? `${stats.passRate}%` : '-'}</td>
+              <td style={{ padding: '10px 16px', fontSize: 13, fontWeight: 800 }}>{stats.avgScore !== null ? `${stats.avgScore}%` : '-'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function HostStatTile({ icon: Icon, label, value }: { icon: typeof Trophy; label: string; value: string }) {
   return (
     <div style={{
@@ -472,7 +533,11 @@ export default function MyExams() {
       rootLabel="Tous les examens"
       oneLabel="examen"
       cta={{ label: '+ Nouvel examen', onClick: () => navigate('/exam-builder') }}
-      statsRow={<><HostStatsRow hostId={user.id} /><ProblemModulesPanel hostId={user.id} navigate={navigate} /></>}
+      statsRow={<>
+        <HostStatsRow hostId={user.id} />
+        <PromotionComparisonPanel hostId={user.id} />
+        <ProblemModulesPanel hostId={user.id} navigate={navigate} />
+      </>}
       extraFilter={(d) => status === 'Tous' || computeExamStatus(d.data as unknown as Exam) === status}
       extraToolbar={
         <Select value={status} onValueChange={(v) => setStatus(v as 'Tous' | ExamStatus)}>
