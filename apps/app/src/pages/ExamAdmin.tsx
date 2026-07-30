@@ -303,6 +303,9 @@ export default function ExamAdmin() {
           />
         </div>
 
+        {/* Grade distribution */}
+        {completed.length > 0 && <GradeDistribution attempts={completed} passingScore={exam.passingScore} />}
+
         {/* Exam info */}
         <div style={{
           background: 'var(--ap-card)', border: 'var(--ap-border-w) solid var(--ap-line)',
@@ -916,6 +919,73 @@ function StatCard({ icon: Icon, label, value, highlight }: { icon: LucideIcon; l
       <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--ap-muted)' }}>
         {label}
       </div>
+    </div>
+  );
+}
+
+const GRADE_BUCKETS = [
+  { min: 0, max: 20, label: '0-20' },
+  { min: 20, max: 40, label: '20-40' },
+  { min: 40, max: 60, label: '40-60' },
+  { min: 60, max: 80, label: '60-80' },
+  { min: 80, max: 101, label: '80-100' },
+] as const;
+
+/** Score histogram (répartition des notes) — one bar per 20-point bucket,
+ *  built entirely from attempts already loaded for this exam (no extra fetch). */
+function GradeDistribution({ attempts, passingScore }: { attempts: Attempt[]; passingScore: number }) {
+  const scored = attempts.filter((a): a is Attempt & { percentage: number } => a.percentage !== null);
+  if (scored.length === 0) return null;
+
+  const counts = GRADE_BUCKETS.map((b) => scored.filter((a) => a.percentage >= b.min && a.percentage < b.max).length);
+  const maxCount = Math.max(...counts, 1);
+
+  return (
+    <div style={{
+      background: 'var(--ap-card)', border: 'var(--ap-border-w) solid var(--ap-line)',
+      borderRadius: 'var(--ap-r-lg)', padding: '20px 24px', marginBottom: 20,
+    }}>
+      <h3 style={{ fontFamily: 'var(--ap-font-display)', fontWeight: 600, fontSize: 15, marginBottom: 16 }}>
+        Répartition des notes
+      </h3>
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, height: 120 }}>
+        {GRADE_BUCKETS.map((bucket, i) => {
+          const count = counts[i];
+          const heightPct = maxCount ? (count / maxCount) * 100 : 0;
+          const isPassingRange = bucket.max > passingScore;
+          return (
+            <div
+              key={bucket.label}
+              style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}
+              title={`${bucket.label}% : ${count} tentative${count > 1 ? 's' : ''}`}
+            >
+              <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--ap-ink)', marginBottom: 4, minHeight: 16 }}>
+                {count > 0 ? count : ''}
+              </span>
+              <div
+                style={{
+                  width: '100%', maxWidth: 40,
+                  height: `${Math.max(heightPct, count > 0 ? 3 : 0)}%`,
+                  background: 'var(--ap-brand)',
+                  opacity: isPassingRange ? 1 : 0.55,
+                  borderRadius: '4px 4px 0 0',
+                  transition: 'opacity .15s',
+                }}
+              />
+            </div>
+          );
+        })}
+      </div>
+      <div style={{ display: 'flex', gap: 4, marginTop: 8 }}>
+        {GRADE_BUCKETS.map((bucket) => (
+          <div key={bucket.label} style={{ flex: 1, textAlign: 'center', fontSize: 11, fontWeight: 700, color: 'var(--ap-muted)' }}>
+            {bucket.label}%
+          </div>
+        ))}
+      </div>
+      <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--ap-muted)', marginTop: 10, marginBottom: 0 }}>
+        Seuil de réussite : {passingScore}% — barres pleines au-dessus du seuil.
+      </p>
     </div>
   );
 }
