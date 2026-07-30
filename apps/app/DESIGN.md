@@ -66,7 +66,7 @@ spacing:
   xs: "4px"
   sm: "8px"
   md: "16px"
-  lg: "24px"
+  lg: "20px"
   xl: "32px"
 components:
   button-primary:

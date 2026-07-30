@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { useNavigate } from "react-router-dom";
 import type { DashboardStats } from "@/lib/dashboardStats";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MaterialSymbol } from "@/components/MaterialSymbol";
@@ -12,10 +11,6 @@ interface Tile {
   /** Shown instead of TrendBadge when deltaPct is null and the value itself
    *  needs explaining (e.g. a bare "-" reads as broken, not "no data yet"). */
   emptyHint?: string;
-  /** True when onClick navigates away instead of scrolling to a chart on
-   *  this page — the other tiles share one contract, so this one needs its
-   *  own affordance rather than looking identical and behaving differently. */
-  external?: boolean;
   /** Where this KPI's detailed breakdown lives — REQ-DB-004. */
   onClick: () => void;
 }
@@ -40,8 +35,6 @@ function TrendBadge({ deltaPct }: { deltaPct: number | null }) {
 }
 
 export function KpiRow({ stats }: { stats: DashboardStats | null }) {
-  const navigate = useNavigate();
-
   if (!stats) {
     return (
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
@@ -97,14 +90,13 @@ export function KpiRow({ stats }: { stats: DashboardStats | null }) {
       label: "Score moyen (quiz)", value: s.avgScore != null ? `${s.avgScore} pts` : "-",
       deltaPct: scoreDeltaPct,
       emptyHint: s.avgScore == null ? "Pas encore de score" : undefined,
-      external: true,
-      onClick: () => navigate("/my-quizzes"),
+      onClick: scrollToChart("dashboard-score-chart"),
     },
   ];
 
   return (
     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px" }}>
-      {tiles.map(({ icon, label, value, deltaPct, emptyHint, external, onClick }) => (
+      {tiles.map(({ icon, label, value, deltaPct, emptyHint, onClick }) => (
         <button
           key={label}
           type="button"
@@ -121,10 +113,7 @@ export function KpiRow({ stats }: { stats: DashboardStats | null }) {
             </div>
             <div>
               <div style={{ fontSize: "22px", fontWeight: 800, fontFamily: "var(--ap-font-display)", color: "var(--ap-ink)" }}>{value}</div>
-              <div className="ap-muted" style={{ display: "flex", alignItems: "center", gap: 3, fontSize: "12px" }}>
-                {label}
-                {external && <MaterialSymbol name="arrow_outward" size={12} aria-label="Ouvre une autre page" />}
-              </div>
+              <div className="ap-muted" style={{ fontSize: "12px" }}>{label}</div>
             </div>
           </div>
           {deltaPct !== null
