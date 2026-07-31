@@ -11,9 +11,30 @@ import { genParticipantId, getParticipant, setParticipant, type Participant } fr
 import { AudienceCapError } from '@/lib/plans';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { Map as MapIcon, Flag, MessageCircle } from 'lucide-react';
+import {
+  ArrowRight,
+  Ban,
+  CheckCircle2,
+  CircleHelp,
+  ClipboardCheck,
+  Flag,
+  Hourglass,
+  LockKeyhole,
+  Map as MapIcon,
+  MessageCircle,
+  PartyPopper,
+  PencilLine,
+  Pin,
+  RotateCcw,
+  Search,
+  Timer,
+  TriangleAlert,
+  Trophy,
+  UsersRound,
+  XCircle,
+  type LucideIcon,
+} from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { MaterialSymbol } from '@/components/MaterialSymbol';
 import {
   ProctoringPreflight,
   type ProctoringStreams,
@@ -282,7 +303,7 @@ export default function ExamRoom() {
       })
       .catch(() => {
         autoSubmittingRef.current = false;
-        toast.error("Échec de l'envoi automatique — nouvelle tentative en cours…", { duration: 8000 });
+        toast.error("Échec de l'envoi automatique. Nouvelle tentative en cours…", { duration: 8000 });
         // Time is already up; retry shortly rather than leaving the
         // participant stuck on an expired timer with no way to submit.
         setTimeout(() => handleAutoSubmit(), 5000);
@@ -452,7 +473,9 @@ export default function ExamRoom() {
           onKeyDown={(e) => { if (e.key === 'Enter') handleIdentify(); }}
         />
         {identError && <p style={{ color: 'var(--ap-quiz)', fontSize: 13, fontWeight: 800, marginTop: 8 }}>{identError}</p>}
-        <button className="ap-btn ap-btn--pill" style={{ width: '100%', marginTop: 20 }} onClick={handleIdentify}>Continuer →</button>
+        <button className="ap-btn ap-btn--pill" style={{ width: '100%', marginTop: 20 }} onClick={handleIdentify}>
+          Continuer <ArrowRight aria-hidden="true" className="h-4 w-4" />
+        </button>
       </div>
     </Screen>
   );
@@ -469,8 +492,8 @@ export default function ExamRoom() {
           }}
         />
       ) : (
-      <div className="ap-card" style={{ padding: '28px 28px', width: '100%', textAlign: 'center' }}>
-        <div style={{ marginBottom: 12, color: 'var(--ap-brand)' }}><MaterialSymbol name="assignment" size={44} /></div>
+      <div className="product-exam-ready">
+        <div className="product-exam-ready__icon"><ClipboardCheck aria-hidden="true" /></div>
         <h1 style={{ fontFamily: 'var(--ap-font-display)', fontWeight: 700, fontSize: 22, marginBottom: 8 }}>
           {exam.title}
         </h1>
@@ -479,25 +502,22 @@ export default function ExamRoom() {
             {exam.description}
           </p>
         )}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 16, flexWrap: 'wrap', marginBottom: 24 }}>
+        <div className="product-exam-ready__facts">
           <Info icon="help" label={`${exam.questionsPublic.length} questions`} />
           {exam.durationMinutes && <Info icon="timer" label={`${exam.durationMinutes} min`} />}
           <Info icon="replay" label={`${exam.maxAttempts} tentative${exam.maxAttempts > 1 ? 's' : ''}`} />
           <Info icon="emoji_events" label={`Seuil : ${exam.passingScore}%`} />
         </div>
-        <div style={{
-          background: 'var(--ap-paper)', borderRadius: 'var(--ap-r-sm)',
-          padding: '12px 16px', marginBottom: 20, fontSize: 12, fontWeight: 700,
-          color: 'var(--ap-muted)', textAlign: 'left', lineHeight: 1.8,
-          display: 'flex', alignItems: 'flex-start', gap: 8,
-        }}>
-          <MaterialSymbol name="push_pin" size={16} style={{ marginTop: 2, flexShrink: 0 }} />
+        <div className="product-exam-ready__notice">
+          <Pin aria-hidden="true" />
           <span>
             Vos réponses sont sauvegardées automatiquement toutes les 30 secondes.
             {exam.durationMinutes && ` L'examen se soumet automatiquement à la fin du temps.`}
           </span>
         </div>
-        <button className="ap-btn ap-btn--pill" style={{ width: '100%', marginTop: 4 }} onClick={handleStart}>Commencer l'examen →</button>
+        <button className="ap-btn ap-btn--pill" style={{ width: '100%', marginTop: 4 }} onClick={handleStart}>
+          Commencer l'examen <ArrowRight aria-hidden="true" className="h-4 w-4" />
+        </button>
       </div>
       )}
     </Screen>
@@ -523,7 +543,9 @@ export default function ExamRoom() {
               fontSize: 16, fontWeight: 800,
               color: retained?.passed ? 'var(--ap-pres)' : 'var(--ap-quiz)', marginBottom: 16,
             }}>
-              <MaterialSymbol name={retained?.passed ? 'check_circle' : 'cancel'} size={20} />
+              {retained?.passed
+                ? <CheckCircle2 aria-hidden="true" className="h-5 w-5" />
+                : <XCircle aria-hidden="true" className="h-5 w-5" />}
               {retained?.passed ? 'Réussi' : 'Non réussi'}
             </div>
             {exam?.showDetailPolicy !== 'score-only' && retained && (
@@ -532,7 +554,7 @@ export default function ExamRoom() {
                 style={{ marginTop: 8 }}
                 onClick={() => navigate(`/exam/${retained.id}/results`)}
               >
-                Voir la correction →
+                Voir la correction <ArrowRight aria-hidden="true" className="h-4 w-4" />
               </button>
             )}
           </div>
@@ -552,7 +574,7 @@ export default function ExamRoom() {
     const minutesLeft = secondsLeft !== null ? Math.ceil(secondsLeft / 60) : null;
 
     return (
-      <div style={{ minHeight: '100vh', paddingBottom: 100 }}>
+      <div style={{ minHeight: '100dvh', paddingBottom: 100 }}>
         {exam.proctoring.enabled && participant && (
           <ProctoringMonitor
             exam={exam}
@@ -792,7 +814,7 @@ export default function ExamRoom() {
               fontSize: 12, fontWeight: 700,
               color: 'var(--ap-muted)', padding: '8px 0', marginBottom: 8,
             }}>
-              <MaterialSymbol name="hourglass_top" size={14} />
+              <Hourglass aria-hidden="true" className="h-3.5 w-3.5" />
               Pensez à soumettre bientôt
             </div>
           )}
@@ -820,7 +842,7 @@ export default function ExamRoom() {
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                   fontSize: 13, fontWeight: 700, color: 'var(--ap-flash-deep)', marginBottom: 14,
                 }}>
-                  <MaterialSymbol name="warning" size={16} />
+                  <TriangleAlert aria-hidden="true" className="h-4 w-4" />
                   {orderedQs.length - answered} question{orderedQs.length - answered > 1 ? 's' : ''} sans réponse
                 </p>
               )}
@@ -838,7 +860,7 @@ export default function ExamRoom() {
                   disabled={submitting}
                   style={{ flex: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
                 >
-                  {submitting ? '…' : <><MaterialSymbol name="check_circle" size={16} />Soumettre définitivement</>}
+                  {submitting ? 'Envoi...' : <><CheckCircle2 aria-hidden="true" className="h-4 w-4" />Soumettre définitivement</>}
                 </button>
               </div>
             </div>
@@ -921,22 +943,35 @@ export default function ExamRoom() {
 
 function Screen({ children, maxWidth = 400 }: { children: React.ReactNode; maxWidth?: number }) {
   return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      padding: 24,
-    }}>
-      <div style={{ width: '100%', maxWidth, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+    <div className="product-entry-shell">
+      <div className="product-entry-card product-exam-state-card" style={{ maxWidth }}>
         {children}
       </div>
     </div>
   );
 }
 
+const EXAM_ICON_MAP: Record<string, LucideIcon> = {
+  search: Search,
+  hourglass_top: Hourglass,
+  lock: LockKeyhole,
+  check_circle: CheckCircle2,
+  block: Ban,
+  meeting_room: UsersRound,
+  warning: TriangleAlert,
+  edit: PencilLine,
+  celebration: PartyPopper,
+  help: CircleHelp,
+  timer: Timer,
+  replay: RotateCcw,
+  emoji_events: Trophy,
+};
+
 function BigIcon({ name, color }: { name: string; color?: string }) {
+  const Icon = EXAM_ICON_MAP[name] ?? ClipboardCheck;
   return (
-    <div style={{ marginBottom: 8, color: color ?? 'var(--ap-brand)' }}>
-      <MaterialSymbol name={name} size={56} />
+    <div className="product-entry-heading__icon" style={{ color: color ?? 'var(--ap-brand)' }}>
+      <Icon aria-hidden="true" />
     </div>
   );
 }
@@ -977,24 +1012,17 @@ function LegendItem({ swatchBg, swatchBorder, dotColor, label }: {
 }
 
 function Info({ icon, label }: { icon: string; label: string }) {
+  const Icon = EXAM_ICON_MAP[icon] ?? CircleHelp;
   return (
-    <div style={{
-      display: 'flex', alignItems: 'center', gap: 6,
-      fontSize: 13, fontWeight: 800, color: 'var(--ap-ink)',
-      background: 'var(--ap-paper)', border: 'var(--ap-border-w) solid var(--ap-line)',
-      borderRadius: "var(--ap-r-sm)", padding: '6px 14px',
-    }}>
-      <MaterialSymbol name={icon} size={16} /><span>{label}</span>
+    <div className="product-exam-ready__fact">
+      <Icon aria-hidden="true" /><span>{label}</span>
     </div>
   );
 }
 
 function ExamRoomSkeleton() {
   return (
-    <div style={{
-      width: '100%', padding: 24, background: 'var(--ap-card)',
-      border: 'var(--ap-border-w) solid var(--ap-line)', borderRadius: 'var(--ap-r-lg)',
-    }}>
+    <div style={{ width: '100%', padding: 8 }}>
       <Skeleton className="mx-auto mb-5 h-12 w-12 rounded-full" />
       <Skeleton className="mx-auto mb-3 h-7 w-3/5" />
       <Skeleton className="mx-auto mb-8 h-4 w-4/5" />
@@ -1011,7 +1039,7 @@ function ViewResultsBtn({ retained, exam, navigate }: {
   if (exam.showResultsPolicy === 'never') return null;
   return (
     <button className="ap-btn ap-btn--pill" style={{ width: '100%', marginTop: 20 }} onClick={() => navigate(`/exam/${retained.id}/results`)}>
-      Voir mes résultats →
+      Voir mes résultats <ArrowRight aria-hidden="true" className="h-4 w-4" />
     </button>
   );
 }

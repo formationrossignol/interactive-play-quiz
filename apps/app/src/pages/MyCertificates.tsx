@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Award, Download, ExternalLink } from "lucide-react";
+import { Award, BookOpen, CalendarDays, Download, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { AppLayout } from "@/components/AppLayout";
 import { ExplorerEmptyState } from "@/components/content/ExplorerEmptyState";
@@ -35,6 +35,9 @@ export default function MyCertificates() {
 
   if (!user) return null;
 
+  const distinctCourses = new Set(certificates.map((certificate) => certificate.courseId)).size;
+  const latestCertificate = certificates[0];
+
   const download = async (certificate: Certificate) => {
     setDownloadingId(certificate.id);
     try {
@@ -61,17 +64,35 @@ export default function MyCertificates() {
 
   return (
     <AppLayout subtitle="Mes certificats">
-      <div className="mx-auto max-w-3xl px-6 py-10">
-        <div style={{ marginBottom: 25 }}>
-          <h1 className="ap-h2" style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 26, marginBottom: 4 }}>
-            <Award size={23} /> Mes certificats
-          </h1>
-          <p className="ap-muted" style={{ fontSize: 14 }}>Vos attestations de réussite, obtenues en terminant une formation à 100 %.</p>
+      <div className="product-page product-page--medium">
+        <div className="product-page-heading">
+          <div>
+            <h1>Mes certificats</h1>
+            <p>Retrouvez et téléchargez les attestations obtenues à la fin de vos formations.</p>
+          </div>
         </div>
 
-        <section className="ap-card" style={{ padding: 0, overflow: "hidden" }}>
+        {!loading && certificates.length > 0 && (
+          <div className="product-metric-grid product-certificate-metrics">
+            <CertificateMetric icon={Award} value={String(certificates.length)} label="Attestations" />
+            <CertificateMetric icon={BookOpen} value={String(distinctCourses)} label="Formations certifiées" />
+            <CertificateMetric
+              icon={CalendarDays}
+              value={latestCertificate ? new Date(latestCertificate.issuedAt).toLocaleDateString("fr-FR", { month: "short", year: "numeric" }) : "-"}
+              label="Dernière obtention"
+            />
+          </div>
+        )}
+
+        <section className="product-panel product-certificate-panel">
+          <div className="product-panel-heading">
+            <div>
+              <h2>Bibliothèque de certificats</h2>
+              <p>Chaque document est généré à la demande au format PDF.</p>
+            </div>
+          </div>
           {loading ? (
-            <div style={{ padding: 20 }}>
+            <div className="product-certificate-loading">
               <ListSkeleton rows={3} avatarClassName="rounded-lg" />
             </div>
           ) : certificates.length === 0 ? (
@@ -84,19 +105,16 @@ export default function MyCertificates() {
             certificates.map((certificate) => (
               <div
                 key={certificate.id}
-                className="ap-row group flex cursor-pointer items-center gap-4 px-5"
-                style={{ borderBottom: "var(--ap-border-w) solid var(--ap-line)", paddingTop: 14, paddingBottom: 14 }}
+                className="product-certificate-item group"
                 onClick={() => navigate(`/course/${certificate.courseId}`)}
               >
-                <span
-                  style={{ width: 40, height: 40, flexShrink: 0, display: "grid", placeItems: "center", borderRadius: "var(--ap-r-md)", background: "var(--ap-brand-soft)", color: "var(--ap-brand)" }}
-                >
+                <span className="product-certificate-item__icon">
                   <Award size={18} />
                 </span>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <strong style={{ display: "block", fontSize: 14.5 }} className="truncate">{certificate.courseTitle}</strong>
-                  <span className="ap-muted" style={{ fontSize: 12.5 }}>
-                    {certificate.totalLessons} leçon{certificate.totalLessons > 1 ? "s" : ""} · Délivrée le {new Date(certificate.issuedAt).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })}
+                <div className="product-certificate-item__copy">
+                  <strong className="truncate">{certificate.courseTitle}</strong>
+                  <span>
+                    {certificate.totalLessons} leçon{certificate.totalLessons > 1 ? "s" : ""}. Délivrée le {new Date(certificate.issuedAt).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })}
                   </span>
                 </div>
                 <div className="ap-hover-actions flex items-center gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
@@ -126,5 +144,17 @@ export default function MyCertificates() {
         </section>
       </div>
     </AppLayout>
+  );
+}
+
+function CertificateMetric({ icon: Icon, value, label }: { icon: typeof Award; value: string; label: string }) {
+  return (
+    <div className="product-metric">
+      <span className="product-metric__icon"><Icon aria-hidden="true" /></span>
+      <div>
+        <strong>{value}</strong>
+        <small>{label}</small>
+      </div>
+    </div>
   );
 }

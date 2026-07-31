@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { MonitorUp } from "lucide-react";
 import { StaticSlideStage } from "@/components/presentation-editor/StaticSlideStage";
 import type { Presentation } from "@/components/presentation-editor/types/presentation";
 
@@ -28,7 +29,13 @@ export default function PresentationAudience() {
   }, [state]);
 
   if (!state) {
-    return <div style={{ position: "fixed", inset: 0, display: "grid", placeItems: "center", background: "#000", color: "#fff", fontFamily: "var(--ap-font-body)" }}>Connexion au mode présentateur…</div>;
+    return (
+      <div className="product-presenter-wait" role="status" aria-live="polite">
+        <span><MonitorUp aria-hidden="true" /></span>
+        <strong>Connexion au mode présentateur</strong>
+        <p>La diapositive s’affichera dès que le présentateur sera prêt.</p>
+      </div>
+    );
   }
   const slides = state.presentation.slides.filter((slide) => !slide.hidden).sort((a, b) => a.order - b.order);
   const slide = slides[Math.min(state.index, slides.length - 1)];
@@ -36,7 +43,7 @@ export default function PresentationAudience() {
   const slideNumber = state.presentation.slides.findIndex((item) => item.id === slide.id) + 1;
 
   return (
-    <div style={{ position: "fixed", inset: 0, display: "grid", placeItems: "center", overflow: "hidden", background: "#000" }}>
+    <div style={{ position: "fixed", inset: 0, display: "grid", placeItems: "center", overflow: "hidden", background: "#09090b" }}>
       <div style={{ width: state.presentation.width * scale, height: state.presentation.height * scale }}>
         <StaticSlideStage presentation={state.presentation} slide={slide} slideNumber={slideNumber} scale={scale} />
       </div>
