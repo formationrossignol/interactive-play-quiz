@@ -2,6 +2,7 @@ import { Line, LineChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { useNavigate } from "react-router-dom";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent, type ChartConfig } from "@/components/ui/chart";
 import type { ActivityPoint } from "@/lib/dashboardStats";
+import { MaterialSymbol } from "@/components/MaterialSymbol";
 
 const chartConfig = {
   sessions: { label: "Sessions", color: "var(--ap-brand-deep)" },
@@ -18,9 +19,11 @@ export function ActivityChart({ data, hasCreations }: { data: ActivityPoint[]; h
   const hasActivity = data.some((point) => point.sessions > 0 || point.participants > 0);
 
   return (
-    <div className="ap-card" style={{ padding: "20px" }}>
-      <h2 className="ap-h3" style={{ fontSize: "15px", marginBottom: "4px" }}>Activité (14 derniers jours)</h2>
-      <p className="ap-muted" style={{ fontSize: "12px", marginBottom: "12px" }}>Sessions lancées et participants, par jour.</p>
+    <div className="product-analytics-card">
+      <div className="product-analytics-card__header">
+        <h3>Activité sur 14 jours</h3>
+        <p>Sessions lancées et participants uniques, par jour.</p>
+      </div>
 
       {hasActivity ? (
         <ChartContainer config={chartConfig} className="aspect-auto h-[220px] w-full">
@@ -58,17 +61,22 @@ export function ActivityChart({ data, hasCreations }: { data: ActivityPoint[]; h
           </LineChart>
         </ChartContainer>
       ) : (
-        <div style={{ height: 220, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10 }}>
-          <p className="ap-muted" style={{ fontSize: "13px" }}>Pas encore de session sur les 14 derniers jours.</p>
+        <div className="product-empty-inline" style={{ minHeight: 220 }}>
+          <div>
+          <MaterialSymbol name="monitoring" size={25} />
+          <strong>Aucune activité récente</strong>
+          <span style={{ display: "block", fontSize: 12 }}>Les sessions et participants apparaîtront ici.</span>
           {hasCreations && (
             <button
               type="button"
               className="ap-btn ap-btn--sm"
+              style={{ marginTop: 12 }}
               onClick={() => navigate("/my-quizzes")}
             >
               Lancer une session
             </button>
           )}
+          </div>
         </div>
       )}
     </div>

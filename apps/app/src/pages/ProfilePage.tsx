@@ -12,7 +12,7 @@ import { DENSITIES, applyDensity, normalizeDensity, type Density } from "@/lib/d
 import { AppLayout } from "@/components/AppLayout";
 import { SecuritySection } from "@/components/SecuritySection";
 import { MaterialSymbol } from "@/components/MaterialSymbol";
-import { Save, Trophy, BookOpen, Clock, Sun, Moon, Zap, Building2, User } from "lucide-react";
+import { AlertCircle, Check, Save, Trophy, BookOpen, Clock, Sun, Moon, Zap, Building2, User } from "lucide-react";
 import { toast } from "sonner";
 
 const inputStyle: React.CSSProperties = {
@@ -94,9 +94,9 @@ const PLAN_META: Record<Plan, {
 };
 
 const statCards = [
-  { key: "totalQuizzes",   labelKey: "quizzesCreated", icon: Trophy,   accent: "--ap-brand",  accentDeep: "--ap-brand-deep" },
-  { key: "publicQuizzes",  labelKey: "publicQuizzes",  icon: BookOpen, accent: "--ap-poll",   accentDeep: "--ap-poll-deep" },
-  { key: "totalQuestions", labelKey: "questions",      icon: Clock,    accent: "--ap-pres",   accentDeep: "--ap-pres-deep" },
+  { key: "totalQuizzes",   labelKey: "quizzesCreated", icon: Trophy,   accent: "--ap-brand" },
+  { key: "publicQuizzes",  labelKey: "publicQuizzes",  icon: BookOpen, accent: "--ap-poll" },
+  { key: "totalQuestions", labelKey: "questions",      icon: Clock,    accent: "--ap-pres" },
 ] as const;
 
 const ProfilePage = () => {
@@ -200,64 +200,38 @@ const ProfilePage = () => {
 
   return (
     <AppLayout subtitle={t("myProfile")}>
-      <div className="mx-auto max-w-4xl px-6 py-10">
+      <div className="product-page product-page--medium">
 
         {/* Page header */}
-        <div style={{ textAlign: "center", marginBottom: "40px" }}>
-          {/* Avatar circle */}
-          <div
-            style={{
-              width: 72, height: 72, borderRadius: "50%",
-              background: "var(--ap-brand)",
-              boxShadow: "0 6px 0 var(--ap-brand-deep), 0 12px 24px rgba(112,72,255,.3)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              margin: "0 auto 16px",
-            }}
-          >
-            <span
-              style={{
-                fontFamily: "var(--ap-font-display)", fontWeight: 600,
-                fontSize: "28px", color: "#fff", textTransform: "uppercase",
-              }}
-            >
-              {user.username?.[0] ?? "?"}
-            </span>
+        <div className="product-profile-hero">
+          <div className="product-profile-avatar" aria-hidden="true">
+            {user.username?.[0] ?? "?"}
           </div>
-          <h1 className="ap-h2" style={{ fontSize: "26px", marginBottom: "6px" }}>{user.username}</h1>
-          <p className="ap-muted" style={{ fontSize: "14px" }}>{user.email}</p>
+          <div>
+            <h1>{user.username}</h1>
+            <p>{user.email}</p>
+          </div>
+          <span className="product-profile-plan">
+            {(() => {
+              const PlanIcon = PLAN_META[plan].icon;
+              return <PlanIcon className="h-4 w-4" />;
+            })()}
+            Offre {PLAN_META[plan].label}
+          </span>
         </div>
 
-        <div style={{ display: "grid", gap: "20px" }}>
+        <div className="product-settings-stack">
 
           {/* Stats */}
-          <div style={{ display: "grid", gap: "16px", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))" }}>
-            {statCards.map(({ key, labelKey, icon: Icon, accent, accentDeep }) => (
-              <div
-                key={key}
-                className="ap-card"
-                style={{ textAlign: "center", padding: "24px 20px" }}
-              >
-                <div
-                  className="ap-tile__icon"
-                  style={{
-                    background: `var(${accent})`,
-                    boxShadow: `0 5px 0 var(${accentDeep})`,
-                    margin: "0 auto 14px",
-                  }}
-                >
-                  <Icon className="h-6 w-6" color="#fff" />
+          <div className="product-metric-grid">
+            {statCards.map(({ key, labelKey, icon: Icon, accent }) => (
+              <div key={key} className="product-metric">
+                <div className="product-metric__icon" style={{ color: `var(${accent})` }}>
+                  <Icon className="h-5 w-5" />
                 </div>
-                <div
-                  style={{
-                    fontFamily: "var(--ap-font-display)", fontWeight: 600,
-                    fontSize: "36px", color: "var(--ap-ink)", lineHeight: 1,
-                    marginBottom: "6px",
-                  }}
-                >
-                  {stats[key]}
-                </div>
-                <div className="ap-muted" style={{ fontSize: "13px", fontWeight: 700 }}>
-                  {t(labelKey as Parameters<typeof t>[0])}
+                <div>
+                  <strong>{stats[key]}</strong>
+                  <small>{t(labelKey as Parameters<typeof t>[0])}</small>
                 </div>
               </div>
             ))}
@@ -268,7 +242,7 @@ const ProfilePage = () => {
             const meta = PLAN_META[plan];
             const PlanIcon = meta.icon;
             return (
-              <div className="ap-card ap-card--floaty" style={{ padding: "28px 32px" }}>
+              <div className="product-settings-panel">
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "16px", marginBottom: "20px" }}>
                   <h2 className="ap-h3" style={{ margin: 0 }}>Mon compte</h2>
                   <span
@@ -287,8 +261,8 @@ const ProfilePage = () => {
                 <ul style={{ margin: "0 0 20px", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: "8px" }}>
                   {meta.features.map((f) => (
                     <li key={f} style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", color: "var(--ap-ink)", fontFamily: "var(--ap-font-body)", fontWeight: 600 }}>
-                      <span style={{ width: 18, height: 18, borderRadius: "50%", background: `var(${meta.color})`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                        <svg viewBox="0 0 12 10" width="10" height="8" fill="none"><path d="M1 5l3 3 7-7" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      <span style={{ width: 18, height: 18, borderRadius: "50%", background: `var(${meta.color})`, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <Check className="h-3 w-3" strokeWidth={2.4} />
                       </span>
                       {f}
                     </li>
@@ -342,7 +316,7 @@ const ProfilePage = () => {
           })()}
 
           {/* Profile info */}
-          <div className="ap-card ap-card--floaty" style={{ padding: "28px 32px" }}>
+          <div className="product-settings-panel">
             <h2 className="ap-h3" style={{ marginBottom: "20px" }}>{t("profileInfo")}</h2>
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               <div>
@@ -360,9 +334,7 @@ const ProfilePage = () => {
                 />
                 {usernameError && (
                   <p id="profile-username-error" role="alert" style={{ margin: "8px 0 0", fontSize: "12.5px", fontWeight: 800, color: "var(--ap-danger-deep)", display: "flex", alignItems: "center", gap: "6px" }}>
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="12" r="9" /><path d="M12 8v5M12 16h.01" />
-                    </svg>
+                    <AlertCircle className="h-4 w-4" />
                     {usernameError}
                   </p>
                 )}
@@ -381,7 +353,7 @@ const ProfilePage = () => {
           </div>
 
           {/* Preferences */}
-          <div className="ap-card ap-card--floaty" style={{ padding: "28px 32px" }}>
+          <div className="product-settings-panel">
             <h2 className="ap-h3" style={{ marginBottom: "20px" }}>{t("preferences")}</h2>
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               <div>
@@ -397,7 +369,7 @@ const ProfilePage = () => {
                         aria-checked={selected}
                         onClick={() => {
                           setSiteTheme(def.id);
-                          // Aperçu instantané — persisté définitivement au clic sur Enregistrer
+                          // Aperçu instantané, persisté définitivement au clic sur Enregistrer
                           applySiteTheme(def.id);
                         }}
                         style={{
@@ -446,7 +418,7 @@ const ProfilePage = () => {
                   value={theme}
                   onValueChange={(v: Theme) => {
                     setTheme(v);
-                    // Aperçu instantané — persisté définitivement au clic sur Enregistrer
+                    // Aperçu instantané, persisté définitivement au clic sur Enregistrer
                     document.documentElement.classList.toggle("dark", v === "dark");
                   }}
                 >
@@ -474,7 +446,7 @@ const ProfilePage = () => {
                   value={density}
                   onValueChange={(v: Density) => {
                     setDensity(v);
-                    // Aperçu instantané — persisté définitivement au clic sur Enregistrer
+                    // Aperçu instantané, persisté définitivement au clic sur Enregistrer
                     applyDensity(v);
                   }}
                 >
@@ -497,8 +469,8 @@ const ProfilePage = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent style={{ background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-md)" }}>
-                    <SelectItem value="en">🇬🇧 English</SelectItem>
-                    <SelectItem value="fr">🇫🇷 Français</SelectItem>
+                    <SelectItem value="en">English</SelectItem>
+                    <SelectItem value="fr">Français</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

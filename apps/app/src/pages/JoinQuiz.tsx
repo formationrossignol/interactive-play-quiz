@@ -20,7 +20,7 @@ const fetchRoomLocked = async (gameCode: string): Promise<boolean> => {
 
 /** Read the baked-in participant cap (quiz_data.maxParticipants) and the
  *  current player count, so a join can be blocked once the room is full.
- *  Error-tolerant like fetchRoomLocked — a query failure just reports "not full".
+ *  Error-tolerant like fetchRoomLocked. A query failure just reports "not full".
  *  Client-only check, same as the room-lock mechanism above: two players
  *  joining the last slot near-simultaneously can both be admitted (no
  *  server-side atomic reservation). Accepted trade-off, not a bug. */
@@ -81,7 +81,7 @@ const JoinQuiz = () => {
       let result = await checkSupabase(gameCode);
 
       if (result === null) {
-        // Unknown error — wait 2s and retry once
+        // Unknown error, wait 2s and retry once
         await new Promise((r) => setTimeout(r, 2000));
         result = await checkSupabase(gameCode);
       }
@@ -94,7 +94,7 @@ const JoinQuiz = () => {
           description: t("quizOrPollNotFoundDesc"),
         });
       } else {
-        // Still unknown after retry — let them try anyway, PlayerView will handle it
+        // Still unknown after retry. Let them try anyway, PlayerView will handle it.
         setQuizExists(true);
       }
     };
@@ -113,7 +113,7 @@ const JoinQuiz = () => {
         navigate(`/quiz/${gameCode}?player=${encodeURIComponent(parsed.name)}&avatar=${encodeURIComponent(parsed.avatar)}`, { replace: true });
         return;
       } catch {
-        // corrupt data — let them re-register
+        // Corrupt data, let them re-register.
         sessionStorage.removeItem(`quiz-player-${gameCode}`);
       }
     }
@@ -147,7 +147,7 @@ const JoinQuiz = () => {
 
   const handleAvatarComplete = async (name: string, avatar: string) => {
     if (!gameCode) return;
-    // Re-check at submit time — the host may have locked the room or it may
+    // Re-check at submit time. The host may have locked the room or it may
     // have filled up while the player was picking an avatar.
     if (await fetchRoomLocked(gameCode)) {
       setRoomLocked(true);
@@ -167,18 +167,20 @@ const JoinQuiz = () => {
     try {
       sessionStorage.setItem(`quiz-player-${gameCode}`, JSON.stringify(player));
     } catch {
-      // ignore storage errors — PlayerView will handle missing session
+      // Ignore storage errors. PlayerView will handle missing session.
     }
     navigate(`/quiz/${gameCode}?player=${encodeURIComponent(name)}`);
   };
 
   if (!gameCode || quizExists === false) {
     return (
-      <div style={{ minHeight: "100vh", background: "var(--ap-paper)", display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
-        <div className="ap-card ap-card--floaty" style={{ maxWidth: 440, width: "100%", textAlign: "center", padding: "40px" }}>
-          <AlertTriangle className="w-16 h-16 mx-auto mb-4 animate-pulse" style={{ color: "var(--ap-flash)" }} />
-          <h2 className="ap-h2" style={{ fontSize: "24px", marginBottom: "12px" }}>Code invalide</h2>
-          <p className="ap-muted" style={{ fontSize: "15px", marginBottom: "24px" }}>Ce code de quiz ou sondage n'existe pas.</p>
+      <div className="product-entry-shell">
+        <div className="product-entry-card">
+          <div className="product-entry-heading">
+            <span className="product-entry-heading__icon"><AlertTriangle className="h-6 w-6" /></span>
+            <h1>Code invalide</h1>
+            <p>Ce code de quiz ou sondage n’existe pas. Vérifiez le lien reçu.</p>
+          </div>
           <button className="ap-btn ap-btn--pill" onClick={() => { window.location.href = "/"; }}>
             Retour
           </button>
@@ -189,15 +191,15 @@ const JoinQuiz = () => {
 
   if (roomLocked) {
     return (
-      <div style={{ minHeight: "100vh", background: "var(--ap-paper)", display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
-        <div className="ap-card ap-card--floaty" style={{ maxWidth: 440, width: "100%", textAlign: "center", padding: "40px" }}>
-          <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'var(--ap-brand-soft)', display: 'grid', placeItems: 'center', margin: '0 auto 16px' }}>
-            <Lock style={{ width: 32, height: 32, color: 'var(--ap-brand)' }} strokeWidth={2} />
+      <div className="product-entry-shell">
+        <div className="product-entry-card">
+          <div className="product-entry-heading">
+            <span className="product-entry-heading__icon">
+              <Lock className="h-6 w-6" />
+            </span>
+            <h1>Salle verrouillée</h1>
+            <p>L’hôte a fermé l’accès à cette partie. Réessayez lorsqu’il aura rouvert la salle.</p>
           </div>
-          <h2 className="ap-h2" style={{ fontSize: "24px", marginBottom: "12px" }}>Salle verrouillée</h2>
-          <p className="ap-muted" style={{ fontSize: "15px", marginBottom: "24px" }}>
-            L'hôte a fermé l'accès à cette partie. Vous ne pouvez pas la rejoindre pour le moment.
-          </p>
           <button className="ap-btn ap-btn--pill" onClick={() => { window.location.href = "/"; }}>
             Retour
           </button>
@@ -208,15 +210,15 @@ const JoinQuiz = () => {
 
   if (roomFull) {
     return (
-      <div style={{ minHeight: "100vh", background: "var(--ap-paper)", display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
-        <div className="ap-card ap-card--floaty" style={{ maxWidth: 440, width: "100%", textAlign: "center", padding: "40px" }}>
-          <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'var(--ap-brand-soft)', display: 'grid', placeItems: 'center', margin: '0 auto 16px' }}>
-            <Lock style={{ width: 32, height: 32, color: 'var(--ap-brand)' }} strokeWidth={2} />
+      <div className="product-entry-shell">
+        <div className="product-entry-card">
+          <div className="product-entry-heading">
+            <span className="product-entry-heading__icon">
+              <Lock className="h-6 w-6" />
+            </span>
+            <h1>Session complète</h1>
+            <p>Le nombre maximum de participants pour cette session est atteint.</p>
           </div>
-          <h2 className="ap-h2" style={{ fontSize: "24px", marginBottom: "12px" }}>Session complète</h2>
-          <p className="ap-muted" style={{ fontSize: "15px", marginBottom: "24px" }}>
-            Le nombre maximum de participants pour cette session est atteint.
-          </p>
           <button className="ap-btn ap-btn--pill" onClick={() => { window.location.href = "/"; }}>
             Retour
           </button>
@@ -227,13 +229,13 @@ const JoinQuiz = () => {
 
   if (quizExists === null) {
     return (
-      <div style={{ minHeight: "100vh", background: "var(--ap-brand)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div className="w-full max-w-md rounded-3xl border border-white/20 bg-white/10 p-8" role="status" aria-label={t("checkingCode")}>
-          <Skeleton className="mx-auto mb-5 h-14 w-14 rounded-full bg-white/20" />
-          <Skeleton className="mx-auto mb-8 h-7 w-3/5 bg-white/20" />
-          <Skeleton className="mb-3 h-12 w-full bg-white/20" />
-          <Skeleton className="mb-6 h-12 w-full bg-white/20" />
-          <Skeleton className="h-12 w-full rounded-full bg-white/20" />
+      <div className="product-entry-shell">
+        <div className="product-entry-card" role="status" aria-label={t("checkingCode")}>
+          <Skeleton className="mb-5 h-12 w-12 rounded-xl" />
+          <Skeleton className="mb-3 h-7 w-3/5" />
+          <Skeleton className="mb-8 h-4 w-4/5" />
+          <Skeleton className="mb-3 h-12 w-full" />
+          <Skeleton className="h-12 w-full rounded-xl" />
         </div>
       </div>
     );

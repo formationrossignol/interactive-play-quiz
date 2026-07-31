@@ -1,7 +1,7 @@
-// Site-wide visual themes (skins). Orthogonal to the light/dark mode toggle:
+// Product visual themes (skins). Orthogonal to the light/dark mode toggle:
 // the skin picks the token palette + typography, the mode picks its variant.
-// The active skin is stamped on <html> as data-theme="<id>". Arcade Pop is
-// the legacy base stylesheet, while Studio is the commercial default.
+// The marketing application owns its own visual system; these themes belong
+// to the product and Arcade Pop remains the original application default.
 
 export type SiteTheme = "arcade" | "thales" | "innov" | "studio" | "material";
 
@@ -21,8 +21,8 @@ export const SITE_THEMES: SiteThemeDef[] = [
     id: "arcade",
     name: "Arcade Pop",
     tagline: {
-      en: "Playful and colorful — the original look",
-      fr: "Ludique et coloré — le style d'origine",
+      en: "Playful and colorful, the original application look",
+      fr: "Ludique et coloré, l’identité originale de l’application",
     },
     colors: ["#7048ff", "#ff5a4d", "#15c08a", "#ffb020"],
     previewFont: "'Fredoka Variable', 'Fredoka', system-ui, sans-serif",
@@ -31,8 +31,8 @@ export const SITE_THEMES: SiteThemeDef[] = [
     id: "thales",
     name: "Thales",
     tagline: {
-      en: "Institutional — deep blue, sharp and sober",
-      fr: "Institutionnel — bleu profond, sobre et net",
+      en: "Institutional: deep blue, sharp and sober",
+      fr: "Institutionnel : bleu profond, sobre et net",
     },
     colors: ["#171F69", "#3CC2D2", "#0C0D29", "#FFFFFF"],
     previewFont: "'Gibson', 'Aptos', 'Segoe UI', Arial, Helvetica, sans-serif",
@@ -41,8 +41,8 @@ export const SITE_THEMES: SiteThemeDef[] = [
     id: "innov",
     name: "Innov Campus",
     tagline: {
-      en: "Campus energy — black, white, turquoise",
-      fr: "Énergie campus — noir, blanc, turquoise",
+      en: "Campus energy: black, white and turquoise",
+      fr: "Énergie campus : noir, blanc et turquoise",
     },
     colors: ["#000000", "#00B8A9", "#FFFFFF", "#595959"],
     previewFont: "'Montserrat Variable', 'Montserrat', 'Aptos', Arial, Helvetica, sans-serif",
@@ -51,8 +51,8 @@ export const SITE_THEMES: SiteThemeDef[] = [
     id: "studio",
     name: "Studio",
     tagline: {
-      en: "Sober and editorial — a learning studio, not a game show",
-      fr: "Sobre et éditorial — un studio pédagogique, pas un jeu télévisé",
+      en: "Sober and editorial, designed as a learning studio",
+      fr: "Sobre et éditorial, pensé comme un studio pédagogique",
     },
     colors: ["#5B4FE9", "#172033", "#FFFFFF", "#FF7657"],
     previewFont: "'Plus Jakarta Sans Variable', 'Plus Jakarta Sans', system-ui, sans-serif",
@@ -61,15 +61,15 @@ export const SITE_THEMES: SiteThemeDef[] = [
     id: "material",
     name: "Material 3",
     tagline: {
-      en: "Adaptive and calm — role-based color, tonal surfaces, rounded symbols",
-      fr: "Adaptatif et calme — couleurs par rôle, surfaces tonales, symboles arrondis",
+      en: "Adaptive and calm: role-based color and tonal surfaces",
+      fr: "Adaptatif et calme : couleurs par rôle et surfaces tonales",
     },
     colors: ["#65558F", "#EADDFF", "#625B71", "#7D5260"],
     previewFont: "'Roboto Flex Variable', 'Roboto Flex', system-ui, sans-serif",
   },
 ];
 
-export const DEFAULT_SITE_THEME: SiteTheme = "studio";
+export const DEFAULT_SITE_THEME: SiteTheme = "arcade";
 
 // "ynov" is the old id (pre-rename) — still present in already-saved
 // profiles, mapped forward so existing users don't silently lose their pick.
@@ -80,7 +80,7 @@ export const normalizeSiteTheme = (raw: unknown): SiteTheme => {
   return SITE_THEMES.some((t) => t.id === raw) ? (raw as SiteTheme) : DEFAULT_SITE_THEME;
 };
 
-/** Stamp the skin on <html>. Arcade Pop remains the bare legacy stylesheet. */
+/** Stamp the selected product skin on <html>. Arcade Pop is the base skin. */
 export const applySiteTheme = (theme: SiteTheme) => {
   if (theme === "arcade") {
     document.documentElement.removeAttribute("data-theme");
@@ -89,39 +89,8 @@ export const applySiteTheme = (theme: SiteTheme) => {
   }
 };
 
-/** The register DESIGN.md requires for correction/admin/trust surfaces,
- *  independent of the visitor's site-theme pick. */
-export const FORCED_SITE_THEME: SiteTheme = "material";
-
-/** Routes exempt from FORCED_SITE_THEME — the visitor's own picked skin
- *  applies here instead:
- *   - pre-auth / onboarding: not yet an authenticated product surface
- *   - live game/exam-taking screens: the "different register" DESIGN.md
- *     explicitly reserves for playful, in-the-moment energy
- *   - /profile: the theme picker itself lives here with an instant-preview
- *     click handler — forcing Material would make 4 of 5 skins unpreviewable
- *  Everything else authenticated renders FORCED_SITE_THEME regardless of
- *  the picker. */
-const SITE_THEME_EXEMPT_PATTERNS: RegExp[] = [
-  /^\/$/,
-  /^\/auth$/,
-  /^\/reset-password$/,
-  /^\/invite\//,
-  /^\/onboarding\/org$/,
-  /^\/org\/invitations$/,
-  /^\/profile$/,
-  /^\/quiz\/[^/]+$/,
-  /^\/join\/[^/]+$/,
-  /^\/join-exam(\/.*)?$/,
-  /^\/take\/[^/]+$/,
-  /^\/presentation-audience$/,
-  /^\/preview\/[^/]+$/,
-];
-
-export const isSiteThemeExemptPath = (pathname: string): boolean =>
-  SITE_THEME_EXEMPT_PATTERNS.some((pattern) => pattern.test(pathname));
-
-/** The skin to stamp on <html> for a given route: the visitor's own pick on
- *  exempt routes, FORCED_SITE_THEME everywhere else. */
-export const resolveSiteThemeForPath = (pathname: string, userSiteTheme: unknown): SiteTheme =>
-  isSiteThemeExemptPath(pathname) ? normalizeSiteTheme(userSiteTheme) : FORCED_SITE_THEME;
+/** Resolve the selected product theme on every route. Keeping the pathname in
+ *  the signature avoids churn at call sites and leaves room for future
+ *  route-specific presentation themes without overriding a profile choice. */
+export const resolveSiteThemeForPath = (_pathname: string, userSiteTheme: unknown): SiteTheme =>
+  normalizeSiteTheme(userSiteTheme);

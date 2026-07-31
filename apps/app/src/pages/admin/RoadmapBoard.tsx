@@ -40,7 +40,7 @@ export const RoadmapBoard = ({ rows, onEdit, onNew, onToggleStatus, onDelete }: 
                 <span className="bc-cat">{c.category}</span>
                 <span className="bc-votes"><ChevronUp className="h-3 w-3" style={{ display: "inline", verticalAlign: "-1px" }} /> {c.base_votes}</span>
               </div>
-              <b>{c.title || "—"}</b>
+              <b>{c.title || "-"}</b>
               {c.subtitle && <small>{c.subtitle}</small>}
               {(c.beta || c.locked || c.status === "draft") && (
                 <div className="bc-flags">

@@ -69,7 +69,7 @@ export default function MyLearningPaths() {
 
   return (
     <AppLayout subtitle="Mes parcours">
-      <div className="mx-auto max-w-6xl px-6 py-10">
+      <div className="product-page">
         <PageHeader
           title="Mes parcours"
           description="Assemblez vos cours, imposez des prérequis et pilotez la progression étape par étape."

@@ -164,8 +164,8 @@ export default function LearningPathBuilder() {
 
   return (
     <AppLayout subtitle="Créateur de parcours">
-      <div style={{ minHeight: "calc(100vh - var(--app-header-height, 64px))", padding: "20px clamp(18px, 4vw, 48px) 48px" }}>
-        <div style={{ maxWidth: 1120, margin: "0 auto" }}>
+      <div className="product-page">
+        <div>
           <div className="flex flex-wrap items-center justify-between gap-4">
             <Breadcrumb
               onHome={() => navigate("/dashboard")}
@@ -195,7 +195,7 @@ export default function LearningPathBuilder() {
             </div>
           </div>
 
-          <header style={{ margin: "32px 0 24px" }}>
+          <header className="product-template-start" style={{ marginTop: 28 }}>
             <button
               className="ap-btn ap-btn--ghost ap-btn--sm"
               style={{ marginBottom: 12 }}
@@ -204,7 +204,7 @@ export default function LearningPathBuilder() {
               <ArrowLeft className="h-4 w-4" />
               Retour aux parcours
             </button>
-            <h1 className="ap-h1" style={{ fontSize: "clamp(28px, 4vw, 40px)" }}>
+            <h1>
               {pathId ? "Modifier le parcours" : "Créer un parcours"}
             </h1>
             <p className="ap-muted" style={{ marginTop: 8 }}>
@@ -264,7 +264,7 @@ export default function LearningPathBuilder() {
                       <SelectContent>
                         {availableCourses.map((course) => (
                           <SelectItem key={course.id} value={course.id}>
-                            {course.title} · {totalLessons(course)} leçon{totalLessons(course) !== 1 ? "s" : ""}
+                            {course.title}, {totalLessons(course)} leçon{totalLessons(course) !== 1 ? "s" : ""}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -295,7 +295,7 @@ export default function LearningPathBuilder() {
                           </div>
                           <div style={{ minWidth: 0, flex: 1 }}>
                             <h3 className="ap-h3 truncate" style={{ fontSize: 15 }}>{course?.title ?? "Cours supprimé"}</h3>
-                            <p className="ap-muted" style={{ fontSize: 12 }}>{course ? `${course.modules.length} modules · ${totalLessons(course)} leçons` : "Cette étape doit être remplacée"}</p>
+                            <p className="ap-muted" style={{ fontSize: 12 }}>{course ? `${course.modules.length} modules, ${totalLessons(course)} leçons` : "Cette étape doit être remplacée"}</p>
                           </div>
                           <button className="ap-btn ap-btn--ghost ap-btn--sm ap-icon-btn" disabled={index === 0} title="Monter" onClick={() => moveStep(index, -1)}>
                             <ArrowUp className="h-4 w-4" />
@@ -329,7 +329,7 @@ export default function LearningPathBuilder() {
                           <div>
                             {fieldLabel("Prérequis")}
                             {index === 0 ? (
-                              <p className="ap-muted" style={{ fontSize: 13, paddingTop: 8 }}>Aucun — première étape</p>
+                              <p className="ap-muted" style={{ fontSize: 13, paddingTop: 8 }}>Aucun, première étape</p>
                             ) : isSequential ? (
                               <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 11px", background: "color-mix(in srgb, var(--ap-brand) 9%, transparent)", borderRadius: "var(--ap-r-sm)", fontSize: 12.5, fontWeight: 700 }}>
                                 <Link2 className="h-4 w-4" style={{ color: "var(--ap-brand)" }} />
@@ -346,7 +346,7 @@ export default function LearningPathBuilder() {
                                         checked={checked}
                                         onCheckedChange={(value) => togglePrerequisite(step, candidate.id, value === true)}
                                       />
-                                      Étape {prerequisiteIndex + 1} · {candidateCourse?.title ?? "Cours supprimé"}
+                                      Étape {prerequisiteIndex + 1} : {candidateCourse?.title ?? "Cours supprimé"}
                                     </label>
                                   );
                                 })}

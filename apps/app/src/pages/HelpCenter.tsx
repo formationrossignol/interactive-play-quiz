@@ -57,12 +57,12 @@ export default function HelpCenter() {
 
   return (
     <AppLayout subtitle="Centre d’aide">
-      <div className="mx-auto max-w-5xl px-6 py-10">
+      <div className="product-page product-page--medium">
         <section style={{ marginBottom: 28 }}>
           <span style={{ width: 42, height: 42, display: "grid", placeItems: "center", marginBottom: 14, borderRadius: "var(--ap-r-md)", background: "var(--ap-brand-soft)", color: "var(--ap-brand)" }}>
             <CircleHelp size={21} />
           </span>
-          <h1 className="ap-h2" style={{ fontSize: 28, marginBottom: 5 }}>Comment pouvons-nous vous aider ?</h1>
+          <h1 className="ap-h2" style={{ fontSize: 32, marginBottom: 5, letterSpacing: "-.03em" }}>Comment pouvons-nous vous aider ?</h1>
           <p className="ap-muted" style={{ fontSize: 14 }}>Recherchez une réponse ou contactez directement l’équipe depuis l’application.</p>
         </section>
 

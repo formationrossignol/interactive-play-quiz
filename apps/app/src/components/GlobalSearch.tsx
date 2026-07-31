@@ -137,7 +137,7 @@ export const GlobalSearch = ({ user }: GlobalSearchProps) => {
   if (!user) return null;
 
   return (
-    <div ref={containerRef} style={{ position: "relative", width: "min(340px, 32vw)", flexShrink: 0 }}>
+    <div ref={containerRef} className="product-global-search" style={{ position: "relative", width: "min(380px, 34vw)", flexShrink: 0 }}>
       <div style={{ position: "relative" }}>
         <Search
           className="h-4 w-4"

@@ -22,7 +22,7 @@ export function StaticPageEditor({ open, onOpenChange, initial, hasBlocks, onSav
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[calc(100vw-48px)] max-w-5xl" style={{ maxHeight: "90vh", overflowY: "auto" }}>
-        <DialogHeader><DialogTitle>Éditer — {initial.title}</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>Éditer : {initial.title}</DialogTitle></DialogHeader>
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <label style={{ fontWeight: 800, fontSize: 12 }}>Titre</label>
           <Input value={v.title} onChange={(e) => set("title", e.target.value)} />

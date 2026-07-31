@@ -48,7 +48,7 @@ const inHours = (n: number) => {
 };
 
 // ExamRoom only renders an answerable UI for these types (true-false,
-// single/multiple-choice, short-answer) — a quiz containing ranking/
+// single/multiple-choice, short-answer). A quiz containing ranking/
 // matching/fill-blank/drag-drop/hotspot/slider questions would silently
 // render no input at all for those, and they'd never score correctly either
 // (calculateScore's structural comparison only covers these same types).
@@ -175,7 +175,7 @@ export default function ExamBuilder() {
     setForm((f) => ({ ...f, [key]: val }));
 
   // Only the first step (title/quiz source) has fields the rest of the form
-  // depends on — later steps have no invalid state, just choices.
+  // depends on. Later steps have no invalid state, just choices.
   const stepError = (s: number): string | null => {
     if (s === 0) {
       if (!form.title.trim()) return 'Titre requis';
@@ -308,7 +308,7 @@ export default function ExamBuilder() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', paddingBottom: 80 }}>
+    <div className="product-flow">
       <style>{`
         .eb-input {
           width: 100%; padding: 10px 14px;
@@ -345,11 +345,7 @@ export default function ExamBuilder() {
       `}</style>
 
       {/* Topbar */}
-      <div style={{
-        background: 'var(--ap-card)', borderBottom: 'var(--ap-border-w) solid var(--ap-line)',
-        padding: '0 24px', height: 60, display: 'flex', alignItems: 'center', gap: 16,
-        position: 'sticky', top: 0, zIndex: 10,
-      }}>
+      <div className="product-flow-topbar">
         <Breadcrumb
           onHome={() => { window.location.href = '/'; }}
           items={[
@@ -369,16 +365,12 @@ export default function ExamBuilder() {
         )}
       </div>
 
-      <div style={{ maxWidth: 980, margin: '0 auto', padding: '24px 16px' }}>
+      <div className="product-flow-page product-flow-page--compact">
 
         {/* Join code banner */}
         {saved && saved.status !== 'draft' && (
-          <div style={{
-            background: 'var(--ap-pres-soft)', border: '2px solid var(--ap-pres)',
-            borderRadius: 'var(--ap-r-lg)', padding: '16px 24px', marginBottom: 20,
-            display: 'flex', alignItems: 'center', gap: 16,
-          }}>
-            <Link2 style={{ width: 28, height: 28, color: 'var(--ap-pres-deep)', flexShrink: 0 }} />
+          <div className="product-session-access">
+            <span className="product-session-access__icon"><Link2 className="h-5 w-5" /></span>
             <div>
               <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--ap-pres-deep)', marginBottom: 2 }}>
                 Code d'accès participants
@@ -402,8 +394,8 @@ export default function ExamBuilder() {
 
         <div style={{ marginBottom: 20 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
-            <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--ap-muted)' }}>
-              Rubrique {step + 1}/{STEPS.length} — {STEPS[step]}
+            <span className="product-flow-progress-label">
+              Étape {step + 1} sur {STEPS.length} : {STEPS[step]}
             </span>
           </div>
           <MultiStepProgress totalSteps={STEPS.length} currentStep={step} />
@@ -497,7 +489,7 @@ export default function ExamBuilder() {
                 return (
                   <option key={q.id} value={q.id} disabled={unsupported.length > 0}>
                     {q.title} ({q.questions.length} questions)
-                    {unsupported.length > 0 ? ' — types non supportés par les examens' : ''}
+                    {unsupported.length > 0 ? ', types non supportés par les examens' : ''}
                   </option>
                 );
               })}

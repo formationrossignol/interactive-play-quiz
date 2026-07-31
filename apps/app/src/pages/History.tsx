@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { Trophy, ListChecks } from "lucide-react";
+import { Trophy } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { ExplorerEmptyState } from "@/components/content/ExplorerEmptyState";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getCurrentUser } from "@/lib/auth";
 import { listQuizAttempts, type QuizAttempt } from "@/lib/quizAttempts";
 import { useSEO } from "@/hooks/useSEO";
+import { PageHeader } from "@/components/ui/page-header";
 
 export default function History() {
   const user = getCurrentUser();
@@ -25,13 +26,8 @@ export default function History() {
 
   return (
     <AppLayout subtitle="Historique">
-      <div className="mx-auto max-w-3xl px-6 py-10">
-        <div style={{ marginBottom: 25 }}>
-          <h1 className="ap-h2" style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 26, marginBottom: 4 }}>
-            <ListChecks size={23} /> Historique
-          </h1>
-          <p className="ap-muted" style={{ fontSize: 14 }}>Vos parties de quiz jouées en solo.</p>
-        </div>
+      <div className="product-page product-page--compact">
+        <PageHeader title="Historique" description="Vos parties de quiz jouées en solo." />
 
         <section className="ap-card" style={{ padding: 0, overflow: "hidden" }}>
           {loading ? (

@@ -21,7 +21,7 @@ export const GuidesGrid = ({ rows, onEdit, onNew, onToggleStatus, onDelete }: Pr
           {g.duration_label && <span className="g-dur">{g.duration_label}</span>}
         </div>
         <div className="adm-gbody">
-          <h4>{g.title || "—"}</h4>
+          <h4>{g.title || "-"}</h4>
           <div className="adm-gmeta">
             <span className={`adm-lvl ${g.level}`}>{LVL[g.level] ?? g.level}</span>
             <span className="adm-fmt">

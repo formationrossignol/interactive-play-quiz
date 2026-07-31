@@ -1,6 +1,7 @@
 import { Bar, BarChart, CartesianGrid, Cell, XAxis, YAxis } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import type { CreationsByType } from "@/lib/dashboardStats";
+import { MaterialSymbol } from "@/components/MaterialSymbol";
 
 const chartConfig = {
   quiz: { label: "Quiz", color: "var(--ap-quiz)" },
@@ -19,9 +20,11 @@ export function CreationsByTypeChart({ data }: { data: CreationsByType }) {
   const total = rows.reduce((sum, row) => sum + row.count, 0);
 
   return (
-    <div className="ap-card" style={{ padding: "20px" }}>
-      <h2 className="ap-h3" style={{ fontSize: "15px", marginBottom: "4px" }}>Créations par type</h2>
-      <p className="ap-muted" style={{ fontSize: "12px", marginBottom: "12px" }}>Répartition de vos {total} création{total > 1 ? "s" : ""}.</p>
+    <div className="product-analytics-card">
+      <div className="product-analytics-card__header">
+        <h3>Bibliothèque</h3>
+        <p>Répartition de vos {total} création{total > 1 ? "s" : ""} par format.</p>
+      </div>
 
       {total > 0 ? (
         <ChartContainer config={chartConfig} className="aspect-auto h-[220px] w-full">
@@ -44,8 +47,12 @@ export function CreationsByTypeChart({ data }: { data: CreationsByType }) {
           </BarChart>
         </ChartContainer>
       ) : (
-        <div style={{ height: 220, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <p className="ap-muted" style={{ fontSize: "13px" }}>Aucune création pour le moment.</p>
+        <div className="product-empty-inline" style={{ minHeight: 220 }}>
+          <div>
+            <MaterialSymbol name="category" size={25} />
+            <strong>Bibliothèque vide</strong>
+            <span style={{ fontSize: 12 }}>Vos contenus seront regroupés ici par format.</span>
+          </div>
         </div>
       )}
     </div>

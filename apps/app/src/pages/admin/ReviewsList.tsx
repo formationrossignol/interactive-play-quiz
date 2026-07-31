@@ -27,7 +27,7 @@ export const ReviewsList = ({ rows, onEdit, onNew, onUnpublish, onDelete }: Prop
         <div className="adm-twho">
           <span className="adm-tav">{r.avatar_emoji || "🙂"}</span>
           <div>
-            <span className="who-name">{r.author_name || "—"}</span>
+            <span className="who-name">{r.author_name || "-"}</span>
             <span className="who-role">{r.author_role}</span>
           </div>
           <span className="adm-tverif"><BadgeCheck className="h-3 w-3" style={{ display: "inline", verticalAlign: "-1px" }} /> Vérifié</span>

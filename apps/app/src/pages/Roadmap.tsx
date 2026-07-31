@@ -64,11 +64,11 @@ export default function Roadmap() {
 
   return (
     <AppLayout subtitle="Roadmap">
-      <div className="mx-auto max-w-7xl px-6 py-10">
-        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 20, flexWrap: "wrap", marginBottom: 28 }}>
+      <div className="product-page">
+        <div className="product-page-heading">
           <div>
-            <h1 className="ap-h2" style={{ fontSize: 26, marginBottom: 4 }}>Roadmap produit</h1>
-            <p className="ap-muted" style={{ fontSize: 14 }}>Votez pour les fonctionnalités qui comptent pour vous.</p>
+            <h1>Roadmap produit</h1>
+            <p>Votez pour les fonctionnalités qui comptent pour vous.</p>
           </div>
           <span className="ap-pill" style={{ padding: "8px 12px", fontSize: 12 }}>{remaining}/3 votes disponibles</span>
         </div>

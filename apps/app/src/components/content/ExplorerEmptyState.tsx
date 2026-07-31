@@ -11,6 +11,7 @@ interface ExplorerEmptyStateProps {
 export function ExplorerEmptyState({ icon, title, body, action }: ExplorerEmptyStateProps) {
   return (
     <div
+      className="product-empty-state"
       style={{
         borderRadius: "var(--ap-r-lg)",
         border: "var(--ap-border-w) dashed var(--ap-line-2)",

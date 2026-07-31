@@ -25,7 +25,7 @@ interface AdminSidebarGroupProps {
 
 // Admin's own content/moderation/subscribers/settings tabs, rehosted as an
 // extra group in the shared AppSidebar instead of Admin.tsx's own .adm-rail
-// nav — same live badge counts, just one entry point for navigation.
+// nav, with the same live badge counts and one entry point for navigation.
 export const AdminSidebarGroup = ({ section, setSection, nav }: AdminSidebarGroupProps) => (
   <SidebarGroup>
     <SidebarGroupLabel>Administration</SidebarGroupLabel>

@@ -51,7 +51,7 @@ export const QuizBuilderStart = () => {
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
   const quizType = (searchParams.get("type") || "quiz") as "quiz" | "poll" | "flashcard" | "slide";
-  // Hooks must run unconditionally on every render (Rules of Hooks) — declare
+  // Hooks must run unconditionally on every render (Rules of Hooks), so declare
   // this before the early return below.
   const [showAll, setShowAll] = useState(false);
 
@@ -104,10 +104,10 @@ export const QuizBuilderStart = () => {
       }
     >
 
-      <div className="mx-auto max-w-5xl px-6 py-12">
-        <div className="mb-10 text-center">
-          <h1 className="ap-h2" style={{ fontSize: "28px", marginBottom: "8px" }}>{pageTitle}</h1>
-          <p className="ap-muted">
+      <div className="product-page product-page--medium">
+        <div className="product-template-start">
+          <h1>{pageTitle}</h1>
+          <p>
             {isPoll ? t("choosePollStart") : isFlashcard ? t("chooseFlashcardStart") : t("chooseQuizStart")}
           </p>
         </div>
@@ -132,7 +132,7 @@ export const QuizBuilderStart = () => {
         ) : (
           <div>
             {/* Section heading */}
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "20px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px" }}>
               <h2 className="ap-h3" style={{ margin: 0, fontSize: "17px" }}>Commencer depuis un modèle</h2>
             </div>
 

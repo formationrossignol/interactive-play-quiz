@@ -144,15 +144,15 @@ export default function Groups() {
 
   return (
     <AppLayout subtitle="Groupes">
-      <div className="mx-auto max-w-6xl px-6 py-10">
+      <div className="product-page">
         <PageHeader
           title="Mes groupes"
           description="Une seule liste de membres pour vos partages de cours et vos demandes de signature."
         />
 
-        <div className="grid gap-5 lg:grid-cols-[320px_minmax(0,1fr)]">
-          <section className="ap-card overflow-hidden p-0">
-            <div className="flex gap-2 p-4" style={{ borderBottom: "var(--ap-border-w) solid var(--ap-line)" }}>
+        <div className="product-workspace-grid">
+          <section className="product-master-panel">
+            <div className="product-panel-toolbar">
               <input
                 className="min-w-0 flex-1 rounded-md border bg-transparent px-3 text-sm"
                 style={{ borderColor: "var(--ap-line)", color: "var(--ap-ink)" }}
@@ -177,19 +177,16 @@ export default function Groups() {
                 <p className="ap-muted mt-1 text-xs">Créez votre première liste de destinataires.</p>
               </div>
             ) : (
-              <div className="p-2">
+              <div className="product-master-list">
                 {groups.map((group) => (
                   <button
                     key={group.id}
                     type="button"
-                    className="flex w-full items-center gap-3 rounded-md px-3 py-3 text-left text-sm font-bold transition-colors"
-                    style={{
-                      background: group.id === selectedId ? "var(--ap-brand-soft)" : "transparent",
-                      color: "var(--ap-ink)",
-                    }}
+                    className="product-master-item"
+                    data-active={group.id === selectedId}
                     onClick={() => setSelectedId(group.id)}
                   >
-                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full" style={{ background: "var(--ap-card)", border: "1px solid var(--ap-line)" }}>
+                    <span className="product-master-item__icon">
                       <UsersRound className="h-4 w-4" />
                     </span>
                     <span className="truncate">{group.name}</span>
@@ -199,7 +196,7 @@ export default function Groups() {
             )}
           </section>
 
-          <section className="ap-card min-h-[420px] p-0">
+          <section className="product-detail-panel min-h-[420px]">
             {!selectedGroup ? (
               <div className="grid min-h-[420px] place-items-center p-8 text-center">
                 <div>
@@ -209,7 +206,7 @@ export default function Groups() {
               </div>
             ) : (
               <>
-                <div className="flex flex-wrap items-center justify-between gap-3 p-5" style={{ borderBottom: "var(--ap-border-w) solid var(--ap-line)" }}>
+                <div className="product-panel-heading">
                   <div>
                     <h2 className="ap-h2 text-xl">{selectedGroup.name}</h2>
                     <p className="ap-muted mt-1 text-xs">{members.length} membre{members.length !== 1 ? "s" : ""} ou invitation{members.length !== 1 ? "s" : ""}</p>

@@ -4,6 +4,7 @@
 @import "./theme-studio.css";
 @import "./theme-material.css";
 @import "./density.css";
+@import "./product-app.css";
 
 @tailwind base;
 @tailwind components;

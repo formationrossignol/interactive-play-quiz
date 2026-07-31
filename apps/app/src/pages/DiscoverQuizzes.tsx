@@ -112,10 +112,10 @@ const DiscoverQuizzes = () => {
 
   return (
     <AppLayout subtitle={t("discoverPublic")}>
-      <div className="mx-auto max-w-6xl px-6 py-10">
+      <div className="product-page">
 
         {/* Page header */}
-        <div style={{ marginBottom: "30px" }}>
+        <div className="product-page-heading">
           <h1 className="ap-h2" style={{ fontSize: "26px", marginBottom: "4px" }}>
             {t("discoverPublic")}
           </h1>
@@ -125,9 +125,7 @@ const DiscoverQuizzes = () => {
         </div>
 
         {/* Filter bar */}
-        <div
-          style={{ marginBottom: "28px", display: "flex", flexDirection: "column", gap: "14px" }}
-        >
+        <div className="product-list-panel" style={{ marginBottom: "20px", padding: "14px", display: "flex", flexDirection: "column", gap: "14px" }}>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
             {/* search */}
             <div style={{ position: "relative", flex: "1 1 220px", minWidth: 0 }}>

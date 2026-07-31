@@ -1,10 +1,5 @@
-/* ──────────────────────────────────────────────────────────
-   Admin Console — "Arcade Console"
-   Scoped under `.adm`. Reuses Arcade Pop --ap-* tokens, so it
-   follows light / dark automatically. Design anchors:
-   chunky icon nav-rail with 3D active pill + oversized Fredoka
-   KPI numbers under colored accent chips.
-   ────────────────────────────────────────────────────────── */
+/* Administration workspace. Scoped under `.adm` and driven by
+   the shared product tokens so every application theme remains available. */
 
 .adm {
   --disp: var(--ap-font-display, 'Fredoka', system-ui, sans-serif);
@@ -18,15 +13,6 @@
 
 /* ── Console header ── */
 .adm-top { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; margin-bottom: 26px; flex-wrap: wrap; }
-.adm-eyebrow {
-  display: inline-flex; align-items: center; gap: 7px;
-  font-size: 11px; font-weight: 900; letter-spacing: 1.4px; text-transform: uppercase;
-  color: var(--ap-brand);
-}
-.adm-eyebrow::before {
-  content: ""; width: 9px; height: 9px; border-radius:var(--ap-r-sm);
-  background: var(--ap-pres); box-shadow: 0 0 0 4px var(--ap-pres-soft);
-}
 .adm-top h1 { font-size: clamp(30px, 4vw, 46px); margin-top: 8px; }
 
 /* ── Shell: rail + main ── */
@@ -385,4 +371,167 @@
   .adm-kpi { grid-template-columns: 1fr; }
   .adm-row { grid-template-columns: 1fr; gap: 10px; }
   .adm-row .r-actions { justify-content: flex-start; }
+}
+
+/* Product shell alignment */
+.adm {
+  padding: clamp(28px, 4vw, 54px) 0 72px;
+}
+
+.adm .wrap {
+  max-width: 1240px;
+  padding-inline: var(--product-gutter, clamp(18px, 3vw, 36px));
+}
+
+.adm-top {
+  margin-bottom: 24px;
+}
+
+.adm-top h1 {
+  margin: 0;
+  font-size: clamp(27px, 3vw, 38px);
+  font-weight: 720;
+  letter-spacing: -.035em;
+  line-height: 1.08;
+}
+
+.adm-top p {
+  max-width: 700px;
+  margin: 7px 0 0;
+  color: var(--ap-muted);
+  font-size: 14px;
+  font-weight: 560;
+  line-height: 1.55;
+}
+
+.adm-kpi {
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.adm-stat {
+  display: grid;
+  min-height: 0;
+  grid-template-columns: 38px minmax(0, 1fr);
+  align-items: center;
+  gap: 2px 12px;
+  border: var(--ap-border-w) solid var(--ap-line);
+  border-left-width: var(--ap-border-w);
+  border-radius: var(--ap-r-md);
+  padding: 15px;
+  box-shadow: none;
+}
+
+.adm-stat .chip {
+  grid-row: 1 / 3;
+  margin: 0;
+  border-radius: max(var(--ap-r-sm), 9px);
+}
+
+.adm-stat .num {
+  align-self: end;
+  font-size: 21px;
+  font-weight: 730;
+  letter-spacing: -.025em;
+  font-variant-numeric: tabular-nums;
+}
+
+.adm-stat .lbl {
+  align-self: start;
+  margin: 0;
+  overflow: hidden;
+  font-size: 11px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.adm-panel,
+.adm-gcard,
+.adm-relcard,
+.adm-faqgroup,
+.adm-tcard,
+.adm-bcard {
+  border-width: var(--ap-border-w);
+  border-radius: var(--ap-r-lg);
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--ap-ink) 5%, transparent);
+}
+
+.adm-panel {
+  padding: 20px;
+}
+
+.adm-btn,
+.adm-btn:hover,
+.adm-btn:active,
+.adm-btn--ghost,
+.adm-btn--ghost:hover,
+.adm-btn--ghost:active,
+.adm-btn--danger,
+.adm-btn--danger:hover,
+.adm-btn--danger:active,
+.adm-btn--pres,
+.adm-btn--pres:hover,
+.adm-btn--pres:active {
+  box-shadow: none;
+}
+
+.adm-btn {
+  border-radius: var(--ap-r-sm);
+  font-family: var(--body);
+  font-weight: 760;
+  transition: background 150ms var(--ap-ease), transform 150ms var(--ap-ease), border-color 150ms var(--ap-ease);
+}
+
+.adm-btn:hover {
+  transform: translateY(-1px);
+}
+
+.adm-btn:active {
+  transform: translateY(1px) scale(.99);
+}
+
+.adm-pill,
+.adm-pill.on {
+  border-width: var(--ap-border-w);
+  box-shadow: none;
+}
+
+.adm-pill:hover {
+  transform: none;
+}
+
+.adm-row {
+  border-width: var(--ap-border-w);
+  background: var(--ap-card);
+}
+
+.adm-row:hover {
+  transform: none;
+  border-color: color-mix(in srgb, var(--ap-brand) 34%, var(--ap-line));
+  box-shadow: none;
+}
+
+.adm-status::before {
+  display: none;
+}
+
+.adm-modcard,
+.adm-bcol-head,
+.adm-iconbtn,
+.adm-faqrow {
+  border-width: var(--ap-border-w);
+}
+
+.adm-gcard:hover,
+.adm-tcard:hover,
+.adm-bcard:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--ap-brand) 28%, var(--ap-line));
+  box-shadow: 0 5px 18px color-mix(in srgb, var(--ap-ink) 7%, transparent);
+}
+
+.adm-empty {
+  border-width: var(--ap-border-w);
+  background: color-mix(in srgb, var(--ap-paper-2) 55%, var(--ap-card));
 }

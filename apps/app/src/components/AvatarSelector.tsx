@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { ENHANCED_AVATARS, AvatarDisplay } from "./BetterAvatars";
 import { ensureSessionState, upsertPlayerInSession } from "@/lib/sessionState";
+import { ArrowRight, UsersRound } from "lucide-react";
 
 interface AvatarSelectorProps {
   onComplete: (name: string, avatar: string) => void;
@@ -47,29 +48,29 @@ export const AvatarSelector = ({ onComplete, gameCode, quizTitle }: AvatarSelect
   const selected = ENHANCED_AVATARS.find(a => a.emoji === selectedAvatar) || ENHANCED_AVATARS[0];
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--ap-paper)', fontFamily: 'var(--ap-font-body)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-      <div style={{ maxWidth: 440, width: '100%' }}>
-        <div className="ap-card" style={{ boxShadow: 'var(--ap-shadow-card)' }}>
+    <div className="product-entry-shell">
+      <div className="product-entry-card">
 
           {/* Header */}
-          <div style={{ textAlign: 'center', marginBottom: 24 }}>
-            <h1 style={{ fontFamily: 'var(--ap-font-display)', fontSize: '1.8rem', fontWeight: 700, color: 'var(--ap-ink)', margin: 0 }}>
+          <div className="product-entry-heading">
+            <span className="product-entry-heading__icon"><UsersRound className="h-6 w-6" /></span>
+            <h1>
               Rejoindre le quiz
             </h1>
             {quizTitle ? (
-              <div style={{ fontFamily: 'var(--ap-font-display)', fontSize: '1.1rem', fontWeight: 700, color: 'var(--ap-brand)', marginTop: 6 }}>
+              <p style={{ color: 'var(--ap-brand-deep)', fontWeight: 720 }}>
                 {quizTitle}
-              </div>
+              </p>
             ) : (
-              <div style={{ fontFamily: 'var(--ap-font-display)', fontSize: '2rem', fontWeight: 700, color: 'var(--ap-brand)', letterSpacing: '0.12em', marginTop: 6 }}>
+              <p style={{ color: 'var(--ap-brand-deep)', fontFamily: 'var(--ap-font-mono)', fontSize: '1.1rem', fontWeight: 760, letterSpacing: '0.12em' }}>
                 {gameCode}
-              </div>
+              </p>
             )}
           </div>
 
           {/* Avatar grid */}
           <div style={{ marginBottom: 20 }}>
-            <div style={{ fontWeight: 700, color: 'var(--ap-muted)', fontSize: 13, marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            <div style={{ fontWeight: 750, color: 'var(--ap-ink)', fontSize: 13, marginBottom: 10 }}>
               Choisis ton avatar
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8 }}>
@@ -83,9 +84,9 @@ export const AvatarSelector = ({ onComplete, gameCode, quizTitle }: AvatarSelect
                     borderRadius: 'var(--ap-r-md)',
                     padding: 4,
                     cursor: 'pointer',
-                    transform: selectedAvatar === avatar.emoji ? 'scale(1.1)' : 'scale(1)',
-                    transition: 'all 0.15s ease',
-                    boxShadow: selectedAvatar === avatar.emoji ? '0 4px 0 var(--ap-brand-deep)' : 'none',
+                    transform: selectedAvatar === avatar.emoji ? 'translateY(-2px)' : 'translateY(0)',
+                    transition: 'transform 0.15s ease, border-color 0.15s ease, background 0.15s ease',
+                    boxShadow: 'none',
                   }}
                   title={avatar.name}
                 >
@@ -97,14 +98,15 @@ export const AvatarSelector = ({ onComplete, gameCode, quizTitle }: AvatarSelect
 
           {/* Name input */}
           <div style={{ marginBottom: 20 }}>
-            <label style={{ fontWeight: 700, color: 'var(--ap-muted)', fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 8 }}>
+            <label htmlFor="participant-name" style={{ fontWeight: 750, color: 'var(--ap-ink)', fontSize: 13, display: 'block', marginBottom: 8 }}>
               Ton pseudo
             </label>
             <input
+              id="participant-name"
               placeholder="Entre ton pseudo…"
               value={playerName}
               onChange={(e) => setPlayerName(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSubmit()}
+              onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
               maxLength={20}
               style={{
                 width: '100%',
@@ -114,7 +116,7 @@ export const AvatarSelector = ({ onComplete, gameCode, quizTitle }: AvatarSelect
                 fontWeight: 700,
                 fontSize: '1rem',
                 color: 'var(--ap-ink)',
-                background: 'var(--ap-paper)',
+                background: 'var(--ap-card)',
                 border: 'var(--ap-border-w) solid var(--ap-line)',
                 borderRadius: 'var(--ap-r-md)',
                 outline: 'none',
@@ -135,7 +137,7 @@ export const AvatarSelector = ({ onComplete, gameCode, quizTitle }: AvatarSelect
           }}>
             <AvatarDisplay emoji={selectedAvatar} size="lg" />
             <div>
-              <div style={{ color: 'var(--ap-muted)', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              <div style={{ color: 'var(--ap-muted)', fontSize: 12, fontWeight: 700 }}>
                 {selected.name}
               </div>
               <div style={{ fontFamily: 'var(--ap-font-display)', fontSize: '1.3rem', fontWeight: 700, color: 'var(--ap-ink)' }}>
@@ -151,14 +153,13 @@ export const AvatarSelector = ({ onComplete, gameCode, quizTitle }: AvatarSelect
             style={{
               width: '100%',
               background: playerName.trim() ? 'var(--ap-brand)' : 'var(--ap-muted)',
-              boxShadow: playerName.trim() ? '0 5px 0 var(--ap-brand-deep)' : 'none',
+              boxShadow: 'none',
               cursor: playerName.trim() ? 'pointer' : 'not-allowed',
               opacity: playerName.trim() ? 1 : 0.6,
             }}
           >
-            🚀 C'est parti !
+            Rejoindre <ArrowRight className="h-4 w-4" />
           </button>
-        </div>
       </div>
     </div>
   );

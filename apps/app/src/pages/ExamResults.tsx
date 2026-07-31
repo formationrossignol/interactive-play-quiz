@@ -5,6 +5,7 @@ import { parseFunctionsError } from '@/lib/functionsError';
 import { getParticipant } from '@/lib/examParticipant';
 import { isAnswerCorrect } from '@/lib/examStorage';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ArrowLeft, CheckCircle2, LockKeyhole, RotateCcw } from 'lucide-react';
 
 interface AttemptView {
   timeUsedSeconds: number;
@@ -77,9 +78,17 @@ export default function ExamResults() {
   }, [attemptId]);
 
   if (error) return (
-    <div style={wrapSt}>
-      <div style={{ fontSize: 52, marginBottom: 16 }}>🔒</div>
-      <h1 style={titleSt}>{error}</h1>
+    <div className="product-entry-shell">
+      <div className="product-entry-card">
+        <div className="product-entry-heading">
+          <span className="product-entry-heading__icon"><LockKeyhole className="h-6 w-6" /></span>
+          <h1>{error}</h1>
+          <p>Vérifiez le lien reçu ou demandez un nouvel accès à l’organisateur.</p>
+        </div>
+        <button type="button" className="ap-btn ap-btn--ghost" onClick={() => navigate(-1)}>
+          <ArrowLeft className="h-4 w-4" /> Retour
+        </button>
+      </div>
     </div>
   );
 
@@ -98,39 +107,32 @@ export default function ExamResults() {
     .filter(Boolean) as QuestionView[];
 
   return (
-    <div style={{ minHeight: '100vh', paddingBottom: 80 }}>
+    <div className="product-flow">
       {/* Header */}
-      <div style={{
-        background: 'var(--ap-card)', borderBottom: 'var(--ap-border-w) solid var(--ap-line)',
-        padding: '0 24px', height: 60, display: 'flex', alignItems: 'center', gap: 16,
-      }}>
+      <div className="product-flow-topbar">
         <button
+          type="button"
           onClick={() => navigate(-1)}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ap-muted)', fontSize: 20, padding: 4 }}
-        >←</button>
+          className="ap-btn ap-btn--ghost ap-btn--sm ap-icon-btn"
+          aria-label="Retour"
+        ><ArrowLeft className="h-4 w-4" /></button>
         <span style={{ fontFamily: 'var(--ap-font-display)', fontWeight: 600, fontSize: 18 }}>
           {exam.title} : Résultats
         </span>
       </div>
 
-      <div style={{ maxWidth: 1120, margin: '0 auto', padding: '28px 16px' }}>
+      <div className="product-flow-page product-flow-page--compact">
         {/* Score card */}
-        <div style={{
-          background: passed ? 'linear-gradient(135deg, #e8faf3, #d0f4e6)' : 'linear-gradient(135deg, #fff3f0, #ffe5e2)',
-          border: `2px solid ${passed ? '#4dd9a0' : '#ff9e96'}`,
-          borderRadius: 'var(--ap-r-lg)', padding: '28px 24px', textAlign: 'center', marginBottom: 24,
-        }}>
-          <div style={{ fontSize: 52, marginBottom: 12 }}>{passed ? '🎉' : '📚'}</div>
-          <div style={{
-            fontFamily: 'var(--ap-font-display)', fontWeight: 800, fontSize: 52,
-            color: passed ? '#15c08a' : '#ff5a4d', lineHeight: 1, marginBottom: 8,
-          }}>
-            {pct}%
+        <div className="product-outcome" data-passed={passed === true ? 'true' : 'false'}>
+          <div className="product-outcome__icon">
+            {passed ? <CheckCircle2 className="h-7 w-7" /> : <RotateCcw className="h-7 w-7" />}
           </div>
-          <div style={{ fontWeight: 800, fontSize: 18, color: passed ? '#15c08a' : '#ff5a4d', marginBottom: 16 }}>
-            {passed ? '✅ Réussi' : '❌ Non réussi'}
+          <div className="product-outcome__copy">
+            <strong>{passed ? 'Examen réussi' : 'Résultat sous le seuil attendu'}</strong>
+            <span>{passed ? 'Votre travail a atteint le seuil de validation.' : 'Consultez le détail pour préparer la prochaine tentative.'}</span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 20, flexWrap: 'wrap' }}>
+          <div className="product-outcome__score">{pct}%</div>
+          <div className="product-outcome__stats">
             <Stat label="Seuil" value={`${exam.passingScore}%`} />
             <Stat label="Temps" value={`${Math.round(attempt.timeUsedSeconds / 60)} min`} />
             <Stat label="Répondu" value={`${Object.keys(attempt.answers).length}/${questions.length}`} />
@@ -138,13 +140,8 @@ export default function ExamResults() {
         </div>
 
         {showAnswers && (
-          <div style={{
-            overflowX: 'auto',
-            background: 'var(--ap-card)',
-            border: 'var(--ap-border-w) solid var(--ap-line)',
-            borderRadius: 'var(--ap-r-lg)',
-          }}>
-            <table style={{ width: '100%', minWidth: 760, borderCollapse: 'collapse', textAlign: 'left' }}>
+          <div className="product-data-table-wrap">
+            <table className="product-data-table" style={{ minWidth: 760 }}>
               <thead>
                 <tr style={{ background: 'var(--ap-paper)' }}>
                   <ResultHeader style={{ width: 64 }}>#</ResultHeader>
@@ -230,12 +227,12 @@ function AnswerPill({ children, tone }: { children: React.ReactNode; tone: 'succ
 
 function ExamResultsSkeleton() {
   return (
-    <div style={{ minHeight: '100vh' }}>
-      <div style={{ height: 60, borderBottom: 'var(--ap-border-w) solid var(--ap-line)', padding: '0 24px', display: 'flex', alignItems: 'center', gap: 16 }}>
+    <div className="product-flow">
+      <div className="product-flow-topbar">
         <Skeleton className="h-7 w-7 rounded-full" />
         <Skeleton className="h-5 w-64" />
       </div>
-      <div style={{ maxWidth: 1120, margin: '0 auto', padding: '28px 16px' }}>
+      <div className="product-flow-page product-flow-page--compact">
         <Skeleton className="h-64 w-full rounded-2xl mb-6" />
         <div style={{ border: 'var(--ap-border-w) solid var(--ap-line)', borderRadius: 'var(--ap-r-lg)', padding: 16 }}>
           <Skeleton className="h-10 w-full mb-3" />
@@ -272,19 +269,9 @@ function formatCorrect(q: { type: string; answers?: string[] }, correctAnswer: u
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div style={{ textAlign: 'center' }}>
-      <div style={{ fontSize: 18, fontWeight: 800 }}>{value}</div>
-      <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--ap-muted)', textTransform: 'uppercase', letterSpacing: '.06em' }}>{label}</div>
+    <div className="product-outcome__stat">
+      <strong>{value}</strong>
+      <small>{label}</small>
     </div>
   );
 }
-
-const wrapSt: React.CSSProperties = {
-  minHeight: '100vh',
-  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-  padding: 24, gap: 12,
-};
-
-const titleSt: React.CSSProperties = {
-  fontFamily: 'var(--ap-font-display)', fontWeight: 700, fontSize: 22, textAlign: 'center',
-};

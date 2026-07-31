@@ -51,7 +51,7 @@ function fmt(secs: number): string {
 }
 
 /** Live countdown for an in-progress attempt, derived from startedAt + the
- *  exam's duration — null when the exam has no time limit. */
+ *  exam's duration. Null when the exam has no time limit. */
 function remainingFor(att: Attempt, exam: Exam, now: number): number | null {
   if (!exam.durationMinutes) return null;
   const deadline = new Date(att.startedAt).getTime() + exam.durationMinutes * 60000;
@@ -196,7 +196,7 @@ export default function ExamAdmin() {
     : [];
 
   return (
-    <div style={{ minHeight: '100vh', paddingBottom: 80 }}>
+    <div className="product-flow">
       <style>{`
         .ea-row { display: grid; gap: 16px; }
         @media (min-width: 600px) { .ea-row { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); } }
@@ -206,11 +206,7 @@ export default function ExamAdmin() {
       `}</style>
 
       {/* Topbar */}
-      <div style={{
-        background: 'var(--ap-card)', borderBottom: 'var(--ap-border-w) solid var(--ap-line)',
-        padding: '0 24px', height: 60, display: 'flex', alignItems: 'center', gap: 16,
-        position: 'sticky', top: 0, zIndex: 10,
-      }}>
+      <div className="product-flow-topbar">
         <button
           onClick={() => navigate('/my-exams')}
           aria-label="Retour"
@@ -230,15 +226,11 @@ export default function ExamAdmin() {
         </button>
       </div>
 
-      <div style={{ maxWidth: 1180, margin: '0 auto', padding: '24px 16px' }}>
+      <div className="product-flow-page">
 
         {/* Join code */}
         {liveStatus !== 'draft' && (
-          <div style={{
-            background: 'var(--ap-card)', border: 'var(--ap-border-w) solid var(--ap-line)',
-            borderRadius: 'var(--ap-r-lg)', padding: '16px 24px', marginBottom: 20,
-            display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap',
-          }}>
+          <div className="product-session-access">
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{ fontFamily: 'var(--ap-font-mono)', fontSize: 28, fontWeight: 800, letterSpacing: '0.15em', color: 'var(--ap-ink)' }}>
@@ -246,7 +238,7 @@ export default function ExamAdmin() {
                 </span>
                 <button
                   className="ap-btn ap-btn--sm"
-                  onClick={async () => { try { await navigator.clipboard.writeText(exam.joinCode); toast.success('Code copié !'); } catch { toast.error('Copie échouée'); } }}
+                  onClick={async () => { try { await navigator.clipboard.writeText(exam.joinCode); toast.success('Code copié'); } catch { toast.error('Copie échouée'); } }}
                   style={{ padding: '4px 10px' }}
                 >
                   Copier
@@ -258,7 +250,7 @@ export default function ExamAdmin() {
                 </span>
                 <button
                   className="ap-btn ap-btn--sm"
-                  onClick={async () => { try { await navigator.clipboard.writeText(`${window.location.origin}/join-exam/${exam.joinCode}`); toast.success('Lien copié !'); } catch { toast.error('Copie échouée'); } }}
+                  onClick={async () => { try { await navigator.clipboard.writeText(`${window.location.origin}/join-exam/${exam.joinCode}`); toast.success('Lien copié'); } catch { toast.error('Copie échouée'); } }}
                   style={{ padding: '4px 10px', fontSize: 12 }}
                 >
                   Copier le lien
@@ -317,7 +309,7 @@ export default function ExamAdmin() {
           {quiz && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><HelpCircle className="h-3.5 w-3.5" /> {quiz.questions.length} questions</span>}
         </div>
 
-        {/* In-progress participants — kept visually separate from submissions */}
+        {/* In-progress participants kept visually separate from submissions */}
         {inProgress.length > 0 && (
           <>
             <h2 style={{ fontFamily: 'var(--ap-font-display)', fontWeight: 600, fontSize: 18, marginBottom: 12 }}>
@@ -567,12 +559,12 @@ function ResultsTable({
                   </ResultsCell>
                   <ResultsCell>
                     <span style={{ fontFamily: 'var(--ap-font-display)', fontWeight: 800, fontSize: 17, color: att.passed ? '#0d8f68' : '#d83d34' }}>
-                      {att.percentage === null ? '—' : `${att.percentage}%`}
+                      {att.percentage === null ? '-' : `${att.percentage}%`}
                     </span>
                   </ResultsCell>
                   <ResultsCell style={{ fontFamily: 'var(--ap-font-mono)', fontWeight: 700 }}>{fmt(att.timeUsedSeconds)}</ResultsCell>
                   <ResultsCell style={{ color: 'var(--ap-muted)', fontSize: 12, fontWeight: 700 }}>
-                    {att.submittedAt ? new Date(att.submittedAt).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }) : '—'}
+                    {att.submittedAt ? new Date(att.submittedAt).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }) : '-'}
                   </ResultsCell>
                   <ResultsCell style={{ textAlign: 'right' }}>
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
@@ -894,19 +886,11 @@ function checkCorrect(q: { type: string; correctAnswer: unknown }, given: number
 
 function StatCard({ icon: Icon, label, value, highlight }: { icon: LucideIcon; label: string; value: string; highlight?: boolean }) {
   return (
-    <div style={{
-      background: 'var(--ap-card)', border: 'var(--ap-border-w) solid var(--ap-line)',
-      borderRadius: 'var(--ap-r-lg)', padding: '16px 20px', textAlign: 'center',
-    }}>
-      <div style={{ marginBottom: 6, display: 'flex', justifyContent: 'center' }}><Icon style={{ width: 22, height: 22, color: 'var(--ap-muted)' }} /></div>
-      <div style={{
-        fontFamily: 'var(--ap-font-display)', fontWeight: 800, fontSize: 24,
-        color: highlight ? 'var(--ap-brand)' : 'var(--ap-ink)', marginBottom: 4,
-      }}>
-        {value}
-      </div>
-      <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--ap-muted)' }}>
-        {label}
+    <div className="product-metric">
+      <div className="product-metric__icon"><Icon className="h-5 w-5" /></div>
+      <div>
+        <strong style={{ color: highlight ? 'var(--ap-brand-deep)' : undefined }}>{value}</strong>
+        <small>{label}</small>
       </div>
     </div>
   );

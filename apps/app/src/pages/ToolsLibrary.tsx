@@ -41,34 +41,35 @@ const ToolsLibrary = () => {
 
   return (
     <AppLayout subtitle="Outils">
-      <div className="mx-auto max-w-6xl px-6 py-10">
-        <div style={{ marginBottom: "32px" }}>
-          <h1 className="ap-h2" style={{ fontSize: "26px", marginBottom: "4px" }}>Outils</h1>
-          <p className="ap-muted" style={{ fontSize: "14px" }}>
+      <div className="product-page">
+        <div className="product-page-heading">
+          <div>
+          <h1>Outils de classe</h1>
+          <p>
             Des mini-outils autonomes à utiliser en classe, sans quiz ni compte requis.
           </p>
+          </div>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: "16px" }}>
+        <div className="product-tool-grid">
           {TOOLS.map((tool) => {
             const Icon = tool.icon;
             return (
               <button
                 key={tool.path}
                 type="button"
-                className="ap-card ap-card--hover"
+                className="product-tool-card"
                 onClick={() => navigate(tool.path)}
-                style={{ textAlign: "left", display: "flex", flexDirection: "column", cursor: "pointer", overflow: "hidden", padding: 0 }}
               >
                 <div
-                  className="relative h-52 w-full flex-shrink-0 flex items-center justify-center"
+                  className="product-tool-card__visual"
                   style={{ background: `color-mix(in srgb, ${tool.accent} 14%, var(--ap-paper-2))` }}
                 >
                   <Icon style={{ width: 40, height: 40, color: tool.accent, opacity: 0.8 }} />
                 </div>
-                <div style={{ padding: "14px 16px 16px", display: "flex", flexDirection: "column", gap: "4px" }}>
-                  <h3 className="ap-h3" style={{ fontSize: "16px" }}>{tool.title}</h3>
-                  <p className="ap-muted" style={{ fontSize: "13px", margin: 0 }}>{tool.description}</p>
+                <div className="product-tool-card__body">
+                  <h3>{tool.title}</h3>
+                  <p>{tool.description}</p>
                 </div>
               </button>
             );

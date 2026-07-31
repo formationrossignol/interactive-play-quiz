@@ -13,7 +13,7 @@ const ChronometerTool = () => {
 
   return (
     <AppLayout subtitle="Chronomètre">
-      <div className="mx-auto max-w-2xl px-6 py-10">
+      <div className="product-page product-page--narrow">
         <ToolHeader
           icon={Timer}
           title="Chronomètre"

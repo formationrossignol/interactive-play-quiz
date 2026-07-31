@@ -1,6 +1,7 @@
 import { Line, LineChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import type { ScorePoint } from "@/lib/dashboardStats";
+import { MaterialSymbol } from "@/components/MaterialSymbol";
 
 const chartConfig = {
   avgScore: { label: "Score moyen", color: "var(--ap-pres)" },
@@ -15,9 +16,11 @@ export function ScoreChart({ data }: { data: ScorePoint[] }) {
   const hasScores = data.some((point) => point.avgScore !== null);
 
   return (
-    <div className="ap-card" style={{ padding: "20px" }}>
-      <h2 className="ap-h3" style={{ fontSize: "15px", marginBottom: "4px" }}>Score moyen (14 derniers jours)</h2>
-      <p className="ap-muted" style={{ fontSize: "12px", marginBottom: "12px" }}>Moyenne des scores de vos sessions quiz, par jour.</p>
+    <div className="product-analytics-card">
+      <div className="product-analytics-card__header">
+        <h3>Score moyen</h3>
+        <p>Résultats des sessions quiz sur 14 jours.</p>
+      </div>
 
       {hasScores ? (
         <ChartContainer config={chartConfig} className="aspect-auto h-[220px] w-full">
@@ -46,8 +49,12 @@ export function ScoreChart({ data }: { data: ScorePoint[] }) {
           </LineChart>
         </ChartContainer>
       ) : (
-        <div style={{ height: 220, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <p className="ap-muted" style={{ fontSize: "13px" }}>Pas encore de score sur les 14 derniers jours.</p>
+        <div className="product-empty-inline" style={{ minHeight: 220 }}>
+          <div>
+            <MaterialSymbol name="target" size={25} />
+            <strong>Aucun score récent</strong>
+            <span style={{ fontSize: 12 }}>Les résultats apparaîtront après une première session.</span>
+          </div>
         </div>
       )}
     </div>

@@ -48,8 +48,8 @@ export default function Report() {
 
   return (
     <AppLayout subtitle="Support">
-      <div className="mx-auto max-w-6xl px-6 py-10">
-        <div style={{ marginBottom: 26 }}><h1 className="ap-h2" style={{ fontSize: 26, marginBottom: 4 }}>Signaler un problème</h1><p className="ap-muted" style={{ fontSize: 14 }}>Décrivez précisément ce qui s’est passé et suivez la résolution depuis l’application.</p></div>
+      <div className="product-page">
+        <div className="product-page-heading"><div><h1>Signaler un problème</h1><p>Décrivez précisément ce qui s’est passé et suivez la résolution depuis l’application.</p></div></div>
         <div className="grid gap-[18px] lg:grid-cols-[minmax(0,1.45fr)_minmax(280px,.75fr)]" style={{ alignItems: "start" }}>
           <section className="ap-card" style={{ padding: 22, display: "grid", gap: 18 }}>
             <fieldset style={{ border: 0, padding: 0, margin: 0 }}><legend style={{ marginBottom: 9, fontWeight: 900, fontSize: 13 }}>Type de demande</legend><div className="grid gap-2 sm:grid-cols-3">{TYPES.map(({ key, label, detail, icon: Icon }) => <button key={key} type="button" className={type === key ? "ap-btn" : "ap-btn ap-btn--ghost"} onClick={() => setType(key)} style={{ minHeight: 76, display: "grid", justifyItems: "start", alignContent: "center", textAlign: "left" }}><span style={{ display: "flex", alignItems: "center", gap: 7 }}><Icon size={16} />{label}</span><small style={{ opacity: .72 }}>{detail}</small></button>)}</div></fieldset>
