@@ -275,72 +275,43 @@ function CourseOverviewScreen({
   };
 
   return (
-    <div style={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
-      {/* Hero */}
-      <div style={{ position: "relative", height: 300, flexShrink: 0, overflow: "hidden" }}>
-        <img
-          src={course.coverImage || defaultCourseOverviewImage}
-          alt=""
-          style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center" }}
-        />
-        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(0deg, rgba(10,8,30,.82), rgba(10,8,30,.15) 60%)" }} />
-        <div style={{ position: "absolute", left: 0, right: 0, bottom: 0 }}>
-          <div style={{ maxWidth: 1100, margin: "0 auto", padding: "28px 40px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
-              {course.category && (
-                <span style={{
-                  display: "inline-block", fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase",
-                  padding: "5px 12px", borderRadius: "var(--ap-r-sm)", background: "rgba(255,255,255,.15)", color: "#fff",
-                }}>
-                  {course.category}
-                </span>
-              )}
-              {course.generatedByAI && (
-                <span
-                  title="Ce cours a été généré par IA à partir d'un document."
-                  style={{
-                    display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11.5, fontWeight: 800,
-                    padding: "5px 12px", borderRadius: "var(--ap-r-sm)", background: "rgba(255,255,255,.15)", color: "#fff",
-                  }}
-                >
-                  <Sparkles style={{ width: 12, height: 12 }} />
-                  Généré par IA
-                </span>
-              )}
-            </div>
-            <h1 style={{ fontFamily: "var(--ap-font-display)", fontWeight: 600, fontSize: "clamp(24px, 3.2vw, 34px)", color: "#fff", lineHeight: 1.15, marginBottom: 10 }}>
-              {course.title}
-            </h1>
-            {course.description && (
-              <p style={{ fontSize: 15, color: "rgba(255,255,255,.85)", maxWidth: 640, marginBottom: 12 }}>{course.description}</p>
+    <div className="product-course-overview">
+      <section className="product-course-hero">
+        <div className="product-course-hero__media">
+          <img
+            src={course.coverImage || defaultCourseOverviewImage}
+            alt={`Couverture du cours ${course.title}`}
+          />
+        </div>
+        <div className="product-course-hero__copy">
+          <div className="product-course-hero__context">
+            {course.category && <span>{course.category}</span>}
+            {course.generatedByAI && (
+              <span title="Ce cours a été généré à partir d’un document.">
+                <Sparkles aria-hidden="true" /> Généré avec l’IA
+              </span>
             )}
-            <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap", fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,.9)" }}>
-              {ratingSummary.count > 0 && (
-                <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                  <Star style={{ width: 14, height: 14, color: "#f4970a" }} fill="#f4970a" /> {ratingSummary.average} ({ratingSummary.count} avis)
-                </span>
-              )}
-              <span>{course.modules.length} module{course.modules.length > 1 ? "s" : ""}</span>
-              <span>{totalLessons} leçon{totalLessons > 1 ? "s" : ""}</span>
-              {minutes > 0 && <span>{minutes} min</span>}
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", marginTop: 11, fontSize: 12, fontWeight: 650, color: "rgba(255,255,255,.78)" }}>
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-                <CalendarDays style={{ width: 13, height: 13 }} />
-                Créé le {formatCourseDate(course.createdAt)}
-              </span>
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-                <RefreshCw style={{ width: 13, height: 13 }} />
-                Mis à jour le {formatCourseDate(course.updatedAt)}
-              </span>
-            </div>
+          </div>
+          <h1>{course.title}</h1>
+          {course.description && <p>{course.description}</p>}
+          <div className="product-course-hero__facts">
+            {ratingSummary.count > 0 && (
+              <span><Star aria-hidden="true" fill="currentColor" /> {ratingSummary.average} sur 5 ({ratingSummary.count} avis)</span>
+            )}
+            <span><Layers3 aria-hidden="true" /> {course.modules.length} module{course.modules.length > 1 ? "s" : ""}</span>
+            <span><BookOpen aria-hidden="true" /> {totalLessons} leçon{totalLessons > 1 ? "s" : ""}</span>
+            {minutes > 0 && <span><Clock3 aria-hidden="true" /> {formatCourseDuration(minutes)}</span>}
+          </div>
+          <div className="product-course-hero__dates">
+            <span><CalendarDays aria-hidden="true" /> Créé le {formatCourseDate(course.createdAt)}</span>
+            <span><RefreshCw aria-hidden="true" /> Mis à jour le {formatCourseDate(course.updatedAt)}</span>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* Body: 2-column layout */}
-      <div className="cv-body-layout" style={{ display: "flex", gap: 40, maxWidth: 1100, margin: "0 auto", padding: "32px 40px 60px", alignItems: "flex-start" }}>
-        <div style={{ flex: "1 1 auto", minWidth: 0 }}>
+      <div className="cv-body-layout product-course-layout">
+        <main className="product-course-main">
           {course.overview && (
             <div className="cv-prose" style={{ marginBottom: 32 }} dangerouslySetInnerHTML={{ __html: sanitizeHtml(course.overview) }} />
           )}
@@ -499,37 +470,32 @@ function CourseOverviewScreen({
               </div>
             )}
           </div>
-        </div>
+        </main>
 
         {/* Sticky CTA sidebar */}
-        <div style={{ flex: "0 0 300px", position: "sticky", top: 24 }}>
-          <div style={{ background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-lg)", boxShadow: "0 5px 0 var(--ap-line)", padding: 24 }}>
+        <aside className="product-course-sidebar">
+          <div className="product-panel product-course-cta">
             {started && (
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 12.5, fontWeight: 700, color: "var(--ap-muted)" }}>
+              <div className="product-course-progress">
+                <div>
                   <span>{progressPct}% terminé</span>
                   <span>{completedCount}/{totalLessons}</span>
                 </div>
-                <div style={{ height: 6, background: "var(--ap-line)", borderRadius: "var(--ap-r-sm)" }}>
-                  <div style={{ height: "100%", width: `${progressPct}%`, background: allDone ? "var(--ap-flash)" : "var(--ap-brand)", borderRadius: "var(--ap-r-sm)", transition: "width .3s" }} />
+                <div className="product-course-progress__track">
+                  <div data-complete={allDone ? "true" : "false"} style={{ width: `${progressPct}%` }} />
                 </div>
               </div>
             )}
             <button
-              className="cv-btn"
+              className="ap-btn ap-btn--pill product-course-cta__button"
               onClick={onStart}
-              style={{
-                width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-                fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 15,
-                padding: "14px 20px", borderRadius: "var(--ap-r-sm)", border: "none", cursor: "pointer",
-                color: "#fff", background: "var(--ap-brand)", boxShadow: "0 4px 0 var(--ap-brand-deep)",
-              }}
             >
               {ctaLabel}
               <PlaySquare style={{ width: 16, height: 16 }} />
             </button>
+            <p>Votre progression est enregistrée automatiquement sur cet appareil.</p>
           </div>
-        </div>
+        </aside>
       </div>
     </div>
   );
@@ -738,7 +704,7 @@ const CourseViewer = () => {
   /* ── Render ─────────────────────────────────────────────────── */
   return (
     <div style={{
-      height: "100vh", overflow: "hidden", display: "flex", flexDirection: "column",
+      height: "100dvh", overflow: "hidden", display: "flex", flexDirection: "column",
       fontFamily: "var(--ap-font-body)", color: "var(--ap-ink)",
       background: "var(--ap-paper)",
       backgroundImage: "var(--ap-texture)",
@@ -790,11 +756,7 @@ const CourseViewer = () => {
       `}</style>
 
       {/* ── Topbar ──────────────────────────────────────────── */}
-      <div style={{
-        height: 62, flexShrink: 0, zIndex: 20,
-        background: "var(--ap-card)", borderBottom: "var(--ap-border-w) solid var(--ap-line)",
-        display: "flex", alignItems: "center", gap: 14, padding: "0 18px",
-      }}>
+      <div className="product-course-topbar">
         <Breadcrumb
           onHome={() => { window.location.href = "/"; }}
           items={[
@@ -839,13 +801,10 @@ const CourseViewer = () => {
           onStart={() => setCurrentLessonId(nextUpLesson()?.lesson.id ?? null)}
         />
       ) : (
-      <div style={{ flex: 1, minHeight: 0, display: "grid", gridTemplateColumns: "320px 1fr" }}>
+      <div className="product-course-learning-layout">
 
         {/* Sidebar */}
-        <nav className="cv-plan" style={{
-          borderRight: "var(--ap-border-w) solid var(--ap-line)", background: "var(--ap-card)",
-          overflowY: "auto", padding: "14px 12px 24px",
-        }}>
+        <nav className="cv-plan product-course-plan" aria-label="Plan du cours">
           {course.modules.map((mod, mi) => {
             const dCount = mod.lessons.filter((l) => completedIds.includes(l.id)).length;
             const modComplete = dCount === mod.lessons.length;
@@ -878,11 +837,10 @@ const CourseViewer = () => {
                     <b style={{ display: "block", fontSize: 13.5, fontWeight: 800, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{mod.title}</b>
                     <span style={{ fontSize: 11.5, fontWeight: 700, color: "var(--ap-muted)" }}>{dCount}/{mod.lessons.length} leçons</span>
                   </span>
-                  <span style={{ flexShrink: 0, transform: collapsed ? "rotate(-90deg)" : undefined, transition: "transform .25s cubic-bezier(.2,.7,.3,1)" }}>
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ap-muted)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M7 10l5 5 5-5"/>
-                    </svg>
-                  </span>
+                  <ChevronDown
+                    aria-hidden="true"
+                    style={{ width: 15, height: 15, flexShrink: 0, color: "var(--ap-muted)", transform: collapsed ? "rotate(-90deg)" : undefined, transition: "transform .25s cubic-bezier(.2,.7,.3,1)" }}
+                  />
                 </button>
 
                 {!collapsed && (
@@ -914,9 +872,7 @@ const CourseViewer = () => {
                               transition: "background .25s, border-color .25s",
                             }}
                           >
-                            <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke={done ? "#fff" : "transparent"} strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M5 12.5 10 17.5 19 7"/>
-                            </svg>
+                            <Check aria-hidden="true" style={{ width: 11, height: 11, color: done ? "#fff" : "transparent", strokeWidth: 3.4 }} />
                           </span>
                           {/* Type icon */}
                           <span style={{
@@ -945,8 +901,8 @@ const CourseViewer = () => {
         </nav>
 
         {/* Content */}
-        <div style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
-        <div ref={mainRef} className="cv-content" style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
+        <div className="product-course-learning-main">
+        <div ref={mainRef} className="cv-content product-course-content">
 
           {/* Completion banner */}
           <div
@@ -1003,12 +959,7 @@ const CourseViewer = () => {
 
               {/* Lesson header */}
               <header style={{ marginBottom: 22 }}>
-                <span style={{
-                  display: "inline-flex", alignItems: "center", gap: 8,
-                  fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase",
-                  padding: "5px 12px", borderRadius: "var(--ap-r-sm)", border: `2px solid ${kicker[2]}`,
-                  color: kicker[0], background: kicker[1],
-                }}>
+                <span className="product-lesson-context" style={{ color: kicker[0] }}>
                   {TYPE_LABEL[lesson.type] ?? lesson.type}
                   {lesson.estimatedMinutes ? ` · ${lesson.estimatedMinutes} min` : ""}
                 </span>

@@ -32,11 +32,11 @@ import type { ContentDisplay } from '@/lib/content/contentView';
 import { ContentCardHeader, ContentRowThumbnail } from '@/components/content/ContentCardHeader';
 
 const STATUS_LABEL: Record<string, { label: string; color: string; bg: string }> = {
-  draft:     { label: 'Brouillon',  color: '#6d6288', bg: '#f3ecdd' },
-  scheduled: { label: 'Planifié',   color: '#2f7bff', bg: '#eef4ff' },
-  open:      { label: 'Ouvert',     color: '#15c08a', bg: '#e8faf3' },
-  closed:    { label: 'Fermé',      color: '#ff5a4d', bg: '#fff3f0' },
-  archived:  { label: 'Archivé',    color: '#aaa',    bg: '#f3f3f3' },
+  draft:     { label: 'Brouillon', color: 'var(--ap-muted)', bg: 'var(--ap-paper-2)' },
+  scheduled: { label: 'Planifié', color: 'var(--ap-brand-deep)', bg: 'var(--ap-brand-soft)' },
+  open:      { label: 'Ouvert', color: 'var(--ap-pres-deep)', bg: 'var(--ap-pres-soft)' },
+  closed:    { label: 'Fermé', color: 'var(--ap-danger-deep)', bg: 'var(--ap-danger-soft)' },
+  archived:  { label: 'Archivé', color: 'var(--ap-muted)', bg: 'var(--ap-paper-2)' },
 };
 
 const triggerStyle: React.CSSProperties = {
@@ -197,45 +197,47 @@ function PromotionComparisonPanel({ hostId }: { hostId: string }) {
   if (rows.length < 2) return null;
 
   return (
-    <div className="ap-card" style={{ padding: 0, marginBottom: 20, overflowX: 'auto' }}>
-      <div style={{ padding: '14px 20px 10px' }}>
-        <h3 style={{ fontFamily: 'var(--ap-font-display)', fontWeight: 600, fontSize: 15, margin: 0 }}>
-          Comparaison des promotions
-        </h3>
+    <section className="product-panel product-insight-panel">
+      <div className="product-panel-heading">
+        <div>
+          <h2>Comparaison des promotions</h2>
+          <p>Comparez les résultats des groupes sur l’ensemble de vos examens.</p>
+        </div>
       </div>
-      <table style={{ width: '100%', minWidth: 520, borderCollapse: 'collapse', textAlign: 'left' }}>
-        <thead>
-          <tr style={{ background: 'var(--ap-paper)' }}>
-            <th style={{ padding: '10px 20px', fontSize: 11, fontWeight: 800, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--ap-muted)' }}>Promotion</th>
-            <th style={{ padding: '10px 16px', fontSize: 11, fontWeight: 800, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--ap-muted)' }}>Tentatives</th>
-            <th style={{ padding: '10px 16px', fontSize: 11, fontWeight: 800, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--ap-muted)' }}>Taux de réussite</th>
-            <th style={{ padding: '10px 16px', fontSize: 11, fontWeight: 800, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--ap-muted)' }}>Score moyen</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map(({ group, stats }) => (
-            <tr key={group.id} style={{ borderTop: '1px solid var(--ap-line)' }}>
-              <td style={{ padding: '10px 20px', fontSize: 13, fontWeight: 700 }}>{group.name}</td>
-              <td style={{ padding: '10px 16px', fontSize: 13, fontWeight: 700, color: 'var(--ap-muted)' }}>{stats.completedAttempts}</td>
-              <td style={{ padding: '10px 16px', fontSize: 13, fontWeight: 800 }}>{stats.passRate !== null ? `${stats.passRate}%` : '-'}</td>
-              <td style={{ padding: '10px 16px', fontSize: 13, fontWeight: 800 }}>{stats.avgScore !== null ? `${stats.avgScore}%` : '-'}</td>
+      <div className="product-data-table-wrap product-data-table-wrap--flush">
+        <table className="product-data-table" style={{ minWidth: 520 }}>
+          <thead>
+            <tr style={{ background: 'var(--ap-paper)' }}>
+              <th>Promotion</th>
+              <th>Tentatives</th>
+              <th>Taux de réussite</th>
+              <th>Score moyen</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            {rows.map(({ group, stats }) => (
+              <tr key={group.id}>
+                <td style={{ fontWeight: 700 }}>{group.name}</td>
+                <td style={{ color: 'var(--ap-muted)' }}>{stats.completedAttempts}</td>
+                <td style={{ fontWeight: 720 }}>{stats.passRate !== null ? `${stats.passRate}%` : '-'}</td>
+                <td style={{ fontWeight: 720 }}>{stats.avgScore !== null ? `${stats.avgScore}%` : '-'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
   );
 }
 
 function HostStatTile({ icon: Icon, label, value }: { icon: typeof Trophy; label: string; value: string }) {
   return (
-    <div style={{
-      background: 'var(--ap-card)', border: 'var(--ap-border-w) solid var(--ap-line)',
-      borderRadius: 'var(--ap-r-lg)', padding: '14px 18px', textAlign: 'center', flex: 1, minWidth: 120,
-    }}>
-      <div style={{ marginBottom: 6, display: 'flex', justifyContent: 'center' }}><Icon style={{ width: 18, height: 18, color: 'var(--ap-muted)' }} /></div>
-      <div style={{ fontFamily: 'var(--ap-font-display)', fontWeight: 800, fontSize: 20, color: 'var(--ap-ink)', marginBottom: 2 }}>{value}</div>
-      <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--ap-muted)' }}>{label}</div>
+    <div className="product-metric">
+      <span className="product-metric__icon"><Icon aria-hidden="true" /></span>
+      <div>
+        <strong>{value}</strong>
+        <small>{label}</small>
+      </div>
     </div>
   );
 }
@@ -254,9 +256,15 @@ function HostStatsRow({ hostId }: { hostId: string }) {
   if (groups.length === 0 && stats.totalExams === 0) return null;
 
   return (
-    <div style={{ marginBottom: 20 }}>
+    <section className="product-panel product-insight-panel">
+      <div className="product-panel-heading">
+        <div>
+          <h2>Vue d’ensemble</h2>
+          <p>Les indicateurs clés de votre activité d’évaluation.</p>
+        </div>
+      </div>
       {groups.length > 0 && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+        <div className="product-filter-bar product-filter-bar--insight">
           <Select value={groupId ?? 'all'} onValueChange={(v) => setGroupId(v === 'all' ? null : v)}>
             <SelectTrigger className="w-[200px]" style={triggerStyle}>
               <SelectValue placeholder="Promotion" />
@@ -267,14 +275,14 @@ function HostStatsRow({ hostId }: { hostId: string }) {
             </SelectContent>
           </Select>
           {groupId && (
-            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--ap-muted)' }}>
-              Rapproché par email d'invitation — les participants sans email ou ajoutés par pseudo ne sont pas comptés.
+            <span className="product-filter-note">
+              Le rapprochement utilise l’adresse d’invitation. Les participants sans adresse ne sont pas comptés.
             </span>
           )}
         </div>
       )}
       {(stats.totalExams > 0 || groupId) && (
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+        <div className="product-metric-grid product-metric-grid--wide product-metric-grid--compact">
           <HostStatTile icon={ClipboardCheck} label="Examens" value={String(stats.totalExams)} />
           <HostStatTile icon={UserRound} label="Tentatives" value={String(stats.completedAttempts)} />
           <HostStatTile icon={Trophy} label="Taux de réussite" value={stats.passRate !== null ? `${stats.passRate}%` : '-'} />
@@ -282,7 +290,7 @@ function HostStatsRow({ hostId }: { hostId: string }) {
           <HostStatTile icon={Clock3} label="Durée moy." value={stats.avgTimeMinutes !== null ? `${stats.avgTimeMinutes} min` : '-'} />
         </div>
       )}
-    </div>
+    </section>
   );
 }
 
@@ -311,37 +319,35 @@ function ProblemModulesPanel({ hostId, navigate }: { hostId: string; navigate: R
   if (problematic.length === 0) return null;
 
   return (
-    <div className="ap-card" style={{ padding: '16px 20px', marginBottom: 20 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-        <AlertTriangle className="h-4 w-4" style={{ color: 'var(--ap-quiz)' }} />
-        <h3 style={{ fontFamily: 'var(--ap-font-display)', fontWeight: 600, fontSize: 15, margin: 0 }}>
-          Modules problématiques
-        </h3>
-        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--ap-muted)' }}>
-          Taux de réussite &lt; {PROBLEM_THRESHOLD_PCT}%
-        </span>
+    <section className="product-panel product-insight-panel">
+      <div className="product-panel-heading product-panel-heading--compact">
+        <div className="product-insight-title">
+          <span className="product-insight-title__icon product-insight-title__icon--warning"><AlertTriangle aria-hidden="true" /></span>
+          <div>
+            <h2>Examens à surveiller</h2>
+            <p>Taux de réussite inférieur à {PROBLEM_THRESHOLD_PCT}%.</p>
+          </div>
+        </div>
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <div className="product-alert-list">
         {problematic.map(({ exam, stats }) => (
-          <div
+          <button
+            type="button"
             key={exam.id}
             onClick={() => navigate(`/exam/${exam.id}/admin`)}
-            style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
-              padding: '10px 12px', borderRadius: 'var(--ap-r-sm)', background: 'var(--ap-quiz-soft)',
-              cursor: 'pointer',
-            }}
+            className="product-alert-item"
           >
-            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--ap-ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <span className="product-alert-item__title">
               {exam.title}
             </span>
-            <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--ap-quiz-deep)', flexShrink: 0 }}>
-              {stats.passRate}% réussite · {stats.completedAttempts} tentative{stats.completedAttempts > 1 ? 's' : ''}
+            <span className="product-alert-item__meta">
+              {stats.passRate}% de réussite, {stats.completedAttempts} tentative{stats.completedAttempts > 1 ? 's' : ''}
             </span>
-          </div>
+            <ArrowRight aria-hidden="true" />
+          </button>
         ))}
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -529,15 +535,15 @@ export default function MyExams() {
       reloadRef={reloadRef}
       accentBtn=""
       headerTitle="Mes examens"
-      headerSubtitle="Examens asynchrones · résultats en temps réel"
+      headerSubtitle="Planifiez vos évaluations et suivez les résultats en temps réel."
       rootLabel="Tous les examens"
       oneLabel="examen"
-      cta={{ label: '+ Nouvel examen', onClick: () => navigate('/exam-builder') }}
-      statsRow={<>
+      cta={{ label: 'Nouvel examen', onClick: () => navigate('/exam-builder') }}
+      statsRow={<div className="product-insights-stack">
         <HostStatsRow hostId={user.id} />
         <PromotionComparisonPanel hostId={user.id} />
         <ProblemModulesPanel hostId={user.id} navigate={navigate} />
-      </>}
+      </div>}
       extraFilter={(d) => status === 'Tous' || computeExamStatus(d.data as unknown as Exam) === status}
       extraToolbar={
         <Select value={status} onValueChange={(v) => setStatus(v as 'Tous' | ExamStatus)}>
