@@ -1,55 +1,63 @@
-// src/components/AudioControls.tsx
 import { useState } from 'react';
-import { Volume2, VolumeX } from 'lucide-react';
+import { ChevronDown, Volume2, VolumeX } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { GameAudioApi } from '@/hooks/useGameAudio';
 
 interface AudioControlsProps {
   audio: GameAudioApi;
   className?: string;
+  expanded?: boolean;
 }
 
-// Per-device mute toggle + volume slider popover. Arcade Pop tokens, white-on-
-// translucent to sit over the dark in-session backgrounds.
-export const AudioControls = ({ audio, className }: AudioControlsProps) => {
+/** Per-device sound controls. The expanded lobby version keeps the volume
+ * visible; compact in-game headers expose it through an explicit disclosure. */
+export const AudioControls = ({ audio, className, expanded = false }: AudioControlsProps) => {
   const [open, setOpen] = useState(false);
+  const volumeLabel = `${Math.round(audio.volume * 100)} %`;
+
+  const slider = (
+    <label className="live-audio-slider">
+      <span>Volume</span>
+      <input
+        type="range"
+        min={0}
+        max={1}
+        step={0.05}
+        value={audio.volume}
+        onChange={(event) => audio.setVolume(Number(event.target.value))}
+        aria-label="Volume du quiz"
+      />
+      <output>{volumeLabel}</output>
+    </label>
+  );
 
   return (
-    <div className={cn('relative', className)}>
+    <div className={cn('live-audio-controls', expanded && 'live-audio-controls--expanded', className)}>
       <button
         type="button"
         onClick={() => audio.setMuted(!audio.muted)}
-        onContextMenu={(e) => { e.preventDefault(); setOpen((v) => !v); }}
         title={audio.muted ? 'Activer le son' : 'Couper le son'}
         aria-label={audio.muted ? 'Activer le son' : 'Couper le son'}
-        className="ap-btn ap-btn--ghost ap-btn--sm"
-        style={{
-          background: 'rgba(255,255,255,0.12)',
-          border: '2px solid rgba(255,255,255,0.2)',
-          color: '#fff',
-          boxShadow: 'none',
-          padding: '8px 10px',
-        }}
+        aria-pressed={audio.muted}
+        className="live-audio-toggle"
       >
-        {audio.muted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+        {audio.muted ? <VolumeX aria-hidden="true" /> : <Volume2 aria-hidden="true" />}
+        {expanded && <span>{audio.muted ? 'Son coupé' : 'Son activé'}</span>}
       </button>
 
-      {open && (
-        <div
-          style={{
-            position: 'absolute', top: 'calc(100% + 8px)', right: 0, zIndex: 30,
-            background: 'rgba(20,14,40,0.95)', border: '1px solid rgba(255,255,255,0.15)',
-            borderRadius: "var(--ap-r-md)", padding: '12px 14px', width: 160,
-          }}
-        >
-          <input
-            type="range" min={0} max={1} step={0.05}
-            value={audio.volume}
-            onChange={(e) => audio.setVolume(Number(e.target.value))}
-            aria-label="Volume"
-            style={{ width: '100%' }}
-          />
-        </div>
+      {expanded ? slider : (
+        <>
+          <button
+            type="button"
+            className="live-audio-disclosure"
+            onClick={() => setOpen((value) => !value)}
+            aria-label="Régler le volume"
+            aria-expanded={open}
+          >
+            <ChevronDown aria-hidden="true" />
+          </button>
+          {open && <div className="live-audio-popover">{slider}</div>}
+        </>
       )}
     </div>
   );

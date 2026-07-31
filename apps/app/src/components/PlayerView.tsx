@@ -745,84 +745,64 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
 
   if (gameState === 'waiting') {
     return (
-      <div
-        className="min-h-screen flex items-center justify-center p-4"
-        style={{ background: "var(--ap-brand)" }}
-      >
-        <div className="max-w-md w-full text-center">
-          <div className="flex justify-center mb-6">
-            <AvatarDisplay emoji={playerAvatar} size="xl" />
-          </div>
+      <main className="live-player-shell live-player-shell--waiting">
+        <div className="live-player-topbar">
+          <span className="live-player-topbar__status"><i /> Connecté</span>
+          <AudioControls audio={audio} expanded />
+        </div>
 
-          <h1 className="ap-h2 text-white mb-2">Connecté !</h1>
-          <div className="mb-8" style={{ color: "rgba(255,255,255,0.75)", fontFamily: "var(--ap-font-body)", fontWeight: 700 }}>
-            Bonjour <span className="font-bold text-white">{playerName}</span>
-          </div>
-
-          <div
-            className="p-5 space-y-4"
-            style={{
-              background: "rgba(255,255,255,0.12)",
-              border: "2px solid rgba(255,255,255,0.2)",
-              borderRadius: "var(--ap-r-xl)",
-            }}
-          >
-            <div className="ap-code" style={{ color: "#fff", background: "rgba(255,255,255,0.15)", border: "none", fontSize: "28px" }}>
-              {gameCode}
+        <div className="live-waiting-layout">
+          <section className="live-waiting-card" aria-labelledby="waiting-title">
+            <div className="live-waiting-avatar">
+              <AvatarDisplay emoji={playerAvatar} size="xl" />
             </div>
-            <p style={{ color: "rgba(255,255,255,0.75)", fontFamily: "var(--ap-font-body)", fontWeight: 700 }}>
-              {isPoll ? 'En attente du début du sondage…' : 'En attente du début du quiz…'}
+            <span className="live-eyebrow">Tu es dans la partie</span>
+            <h1 id="waiting-title">Prêt, {playerName}&nbsp;?</h1>
+            <p className="live-waiting-lead">
+              {isPoll ? 'Le sondage commencera dans un instant.' : 'Le quiz commencera dès que l’hôte donnera le départ.'}
             </p>
-            <div className="flex items-center justify-center gap-4" style={{ color: "rgba(255,255,255,0.75)" }}>
-              <div className="flex items-center gap-1">
-                <Users className="w-4 h-4" />
-                <span>{totalPlayers} joueur{totalPlayers !== 1 ? 's' : ''}</span>
+
+            <div className="live-waiting-facts">
+              <div>
+                <small>Code de la partie</small>
+                <strong>{gameCode}</strong>
+              </div>
+              <div>
+                <small>Dans la salle</small>
+                <strong><Users aria-hidden="true" /> {totalPlayers} joueur{totalPlayers !== 1 ? 's' : ''}</strong>
               </div>
             </div>
-          </div>
+
+            <div className="live-waiting-status" role="status">
+              <span className="live-waiting-status__pulse"><i /><i /><i /></span>
+              <span>{isPoll ? 'En attente du sondage' : 'En attente du quiz'}</span>
+            </div>
+          </section>
 
           {/* Reaction panel (lobby) — quiz only, the poll host has no reactions feed */}
           {!isPoll && liveReactionsEnabled && (
-          <div
-            className="mt-5"
-            style={{
-              background: 'rgba(255,255,255,0.12)',
-              border: '2px solid rgba(255,255,255,0.2)',
-              borderRadius: 'var(--ap-r-xl)',
-              padding: '14px',
-            }}
-          >
-            <p style={{ color: 'rgba(255,255,255,0.75)', fontWeight: 700, fontSize: '12px', marginBottom: '10px', fontFamily: 'var(--ap-font-body)' }}>
-              Envoie une réaction !
-            </p>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', flexWrap: 'wrap' }}>
+          <section className="live-reaction-panel" aria-labelledby="reaction-title">
+            <div>
+              <span className="live-step">Pendant l’attente</span>
+              <h2 id="reaction-title">Envoie une réaction</h2>
+            </div>
+            <div className="live-reaction-list">
               {REACTION_EMOJIS.map((e) => (
                 <button
                   key={e}
                   onClick={() => sendReaction(e)}
-                  style={{
-                    fontSize: '1.5rem',
-                    background: lastSentEmoji === e ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.1)',
-                    border: '2px solid rgba(255,255,255,0.2)',
-                    borderRadius: '10px',
-                    padding: '5px 8px',
-                    cursor: 'pointer',
-                    transition: 'transform 0.1s, background 0.1s',
-                    transform: lastSentEmoji === e ? 'scale(1.2)' : 'scale(1)',
-                  }}
+                  className="live-reaction-button"
+                  data-sent={lastSentEmoji === e}
+                  aria-label={`Envoyer la réaction ${e}`}
                 >
                   {e}
                 </button>
               ))}
             </div>
-          </div>
+          </section>
           )}
-
-          <div className="mt-6 animate-pulse">
-            <div className="w-8 h-8 rounded-full mx-auto" style={{ background: "rgba(255,255,255,0.3)" }}></div>
-          </div>
         </div>
-      </div>
+      </main>
     );
   }
 
@@ -1071,51 +1051,45 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
     const ordinal = playerRank === 1 ? '1er' : `${playerRank}ᵉ`;
 
     return (
-      <div
-        className="min-h-screen flex items-center justify-center p-4"
-        style={{ background: answerPending ? "var(--ap-brand)" : (lastAnswerCorrect ? "var(--ap-pres)" : "var(--ap-danger-deep)") }}
+      <main
+        className={`live-feedback-shell ${answerPending ? 'is-pending' : lastAnswerCorrect ? 'is-correct' : 'is-wrong'}`}
       >
-        <div className="max-w-md w-full text-center">
+        <div className="live-feedback-topbar">
+          <span>Question {currentQuestion + 1} / {totalQuestions}</span>
+          <AudioControls audio={audio} />
+        </div>
+
+        <section className="live-feedback-card" aria-live="polite">
           {answerPending ? (
-            <div className="flex flex-col items-center justify-center text-center">
-              <div className="text-6xl mb-4 animate-pulse">⏳</div>
-              <div className="text-2xl font-bold text-white">Vérification en cours…</div>
+            <div className="live-feedback-pending">
+              <div className="live-feedback-pending__mark">•••</div>
+              <h1>Vérification en cours</h1>
+              <p>Ta réponse arrive au serveur.</p>
             </div>
           ) : (
             <>
-              <div className="text-7xl mb-3 drop-shadow-xl">{lastAnswerCorrect ? '🎉' : '😅'}</div>
-              <h2 className="ap-h2 text-white mb-3" style={{ fontSize: 34 }}>
-                {lastAnswerCorrect ? 'Bonne réponse !' : 'Pas cette fois !'}
-              </h2>
+              <div className="live-feedback-mark" aria-hidden="true">
+                <span>{lastAnswerCorrect ? '✓' : '×'}</span>
+              </div>
+              <span className="live-feedback-kicker">{lastAnswerCorrect ? 'Bien joué' : 'Réponse enregistrée'}</span>
+              <h1>{lastAnswerCorrect ? 'Bonne réponse.' : 'Pas cette fois.'}</h1>
 
-              {/* Points earned pill */}
-              <div
-                style={{
-                  display: 'inline-block',
-                  fontFamily: 'var(--ap-font-mono, var(--ap-font-display))', fontWeight: 800, fontSize: 22,
-                  color: '#fff', background: 'rgba(255,255,255,0.2)', borderRadius: "var(--ap-r-sm)", padding: '6px 20px',
-                }}
-              >
+              <div className="live-feedback-points">
                 {lastAnswerCorrect ? `+ ${lastEarnedPoints.toLocaleString('fr-FR')} pts` : '+ 0 pt'}
               </div>
 
-              {/* Streak */}
               {lastAnswerCorrect && streak >= 2 && (
-                <div style={{ marginTop: 12, fontWeight: 900, fontSize: 14, color: '#fff' }}>
-                  🔥 Série de {streak}
+                <div className="live-feedback-streak">🔥 Série de {streak}</div>
+              )}
+
+              {!lastAnswerCorrect && correctAnswerText && (
+                <div className="live-feedback-answer">
+                  <small>La bonne réponse</small>
+                  <strong>{correctAnswerText}</strong>
                 </div>
               )}
 
-              {/* Wrong → reveal the right answer */}
-              {!lastAnswerCorrect && correctAnswerText && (
-                <p className="mt-3" style={{ color: 'rgba(255,255,255,0.85)', fontFamily: 'var(--ap-font-body)', fontWeight: 700 }}>
-                  La bonne réponse était{' '}
-                  <span className="font-bold text-white">{correctAnswerText}</span> ⭐
-                </p>
-              )}
-
-              {/* Relative standing */}
-              <p className="mt-4" style={{ color: 'rgba(255,255,255,0.9)', fontWeight: 800, fontSize: 14, fontFamily: 'var(--ap-font-body)' }}>
+              <p className="live-feedback-rank">
                 {playerRank === 1
                   ? 'Tu es en tête 🏆'
                   : ahead
@@ -1123,13 +1097,15 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
                     : `Tu es ${ordinal}`}
               </p>
 
-              <p className="mt-3 text-sm" style={{ color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--ap-font-body)' }}>
-                Total : {playerScore.toLocaleString('fr-FR')} pts · en attente de la suite…
-              </p>
+              <footer className="live-feedback-total">
+                <span>Total</span>
+                <strong>{playerScore.toLocaleString('fr-FR')} pts</strong>
+                <small>En attente de la suite</small>
+              </footer>
             </>
           )}
-        </div>
-      </div>
+        </section>
+      </main>
     );
   }
 
