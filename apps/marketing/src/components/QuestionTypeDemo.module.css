@@ -1,0 +1,385 @@
+.demo {
+  overflow: hidden;
+  border: 1px solid var(--mp-line);
+  border-radius: 1.5rem;
+  background: var(--mp-surface);
+  box-shadow: 0 1.8rem 4.5rem color-mix(in srgb, var(--mp-accent-deep) 12%, transparent);
+}
+
+.demoHeader,
+.demoFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.2rem;
+  background: var(--mp-surface-strong);
+}
+
+.demoHeader > div {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.demoHeader span,
+.demoHint {
+  color: var(--mp-muted);
+  font-size: 0.75rem;
+  font-weight: 650;
+}
+
+.demoHeader strong {
+  color: var(--mp-ink);
+  font-size: 0.9rem;
+}
+
+.reset,
+.demoFooter button {
+  display: inline-flex;
+  min-height: 2.45rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  border-radius: 0.7rem;
+  padding: 0.55rem 0.8rem;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.reset {
+  border: 1px solid var(--mp-line);
+  background: var(--mp-surface);
+  color: var(--mp-ink);
+}
+
+.demoQuestion {
+  padding: clamp(1.5rem, 4vw, 2.4rem) clamp(1.2rem, 4vw, 2.2rem) 1.2rem;
+}
+
+.demoQuestion h2 {
+  max-width: 22ch;
+  margin: 0;
+  color: var(--mp-ink);
+  font-family: var(--ap-font-display);
+  font-size: clamp(1.45rem, 3vw, 2.3rem);
+  letter-spacing: -0.035em;
+  line-height: 1.15;
+}
+
+.demoQuestion p {
+  margin: 0.75rem 0 0;
+  color: var(--mp-muted);
+  font-size: 0.86rem;
+  font-weight: 650;
+}
+
+.choiceGrid,
+.rankingList,
+.matchingList,
+.placementGrid,
+.field,
+.fillSentence,
+.slider,
+.stars,
+.npsGrid {
+  margin: 0 clamp(1.2rem, 4vw, 2.2rem) clamp(1.5rem, 4vw, 2.4rem);
+}
+
+.choiceGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.7rem;
+}
+
+.choice,
+.choiceSelected {
+  min-height: 4rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border: 1px solid var(--mp-line);
+  border-radius: 0.85rem;
+  padding: 0.8rem;
+  background: transparent;
+  color: var(--mp-ink);
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.choice span,
+.choiceSelected span,
+.rankNumber {
+  width: 1.75rem;
+  height: 1.75rem;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 0.55rem;
+  background: var(--mp-surface-strong);
+  color: var(--mp-muted);
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+
+.choiceSelected {
+  border-color: var(--mp-accent);
+  background: var(--mp-accent-soft);
+}
+
+.choiceSelected span {
+  background: var(--mp-accent);
+  color: var(--mp-on-accent);
+}
+
+.field {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.field > span,
+.matchingList label > span,
+.placementGrid label > span {
+  color: var(--mp-ink);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.field textarea,
+.fillSentence input,
+.matchingList select,
+.placementGrid select {
+  width: 100%;
+  border: 1px solid var(--mp-line);
+  border-radius: 0.75rem;
+  outline: 0;
+  background: var(--mp-bg);
+  color: var(--mp-ink);
+  padding: 0.8rem;
+  font: inherit;
+  font-size: 0.9rem;
+}
+
+.field textarea:focus,
+.fillSentence input:focus,
+.matchingList select:focus,
+.placementGrid select:focus {
+  border-color: var(--mp-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--mp-accent) 18%, transparent);
+}
+
+.fillSentence {
+  color: var(--mp-ink);
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 2.3;
+}
+
+.fillSentence input {
+  width: min(14rem, 100%);
+  padding-block: 0.5rem;
+}
+
+.rankingList {
+  display: grid;
+  gap: 0.6rem;
+  padding: 0;
+  list-style: none;
+}
+
+.rankingList li {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.75rem;
+  border: 1px solid var(--mp-line);
+  border-radius: 0.8rem;
+  padding: 0.65rem;
+  color: var(--mp-ink);
+}
+
+.rankActions {
+  display: inline-flex;
+  gap: 0.3rem;
+}
+
+.rankActions button {
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--mp-line);
+  border-radius: 0.55rem;
+  background: transparent;
+  color: var(--mp-ink);
+  cursor: pointer;
+}
+
+.rankActions button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.matchingList,
+.placementGrid {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.matchingList label,
+.placementGrid label {
+  display: grid;
+  grid-template-columns: minmax(7rem, 0.55fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.matchingList small {
+  grid-column: 2;
+}
+
+.hotspot {
+  position: relative;
+  min-height: 23rem;
+  margin: 0 clamp(1.2rem, 4vw, 2.2rem) clamp(1.5rem, 4vw, 2.4rem);
+  overflow: hidden;
+  border-radius: 1rem;
+}
+
+.hotspot img {
+  object-fit: cover;
+}
+
+.hotspot button {
+  position: absolute;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 3px solid var(--mp-on-accent);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--mp-accent) 75%, transparent);
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--mp-on-accent) 30%, transparent);
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+}
+
+.hotspot .hotspotSelected {
+  width: 3rem;
+  height: 3rem;
+  background: var(--mp-accent);
+}
+
+.slider {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.sliderValue {
+  color: var(--mp-ink);
+  font-family: var(--ap-font-display);
+  font-size: 2rem;
+  font-weight: 750;
+}
+
+.slider input {
+  width: 100%;
+  accent-color: var(--mp-accent);
+}
+
+.sliderBounds,
+.npsBounds {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  color: var(--mp-muted);
+  font-size: 0.75rem;
+  font-weight: 650;
+}
+
+.stars {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.stars button {
+  border: 0;
+  background: transparent;
+  color: var(--mp-line-2, var(--mp-line));
+  font-size: clamp(2.4rem, 7vw, 4.2rem);
+  cursor: pointer;
+}
+
+.stars .starSelected {
+  color: var(--mp-accent);
+}
+
+.npsGrid {
+  display: grid;
+  grid-template-columns: repeat(11, minmax(2rem, 1fr));
+  gap: 0.35rem;
+}
+
+.npsGrid button {
+  aspect-ratio: 1;
+  border: 1px solid var(--mp-line);
+  border-radius: 0.55rem;
+  background: transparent;
+  color: var(--mp-ink);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.npsGrid .npsSelected {
+  border-color: var(--mp-accent);
+  background: var(--mp-accent);
+  color: var(--mp-on-accent);
+}
+
+.npsBounds {
+  margin: -1.6rem clamp(1.2rem, 4vw, 2.2rem) 2rem;
+}
+
+.demoFooter {
+  color: var(--mp-muted);
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+
+.demoFooter button {
+  border: 1px solid var(--mp-accent);
+  background: var(--mp-accent);
+  color: var(--mp-on-accent);
+}
+
+.demoFooter button:disabled {
+  border-color: var(--mp-line);
+  background: var(--mp-line);
+  color: var(--mp-muted);
+  cursor: default;
+}
+
+@media (max-width: 620px) {
+  .choiceGrid,
+  .matchingList label,
+  .placementGrid label {
+    grid-template-columns: 1fr;
+  }
+
+  .matchingList small {
+    grid-column: auto;
+  }
+
+  .npsGrid {
+    grid-template-columns: repeat(6, minmax(2rem, 1fr));
+  }
+
+  .demoFooter {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

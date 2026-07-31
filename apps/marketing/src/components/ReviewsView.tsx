@@ -3,141 +3,183 @@
 import { useState } from "react";
 import { submitReview, requireAuth } from "@/lib/interactionsRepo";
 import type { Review, ReviewPersona } from "@/lib/types";
+import pageStyles from "./MarketingPage.module.css";
+import styles from "./ReviewsView.module.css";
 
-type Persona = "all" | "formateur" | "enseignant" | "entreprise";
+type Persona = "all" | ReviewPersona;
 
-const BARS = [
-  { label: "5 ★", pct: 82 },
-  { label: "4 ★", pct: 13 },
-  { label: "3 ★", pct: 4 },
-  { label: "2 ★", pct: 1 },
-  { label: "1 ★", pct: 0 },
+const FILTERS: { value: Persona; label: string }[] = [
+  { value: "all", label: "Tous les avis" },
+  { value: "formateur", label: "Formateurs" },
+  { value: "enseignant", label: "Enseignants" },
+  { value: "entreprise", label: "Écoles et entreprises" },
 ];
 
-const CHIPS: { p: Persona; label: string }[] = [
-  { p: "all", label: "Tous" },
-  { p: "formateur", label: "Formateurs indépendants" },
-  { p: "enseignant", label: "Enseignants" },
-  { p: "entreprise", label: "Entreprises & écoles" },
-];
-
-const stars = (n: number) => "★★★★★☆☆☆☆☆".slice(5 - n, 10 - n);
+function getInitials(name: string) {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("");
+}
 
 export function ReviewsView({ reviews }: { reviews: Review[] }) {
   const [persona, setPersona] = useState<Persona>("all");
-  const [rvPersona, setRvPersona] = useState<ReviewPersona>("formateur");
-  const [rvStars, setRvStars] = useState(5);
-  const [rvText, setRvText] = useState("");
-  const [rvRole, setRvRole] = useState("");
-  const [rvSent, setRvSent] = useState(false);
-  const [rvPending, setRvPending] = useState(false);
+  const [reviewPersona, setReviewPersona] = useState<ReviewPersona>("formateur");
+  const [reviewStars, setReviewStars] = useState(5);
+  const [reviewText, setReviewText] = useState("");
+  const [reviewRole, setReviewRole] = useState("");
+  const [sent, setSent] = useState(false);
+  const [pending, setPending] = useState(false);
+
+  const visible = reviews.filter((review) => persona === "all" || review.p === persona);
 
   const onSubmitReview = async () => {
-    if (!rvText.trim() || rvPending) return;
+    if (!reviewText.trim() || pending) return;
     if (!(await requireAuth())) return;
-    setRvPending(true);
+    setPending(true);
     try {
-      await submitReview({ persona: rvPersona, stars: rvStars, text: rvText.trim(), authorRole: rvRole.trim() });
-      setRvSent(true);
+      await submitReview({
+        persona: reviewPersona,
+        stars: reviewStars,
+        text: reviewText.trim(),
+        authorRole: reviewRole.trim(),
+      });
+      setSent(true);
     } finally {
-      setRvPending(false);
+      setPending(false);
     }
   };
 
   return (
     <>
-      <div className="page-hero">
-        <span className="eyebrow">Témoignages</span>
-        <h1>Ils animent avec Brivia.</h1>
-        <p className="lead">Avis vérifiés de formateurs, enseignants et responsables formation.</p>
-      </div>
+      <section className={pageStyles.section} aria-labelledby="published-reviews-title">
+        <div className={pageStyles.container}>
+          <div className={pageStyles.sectionLead}>
+            <h2 id="published-reviews-title">Des retours publiés, sans chiffre inventé.</h2>
+            <p>Filtrez les avis disponibles selon le contexte d’utilisation.</p>
+          </div>
 
-      <div className="card ratingband">
-        <div className="bigscore">
-          <b>4,8</b>
-          <div className="stars">★★★★★</div>
-          <small>312 avis vérifiés</small>
-        </div>
-        <div className="rbars">
-          {BARS.map((b) => (
-            <div className="rbar" key={b.label}>
-              <span className="rl">{b.label}</span>
-              <div className="rtrack"><i style={{ width: `${b.pct}%` }} /></div>
-              <span className="rp">{b.pct} %</span>
+          <div className={styles.toolbar} role="group" aria-label="Filtrer les témoignages">
+            {FILTERS.map((filter) => (
+              <button
+                key={filter.value}
+                type="button"
+                className={`${styles.filter} ${persona === filter.value ? styles.filterActive : ""}`}
+                onClick={() => setPersona(filter.value)}
+                aria-pressed={persona === filter.value}
+              >
+                {filter.label}
+              </button>
+            ))}
+          </div>
+
+          {visible.length > 0 ? (
+            <div className={pageStyles.quoteGrid}>
+              {visible.map((review) => (
+                <figure className={pageStyles.quote} key={review.id}>
+                  <div className={styles.stars} aria-label={`${review.stars} étoiles sur 5`}>
+                    {"★★★★★".slice(0, review.stars)}
+                  </div>
+                  <blockquote>{review.text}</blockquote>
+                  <figcaption>
+                    <span className={pageStyles.initials} aria-hidden="true">
+                      {getInitials(review.name)}
+                    </span>
+                    <span>
+                      <strong>{review.name}</strong>
+                      <small>{review.role}</small>
+                    </span>
+                  </figcaption>
+                </figure>
+              ))}
             </div>
-          ))}
+          ) : (
+            <div className={pageStyles.emptyState}>
+              Aucun avis publié pour ce filtre.
+            </div>
+          )}
         </div>
-      </div>
+      </section>
 
-      <div className="featured-t">
-        <div className="fpic">👩‍🏫</div>
-        <div>
-          <blockquote>
-            « Avant, je terminais mes modules sans savoir ce qui était acquis. Maintenant, les analytics me disent quoi réexpliquer avant l&apos;examen. Mon taux de réussite a gagné 12 points en un semestre. »
-          </blockquote>
-          <footer>Responsable pédagogique — école d&apos;ingénieurs, Toulouse · cliente depuis 14 mois</footer>
-        </div>
-      </div>
+      <section className={`${pageStyles.section} ${pageStyles.sectionTint}`} aria-labelledby="share-review-title">
+        <div className={`${pageStyles.container} ${styles.formSection}`}>
+          <div className={styles.formIntro}>
+            <h2 id="share-review-title">Partagez votre expérience.</h2>
+            <p>Les avis sont relus avant publication. La connexion permet de vérifier qu’ils viennent bien d’un utilisateur.</p>
+          </div>
 
-      <div className="chips">
-        {CHIPS.map((c) => (
-          <button key={c.p} className={`chip${persona === c.p ? " on" : ""}`} onClick={() => setPersona(c.p)}>
-            {c.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="tgrid">
-        {reviews
-          .filter((r) => persona === "all" || r.p === persona)
-          .map((r) => (
-            <div className="card tcard" key={r.id}>
-              <div className="tstars">{stars(r.stars)}</div>
-              <p>{r.text}</p>
-              <div className="twho">
-                <span className="tw-av">{r.av}</span>
-                <div>
-                  <b>{r.name}</b>
-                  <small>{r.role}</small>
+          <div className={styles.form}>
+            {sent ? (
+              <p className={styles.success}>Merci. Votre avis sera publié après modération.</p>
+            ) : (
+              <>
+                <div className={styles.field}>
+                  <label htmlFor="review-persona">Votre contexte</label>
+                  <select
+                    id="review-persona"
+                    value={reviewPersona}
+                    onChange={(event) => setReviewPersona(event.target.value as ReviewPersona)}
+                  >
+                    <option value="formateur">Formateur</option>
+                    <option value="enseignant">Enseignant</option>
+                    <option value="entreprise">École ou entreprise</option>
+                  </select>
                 </div>
-                <span className="pill tsrc">✓ Vérifié</span>
-              </div>
-            </div>
-          ))}
-      </div>
 
-      <div className="card" style={{ padding: "24px 28px", marginBottom: "28px", display: "flex", flexDirection: "column", gap: "12px" }}>
-        <h3 style={{ fontSize: "16px" }}>Partagez votre expérience</h3>
-        {rvSent ? (
-          <p style={{ color: "var(--ap-muted)", fontWeight: 700 }}>Merci ! Votre avis sera publié après modération.</p>
-        ) : (
-          <>
-            <div className="chips">
-              {CHIPS.filter((c) => c.p !== "all").map((c) => (
-                <button key={c.p} className={`chip${rvPersona === c.p ? " on" : ""}`} onClick={() => setRvPersona(c.p as ReviewPersona)}>{c.label}</button>
-              ))}
-            </div>
-            <div style={{ display: "flex", gap: "6px" }}>
-              {[1, 2, 3, 4, 5].map((n) => (
-                <button key={n} onClick={() => setRvStars(n)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "22px", color: n <= rvStars ? "var(--ap-brand)" : "var(--ap-line-2)" }} aria-label={`${n} étoiles`}>★</button>
-              ))}
-            </div>
-            <input value={rvRole} onChange={(e) => setRvRole(e.target.value)} placeholder="Votre rôle (ex. Formateur indépendant)" />
-            <textarea rows={3} value={rvText} onChange={(e) => setRvText(e.target.value)} placeholder="Qu'est-ce qui vous a plu ?" />
-            <button className="btn" style={{ alignSelf: "flex-start" }} disabled={rvPending || !rvText.trim()} onClick={onSubmitReview}>
-              Envoyer mon avis
-            </button>
-          </>
-        )}
-      </div>
+                <div className={styles.field}>
+                  <label id="review-rating-label">Votre note</label>
+                  <div className={styles.ratingButtons} role="group" aria-labelledby="review-rating-label">
+                    {[1, 2, 3, 4, 5].map((rating) => (
+                      <button
+                        key={rating}
+                        type="button"
+                        className={rating <= reviewStars ? styles.selected : undefined}
+                        onClick={() => setReviewStars(rating)}
+                        aria-label={`${rating} étoiles`}
+                        aria-pressed={rating === reviewStars}
+                      >
+                        ★
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-      <div className="finalcta">
-        <h2>Rejoignez-les.</h2>
-        <p>Gratuit pour commencer, 5 minutes pour votre premier quiz.</p>
-        <a className="btn btn--quiz" style={{ fontSize: "16px", padding: "14px 30px" }} href="/builder-start?type=quiz">
-          Créer mon premier quiz
-        </a>
-      </div>
+                <div className={styles.field}>
+                  <label htmlFor="review-role">Votre rôle</label>
+                  <input
+                    id="review-role"
+                    value={reviewRole}
+                    onChange={(event) => setReviewRole(event.target.value)}
+                    placeholder="Par exemple : formatrice indépendante"
+                  />
+                </div>
+
+                <div className={styles.field}>
+                  <label htmlFor="review-text">Votre témoignage</label>
+                  <textarea
+                    id="review-text"
+                    rows={5}
+                    value={reviewText}
+                    onChange={(event) => setReviewText(event.target.value)}
+                    placeholder="Qu’est-ce qui a changé dans vos sessions ?"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  className={styles.submit}
+                  disabled={pending || !reviewText.trim()}
+                  onClick={onSubmitReview}
+                >
+                  {pending ? "Envoi en cours…" : "Envoyer mon avis"}
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </section>
     </>
   );
 }

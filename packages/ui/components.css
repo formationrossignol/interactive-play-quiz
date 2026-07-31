@@ -1,26 +1,18 @@
-/* ============================================================
-   Brivia · « Arcade Pop » — Shared component classes
-   ------------------------------------------------------------
-   Subset of apps/app/src/arcade-pop.css's component sections
-   (2 BASE typography, 3 BOUTONS, 4 CARTES, 9 LOGO, part of 10
-   UTILITAIRES) — just what apps/marketing's pages ported so far
-   actually use. Grows as more pages get ported; requires
-   tokens.css to already be loaded (consumes --ap-* vars).
-   ============================================================ */
+/* Brivia shared components for public and marketing surfaces. */
 
 .ap-display { font-family: var(--ap-font-display); font-weight: 600; letter-spacing: -.5px; margin: 0; }
 .ap-h1 { font-family: var(--ap-font-display); font-weight: 600; font-size: 56px; line-height: 1; letter-spacing: -1.5px; margin: 0; }
 .ap-h2 { font-family: var(--ap-font-display); font-weight: 600; font-size: 38px; line-height: 1.05; letter-spacing: -1px; margin: 0; }
 .ap-h3 { font-family: var(--ap-font-display); font-weight: 600; font-size: 20px; margin: 0; }
-.ap-lead { font-size: 19px; line-height: 1.5; color: #5f5675; font-weight: 400; }
+.ap-lead { font-size: 19px; line-height: 1.5; color: var(--ap-muted); font-weight: 400; }
 .ap-muted { color: var(--ap-muted); }
 
-/* ── Boutons — le ressort « pop » (offset plein qui s'écrase au clic) ── */
+/* Buttons */
 .ap-btn {
   font-family: var(--ap-font-display);
   font-weight: 600;
   font-size: 15.5px;
-  border: none;
+  border: 1px solid transparent;
   cursor: pointer;
   border-radius: var(--ap-r-md);
   padding: 13px 24px;
@@ -30,22 +22,27 @@
   gap: 9px;
   color: #fff;
   background: var(--ap-brand);
-  box-shadow: 0 5px 0 var(--ap-brand-deep);
-  transition: transform .08s var(--ap-ease), box-shadow .08s var(--ap-ease);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--ap-brand-deep) 28%, transparent);
+  transition: transform .16s var(--ap-ease), box-shadow .16s var(--ap-ease),
+              background .16s var(--ap-ease), border-color .16s var(--ap-ease);
 }
-.ap-btn:hover  { transform: translateY(-2px); box-shadow: 0 7px 0 var(--ap-brand-deep); }
-.ap-btn:active { transform: translateY(5px);  box-shadow: 0 0px 0 var(--ap-brand-deep); }
+.ap-btn:hover  {
+  background: var(--ap-brand-deep);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--ap-brand-deep) 24%, transparent);
+}
+.ap-btn:active { transform: translateY(0) scale(.99); box-shadow: 0 1px 2px transparent; }
 .ap-btn:disabled,
 .ap-btn[aria-disabled="true"] {
   cursor: not-allowed;
   opacity: .55;
   transform: none;
-  box-shadow: 0 2px 0 var(--ap-line-2);
+  box-shadow: none;
 }
 .ap-btn:disabled:hover,
 .ap-btn[aria-disabled="true"]:hover {
   transform: none;
-  box-shadow: 0 2px 0 var(--ap-line-2);
+  box-shadow: none;
 }
 
 .ap-btn--lg { font-size: 18px; padding: 17px 30px; border-radius: var(--ap-r-lg); }
@@ -54,22 +51,28 @@
 
 .ap-btn--ghost {
   background: var(--ap-card); color: var(--ap-ink);
-  box-shadow: 0 5px 0 var(--ap-line-2), inset 0 0 0 2px var(--ap-line);
+  border-color: var(--ap-line);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--ap-ink) 6%, transparent);
 }
-.ap-btn--ghost:hover  { box-shadow: 0 7px 0 var(--ap-line-2), inset 0 0 0 2px var(--ap-line-2); }
-.ap-btn--ghost:active { box-shadow: 0 1px 0 var(--ap-line-2), inset 0 0 0 2px var(--ap-line-2); }
+.ap-btn--ghost:hover  {
+  color: var(--ap-ink);
+  background: var(--ap-paper-2);
+  border-color: var(--ap-line-2);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--ap-ink) 8%, transparent);
+}
+.ap-btn--ghost:active { box-shadow: none; }
 
 /* ── Cartes & surfaces ── */
 .ap-card {
   background: var(--ap-card);
-  border: 2px solid var(--ap-line);
+  border: 1px solid var(--ap-line);
   border-radius: var(--ap-r-lg);
   box-shadow: var(--ap-shadow-soft);
   padding: 24px;
 }
 .ap-card--floaty { box-shadow: var(--ap-shadow-card); border-radius: var(--ap-r-xl); }
 .ap-card--hover { transition: transform .12s var(--ap-ease), box-shadow .12s var(--ap-ease); }
-.ap-card--hover:hover { transform: translateY(-3px); box-shadow: var(--ap-shadow-card); }
+.ap-card--hover:hover { transform: translateY(-2px); box-shadow: var(--ap-shadow-card); }
 
 /* One loading language across the product: the highlight travels through the
    placeholder to make progress visible without a spinner or layout jump. */
@@ -119,7 +122,7 @@
 .ap-code {
   font-family: var(--ap-font-display); font-weight: 600; font-size: 25px;
   letter-spacing: 6px; text-align: center;
-  border: 2px solid var(--ap-line); border-radius: var(--ap-r-md);
+  border: 1px solid var(--ap-line); border-radius: var(--ap-r-md);
   padding: 14px 18px; color: var(--ap-ink); background: var(--ap-card); outline: none;
 }
 .ap-code:focus { border-color: var(--ap-brand); box-shadow: 0 0 0 4px var(--ap-brand-soft); }
@@ -127,18 +130,19 @@
 /* ── Segmented control (UseCaseTabs) ── */
 .ap-seg { display: flex; gap: 6px; }
 .ap-seg button {
-  flex: 1; border: 2px solid var(--ap-line); background: #fdfaf2;
+  flex: 1; border: 1px solid var(--ap-line); background: var(--ap-card);
   border-radius: var(--ap-r-sm); padding: 8px 0;
   font-family: var(--ap-font-display); font-weight: 600; font-size: 13px;
-  color: var(--ap-muted); cursor: pointer; transition: all .12s;
+  color: var(--ap-muted); cursor: pointer;
+  transition: color .16s var(--ap-ease), background .16s var(--ap-ease), border-color .16s var(--ap-ease);
 }
 .ap-seg button.is-on { background: var(--ap-brand); border-color: var(--ap-brand); color: #fff; }
 
 /* ── Pills / badges ── */
 .ap-badge {
   display: inline-flex; align-items: center; gap: 6px;
-  font-weight: 800; font-size: 11px; letter-spacing: .5px;
-  text-transform: uppercase; padding: 4px 11px; border-radius: var(--ap-r-pill);
+  font-weight: 700; font-size: 12px; letter-spacing: 0;
+  padding: 4px 10px; border-radius: var(--ap-r-pill);
 }
 .ap-badge--brand { background: var(--ap-brand-soft); color: var(--ap-brand-deep); }
 
@@ -156,8 +160,8 @@
 .ap-compare__planname { font-family: var(--ap-font-display); font-weight: 600; font-size: 17px; }
 .ap-compare__category td {
   padding: 18px 16px 8px;
-  font-family: var(--ap-font-body); font-size: 11px; font-weight: 800;
-  letter-spacing: .08em; text-transform: uppercase; color: var(--ap-muted);
+  font-family: var(--ap-font-body); font-size: 12px; font-weight: 700;
+  letter-spacing: 0; color: var(--ap-muted);
   border-bottom: 1px solid var(--ap-line);
 }
 .ap-compare tbody tr:not(.ap-compare__category) td { border-bottom: 1px solid var(--ap-line); }
@@ -176,7 +180,7 @@
 .ap-logo {
   width: 46px; height: 46px; border-radius: var(--ap-r-md); background: var(--ap-brand);
   display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 6px 0 var(--ap-brand-deep), 0 10px 18px rgba(67,56,202,.35);
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--ap-brand) 24%, transparent);
   flex: 0 0 auto;
 }
 .ap-brandname {
@@ -190,43 +194,26 @@
 .ap-row { display: flex; align-items: center; }
 .ap-gap-8  { gap: 8px; }  .ap-gap-12 { gap: 12px; }  .ap-gap-16 { gap: 16px; }  .ap-gap-24 { gap: 24px; }
 
-/* Confetti burst — généré en JS, animé en CSS (HeroMiniQuiz). */
-@keyframes ap-confetti-burst {
-  0%   { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 1; }
-  100% { transform: translate(var(--cx, 0px), var(--cy, -80px)) rotate(var(--cr, 180deg)) scale(.3); opacity: 0; }
-}
-.ap-confetti-piece {
-  position: absolute; border-radius: 3px; pointer-events: none; z-index: 50;
-  animation: ap-confetti-burst 700ms var(--ap-ease) forwards;
-}
-
 /* ── Réponses de quiz (HeroMiniQuiz demo) ── */
 .ap-answer {
   display: flex; align-items: center; gap: 12px;
   padding: 16px 18px; border-radius: var(--ap-r-md);
   color: var(--ap-ink); font-weight: 700; font-size: 15px;
   background: var(--ap-card);
-  border: 2px solid var(--ap-line);
+  border: 1px solid var(--ap-line);
   cursor: pointer; text-align: left;
-  box-shadow: 0 4px 0 var(--ap-line);
-  transition: background .12s, border-color .12s, transform .1s var(--ap-spring), box-shadow .1s var(--ap-spring);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--ap-ink) 6%, transparent);
+  transition: background .16s, border-color .16s, transform .16s var(--ap-ease), box-shadow .16s var(--ap-ease);
   min-width: 0;
 }
 .ap-answer:hover {
   background: var(--ap-paper);
   border-color: var(--ap-line-2);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 0 var(--ap-line-2);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--ap-ink) 8%, transparent);
 }
-.ap-answer:active { transform: translateY(4px); box-shadow: 0 0px 0 var(--ap-line-2); }
+.ap-answer:active { transform: translateY(0); box-shadow: none; }
 
-@keyframes ap-correct-bounce {
-  0%   { transform: scale(1) translateY(0); }
-  30%  { transform: scale(1.06) translateY(-4px); }
-  60%  { transform: scale(.97) translateY(0); }
-  80%  { transform: scale(1.02) translateY(-2px); }
-  100% { transform: scale(1) translateY(0); }
-}
 @keyframes ap-shake {
   0%, 100% { transform: translateX(0); }
   15%  { transform: translateX(-7px) rotate(-1deg); }
@@ -240,17 +227,17 @@
 .ap-answer--correct:active {
   background: var(--ap-pres);
   border-color: var(--ap-pres-deep);
-  box-shadow: 0 4px 0 var(--ap-pres-deep);
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--ap-pres-deep) 20%, transparent);
   color: #fff;
   transform: none;
-  animation: ap-correct-bounce 500ms var(--ap-spring) both;
+  animation: none;
 }
-.ap-answer--wrong { animation: ap-shake 420ms ease both; }
+.ap-answer--wrong { animation: ap-shake 260ms ease both; }
 .ap-answer--dim,
 .ap-answer--dim:hover,
 .ap-answer--dim:active {
   opacity: .45; pointer-events: none; transform: none;
-  box-shadow: 0 4px 0 var(--ap-line);
+  box-shadow: none;
 }
 
 @keyframes ap-pill-pop {
@@ -258,35 +245,16 @@
   55%  { transform: translateX(-50%) translateY(-22px) scale(1.08); opacity: 1; }
   100% { transform: translateX(-50%) translateY(-18px) scale(1); opacity: 1; }
 }
-@keyframes ap-pill-float {
-  0%, 100% { transform: translateX(-50%) translateY(-18px); }
-  50%       { transform: translateX(-50%) translateY(-24px); }
-}
 .ap-score-pill {
   position: absolute;
   font-family: var(--ap-font-display); font-weight: 700; font-size: 15px;
   color: var(--ap-pres-deep); background: var(--ap-pres-soft);
-  border: 2px solid var(--ap-pres); border-radius: var(--ap-r-pill);
+  border: 1px solid color-mix(in srgb, var(--ap-pres) 55%, var(--ap-line)); border-radius: var(--ap-r-pill);
   padding: 4px 12px; pointer-events: none; z-index: 20;
   white-space: nowrap;
-  animation: ap-pill-pop 380ms var(--ap-spring) forwards,
-             ap-pill-float 1.6s ease-in-out 380ms infinite;
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--ap-pres-deep) 12%, transparent);
+  animation: ap-pill-pop 280ms var(--ap-ease) forwards;
 }
-
-/* ── Eyebrow — badge live avec dot pulsant ── */
-.ap-eyebrow {
-  display: inline-flex; align-items: center; gap: 8px;
-  font-family: var(--ap-font-body); font-size: 13px; font-weight: 800;
-  letter-spacing: .08em; text-transform: uppercase;
-  color: var(--ap-brand-deep); background: var(--ap-brand-soft);
-  border: 2px solid color-mix(in srgb, var(--ap-brand) 30%, transparent);
-  padding: 6px 14px; border-radius: var(--ap-r-pill);
-}
-.ap-eyebrow__dot {
-  width: 8px; height: 8px; border-radius: 50%; background: var(--ap-pres); flex: 0 0 auto;
-  animation: ap-dot-pulse 2s ease-in-out infinite;
-}
-@keyframes ap-dot-pulse { 50% { opacity: .3; transform: scale(.75); } }
 
 /* ── Entrées orchestrées — reveal avec délais d1-d6 ── */
 @keyframes ap-rise {
@@ -301,17 +269,17 @@
 
 /* ── Strip — bande de preuve produit sous le hero ── */
 .ap-strip-label {
-  font-family: var(--ap-font-body); font-size: 12.5px; font-weight: 800;
-  letter-spacing: .1em; text-transform: uppercase; color: var(--ap-muted);
+  font-family: var(--ap-font-body); font-size: 13px; font-weight: 600;
+  letter-spacing: 0; color: var(--ap-muted);
   margin-bottom: 18px; display: flex; align-items: center; gap: 12px;
 }
-.ap-strip-label::after { content: ""; flex: 1; height: 2px; background: var(--ap-line); border-radius: 2px; }
+.ap-strip-label::after { content: ""; flex: 1; height: 1px; background: var(--ap-line); }
 
 .ap-pin {
   font-family: var(--ap-font-mono); font-weight: 700; font-size: 32px;
   letter-spacing: .14em; font-variant-numeric: tabular-nums;
   color: var(--ap-ink); background: var(--ap-paper-2);
-  border: 2px dashed var(--ap-line-2); border-radius: var(--ap-r-md);
+  border: 1px solid var(--ap-line); border-radius: var(--ap-r-md);
   padding: 14px 18px; text-align: center;
 }
 .ap-pin__accent { color: var(--ap-brand); }
@@ -319,12 +287,12 @@
 .ap-lb-row {
   display: flex; align-items: center; gap: 12px;
   padding: 10px 12px; border-radius: var(--ap-r-md);
-  border: 2px solid var(--ap-line); margin-bottom: 8px; background: var(--ap-card);
+  border: 1px solid var(--ap-line); margin-bottom: 8px; background: var(--ap-card);
 }
 .ap-lb-row--first { background: var(--ap-flash-soft); border-color: color-mix(in srgb, var(--ap-flash) 50%, transparent); }
 .ap-lb-row__rank { font-family: var(--ap-font-display); font-weight: 600; width: 26px; text-align: center; font-size: 17px; }
 .ap-lb-row__who { display: flex; align-items: center; gap: 9px; flex: 1; font-weight: 800; font-size: 14.5px; }
-.ap-lb-row__av { width: 30px; height: 30px; border-radius: 50%; background: var(--ap-paper-2); display: grid; place-items: center; font-size: 15px; border: 2px solid var(--ap-line); }
+.ap-lb-row__av { width: 30px; height: 30px; border-radius: 50%; background: var(--ap-paper-2); display: grid; place-items: center; font-size: 15px; border: 1px solid var(--ap-line); }
 .ap-lb-row__pts { font-family: var(--ap-font-mono); font-weight: 700; font-size: 14px; font-variant-numeric: tabular-nums; }
 .ap-lb-row__up { font-size: 11px; font-weight: 800; color: var(--ap-pres-deep); background: var(--ap-pres-soft); border-radius: var(--ap-r-pill); padding: 2px 8px; }
 
@@ -332,10 +300,10 @@
   display: inline-flex; align-items: center; gap: 8px;
   font-family: var(--ap-font-body); font-weight: 800; font-size: 13.5px;
   padding: 9px 15px; border-radius: var(--ap-r-pill);
-  border: 2px solid; cursor: pointer; background: var(--ap-card);
-  transition: transform .15s var(--ap-spring);
+  border: 1px solid; cursor: pointer; background: var(--ap-card);
+  transition: transform .16s var(--ap-ease), background .16s var(--ap-ease);
 }
-.ap-type-badge:hover { transform: translateY(-2px) rotate(-1deg); }
+.ap-type-badge:hover { transform: translateY(-1px); background: var(--ap-paper-2); }
 .ap-type-badge__dot { width: 9px; height: 9px; border-radius: 3px; display: inline-block; flex: 0 0 auto; }
 .ap-type-badge--quiz  { color: var(--ap-quiz-deep);  border-color: color-mix(in srgb, var(--ap-quiz) 45%, transparent); }  .ap-type-badge--quiz  .ap-type-badge__dot { background: var(--ap-quiz); }
 .ap-type-badge--poll  { color: var(--ap-poll-deep);  border-color: color-mix(in srgb, var(--ap-poll) 45%, transparent); }  .ap-type-badge--poll  .ap-type-badge__dot { background: var(--ap-poll); }
@@ -346,13 +314,11 @@
   position: absolute; z-index: 3;
   font-family: var(--ap-font-display); font-weight: 600; font-size: 14px;
   padding: 8px 16px; border-radius: var(--ap-r-pill);
-  background: var(--ap-card); border: 2px solid var(--ap-line);
-  box-shadow: 0 4px 0 var(--ap-line);
-  animation: ap-floaty 5s ease-in-out infinite;
+  background: var(--ap-card); border: 1px solid var(--ap-line);
+  box-shadow: var(--ap-shadow-soft);
+  animation: none;
   white-space: nowrap; pointer-events: none;
 }
-@keyframes ap-floaty { 50% { transform: translateY(-7px); } }
-
 /* ── Partners strip — bandeau logos défilants ── */
 .ap-partners { padding: 72px 0; background: var(--ap-brand-soft); }
 .ap-partners__inner {
@@ -419,12 +385,10 @@
   .ap-btn, .ap-answer, .ap-card--hover, .ap-logo, .ap-hover-actions, .ap-grip { transition: none; }
   .ap-skeleton-shimmer { animation: none; background-image: none; }
   .ap-cascade > * { animation: none; }
-  .ap-confetti-piece { animation: none; display: none; }
   .ap-answer--correct { animation: none; }
   .ap-answer--wrong { animation: none; }
   .ap-score-pill { animation: none; transform: translateX(-50%) translateY(-18px); }
   .ap-reveal { animation: none; opacity: 1; transform: none; }
-  .ap-eyebrow__dot { animation: none; }
   .ap-float-pill { animation: none; }
   .ap-type-badge:hover { transform: none; }
   .ap-partners__track { animation: none; }
@@ -433,9 +397,9 @@
 /* ── Nav pill — ported from apps/app/src/arcade-pop.css (11. NAV PILL) ── */
 .ap-nav-pill {
   display: flex; gap: 2px;
-  background: var(--ap-card); border: 2px solid var(--ap-line);
+  background: var(--ap-card); border: 1px solid var(--ap-line);
   border-radius: var(--ap-r-pill); padding: 4px;
-  box-shadow: 0 3px 0 var(--ap-line);
+  box-shadow: var(--ap-shadow-soft);
 }
 .ap-nav-pill__item {
   font-family: var(--ap-font-display); font-weight: 600; font-size: 14px;

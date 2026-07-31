@@ -85,10 +85,9 @@ export function RoadmapBoard({ baseView }: { baseView: RoadmapView }) {
   return (
     <>
       <div className="page-hero">
-        <span className="eyebrow">Roadmap publique</span>
         <h1>C&apos;est vous qui décidez de la suite.</h1>
         <p className="lead">
-          Votez pour les fonctionnalités qui comptent pour vous. Les plus votées passent en développement — et vous êtes prévenu quand elles sortent.
+          Votez pour les fonctionnalités qui comptent pour vous. Les plus votées passent en développement, puis vous êtes prévenu quand elles sortent.
         </p>
         <div className="quota">
           Vos votes disponibles

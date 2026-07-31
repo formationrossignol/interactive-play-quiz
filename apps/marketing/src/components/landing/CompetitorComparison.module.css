@@ -7,7 +7,7 @@
   border: var(--ap-border-w) solid var(--ap-line);
   border-radius: var(--ap-r-xl);
   background: var(--ap-card);
-  box-shadow: 0 7px 0 var(--ap-line);
+  box-shadow: var(--ap-shadow-card);
   scrollbar-color: var(--ap-brand) var(--ap-paper-2);
   scrollbar-width: thin;
 }
@@ -58,12 +58,11 @@
 
 .featureHead {
   z-index: 3;
-  border-top-left-radius: calc(var(--ap-r-xl) - 2px);
+  border-top-left-radius: calc(var(--ap-r-xl) - 1px);
   color: var(--ap-muted);
-  font-size: 11px;
-  font-weight: 900;
-  letter-spacing: .08em;
-  text-transform: uppercase;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
 }
 
 .featureCell {
@@ -85,9 +84,8 @@
 
 .briviaHead {
   position: relative;
-  background:
-    linear-gradient(135deg, color-mix(in srgb, var(--ap-brand-soft) 82%, #fff), var(--ap-card));
-  box-shadow: inset 3px 0 0 var(--ap-brand), inset -3px 0 0 var(--ap-brand);
+  background: color-mix(in srgb, var(--ap-brand-soft) 62%, var(--ap-card));
+  box-shadow: inset 1px 0 0 var(--ap-brand), inset -1px 0 0 var(--ap-brand);
 }
 
 .productName,
@@ -109,10 +107,9 @@
 .productNote {
   margin-top: 3px;
   color: var(--ap-muted);
-  font-size: 10.5px;
-  font-weight: 800;
-  letter-spacing: .04em;
-  text-transform: uppercase;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0;
 }
 
 .valueCell {
@@ -123,7 +120,7 @@
 
 .briviaCell {
   background: color-mix(in srgb, var(--ap-brand-soft) 42%, var(--ap-card));
-  box-shadow: inset 3px 0 0 var(--ap-brand), inset -3px 0 0 var(--ap-brand);
+  box-shadow: inset 1px 0 0 var(--ap-brand), inset -1px 0 0 var(--ap-brand);
   color: var(--ap-ink);
 }
 

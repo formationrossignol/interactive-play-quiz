@@ -8,6 +8,7 @@ import type { NextConfig } from "next";
 const APP_ORIGIN = process.env.APP_ORIGIN ?? "https://interactive-play-quiz.vercel.app";
 
 const nextConfig: NextConfig = {
+  serverExternalPackages: ["isomorphic-dompurify"],
   async redirects() {
     return ["roadmap", "changelog", "report"].map((path) => ({
       source: `/${path}`,

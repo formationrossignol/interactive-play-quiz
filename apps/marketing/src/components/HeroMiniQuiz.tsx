@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { RotateCcw, Trophy } from "lucide-react";
 
 // Mirrors apps/app/src/components/HeroMiniQuiz.tsx verbatim — pure client
 // state (no data fetching, no auth), fully self-contained.
@@ -87,27 +88,6 @@ const SHAPE_COLORS = ["var(--ap-quiz)", "var(--ap-poll)", "var(--ap-flash)", "va
 const TIMER_SECONDS = 15;
 const CIRC = 2 * Math.PI * 24; // r=24 → ≈ 150.8
 
-type Piece = { id: number; x: number; y: number; r: number; color: string; size: number };
-
-function spawnConfetti(container: HTMLElement) {
-  const colors = ["#7048ff", "#ff5a4d", "#2f7bff", "#ffb020", "#15c08a"];
-  const pieces: Piece[] = Array.from({ length: 22 }, (_, i) => ({
-    id: i,
-    x: (Math.random() - 0.5) * 220,
-    y: -(40 + Math.random() * 100),
-    r: Math.random() * 360,
-    color: colors[i % colors.length],
-    size: 6 + Math.random() * 7,
-  }));
-  pieces.forEach((p) => {
-    const el = document.createElement("div");
-    el.className = "ap-confetti-piece";
-    el.style.cssText = `left:50%;top:50%;width:${p.size}px;height:${p.size}px;background:${p.color};--cx:${p.x}px;--cy:${p.y}px;--cr:${p.r}deg;`;
-    container.appendChild(el);
-    setTimeout(() => el.remove(), 750);
-  });
-}
-
 function useAnimatedNumber(target: number, duration = 500) {
   const [display, setDisplay] = useState(0);
   const prev = useRef(0);
@@ -138,26 +118,30 @@ export function HeroMiniQuiz() {
   const [pillBonus, setPillBonus] = useState<number | null>(null);
   const [pillKey, setPillKey] = useState(0);
   const [hintText, setHintText] = useState("Cliquez sur une réponse, c'est une vraie démo.");
-  const containerRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const advanceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const advanceLockedRef = useRef(false);
   const animatedScore = useAnimatedNumber(score);
 
-  const q = QUESTIONS[qIndex];
+  const q = QUESTIONS[Math.min(qIndex, QUESTIONS.length - 1)];
   const timerOffset = CIRC * (1 - timeLeft / TIMER_SECONDS);
   const isHot = timeLeft <= 5;
 
   const advance = useCallback(() => {
+    if (advanceLockedRef.current) return;
+    advanceLockedRef.current = true;
     if (timerRef.current) clearInterval(timerRef.current);
     if (qIndex + 1 < QUESTIONS.length) {
-      setTimeout(() => {
-        setQIndex((i) => i + 1);
+      advanceTimeoutRef.current = setTimeout(() => {
+        setQIndex(qIndex + 1);
         setSelected(null);
         setRevealed(false);
         setTimeLeft(TIMER_SECONDS);
         setHintText("Cliquez sur une réponse, c'est une vraie démo.");
+        advanceLockedRef.current = false;
       }, 1600);
     } else {
-      setTimeout(() => setDone(true), 1600);
+      advanceTimeoutRef.current = setTimeout(() => setDone(true), 1600);
     }
   }, [qIndex]);
 
@@ -173,7 +157,6 @@ export function HeroMiniQuiz() {
       setPillKey((k) => k + 1);
       setTimeout(() => setPillBonus(null), 2200);
       setHintText(q.hint);
-      if (containerRef.current) spawnConfetti(containerRef.current);
     } else {
       setShakingIndex(i);
       setTimeout(() => setShakingIndex(null), 500);
@@ -199,7 +182,14 @@ export function HeroMiniQuiz() {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [revealed, done, qIndex, q.hint, advance]);
 
+  useEffect(() => () => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    if (advanceTimeoutRef.current) clearTimeout(advanceTimeoutRef.current);
+  }, []);
+
   const restart = () => {
+    if (advanceTimeoutRef.current) clearTimeout(advanceTimeoutRef.current);
+    advanceLockedRef.current = false;
     setQIndex(0); setSelected(null); setRevealed(false);
     setScore(0); setTimeLeft(TIMER_SECONDS); setDone(false);
     setHintText("Cliquez sur une réponse, c'est une vraie démo.");
@@ -207,7 +197,6 @@ export function HeroMiniQuiz() {
 
   return (
     <div
-      ref={containerRef}
       style={{
         position: "relative",
         width: "100%",
@@ -216,7 +205,7 @@ export function HeroMiniQuiz() {
         border: "var(--ap-border-w) solid var(--ap-line)",
         borderRadius: "var(--ap-r-lg)",
         padding: 26,
-        boxShadow: "0 6px 0 var(--ap-line), 0 34px 60px rgba(60,40,120,.13)",
+        boxShadow: "var(--ap-shadow-card)",
         userSelect: "none",
       }}
       role="group"
@@ -230,7 +219,12 @@ export function HeroMiniQuiz() {
 
       {done ? (
         <div style={{ textAlign: "center", padding: "20px 0" }}>
-          <div style={{ fontSize: 40, marginBottom: 10 }}>🎉</div>
+          <Trophy
+            size={38}
+            strokeWidth={1.7}
+            aria-hidden="true"
+            style={{ color: "var(--ap-brand)", margin: "0 auto 12px" }}
+          />
           <p style={{ fontFamily: "var(--ap-font-display)", fontSize: 18, fontWeight: 600, color: "var(--ap-muted)", marginBottom: 4 }}>
             Score final
           </p>
@@ -242,7 +236,8 @@ export function HeroMiniQuiz() {
             style={{ fontSize: 14, padding: "10px 24px" }}
             onClick={restart}
           >
-            Rejouer ↺
+            <RotateCcw size={16} aria-hidden="true" />
+            Rejouer
           </button>
         </div>
       ) : (
@@ -299,8 +294,8 @@ export function HeroMiniQuiz() {
               let shapeBg = SHAPE_COLORS[i];
               if (revealed) {
                 if (isCorrect) {
-                  bg = "var(--ap-pres-deep)"; border = "2px solid var(--ap-pres-deep)";
-                  shadow = "0 4px 0 #076346"; color = "#fff"; shapeBg = "rgba(255,255,255,.22)";
+                  bg = "var(--ap-pres-deep)"; border = "1px solid var(--ap-pres-deep)";
+                  shadow = "0 6px 18px color-mix(in srgb, var(--ap-pres-deep) 18%, transparent)"; color = "#fff"; shapeBg = "rgba(255,255,255,.22)";
                 } else if (isSelected) {
                   bg = "var(--ap-paper-2)"; border = "var(--ap-border-w) solid var(--ap-line)";
                   shadow = "var(--ap-shadow-soft)"; color = "var(--ap-muted)"; shapeBg = "var(--ap-line-2)";
@@ -362,7 +357,8 @@ export function HeroMiniQuiz() {
                 whiteSpace: "nowrap", marginLeft: 12, flexShrink: 0,
               }}
             >
-              Rejouer ↺
+              <RotateCcw size={14} aria-hidden="true" style={{ display: "inline", marginRight: 5, verticalAlign: -2 }} />
+              Rejouer
             </button>
           </div>
         </>

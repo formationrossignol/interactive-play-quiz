@@ -6,6 +6,9 @@ import { toast } from "sonner";
 import { t } from "@/lib/i18n";
 import { BrandMonogram } from "ui/BrandMonogram";
 import { BrandWordmark } from "ui/BrandWordmark";
+import { marketingUrl } from "@/lib/marketingOrigin";
+import "@fontsource-variable/plus-jakarta-sans";
+import styles from "./AuthPage.module.css";
 
 type View = "login" | "register" | "mfa" | "forgot" | "confirm-email";
 
@@ -69,6 +72,10 @@ const AuthPage = () => {
 
   // Already signed in (e.g. arriving from the email confirmation link)
   useEffect(() => {
+    const requestedView = new URLSearchParams(window.location.search).get("view");
+    if (requestedView === "register" || requestedView === "signup") {
+      setView("register");
+    }
     if (getCurrentUser()) window.location.href = "/";
   }, []);
 
@@ -199,13 +206,13 @@ const AuthPage = () => {
   /* ── Shared field styles ──────────────────────────────────── */
   const inputStyle: React.CSSProperties = {
     width: "100%",
-    fontFamily: "var(--ap-font-body)",
-    fontWeight: 700,
+    fontFamily: "var(--auth-font)",
+    fontWeight: 600,
     fontSize: "15px",
     color: "var(--ap-ink)",
     background: "var(--ap-card)",
-    border: "var(--ap-border-w) solid var(--ap-line)",
-    borderRadius: "var(--ap-r-sm)",
+    border: "1px solid var(--ap-line)",
+    borderRadius: "10px",
     padding: "12px 15px",
     outline: "none",
     boxSizing: "border-box",
@@ -214,13 +221,12 @@ const AuthPage = () => {
 
   const labelStyle: React.CSSProperties = {
     display: "block",
-    fontWeight: 800,
-    fontSize: "11px",
-    letterSpacing: "0.5px",
-    textTransform: "uppercase",
-    color: "var(--ap-muted)",
+    fontWeight: 700,
+    fontSize: "13px",
+    letterSpacing: 0,
+    color: "var(--ap-ink)",
     marginBottom: "7px",
-    fontFamily: "var(--ap-font-body)",
+    fontFamily: "var(--auth-font)",
   };
 
   const linkButtonStyle: React.CSSProperties = {
@@ -230,7 +236,7 @@ const AuthPage = () => {
     fontSize: "13px",
     fontWeight: 800,
     color: "var(--ap-brand)",
-    fontFamily: "var(--ap-font-body)",
+    fontFamily: "var(--auth-font)",
     padding: 0,
   };
 
@@ -266,32 +272,7 @@ const AuthPage = () => {
     <button
       type="button"
       onClick={() => comingSoon(provider)}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: "10px",
-        width: "100%",
-        padding: "12px 16px",
-        fontFamily: "var(--ap-font-display)",
-        fontWeight: 600,
-        fontSize: "14.5px",
-        color: "var(--ap-ink)",
-        background: "var(--ap-card)",
-        border: "var(--ap-border-w) solid var(--ap-line)",
-        borderRadius: "var(--ap-r-pill)",
-        cursor: "pointer",
-        boxShadow: "0 3px 0 var(--ap-line)",
-        transition: "transform .1s var(--ap-ease), box-shadow .1s var(--ap-ease)",
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.transform = "translateY(-1px)";
-        e.currentTarget.style.boxShadow = "0 4px 0 var(--ap-line-2)";
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.transform = "none";
-        e.currentTarget.style.boxShadow = "0 3px 0 var(--ap-line)";
-      }}
+      className={styles.socialButton}
     >
       {logo}
       Continuer avec {provider}
@@ -383,7 +364,7 @@ const AuthPage = () => {
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="9" /><path d="M12 8v5M12 16h.01" />
           </svg>
-          8 caractères minimum — il en manque {pwMissing}
+          8 caractères minimum, il en manque {pwMissing}
         </p>
       ) : (
         <FieldError id="auth-password-error" message={fieldErrors.password} />
@@ -393,10 +374,10 @@ const AuthPage = () => {
 
   /* ── Right column: the auth card ──────────────────────────── */
   const authCard = (
-    <div className="ap-card ap-card--floaty" style={{ padding: "34px", width: "100%", maxWidth: "440px" }}>
+    <div className={styles.authCard}>
       {(view === "login" || view === "register") && (
         <>
-          <div className="ap-seg" style={{ marginBottom: "22px" }}>
+          <div className={`${styles.authTabs} ap-seg`}>
             <button className={view === "login" ? "is-on" : ""} onClick={() => changeView("login")}>
               Connexion
             </button>
@@ -453,7 +434,7 @@ const AuthPage = () => {
               {t("forgotPassword")}
             </button>
           </div>
-          <button type="submit" className="ap-btn ap-btn--pill" disabled={busy} style={{ width: "100%", marginTop: "4px" }}>
+          <button type="submit" className={`${styles.submitButton} ap-btn`} disabled={busy}>
             Se connecter
           </button>
         </form>
@@ -518,7 +499,7 @@ const AuthPage = () => {
             </label>
             <FieldError id="register-terms-error" message={fieldErrors.terms} />
           </div>
-          <button type="submit" className="ap-btn ap-btn--pill" disabled={busy} style={{ width: "100%", marginTop: "4px" }}>
+          <button type="submit" className={`${styles.submitButton} ap-btn`} disabled={busy}>
             S'inscrire
           </button>
         </form>
@@ -528,15 +509,15 @@ const AuthPage = () => {
         <form onSubmit={handleMfaVerify} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           <p className="ap-muted" style={{ fontSize: "14px", margin: 0 }}>{t("mfaLoginPrompt")}</p>
           <div>
-            <label style={labelStyle}>{t("mfaCodeLabel")}</label>
+            <label style={labelStyle} htmlFor="mfa-code">{t("mfaCodeLabel")}</label>
             <input
+              id="mfa-code"
               type="text"
               inputMode="numeric"
               autoComplete="one-time-code"
               pattern="[0-9]{6}"
               maxLength={6}
               required
-              autoFocus
               value={mfaCode}
               onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ""))}
               style={{ ...inputStyle, textAlign: "center", fontSize: "22px", letterSpacing: "8px" }}
@@ -545,7 +526,7 @@ const AuthPage = () => {
               onBlur={onBlur}
             />
           </div>
-          <button type="submit" className="ap-btn ap-btn--pill" disabled={busy} style={{ width: "100%" }}>
+          <button type="submit" className={`${styles.submitButton} ap-btn`} disabled={busy}>
             {t("verify")}
           </button>
           <button type="button" onClick={() => changeView("login")} style={{ ...linkButtonStyle, color: "var(--ap-muted)", alignSelf: "center" }}>
@@ -563,7 +544,6 @@ const AuthPage = () => {
               ref={forgotEmailRef}
               type="email"
               required
-              autoFocus
               value={forgotEmail}
               aria-invalid={!!fieldErrors.forgotEmail}
               aria-describedby={fieldErrors.forgotEmail ? "forgot-email-error" : undefined}
@@ -575,7 +555,7 @@ const AuthPage = () => {
             />
             <FieldError id="forgot-email-error" message={fieldErrors.forgotEmail} />
           </div>
-          <button type="submit" className="ap-btn ap-btn--pill" disabled={busy} style={{ width: "100%" }}>
+          <button type="submit" className={`${styles.submitButton} ap-btn`} disabled={busy}>
             {t("send")}
           </button>
           <button type="button" onClick={() => changeView("login")} style={{ ...linkButtonStyle, color: "var(--ap-muted)", alignSelf: "center" }}>
@@ -613,120 +593,60 @@ const AuthPage = () => {
     </div>
   );
 
-  /* ── Left column: the brand hero ──────────────────────────── */
-  const features: { icon: React.ReactNode; text: React.ReactNode }[] = [
-    {
-      icon: (
-        <svg width="19" height="19" viewBox="0 0 24 24" fill="#fff" aria-hidden="true">
-          <path d="M13 2L4.5 13.5H11l-1 8.5L19.5 10H13l0-8z" />
-        </svg>
-      ),
-      text: (
-        <>Créez un quiz en 5 minutes — ou générez-le par IA depuis vos supports de cours</>
-      ),
-    },
-    {
-      icon: (
-        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" />
-          <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
-        </svg>
-      ),
-      text: (
-        <>Jusqu'à 200 participants en direct, sur leur propre téléphone, sans installation</>
-      ),
-    },
-    {
-      icon: (
-        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" />
-        </svg>
-      ),
-      text: (
-        <>Analytics par question : sachez exactement quoi réexpliquer</>
-      ),
-    },
-  ];
+  const pageTitle = view === "register"
+    ? "Créez votre espace Brivia"
+    : view === "forgot"
+      ? "Retrouvez l’accès à votre compte"
+      : view === "mfa"
+        ? "Vérification de sécurité"
+        : "Bienvenue sur Brivia";
+
+  const pageDescription = view === "register"
+    ? "Commencez à créer vos premières activités interactives."
+    : view === "forgot"
+      ? "Nous vous enverrons un lien de réinitialisation sécurisé."
+      : view === "mfa"
+        ? "Saisissez le code à six chiffres de votre application."
+        : "Connectez-vous pour retrouver vos contenus et vos sessions.";
 
   const heroPanel = (
-    <div
-      className="auth-hero"
-      style={{
-        position: "relative",
-        overflow: "hidden",
-        background: "linear-gradient(150deg, #7e57ff 0%, #6a3ff0 45%, #4f2fd0 100%)",
-        color: "#fff",
-        padding: "56px 52px",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-      }}
-    >
-      {/* dot texture overlay */}
-      <div
-        aria-hidden="true"
-        style={{
-          position: "absolute",
-          inset: 0,
-          backgroundImage: "radial-gradient(rgba(255,255,255,.14) 1px, transparent 1px)",
-          backgroundSize: "26px 26px",
-          pointerEvents: "none",
-        }}
+    <section className={styles.visual} aria-label="Présentation de Brivia">
+      <img
+        className={styles.visualImage}
+        src="/images/auth-training-session.jpg"
+        alt="Une formatrice anime une activité Brivia avec son groupe"
       />
-      <div style={{ position: "relative", maxWidth: "460px" }}>
-        {/* Brand */}
-        <div
-          style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "44px", cursor: "pointer" }}
-          onClick={() => { window.location.href = "/"; }}
-        >
-          <span style={{ width: 46, height: 46, borderRadius: "var(--ap-r-md)", background: "rgba(255,255,255,.16)", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }}>
-            <BrandMonogram size={24} diamondColor="#b4a9ff" />
-          </span>
-          <BrandWordmark size={26} color="#fff" />
-        </div>
-
-        <h1 style={{ fontFamily: "var(--ap-font-display)", fontWeight: 600, fontSize: "clamp(30px, 3.4vw, 42px)", lineHeight: 1.08, letterSpacing: "-1px", margin: "0 0 34px" }}>
-          Vos cours deviennent<br />des moments dont<br />on se souvient.
-        </h1>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: "18px", marginBottom: "38px" }}>
-          {features.map((f, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: "14px" }}>
-              <span style={{ width: 38, height: 38, borderRadius: "11px", background: "rgba(255,255,255,.14)", display: "flex", alignItems: "center", justifyContent: "center", flex: "0 0 auto", marginTop: "1px" }}>
-                {f.icon}
-              </span>
-              <p style={{ margin: 0, fontSize: "15px", fontWeight: 700, lineHeight: 1.45, color: "rgba(255,255,255,.94)" }}>{f.text}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Testimonial */}
-        <div style={{ background: "rgba(255,255,255,.10)", border: "1px solid rgba(255,255,255,.18)", borderRadius: "var(--ap-r-md)", padding: "20px 22px", backdropFilter: "blur(4px)" }}>
-          <p style={{ margin: "0 0 12px", fontSize: "14.5px", fontWeight: 700, lineHeight: 1.5, color: "#fff" }}>
-            « Mes M2 réclament le quiz Brivia à chaque fin de module. Le taux de réussite à l'examen a gagné 12 points. »
-          </p>
-          <p style={{ margin: 0, fontSize: "12.5px", fontWeight: 800, color: "rgba(255,255,255,.75)" }}>
-            — Formatrice cloud &amp; DevOps, Toulouse
-          </p>
-        </div>
+      <div className={styles.visualScrim} aria-hidden="true" />
+      <a
+        className={styles.visualBrand}
+        aria-label="Retour à l’accueil"
+        href={marketingUrl("/")}
+      >
+        <span className={styles.brandMark}>
+          <BrandMonogram size={22} diamondColor="#c7d2fe" />
+        </span>
+        <BrandWordmark size={24} color="#fff" />
+      </a>
+      <div className={styles.visualCopy}>
+        <h1>Créez une session qui fait participer.</h1>
+        <p>Quiz, sondages, présentations et évaluations réunis dans un même espace de travail.</p>
       </div>
-    </div>
+    </section>
   );
 
   return (
-    <div className="auth-split" style={{ minHeight: "100vh", display: "grid", gridTemplateColumns: "1fr 1fr" }}>
+    <main className={styles.shell}>
       {heroPanel}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 24px" }}>
-        {authCard}
-      </div>
-
-      <style>{`
-        @media (max-width: 900px) {
-          .auth-split { grid-template-columns: 1fr; }
-          .auth-hero { display: none; }
-        }
-      `}</style>
-    </div>
+      <section className={styles.formSide} aria-labelledby="auth-page-title">
+        <div className={styles.formWrap}>
+          <header className={styles.formIntro}>
+            <h2 id="auth-page-title">{pageTitle}</h2>
+            <p>{pageDescription}</p>
+          </header>
+          {authCard}
+        </div>
+      </section>
+    </main>
   );
 };
 

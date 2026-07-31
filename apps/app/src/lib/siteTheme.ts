@@ -1,7 +1,7 @@
 // Site-wide visual themes (skins). Orthogonal to the light/dark mode toggle:
 // the skin picks the token palette + typography, the mode picks its variant.
-// The active skin is stamped on <html> as data-theme="<id>" (none for the
-// default Arcade Pop) and every skin ships a light + dark token set.
+// The active skin is stamped on <html> as data-theme="<id>". Arcade Pop is
+// the legacy base stylesheet, while Studio is the commercial default.
 
 export type SiteTheme = "arcade" | "thales" | "innov" | "studio" | "material";
 
@@ -69,7 +69,7 @@ export const SITE_THEMES: SiteThemeDef[] = [
   },
 ];
 
-export const DEFAULT_SITE_THEME: SiteTheme = "arcade";
+export const DEFAULT_SITE_THEME: SiteTheme = "studio";
 
 // "ynov" is the old id (pre-rename) — still present in already-saved
 // profiles, mapped forward so existing users don't silently lose their pick.
@@ -80,9 +80,9 @@ export const normalizeSiteTheme = (raw: unknown): SiteTheme => {
   return SITE_THEMES.some((t) => t.id === raw) ? (raw as SiteTheme) : DEFAULT_SITE_THEME;
 };
 
-/** Stamp the skin on <html>. Arcade Pop is the bare default (no attribute). */
+/** Stamp the skin on <html>. Arcade Pop remains the bare legacy stylesheet. */
 export const applySiteTheme = (theme: SiteTheme) => {
-  if (theme === DEFAULT_SITE_THEME) {
+  if (theme === "arcade") {
     document.documentElement.removeAttribute("data-theme");
   } else {
     document.documentElement.setAttribute("data-theme", theme);

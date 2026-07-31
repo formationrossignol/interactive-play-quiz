@@ -1,16 +1,6 @@
-/* ============================================================
-   Brivia · « Arcade Pop » — Design tokens (shared)
-   ------------------------------------------------------------
-   Extracted from apps/app/src/arcade-pop.css — fonts + :root
-   tokens only, framework-agnostic. Component classes (.ap-btn,
-   .ap-card, etc.) stay in the app; this package only ships what
-   more than one app needs (currently: app + marketing).
-   ============================================================ */
+/* Brivia shared design tokens for public and marketing surfaces. */
 
-/* --- Polices (auto-hébergées via Fontsource) -------------- */
-@import '@fontsource-variable/fredoka';
-@import '@fontsource-variable/nunito';
-/* Sora — réservée au wordmark "brivia" (voir BrandWordmark). */
+/* Sora is reserved for the Brivia wordmark. */
 @import '@fontsource-variable/sora';
 
 :root {
@@ -20,46 +10,45 @@
   --ap-poll:        #2f7bff;  --ap-poll-deep:   #1d55c0;  --ap-poll-soft:  #eef4ff;
   --ap-flash:       #ffb020;  --ap-flash-deep:  #a86e00;  --ap-flash-soft: #fff7e6;
 
-  /* Marque + neutres chauds — indigo Brivia (CTA plein) */
+  /* Brand and neutral defaults. Marketing may override these colors. */
   --ap-brand:       #4338ca;  --ap-brand-deep:  #312e81;  --ap-brand-soft: #ecebfe;
   /* Diamant du logo : indigo sur fond clair, lavande sur fond encre (.dark). */
   --ap-logo-diamond: #4f46e5;
-  --ap-ink:         #241b3a;  /* texte principal */
-  --ap-muted:       #6d6288;  /* texte secondaire — 4.6:1 sur fond crème */
-  --ap-paper:       #fff8ee;  /* fond crème de l'app */
-  --ap-paper-2:     #f3ecdd;  /* fond crème plus soutenu (zones) */
-  --ap-card:        #ffffff;  /* surfaces */
-  --ap-line:        #efe6d3;  /* bordures / séparateurs */
-  --ap-line-2:      #d8ccb5;  /* bordures pointillées / dropzones */
+  --ap-ink:         #171827;
+  --ap-muted:       #5b5d70;
+  --ap-paper:       #f4f5fa;
+  --ap-paper-2:     #e9eaf2;
+  --ap-card:        #ffffff;
+  --ap-line:        #d8dae5;
+  --ap-line-2:      #b9bccb;
 
-  /* Rayons — une courbe légère et cohérente, sans effet « bulle ». */
+  /* Restrained radii for commercial surfaces. */
   --ap-r-sm: 5px;
   --ap-r-md: 7px;
   --ap-r-lg: 9px;
   --ap-r-xl: 11px;
   --ap-r-pill: 7px;
 
-  /* Ombres « 3D douce » : un offset plein (la couleur) + une diffuse */
-  --ap-shadow-soft:  0 4px 0 var(--ap-line);
-  --ap-shadow-card:  0 30px 60px rgba(60,40,120,.12), 0 4px 0 var(--ap-line);
-  --ap-shadow-float: 0 14px 30px rgba(60,40,120,.16);
+  /* Soft elevation without arcade-style offset shadows. */
+  --ap-shadow-soft:  0 1px 2px rgba(23,24,39,.06);
+  --ap-shadow-card:  0 18px 44px rgba(23,24,39,.10), 0 2px 8px rgba(23,24,39,.05);
+  --ap-shadow-float: 0 12px 30px rgba(23,24,39,.12);
 
   /* Typo */
-  --ap-font-display: 'Fredoka Variable', 'Fredoka', system-ui, sans-serif;
-  --ap-font-body:    'Nunito Variable', 'Nunito', system-ui, sans-serif;
+  --ap-font-display: 'Plus Jakarta Sans Variable', 'Avenir Next', 'Segoe UI', system-ui, sans-serif;
+  --ap-font-body:    'Plus Jakarta Sans Variable', 'Avenir Next', 'Segoe UI', system-ui, sans-serif;
 
   /* Transitions */
   --ap-ease:   cubic-bezier(.2,.7,.3,1);
-  --ap-spring: cubic-bezier(.2,.7,.3,1.3);  /* léger dépassement = vivant */
+  --ap-spring: cubic-bezier(.2,.7,.3,1);
 
   /* Typographie mono — chiffres tabulaires pour codes et compteurs */
   --ap-font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', ui-monospace, monospace;
 
-  /* Texture de fond (trame de points) — les thèmes sobres la neutralisent */
-  --ap-texture: radial-gradient(var(--ap-line-2) 1px, transparent 1px);
+  --ap-texture: none;
 
   /* Épaisseur de bordure structurelle (cartes, menus, filets) */
-  --ap-border-w: 2px;
+  --ap-border-w: 1px;
 }
 
 /* Mode sombre — mêmes tokens, palette aubergine profonde. Activé par la
@@ -80,9 +69,9 @@
   --ap-poll-soft:   #182a4d;
   --ap-flash-soft:  #3a2c10;
 
-  --ap-shadow-soft:  0 4px 0 rgba(0,0,0,.35);
-  --ap-shadow-card:  0 30px 60px rgba(0,0,0,.45), 0 4px 0 rgba(0,0,0,.35);
-  --ap-shadow-float: 0 14px 30px rgba(0,0,0,.5);
+  --ap-shadow-soft:  0 1px 2px rgba(0,0,0,.24);
+  --ap-shadow-card:  0 18px 44px rgba(0,0,0,.34), 0 2px 8px rgba(0,0,0,.22);
+  --ap-shadow-float: 0 12px 30px rgba(0,0,0,.38);
 }
 
 :root { color-scheme: light; }

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Toaster } from "sonner";
+import { MarketingLanguageProvider } from "@/components/MarketingLanguage";
 import { SITE_URL } from "@/lib/siteUrl";
 import "ui/tokens.css";
 import "ui/components.css";
@@ -27,10 +28,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr" className="h-full antialiased">
+    <html lang="fr" className="h-full antialiased" data-scroll-behavior="smooth">
       <body className="min-h-full flex flex-col">
-        {children}
-        <Toaster />
+        <MarketingLanguageProvider>
+          {children}
+          <Toaster />
+        </MarketingLanguageProvider>
       </body>
     </html>
   );

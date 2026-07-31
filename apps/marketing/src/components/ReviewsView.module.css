@@ -1,0 +1,148 @@
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .55rem;
+  margin-bottom: 2rem;
+}
+
+.filter {
+  min-height: 2.6rem;
+  border: 1px solid var(--mp-line);
+  border-radius: .75rem;
+  padding: .55rem .85rem;
+  background: transparent;
+  color: var(--mp-muted);
+  font: inherit;
+  font-size: .82rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.filterActive {
+  border-color: var(--mp-accent);
+  background: var(--mp-accent);
+  color: var(--mp-on-accent);
+}
+
+.stars {
+  margin-bottom: .8rem;
+  color: var(--mp-accent);
+  font-size: .82rem;
+  letter-spacing: .08em;
+}
+
+.formSection {
+  display: grid;
+  grid-template-columns: minmax(15rem, .65fr) minmax(0, 1.35fr);
+  gap: clamp(2rem, 7vw, 7rem);
+  align-items: start;
+}
+
+.formIntro h2 {
+  margin: 0;
+  font-family: var(--ap-font-display);
+  font-size: clamp(2rem, 4vw, 3.7rem);
+  font-weight: 730;
+  letter-spacing: -.05em;
+  line-height: 1;
+}
+
+.formIntro p {
+  margin: 1rem 0 0;
+  color: var(--mp-muted);
+  font-size: .9rem;
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+.form {
+  display: grid;
+  gap: 1rem;
+  border-radius: 1.25rem;
+  padding: clamp(1.4rem, 4vw, 2.25rem);
+  background: var(--mp-surface);
+}
+
+.field {
+  display: grid;
+  gap: .45rem;
+}
+
+.field label {
+  color: var(--mp-ink);
+  font-size: .8rem;
+  font-weight: 800;
+}
+
+.field input,
+.field textarea,
+.field select {
+  width: 100%;
+  border: 1px solid var(--mp-line);
+  border-radius: .75rem;
+  padding: .8rem .9rem;
+  background: var(--mp-bg);
+  color: var(--mp-ink);
+  font: inherit;
+  font-size: .9rem;
+  font-weight: 600;
+  outline: none;
+}
+
+.field input:focus,
+.field textarea:focus,
+.field select:focus {
+  border-color: var(--mp-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--mp-accent) 20%, transparent);
+}
+
+.ratingButtons {
+  display: flex;
+  gap: .3rem;
+}
+
+.ratingButtons button {
+  border: 0;
+  padding: .2rem;
+  background: transparent;
+  color: var(--mp-line);
+  font-size: 1.55rem;
+  cursor: pointer;
+}
+
+.ratingButtons .selected {
+  color: var(--mp-accent);
+}
+
+.submit {
+  justify-self: start;
+  min-height: 3rem;
+  border: 1px solid var(--mp-accent);
+  border-radius: .75rem;
+  padding: .75rem 1.1rem;
+  background: var(--mp-accent);
+  color: var(--mp-on-accent);
+  font: inherit;
+  font-size: .88rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.submit:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+}
+
+.success {
+  border-radius: 1rem;
+  padding: 1.25rem;
+  background: var(--mp-accent-soft);
+  color: var(--mp-ink);
+  font-weight: 700;
+}
+
+@media (max-width: 760px) {
+  .formSection {
+    grid-template-columns: 1fr;
+  }
+}

@@ -103,7 +103,7 @@ export function ReportForm() {
           <div className="dropzone">
             <Upload size={20} strokeWidth={2.2} style={{ marginBottom: "5px" }} />
             <br />
-            Glissez un fichier ici, ou cliquez — PNG, JPG, MP4, 20 Mo max
+            Glissez un fichier ici, ou cliquez. PNG, JPG, MP4, 20 Mo max
           </div>
         </div>
 

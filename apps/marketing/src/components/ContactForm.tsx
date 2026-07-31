@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Clock, Send } from "lucide-react";
 import { toast } from "sonner";
+import styles from "./ContactForm.module.css";
 
 const COOLDOWN_SECONDS = 60;
 const MAX_PER_HOUR = 3;
@@ -107,7 +108,7 @@ export function ContactForm() {
     e.preventDefault();
 
     if (honeypot) {
-      toast.success("Message envoyé ! Nous vous répondrons rapidement.");
+      toast.success("Message envoyé. Nous vous répondrons rapidement.");
       setFormData({ name: "", email: "", subject: "", message: "" });
       return;
     }
@@ -146,7 +147,7 @@ export function ContactForm() {
     saveFlood(newFlood);
     setCooldown(COOLDOWN_SECONDS);
 
-    toast.success("Message envoyé ! Nous vous répondrons rapidement.");
+    toast.success("Message envoyé. Nous vous répondrons rapidement.");
     setFormData({ name: "", email: "", subject: "", message: "" });
   };
 
@@ -154,7 +155,7 @@ export function ContactForm() {
 
   if (hourlyBlocked) {
     return (
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px", padding: "32px 0", textAlign: "center" }}>
+      <div className={styles.blocked}>
         <Clock style={{ width: 40, height: 40, color: "var(--ap-muted)" }} />
         <p className="ap-muted" style={{ fontWeight: 700 }}>Limite horaire atteinte ({MAX_PER_HOUR} messages/heure).</p>
         <p className="ap-muted" style={{ fontSize: "13px" }}>Réessayez dans une heure ou écrivez-nous directement par email.</p>
@@ -163,16 +164,17 @@ export function ContactForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-      <div style={{ position: "absolute", left: "-9999px", opacity: 0, pointerEvents: "none" }} aria-hidden>
+    <form onSubmit={handleSubmit} className={styles.form}>
+      <div className={styles.hidden} aria-hidden>
         <label>Ne pas remplir</label>
         <input tabIndex={-1} autoComplete="off" value={honeypot} onChange={(e) => setHoneypot(e.target.value)} />
       </div>
 
-      <div style={{ display: "grid", gap: "16px", gridTemplateColumns: "1fr 1fr" }}>
+      <div className={styles.identityGrid}>
         <div>
-          <label style={labelStyle}>Nom</label>
+          <label htmlFor="contact-name" style={labelStyle}>Nom</label>
           <input
+            id="contact-name"
             style={inputStyle}
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -182,8 +184,9 @@ export function ContactForm() {
           />
         </div>
         <div>
-          <label style={labelStyle}>Email</label>
+          <label htmlFor="contact-email" style={labelStyle}>Email</label>
           <input
+            id="contact-email"
             type="email"
             style={inputStyle}
             value={formData.email}
@@ -196,8 +199,9 @@ export function ContactForm() {
       </div>
 
       <div>
-        <label style={labelStyle}>Sujet</label>
+        <label htmlFor="contact-subject" style={labelStyle}>Sujet</label>
         <input
+          id="contact-subject"
           style={inputStyle}
           value={formData.subject}
           onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
@@ -208,8 +212,9 @@ export function ContactForm() {
       </div>
 
       <div>
-        <label style={labelStyle}>Message</label>
+        <label htmlFor="contact-message" style={labelStyle}>Message</label>
         <textarea
+          id="contact-message"
           style={{ ...inputStyle, resize: "vertical", minHeight: "140px", lineHeight: 1.5 }}
           value={formData.message}
           onChange={(e) => setFormData({ ...formData, message: e.target.value })}

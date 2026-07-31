@@ -47,7 +47,7 @@ export function ChangelogView({ releases }: { releases: Release[] }) {
     <>
       <div className="subscribe">
         <button className="btn btn--sm" disabled={subLoading || subPending} onClick={toggleSubscribe}>
-          {subscribed ? "Abonné ✓ — se désabonner" : "Recevoir les nouveautés"}
+          {subscribed ? "Abonné ✓, se désabonner" : "Recevoir les nouveautés"}
         </button>
       </div>
 

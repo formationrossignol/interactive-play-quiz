@@ -28,6 +28,29 @@
    1. TOKENS
    ============================================================ */
 :root[data-theme="studio"] {
+  /* Pont vers les composants Tailwind/shadcn afin que les surfaces publiques
+     partagent exactement la même palette que les composants ap-*. */
+  --background: 225 25% 98%;
+  --foreground: 221 38% 15%;
+  --card: 0 0% 100%;
+  --card-foreground: 221 38% 15%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 221 38% 15%;
+  --primary: 245 79% 61%;
+  --primary-foreground: 240 100% 99%;
+  --secondary: 225 18% 95%;
+  --secondary-foreground: 221 38% 15%;
+  --muted: 225 18% 95%;
+  --muted-foreground: 223 14% 41%;
+  --accent: 241 68% 96%;
+  --accent-foreground: 245 58% 49%;
+  --destructive: 348 51% 46%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 228 20% 92%;
+  --input: 228 20% 86%;
+  --ring: 245 79% 61%;
+  --radius: .625rem;
+
   /* Couleurs par TYPE de contenu — signal discret, jamais un aplat plein écran */
   --ap-quiz:        #d3654f;  --ap-quiz-deep:   #a8493a;  --ap-quiz-soft:  #fbeeec;
   --ap-pres:        #7c6ae8;  --ap-pres-deep:   #5b4fe9;  --ap-pres-soft:  #efedfc;
@@ -78,6 +101,24 @@
 
 /* ── Variante sombre — encre profonde, indigo inchangé ── */
 .dark[data-theme="studio"] {
+  --background: 218 39% 9%;
+  --foreground: 220 22% 96%;
+  --card: 216 32% 14%;
+  --card-foreground: 220 22% 96%;
+  --popover: 216 32% 14%;
+  --popover-foreground: 220 22% 96%;
+  --primary: 245 79% 69%;
+  --primary-foreground: 240 100% 99%;
+  --secondary: 219 35% 12%;
+  --secondary-foreground: 220 22% 96%;
+  --muted: 219 35% 12%;
+  --muted-foreground: 222 17% 66%;
+  --accent: 246 39% 20%;
+  --accent-foreground: 244 77% 83%;
+  --border: 216 29% 21%;
+  --input: 216 23% 29%;
+  --ring: 245 79% 69%;
+
   --ap-paper:       #0e1420;
   --ap-paper-2:     #141b2b;
   --ap-card:        #17202f;

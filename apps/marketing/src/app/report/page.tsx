@@ -6,7 +6,7 @@ import "@/styles/roadmap-pages.css";
 
 export const metadata: Metadata = {
   title: "Signaler un problème",
-  description: "Un souci avec Brivia ? Décrivez ce qui s'est passé — type, gravité, contexte technique — et suivez la résolution de vos tickets.",
+  description: "Un souci avec Brivia ? Décrivez le type, la gravité et le contexte technique, puis suivez la résolution de vos tickets.",
 };
 
 export default function ReportPage() {
@@ -16,9 +16,8 @@ export default function ReportPage() {
       <main className="lq" style={{ flex: 1 }}>
         <div className="wrap">
           <div className="page-hero">
-            <span className="eyebrow">Support</span>
             <h1>Un problème ? Réglons ça.</h1>
-            <p className="lead">Décrivez ce qui s&apos;est passé — plus c&apos;est précis, plus vite on corrige.</p>
+            <p className="lead">Décrivez précisément ce qui s&apos;est passé pour nous aider à corriger plus vite.</p>
           </div>
           <ReportForm />
         </div>
