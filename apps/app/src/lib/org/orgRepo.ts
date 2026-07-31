@@ -44,6 +44,21 @@ export interface OrgMember {
   joined_at: string;
 }
 
+export interface OrgSettings {
+  id: string;
+  name: string;
+  guest_access_enabled: boolean;
+}
+
+export interface AdminOrgSummary {
+  id: string;
+  name: string;
+  slug: string;
+  member_count: number;
+  guest_access_enabled: boolean;
+  created_at: string;
+}
+
 /** Pure: turn a display name into a URL/DB-safe slug candidate. No I/O. */
 export function slugify(input: string): string {
   return input
@@ -146,4 +161,28 @@ export async function revokeOrgRole(orgId: string, userId: string, role: OrgRole
 export async function removeOrgMember(orgId: string, userId: string): Promise<void> {
   const { error } = await supabase.rpc('admin_remove_org_member', { p_org_id: orgId, p_user_id: userId });
   if (error) throw error;
+}
+
+/** Org id/name/guest-access — readable by any member (organizations_member_read). */
+export async function fetchOrgSettings(orgId: string): Promise<OrgSettings> {
+  const { data, error } = await supabase
+    .from('organizations')
+    .select('id, name, guest_access_enabled')
+    .eq('id', orgId)
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+/** Org admin/pedago only (enforced server-side). */
+export async function updateGuestAccess(orgId: string, enabled: boolean): Promise<void> {
+  const { error } = await supabase.rpc('update_org_guest_access', { p_org_id: orgId, p_enabled: enabled });
+  if (error) throw error;
+}
+
+/** Site super-admin only (enforced server-side) — every org, read-only. */
+export async function adminListAllOrgs(): Promise<AdminOrgSummary[]> {
+  const { data, error } = await supabase.rpc('admin_list_all_orgs');
+  if (error) throw error;
+  return data ?? [];
 }
