@@ -364,10 +364,12 @@ const QuestionBank = () => {
                 <ExternalLink className="h-4 w-4" />
                 {t("openQuizBuilder")}
               </button>
-              <button className="ap-btn ap-btn--sm ap-btn--pill" onClick={openCreateDialog}>
-                <Plus className="h-4 w-4" />
-                {t("addQuestionToBank")}
-              </button>
+              {items.length > 0 && (
+                <button className="ap-btn ap-btn--sm ap-btn--pill" onClick={openCreateDialog}>
+                  <Plus className="h-4 w-4" />
+                  {t("addQuestionToBank")}
+                </button>
+              )}
             </>
           )}
         />
