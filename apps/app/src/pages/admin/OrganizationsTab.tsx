@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useState } from "react";
+import { ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { TableSkeleton } from "@/components/ui/skeletons";
@@ -77,30 +78,44 @@ export function OrganizationsTab() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {orgs.map((org) => (
-            <Fragment key={org.id}>
-              <TableRow
-                className="cursor-pointer"
-                onClick={() => setExpandedOrgId((prev) => (prev === org.id ? null : org.id))}
-              >
-                <TableCell>{org.name}</TableCell>
-                <TableCell>{org.member_count}</TableCell>
-                <TableCell>
-                  <Badge variant={org.guest_access_enabled ? "default" : "secondary"}>
-                    {org.guest_access_enabled ? "Activé" : "Désactivé"}
-                  </Badge>
-                </TableCell>
-                <TableCell>{new Date(org.created_at).toLocaleDateString("fr-FR")}</TableCell>
-              </TableRow>
-              {expandedOrgId === org.id && (
+          {orgs.map((org) => {
+            const expanded = expandedOrgId === org.id;
+            return (
+              <Fragment key={org.id}>
                 <TableRow>
-                  <TableCell colSpan={4} className="p-0">
-                    <MemberRosterReadOnly orgId={org.id} />
+                  <TableCell className="p-0">
+                    <button
+                      type="button"
+                      className="flex w-full items-center gap-2 p-4 text-left"
+                      onClick={() => setExpandedOrgId((prev) => (prev === org.id ? null : org.id))}
+                      aria-expanded={expanded}
+                    >
+                      <ChevronRight
+                        size={16}
+                        className="shrink-0 text-muted-foreground transition-transform"
+                        style={{ transform: expanded ? "rotate(90deg)" : undefined }}
+                      />
+                      {org.name}
+                    </button>
                   </TableCell>
+                  <TableCell>{org.member_count}</TableCell>
+                  <TableCell>
+                    <Badge variant={org.guest_access_enabled ? "default" : "secondary"}>
+                      {org.guest_access_enabled ? "Activé" : "Désactivé"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>{new Date(org.created_at).toLocaleDateString("fr-FR")}</TableCell>
                 </TableRow>
-              )}
-            </Fragment>
-          ))}
+                {expanded && (
+                  <TableRow>
+                    <TableCell colSpan={4} className="p-0">
+                      <MemberRosterReadOnly orgId={org.id} />
+                    </TableCell>
+                  </TableRow>
+                )}
+              </Fragment>
+            );
+          })}
         </TableBody>
       </Table>
     </section>
