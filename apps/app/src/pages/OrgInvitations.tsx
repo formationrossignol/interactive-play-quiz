@@ -22,16 +22,7 @@ import {
   type OrgMembership,
   type OrgRole,
 } from "@/lib/org/orgRepo";
-
-const roleOptions: { value: OrgRole; label: string }[] = [
-  { value: "learner", label: "Apprenant" },
-  { value: "trainer", label: "Formateur" },
-  { value: "pedago", label: "Responsable pédagogique" },
-  { value: "registrar", label: "Gestionnaire de scolarité" },
-  { value: "admin", label: "Administrateur" },
-];
-
-const roleLabel = (role: OrgRole): string => roleOptions.find((r) => r.value === role)?.label ?? role;
+import { roleOptions, roleLabel } from "@/lib/org/roleLabels";
 
 /** Postgrest errors are plain {code,message,...} objects, not `instanceof Error`. */
 function errorMessage(err: unknown): string {
