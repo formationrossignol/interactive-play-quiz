@@ -235,7 +235,7 @@ const PhonePreview = ({
           background: "var(--ap-paper)", borderRadius: "var(--ap-r-md)", overflow: "hidden",
           display: "flex", flexDirection: "column", minHeight: 470,
         }}>
-          <div style={{ width: 84, height: 20, background: "var(--ap-ink)", borderRadius: "0 0 13px 13px", margin: "0 auto", flexShrink: 0 }} />
+          <div style={{ width: 84, height: 20, background: "var(--ap-ink)", borderRadius: "0 0 var(--ap-r-xl) var(--ap-r-xl)", margin: "0 auto", flexShrink: 0 }} />
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1, padding: 20, color: "var(--ap-muted)", fontSize: 13, fontWeight: 700, textAlign: "center" }}>
             Sélectionnez une question<br />pour voir l'aperçu joueur
           </div>
@@ -283,7 +283,7 @@ const PhonePreview = ({
         display: "flex", flexDirection: "column", minHeight: 470,
       }}>
         {/* Notch */}
-        <div style={{ width: 84, height: 20, background: "var(--ap-ink)", borderRadius: "0 0 13px 13px", margin: "0 auto", flexShrink: 0 }} />
+        <div style={{ width: 84, height: 20, background: "var(--ap-ink)", borderRadius: "0 0 var(--ap-r-xl) var(--ap-r-xl)", margin: "0 auto", flexShrink: 0 }} />
 
         {/* HUD */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px 6px" }}>
@@ -337,8 +337,11 @@ const PhonePreview = ({
               }}
             />
           )}
+          {/* Media-legibility scrim — same value as QuizSession.tsx/PollSession.tsx's
+              identical-intent gradient; previously drifted brand-tinted rgb + a
+              different start-opacity in each of the three. */}
           {layout.mediaPosition === "background" && hasMedia && (
-            <span aria-hidden="true" style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(20,15,35,.1), rgba(20,15,35,.82))" }} />
+            <span aria-hidden="true" style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(0,0,0,.1), rgba(0,0,0,.82))" }} />
           )}
           <p style={{
             position: "relative",
@@ -387,7 +390,7 @@ const PhonePreview = ({
 
         <div style={{
           textAlign: "center", fontFamily: "var(--ap-font-display)", fontWeight: 600,
-          fontSize: 10.5, color: "var(--ap-muted)", paddingBottom: 10, letterSpacing: ".04em",
+          fontSize: 11, color: "var(--ap-muted)", paddingBottom: 10, letterSpacing: ".04em",
         }}>
           <span style={{ display: "inline-flex", verticalAlign: "-2px", marginRight: 4 }}>
             <BrandMonogram size={11} color="var(--ap-brand)" />
@@ -446,7 +449,7 @@ const RailItem = ({
         <span style={{ minWidth: 0, flex: 1 }}>
           <span style={{
             display: "flex", alignItems: "center", gap: 5,
-            fontSize: 10.5, fontWeight: 800, letterSpacing: ".07em",
+            fontSize: 11, fontWeight: 800, letterSpacing: ".07em",
             textTransform: "uppercase", color: "var(--ap-muted)",
           }}>
             <MetaIcon style={{ width: 13, height: 13, color: meta.dot, flexShrink: 0 }} aria-hidden="true" />
@@ -528,7 +531,7 @@ const ThemePreviewPanel = ({ theme }: { theme?: Theme }) => {
       </div>
       <div className="flex items-center justify-between gap-3">
         <ThemePaletteChips theme={theme} />
-        <span className="text-[0.65rem] font-semibold uppercase tracking-widest text-muted-foreground">Palette</span>
+        <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Palette</span>
       </div>
     </div>
   );
@@ -1089,7 +1092,7 @@ export const QuizBuilder = () => {
             <img src={q.image} alt="" style={{ width: "100%", maxHeight: 200, objectFit: "cover", display: "block" }} />
             <button
               onClick={() => upd({ image: "" })}
-              style={{ position: "absolute", top: 8, right: 8, background: "rgba(0,0,0,.6)", color: "white", border: "none", borderRadius: 8, padding: "4px 8px", cursor: "pointer" }}
+              style={{ position: "absolute", top: 8, right: 8, background: "color-mix(in srgb, var(--ap-ink) 78%, transparent)", color: "white", border: "none", borderRadius: 8, padding: "4px 8px", cursor: "pointer" }}
             >
               <Trash2 style={{ width: 14, height: 14 }} />
             </button>

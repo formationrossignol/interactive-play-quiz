@@ -413,8 +413,10 @@ export const PollSession = ({ poll }: PollSessionProps) => {
                 }}
               />
             )}
+            {/* Media-legibility scrim — matches QuizSession.tsx/QuizBuilder.tsx's
+                identical-intent gradient. */}
             {backgroundMedia && (
-              <span aria-hidden="true" style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(20,15,35,.12), rgba(20,15,35,.82))" }} />
+              <span aria-hidden="true" style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(0,0,0,.1), rgba(0,0,0,.82))" }} />
             )}
             <h1 style={{
               position: "relative",
