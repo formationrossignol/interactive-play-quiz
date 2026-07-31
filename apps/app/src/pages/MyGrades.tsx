@@ -11,6 +11,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/ui/page-header";
+import { ExplorerEmptyState } from "@/components/content/ExplorerEmptyState";
 import {
   Dialog,
   DialogContent,
@@ -109,13 +110,11 @@ export default function MyGrades() {
         {loading ? (
           <section className="ap-card p-5"><ListSkeleton rows={6} /></section>
         ) : grades.length === 0 ? (
-          <section className="ap-card border-dashed px-6 py-14 text-center">
-            <ClipboardList className="mx-auto mb-4 h-12 w-12" style={{ color: "var(--ap-brand)" }} />
-            <h2 className="ap-h2 text-xl">Aucune note publiée</h2>
-            <p className="ap-muted mx-auto mt-2 max-w-lg text-sm">
-              Vos résultats apparaîtront ici lorsque votre enseignant les aura publiés.
-            </p>
-          </section>
+          <ExplorerEmptyState
+            icon={<ClipboardList size={27} />}
+            title="Aucune note publiée"
+            body="Vos résultats apparaîtront ici lorsque votre enseignant les aura publiés."
+          />
         ) : (
           <>
             <div className="product-metric-grid">
