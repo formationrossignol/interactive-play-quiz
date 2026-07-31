@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
+import { ExplorerEmptyState } from "@/components/content/ExplorerEmptyState";
 import { getCurrentUser } from "@/lib/auth";
 import {
   deleteLearningPath,
@@ -82,25 +83,17 @@ export default function MyLearningPaths() {
         />
 
           {paths.length === 0 ? (
-            <div
-              className="ap-card"
-              style={{ padding: "52px 24px", textAlign: "center", borderStyle: "dashed", maxWidth: 720, margin: "48px auto 0" }}
-            >
-              <div style={{
-                width: 64, height: 64, borderRadius: "50%", margin: "0 auto 18px",
-                display: "grid", placeItems: "center", background: "color-mix(in srgb, var(--ap-brand) 12%, transparent)",
-              }}>
-                <Route style={{ width: 30, height: 30, color: "var(--ap-brand)" }} />
-              </div>
-              <h2 className="ap-h2" style={{ fontSize: 22 }}>Créez votre premier parcours</h2>
-              <p className="ap-muted" style={{ maxWidth: 480, margin: "8px auto 22px", lineHeight: 1.6 }}>
-                Sélectionnez plusieurs cours, définissez leur ordre et choisissez les conditions nécessaires pour débloquer chaque étape.
-              </p>
-              <Button onClick={() => navigate("/learning-path-builder")}>
-                <Plus className="h-4 w-4" />
-                Créer un parcours
-              </Button>
-            </div>
+            <ExplorerEmptyState
+              icon={<Route size={27} />}
+              title="Créez votre premier parcours"
+              body="Sélectionnez plusieurs cours, définissez leur ordre et choisissez les conditions nécessaires pour débloquer chaque étape."
+              action={(
+                <Button onClick={() => navigate("/learning-path-builder")}>
+                  <Plus className="h-4 w-4" />
+                  Créer un parcours
+                </Button>
+              )}
+            />
           ) : (
             <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
               {paths.map((path) => {
