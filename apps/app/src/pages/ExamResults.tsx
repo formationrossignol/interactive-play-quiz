@@ -5,7 +5,7 @@ import { parseFunctionsError } from '@/lib/functionsError';
 import { getParticipant } from '@/lib/examParticipant';
 import { isAnswerCorrect } from '@/lib/examStorage';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, CheckCircle2, LockKeyhole, RotateCcw } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, LockKeyhole, RotateCcw, TrendingUp, X } from 'lucide-react';
 
 interface AttemptView {
   timeUsedSeconds: number;
@@ -22,8 +22,39 @@ interface ExamView {
   showResultsPolicy: string;
 }
 
-type QuestionView = { id: string; type: string; question: string; answers?: string[] };
+type QuestionView = { id: string; type: string; question: string; answers?: string[]; skills?: string[] };
 type CorrectionView = { id: string; correctAnswer: unknown };
+
+interface SkillMastery {
+  skill: string;
+  correct: number;
+  total: number;
+}
+
+/** Per-attempt skill mastery (analytics phase C, apprenant persona) — no
+ *  cross-attempt aggregation, so no identity-linking problem: everything
+ *  needed is already on the attempt the learner is looking at. */
+function computeSkillMastery(
+  orderedQs: QuestionView[],
+  answers: Record<string, number | string | null>,
+  correctionById: Map<string, CorrectionView>,
+): SkillMastery[] {
+  const bySkill = new Map<string, SkillMastery>();
+  for (const q of orderedQs) {
+    if (!q.skills?.length) continue;
+    const given = answers[q.id];
+    const correctAnswer = correctionById.get(q.id)?.correctAnswer;
+    const isCorrect = given !== null && given !== undefined && given !== ''
+      && isAnswerCorrect(given, { type: q.type, correctAnswer });
+    for (const skill of q.skills) {
+      const acc = bySkill.get(skill) ?? { skill, correct: 0, total: 0 };
+      acc.total += 1;
+      if (isCorrect) acc.correct += 1;
+      bySkill.set(skill, acc);
+    }
+  }
+  return [...bySkill.values()].sort((a, b) => (a.correct / a.total) - (b.correct / b.total));
+}
 
 export default function ExamResults() {
   const { attemptId } = useParams<{ attemptId: string }>();
@@ -105,6 +136,7 @@ export default function ExamResults() {
   const orderedQs = attempt.questionOrder
     .map((id) => questions.find((q) => q.id === id))
     .filter(Boolean) as QuestionView[];
+  const skillMastery = showCorrection ? computeSkillMastery(orderedQs, attempt.answers, correctionById) : [];
 
   return (
     <div className="product-flow">
@@ -138,6 +170,38 @@ export default function ExamResults() {
             <Stat label="Répondu" value={`${Object.keys(attempt.answers).length}/${questions.length}`} />
           </div>
         </div>
+
+        {skillMastery.length > 0 && (
+          <div className="product-panel" style={{ marginBottom: 22 }}>
+            <h3 style={{ fontFamily: 'var(--ap-font-display)', fontWeight: 600, fontSize: 15, marginBottom: 14 }}>
+              Vos compétences
+            </h3>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {skillMastery.map((sm) => {
+                const mastered = sm.correct === sm.total;
+                return (
+                  <span
+                    key={sm.skill}
+                    title={`${sm.correct}/${sm.total} bonne${sm.correct > 1 ? 's' : ''} réponse${sm.correct > 1 ? 's' : ''}`}
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 6,
+                      padding: '7px 12px', borderRadius: 'var(--ap-r-sm)',
+                      border: `1px solid ${mastered ? 'var(--ap-pres)' : 'var(--ap-quiz)'}`,
+                      background: mastered ? 'var(--ap-pres-soft)' : 'var(--ap-quiz-soft)',
+                      color: mastered ? 'var(--ap-pres-deep)' : 'var(--ap-quiz-deep)',
+                      fontWeight: 700, fontSize: 13,
+                    }}
+                  >
+                    {mastered
+                      ? <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+                      : <TrendingUp className="h-4 w-4" aria-hidden="true" />}
+                    {sm.skill}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {showAnswers && (
           <div className="product-data-table-wrap">
@@ -174,9 +238,12 @@ export default function ExamResults() {
                         <ResultCell>
                           <span style={{
                             display: 'inline-flex', alignItems: 'center', gap: 6,
-                            color: isCorrect ? '#0d8f68' : '#d83d34', fontWeight: 800, fontSize: 13,
+                            color: isCorrect ? 'var(--ap-pres-deep)' : 'var(--ap-quiz-deep)', fontWeight: 800, fontSize: 13,
                           }}>
-                            {isCorrect ? '✓ Correct' : '✕ Incorrect'}
+                            {isCorrect
+                              ? <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+                              : <X className="h-4 w-4" aria-hidden="true" />}
+                            {isCorrect ? 'Correct' : 'Incorrect'}
                           </span>
                         </ResultCell>
                       )}
@@ -209,8 +276,8 @@ function ResultCell({ children, style }: { children: React.ReactNode; style?: Re
 
 function AnswerPill({ children, tone }: { children: React.ReactNode; tone: 'success' | 'error' | 'neutral' }) {
   const tones = {
-    success: { background: '#e8faf3', color: '#0d8f68', border: '#9ce7ca' },
-    error: { background: '#fff3f0', color: '#d83d34', border: '#ffc1bc' },
+    success: { background: 'var(--ap-pres-soft)', color: 'var(--ap-pres-deep)', border: 'var(--ap-pres)' },
+    error: { background: 'var(--ap-quiz-soft)', color: 'var(--ap-quiz-deep)', border: 'var(--ap-quiz)' },
     neutral: { background: 'var(--ap-paper)', color: 'var(--ap-ink)', border: 'var(--ap-line)' },
   };
   const colors = tones[tone];

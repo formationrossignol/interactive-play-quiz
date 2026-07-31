@@ -49,6 +49,7 @@ import { assertSafeImportFile } from "@/lib/fileValidation";
 import { sanitizeHtml } from "@/lib/sanitizeHtml";
 import { toast } from "sonner";
 import { CourseCertificateDialog } from "@/components/CourseCertificateDialog";
+import { recordCertificate } from "@/lib/certificates";
 import { ScormPlayer } from "@/components/ScormPlayer";
 import { H5pPlayer } from "@/components/h5p/H5pPlayer";
 import type { H5pTrackingRecord } from "@/lib/h5pTracking";
@@ -551,6 +552,7 @@ const CourseViewer = () => {
   const [certificateOpen, setCertificateOpen] = useState(false);
   const mainRef = useRef<HTMLDivElement>(null);
   const confettiFiredRef = useRef(false);
+  const certificateRecordedRef = useRef(false);
 
   useEffect(() => {
     if (!user) { navigate("/auth"); return; }
@@ -629,6 +631,20 @@ const CourseViewer = () => {
       launchConfetti();
     }
   }, [allDone]);
+
+  // Persist the certificate so it shows up in "Mes certificats" — upsert is
+  // idempotent, but a ref keeps this from re-firing on every render.
+  useEffect(() => {
+    if (!allDone || !course || !user || certificateRecordedRef.current) return;
+    certificateRecordedRef.current = true;
+    void recordCertificate({
+      userId: user.id,
+      courseId: course.id,
+      courseTitle: course.title,
+      learnerName: user.username || user.email,
+      totalLessons,
+    }).catch(() => { certificateRecordedRef.current = false; });
+  }, [allDone, course, user, totalLessons]);
 
   const currentIdx = allLessons.findIndex((x) => x.lesson.id === currentLessonId);
   const currentEntry = allLessons[currentIdx];

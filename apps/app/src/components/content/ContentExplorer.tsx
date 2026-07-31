@@ -18,6 +18,7 @@ import {
   Folder as FolderIcon,
   Globe,
   LayoutGrid,
+  LayoutTemplate,
   List,
   Search,
   Sparkles,
@@ -41,6 +42,7 @@ import {
   filterActive,
   filterByFolder,
   filterFavorites,
+  filterTemplates,
   filterTrashed,
   toDisplay,
   type ContentDisplay,
@@ -52,7 +54,7 @@ import { ExplorerEmptyState } from "./ExplorerEmptyState";
 
 const PAGE_SIZE = 12;
 
-type ShortcutView = "all" | "favorites" | "public" | "trash";
+type ShortcutView = "all" | "favorites" | "templates" | "public" | "trash";
 
 interface ExplorerPreferences {
   view?: ShortcutView;
@@ -253,6 +255,8 @@ export interface ContentExplorerProps {
   oneLabel: string; // "quiz", "sondage", "paquet", "cours"
   cta: { label: string; onClick: () => void };
   headerExtras?: ReactNode; // e.g. Examens button (quiz), Générer par IA (course)
+  /** Full-width row rendered between the page head and the toolbar/sidebar grid — e.g. a cross-item stats summary. */
+  statsRow?: ReactNode;
   /** Fixed category list; when omitted, derived from the items' categories. */
   categories?: string[];
   /** Receives the collection's reload fn so the page can refresh after external mutations. */
@@ -295,6 +299,7 @@ export function ContentExplorer({
   oneLabel,
   cta,
   headerExtras,
+  statsRow,
   categories: fixedCategories,
   reloadRef,
   extraFilter,
@@ -339,6 +344,7 @@ export function ContentExplorer({
   );
   const trashed = useMemo(() => filterTrashed(display), [display]);
   const favorites = useMemo(() => applySearchSort(filterFavorites(display), opts), [display, opts]);
+  const templates = useMemo(() => applySearchSort(filterTemplates(display), opts), [display, opts]);
   const publicDisplay = useMemo(() => applySearchSort(c.publicItems.map(toDisplay), opts), [c.publicItems, opts]);
 
   // Direct active-item count per folderId (badges).
@@ -390,7 +396,9 @@ export function ContentExplorer({
 
   const breadcrumbItems: BreadcrumbItem[] = useMemo(() => {
     if (view !== "all") {
-      const label = view === "favorites" ? t("favorites") : view === "public" ? t("explorerPublicContent") : t("explorerTrash");
+      const label = view === "favorites" ? t("favorites")
+        : view === "templates" ? t("explorerTemplates")
+        : view === "public" ? t("explorerPublicContent") : t("explorerTrash");
       return [{ label }];
     }
     const folders: BreadcrumbItem[] = breadcrumb.map((f) =>
@@ -553,6 +561,10 @@ export function ContentExplorer({
     content = favorites.length
       ? paginatedBlock(favorites)
       : emptyBox(t("explorerNoFavoritesTitle"), tVars("explorerNoFavoritesBody", { item: oneLabel }), <Star style={{ width: 26, height: 26 }} />);
+  } else if (view === "templates") {
+    content = templates.length
+      ? paginatedBlock(templates)
+      : emptyBox(t("explorerNoTemplatesTitle"), tVars("explorerNoTemplatesBody", { item: oneLabel }), <LayoutTemplate style={{ width: 26, height: 26 }} />);
   } else if (view === "public") {
     content = publicDisplay.length
       ? paginatedBlock(publicDisplay)
@@ -608,6 +620,8 @@ export function ContentExplorer({
           </div>
         </div>
 
+        {statsRow}
+
         {c.error && (
           <div style={{ borderRadius: "var(--ap-r-md)", border: "2px solid var(--ap-danger)", background: "var(--ap-paper-2)", padding: "16px", marginBottom: "16px", color: "var(--ap-danger)", fontWeight: 700 }}>
             {c.error}
@@ -636,6 +650,13 @@ export function ContentExplorer({
                     count={filterFavorites(display).length}
                     active={view === "favorites"}
                     onClick={() => goShortcut("favorites")}
+                  />
+                  <ShortcutRow
+                    icon={<LayoutTemplate style={{ width: 16, height: 16 }} />}
+                    label={t("explorerTemplates")}
+                    count={filterTemplates(display).length}
+                    active={view === "templates"}
+                    onClick={() => goShortcut("templates")}
                   />
                   <ShortcutRow
                     icon={<Globe style={{ width: 16, height: 16 }} />}

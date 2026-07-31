@@ -1,4 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("@/lib/supabase", () => ({
+  supabase: {},
+  supabaseUrl: "https://example.supabase.co",
+  supabaseKey: "anon-key",
+}));
+
 import { createLinkedInPostDraft } from "../CourseCertificateDialog";
 import type { Course } from "@/lib/courseStorage";
 

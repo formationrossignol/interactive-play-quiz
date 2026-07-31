@@ -64,6 +64,38 @@ interface QuestionStat {
   totalResponded: number;
   correctCount: number;
   pctCorrect: number;
+  skills: string[];
+}
+
+interface SkillStat {
+  skill: string;
+  totalResponded: number;
+  correctCount: number;
+  pctCorrect: number;
+}
+
+/** Rolls per-question stats up by skill tag (a question can carry several
+ *  skills, so it contributes to each one's totals) — "compétences les moins
+ *  maîtrisées". Untagged questions are excluded; this panel only appears
+ *  once at least one question has a skill. */
+function computeSkillStats(questionStats: QuestionStat[]): SkillStat[] {
+  const bySkill = new Map<string, { totalResponded: number; correctCount: number }>();
+  for (const qs of questionStats) {
+    for (const skill of qs.skills) {
+      const acc = bySkill.get(skill) ?? { totalResponded: 0, correctCount: 0 };
+      acc.totalResponded += qs.totalResponded;
+      acc.correctCount += qs.correctCount;
+      bySkill.set(skill, acc);
+    }
+  }
+  return [...bySkill.entries()]
+    .map(([skill, acc]) => ({
+      skill,
+      totalResponded: acc.totalResponded,
+      correctCount: acc.correctCount,
+      pctCorrect: acc.totalResponded > 0 ? Math.round((acc.correctCount / acc.totalResponded) * 100) : 0,
+    }))
+    .sort((a, b) => a.pctCorrect - b.pctCorrect);
 }
 
 export default function ExamAdmin() {
@@ -77,6 +109,7 @@ export default function ExamAdmin() {
   const [stats, setStats] = useState<ExamStats>({ totalAttempts: 0, completedAttempts: 0, passRate: null, avgScore: null, avgTimeMinutes: null });
   const [expanded, setExpanded] = useState<string | null>(null);
   const [showQuestionStats, setShowQuestionStats] = useState(false);
+  const [showSkillStats, setShowSkillStats] = useState(false);
   const [error, setError] = useState('');
   const [now, setNow] = useState(() => Date.now());
   const [chatWithId, setChatWithId] = useState<string | null>(null);
@@ -178,7 +211,7 @@ export default function ExamAdmin() {
   const finished = attempts.filter((a) => a.status !== 'in-progress');
 
   const questionStats: QuestionStat[] = quiz
-    ? quiz.questions.map((q: { id: string; question: string; type: string; correctAnswer: unknown }) => {
+    ? quiz.questions.map((q: { id: string; question: string; type: string; correctAnswer: unknown; skills?: string[] }) => {
         const responded = completed.filter((a) => {
           const given = a.answers[q.id];
           return given !== null && given !== undefined && given !== '';
@@ -191,9 +224,11 @@ export default function ExamAdmin() {
           totalResponded: responded.length,
           correctCount: correct.length,
           pctCorrect: pct,
+          skills: q.skills ?? [],
         };
       })
     : [];
+  const skillStats = computeSkillStats(questionStats);
 
   return (
     <div className="product-flow">
@@ -295,6 +330,9 @@ export default function ExamAdmin() {
           />
         </div>
 
+        {/* Grade distribution */}
+        {completed.length > 0 && <GradeDistribution attempts={completed} passingScore={exam.passingScore} />}
+
         {/* Exam info */}
         <div style={{
           background: 'var(--ap-card)', border: 'var(--ap-border-w) solid var(--ap-line)',
@@ -334,7 +372,7 @@ export default function ExamAdmin() {
         {/* Submissions */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
           <h2 style={{ fontFamily: 'var(--ap-font-display)', fontWeight: 600, fontSize: 18 }}>
-            Résultats ({completed.length} soumis{completed.length > 1 ? 's' : ''})
+            Résultats ({completed.length} soumis)
           </h2>
           <ExportMenu
             style={{ ...outlineBtn, fontSize: 12 }}
@@ -440,6 +478,58 @@ export default function ExamAdmin() {
           </div>
         )}
 
+        {/* Compétences les moins maîtrisées — analytics phase C, opt-in per question */}
+        {skillStats.length > 0 && (
+          <div style={{ marginTop: 24 }}>
+            <button
+              onClick={() => setShowSkillStats((s) => !s)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12,
+                background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                fontFamily: 'var(--ap-font-display)', fontWeight: 600, fontSize: 18,
+                color: 'var(--ap-ink)',
+              }}
+            >
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Trophy className="h-4 w-4" /> Compétences les moins maîtrisées</span>
+              <ChevronDown style={{ width: 14, height: 14, color: 'var(--ap-muted)', transform: showSkillStats ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }} />
+            </button>
+
+            {showSkillStats && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {skillStats.map((ss) => (
+                  <div key={ss.skill} style={{
+                    background: 'var(--ap-card)', border: '2px solid var(--ap-line)',
+                    borderRadius: 'var(--ap-r-lg)', padding: '14px 18px',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                      <p style={{ fontSize: 13, fontWeight: 700, margin: 0, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {ss.skill}
+                      </p>
+                      <span style={{
+                        fontSize: 14, fontWeight: 800, flexShrink: 0,
+                        color: ss.pctCorrect >= 70 ? '#15c08a' : ss.pctCorrect >= 40 ? '#f4970a' : '#ff5a4d',
+                      }}>
+                        {ss.pctCorrect}%
+                      </span>
+                    </div>
+                    <div style={{ height: 6, background: 'var(--ap-line)', borderRadius: "var(--ap-r-sm)", overflow: 'hidden' }}>
+                      <div style={{
+                        height: '100%', borderRadius: "var(--ap-r-sm)",
+                        width: `${ss.pctCorrect}%`,
+                        background: ss.pctCorrect >= 70 ? '#15c08a' : ss.pctCorrect >= 40 ? '#f4970a' : '#ff5a4d',
+                        transition: 'width .4s',
+                      }} />
+                    </div>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--ap-muted)', marginTop: 6 }}>
+                      {ss.correctCount}/{ss.totalResponded} bonne{ss.correctCount !== 1 ? 's' : ''} réponse{ss.correctCount !== 1 ? 's' : ''}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {exam.proctoring.enabled && (
           <ProctoringDashboard exam={exam} attempts={attempts} />
         )}
@@ -524,7 +614,7 @@ function ResultsTable({
             const isChatOpen = chatWithId === att.id;
             return (
               <Fragment key={att.id}>
-                <tr style={{ borderTop: '1px solid var(--ap-line)', background: isExpanded ? 'var(--ap-paper)' : 'transparent' }}>
+                <tr className="ap-tr-hover" style={{ borderTop: '1px solid var(--ap-line)', background: isExpanded ? 'var(--ap-paper)' : 'transparent' }}>
                   <ResultsCell>
                     <button
                       type="button"
@@ -567,7 +657,7 @@ function ResultsTable({
                     {att.submittedAt ? new Date(att.submittedAt).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }) : '-'}
                   </ResultsCell>
                   <ResultsCell style={{ textAlign: 'right' }}>
-                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <div className="ap-hover-actions" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                       <button
                         type="button"
                         onClick={() => onToggleChat(att.id)}
@@ -594,7 +684,7 @@ function ResultsTable({
                 {isChatOpen && (
                   <tr style={{ borderTop: '1px solid var(--ap-line)' }}>
                     <td colSpan={7}>
-                      <AttemptChat examId={exam.id} attemptId={att.id} participantName={att.participantName} />
+                      <AttemptChat examId={exam.id} attemptId={att.id} participantName={att.participantName} isSubmitted={att.status === 'submitted' || att.status === 'auto-submitted'} />
                     </td>
                   </tr>
                 )}
@@ -641,7 +731,7 @@ function AttemptRow({
   return (
     <div className="ea-attempt">
       <div
-        className="ea-attempt-header"
+        className="ea-attempt-header ap-row"
         onClick={onToggleExpand}
         style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', cursor: 'pointer', transition: 'background .15s', background: isExpanded ? 'var(--ap-paper)' : 'transparent' }}
       >
@@ -701,20 +791,22 @@ function AttemptRow({
         </span>
 
         {/* Host actions */}
-        <button
-          onClick={(e) => { e.stopPropagation(); onToggleChat(); }}
-          title="Discussion avec ce participant"
-          style={{ ...rowIconBtn, color: isChatOpen ? 'var(--ap-brand)' : 'var(--ap-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-        >
-          <MessageCircle className="h-4 w-4" />
-        </button>
-        <button
-          onClick={(e) => { e.stopPropagation(); onRemove(); }}
-          title="Retirer ce participant"
-          style={{ ...rowIconBtn, color: '#ff5a4d', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-        >
-          <Trash2 className="h-4 w-4" />
-        </button>
+        <div className="ap-hover-actions" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <button
+            onClick={(e) => { e.stopPropagation(); onToggleChat(); }}
+            title="Discussion avec ce participant"
+            style={{ ...rowIconBtn, color: isChatOpen ? 'var(--ap-brand)' : 'var(--ap-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          >
+            <MessageCircle className="h-4 w-4" />
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); onRemove(); }}
+            title="Retirer ce participant"
+            style={{ ...rowIconBtn, color: '#ff5a4d', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </div>
 
         <ChevronDown style={{ width: 14, height: 14, color: 'var(--ap-muted)', transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }} />
       </div>
@@ -722,7 +814,7 @@ function AttemptRow({
       {/* Persistent chat thread */}
       {isChatOpen && (
         <div onClick={(e) => e.stopPropagation()} style={{ borderTop: 'var(--ap-border-w) solid var(--ap-line)' }}>
-          <AttemptChat examId={exam.id} attemptId={att.id} participantName={att.participantName} />
+          <AttemptChat examId={exam.id} attemptId={att.id} participantName={att.participantName} isSubmitted={att.status === 'submitted' || att.status === 'auto-submitted'} />
         </div>
       )}
 
@@ -734,7 +826,7 @@ function AttemptRow({
   );
 }
 
-function AttemptChat({ examId, attemptId, participantName }: { examId: string; attemptId: string; participantName: string }) {
+function AttemptChat({ examId, attemptId, participantName, isSubmitted }: { examId: string; attemptId: string; participantName: string; isSubmitted: boolean }) {
   const [messages, setMessages] = useState<ExamMessage[]>([]);
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
@@ -762,7 +854,7 @@ function AttemptChat({ examId, attemptId, participantName }: { examId: string; a
 
   const handleSend = async () => {
     const body = text.trim();
-    if (!body || sending) return;
+    if (!body || sending || isSubmitted) return;
     setSending(true);
     try {
       const sent = await sendMessage(examId, attemptId, 'host', body);
@@ -799,20 +891,26 @@ function AttemptChat({ examId, attemptId, participantName }: { examId: string; a
           </div>
         ))}
       </div>
-      <div style={{ display: 'flex', gap: 8 }}>
-        <input
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') void handleSend(); }}
-          placeholder={`Message à ${participantName}…`}
-          style={{
-            flex: 1, padding: '9px 12px', fontFamily: 'var(--ap-font-body)', fontWeight: 700, fontSize: 13,
-            color: 'var(--ap-ink)', background: 'var(--ap-paper-2)', border: 'var(--ap-border-w) solid var(--ap-line)',
-            borderRadius: 'var(--ap-r-sm)', outline: 'none',
-          }}
-        />
-        <button onClick={() => void handleSend()} disabled={sending} style={{ ...outlineBtn, fontSize: 12 }}>Envoyer</button>
-      </div>
+      {isSubmitted ? (
+        <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--ap-muted)', margin: 0 }}>
+          {participantName} a déjà soumis son examen — impossible de lui envoyer un nouveau message.
+        </p>
+      ) : (
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') void handleSend(); }}
+            placeholder={`Message à ${participantName}…`}
+            style={{
+              flex: 1, padding: '9px 12px', fontFamily: 'var(--ap-font-body)', fontWeight: 700, fontSize: 13,
+              color: 'var(--ap-ink)', background: 'var(--ap-paper-2)', border: 'var(--ap-border-w) solid var(--ap-line)',
+              borderRadius: 'var(--ap-r-sm)', outline: 'none',
+            }}
+          />
+          <button onClick={() => void handleSend()} disabled={sending} style={{ ...outlineBtn, fontSize: 12 }}>Envoyer</button>
+        </div>
+      )}
     </div>
   );
 }
@@ -892,6 +990,73 @@ function StatCard({ icon: Icon, label, value, highlight }: { icon: LucideIcon; l
         <strong style={{ color: highlight ? 'var(--ap-brand-deep)' : undefined }}>{value}</strong>
         <small>{label}</small>
       </div>
+    </div>
+  );
+}
+
+const GRADE_BUCKETS = [
+  { min: 0, max: 20, label: '0-20' },
+  { min: 20, max: 40, label: '20-40' },
+  { min: 40, max: 60, label: '40-60' },
+  { min: 60, max: 80, label: '60-80' },
+  { min: 80, max: 101, label: '80-100' },
+] as const;
+
+/** Score histogram (répartition des notes) — one bar per 20-point bucket,
+ *  built entirely from attempts already loaded for this exam (no extra fetch). */
+function GradeDistribution({ attempts, passingScore }: { attempts: Attempt[]; passingScore: number }) {
+  const scored = attempts.filter((a): a is Attempt & { percentage: number } => a.percentage !== null);
+  if (scored.length === 0) return null;
+
+  const counts = GRADE_BUCKETS.map((b) => scored.filter((a) => a.percentage >= b.min && a.percentage < b.max).length);
+  const maxCount = Math.max(...counts, 1);
+
+  return (
+    <div style={{
+      background: 'var(--ap-card)', border: 'var(--ap-border-w) solid var(--ap-line)',
+      borderRadius: 'var(--ap-r-lg)', padding: '20px 24px', marginBottom: 20,
+    }}>
+      <h3 style={{ fontFamily: 'var(--ap-font-display)', fontWeight: 600, fontSize: 15, marginBottom: 16 }}>
+        Répartition des notes
+      </h3>
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, height: 120 }}>
+        {GRADE_BUCKETS.map((bucket, i) => {
+          const count = counts[i];
+          const heightPct = maxCount ? (count / maxCount) * 100 : 0;
+          const isPassingRange = bucket.max > passingScore;
+          return (
+            <div
+              key={bucket.label}
+              style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}
+              title={`${bucket.label}% : ${count} tentative${count > 1 ? 's' : ''}`}
+            >
+              <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--ap-ink)', marginBottom: 4, minHeight: 16 }}>
+                {count > 0 ? count : ''}
+              </span>
+              <div
+                style={{
+                  width: '100%', maxWidth: 40,
+                  height: `${Math.max(heightPct, count > 0 ? 3 : 0)}%`,
+                  background: 'var(--ap-brand)',
+                  opacity: isPassingRange ? 1 : 0.55,
+                  borderRadius: '4px 4px 0 0',
+                  transition: 'opacity .15s',
+                }}
+              />
+            </div>
+          );
+        })}
+      </div>
+      <div style={{ display: 'flex', gap: 4, marginTop: 8 }}>
+        {GRADE_BUCKETS.map((bucket) => (
+          <div key={bucket.label} style={{ flex: 1, textAlign: 'center', fontSize: 11, fontWeight: 700, color: 'var(--ap-muted)' }}>
+            {bucket.label}%
+          </div>
+        ))}
+      </div>
+      <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--ap-muted)', marginTop: 10, marginBottom: 0 }}>
+        Seuil de réussite : {passingScore}% — barres pleines au-dessus du seuil.
+      </p>
     </div>
   );
 }

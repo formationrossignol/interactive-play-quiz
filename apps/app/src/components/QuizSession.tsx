@@ -176,6 +176,7 @@ interface QuizSession {
   theme?: string;
   font?: string;
   transitionTime?: number;
+  readingTime?: number;
   ambianceId?: string;
   liveReactionsEnabled?: boolean;
   endChatEnabled?: boolean;
@@ -823,7 +824,7 @@ export const QuizSession = ({ quiz, isHost = false, isSolo = false, onExitReques
     });
   }, [players, currentQuestionIndex, quiz.createdAt]);
 
-  const QUESTION_READING_SECS = 3;
+  const QUESTION_READING_SECS = quiz.readingTime ?? 3;
 
   /** Solo answering: the host device submits its own answer directly to the
    *  same submit-answer edge function a joined player's device would call.

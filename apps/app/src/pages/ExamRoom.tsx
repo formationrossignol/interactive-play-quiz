@@ -13,6 +13,7 @@ import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { Map as MapIcon, Flag, MessageCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { MaterialSymbol } from '@/components/MaterialSymbol';
 import {
   ProctoringPreflight,
   type ProctoringStreams,
@@ -371,7 +372,7 @@ export default function ExamRoom() {
 
   if (phase === 'not-found') return (
     <Screen>
-      <BigIcon>🔍</BigIcon>
+      <BigIcon name="search" />
       <Title>Examen introuvable</Title>
       <Sub>Vérifiez le code d'accès et réessayez.</Sub>
     </Screen>
@@ -381,7 +382,7 @@ export default function ExamRoom() {
     const status = exam ? computeExamStatus(exam) : null;
     return (
       <Screen>
-        <BigIcon>{status === 'scheduled' ? '⏳' : '🔒'}</BigIcon>
+        <BigIcon name={status === 'scheduled' ? 'hourglass_top' : 'lock'} />
         <Title>{status === 'scheduled' ? 'Pas encore ouvert' : 'Examen fermé'}</Title>
         <Sub>
           {status === 'scheduled'
@@ -394,7 +395,7 @@ export default function ExamRoom() {
 
   if (phase === 'exhausted') return (
     <Screen>
-      <BigIcon>✅</BigIcon>
+      <BigIcon name="check_circle" color="var(--ap-pres)" />
       <Title>Tentatives épuisées</Title>
       <Sub>Vous avez atteint le nombre maximum de tentatives pour cet examen.</Sub>
       {exam && retainedAttempt && (
@@ -405,7 +406,7 @@ export default function ExamRoom() {
 
   if (phase === 'kicked') return (
     <Screen>
-      <BigIcon>🚫</BigIcon>
+      <BigIcon name="block" color="var(--ap-quiz)" />
       <Title>Retiré de l'examen</Title>
       <Sub>Le surveillant vous a retiré de cet examen. Contactez-le pour plus d'informations.</Sub>
     </Screen>
@@ -413,7 +414,7 @@ export default function ExamRoom() {
 
   if (phase === 'full') return (
     <Screen>
-      <BigIcon>🚪</BigIcon>
+      <BigIcon name="meeting_room" color="var(--ap-quiz)" />
       <Title>Capacité maximale atteinte</Title>
       <Sub>Cet examen a atteint son nombre maximum de participants. Contactez l'organisateur.</Sub>
     </Screen>
@@ -421,7 +422,7 @@ export default function ExamRoom() {
 
   if (exam && exam.questionsPublic.length === 0) return (
     <Screen>
-      <BigIcon>⚠️</BigIcon>
+      <BigIcon name="warning" color="var(--ap-quiz)" />
       <Title>Quiz introuvable</Title>
       <Sub>Le contenu associé à cet examen n'est pas disponible. Contactez l'organisateur.</Sub>
     </Screen>
@@ -429,29 +430,29 @@ export default function ExamRoom() {
 
   if (phase === 'identify') return (
     <Screen maxWidth={420}>
-      <BigIcon>✏️</BigIcon>
+      <BigIcon name="edit" />
       <Title>{exam?.title}</Title>
       {exam?.description && <Sub style={{ marginBottom: 20 }}>{exam.description}</Sub>}
       <div style={{ width: '100%', textAlign: 'left' }}>
-        <label style={labelSt}>Prénom et nom *</label>
+        <label className="ap-label">Prénom et nom *</label>
         <input
-          style={inputSt}
+          className="ap-input"
           placeholder="Marie Dupont"
           value={nameInput}
           onChange={(e) => setNameInput(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') handleIdentify(); }}
         />
-        <label style={{ ...labelSt, marginTop: 14 }}>Email (optionnel)</label>
+        <label className="ap-label" style={{ marginTop: 14 }}>Email (optionnel)</label>
         <input
-          style={inputSt}
+          className="ap-input"
           type="email"
           placeholder="marie@exemple.fr"
           value={emailInput}
           onChange={(e) => setEmailInput(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') handleIdentify(); }}
         />
-        {identError && <p style={{ color: '#ff5a4d', fontSize: 13, fontWeight: 800, marginTop: 8 }}>{identError}</p>}
-        <button style={primaryBtnSt} onClick={handleIdentify}>Continuer →</button>
+        {identError && <p style={{ color: 'var(--ap-quiz)', fontSize: 13, fontWeight: 800, marginTop: 8 }}>{identError}</p>}
+        <button className="ap-btn ap-btn--pill" style={{ width: '100%', marginTop: 20 }} onClick={handleIdentify}>Continuer →</button>
       </div>
     </Screen>
   );
@@ -468,11 +469,8 @@ export default function ExamRoom() {
           }}
         />
       ) : (
-      <div style={{
-        background: 'var(--ap-card)', border: 'var(--ap-border-w) solid var(--ap-line)',
-        borderRadius: 'var(--ap-r-lg)', padding: '28px 28px', width: '100%', textAlign: 'center',
-      }}>
-        <div style={{ fontSize: 52, marginBottom: 12 }}>📝</div>
+      <div className="ap-card" style={{ padding: '28px 28px', width: '100%', textAlign: 'center' }}>
+        <div style={{ marginBottom: 12, color: 'var(--ap-brand)' }}><MaterialSymbol name="assignment" size={44} /></div>
         <h1 style={{ fontFamily: 'var(--ap-font-display)', fontWeight: 700, fontSize: 22, marginBottom: 8 }}>
           {exam.title}
         </h1>
@@ -482,20 +480,24 @@ export default function ExamRoom() {
           </p>
         )}
         <div style={{ display: 'flex', justifyContent: 'center', gap: 16, flexWrap: 'wrap', marginBottom: 24 }}>
-          <Info icon="❓" label={`${exam.questionsPublic.length} questions`} />
-          {exam.durationMinutes && <Info icon="⏱️" label={`${exam.durationMinutes} min`} />}
-          <Info icon="🔄" label={`${exam.maxAttempts} tentative${exam.maxAttempts > 1 ? 's' : ''}`} />
-          <Info icon="🏆" label={`Seuil : ${exam.passingScore}%`} />
+          <Info icon="help" label={`${exam.questionsPublic.length} questions`} />
+          {exam.durationMinutes && <Info icon="timer" label={`${exam.durationMinutes} min`} />}
+          <Info icon="replay" label={`${exam.maxAttempts} tentative${exam.maxAttempts > 1 ? 's' : ''}`} />
+          <Info icon="emoji_events" label={`Seuil : ${exam.passingScore}%`} />
         </div>
         <div style={{
           background: 'var(--ap-paper)', borderRadius: 'var(--ap-r-sm)',
           padding: '12px 16px', marginBottom: 20, fontSize: 12, fontWeight: 700,
           color: 'var(--ap-muted)', textAlign: 'left', lineHeight: 1.8,
+          display: 'flex', alignItems: 'flex-start', gap: 8,
         }}>
-          📌 Vos réponses sont sauvegardées automatiquement toutes les 30 secondes.
-          {exam.durationMinutes && ` L'examen se soumet automatiquement à la fin du temps.`}
+          <MaterialSymbol name="push_pin" size={16} style={{ marginTop: 2, flexShrink: 0 }} />
+          <span>
+            Vos réponses sont sauvegardées automatiquement toutes les 30 secondes.
+            {exam.durationMinutes && ` L'examen se soumet automatiquement à la fin du temps.`}
+          </span>
         </div>
-        <button style={primaryBtnSt} onClick={handleStart}>Commencer l'examen →</button>
+        <button className="ap-btn ap-btn--pill" style={{ width: '100%', marginTop: 4 }} onClick={handleStart}>Commencer l'examen →</button>
       </div>
       )}
     </Screen>
@@ -506,25 +508,28 @@ export default function ExamRoom() {
     const showResults = exam?.showResultsPolicy === 'immediately';
     return (
       <Screen>
-        <BigIcon>🎉</BigIcon>
+        <BigIcon name="celebration" />
         <Title>Examen soumis !</Title>
         {showResults && retained?.percentage !== null ? (
           <div style={{ textAlign: 'center' }}>
             <div style={{
               fontSize: 52, fontFamily: 'var(--ap-font-display)', fontWeight: 800,
-              color: retained?.passed ? '#15c08a' : '#ff5a4d', marginBottom: 8,
+              color: retained?.passed ? 'var(--ap-pres)' : 'var(--ap-quiz)', marginBottom: 8,
             }}>
               {retained?.percentage}%
             </div>
             <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
               fontSize: 16, fontWeight: 800,
-              color: retained?.passed ? '#15c08a' : '#ff5a4d', marginBottom: 16,
+              color: retained?.passed ? 'var(--ap-pres)' : 'var(--ap-quiz)', marginBottom: 16,
             }}>
-              {retained?.passed ? '✅ Réussi' : '❌ Non réussi'}
+              <MaterialSymbol name={retained?.passed ? 'check_circle' : 'cancel'} size={20} />
+              {retained?.passed ? 'Réussi' : 'Non réussi'}
             </div>
             {exam?.showDetailPolicy !== 'score-only' && retained && (
               <button
-                style={{ ...primaryBtnSt, marginTop: 8 }}
+                className="ap-btn ap-btn--pill"
+                style={{ marginTop: 8 }}
                 onClick={() => navigate(`/exam/${retained.id}/results`)}
               >
                 Voir la correction →
@@ -766,9 +771,8 @@ export default function ExamRoom() {
 
                 {q.type === 'short-answer' && (
                   <input
+                    className="ap-input"
                     style={{
-                      ...inputSt,
-                      marginBottom: 0,
                       background: currentAnswer ? 'var(--ap-brand-soft)' : 'var(--ap-paper)',
                       borderColor: currentAnswer ? 'var(--ap-brand)' : 'var(--ap-line)',
                     }}
@@ -784,52 +788,57 @@ export default function ExamRoom() {
           {/* Gentle time nudge when < 5 min remaining */}
           {minutesLeft !== null && minutesLeft <= 5 && minutesLeft > 0 && (
             <div style={{
-              textAlign: 'center', fontSize: 12, fontWeight: 700,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              fontSize: 12, fontWeight: 700,
               color: 'var(--ap-muted)', padding: '8px 0', marginBottom: 8,
             }}>
-              ⏳ Pensez à soumettre bientôt
+              <MaterialSymbol name="hourglass_top" size={14} />
+              Pensez à soumettre bientôt
             </div>
           )}
 
           {/* Submit button */}
           {!confirmSubmit ? (
             <button
+              className="ap-btn ap-btn--pill"
               onClick={() => setConfirmSubmit(true)}
               style={{
-                width: '100%', padding: '16px 0', borderRadius: "var(--ap-r-sm)", border: 'none',
-                background: answered === orderedQs.length ? 'var(--ap-brand)' : 'var(--ap-line-2)',
-                color: '#fff', fontFamily: 'var(--ap-font-body)', fontWeight: 800, fontSize: 16,
-                cursor: 'pointer', boxShadow: answered === orderedQs.length ? '0 4px 0 var(--ap-brand-deep)' : 'none',
+                width: '100%',
+                background: answered === orderedQs.length ? undefined : 'var(--ap-line-2)',
+                boxShadow: answered === orderedQs.length ? undefined : 'none',
               }}
             >
               Soumettre l'examen ({answered}/{orderedQs.length} répondu{answered > 1 ? 's' : ''})
             </button>
           ) : (
-            <div style={{
-              background: 'var(--ap-card)', border: 'var(--ap-border-w) solid var(--ap-line)',
-              borderRadius: 'var(--ap-r-lg)', padding: 20, textAlign: 'center',
-            }}>
+            <div className="ap-card" style={{ padding: 20, textAlign: 'center' }}>
               <p style={{ fontFamily: 'var(--ap-font-display)', fontWeight: 600, fontSize: 16, marginBottom: 6 }}>
                 Confirmer la soumission ?
               </p>
               {answered < orderedQs.length && (
-                <p style={{ fontSize: 13, fontWeight: 700, color: '#f4970a', marginBottom: 14 }}>
-                  ⚠️ {orderedQs.length - answered} question{orderedQs.length - answered > 1 ? 's' : ''} sans réponse
+                <p style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                  fontSize: 13, fontWeight: 700, color: 'var(--ap-flash-deep)', marginBottom: 14,
+                }}>
+                  <MaterialSymbol name="warning" size={16} />
+                  {orderedQs.length - answered} question{orderedQs.length - answered > 1 ? 's' : ''} sans réponse
                 </p>
               )}
               <div style={{ display: 'flex', gap: 10 }}>
                 <button
+                  className="ap-btn ap-btn--ghost"
                   onClick={() => setConfirmSubmit(false)}
-                  style={{ flex: 1, padding: '12px 0', borderRadius: "var(--ap-r-sm)", border: 'var(--ap-border-w) solid var(--ap-line)', background: 'var(--ap-paper-2)', fontFamily: 'var(--ap-font-body)', fontWeight: 800, fontSize: 14, cursor: 'pointer', color: 'var(--ap-ink)' }}
+                  style={{ flex: 1 }}
                 >
                   Continuer
                 </button>
                 <button
+                  className="ap-btn"
                   onClick={handleSubmit}
                   disabled={submitting}
-                  style={{ flex: 2, padding: '12px 0', borderRadius: "var(--ap-r-sm)", border: 'none', background: 'var(--ap-brand)', color: '#fff', fontFamily: 'var(--ap-font-body)', fontWeight: 800, fontSize: 14, cursor: 'pointer' }}
+                  style={{ flex: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
                 >
-                  {submitting ? '…' : '✅ Soumettre définitivement'}
+                  {submitting ? '…' : <><MaterialSymbol name="check_circle" size={16} />Soumettre définitivement</>}
                 </button>
               </div>
             </div>
@@ -924,8 +933,12 @@ function Screen({ children, maxWidth = 400 }: { children: React.ReactNode; maxWi
   );
 }
 
-function BigIcon({ children }: { children: React.ReactNode }) {
-  return <div style={{ fontSize: 64, lineHeight: 1, marginBottom: 8 }}>{children}</div>;
+function BigIcon({ name, color }: { name: string; color?: string }) {
+  return (
+    <div style={{ marginBottom: 8, color: color ?? 'var(--ap-brand)' }}>
+      <MaterialSymbol name={name} size={56} />
+    </div>
+  );
 }
 
 function Title({ children }: { children: React.ReactNode }) {
@@ -971,7 +984,7 @@ function Info({ icon, label }: { icon: string; label: string }) {
       background: 'var(--ap-paper)', border: 'var(--ap-border-w) solid var(--ap-line)',
       borderRadius: "var(--ap-r-sm)", padding: '6px 14px',
     }}>
-      <span>{icon}</span><span>{label}</span>
+      <MaterialSymbol name={icon} size={16} /><span>{label}</span>
     </div>
   );
 }
@@ -997,28 +1010,8 @@ function ViewResultsBtn({ retained, exam, navigate }: {
 }) {
   if (exam.showResultsPolicy === 'never') return null;
   return (
-    <button style={primaryBtnSt} onClick={() => navigate(`/exam/${retained.id}/results`)}>
+    <button className="ap-btn ap-btn--pill" style={{ width: '100%', marginTop: 20 }} onClick={() => navigate(`/exam/${retained.id}/results`)}>
       Voir mes résultats →
     </button>
   );
 }
-
-const labelSt: React.CSSProperties = {
-  display: 'block', fontSize: 11, fontWeight: 800, letterSpacing: '.08em',
-  textTransform: 'uppercase', color: 'var(--ap-muted)', marginBottom: 6,
-};
-
-const inputSt: React.CSSProperties = {
-  width: '100%', padding: '11px 14px', fontFamily: 'var(--ap-font-body)',
-  fontWeight: 700, fontSize: 14, color: 'var(--ap-ink)',
-  background: 'var(--ap-paper-2)', border: 'var(--ap-border-w) solid var(--ap-line)',
-  borderRadius: 'var(--ap-r-sm)', outline: 'none',
-  boxSizing: 'border-box', marginBottom: 4,
-};
-
-const primaryBtnSt: React.CSSProperties = {
-  width: '100%', marginTop: 20, padding: '14px 0', borderRadius: "var(--ap-r-sm)",
-  border: 'none', background: 'var(--ap-brand)', color: '#fff',
-  fontFamily: 'var(--ap-font-body)', fontWeight: 800, fontSize: 15,
-  cursor: 'pointer', boxShadow: '0 4px 0 var(--ap-brand-deep)',
-};

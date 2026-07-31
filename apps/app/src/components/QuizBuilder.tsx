@@ -30,14 +30,15 @@ import {
   ArrowRight, Copy, Library, HelpCircle, Home, type LucideIcon,
   ListChecks, CircleDot, ToggleLeft, TextCursorInput, ArrowUpDown,
   Link2, TextSelect, SlidersHorizontal, Rows3, ChartNoAxesColumn,
-  Star, MessageSquareText, Gauge, Layers3, Presentation,
+  Star, MessageSquareText, Gauge, Layers3, Presentation, LayoutTemplate, BarChart2,
 } from "lucide-react";
 import { ImportFileModal } from "./ImportFileModal";
 import { getCurrentUser } from "@/lib/auth";
 import { useSaveShortcut } from "@/hooks/useSaveShortcut";
 import { getPlan, isQuestionTypeLocked } from "@/lib/plans";
 import { showError } from "@/lib/errorTaxonomy";
-import { saveQuiz, updateQuiz, getQuizById, type SavedQuiz } from "@/lib/quizStorage";
+import { saveQuiz, updateQuiz, getQuizById, saveQuizAsTemplate, type SavedQuiz } from "@/lib/quizStorage";
+import { readSessionHistory } from "@/lib/sessionState";
 import {
   getContent,
   getContentBySource,
@@ -601,6 +602,7 @@ export const QuizBuilder = () => {
 
   const isPoll = quizType === "poll";
   const isFlashcard = quizType === "flashcard";
+  const hasHistory = !isFlashcard && !!quizId && readSessionHistory(quizId).length > 0;
 
   // ── State ────────────────────────────────────────────────────────────────
   const [title, setTitle] = useState("");
@@ -610,9 +612,11 @@ export const QuizBuilder = () => {
   const [isPublic, setIsPublic] = useState(false);
   const [speedBonus, setSpeedBonus] = useState(true);
   const [transitionTime, setTransitionTime] = useState(5);
+  const [readingTime, setReadingTime] = useState(3);
   const [category, setCategory] = useState("Autre");
   const [tags, setTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState("");
+  const [newSkill, setNewSkill] = useState("");
   const [headerImage, setHeaderImage] = useState("");
   const [theme, setTheme] = useState<string>(DEFAULT_THEME_ID);
   const [ambianceId, setAmbianceId] = useState<string>(isPoll ? "none" : DEFAULT_AMBIANCE);
@@ -699,6 +703,7 @@ export const QuizBuilder = () => {
     setIsPublic(eq.isPublic);
     setSpeedBonus(eq.speedBonus);
     setTransitionTime(eq.transitionTime);
+    setReadingTime(eq.readingTime ?? 3);
     setTags(eq.tags || []);
     setHeaderImage(eq.headerImage || "");
     setTheme(THEMES.some(t => t.id === eq.theme) ? eq.theme : DEFAULT_THEME_ID);
@@ -908,7 +913,7 @@ export const QuizBuilder = () => {
         isPublic: isPoll ? false : isPublic,
         isFavorite: false, tags,
         speedBonus: isPoll ? false : speedBonus,
-        transitionTime, category, type: quizType,
+        transitionTime, readingTime, category, type: quizType,
         headerImage, theme, font: previewFont, ambianceId,
         liveReactionsEnabled, endChatEnabled,
       };
@@ -954,6 +959,18 @@ export const QuizBuilder = () => {
     }
   };
   useSaveShortcut(handleSaveQuiz);
+
+  const handleSaveAsTemplate = async () => {
+    if (!quizId || !user) { toast.error("Enregistrez d'abord ce contenu avant d'en faire un modèle."); return; }
+    try {
+      const template = saveQuizAsTemplate(quizId);
+      if (!template) { toast.error("Impossible de créer le modèle."); return; }
+      await upsertContentBySource(user.id, template.type as ContentType, template.id, template as unknown as Record<string, unknown>, false);
+      toast.success("Modèle enregistré — retrouvez-le dans « Mes modèles ».");
+    } catch (e) {
+      showError(e, "QuizBuilder.saveAsTemplate", "Erreur lors de la création du modèle");
+    }
+  };
 
   const handlePreviewQuiz = () => {
     if (questions.length === 0) { toast.error("Ajoutez au moins une question pour prévisualiser"); return; }
@@ -1280,6 +1297,44 @@ export const QuizBuilder = () => {
             </div>
           </div>
         )}
+
+        {/* Compétences — free-text skill tags, aggregated by ExamAdmin's
+            "compétences les moins maîtrisées" panel once an exam runs. */}
+        {!isPoll && (
+          <div style={{ marginTop: 18 }}>
+            <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".09em", textTransform: "uppercase", color: "var(--ap-muted)", marginBottom: 9 }}>Compétences</div>
+            <div className="flex gap-2">
+              <Input
+                placeholder="Ajouter une compétence"
+                value={newSkill}
+                onChange={e => setNewSkill(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    const v = newSkill.trim();
+                    if (v && !(q.skills ?? []).includes(v)) { upd({ skills: [...(q.skills ?? []), v] }); setNewSkill(""); }
+                  }
+                }}
+              />
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const v = newSkill.trim();
+                  if (v && !(q.skills ?? []).includes(v)) { upd({ skills: [...(q.skills ?? []), v] }); setNewSkill(""); }
+                }}
+              >
+                <Plus className="w-4 h-4" />
+              </Button>
+            </div>
+            <div className="flex flex-wrap gap-2 mt-2">
+              {(q.skills ?? []).map(skill => (
+                <Badge key={skill} variant="secondary" className="cursor-pointer" onClick={() => upd({ skills: (q.skills ?? []).filter(s => s !== skill) })}>
+                  {skill} ×
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
         </>
         )}
       </div>
@@ -1498,6 +1553,46 @@ export const QuizBuilder = () => {
         >
           <Settings style={{ width: 15, height: 15, color: "var(--ap-muted)" }} />
         </button>
+
+        {/* Save as template */}
+        <TooltipProvider delayDuration={180}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span style={{ display: "inline-flex", flexShrink: 0 }}>
+                <button
+                  onClick={() => void handleSaveAsTemplate()}
+                  disabled={!quizId}
+                  title="Enregistrer comme template"
+                  style={{
+                    display: "grid", placeItems: "center", width: 36, height: 36,
+                    borderRadius: "var(--ap-r-sm)", border: "var(--ap-border-w) solid var(--ap-line)",
+                    background: "var(--ap-card)", cursor: quizId ? "pointer" : "not-allowed",
+                    boxShadow: "0 3px 0 var(--ap-line)", flexShrink: 0, opacity: quizId ? 1 : 0.5,
+                  }}
+                >
+                  <LayoutTemplate style={{ width: 15, height: 15, color: "var(--ap-muted)" }} />
+                </button>
+              </span>
+            </TooltipTrigger>
+            {!quizId && (
+              <TooltipContent side="bottom" align="end">
+                Enregistrez d’abord ce contenu pour pouvoir en faire un modèle.
+              </TooltipContent>
+            )}
+          </Tooltip>
+        </TooltipProvider>
+
+        {/* Results */}
+        {hasHistory && (
+          <button
+            onClick={() => navigate(isPoll ? `/poll-results/${quizId}` : `/quiz-results/${quizId}`)}
+            className="ap-btn ap-btn--ghost"
+            style={{ padding: "10px 18px", borderRadius: "var(--ap-r-sm)", fontSize: 14 }}
+          >
+            <BarChart2 style={{ width: 15, height: 15 }} />
+            Résultats
+          </button>
+        )}
 
         {/* Preview */}
         <TooltipProvider delayDuration={180}>
@@ -1750,6 +1845,15 @@ export const QuizBuilder = () => {
                   <Label>{t("transitionTime")}</Label>
                   <Input type="number" min="3" max="10" value={transitionTime} onChange={e => setTransitionTime(parseInt(e.target.value) || 5)} className="mt-2" />
                 </div>
+                {!isFlashcard && (
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <Label>Temps de lecture</Label>
+                      <TooltipProvider><Tooltip><TooltipTrigger asChild><button className="text-muted-foreground hover:text-foreground"><HelpCircle className="w-4 h-4" /></button></TooltipTrigger><TooltipContent><p className="max-w-xs">Pause avant le lancement du chronomètre, pour laisser le temps de lire la question.</p></TooltipContent></Tooltip></TooltipProvider>
+                    </div>
+                    <Input type="number" min="0" max="15" value={readingTime} onChange={e => setReadingTime(parseInt(e.target.value) || 0)} className="mt-2" />
+                  </div>
+                )}
               </>
             )}
             <div>
