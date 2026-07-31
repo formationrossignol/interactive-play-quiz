@@ -105,19 +105,17 @@ export const AppLayout = ({ subtitle, extraSection, children }: AppLayoutProps) 
 
           <div className="product-topbar__actions">
             <GlobalSearch user={user} />
-            {user && <NotificationCenter user={user} />}
             <button
               type="button"
-              className="ap-btn ap-btn--ghost ap-btn--sm product-topbar__command"
+              className="ap-btn ap-btn--ghost ap-btn--sm ap-icon-btn product-topbar__command"
+              style={{ height: 38, width: 38, padding: 0 }}
               aria-label={`${t("commandPaletteOpen")} (${navigator.platform.includes("Mac") ? "⌘" : "Ctrl+"}K)`}
               title={`${t("commandPaletteOpen")} (${navigator.platform.includes("Mac") ? "⌘K" : "Ctrl+K"})`}
               onClick={() => setPaletteOpen(true)}
             >
               <MaterialSymbol name="terminal" size={20} />
-              <span aria-hidden="true" className="product-topbar__command-key">
-                {navigator.platform.includes("Mac") ? "⌘K" : "Ctrl+K"}
-              </span>
             </button>
+            {user && <NotificationCenter user={user} />}
             {user ? (
               <DropdownMenu open={accountOpen} onOpenChange={setAccountOpen}>
                 <DropdownMenuTrigger asChild>

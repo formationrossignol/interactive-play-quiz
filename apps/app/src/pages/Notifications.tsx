@@ -66,19 +66,21 @@ export default function Notifications() {
           </section>
         )}
 
-        <div className="product-filter-bar">
-          {FILTERS.map(({ key, label }) => (
-            <button key={key} className={filter === key ? "ap-btn ap-btn--sm" : "ap-btn ap-btn--ghost ap-btn--sm"} onClick={() => setFilter(key)}>{label}</button>
-          ))}
-          <button
-            className="ap-btn ap-btn--ghost ap-btn--sm"
-            style={{ marginLeft: "auto", color: "var(--ap-danger)" }}
-            disabled={!center.notifications.some((notification) => notification.readAt)}
-            onClick={() => center.clearRead.mutate(undefined, { onError: notifyError })}
-          >
-            <Trash2 size={14} /> Effacer les lues
-          </button>
-        </div>
+        {center.notifications.length > 0 && (
+          <div className="product-filter-bar">
+            {FILTERS.map(({ key, label }) => (
+              <button key={key} className={filter === key ? "ap-btn ap-btn--sm" : "ap-btn ap-btn--ghost ap-btn--sm"} onClick={() => setFilter(key)}>{label}</button>
+            ))}
+            <button
+              className="ap-btn ap-btn--ghost ap-btn--sm"
+              style={{ marginLeft: "auto", color: "var(--ap-danger)" }}
+              disabled={!center.notifications.some((notification) => notification.readAt)}
+              onClick={() => center.clearRead.mutate(undefined, { onError: notifyError })}
+            >
+              <Trash2 size={14} /> Effacer les lues
+            </button>
+          </div>
+        )}
 
         <section className="ap-card" style={{ padding: 0, overflow: "hidden" }}>
           {center.isLoading ? (

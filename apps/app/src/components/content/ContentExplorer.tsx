@@ -531,9 +531,7 @@ export function ContentExplorer({
       icon={cs}
       title={title}
       body={body}
-      action={view === "all" && !searching ? (
-        <button className={`ap-btn ap-btn--sm ap-btn--pill ${accentBtn}`} onClick={cta.onClick}>{cta.label}</button>
-      ) : searching ? (
+      action={searching ? (
         <button
           className="ap-btn ap-btn--ghost ap-btn--sm ap-btn--pill"
           onClick={() => { setSearch(""); setCategory("Tous"); }}

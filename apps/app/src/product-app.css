@@ -191,17 +191,6 @@
   gap: 8px;
 }
 
-.product-topbar__command-key {
-  border: var(--ap-border-w) solid var(--ap-line);
-  border-radius: 6px;
-  padding: 1px 5px;
-  color: var(--ap-muted);
-  background: color-mix(in srgb, var(--ap-card) 68%, transparent);
-  font-size: 10px;
-  font-weight: 750;
-  line-height: 1.45;
-}
-
 .product-content {
   display: flex;
   min-height: calc(100svh - 68px);
