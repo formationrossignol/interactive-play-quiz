@@ -26,7 +26,7 @@ export function NotificationCenter({ user }: { user: User }) {
         <button
           type="button"
           className="ap-btn ap-btn--ghost ap-btn--sm ap-icon-btn"
-          style={{ position: "relative", padding: "8px 10px" }}
+          style={{ position: "relative", height: 38, width: 38, padding: 0 }}
           aria-label={center.unreadCount > 0 ? `${center.unreadCount} notification${center.unreadCount > 1 ? "s" : ""} non lue${center.unreadCount > 1 ? "s" : ""}` : "Notifications"}
           title="Notifications"
         >
