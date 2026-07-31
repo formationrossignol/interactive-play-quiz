@@ -8,7 +8,7 @@ import { RatingStars } from "@/components/RatingStars";
 import { PageHeader } from "@/components/ui/page-header";
 import { ExplorerEmptyState } from "@/components/content/ExplorerEmptyState";
 import { getPublicQuizzes, rateQuiz } from "@/lib/quizStorage";
-import { BarChart2, Compass, ListChecks, Search, Play, Clock, Users } from "lucide-react";
+import { BarChart2, Compass, ListChecks, Search, Play, Clock, Users, Plus } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { toast } from "sonner";
 import { t } from "@/lib/i18n";
@@ -217,7 +217,12 @@ const DiscoverQuizzes = () => {
               >
                 Réinitialiser les filtres
               </button>
-            ) : undefined}
+            ) : (
+              <button className="ap-btn ap-btn--sm" onClick={() => navigate("/builder-start?type=quiz")}>
+                <Plus className="h-4 w-4" />
+                Créer vos quiz
+              </button>
+            )}
           />
         ) : (
           <div style={{ display: "grid", gap: "20px", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))" }}>

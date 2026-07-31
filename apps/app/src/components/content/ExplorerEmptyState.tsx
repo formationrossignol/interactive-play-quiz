@@ -18,8 +18,6 @@ export function ExplorerEmptyState({ icon, title, body, action }: ExplorerEmptyS
         background: "var(--ap-paper-2)",
         padding: "48px 24px",
         textAlign: "center",
-        maxWidth: 680,
-        margin: "0 auto",
       }}
     >
       <div
