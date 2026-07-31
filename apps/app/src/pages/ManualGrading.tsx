@@ -13,6 +13,7 @@ import { CreateManualEvaluationDialog } from "@/components/grading/CreateManualE
 import { ManualGradebook } from "@/components/grading/ManualGradebook";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
+import { ExplorerEmptyState } from "@/components/content/ExplorerEmptyState";
 import { ListSkeleton, PageSkeleton } from "@/components/ui/skeletons";
 import { getCurrentUser } from "@/lib/auth";
 import { showError } from "@/lib/errorTaxonomy";
@@ -102,19 +103,17 @@ export default function ManualGrading() {
         />
 
         {evaluations.length === 0 ? (
-          <section className="ap-card mx-auto max-w-2xl border-dashed px-6 py-14 text-center">
-            <span className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-full" style={{ background: "var(--ap-brand-soft)", color: "var(--ap-brand)" }}>
-              <ClipboardCheck className="h-8 w-8" />
-            </span>
-            <h2 className="ap-h2 text-2xl">Créez votre première évaluation</h2>
-            <p className="ap-muted mx-auto mt-2 max-w-lg text-sm leading-6">
-              Choisissez un barème et des groupes. Vous pourrez ensuite saisir les résultats au clavier, coller une colonne depuis un tableur et conserver les notes en brouillon.
-            </p>
-            <Button className="mt-6" onClick={() => setCreateOpen(true)}>
-              <FilePlus2 />
-              Créer une évaluation
-            </Button>
-          </section>
+          <ExplorerEmptyState
+            icon={<ClipboardCheck size={27} />}
+            title="Créez votre première évaluation"
+            body="Choisissez un barème et des groupes. Vous pourrez ensuite saisir les résultats au clavier, coller une colonne depuis un tableur et conserver les notes en brouillon."
+            action={(
+              <Button onClick={() => setCreateOpen(true)}>
+                <FilePlus2 />
+                Créer une évaluation
+              </Button>
+            )}
+          />
         ) : (
           <div className="product-workspace-grid">
             <aside className="product-master-panel">
