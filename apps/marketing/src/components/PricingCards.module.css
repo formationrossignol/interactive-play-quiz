@@ -1,0 +1,155 @@
+.plans {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.plan {
+  grid-column: span 4;
+  display: flex;
+  min-height: 34rem;
+  flex-direction: column;
+  border-radius: 1.25rem;
+  padding: 1.6rem;
+  background: var(--mp-surface);
+}
+
+.plan:nth-child(2) {
+  grid-column: span 5;
+  background: var(--mp-accent);
+  color: var(--mp-on-accent);
+}
+
+.plan:nth-child(3) {
+  grid-column: span 3;
+  background: var(--mp-accent-soft);
+}
+
+.planHeader {
+  min-height: 8rem;
+}
+
+.planName {
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  margin: 0;
+  font-family: var(--ap-font-display);
+  font-size: 1.55rem;
+  letter-spacing: -.035em;
+}
+
+.planDescription {
+  margin: .75rem 0 0;
+  color: var(--mp-muted);
+  font-size: .84rem;
+  font-weight: 600;
+  line-height: 1.55;
+}
+
+.plan:nth-child(2) .planDescription,
+.plan:nth-child(2) .billing,
+.plan:nth-child(2) .features {
+  color: color-mix(in srgb, var(--mp-on-accent) 82%, transparent);
+}
+
+.price {
+  margin: 1.5rem 0 0;
+  font-family: var(--ap-font-display);
+  font-size: clamp(2.4rem, 4vw, 4rem);
+  font-weight: 740;
+  letter-spacing: -.055em;
+  line-height: 1;
+}
+
+.billing {
+  margin: .45rem 0 0;
+  color: var(--mp-muted);
+  font-size: .78rem;
+  font-weight: 700;
+}
+
+.features {
+  display: grid;
+  gap: .85rem;
+  margin: 2rem 0;
+  padding: 0;
+  color: var(--mp-ink);
+  list-style: none;
+}
+
+.features li {
+  display: grid;
+  grid-template-columns: 1.15rem minmax(0, 1fr);
+  gap: .6rem;
+  font-size: .83rem;
+  font-weight: 680;
+  line-height: 1.45;
+}
+
+.features svg {
+  color: var(--mp-accent);
+}
+
+.plan:nth-child(2) .features svg {
+  color: var(--mp-on-accent);
+}
+
+.button {
+  width: 100%;
+  min-height: 3rem;
+  margin-top: auto;
+  border: 1px solid var(--mp-line);
+  border-radius: .75rem;
+  padding: .75rem;
+  background: transparent;
+  color: var(--mp-ink);
+  font: inherit;
+  font-size: .86rem;
+  font-weight: 820;
+  cursor: pointer;
+}
+
+.plan:nth-child(2) .button {
+  border-color: var(--mp-on-accent);
+  background: var(--mp-on-accent);
+  color: var(--mp-accent-deep);
+}
+
+.button:active {
+  transform: translateY(1px);
+}
+
+.subsection {
+  margin-top: clamp(4.5rem, 9vw, 8rem);
+}
+
+.subsectionHeader {
+  max-width: 42rem;
+  margin-bottom: 2rem;
+}
+
+.subsectionHeader h2 {
+  margin: 0;
+  font-family: var(--ap-font-display);
+  font-size: clamp(2rem, 4vw, 3.5rem);
+  font-weight: 730;
+  letter-spacing: -.05em;
+  line-height: 1;
+}
+
+.subsectionHeader p {
+  margin: 1rem 0 0;
+  color: var(--mp-muted);
+  font-size: .9rem;
+  font-weight: 600;
+}
+
+@media (max-width: 900px) {
+  .plan,
+  .plan:nth-child(2),
+  .plan:nth-child(3) {
+    grid-column: span 12;
+    min-height: auto;
+  }
+}

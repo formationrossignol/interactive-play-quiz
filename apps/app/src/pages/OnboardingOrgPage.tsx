@@ -1,9 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { PublicAccessShell } from "@/components/PublicAccessShell";
+import styles from "@/components/PublicAccessShell.module.css";
 import { showError } from "@/lib/errorTaxonomy";
 import { createOrganization, slugify } from "@/lib/org/orgRepo";
 
@@ -13,24 +11,26 @@ export default function OnboardingOrgPage() {
   const [slug, setSlug] = useState("");
   const [slugTouched, setSlugTouched] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
 
   const handleNameChange = (value: string) => {
     setName(value);
     if (!slugTouched) setSlug(slugify(value));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
     if (!name.trim() || !slug.trim()) return;
     setBusy(true);
+    setError("");
     try {
       await createOrganization(name.trim(), slug.trim());
       navigate("/dashboard", { replace: true });
-    } catch (err) {
-      if (err instanceof Error && err.message.includes("slug_taken")) {
-        toast.error("Cet identifiant est déjà utilisé, essayez-en un autre.");
+    } catch (caughtError) {
+      if (caughtError instanceof Error && caughtError.message.includes("slug_taken")) {
+        setError("Cet identifiant est déjà utilisé. Choisissez-en un autre.");
       } else {
-        showError(err);
+        showError(caughtError);
       }
     } finally {
       setBusy(false);
@@ -38,35 +38,44 @@ export default function OnboardingOrgPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4">
-      <form onSubmit={handleSubmit} className="w-full max-w-md space-y-4">
-        <h1 className="text-2xl font-semibold">Créez votre établissement</h1>
-        <p className="text-sm text-muted-foreground">
-          Vous deviendrez administrateur de cet espace.
-        </p>
-        <div className="space-y-2">
-          <Label htmlFor="org-name">Nom de l'établissement</Label>
-          <Input
+    <PublicAccessShell
+      title="Créez votre établissement"
+      description="Structurez vos contenus, vos équipes et vos participants dans un espace dédié."
+    >
+      <form className={styles.form} onSubmit={handleSubmit}>
+        <div className={styles.field}>
+          <label className={styles.label} htmlFor="org-name">Nom de l’établissement</label>
+          <input
             id="org-name"
+            className={styles.input}
             value={name}
-            onChange={(e) => handleNameChange(e.target.value)}
+            onChange={(event) => handleNameChange(event.target.value)}
             placeholder="Lycée Victor Hugo"
             required
           />
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="org-slug">Identifiant</Label>
-          <Input
+        <div className={styles.field}>
+          <label className={styles.label} htmlFor="org-slug">Identifiant de l’espace</label>
+          <input
             id="org-slug"
+            className={styles.input}
             value={slug}
-            onChange={(e) => { setSlug(slugify(e.target.value)); setSlugTouched(true); }}
+            onChange={(event) => {
+              setSlug(slugify(event.target.value));
+              setSlugTouched(true);
+            }}
+            aria-describedby="org-slug-help"
             required
           />
+          <span id="org-slug-help" className={styles.helper}>
+            Utilisé dans les liens et les invitations de votre équipe.
+          </span>
         </div>
-        <Button type="submit" loading={busy} className="w-full">
-          Créer l'établissement
-        </Button>
+        {error && <p className={styles.error} role="alert">{error}</p>}
+        <button className={styles.primaryButton} type="submit" disabled={busy}>
+          {busy ? "Création..." : "Créer l’établissement"}
+        </button>
       </form>
-    </div>
+    </PublicAccessShell>
   );
 }

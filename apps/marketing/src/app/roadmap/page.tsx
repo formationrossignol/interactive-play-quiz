@@ -7,7 +7,7 @@ import "@/styles/roadmap-pages.css";
 
 export const metadata: Metadata = {
   title: "Roadmap publique",
-  description: "Votez pour les prochaines fonctionnalités de Brivia. Les idées les plus votées passent en développement — et vous êtes prévenu quand elles sortent.",
+  description: "Votez pour les prochaines fonctionnalités de Brivia. Les idées les plus votées passent en développement et vous êtes prévenu quand elles sortent.",
 };
 
 export default async function RoadmapPage() {

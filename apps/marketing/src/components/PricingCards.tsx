@@ -1,10 +1,12 @@
 "use client";
 
-import { Check, Rocket, Crown, Building2 } from "lucide-react";
+import { Building2, Check, Crown, Rocket } from "lucide-react";
 import { toast } from "sonner";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import { PlanComparator } from "@/components/PlanComparator";
 import { PaymentFaq } from "@/components/PaymentFaq";
+import pageStyles from "./MarketingPage.module.css";
+import styles from "./PricingCards.module.css";
 
 async function startProCheckout(): Promise<{ ok: boolean; error?: string }> {
   const { data, error } = await supabaseBrowser.functions.invoke("create-checkout-session", { body: {} });
@@ -26,141 +28,105 @@ async function onProClick() {
 const PLANS = [
   {
     name: "Starter",
-    description: "Idéal pour découvrir Brivia avec une petite équipe.",
+    description: "Pour essayer Brivia et animer un petit groupe.",
     price: "Gratuit",
-    cta: "Créer mon premier quiz",
+    cta: "Créer gratuitement",
     icon: Rocket,
-    accent: "--ap-pres",
-    accentDeep: "--ap-pres-deep",
     features: [
-      "Jusqu'à 5 quiz, sondages, jeux de cartes et présentations",
-      "1 cours, types de questions classiques uniquement",
-      "Jusqu'à 20 participants par session",
+      "5 quiz, sondages, flashcards, présentations et examens",
+      "1 cours",
+      "20 participants par session",
+      "Types de questions classiques",
     ],
     onClick: () => { window.location.href = "/builder-start?type=quiz"; },
-    billing: "par mois",
+    billing: "sans limite de durée",
     highlight: false,
+    accent: "--ap-brand",
   },
   {
     name: "Pro",
-    description: "Pour les animateurs qui veulent personnalisation avancée et analyses détaillées.",
+    description: "Pour produire sans plafond et analyser chaque session.",
     price: "19 €",
     cta: "Passer en Pro",
     icon: Crown,
-    accent: "--ap-brand",
-    accentDeep: "--ap-brand-deep",
     features: [
-      "Quiz, sondages, flashcards, présentations, examens et cours illimités",
-      "Jusqu'à 200 participants en direct, tous les types de questions",
-      "Rapports détaillés et exports de performances",
+      "Tous les formats en illimité",
+      "200 participants par session",
+      "Classement, association, texte à trous et curseur",
+      "Rapports détaillés et exports",
     ],
     onClick: onProClick,
-    billing: "par mois",
+    billing: "par mois, sans engagement",
     highlight: true,
+    accent: "--ap-brand",
   },
   {
     name: "Entreprise",
-    description: "Accompagnement sur-mesure et sécurité renforcée pour les grandes organisations.",
+    description: "Pour les déploiements qui dépassent le cadre d’une équipe.",
     price: "Sur devis",
-    cta: "Contacter les ventes",
+    cta: "Nous contacter",
     icon: Building2,
-    accent: "--ap-poll",
-    accentDeep: "--ap-poll-deep",
     features: [
-      "Participants et événements illimités",
-      "Single sign-on (SSO) et templates personnalisés en marque blanche",
-      "Success manager dédié et formations",
+      "Contenus illimités",
+      "Audience sans plafond produit",
+      "Cadrage adapté à l’organisation",
+      "Accompagnement au déploiement",
     ],
-    onClick: () => window.open("mailto:contact@quizmaster.app", "_blank"),
-    billing: "Discutons de vos besoins",
+    onClick: () => { window.location.href = "/contact"; },
+    billing: "selon vos besoins",
     highlight: false,
+    accent: "--ap-brand",
   },
 ];
 
 export function PricingCards() {
   return (
-    <>
-      <section style={{ maxWidth: 1100, margin: "0 auto", padding: "0 24px 96px" }}>
-        <div style={{ display: "grid", gap: "24px", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))" }}>
-          {PLANS.map((plan) => {
-            const Icon = plan.icon;
-            return (
-              <div
-                key={plan.name}
-                className={plan.highlight ? "ap-card ap-card--floaty" : "ap-card ap-card--hover"}
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "20px",
-                  padding: "32px",
-                  border: plan.highlight ? `2px solid var(${plan.accent})` : undefined,
-                  position: "relative",
-                  overflow: "hidden",
-                }}
-              >
-                {plan.highlight && (
-                  <span className="ap-badge ap-badge--brand" style={{ position: "absolute", top: 16, right: 16, fontSize: "10px" }}>
-                    Populaire
-                  </span>
-                )}
-                <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-                  <div className="ap-tile__icon" style={{ background: `var(${plan.accent})`, boxShadow: `0 5px 0 var(${plan.accentDeep})`, flexShrink: 0 }}>
-                    <Icon className="h-6 w-6" color="#fff" />
-                  </div>
-                  <div>
-                    <h3 className="ap-h3">{plan.name}</h3>
-                    <p className="ap-muted" style={{ fontSize: "13px", marginTop: "2px" }}>{plan.description}</p>
-                  </div>
-                </div>
-
-                <div>
-                  <span style={{ fontFamily: "var(--ap-font-display)", fontWeight: 600, fontSize: "36px", color: "var(--ap-ink)", letterSpacing: "-1px" }}>
-                    {plan.price}
-                  </span>
-                  <p className="ap-muted" style={{ fontSize: "13px", marginTop: "2px" }}>{plan.billing}</p>
-                </div>
-
-                <ul style={{ display: "flex", flexDirection: "column", gap: "10px", flex: 1 }}>
-                  {plan.features.map((feature) => (
-                    <li key={feature} style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
-                      <Check className="mt-0.5 h-4 w-4 flex-shrink-0" style={{ color: `var(${plan.accent})` }} />
-                      <span style={{ fontFamily: "var(--ap-font-body)", fontWeight: 700, fontSize: "14px", color: "var(--ap-ink)" }}>
-                        {feature}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-
-                <button
-                  onClick={plan.onClick}
-                  className={plan.highlight ? "ap-btn ap-btn--pill" : "ap-btn ap-btn--ghost ap-btn--pill"}
-                  style={{ width: "100%" }}
-                >
-                  {plan.cta}
-                </button>
+    <div className={pageStyles.container}>
+      <div className={styles.plans}>
+        {PLANS.map((plan) => {
+          const Icon = plan.icon;
+          return (
+            <article className={styles.plan} key={plan.name}>
+              <div className={styles.planHeader}>
+                <h2 className={styles.planName}>
+                  <Icon size={22} strokeWidth={1.7} aria-hidden="true" />
+                  {plan.name}
+                </h2>
+                <p className={styles.planDescription}>{plan.description}</p>
               </div>
-            );
-          })}
-        </div>
-      </section>
+              <p className={styles.price}>{plan.price}</p>
+              <p className={styles.billing}>{plan.billing}</p>
+              <ul className={styles.features}>
+                {plan.features.map((feature) => (
+                  <li key={feature}>
+                    <Check size={17} strokeWidth={2.2} aria-hidden="true" />
+                    <span>{feature}</span>
+                  </li>
+                ))}
+              </ul>
+              <button type="button" className={styles.button} onClick={plan.onClick}>
+                {plan.cta}
+              </button>
+            </article>
+          );
+        })}
+      </div>
 
-      <section style={{ maxWidth: 1100, margin: "0 auto", padding: "0 24px 96px" }}>
-        <div style={{ textAlign: "center", marginBottom: "40px" }}>
-          <h2 className="ap-h2" style={{ marginBottom: "8px" }}>Comparez les formules en détail</h2>
-          <p className="ap-muted" style={{ maxWidth: 480, margin: "0 auto" }}>
-            Toutes les limites et fonctionnalités, plan par plan.
-          </p>
+      <section className={styles.subsection} aria-labelledby="plans-comparison-title">
+        <div className={styles.subsectionHeader}>
+          <h2 id="plans-comparison-title">Les limites, plan par plan.</h2>
+          <p>Les capacités ci-dessous correspondent aux règles appliquées dans l’app.</p>
         </div>
         <PlanComparator plans={PLANS} />
       </section>
 
-      <section style={{ maxWidth: 1100, margin: "0 auto", padding: "0 24px 96px" }}>
-        <div style={{ textAlign: "center", marginBottom: "32px" }}>
-          <h2 className="ap-h2" style={{ marginBottom: "8px" }}>Questions sur le paiement</h2>
-          <p className="ap-muted">Tout ce qu&apos;il faut savoir avant de passer au plan Pro.</p>
+      <section className={styles.subsection} aria-labelledby="payment-title">
+        <div className={styles.subsectionHeader}>
+          <h2 id="payment-title">Paiement et abonnement.</h2>
+          <p>Le plan Pro passe par Stripe et reste sans engagement annuel.</p>
         </div>
         <PaymentFaq />
       </section>
-    </>
+    </div>
   );
 }

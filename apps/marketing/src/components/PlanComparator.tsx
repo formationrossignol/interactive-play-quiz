@@ -38,14 +38,6 @@ const CATEGORIES: Category[] = [
       { label: "Export des résultats", values: [false, true, true] },
     ],
   },
-  {
-    title: "Sécurité & organisation",
-    rows: [
-      { label: "Single Sign-On (SSO)", values: [false, false, true] },
-      { label: "Marque blanche & templates personnalisés", values: [false, false, true] },
-      { label: "Success manager dédié & formations", values: [false, false, true] },
-    ],
-  },
 ];
 
 const Cell = ({ value, accent }: { value: CellValue; accent: string }) => {

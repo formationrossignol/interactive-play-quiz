@@ -7,7 +7,7 @@ import "@/styles/roadmap-pages.css";
 
 export const metadata: Metadata = {
   title: "Nouveautés produit",
-  description: "Toutes les nouveautés, améliorations et corrections de Brivia, mois par mois — et d'où elles viennent.",
+  description: "Toutes les nouveautés, améliorations et corrections de Brivia, mois par mois, avec leur origine.",
 };
 
 export default async function ChangelogPage() {
@@ -19,9 +19,8 @@ export default async function ChangelogPage() {
       <main className="lq" style={{ flex: 1 }}>
         <div className="wrap">
           <div className="page-hero">
-            <span className="eyebrow">Nouveautés produit</span>
             <h1>Brivia s&apos;améliore chaque mois.</h1>
-            <p className="lead">Toutes les nouveautés, améliorations et corrections — et d&apos;où elles viennent.</p>
+            <p className="lead">Toutes les nouveautés, améliorations et corrections, avec leur origine.</p>
           </div>
           <ChangelogView releases={releases} />
         </div>

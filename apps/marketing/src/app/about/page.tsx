@@ -1,92 +1,103 @@
 import type { Metadata } from "next";
-import { Zap, Users, Target, Heart } from "lucide-react";
+import Image from "next/image";
+import { ArrowRight, Focus, Heart, Layers3, UsersRound } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { fetchStaticPage } from "@/lib/repo";
 import { sanitizeHtml } from "@/lib/sanitizeHtml";
 import { STATIC_PAGE_DEFAULTS, mergeStaticPage } from "@/lib/staticPageDefaults";
+import styles from "@/components/MarketingPage.module.css";
 
-const ICONS = [Zap, Users, Target, Heart];
-const ACCENTS = [
-  { accent: "--ap-brand", accentDeep: "--ap-brand-deep" },
-  { accent: "--ap-poll", accentDeep: "--ap-poll-deep" },
-  { accent: "--ap-pres", accentDeep: "--ap-pres-deep" },
-  { accent: "--ap-quiz", accentDeep: "--ap-quiz-deep" },
-];
+const VALUE_ICONS = [Focus, UsersRound, Layers3, Heart] as const;
 
 async function getPage() {
   const data = await fetchStaticPage("about");
   return mergeStaticPage(STATIC_PAGE_DEFAULTS.about, data);
 }
 
-export async function generateMetadata(): Promise<Metadata> {
-  return {
-    title: "À propos",
-    description: "Brivia est l'outil de quiz et sondages interactifs conçu pour les formateurs et enseignants. Notre mission : rendre chaque session de formation engageante et mémorable.",
-  };
-}
+export const metadata: Metadata = {
+  title: "À propos",
+  description: "Découvrez pourquoi Brivia réunit animation, apprentissage et évaluation dans un même outil.",
+};
 
 export default async function AboutPage() {
   const page = await getPage();
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+    <div className="marketing-shell">
       <Header />
-      <main style={{ flex: 1 }}>
-        <div className="mx-auto max-w-5xl px-6 py-16">
-          <div style={{ textAlign: "center", marginBottom: "64px" }}>
-            <h1 className="ap-h1" style={{ fontSize: "clamp(36px,5vw,52px)", marginBottom: "20px" }}>
-              À propos de <span style={{ color: "var(--ap-brand)" }}>{page.title}</span>
-            </h1>
-            <p className="ap-lead" style={{ maxWidth: 600, margin: "0 auto" }}>
-              {page.subtitle}
-            </p>
+      <main id="main-content" className={styles.page}>
+        <section className={`${styles.hero} ${styles.heroCompact}`} aria-labelledby="about-title">
+          <div className={`${styles.container} ${styles.heroGrid}`}>
+            <div className={styles.heroCopy}>
+              <h1 id="about-title">L’interactivité sert <span>l’apprentissage.</span></h1>
+              <p className={styles.heroText}>
+                Brivia rassemble le moment en salle et le travail qui continue après.
+              </p>
+            </div>
+            <aside className={styles.heroAside}>
+              <strong>{page.title}</strong>
+              <p>{page.subtitle}</p>
+            </aside>
           </div>
+        </section>
 
-          <div
-            className="ap-card ap-card--floaty about-mission"
-            style={{ marginBottom: "56px", padding: "36px 40px" }}
-            dangerouslySetInnerHTML={{ __html: sanitizeHtml(page.body) }}
-          />
+        <section className={`${styles.section} ${styles.sectionTint}`} aria-labelledby="mission-title">
+          <div className={`${styles.container} ${styles.proofGrid}`}>
+            <div className={styles.proofMedia}>
+              <Image
+                src="/images/brivia-group-energy.jpg"
+                alt="Un groupe échange autour des résultats d’une activité Brivia"
+                fill
+                sizes="(max-width: 900px) 100vw, 55vw"
+              />
+            </div>
+            <div>
+              <div className={styles.sectionLead}>
+                <h2 id="mission-title">Un outil qui suit la réalité pédagogique.</h2>
+                <p>Une session peut commencer par un sondage, continuer par un cours et se terminer par un examen. L’outil doit suivre ce mouvement.</p>
+              </div>
+              <div
+                className={styles.legalCopy}
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(page.body) }}
+              />
+            </div>
+          </div>
+        </section>
 
-          <div style={{ marginBottom: "56px" }}>
-            <h2 className="ap-h2" style={{ fontSize: "32px", textAlign: "center", marginBottom: "32px" }}>
-              Nos valeurs
-            </h2>
-            <div style={{ display: "grid", gap: "20px", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))" }}>
-              {page.blocks.map((val, i) => {
-                const Icon = ICONS[i % ICONS.length];
-                const { accent, accentDeep } = ACCENTS[i % ACCENTS.length];
+        <section className={styles.section} aria-labelledby="values-title">
+          <div className={styles.container}>
+            <div className={styles.sectionLead}>
+              <h2 id="values-title">Les choix qui guident le produit.</h2>
+              <p>Moins de friction pour participer, plus de contrôle pour concevoir et analyser.</p>
+            </div>
+            <div className={styles.valueGrid}>
+              {page.blocks.map((value, index) => {
+                const Icon = VALUE_ICONS[index % VALUE_ICONS.length];
                 return (
-                  <div key={val.title} className="ap-card ap-card--hover" style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-                    <div className="ap-tile__icon" style={{ background: `var(${accent})`, boxShadow: `0 5px 0 var(${accentDeep})` }}>
-                      <Icon className="h-6 w-6" color="#fff" />
-                    </div>
-                    <h3 className="ap-h3">{val.title}</h3>
-                    <p className="ap-muted" style={{ fontSize: "14px", lineHeight: 1.55 }}>{val.desc}</p>
-                  </div>
+                  <article className={styles.value} key={value.title}>
+                    <Icon size={25} strokeWidth={1.7} aria-hidden="true" />
+                    <h3>{value.title}</h3>
+                    <p>{value.desc}</p>
+                  </article>
                 );
               })}
             </div>
           </div>
+        </section>
 
-          <div style={{ background: "var(--ap-brand)", borderRadius: "var(--ap-r-xl)", padding: "40px 40px", textAlign: "center", position: "relative", overflow: "hidden" }}>
-            <span style={{ position: "absolute", width: 200, height: 200, borderRadius: "50%", background: "rgba(255,255,255,0.07)", right: -60, top: -60, pointerEvents: "none" }} />
-            <h2 className="ap-h2" style={{ fontSize: "28px", color: "#fff", marginBottom: "12px" }}>
-              Rejoignez la communauté Brivia
-            </h2>
-            <p style={{ color: "rgba(255,255,255,0.8)", fontFamily: "var(--ap-font-body)", fontWeight: 700, fontSize: "15px", marginBottom: "28px" }}>
-              Des milliers d&apos;éducateurs, formateurs et animateurs créent déjà des expériences inoubliables.
-            </p>
-            <a
-              href="/auth"
-              className="ap-btn ap-btn--lg ap-btn--pill"
-              style={{ background: "#fff", color: "var(--ap-brand)", boxShadow: "0 5px 0 var(--ap-brand-deep)" }}
-            >
-              Commencer gratuitement
+        <section className={styles.section}>
+          <div className={`${styles.container} ${styles.cta}`}>
+            <div>
+              <h2>Voyez le produit, pas seulement la promesse.</h2>
+              <p>Explorez les formats, les parcours, les outils d’évaluation et les exports déjà disponibles.</p>
+            </div>
+            <a className={styles.primaryButton} href="/features">
+              Voir les fonctionnalités
+              <ArrowRight size={18} aria-hidden="true" />
             </a>
           </div>
-        </div>
+        </section>
       </main>
       <Footer />
     </div>

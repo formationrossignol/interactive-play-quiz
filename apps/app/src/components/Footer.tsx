@@ -7,9 +7,8 @@ import { marketingUrl } from "@/lib/marketingOrigin";
 // relative links would be swallowed by the SPA catch-all and render its 404.
 // Keep the public deployment as a working default while allowing the custom
 // marketing domain to be supplied per environment.
-// Discreet app footer — not the marketing site's: no product/company/
-// support columns, no logo, no social row. Just copyright, build version,
-// and the legally-required links (see apps/marketing/Footer.tsx for the
+// Discreet app footer, separate from the marketing site's full navigation.
+// It keeps only copyright and legally required links (see apps/marketing/Footer.tsx for the
 // full marketing version, ported from this file's old shape).
 export const Footer = () => {
   const { openPreferences } = useCookieConsent();
@@ -17,10 +16,10 @@ export const Footer = () => {
   return (
     <footer style={{ borderTop: "var(--ap-border-w) solid var(--ap-line)" }}>
       <div
-        className="mx-auto max-w-6xl px-6 py-4 text-xs font-bold"
+        className="mx-auto max-w-6xl px-6 py-5 text-xs font-semibold"
         style={{ color: "var(--ap-muted)", display: "flex", flexWrap: "wrap", gap: "16px", alignItems: "center", justifyContent: "space-between" }}
       >
-        <span>© 2026 Brivia · v{__APP_VERSION__}</span>
+        <span>© 2026 Brivia</span>
         <nav style={{ display: "flex", gap: "16px" }}>
           {[
             { label: t('footerMentionsLegales'), href: "/mentions-legales" },
@@ -30,7 +29,7 @@ export const Footer = () => {
             <a
               key={href}
               href={marketingUrl(href)}
-              className="text-xs font-bold text-ap-muted hover:text-ap-brand focus-visible:text-ap-brand font-body transition-colors"
+              className="font-body text-xs font-semibold text-ap-muted transition-colors hover:text-ap-brand focus-visible:text-ap-brand"
             >
               {label}
             </a>
@@ -38,7 +37,7 @@ export const Footer = () => {
           <button
             type="button"
             onClick={openPreferences}
-            className="text-xs font-bold text-ap-muted hover:text-ap-brand focus-visible:text-ap-brand font-body transition-colors"
+            className="font-body text-xs font-semibold text-ap-muted transition-colors hover:text-ap-brand focus-visible:text-ap-brand"
           >
             Gérer les cookies
           </button>

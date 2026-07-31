@@ -824,69 +824,7 @@ body { transition: background-color .25s ease, color .25s ease; }
 }
 
 /* ============================================================
-   16. COOKIE CONSENT — bandeau bas de page + centre de préférences.
-   Thémable : ne touche que des tokens.
-   ============================================================ */
-.ap-cookie-banner {
-  position: fixed; left: 0; right: 0; bottom: 0; z-index: 80;
-  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px;
-  padding: 18px 24px; background: var(--ap-card);
-  border-top: var(--ap-border-w) solid var(--ap-line);
-  box-shadow: 0 -14px 30px rgba(0,0,0,.12);
-}
-.ap-cookie-banner__text {
-  flex: 1 1 420px; margin: 0;
-  font-family: var(--ap-font-body); font-size: 13.5px; line-height: 1.5; color: var(--ap-muted);
-}
-.ap-cookie-banner__text a { color: var(--ap-brand); font-weight: 700; text-decoration: underline; }
-.ap-cookie-banner__actions { display: flex; flex-wrap: wrap; gap: 10px; flex: 0 0 auto; }
-
-.ap-cookie-modal__scrim {
-  position: fixed; inset: 0; z-index: 90;
-  background: rgba(20,15,35,.5);
-  display: flex; align-items: center; justify-content: center; padding: 20px;
-}
-.ap-cookie-modal {
-  width: 100%; max-width: 520px; max-height: 88vh; overflow-y: auto;
-  background: var(--ap-card); border: var(--ap-border-w) solid var(--ap-line);
-  border-radius: var(--ap-r-xl); padding: 32px;
-  box-shadow: var(--ap-shadow-card);
-}
-.ap-cookie-modal__title {
-  font-family: var(--ap-font-display); font-weight: 600; font-size: 22px;
-  color: var(--ap-ink); margin: 0 0 10px;
-}
-.ap-cookie-modal__intro {
-  font-family: var(--ap-font-body); font-size: 13.5px; line-height: 1.55;
-  color: var(--ap-muted); margin: 0 0 24px;
-}
-.ap-cookie-modal__row {
-  display: flex; align-items: flex-start; justify-content: space-between; gap: 20px;
-  padding: 16px 0; border-top: 1px solid var(--ap-line);
-}
-.ap-cookie-modal__row:first-of-type { border-top: none; }
-.ap-cookie-modal__row-text h3 {
-  font-family: var(--ap-font-display); font-weight: 600; font-size: 15px; color: var(--ap-ink); margin: 0 0 4px;
-}
-.ap-cookie-modal__row-text p {
-  font-family: var(--ap-font-body); font-size: 13px; line-height: 1.5; color: var(--ap-muted); margin: 0;
-}
-.ap-cookie-modal__row .ap-switch:disabled { cursor: not-allowed; opacity: .7; }
-.ap-cookie-modal__actions {
-  display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px;
-  margin-top: 26px; padding-top: 20px; border-top: var(--ap-border-w) solid var(--ap-line);
-}
-@media (max-width: 640px) {
-  .ap-cookie-banner { padding: 16px; }
-  .ap-cookie-banner__actions { width: 100%; }
-  .ap-cookie-banner__actions .ap-btn { flex: 1 1 auto; }
-  .ap-cookie-modal { padding: 24px; }
-  .ap-cookie-modal__actions { flex-direction: column-reverse; }
-  .ap-cookie-modal__actions .ap-btn { width: 100%; }
-}
-
-/* ============================================================
-   17. PLAN COMPARATOR — tableau détaillé sous les cartes tarifs
+   16. PLAN COMPARATOR — tableau détaillé sous les cartes tarifs
    (page /pricing). Thémable : ne touche que des tokens.
    ============================================================ */
 .ap-compare-wrap {

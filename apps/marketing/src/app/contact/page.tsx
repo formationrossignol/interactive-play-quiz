@@ -1,79 +1,72 @@
 import type { Metadata } from "next";
-import { Mail, MessageSquare } from "lucide-react";
+import { ArrowRight, CircleHelp, Mail } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { ContactForm } from "@/components/ContactForm";
+import styles from "@/components/MarketingPage.module.css";
 
 export const metadata: Metadata = {
   title: "Contact",
-  description: "Contactez l'équipe Brivia pour toute question sur nos quiz interactifs, sondages live et outils de formation. Réponse sous 24h.",
+  description: "Contactez l’équipe Brivia pour parler du produit, du support ou d’un déploiement dans votre organisation.",
 };
 
 export default function ContactPage() {
   return (
-    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+    <div className="marketing-shell">
       <Header />
-
-      <main style={{ flex: 1 }}>
-        <div className="mx-auto max-w-4xl px-6 py-16">
-          <div style={{ textAlign: "center", marginBottom: "48px" }}>
-            <h1 className="ap-h1" style={{ fontSize: "clamp(32px,5vw,48px)", marginBottom: "16px" }}>
-              Contactez-nous
-            </h1>
-            <p className="ap-lead">
-              Une question ? Une suggestion ? Nous sommes là pour vous aider.
-            </p>
-          </div>
-
-          <div style={{ display: "grid", gap: "20px", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", marginBottom: "32px" }}>
-            <div className="ap-card" style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-              <div className="ap-tile__icon" style={{ background: "var(--ap-brand)", boxShadow: "0 5px 0 var(--ap-brand-deep)" }}>
-                <Mail className="h-6 w-6" color="#fff" />
-              </div>
-              <div>
-                <h3 className="ap-h3">Email</h3>
-                <p className="ap-muted" style={{ fontSize: "13px", marginTop: "4px" }}>
-                  Écrivez-nous directement à notre adresse email
-                </p>
-              </div>
-              <a
-                href="mailto:contact@quizmaster.com"
-                style={{ color: "var(--ap-brand)", fontWeight: 800, fontSize: "14px" }}
-              >
-                contact@quizmaster.com
-              </a>
+      <main id="main-content" className={styles.page}>
+        <section className={`${styles.hero} ${styles.heroCompact}`} aria-labelledby="contact-title">
+          <div className={`${styles.container} ${styles.heroGrid}`}>
+            <div className={styles.heroCopy}>
+              <h1 id="contact-title">Parlons de votre <span>prochaine session.</span></h1>
+              <p className={styles.heroText}>
+                Support, déploiement ou retour produit : envoyez-nous le contexte et votre objectif.
+              </p>
             </div>
+            <aside className={styles.heroAside}>
+              <strong>Une réponse peut déjà exister.</strong>
+              <p>Le centre d’aide couvre la création, le live, les examens, les cours et les résultats.</p>
+              <div className={styles.actions}>
+                <a className={styles.secondaryButton} href="/help">Consulter l’aide</a>
+              </div>
+            </aside>
+          </div>
+        </section>
 
-            <div className="ap-card" style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-              <div className="ap-tile__icon" style={{ background: "var(--ap-pres)", boxShadow: "0 5px 0 var(--ap-pres-deep)" }}>
-                <MessageSquare className="h-6 w-6" color="#fff" />
+        <section className={`${styles.section} ${styles.sectionTint}`}>
+          <div className={`${styles.container} ${styles.contactGrid}`}>
+            <aside className={styles.contactAside}>
+              <article className={styles.panel}>
+                <Mail size={24} strokeWidth={1.7} aria-hidden="true" />
+                <h3>Email</h3>
+                <p>Pour une demande directe ou l’envoi d’un document.</p>
+                <div className={styles.actions}>
+                  <a href="mailto:contact@quizmaster.app">contact@quizmaster.app</a>
+                </div>
+              </article>
+              <article className={styles.panel}>
+                <CircleHelp size={24} strokeWidth={1.7} aria-hidden="true" />
+                <h3>Besoin de support</h3>
+                <p>Décrivez le format utilisé, le moment du problème et ce que vous attendiez.</p>
+                <div className={styles.actions}>
+                  <a className={styles.textLink} href="/help">
+                    Voir les réponses
+                    <ArrowRight size={17} aria-hidden="true" />
+                  </a>
+                </div>
+              </article>
+            </aside>
+
+            <div className={styles.formPanel}>
+              <div className={styles.sectionLead}>
+                <h2>Envoyez votre message.</h2>
+                <p>Les détails concrets nous aident à vous répondre plus vite.</p>
               </div>
-              <div>
-                <h3 className="ap-h3">Support</h3>
-                <p className="ap-muted" style={{ fontSize: "13px", marginTop: "4px" }}>
-                  Consultez notre centre d&apos;aide pour des réponses rapides
-                </p>
-              </div>
-              <a
-                href="/help"
-                className="ap-btn ap-btn--ghost ap-btn--sm ap-btn--pill"
-                style={{ alignSelf: "flex-start" }}
-              >
-                Centre d&apos;aide
-              </a>
+              <ContactForm />
             </div>
           </div>
-
-          <div className="ap-card ap-card--floaty" style={{ padding: "36px 40px" }}>
-            <h2 className="ap-h3" style={{ marginBottom: "6px" }}>Envoyez-nous un message</h2>
-            <p className="ap-muted" style={{ fontSize: "14px", marginBottom: "28px" }}>
-              Remplissez le formulaire ci-dessous et nous vous répondrons dans les plus brefs délais.
-            </p>
-            <ContactForm />
-          </div>
-        </div>
+        </section>
       </main>
-
       <Footer />
     </div>
   );

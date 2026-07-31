@@ -8,12 +8,12 @@ export const STATIC_PAGE_DEFAULTS: Record<StaticSlug, StaticPage> = {
   features: {
     slug: "features",
     title: "Un seul outil pour engager, mesurer et faire progresser.",
-    subtitle: "Quiz multijoueurs, sondages live, flashcards et présentations interactives — dans une expérience unique, du premier clic au débrief analytics.",
+    subtitle: "Quiz multijoueurs, sondages live, flashcards et présentations interactives, dans une expérience unique du premier clic au débrief analytics.",
     body: "",
     status: "published",
     blocks: [
       { title: "Collaboratif", desc: "Faites participer toute la salle en temps réel : chacun rejoint depuis son téléphone, sans installation." },
-      { title: "Interactif", desc: "Quiz, sondages, nuages de mots, flashcards — variez les formats pour garder l’attention." },
+      { title: "Interactif", desc: "Quiz, sondages, nuages de mots et flashcards : variez les formats pour garder l’attention." },
       { title: "Personnalisable", desc: "Adaptez couleurs, rythme et règles du jeu à votre marque et à votre public." },
       { title: "Analytics", desc: "Mesurez la compréhension question par question et repérez ce qu’il faut réexpliquer." },
       { title: "Modèles", desc: "Partez d’un modèle prêt à l’emploi et lancez votre première session en quelques minutes." },
@@ -52,7 +52,7 @@ export const STATIC_PAGE_DEFAULTS: Record<StaticSlug, StaticPage> = {
 <h2>Données personnelles</h2>
 <p>Le traitement de vos données personnelles est décrit dans notre <a href="/confidentialite">Politique de confidentialité</a>.</p>
 <h2>Cookies</h2>
-<p>Brivia dépose des cookies strictement nécessaires au fonctionnement du service (authentification, sécurité). Les cookies de préférence, de mesure d’audience et marketing ne sont déposés qu’avec votre consentement, recueilli via le bandeau affiché à votre première visite. Vous pouvez modifier votre choix à tout moment via le lien « Gérer les cookies » en pied de page — voir notre <a href="/confidentialite">Politique de confidentialité</a>.</p>
+<p>Brivia dépose des cookies strictement nécessaires au fonctionnement du service (authentification, sécurité). Les cookies de préférence, de mesure d’audience et marketing ne sont déposés qu’avec votre consentement, recueilli via le bandeau affiché à votre première visite. Vous pouvez modifier votre choix à tout moment via le lien « Gérer les cookies » en pied de page. Consultez notre <a href="/confidentialite">Politique de confidentialité</a>.</p>
 <h2>Droit applicable</h2>
 <p>Les présentes mentions légales sont soumises au droit français. Tout litige relatif à leur interprétation ou à leur exécution relève de la compétence des tribunaux français.</p>`.trim(),
   },

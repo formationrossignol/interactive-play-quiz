@@ -1,132 +1,129 @@
+"use client";
+
 import Link from "next/link";
 import { BrandMonogram } from "ui/BrandMonogram";
 import { BrandWordmark } from "ui/BrandWordmark";
 import { SocialLinksRow } from "@/components/SocialLinksRow";
+import { useMarketingLanguage } from "./MarketingLanguage";
+import styles from "./MarketingChrome.module.css";
 
-// Mirrors apps/app/src/components/Footer.tsx. App-only routes (builder,
-// discover, community) get a real <a> to APP_ORIGIN — full browser
-// navigation, not next/link — same reasoning as Header.tsx's "Se connecter"
-// (see docs/marketing-app-decoupling.md).
 const APP_ORIGIN = process.env.NEXT_PUBLIC_APP_ORIGIN ?? "https://interactive-play-quiz.vercel.app";
 
-type FooterLink = { label: string; href: string; external?: boolean };
-
-const FOOTER_SECTIONS: { title: string; links: FooterLink[] }[] = [
-  {
-    title: "Produit",
-    links: [
-      { label: "Fonctionnalités", href: "/features" },
-      { label: "Tarifs", href: "/pricing" },
-      { label: "Créer un quiz", href: `${APP_ORIGIN}/builder-start?type=quiz`, external: true },
-      { label: "Découvrir", href: `${APP_ORIGIN}/discover`, external: true },
-    ],
-  },
-  {
-    title: "Entreprise",
-    links: [
-      { label: "À propos", href: "/about" },
-      { label: "Contact", href: "/contact" },
-    ],
-  },
-  {
-    title: "Support",
-    links: [
-      { label: "Aide", href: "/help" },
-      { label: "Guides", href: "/guides" },
-      { label: "Communauté", href: `${APP_ORIGIN}/community`, external: true },
-      { label: "Avis", href: "/reviews" },
-      { label: "Roadmap", href: `${APP_ORIGIN}/roadmap`, external: true },
-      { label: "Changelog", href: `${APP_ORIGIN}/changelog`, external: true },
-      { label: "Signaler un bug", href: `${APP_ORIGIN}/report`, external: true },
-    ],
-  },
-];
-
-const LEGAL_LINKS = [
-  { label: "Mentions légales", href: "/mentions-legales" },
-  { label: "Confidentialité", href: "/confidentialite" },
-  { label: "CGU", href: "/cgu" },
-];
-
 export function Footer() {
+  const { language } = useMarketingLanguage();
+  const content = language === "fr"
+    ? {
+        home: "Brivia, accueil",
+        statement: "Concevoir, animer et mesurer dans un seul espace.",
+        summary: "Des formats interactifs pour faire participer, vérifier les acquis et améliorer chaque session.",
+        productLabel: "Produit",
+        resourcesLabel: "Ressources",
+        companyLabel: "Entreprise",
+        legalLabel: "Liens légaux",
+        copyright: "© 2026 Brivia. Tous droits réservés.",
+        product: [
+          ["Fonctionnalités", "/features"],
+          ["Quiz", "/features#format-quiz"],
+          ["Sondages", "/features#format-polls"],
+          ["Examens", "/features#format-exams"],
+          ["Cours", "/features#format-courses"],
+        ],
+        resources: [
+          ["Tarifs", "/pricing"],
+          ["Guides", "/guides"],
+          ["Centre d’aide", "/help"],
+          ["Avis clients", "/reviews"],
+          ["Communauté", `${APP_ORIGIN}/community`],
+        ],
+        company: [
+          ["À propos", "/about"],
+          ["Contact", "/contact"],
+          ["Roadmap", `${APP_ORIGIN}/roadmap`],
+          ["Changelog", `${APP_ORIGIN}/changelog`],
+        ],
+        legal: [
+          ["Mentions légales", "/mentions-legales"],
+          ["Confidentialité", "/confidentialite"],
+          ["CGU", "/cgu"],
+        ],
+      }
+    : {
+        home: "Brivia, home",
+        statement: "Design, deliver and measure in one workspace.",
+        summary: "Interactive formats to engage learners, assess knowledge and improve every session.",
+        productLabel: "Product",
+        resourcesLabel: "Resources",
+        companyLabel: "Company",
+        legalLabel: "Legal links",
+        copyright: "© 2026 Brivia. All rights reserved.",
+        product: [
+          ["Features", "/features"],
+          ["Quizzes", "/features#format-quiz"],
+          ["Polls", "/features#format-polls"],
+          ["Exams", "/features#format-exams"],
+          ["Courses", "/features#format-courses"],
+        ],
+        resources: [
+          ["Pricing", "/pricing"],
+          ["Guides", "/guides"],
+          ["Help center", "/help"],
+          ["Customer reviews", "/reviews"],
+          ["Community", `${APP_ORIGIN}/community`],
+        ],
+        company: [
+          ["About", "/about"],
+          ["Contact", "/contact"],
+          ["Roadmap", `${APP_ORIGIN}/roadmap`],
+          ["Changelog", `${APP_ORIGIN}/changelog`],
+        ],
+        legal: [
+          ["Legal notice", "/mentions-legales"],
+          ["Privacy", "/confidentialite"],
+          ["Terms", "/cgu"],
+        ],
+      };
+
+  const footerLink = ([label, href]: string[]) =>
+    href.startsWith("http")
+      ? <a key={href} href={href}>{label}</a>
+      : <Link key={href} href={href}>{label}</Link>;
+
   return (
-    <footer style={{ borderTop: "var(--ap-border-w) solid var(--ap-line)", background: "var(--ap-paper-2)" }}>
-      <div className="mx-auto flex max-w-6xl flex-col gap-10 px-6 py-12 md:flex-row md:justify-between">
-        <div className="max-w-sm">
-          <Link href="/" className="flex items-center gap-3" style={{ marginBottom: 16 }}>
-            <span
-              className="ap-logo"
-              style={{
-                display: "inline-flex", alignItems: "center", justifyContent: "center",
-                width: 32, height: 32, borderRadius: "var(--ap-r-md)", background: "var(--ap-brand)",
-              }}
-            >
-              <BrandMonogram size={16} />
+    <footer id="site-footer" className={styles.footer}>
+      <div className={styles.footerInner}>
+        <div className={styles.footerBrand}>
+          <Link href="/" className={styles.brand} aria-label={content.home}>
+            <span className={styles.brandMark}>
+              <BrandMonogram size={18} />
             </span>
-            <BrandWordmark size={16} style={{ color: "var(--ap-ink)" }} />
+            <BrandWordmark size={18} className={styles.wordmark} />
           </Link>
-          <p className="text-sm leading-relaxed" style={{ color: "var(--ap-muted)" }}>
-            Quiz, sondages, flashcards et présentations interactives, en direct.
-          </p>
+          <p className={styles.footerStatement}>{content.statement}</p>
+          <p>{content.summary}</p>
           <SocialLinksRow />
         </div>
 
-        <div className="grid flex-1 gap-8 sm:grid-cols-3">
-          {FOOTER_SECTIONS.map((section) => (
-            <div key={section.title}>
-              <h3
-                className="text-xs font-bold uppercase tracking-widest"
-                style={{ color: "var(--ap-muted)" }}
-              >
-                {section.title}
-              </h3>
-              <ul className="mt-4 space-y-3">
-                {section.links.map((link) => (
-                  <li key={link.label}>
-                    {link.external ? (
-                      <a
-                        href={link.href}
-                        className="text-sm font-semibold transition-colors hover:opacity-80"
-                        style={{ color: "var(--ap-ink)", fontFamily: "var(--ap-font-body)" }}
-                      >
-                        {link.label}
-                      </a>
-                    ) : (
-                      <Link
-                        href={link.href}
-                        className="text-sm font-semibold transition-colors hover:opacity-80"
-                        style={{ color: "var(--ap-ink)", fontFamily: "var(--ap-font-body)" }}
-                      >
-                        {link.label}
-                      </Link>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+        <div className={styles.footerNavigation}>
+          <nav aria-label={content.productLabel}>
+            <h2>{content.productLabel}</h2>
+            {content.product.map(footerLink)}
+          </nav>
+          <nav aria-label={content.resourcesLabel}>
+            <h2>{content.resourcesLabel}</h2>
+            {content.resources.map(footerLink)}
+          </nav>
+          <nav aria-label={content.companyLabel}>
+            <h2>{content.companyLabel}</h2>
+            {content.company.map(footerLink)}
+          </nav>
         </div>
       </div>
 
-      <div style={{ borderTop: "var(--ap-border-w) solid var(--ap-line)" }}>
-        <div
-          className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-4 text-xs font-bold"
-          style={{ color: "var(--ap-muted)" }}
-        >
-          <span>© 2026 Brivia. Tous droits réservés.</span>
-          <nav style={{ display: "flex", gap: "16px" }}>
-            {LEGAL_LINKS.map(({ label, href }) => (
-              <Link
-                key={href}
-                href={href}
-                className="transition-colors hover:opacity-80"
-                style={{ color: "var(--ap-muted)", fontFamily: "var(--ap-font-body)" }}
-              >
-                {label}
-              </Link>
-            ))}
-          </nav>
-        </div>
+      <div className={styles.footerBottom}>
+        <span>{content.copyright}</span>
+        <nav aria-label={content.legalLabel}>
+          {content.legal.map(footerLink)}
+        </nav>
       </div>
     </footer>
   );

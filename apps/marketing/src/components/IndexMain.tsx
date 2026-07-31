@@ -1,532 +1,471 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { FormEvent, useState } from "react";
+import Image from "next/image";
+import {
+  ArrowRight,
+  BarChart3,
+  Check,
+  PencilLine,
+  QrCode,
+  ShieldCheck,
+  UsersRound,
+} from "lucide-react";
 import { HeroMiniQuiz } from "@/components/HeroMiniQuiz";
-import { UseCaseTabs } from "@/components/landing/UseCaseTabs";
-import { StatsBand } from "@/components/landing/StatsBand";
-import { DemoShowcase } from "@/components/landing/DemoShowcase";
-import { LandingTestimonials } from "@/components/landing/LandingTestimonials";
-import { TrustSection } from "@/components/landing/TrustSection";
-import { LandingFaq } from "@/components/landing/LandingFaq";
+import { PartnersStrip } from "@/components/PartnersStrip";
 import { CompetitorComparison } from "@/components/landing/CompetitorComparison";
-import { useLiveVisitors } from "@/lib/useLiveVisitors";
-import type { Review } from "@/lib/types";
+import { QUESTION_TYPE_PAGES } from "@/lib/questionTypePages";
+import type { Partner, Review } from "@/lib/types";
+import styles from "./IndexMain.module.css";
+import pageStyles from "./MarketingPage.module.css";
 
-// Mirrors apps/app/src/pages/Index.tsx's <main> content. Header/Footer and
-// data fetching (reviews, partners) stay server-side in page.tsx; this is
-// the client island for the interactive landing page (hero demo, live-
-// visitor count, content-type tiles, join-game input).
-//
-// Internal links to app-owned routes (/builder-start, /join/:code,
-// /join-exam, /pricing) use real navigation (<a href> or
-// window.location.href), not client-side state — same reasoning as every
-// other page in this migration series: a full browser navigation is what
-// lets the domain-level rewrite reach the app deployment.
-
-function useCountUp(target: number, duration = 900) {
-  const [value, setValue] = useState(0);
-  const ref = useRef<HTMLSpanElement>(null);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry.isIntersecting) return;
-        observer.disconnect();
-        if (reduced) { setValue(target); return; }
-        const t0 = performance.now();
-        const tick = (now: number) => {
-          const k = Math.min(1, (now - t0) / duration);
-          const ease = 1 - Math.pow(1 - k, 3);
-          setValue(Math.round(target * ease));
-          if (k < 1) requestAnimationFrame(tick);
-        };
-        requestAnimationFrame(tick);
-      },
-      { threshold: 0.5 }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [target, duration]);
-  return { ref, value };
-}
-
-const CONTENT_TYPES = [
+const FORMATS = [
   {
-    key: "quiz",
-    label: "Quiz",
-    title: "Créer un quiz",
-    desc: "Questions à choix multiples, classement en direct, réponses chronométrées.",
-    cta: "Nouveau quiz",
-    accentVar: "--ap-quiz",
-    accentDeepVar: "--ap-quiz-deep",
-    badgeClass: "ap-badge ap-badge--quiz",
-    btnClass: "ap-btn ap-btn--sm ap-btn--pill ap-btn--quiz",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" width="26" height="26">
-        <path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h5"/>
-      </svg>
-    ),
-    route: "/builder-start?type=quiz",
+    name: "Quiz live",
+    description: "Questions chronométrées et classement en direct.",
+    href: "/builder-start?type=quiz",
   },
   {
-    key: "slide",
-    label: "Présentation",
-    title: "Créer une présentation",
-    desc: "Slides interactives, notes, mode présentateur.",
-    cta: "Nouvelle présentation",
-    accentVar: "--ap-pres",
-    accentDeepVar: "--ap-pres-deep",
-    badgeClass: "ap-badge ap-badge--pres",
-    btnClass: "ap-btn ap-btn--sm ap-btn--pill ap-btn--pres",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" width="26" height="26">
-        <path d="M3 4h18v12H3z"/><path d="M12 16v4M8 20h8"/>
-      </svg>
-    ),
-    route: "/builder-start?type=slide",
+    name: "Sondages",
+    description: "Opinions, échelles et nuages de mots instantanés.",
+    href: "/builder-start?type=poll",
   },
   {
-    key: "poll",
-    label: "Sondage",
-    title: "Créer un sondage",
-    desc: "Résultats en temps réel, nuages de mots, échelles de satisfaction.",
-    cta: "Nouveau sondage",
-    accentVar: "--ap-poll",
-    accentDeepVar: "--ap-poll-deep",
-    badgeClass: "ap-badge ap-badge--poll",
-    btnClass: "ap-btn ap-btn--sm ap-btn--pill ap-btn--poll",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" width="26" height="26">
-        <path d="M5 20V10M12 20V4M19 20v-7"/>
-      </svg>
-    ),
-    route: "/builder-start?type=poll",
+    name: "Flashcards",
+    description: "Révision active, seul ou en session guidée.",
+    href: "/builder-start?type=flashcard",
   },
   {
-    key: "flashcard",
-    label: "Flashcard",
-    title: "Créer des flashcards",
-    desc: "Révisions actives, recto-verso, mode session guidée.",
-    cta: "Nouvelles flashcards",
-    accentVar: "--ap-flash",
-    accentDeepVar: "--ap-flash-deep",
-    badgeClass: "ap-badge ap-badge--flash",
-    btnClass: "ap-btn ap-btn--sm ap-btn--pill ap-btn--flash",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" width="26" height="26">
-        <path d="M4 6h13v12H4z"/><path d="M8 3h13v12"/>
-      </svg>
-    ),
-    route: "/builder-start?type=flashcard",
+    name: "Présentations",
+    description: "Texte, médias, formes, tableaux et mode présentateur.",
+    href: "/builder-start?type=slide",
+  },
+  {
+    name: "Examens",
+    description: "Tentatives, seuils, fenêtres de passage et surveillance.",
+    href: "/exam-builder",
+  },
+  {
+    name: "Cours",
+    description: "Vidéo, documents, activités, SCORM, H5P et dépôts.",
+    href: "/course-builder",
   },
 ] as const;
 
-function LeaderboardTile() {
-  const { ref: c1Ref, value: c1Value } = useCountUp(2450);
-  const { ref: c2Ref, value: c2Value } = useCountUp(2310);
-  const { ref: c3Ref, value: c3Value } = useCountUp(2180);
-  return (
-    <div className="ap-card ap-card--hover ap-reveal d6" style={{ boxShadow: "0 5px 0 var(--ap-line)" }}>
-      <h3 className="ap-h3" style={{ marginBottom: 4 }}>Classement en direct</h3>
-      <p style={{ fontSize: 14, color: "var(--ap-muted)", marginBottom: 18 }}>Les scores tombent en temps réel, la tension monte.</p>
-      <div>
-        <div className="ap-lb-row ap-lb-row--first">
-          <span className="ap-lb-row__rank">🥇</span>
-          <span className="ap-lb-row__who"><span className="ap-lb-row__av">🦊</span>Camille</span>
-          <span className="ap-lb-row__up">▲ 2</span>
-          <span ref={c1Ref} className="ap-lb-row__pts ap-mono">{c1Value.toLocaleString("fr-FR")}</span>
-        </div>
-        <div className="ap-lb-row">
-          <span className="ap-lb-row__rank">2</span>
-          <span className="ap-lb-row__who"><span className="ap-lb-row__av">🐙</span>Mehdi</span>
-          <span ref={c2Ref} className="ap-lb-row__pts ap-mono">{c2Value.toLocaleString("fr-FR")}</span>
-        </div>
-        <div className="ap-lb-row" style={{ marginBottom: 0 }}>
-          <span className="ap-lb-row__rank">3</span>
-          <span className="ap-lb-row__who"><span className="ap-lb-row__av">🦉</span>Inès</span>
-          <span ref={c3Ref} className="ap-lb-row__pts ap-mono">{c3Value.toLocaleString("fr-FR")}</span>
-        </div>
-      </div>
-    </div>
-  );
+const WORKFLOW = [
+  {
+    icon: PencilLine,
+    title: "Composez",
+    description: "Partez de zéro ou adaptez un contenu existant en quelques minutes.",
+  },
+  {
+    icon: QrCode,
+    title: "Lancez",
+    description: "Affichez le code ou le QR. Tout le monde rejoint depuis son navigateur.",
+  },
+  {
+    icon: BarChart3,
+    title: "Analysez",
+    description: "Suivez les réponses en direct et retrouvez les résultats après la session.",
+  },
+] as const;
+
+const FAQ = [
+  {
+    question: "Est-ce vraiment gratuit pour commencer ?",
+    answer:
+      "Oui. Le plan Starter permet de créer jusqu’à 5 contenus et d’accueillir 20 participants par session, sans limite de durée.",
+  },
+  {
+    question: "Les participants doivent-ils créer un compte ?",
+    answer:
+      "Non. Ils rejoignent avec un code à 6 caractères ou un QR code, directement depuis leur navigateur.",
+  },
+  {
+    question: "Où sont hébergées les données ?",
+    answer: "Les données sont hébergées en Europe, conformément au RGPD.",
+  },
+  {
+    question: "Puis-je exporter les résultats ?",
+    answer:
+      "Oui, à partir du plan Pro. Les rapports détaillés peuvent être exportés pour poursuivre l’analyse.",
+  },
+] as const;
+
+const FEATURED_QUESTION_TYPES = QUESTION_TYPE_PAGES.slice(0, 8);
+
+function getInitials(name: string) {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("");
 }
 
-export function IndexMain({ reviews, avgRating }: { reviews: Review[]; avgRating: string | null }) {
+export function IndexMain({
+  reviews,
+  avgRating,
+  partners,
+}: {
+  reviews: Review[];
+  avgRating: string | null;
+  partners: Partner[];
+}) {
   const [gameCode, setGameCode] = useState("");
-  const liveVisitors = useLiveVisitors();
+  const [gameError, setGameError] = useState("");
+  const featuredReviews = reviews.slice(0, 2);
 
-  const joinQuiz = () => {
-    if (gameCode.trim()) {
-      window.location.href = `/join/${gameCode.toUpperCase()}`;
+  const joinQuiz = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const code = gameCode.trim().toUpperCase();
+
+    if (!/^[A-Z0-9]{6}$/.test(code)) {
+      setGameError("Saisissez les 6 caractères affichés à l’écran.");
+      return;
     }
+
+    setGameError("");
+    window.location.href = `/join/${code}`;
   };
 
   return (
-    <main style={{ maxWidth: 1160, margin: "0 auto", padding: "0 24px" }}>
-
-      {/* ═══ HERO ═══ */}
-      <section style={{
-        display: "grid",
-        gridTemplateColumns: "1.05fr .95fr",
-        gap: 56,
-        alignItems: "center",
-        padding: "56px 0 72px",
-      }} className="hero-grid">
-
-        <div>
-          <div className="ap-eyebrow ap-reveal d2" style={{ marginBottom: 22 }}>
-            <span className="ap-eyebrow__dot" aria-hidden="true" />
-            Quiz, sondages, flashcards &amp; présentations en direct
-          </div>
-
-          <h1
-            className="ap-reveal d3"
-            style={{
-              fontFamily: "var(--ap-font-display)", fontWeight: 600,
-              fontSize: "clamp(36px, 4.6vw, 56px)", lineHeight: 1.08,
-              letterSpacing: "-.015em", color: "var(--ap-ink)",
-              marginBottom: 20,
-            }}
-          >
-            Vos formations méritent mieux que des slides{" "}
-            <span style={{ position: "relative", whiteSpace: "nowrap", color: "var(--ap-brand)" }}>
-              qui dorment
-              <svg
-                viewBox="0 0 100 12"
-                preserveAspectRatio="none"
-                aria-hidden="true"
-                style={{ position: "absolute", left: 0, bottom: -6, width: "100%", height: 12, overflow: "visible" }}
+    <main id="main-content" className={styles.home}>
+      <section className={styles.hero} aria-labelledby="home-title">
+        <div className={`${styles.container} ${styles.heroGrid}`}>
+          <div className={styles.heroCopy}>
+            <h1 id="home-title" className={styles.heroTitle}>
+              Faites participer <span>toute la salle.</span>
+            </h1>
+            <p className={styles.heroText}>
+              Créez des quiz, sondages et présentations que vos participants rejoignent en un scan, sans compte ni installation.
+            </p>
+            <div className={styles.heroActions}>
+              <a className={styles.primaryButton} href="/builder-start?type=quiz">
+                Créer gratuitement
+                <ArrowRight size={18} strokeWidth={1.8} aria-hidden="true" />
+              </a>
+              <button
+                className={styles.secondaryButton}
+                type="button"
+                onClick={() => document.getElementById("demo")?.scrollIntoView({ behavior: "smooth" })}
               >
-                <path
-                  d="M2 9 Q 25 3, 50 8 T 98 6"
-                  fill="none" stroke="var(--ap-flash)" strokeWidth="5" strokeLinecap="round"
-                  strokeDasharray="240" strokeDashoffset="240"
-                  style={{ animation: "ap-draw-line .7s var(--ap-ease) .9s forwards" }}
-                />
-              </svg>
-            </span>
-          </h1>
-
-          <p
-            className="ap-reveal d4"
-            style={{
-              fontFamily: "var(--ap-font-body)", fontSize: 18, color: "var(--ap-muted)",
-              maxWidth: "46ch", marginBottom: 30, lineHeight: 1.55,
-            }}
-          >
-            Quiz, sondages, flashcards et présentations interactives dans un seul outil. Vos participants rejoignent en{" "}
-            <strong style={{ color: "var(--ap-ink)", fontWeight: 700 }}>un scan de QR code</strong>, sans compte, sans installation.
-          </p>
-
-          <div className="ap-reveal d5" style={{ display: "flex", gap: 14, flexWrap: "wrap", alignItems: "center", marginBottom: 34 }}>
-            <a className="ap-btn ap-btn--pill ap-btn--lg" href="/builder-start?type=quiz">
-              Créer gratuitement
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" aria-hidden="true">
-                <path d="M5 12h14M13 6l6 6-6 6"/>
-              </svg>
-            </a>
-            <button
-              className="ap-btn ap-btn--pill ap-btn--lg ap-btn--ghost"
-              onClick={() => document.getElementById("join-banner")?.scrollIntoView({ behavior: "smooth" })}
-            >
-              Rejoindre une partie
-            </button>
+                Essayer la démo
+              </button>
+            </div>
           </div>
 
-          <div className="ap-reveal d6" style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            <div style={{ display: "flex" }} aria-hidden="true">
-              {["🦊", "🐸", "🦉", "🐙"].map((emoji, i) => (
-                <span key={i} style={{
-                  width: 34, height: 34, borderRadius: "50%",
-                  border: "3px solid var(--ap-paper)",
-                  display: "grid", placeItems: "center", fontSize: 15,
-                  marginLeft: i > 0 ? -10 : 0,
-                  background: "var(--ap-card)",
-                  boxShadow: "0 2px 0 var(--ap-line)",
-                }}>{emoji}</span>
+          <div className={styles.heroMedia}>
+            <Image
+              src="/images/brivia-workshop-hero.jpg"
+              alt="Un formateur anime un atelier interactif avec des participants équipés de leur téléphone"
+              fill
+              preload
+              sizes="(max-width: 900px) 100vw, 48vw"
+              className={styles.coverImage}
+            />
+          </div>
+        </div>
+      </section>
+
+      <PartnersStrip partners={partners} />
+
+      <section id="demo" className={styles.section} aria-labelledby="demo-title">
+        <div className={styles.container}>
+          <div className={styles.sectionLead}>
+            <h2 id="demo-title">Une vraie question. Essayez.</h2>
+            <p>La preuve produit vient avant la promesse marketing.</p>
+          </div>
+
+          <div className={styles.productGrid}>
+            <div className={styles.demoStage}>
+              <HeroMiniQuiz />
+            </div>
+
+            <div className={styles.formatIndex}>
+              <h3>Un outil, six formats.</h3>
+              <p>
+                Préparez une activité rapide ou un parcours complet sans disperser vos contenus.
+              </p>
+              <nav aria-label="Créer un contenu Brivia">
+                {FORMATS.map((format) => (
+                  <a key={format.name} href={format.href} className={styles.formatLink}>
+                    <span>
+                      <strong>{format.name}</strong>
+                      <small>{format.description}</small>
+                    </span>
+                    <ArrowRight size={19} strokeWidth={1.8} aria-hidden="true" />
+                  </a>
+                ))}
+              </nav>
+              <a className={styles.allFeaturesLink} href="/features">
+                Explorer toutes les fonctionnalités
+                <ArrowRight size={18} strokeWidth={1.8} aria-hidden="true" />
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className={`${styles.section} ${styles.workflowSection}`} aria-labelledby="workflow-title">
+        <div className={`${styles.container} ${styles.workflowGrid}`}>
+          <div className={styles.workflowMedia}>
+            <Image
+              src="/images/brivia-join-qr.jpg"
+              alt="Une participante scanne le QR code projeté au début d’une formation"
+              fill
+              sizes="(max-width: 900px) 100vw, 52vw"
+              className={styles.coverImage}
+            />
+          </div>
+
+          <div className={styles.workflowCopy}>
+            <h2 id="workflow-title">Du premier clic aux résultats.</h2>
+            <p className={styles.sectionText}>
+              Brivia garde le parcours court pour vous laisser vous concentrer sur le groupe.
+            </p>
+            <div className={styles.workflowList}>
+              {WORKFLOW.map(({ icon: Icon, title, description }) => (
+                <article key={title} className={styles.workflowItem}>
+                  <Icon size={23} strokeWidth={1.7} aria-hidden="true" />
+                  <div>
+                    <h3>{title}</h3>
+                    <p>{description}</p>
+                  </div>
+                </article>
               ))}
             </div>
-            {avgRating != null && (
-              <small style={{ fontSize: 13.5, fontWeight: 700, color: "var(--ap-muted)", fontFamily: "var(--ap-font-body)" }}>
-                <b style={{ color: "var(--ap-ink)", fontWeight: 800 }}>{avgRating}/5</b> sur {reviews.length} avis vérifiés
-              </small>
+          </div>
+        </div>
+      </section>
+
+      <section className={styles.audienceSection} aria-labelledby="audience-title">
+        <div className={styles.container}>
+          <div className={styles.sectionLead}>
+            <h2 id="audience-title">Du cours au séminaire.</h2>
+            <p>Le même geste simple, adapté à la taille et aux exigences de votre session.</p>
+          </div>
+
+          <div className={styles.audienceGrid}>
+            <article className={styles.audienceColumn}>
+              <div className={styles.audienceIcon}>
+                <UsersRound size={25} strokeWidth={1.7} aria-hidden="true" />
+              </div>
+              <h3>Enseignants et formateurs</h3>
+              <p>
+                Démarrez gratuitement avec 20 participants par session et réunissez quiz, flashcards et examens au même endroit.
+              </p>
+              <a href="/builder-start?type=quiz">
+                Créer mon premier quiz
+                <ArrowRight size={17} strokeWidth={1.8} aria-hidden="true" />
+              </a>
+            </article>
+
+            <article className={styles.audienceColumn}>
+              <div className={styles.audienceIcon}>
+                <BarChart3 size={25} strokeWidth={1.7} aria-hidden="true" />
+              </div>
+              <h3>Écoles et entreprises</h3>
+              <p>
+                Accueillez jusqu’à 200 participants avec Pro, puis exportez les résultats et suivez la progression.
+              </p>
+              <a href="/pricing">
+                Comparer les formules
+                <ArrowRight size={17} strokeWidth={1.8} aria-hidden="true" />
+              </a>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section className={`${styles.section} ${styles.questionSection}`} aria-labelledby="question-types-home-title">
+        <div className={`${styles.container} ${styles.questionShowcase}`}>
+          <div className={styles.questionShowcaseMedia}>
+            <Image
+              src="/images/brivia-quiz-authoring.jpg"
+              alt="Un formateur prépare les questions de sa prochaine session"
+              fill
+              sizes="(max-width: 900px) 100vw, 42vw"
+              className={styles.coverImage}
+            />
+          </div>
+          <div className={styles.questionShowcaseCopy}>
+            <h2 id="question-types-home-title">Quinze façons de faire réfléchir.</h2>
+            <p>Choix, rappel, ordre, association, image, échelles et réponses libres ont chacun leur page pratique.</p>
+            <nav aria-label="Découvrir les types de questions">
+              {FEATURED_QUESTION_TYPES.map((questionType) => (
+                <a href={`/features/questions/${questionType.slug}`} key={questionType.slug}>
+                  {questionType.navTitle}
+                  <ArrowRight size={16} aria-hidden="true" />
+                </a>
+              ))}
+            </nav>
+            <a className={styles.textLink} href="/features#types-de-questions">
+              Voir les 15 types
+              <ArrowRight size={17} strokeWidth={1.8} aria-hidden="true" />
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <section className={`${pageStyles.section} ${pageStyles.page}`} aria-labelledby="home-comparison-title">
+        <div className={pageStyles.container}>
+          <div className={pageStyles.comparisonIntro}>
+            <h2 id="home-comparison-title">Brivia face aux outils du marché.</h2>
+            <p>
+              Comparez ce qui est natif, ce qui dépend d’un autre produit et ce qui reste limité à un usage précis.
+            </p>
+          </div>
+          <CompetitorComparison />
+          <div className={styles.comparisonAction}>
+            <a className={styles.textLink} href="/features#comparatif">
+              Voir le comparatif détaillé
+              <ArrowRight size={17} strokeWidth={1.8} aria-hidden="true" />
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <section className={styles.section} aria-labelledby="reviews-title">
+        <div className={`${styles.container} ${styles.reviewsGrid}`}>
+          <div className={styles.reviewsMedia}>
+            <Image
+              src="/images/brivia-group-energy.jpg"
+              alt="Un groupe de participants réagit ensemble aux résultats d’un quiz"
+              fill
+              sizes="(max-width: 900px) 100vw, 50vw"
+              className={styles.coverImage}
+            />
+          </div>
+
+          <div className={styles.reviewsCopy}>
+            <div>
+              <h2 id="reviews-title">L’énergie se voit tout de suite.</h2>
+              {avgRating && (
+                <p className={styles.rating}>
+                  {avgRating}/5 sur {reviews.length} avis vérifiés
+                </p>
+              )}
+            </div>
+
+            {featuredReviews.length > 0 ? (
+              <div className={styles.reviewList}>
+                {featuredReviews.map((review) => (
+                  <figure key={review.id} className={styles.review}>
+                    <div className={styles.stars} aria-label={`${review.stars} étoiles sur 5`}>
+                      {"★★★★★".slice(0, review.stars)}
+                    </div>
+                    <blockquote>{review.text}</blockquote>
+                    <figcaption>
+                      <span className={styles.avatar} aria-hidden="true">
+                        {getInitials(review.name)}
+                      </span>
+                      <span>
+                        <strong>{review.name}</strong>
+                        <small>{review.role}</small>
+                      </span>
+                    </figcaption>
+                  </figure>
+                ))}
+              </div>
+            ) : (
+              <div className={styles.emptyReview}>
+                <p>Les premiers retours seront publiés ici.</p>
+                <a href="/reviews">Voir les avis</a>
+              </div>
             )}
           </div>
         </div>
+      </section>
 
-        <div className="ap-reveal d4" style={{ position: "relative", paddingTop: 24, paddingBottom: 24 }}>
-          <div
-            className="ap-float-pill"
-            style={{
-              bottom: 8, right: -10,
-              color: "var(--ap-quiz-deep)", borderColor: "var(--ap-quiz)",
-              background: "var(--ap-quiz-soft)", animationDelay: "1.2s",
-            }}
-            aria-hidden="true"
-          >
-            🔴 {liveVisitors != null ? `${liveVisitors} visiteur${liveVisitors !== 1 ? "s" : ""}` : "…"} en direct
+      <section className={`${styles.section} ${styles.assuranceSection}`} aria-labelledby="faq-title">
+        <div className={`${styles.container} ${styles.assuranceGrid}`}>
+          <div className={styles.faqColumn}>
+            <h2 id="faq-title">Les réponses avant de vous lancer.</h2>
+            <div className={styles.faqList}>
+              {FAQ.map((item) => (
+                <details key={item.question} className={styles.faqItem}>
+                  <summary>{item.question}</summary>
+                  <p>{item.answer}</p>
+                </details>
+              ))}
+            </div>
+            <a className={styles.textLink} href="/help">
+              Consulter le centre d’aide
+              <ArrowRight size={17} strokeWidth={1.8} aria-hidden="true" />
+            </a>
           </div>
-          <div style={{ display: "flex", justifyContent: "center" }}>
-            <HeroMiniQuiz />
-          </div>
+
+          <aside className={styles.trustPanel} aria-labelledby="trust-title">
+            <h2 id="trust-title">Simple pour eux. Solide pour vous.</h2>
+            <ul>
+              <li>
+                <ShieldCheck size={21} strokeWidth={1.7} aria-hidden="true" />
+                Données hébergées en Europe et conformité RGPD.
+              </li>
+              <li>
+                <UsersRound size={21} strokeWidth={1.7} aria-hidden="true" />
+                Aucun compte requis pour les participants.
+              </li>
+              <li>
+                <Check size={21} strokeWidth={1.9} aria-hidden="true" />
+                Aucune carte bancaire pour commencer.
+              </li>
+            </ul>
+          </aside>
         </div>
       </section>
 
-      {/* ═══ STRIP — preuve produit ═══ */}
-      <section style={{ paddingBottom: 80 }}>
-        <p className="ap-strip-label ap-reveal d5">Les objets du jeu, même système partout</p>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 18 }} className="strip-grid">
-          <div className="ap-card ap-card--hover ap-reveal d5" style={{ boxShadow: "0 5px 0 var(--ap-line)" }}>
-            <h3 className="ap-h3" style={{ marginBottom: 4 }}>Rejoindre en 5 secondes</h3>
-            <p style={{ fontSize: 14, color: "var(--ap-muted)", marginBottom: 18 }}>Un code, un QR, jamais de compte pour les participants.</p>
-            <div className="ap-pin" aria-label="Code de partie 48 29 17">
-              48<span className="ap-pin__accent">29</span>17
-            </div>
-          </div>
+      <section className={styles.joinSection} aria-labelledby="join-title">
+        <div className={`${styles.container} ${styles.joinGrid}`}>
+          <div className={styles.joinCopy}>
+            <h2 id="join-title">Une partie vous attend ?</h2>
+            <p>Entrez le code affiché à l’écran pour rejoindre la session.</p>
 
-          <LeaderboardTile />
-
-          <div className="ap-card ap-card--hover ap-reveal d6" style={{ boxShadow: "0 5px 0 var(--ap-line)" }}>
-            <h3 className="ap-h3" style={{ marginBottom: 4 }}>Quatre formats, un langage</h3>
-            <p style={{ fontSize: 14, color: "var(--ap-muted)", marginBottom: 18 }}>Chaque type de contenu a sa couleur, repérable en un clin d&apos;œil.</p>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 9 }}>
-              <a className="ap-type-badge ap-type-badge--quiz" href="/builder-start?type=quiz">
-                <span className="ap-type-badge__dot" aria-hidden="true" />Quiz
-              </a>
-              <a className="ap-type-badge ap-type-badge--poll" href="/builder-start?type=poll">
-                <span className="ap-type-badge__dot" aria-hidden="true" />Sondage
-              </a>
-              <a className="ap-type-badge ap-type-badge--flash" href="/builder-start?type=flashcard">
-                <span className="ap-type-badge__dot" aria-hidden="true" />Flashcards
-              </a>
-              <a className="ap-type-badge ap-type-badge--pres" href="/builder-start?type=slide">
-                <span className="ap-type-badge__dot" aria-hidden="true" />Présentation
-              </a>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ═══ Content type tiles ═══ */}
-      <section className="mb-16 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-        {CONTENT_TYPES.map(({ key, label, title, desc, cta, accentVar, accentDeepVar, badgeClass, btnClass, icon, route }) => (
-          <a
-            key={key}
-            href={route}
-            className="ap-card ap-tile ap-card--hover"
-            style={{ cursor: "pointer", display: "flex", flexDirection: "column" }}
-          >
-            <span className="ap-tile__blob" style={{ background: `var(${accentVar})` }} />
-            <div
-              className="ap-tile__icon"
-              style={{ background: `var(${accentVar})`, boxShadow: `0 5px 0 var(${accentDeepVar})` }}
-            >
-              {icon}
-            </div>
-            <div className={badgeClass} style={{ marginBottom: "8px" }}>{label}</div>
-            <h3 className="ap-h3">{title}</h3>
-            <p className="ap-muted" style={{ fontSize: "13.5px", lineHeight: 1.45, margin: "8px 0 16px" }}>
-              {desc}
-            </p>
-            <span className={btnClass} style={{ marginTop: "auto", alignSelf: "flex-start" }}>
-              {cta}
-            </span>
-          </a>
-        ))}
-      </section>
-
-      {/* ═══ COMMENT ÇA MARCHE ═══ */}
-      <section style={{ padding: "24px 0 80px" }}>
-        <div style={{ textAlign: "center", maxWidth: 560, margin: "0 auto 40px" }}>
-          <h2 className="ap-h2" style={{ marginBottom: 8 }}>Trois étapes, zéro friction.</h2>
-          <p className="ap-muted">De la création à la partie en direct, sans détour.</p>
-        </div>
-        <div className="grid gap-5 md:grid-cols-3">
-          {[
-            { n: "1", title: "Créer", desc: "Composez un quiz, sondage, flashcard ou présentation en quelques minutes." },
-            { n: "2", title: "Partager le code", desc: "Un code à 6 chiffres ou un QR code, affiché à l'écran." },
-            { n: "3", title: "Jouer", desc: "Les participants rejoignent sans compte, les scores tombent en direct." },
-          ].map((step) => (
-            <div key={step.n} className="ap-card ap-card--hover" style={{ padding: "26px 24px" }}>
-              <div
-                className="ap-tile__icon"
-                style={{ background: "var(--ap-brand)", boxShadow: "0 5px 0 var(--ap-brand-deep)", marginBottom: 16 }}
-              >
-                <span style={{ fontFamily: "var(--ap-font-display)", fontWeight: 700, fontSize: 18, color: "#fff" }}>{step.n}</span>
+            <form className={styles.joinForm} onSubmit={joinQuiz} noValidate>
+              <label htmlFor="game-code">Code de la partie</label>
+              <div className={styles.joinControls}>
+                <input
+                  id="game-code"
+                  name="game-code"
+                  value={gameCode}
+                  onChange={(event) => {
+                    setGameCode(event.target.value.replace(/[^a-zA-Z0-9]/g, "").slice(0, 6).toUpperCase());
+                    if (gameError) setGameError("");
+                  }}
+                  inputMode="text"
+                  autoComplete="off"
+                  maxLength={6}
+                  aria-invalid={Boolean(gameError)}
+                  aria-describedby={gameError ? "game-code-error" : "game-code-help"}
+                />
+                <button type="submit">Rejoindre</button>
               </div>
-              <h3 className="ap-h3" style={{ marginBottom: 6 }}>{step.title}</h3>
-              <p className="ap-muted" style={{ fontSize: 13.5, lineHeight: 1.5 }}>{step.desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+              {gameError ? (
+                <p id="game-code-error" className={styles.formError} role="alert">
+                  {gameError}
+                </p>
+              ) : (
+                <p id="game-code-help" className={styles.formHelp}>
+                  6 caractères, sans espace.
+                </p>
+              )}
+            </form>
 
-      {/* ═══ CAS D'USAGE ═══ */}
-      <section style={{ padding: "0 0 80px", maxWidth: 720, margin: "0 auto" }}>
-        <div style={{ textAlign: "center", maxWidth: 560, margin: "0 auto 32px" }}>
-          <h2 className="ap-h2" style={{ marginBottom: 8 }}>Fait pour votre contexte.</h2>
-          <p className="ap-muted">Même outil, deux façons de l&apos;utiliser.</p>
-        </div>
-        <UseCaseTabs />
-      </section>
-
-      {/* ═══ STATS ═══ */}
-      <section style={{ padding: "0 0 80px" }}>
-        <p className="ap-strip-label">En ce moment</p>
-        <StatsBand liveVisitors={liveVisitors} />
-      </section>
-
-      {/* ═══ DÉMO ═══ */}
-      <section style={{ padding: "0 0 80px", maxWidth: 900, margin: "0 auto" }}>
-        <div style={{ textAlign: "center", maxWidth: 560, margin: "0 auto 28px" }}>
-          <h2 className="ap-h2" style={{ marginBottom: 8 }}>Voir une session en direct.</h2>
-        </div>
-        <DemoShowcase />
-      </section>
-
-      {/* ═══ COMPARATIF ═══ */}
-      <section id="comparatif" style={{ padding: "0 0 80px" }}>
-        <div style={{ textAlign: "center", maxWidth: 650, margin: "0 auto 32px" }}>
-          <div className="ap-eyebrow" style={{ display: "inline-flex", marginBottom: 14 }}>
-            <span className="ap-eyebrow__dot" aria-hidden="true" />
-            Comparatif 2026
+            <a className={styles.joinExamLink} href="/join-exam">
+              J’ai un code d’examen
+            </a>
           </div>
-          <h2 className="ap-h2" style={{ marginBottom: 10 }}>Brivia face aux outils du marché.</h2>
-          <p className="ap-muted" style={{ lineHeight: 1.55 }}>
-            Quiz, présentations, révisions et évaluations : comparez ce que chaque plateforme réunit réellement.
-          </p>
+
+          <div className={styles.finalCta}>
+            <p>Prêt à animer votre prochaine session ?</p>
+            <a href="/builder-start?type=quiz">
+              Créer gratuitement
+              <ArrowRight size={18} strokeWidth={1.8} aria-hidden="true" />
+            </a>
+          </div>
         </div>
-        <CompetitorComparison />
       </section>
-
-      {/* ═══ TÉMOIGNAGES ═══ */}
-      <section style={{ padding: "0 0 80px" }}>
-        <div style={{ textAlign: "center", maxWidth: 560, margin: "0 auto 32px" }}>
-          <h2 className="ap-h2" style={{ marginBottom: 8 }}>Ce qu&apos;ils en disent.</h2>
-        </div>
-        <LandingTestimonials reviews={reviews} />
-      </section>
-
-      {/* ═══ CONFIANCE ═══ */}
-      <section style={{ padding: "0 0 80px" }}>
-        <div style={{ textAlign: "center", maxWidth: 560, margin: "0 auto 32px" }}>
-          <h2 className="ap-h2" style={{ marginBottom: 8 }}>Vos données, respectées.</h2>
-        </div>
-        <TrustSection />
-      </section>
-
-      {/* ═══ FAQ ═══ */}
-      <section style={{ padding: "0 0 80px", maxWidth: 720, margin: "0 auto" }}>
-        <div style={{ textAlign: "center", maxWidth: 560, margin: "0 auto 32px" }}>
-          <h2 className="ap-h2" style={{ marginBottom: 8 }}>Tout ce qu&apos;il faut savoir.</h2>
-        </div>
-        <LandingFaq />
-      </section>
-
-      {/* ═══ JOIN BANNER ═══ */}
-      <section
-        id="join-banner"
-        style={{
-          background: "var(--ap-brand)",
-          borderRadius: "var(--ap-r-xl)",
-          padding: "36px 40px",
-          display: "flex",
-          flexWrap: "wrap",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: "24px",
-          position: "relative",
-          overflow: "hidden",
-        }}
-      >
-        <span style={{
-          position: "absolute", width: 200, height: 200, borderRadius: "50%",
-          background: "rgba(255,255,255,0.08)", left: -60, top: -60, pointerEvents: "none",
-        }} />
-        <span style={{
-          position: "absolute", width: 120, height: 120, borderRadius: "50%",
-          background: "rgba(255,255,255,0.06)", right: 200, bottom: -40, pointerEvents: "none",
-        }} />
-
-        <div style={{ flex: "1 1 280px", position: "relative" }}>
-          <h2
-            style={{
-              fontFamily: "var(--ap-font-display)", fontWeight: 600,
-              fontSize: "28px", color: "#fff", margin: "0 0 6px",
-              letterSpacing: "-0.5px",
-            }}
-          >
-            Une partie en cours ?
-          </h2>
-          <p style={{ color: "rgba(255,255,255,0.78)", fontFamily: "var(--ap-font-body)", fontWeight: 700, fontSize: "14.5px", margin: 0 }}>
-            Entrez le code à 6 chiffres affiché à l&apos;écran et rejoignez le jeu.
-          </p>
-        </div>
-
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "0",
-            background: "#fff",
-            borderRadius: "var(--ap-r-xl)",
-            padding: "6px 6px 6px 18px",
-            boxShadow: "0 8px 0 var(--ap-brand-deep)",
-            flex: "0 0 auto",
-          }}
-        >
-          <input
-            className="ap-code"
-            placeholder="000000"
-            value={gameCode}
-            onChange={(e) => setGameCode(e.target.value.toUpperCase())}
-            onKeyDown={(e) => e.key === "Enter" && joinQuiz()}
-            maxLength={6}
-            style={{
-              border: "none",
-              boxShadow: "none",
-              background: "transparent",
-              padding: "8px 12px 8px 0",
-              width: "140px",
-              fontSize: "22px",
-              letterSpacing: "8px",
-              outline: "none",
-              color: "var(--ap-ink)",
-            }}
-          />
-          <button
-            className="ap-btn ap-btn--quiz"
-            onClick={joinQuiz}
-            disabled={!gameCode.trim()}
-            style={{ opacity: gameCode.trim() ? 1 : 0.5, borderRadius: "var(--ap-r-lg)", boxShadow: "none", alignSelf: "center" }}
-          >
-            Rejoindre
-          </button>
-        </div>
-
-        <p style={{ marginTop: 12, fontSize: 13, color: "var(--ap-muted)", textAlign: "center", flex: "0 0 100%" }}>
-          Vous avez un code d&apos;examen ?{" "}
-          <a
-            href="/join-exam"
-            style={{ background: "none", border: "none", color: "var(--ap-brand)", fontWeight: 600, cursor: "pointer", fontSize: 13, padding: 0, textDecoration: "underline" }}
-          >
-            Rejoindre un examen
-          </a>
-        </p>
-      </section>
-
-      {/* ═══ CTA FINALE ═══ */}
-      <section className="ap-reveal" style={{ padding: "80px 0 80px", textAlign: "center" }}>
-        <h2 className="ap-h2" style={{ marginBottom: 12 }}>Prêt à réveiller vos formations ?</h2>
-        <p className="ap-muted" style={{ marginBottom: 28 }}>Gratuit pour commencer, aucune carte bancaire requise.</p>
-        <a className="ap-btn ap-btn--pill ap-btn--lg" href="/builder-start?type=quiz">
-          Créer gratuitement
-        </a>
-      </section>
-
-      <div style={{ height: 80 }} />
     </main>
   );
 }

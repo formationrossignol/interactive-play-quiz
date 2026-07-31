@@ -1,6 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useCookieConsent } from "@/contexts/CookieConsentContext";
 import type { CookieConsentState } from "@/lib/cookieConsent";
+import { marketingUrl } from "@/lib/marketingOrigin";
+import styles from "./CookieConsent.module.css";
 
 const OPTIONAL_CATEGORIES: { key: Exclude<keyof CookieConsentState, "necessary">; title: string; desc: string }[] = [
   {
@@ -36,30 +38,50 @@ export const CookieConsent = () => {
   } = useCookieConsent();
 
   const [draft, setDraft] = useState<CookieConsentState>(consent);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
-    if (preferencesOpen) setDraft(consent);
-  }, [preferencesOpen, consent]);
+    if (!preferencesOpen) return;
+
+    setDraft(consent);
+    previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const focusFrame = requestAnimationFrame(() => closeButtonRef.current?.focus());
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") closePreferences();
+    };
+    document.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      cancelAnimationFrame(focusFrame);
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = previousOverflow;
+      previousFocusRef.current?.focus();
+    };
+  }, [preferencesOpen, consent, closePreferences]);
 
   if (!bannerVisible && !preferencesOpen) return null;
 
   return (
     <>
       {bannerVisible && !preferencesOpen && (
-        <div className="ap-cookie-banner" role="dialog" aria-label="Gestion des cookies">
-          <p className="ap-cookie-banner__text">
+        <div className={styles.banner} role="dialog" aria-label="Gestion des cookies">
+          <p className={styles.bannerText}>
             Nous utilisons des cookies nécessaires au bon fonctionnement du site. Avec votre accord, nous
             pourrons aussi utiliser des cookies de préférence, de mesure d'audience et marketing.{" "}
-            <a href="/confidentialite">En savoir plus</a>
+            <a href={marketingUrl("/confidentialite")}>En savoir plus</a>
           </p>
-          <div className="ap-cookie-banner__actions">
-            <button type="button" className="ap-btn ap-btn--ghost ap-btn--sm" onClick={rejectAll}>
+          <div className={styles.bannerActions}>
+            <button type="button" className={`${styles.button} ${styles.quiet}`} onClick={rejectAll}>
               Tout refuser
             </button>
-            <button type="button" className="ap-btn ap-btn--ghost ap-btn--sm" onClick={openPreferences}>
+            <button type="button" className={`${styles.button} ${styles.secondary}`} onClick={openPreferences}>
               Personnaliser
             </button>
-            <button type="button" className="ap-btn ap-btn--sm" onClick={acceptAll}>
+            <button type="button" className={`${styles.button} ${styles.primary}`} onClick={acceptAll}>
               Tout accepter
             </button>
           </div>
@@ -67,60 +89,72 @@ export const CookieConsent = () => {
       )}
 
       {preferencesOpen && (
-        <div className="ap-cookie-modal__scrim" onClick={closePreferences}>
+        <div className={styles.scrim}>
           <div
-            className="ap-cookie-modal"
+            className={styles.modal}
             role="dialog"
             aria-modal="true"
-            aria-label="Préférences de cookies"
-            onClick={(e) => e.stopPropagation()}
+            aria-labelledby="cookie-preferences-title"
+            aria-describedby="cookie-preferences-description"
           >
-            <h2 className="ap-cookie-modal__title">Gérer les cookies</h2>
-            <p className="ap-cookie-modal__intro">
+            <div className={styles.modalHeader}>
+              <h2 className={styles.title} id="cookie-preferences-title">Gérer les cookies</h2>
+              <button
+                ref={closeButtonRef}
+                type="button"
+                className={styles.closeButton}
+                onClick={closePreferences}
+              >
+                Fermer
+              </button>
+            </div>
+            <p className={styles.intro} id="cookie-preferences-description">
               Choisissez les cookies que vous autorisez. Vous pouvez revenir sur ce choix à tout moment
               depuis le lien « Gérer les cookies » en pied de page.
             </p>
 
-            <div className="ap-cookie-modal__row">
-              <div className="ap-cookie-modal__row-text">
-                <h3>Nécessaires</h3>
-                <p>Indispensables au fonctionnement du service (session, authentification, sécurité). Toujours actifs.</p>
-              </div>
-              <button
-                type="button"
-                className="ap-switch is-on"
-                role="switch"
-                aria-checked="true"
-                disabled
-                aria-label="Cookies nécessaires, toujours actifs"
-              />
-            </div>
-
-            {OPTIONAL_CATEGORIES.map(({ key, title, desc }) => (
-              <div className="ap-cookie-modal__row" key={key}>
-                <div className="ap-cookie-modal__row-text">
-                  <h3>{title}</h3>
-                  <p>{desc}</p>
+            <div className={styles.preferenceList}>
+              <div className={styles.row}>
+                <div className={styles.rowText}>
+                  <h3>Nécessaires</h3>
+                  <p>Indispensables au fonctionnement du service (session, authentification, sécurité). Toujours actifs.</p>
                 </div>
                 <button
                   type="button"
-                  className={`ap-switch${draft[key] ? " is-on" : ""}`}
+                  className={styles.switch}
                   role="switch"
-                  aria-checked={draft[key]}
-                  aria-label={title}
-                  onClick={() => setDraft((d) => ({ ...d, [key]: !d[key] }))}
+                  aria-checked="true"
+                  disabled
+                  aria-label="Cookies nécessaires, toujours actifs"
                 />
               </div>
-            ))}
 
-            <div className="ap-cookie-modal__actions">
-              <button type="button" className="ap-btn ap-btn--ghost ap-btn--sm" onClick={rejectAll}>
+              {OPTIONAL_CATEGORIES.map(({ key, title, desc }) => (
+                <div className={styles.row} key={key}>
+                  <div className={styles.rowText}>
+                    <h3>{title}</h3>
+                    <p>{desc}</p>
+                  </div>
+                  <button
+                    type="button"
+                    className={styles.switch}
+                    role="switch"
+                    aria-checked={draft[key]}
+                    aria-label={title}
+                    onClick={() => setDraft((d) => ({ ...d, [key]: !d[key] }))}
+                  />
+                </div>
+              ))}
+            </div>
+
+            <div className={styles.modalActions}>
+              <button type="button" className={`${styles.button} ${styles.quiet}`} onClick={rejectAll}>
                 Tout refuser
               </button>
-              <button type="button" className="ap-btn ap-btn--ghost ap-btn--sm" onClick={acceptAll}>
+              <button type="button" className={`${styles.button} ${styles.secondary}`} onClick={acceptAll}>
                 Tout accepter
               </button>
-              <button type="button" className="ap-btn ap-btn--sm" onClick={() => savePreferences(draft)}>
+              <button type="button" className={`${styles.button} ${styles.primary}`} onClick={() => savePreferences(draft)}>
                 Enregistrer mes choix
               </button>
             </div>

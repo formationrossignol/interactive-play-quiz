@@ -1,0 +1,32 @@
+.form {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.hidden {
+  position: absolute;
+  left: -9999px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.identityGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.blocked {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .75rem;
+  padding: 2rem 0;
+  text-align: center;
+}
+
+@media (max-width: 620px) {
+  .identityGrid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import { ListSkeleton } from "@/components/ui/skeletons/ListSkeleton";
+import { PublicAccessShell } from "@/components/PublicAccessShell";
+import styles from "@/components/PublicAccessShell.module.css";
 import { getCurrentUser } from "@/lib/auth";
 import { showError } from "@/lib/errorTaxonomy";
+import { marketingUrl } from "@/lib/marketingOrigin";
 import { acceptOrgInvitation, getInvitationPreview, type InvitationPreview } from "@/lib/org/orgRepo";
 
 const roleLabels: Record<string, string> = {
@@ -35,8 +37,8 @@ export default function InvitePage() {
     try {
       await acceptOrgInvitation(token);
       navigate("/dashboard", { replace: true });
-    } catch (err) {
-      showError(err);
+    } catch (error) {
+      showError(error);
     } finally {
       setAccepting(false);
     }
@@ -44,37 +46,48 @@ export default function InvitePage() {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-md px-4 py-16">
+      <PublicAccessShell
+        title="Vérification de l’invitation"
+        description="Nous récupérons les informations de votre établissement."
+      >
         <ListSkeleton rows={2} withAvatar={false} />
-      </div>
+      </PublicAccessShell>
     );
   }
 
   if (!preview || preview.status !== "pending") {
     return (
-      <div className="mx-auto max-w-md px-4 py-16 text-center">
-        <p>Cette invitation n'est plus valide.</p>
-      </div>
+      <PublicAccessShell
+        title="Invitation indisponible"
+        description="Ce lien a expiré, a déjà été utilisé ou n’est plus valide."
+        centered
+      >
+        <a className={styles.secondaryButton} href={marketingUrl("/")}>Retour à l’accueil</a>
+      </PublicAccessShell>
     );
   }
 
   const user = getCurrentUser();
+  const role = roleLabels[preview.role] ?? preview.role;
 
   return (
-    <div className="mx-auto max-w-md px-4 py-16 text-center space-y-4">
-      <h1 className="text-2xl font-semibold">Invitation à rejoindre {preview.org_name}</h1>
-      <p className="text-sm text-muted-foreground">
-        En tant que {roleLabels[preview.role] ?? preview.role}
-      </p>
+    <PublicAccessShell
+      title={`Rejoignez ${preview.org_name}`}
+      description="Votre établissement vous invite à collaborer dans son espace Brivia."
+    >
+      <div className={styles.summary}>
+        <strong>{preview.org_name}</strong>
+        <span>Rôle proposé : {role}</span>
+      </div>
       {user ? (
-        <Button onClick={handleAccept} loading={accepting}>
-          Accepter l'invitation
-        </Button>
+        <button className={styles.primaryButton} onClick={handleAccept} disabled={accepting}>
+          {accepting ? "Acceptation..." : "Accepter l’invitation"}
+        </button>
       ) : (
-        <Button onClick={() => navigate(`/auth?invite=${token}`)}>
+        <button className={styles.primaryButton} onClick={() => navigate(`/auth?invite=${token}`)}>
           Se connecter ou créer un compte
-        </Button>
+        </button>
       )}
-    </div>
+    </PublicAccessShell>
   );
 }

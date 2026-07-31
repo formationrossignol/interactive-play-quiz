@@ -1,64 +1,78 @@
 "use client";
 
 import { useState } from "react";
+import { FileText, PlayCircle } from "lucide-react";
 import type { Guide } from "@/lib/types";
+import styles from "./GuidesGrid.module.css";
 
 type Filter = "all" | "deb" | "int" | "avc" | "video";
 
-const LVL_LABEL: Record<string, { cls: string; label: string }> = {
-  deb: { cls: "lvl--deb", label: "Débutant" },
-  int: { cls: "lvl--int", label: "Intermédiaire" },
-  avc: { cls: "lvl--avc", label: "Avancé" },
+const LEVELS: Record<string, string> = {
+  deb: "Débutant",
+  int: "Intermédiaire",
+  avc: "Avancé",
 };
 
-const CHIPS: { f: Filter; label: string }[] = [
-  { f: "all", label: "Tous" },
-  { f: "deb", label: "Débutant" },
-  { f: "int", label: "Intermédiaire" },
-  { f: "avc", label: "Avancé" },
-  { f: "video", label: "🎬 Vidéos" },
+const FILTERS: { value: Filter; label: string }[] = [
+  { value: "all", label: "Tous" },
+  { value: "deb", label: "Débutant" },
+  { value: "int", label: "Intermédiaire" },
+  { value: "avc", label: "Avancé" },
+  { value: "video", label: "Vidéos" },
 ];
 
 export function GuidesGrid({ guides }: { guides: Guide[] }) {
   const [filter, setFilter] = useState<Filter>("all");
-
-  const visible = guides.filter((g) =>
-    filter === "all" ? true : filter === "video" ? g.fmt === "video" : g.lvl === filter,
+  const visible = guides.filter((guide) =>
+    filter === "all" ? true : filter === "video" ? guide.fmt === "video" : guide.lvl === filter,
   );
 
   return (
     <>
-      <div className="chips">
-        {CHIPS.map((c) => (
+      <div className={styles.filters} role="group" aria-label="Filtrer les guides">
+        {FILTERS.map((item) => (
           <button
-            key={c.f}
-            className={`chip${filter === c.f ? " on" : ""}`}
-            onClick={() => setFilter(c.f)}
+            key={item.value}
+            type="button"
+            className={`${styles.filter} ${filter === item.value ? styles.active : ""}`}
+            onClick={() => setFilter(item.value)}
+            aria-pressed={filter === item.value}
           >
-            {c.label}
+            {item.label}
           </button>
         ))}
       </div>
 
-      <div className="ggrid">
-        {visible.length === 0 ? (
-          <p style={{ opacity: 0.5 }}>Aucun guide pour ce filtre.</p>
-        ) : (
-          visible.map((g) => (
-            <article className="card gcard" key={g.id}>
-              <div className="gcover" style={{ background: `var(${g.cover})` }}>
-                {g.emoji}
-                <span className="gdur">{g.dur}</span>
-              </div>
-              <div className="gbody">
-                <h3>{g.title}</h3>
-                <div className="gmeta">
-                  <span className={`lvl ${LVL_LABEL[g.lvl].cls}`}>{LVL_LABEL[g.lvl].label}</span>
-                  <span className="fmt">{g.fmt === "video" ? "Vidéo" : "Article"}</span>
+      <div className={styles.grid}>
+        {visible.length > 0 ? visible.map((guide) => {
+          const Icon = guide.fmt === "video" ? PlayCircle : FileText;
+          const content = (
+            <>
+              <span className={styles.guideIcon}>
+                <Icon size={21} strokeWidth={1.8} aria-hidden="true" />
+              </span>
+              <div>
+                <h3>{guide.title}</h3>
+                <div className={styles.meta}>
+                  <span>{LEVELS[guide.lvl]}</span>
+                  <span>{guide.fmt === "video" ? "Vidéo" : "Article"}</span>
+                  <span>{guide.dur}</span>
                 </div>
               </div>
+            </>
+          );
+
+          return guide.url ? (
+            <a className={styles.guide} href={guide.url} key={guide.id}>
+              {content}
+            </a>
+          ) : (
+            <article className={styles.guide} key={guide.id}>
+              {content}
             </article>
-          ))
+          );
+        }) : (
+          <p className={styles.empty}>Aucun guide disponible pour ce filtre.</p>
         )}
       </div>
     </>

@@ -1,28 +1,43 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { PricingCards } from "@/components/PricingCards";
+import styles from "@/components/MarketingPage.module.css";
 
 export const metadata: Metadata = {
   title: "Tarifs",
-  description: "Offre gratuite jusqu'à 20 participants, plan Pro à 19 €/mois jusqu'à 200 participants, et formule Entreprise sur devis. Choisissez la formule Brivia adaptée à votre équipe.",
+  description: "Starter gratuit, Pro à 19 € par mois et offre Entreprise sur devis. Comparez les limites Brivia.",
 };
 
 export default function PricingPage() {
   return (
-    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+    <div className="marketing-shell">
       <Header />
-      <main style={{ flex: 1 }}>
-        <section style={{ maxWidth: 640, margin: "0 auto", padding: "72px 24px 56px", textAlign: "center" }}>
-          <h1 className="ap-h1" style={{ fontSize: "clamp(36px,5vw,56px)", marginBottom: "16px" }}>
-            Des offres adaptées à chaque équipe
-          </h1>
-          <p className="ap-lead" style={{ maxWidth: 500, margin: "0 auto" }}>
-            Choisissez la formule idéale pour animer des sessions engageantes, du stand-up rapide au grand événement.
-          </p>
+      <main id="main-content" className={styles.page}>
+        <section className={`${styles.hero} ${styles.heroCompact}`} aria-labelledby="pricing-title">
+          <div className={`${styles.container} ${styles.heroGrid}`}>
+            <div className={styles.heroCopy}>
+              <h1 id="pricing-title">Commencez gratuit. <span>Grandissez ensuite.</span></h1>
+              <p className={styles.heroText}>
+                Un plan gratuit durable, puis plus de capacité quand vos sessions grandissent.
+              </p>
+            </div>
+            <div className={styles.heroMedia}>
+              <Image
+                src="/images/brivia-results-debrief.jpg"
+                alt="Deux responsables formation examinent les résultats d’une session"
+                fill
+                priority
+                sizes="(max-width: 900px) 100vw, 46vw"
+              />
+            </div>
+          </div>
         </section>
 
-        <PricingCards />
+        <section className={styles.section}>
+          <PricingCards />
+        </section>
       </main>
       <Footer />
     </div>

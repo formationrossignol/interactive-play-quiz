@@ -15,7 +15,7 @@ const PlaceholderTile = ({ label }: { label: string }) => (
       border: "2px dashed var(--ap-line)", background: "transparent", boxShadow: "none",
     }}
   >
-    <div style={{ fontFamily: "var(--ap-font-display)", fontWeight: 700, fontSize: 32, color: "var(--ap-line-2)" }}>—</div>
+    <div style={{ fontFamily: "var(--ap-font-display)", fontWeight: 700, fontSize: 32, color: "var(--ap-line-2)" }}>-</div>
     <div style={{ fontSize: 13, fontWeight: 700, color: "var(--ap-muted)", marginTop: 4 }}>{label}</div>
   </div>
 );
