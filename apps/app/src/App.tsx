@@ -24,11 +24,8 @@ const PostHogPageview = () => {
   return null;
 };
 
-/** Keeps <html data-theme> in sync with the route on every navigation —
- *  correction/admin/trust surfaces always render the Material 3 "calm
- *  instructor" register (DESIGN.md), independent of the visitor's site-theme
- *  pick; live game/exam-taking screens and the theme picker itself
- *  (/profile) keep rendering that pick. See siteTheme.ts. */
+/** Keeps <html data-theme> in sync on every navigation. Product themes are a
+ *  user preference and apply consistently across the application. */
 const SiteThemeEnforcer = () => {
   const location = useLocation();
   useEffect(() => {

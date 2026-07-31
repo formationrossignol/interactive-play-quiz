@@ -14,7 +14,7 @@ export const Footer = () => {
   const { openPreferences } = useCookieConsent();
 
   return (
-    <footer style={{ borderTop: "var(--ap-border-w) solid var(--ap-line)" }}>
+    <footer className="product-footer" style={{ borderTop: "var(--ap-border-w) solid var(--ap-line)" }}>
       <div
         className="mx-auto max-w-6xl px-6 py-5 text-xs font-semibold"
         style={{ color: "var(--ap-muted)", display: "flex", flexWrap: "wrap", gap: "16px", alignItems: "center", justifyContent: "space-between" }}

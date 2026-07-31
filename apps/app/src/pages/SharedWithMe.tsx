@@ -88,10 +88,12 @@ const SharedWithMe = () => {
 
   return (
     <AppLayout subtitle={t("navSharedWithMe")}>
-      <div className="mx-auto max-w-6xl px-6 py-10">
-        <div style={{ marginBottom: "32px" }}>
-          <h1 className="ap-h2" style={{ fontSize: "26px", marginBottom: "4px" }}>{t("navSharedWithMe")}</h1>
-          <p className="ap-muted" style={{ fontSize: "14px" }}>{t("sharedWithMeSubtitle")}</p>
+      <div className="product-page">
+        <div className="product-page-heading">
+          <div>
+            <h1>{t("navSharedWithMe")}</h1>
+            <p>{t("sharedWithMeSubtitle")}</p>
+          </div>
         </div>
 
         {!loading && sharedContent.length === 0 && <SharedEmptyState onDiscover={() => navigate("/discover")} />}

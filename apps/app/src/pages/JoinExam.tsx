@@ -45,38 +45,36 @@ export default function JoinExam() {
   }, []);
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '16px',
-    }}>
-      <div className="ap-card ap-card--floaty" style={{ maxWidth: 440, width: '100%', padding: '40px', textAlign: 'center' }}>
-        <BookOpen className="w-12 h-12 mx-auto mb-4" style={{ color: 'var(--ap-brand)' }} />
-        <h2 className="ap-h2" style={{ fontSize: '24px', marginBottom: '8px' }}>Rejoindre un examen</h2>
-        <p className="ap-muted" style={{ fontSize: '15px', marginBottom: '28px' }}>
-          Entrez le code fourni par votre formateur.
-        </p>
+    <div className="product-entry-shell">
+      <div className="product-entry-card">
+        <div className="product-entry-heading">
+          <span className="product-entry-heading__icon"><BookOpen className="h-6 w-6" /></span>
+          <h1>Rejoindre un examen</h1>
+          <p>Entrez le code transmis par votre formateur pour accéder à l’épreuve.</p>
+        </div>
 
         {state === 'not-found' && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, padding: '10px 14px', borderRadius: 8, background: '#fff3f3', color: '#c0392b' }}>
+          <div className="product-entry-alert" role="alert">
             <AlertTriangle size={16} />
             <span style={{ fontSize: 14 }}>Code introuvable. Vérifiez et réessayez.</span>
           </div>
         )}
 
         {state === 'not-open' && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, padding: '10px 14px', borderRadius: 8, background: '#fffbea', color: '#856404' }}>
+          <div className="product-entry-alert" role="alert">
             <AlertTriangle size={16} />
             <span style={{ fontSize: 14 }}>{statusMsg}</span>
           </div>
         )}
 
+        <label htmlFor="exam-access-code" style={{ display: 'block', marginBottom: 7, fontSize: 13, fontWeight: 750 }}>
+          Code d’accès
+        </label>
         <input
+          id="exam-access-code"
           className="ap-code"
           type="text"
-          placeholder="EX: AB3D7K"
+          placeholder="AB3D7K"
           maxLength={6}
           value={code}
           onChange={(e) => {
@@ -95,11 +93,11 @@ export default function JoinExam() {
           disabled={!code.trim() || state === 'checking'}
           style={{ width: '100%', opacity: code.trim() && state !== 'checking' ? 1 : 0.5 }}
         >
-          {state === 'checking' ? '…' : "Accéder à l'examen"}
+          {state === 'checking' ? 'Vérification...' : "Accéder à l'examen"}
         </button>
 
         <button
-          className="ap-btn ap-btn--sm"
+          className="ap-btn ap-btn--ghost ap-btn--sm"
           onClick={() => { window.location.href = '/'; }}
           style={{ marginTop: 16, background: 'transparent', color: 'var(--ap-muted)' }}
         >

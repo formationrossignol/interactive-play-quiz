@@ -201,7 +201,7 @@ export default function Signatures() {
 
   return (
     <AppLayout subtitle="Signatures">
-      <div className="mx-auto max-w-6xl px-6 py-10">
+      <div className="product-page">
         <PageHeader
           title="Signatures de groupe"
           description="Faites signer une charte, un règlement ou une validation à tous les membres d’un ou plusieurs groupes."
@@ -213,7 +213,7 @@ export default function Signatures() {
           )}
         />
 
-        <div className="mb-7 grid gap-3 sm:grid-cols-3">
+        <div className="product-metric-grid">
           {[
             { label: "À signer", value: pendingRequests.length, icon: FileSignature },
             { label: "Demandes envoyées", value: ownedRequests.length, icon: Send },
@@ -223,23 +223,23 @@ export default function Signatures() {
               icon: CheckCircle2,
             },
           ].map((stat) => (
-            <div key={stat.label} className="ap-card flex items-center gap-3 p-4">
-              <span className="grid h-10 w-10 place-items-center rounded-lg" style={{ background: "var(--ap-brand-soft)", color: "var(--ap-brand)" }}>
+            <div key={stat.label} className="product-metric">
+              <span className="product-metric__icon">
                 <stat.icon className="h-5 w-5" />
               </span>
               <div>
-                <strong className="block text-xl">{stat.value}</strong>
-                <span className="ap-muted text-xs">{stat.label}</span>
+                <strong>{stat.value}</strong>
+                <small>{stat.label}</small>
               </div>
             </div>
           ))}
         </div>
 
         {loading ? (
-          <section className="ap-card p-5"><ListSkeleton rows={5} /></section>
+          <section className="product-list-panel p-5"><ListSkeleton rows={5} /></section>
         ) : (
-          <div className="grid gap-7 xl:grid-cols-2">
-            <section>
+          <div className="grid gap-4 xl:grid-cols-2">
+            <section className="product-list-panel p-5">
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="ap-h2 text-xl">À signer</h2>
                 <span className="ap-pill text-xs">{assignedRequests.length}</span>
@@ -260,7 +260,7 @@ export default function Signatures() {
                         <div>
                           <h3 className="ap-h3 text-base">{request.title}</h3>
                           <p className="ap-muted mt-1 text-xs">
-                            Reçue le {dateFormatter.format(new Date(request.created_at))} · {request.groupIds.length} groupe{request.groupIds.length !== 1 ? "s" : ""}
+                            Reçue le {dateFormatter.format(new Date(request.created_at))}, {request.groupIds.length} groupe{request.groupIds.length !== 1 ? "s" : ""}
                           </p>
                         </div>
                         <span className="ap-pill text-[11px]" style={{ color: response ? "var(--ap-pres)" : state.color }}>
@@ -291,7 +291,7 @@ export default function Signatures() {
               </div>
             </section>
 
-            <section>
+            <section className="product-list-panel p-5">
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="ap-h2 text-xl">Mes demandes</h2>
                 <span className="ap-pill text-xs">{ownedRequests.length}</span>

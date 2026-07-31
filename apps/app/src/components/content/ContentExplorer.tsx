@@ -607,12 +607,12 @@ export function ContentExplorer({
 
   return (
     <AppLayout subtitle={headerTitle}>
-      <div className="mx-auto max-w-6xl px-6 py-10">
+      <div className="product-page product-page--explorer">
         {/* Page head */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
+        <div className="product-page-heading">
           <div>
-            <h1 className="ap-h2" style={{ fontSize: "26px" }}>{headerTitle}</h1>
-            <p className="ap-muted" style={{ fontSize: "14px" }}>{headerSubtitle}</p>
+            <h1>{headerTitle}</h1>
+            <p>{headerSubtitle}</p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             {headerExtras}

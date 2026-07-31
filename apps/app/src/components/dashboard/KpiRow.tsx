@@ -26,10 +26,10 @@ function TrendBadge({ deltaPct }: { deltaPct: number | null }) {
   const symbolName = flat ? "remove" : positive ? "arrow_upward" : "arrow_downward";
   const color = flat ? "var(--ap-muted)" : positive ? "#15c08a" : "#ff5a4d";
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 11, fontWeight: 800, color }}>
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10.5, fontWeight: 760, color }}>
       <MaterialSymbol name={symbolName} size={11} />
       {flat ? "stable" : `${positive ? "+" : ""}${deltaPct}%`}
-      <span className="ap-muted" style={{ fontWeight: 700 }}>vs 14j préc.</span>
+      <span className="ap-muted" style={{ fontWeight: 620 }}>vs 14 j préc.</span>
     </span>
   );
 }
@@ -37,11 +37,11 @@ function TrendBadge({ deltaPct }: { deltaPct: number | null }) {
 export function KpiRow({ stats }: { stats: DashboardStats | null }) {
   if (!stats) {
     return (
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
+      <div className="product-kpis" aria-label="Chargement des indicateurs">
         {Array.from({ length: 4 }, (_, index) => (
-          <div key={index} className="ap-card" style={{ padding: 20 }}>
+          <div key={index} className="product-kpi">
             <div className="flex items-center gap-3">
-              <Skeleton className="h-10 w-10 rounded-xl" />
+              <Skeleton className="h-8 w-8 rounded-lg" />
               <div className="flex-1">
                 <Skeleton className="h-6 w-20" />
                 <Skeleton className="mt-2 h-3.5 w-28" />
@@ -95,30 +95,29 @@ export function KpiRow({ stats }: { stats: DashboardStats | null }) {
   ];
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px" }}>
+    <div className="product-kpis">
       {tiles.map(({ icon, label, value, deltaPct, emptyHint, onClick }) => (
         <button
           key={label}
           type="button"
           onClick={onClick}
-          className="ap-card"
-          style={{
-            padding: "20px", display: "flex", flexDirection: "column", gap: "10px",
-            textAlign: "left", border: "var(--ap-border-w) solid var(--ap-line)", cursor: "pointer",
-          }}
+          className="product-kpi"
+          aria-label={`${label} : ${value}. Afficher le détail`}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-            <div className="ap-tile__icon" style={{ background: "var(--ap-paper-2)", boxShadow: "0 3px 0 var(--ap-line)", marginBottom: 0, width: 40, height: 40 }}>
+          <div>
+            <div className="product-kpi__top">
+              <span className="product-kpi__icon">
               {icon}
+              </span>
+              <span className="product-kpi__label">{label}</span>
             </div>
-            <div>
-              <div style={{ fontSize: "22px", fontWeight: 800, fontFamily: "var(--ap-font-display)", color: "var(--ap-ink)" }}>{value}</div>
-              <div className="ap-muted" style={{ fontSize: "12px" }}>{label}</div>
-            </div>
+            <span className="product-kpi__value">{value}</span>
           </div>
-          {deltaPct !== null
-            ? <TrendBadge deltaPct={deltaPct} />
-            : emptyHint && <span className="ap-muted" style={{ fontSize: 11 }}>{emptyHint}</span>}
+          <span className="product-kpi__trend">
+            {deltaPct !== null
+              ? <TrendBadge deltaPct={deltaPct} />
+              : emptyHint && <span className="ap-muted" style={{ fontSize: 10.5 }}>{emptyHint}</span>}
+          </span>
         </button>
       ))}
     </div>

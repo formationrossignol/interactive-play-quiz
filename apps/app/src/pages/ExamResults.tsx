@@ -5,7 +5,7 @@ import { parseFunctionsError } from '@/lib/functionsError';
 import { getParticipant } from '@/lib/examParticipant';
 import { isAnswerCorrect } from '@/lib/examStorage';
 import { Skeleton } from '@/components/ui/skeleton';
-import { MaterialSymbol } from '@/components/MaterialSymbol';
+import { ArrowLeft, CheckCircle2, LockKeyhole, RotateCcw, TrendingUp, X } from 'lucide-react';
 
 interface AttemptView {
   timeUsedSeconds: number;
@@ -109,9 +109,17 @@ export default function ExamResults() {
   }, [attemptId]);
 
   if (error) return (
-    <div style={wrapSt}>
-      <div style={{ marginBottom: 16, color: 'var(--ap-muted)' }}><MaterialSymbol name="lock" size={48} /></div>
-      <h1 style={titleSt}>{error}</h1>
+    <div className="product-entry-shell">
+      <div className="product-entry-card">
+        <div className="product-entry-heading">
+          <span className="product-entry-heading__icon"><LockKeyhole className="h-6 w-6" /></span>
+          <h1>{error}</h1>
+          <p>Vérifiez le lien reçu ou demandez un nouvel accès à l’organisateur.</p>
+        </div>
+        <button type="button" className="ap-btn ap-btn--ghost" onClick={() => navigate(-1)}>
+          <ArrowLeft className="h-4 w-4" /> Retour
+        </button>
+      </div>
     </div>
   );
 
@@ -131,49 +139,32 @@ export default function ExamResults() {
   const skillMastery = showCorrection ? computeSkillMastery(orderedQs, attempt.answers, correctionById) : [];
 
   return (
-    <div style={{ minHeight: '100vh', paddingBottom: 80 }}>
+    <div className="product-flow">
       {/* Header */}
-      <div style={{
-        background: 'var(--ap-card)', borderBottom: 'var(--ap-border-w) solid var(--ap-line)',
-        padding: '0 24px', height: 60, display: 'flex', alignItems: 'center', gap: 16,
-      }}>
+      <div className="product-flow-topbar">
         <button
+          type="button"
           onClick={() => navigate(-1)}
-          style={{
-            flexShrink: 0, width: 32, height: 32, borderRadius: '50%', border: 'none',
-            background: 'transparent', cursor: 'pointer', color: 'var(--ap-muted)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}
-        ><MaterialSymbol name="arrow_back" size={20} /></button>
+          className="ap-btn ap-btn--ghost ap-btn--sm ap-icon-btn"
+          aria-label="Retour"
+        ><ArrowLeft className="h-4 w-4" /></button>
         <span style={{ fontFamily: 'var(--ap-font-display)', fontWeight: 600, fontSize: 18 }}>
           {exam.title} : Résultats
         </span>
       </div>
 
-      <div style={{ maxWidth: 1120, margin: '0 auto', padding: '28px 16px' }}>
+      <div className="product-flow-page product-flow-page--compact">
         {/* Score card */}
-        <div className="ap-card" style={{
-          background: passed ? 'var(--ap-pres-soft)' : 'var(--ap-quiz-soft)',
-          borderColor: passed ? 'var(--ap-pres)' : 'var(--ap-quiz)',
-          padding: '28px 24px', textAlign: 'center', marginBottom: 24,
-        }}>
-          <div style={{ marginBottom: 12, color: passed ? 'var(--ap-pres)' : 'var(--ap-quiz)' }}>
-            <MaterialSymbol name={passed ? 'celebration' : 'menu_book'} size={44} />
+        <div className="product-outcome" data-passed={passed === true ? 'true' : 'false'}>
+          <div className="product-outcome__icon">
+            {passed ? <CheckCircle2 className="h-7 w-7" /> : <RotateCcw className="h-7 w-7" />}
           </div>
-          <div style={{
-            fontFamily: 'var(--ap-font-display)', fontWeight: 800, fontSize: 52,
-            color: passed ? 'var(--ap-pres)' : 'var(--ap-quiz)', lineHeight: 1, marginBottom: 8,
-          }}>
-            {pct}%
+          <div className="product-outcome__copy">
+            <strong>{passed ? 'Examen réussi' : 'Résultat sous le seuil attendu'}</strong>
+            <span>{passed ? 'Votre travail a atteint le seuil de validation.' : 'Consultez le détail pour préparer la prochaine tentative.'}</span>
           </div>
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-            fontWeight: 800, fontSize: 18, color: passed ? 'var(--ap-pres)' : 'var(--ap-quiz)', marginBottom: 16,
-          }}>
-            <MaterialSymbol name={passed ? 'check_circle' : 'cancel'} size={20} />
-            {passed ? 'Réussi' : 'Non réussi'}
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 20, flexWrap: 'wrap' }}>
+          <div className="product-outcome__score">{pct}%</div>
+          <div className="product-outcome__stats">
             <Stat label="Seuil" value={`${exam.passingScore}%`} />
             <Stat label="Temps" value={`${Math.round(attempt.timeUsedSeconds / 60)} min`} />
             <Stat label="Répondu" value={`${Object.keys(attempt.answers).length}/${questions.length}`} />
@@ -181,7 +172,7 @@ export default function ExamResults() {
         </div>
 
         {skillMastery.length > 0 && (
-          <div className="ap-card" style={{ padding: '20px 24px', marginBottom: 24 }}>
+          <div className="product-panel" style={{ marginBottom: 22 }}>
             <h3 style={{ fontFamily: 'var(--ap-font-display)', fontWeight: 600, fontSize: 15, marginBottom: 14 }}>
               Vos compétences
             </h3>
@@ -201,7 +192,9 @@ export default function ExamResults() {
                       fontWeight: 700, fontSize: 13,
                     }}
                   >
-                    <MaterialSymbol name={mastered ? 'check_circle' : 'trending_up'} size={15} />
+                    {mastered
+                      ? <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+                      : <TrendingUp className="h-4 w-4" aria-hidden="true" />}
                     {sm.skill}
                   </span>
                 );
@@ -211,8 +204,8 @@ export default function ExamResults() {
         )}
 
         {showAnswers && (
-          <div className="ap-card" style={{ overflowX: 'auto', padding: 0 }}>
-            <table style={{ width: '100%', minWidth: 760, borderCollapse: 'collapse', textAlign: 'left' }}>
+          <div className="product-data-table-wrap">
+            <table className="product-data-table" style={{ minWidth: 760 }}>
               <thead>
                 <tr style={{ background: 'var(--ap-paper)' }}>
                   <ResultHeader style={{ width: 64 }}>#</ResultHeader>
@@ -247,7 +240,9 @@ export default function ExamResults() {
                             display: 'inline-flex', alignItems: 'center', gap: 6,
                             color: isCorrect ? 'var(--ap-pres-deep)' : 'var(--ap-quiz-deep)', fontWeight: 800, fontSize: 13,
                           }}>
-                            <MaterialSymbol name={isCorrect ? 'check' : 'close'} size={15} />
+                            {isCorrect
+                              ? <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+                              : <X className="h-4 w-4" aria-hidden="true" />}
                             {isCorrect ? 'Correct' : 'Incorrect'}
                           </span>
                         </ResultCell>
@@ -299,12 +294,12 @@ function AnswerPill({ children, tone }: { children: React.ReactNode; tone: 'succ
 
 function ExamResultsSkeleton() {
   return (
-    <div style={{ minHeight: '100vh' }}>
-      <div style={{ height: 60, borderBottom: 'var(--ap-border-w) solid var(--ap-line)', padding: '0 24px', display: 'flex', alignItems: 'center', gap: 16 }}>
+    <div className="product-flow">
+      <div className="product-flow-topbar">
         <Skeleton className="h-7 w-7 rounded-full" />
         <Skeleton className="h-5 w-64" />
       </div>
-      <div style={{ maxWidth: 1120, margin: '0 auto', padding: '28px 16px' }}>
+      <div className="product-flow-page product-flow-page--compact">
         <Skeleton className="h-64 w-full rounded-2xl mb-6" />
         <div style={{ border: 'var(--ap-border-w) solid var(--ap-line)', borderRadius: 'var(--ap-r-lg)', padding: 16 }}>
           <Skeleton className="h-10 w-full mb-3" />
@@ -341,19 +336,9 @@ function formatCorrect(q: { type: string; answers?: string[] }, correctAnswer: u
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div style={{ textAlign: 'center' }}>
-      <div style={{ fontSize: 18, fontWeight: 800 }}>{value}</div>
-      <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--ap-muted)', textTransform: 'uppercase', letterSpacing: '.06em' }}>{label}</div>
+    <div className="product-outcome__stat">
+      <strong>{value}</strong>
+      <small>{label}</small>
     </div>
   );
 }
-
-const wrapSt: React.CSSProperties = {
-  minHeight: '100vh',
-  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-  padding: 24, gap: 12,
-};
-
-const titleSt: React.CSSProperties = {
-  fontFamily: 'var(--ap-font-display)', fontWeight: 700, fontSize: 22, textAlign: 'center',
-};

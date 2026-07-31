@@ -23,9 +23,9 @@ const imageOf = (row: ContentRow) => {
 
 function RecentWorksSkeleton() {
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "20px" }}>
+    <div className="product-recent-grid">
       {Array.from({ length: 4 }, (_, index) => (
-        <CardSkeleton key={index} withAction={false} mediaClassName="h-36 w-full rounded-xl" />
+        <CardSkeleton key={index} withAction={false} mediaClassName="h-[132px] w-full rounded-xl" />
       ))}
     </div>
   );
@@ -45,18 +45,15 @@ export function RecentWorks({ userId }: { userId: string }) {
     return () => { cancelled = true; };
   }, [userId]);
 
-  if (!loading && rows.length === 0) return null;
-
   return (
     <section
-      className="ap-card"
-      style={{ padding: "20px", marginBottom: 32 }}
+      className="product-panel"
       aria-labelledby="recent-works-title"
     >
-      <div className="mb-6 flex items-center justify-between gap-4">
+      <div className="product-section-heading">
         <div>
-          <h2 id="recent-works-title" className="ap-h3" style={{ fontSize: 20 }}>Vos travaux récents</h2>
-          <p className="ap-muted mt-1" style={{ fontSize: 13 }}>Reprenez là où vous vous êtes arrêté.</p>
+          <h2 id="recent-works-title">Travaux récents</h2>
+          <p>Reprenez là où vous vous êtes arrêté.</p>
         </div>
         <button
           type="button"
@@ -67,8 +64,26 @@ export function RecentWorks({ userId }: { userId: string }) {
         </button>
       </div>
 
-      {loading ? <RecentWorksSkeleton /> : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "20px" }}>
+      {loading ? <RecentWorksSkeleton /> : rows.length === 0 ? (
+        <div className="product-empty-inline">
+          <div>
+            <MaterialSymbol name="edit_square" size={25} />
+            <strong>Créez votre premier contenu</strong>
+            <span style={{ display: "block", maxWidth: 420, fontSize: 12 }}>
+              Démarrez avec un quiz, un sondage ou un cours. Votre travail récent apparaîtra ici.
+            </span>
+            <button
+              type="button"
+              className="ap-btn ap-btn--sm"
+              style={{ marginTop: 14 }}
+              onClick={() => navigate("/builder-start?type=quiz")}
+            >
+              Créer un quiz
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="product-recent-grid">
           {rows.map((row) => {
             const meta = META[row.type];
             const image = imageOf(row);
@@ -77,13 +92,12 @@ export function RecentWorks({ userId }: { userId: string }) {
               <button
                 type="button"
                 key={row.id}
-                className="group min-w-0 border-0 bg-transparent p-0 text-left"
+                className="product-recent-item"
                 onClick={() => navigate(getSearchResultRoute(row.type, itemId(row)))}
               >
                 <span
-                  className="relative flex h-36 w-full items-center justify-center overflow-hidden rounded-xl transition-transform group-hover:-translate-y-0.5"
+                  className="product-recent-item__media"
                   style={{
-                    border: "var(--ap-border-w) solid var(--ap-line)",
                     background: image
                       ? "var(--ap-paper-2)"
                       : `color-mix(in srgb, ${meta.color} 13%, var(--ap-paper-2))`,
@@ -93,10 +107,8 @@ export function RecentWorks({ userId }: { userId: string }) {
                     ? <img src={image} alt="" className="h-full w-full object-cover" />
                     : <MaterialSymbol name={meta.icon} size={36} style={{ color: meta.color, opacity: .82 }} />}
                 </span>
-                <span className="mt-3 block truncate font-bold" style={{ fontFamily: "var(--ap-font-display)", fontSize: 14.5 }}>
-                  {title}
-                </span>
-                <span className="ap-muted mt-1 flex items-center gap-2 text-xs">
+                <span className="product-recent-item__title">{title}</span>
+                <span className="product-recent-item__meta">
                   <span style={{ color: meta.color, fontWeight: 800 }}>{meta.label}</span>
                   <span aria-hidden="true">·</span>
                   {new Date(row.updated_at).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })}

@@ -469,13 +469,9 @@ const CourseBuilder = () => {
   }
 
   return (
-    <div className="min-h-screen" style={{ display: "flex", flexDirection: "column" }}>
-      {/* ── Topbar — matches the minimal QuizBuilder/PresentationEditor chrome (no public nav/account icons) ── */}
-      <div style={{
-        height: 62, flexShrink: 0, background: "var(--ap-card)",
-        borderBottom: "var(--ap-border-w) solid var(--ap-line)",
-        display: "flex", alignItems: "center", gap: 16, padding: "0 18px",
-      }}>
+    <div className="product-flow product-flow--editor">
+      {/* Minimal editor topbar, shared with the other creation workspaces. */}
+      <div className="product-flow-topbar" style={{ flexShrink: 0 }}>
         <Breadcrumb
           onHome={() => { window.location.href = "/"; }}
           items={[
@@ -518,8 +514,8 @@ const CourseBuilder = () => {
         </button>
       </div>
 
-      <div style={{ display: "flex", flex: 1, height: "calc(100vh - 62px)", overflow: "hidden" }}>
-        {/* ── LEFT SIDEBAR ── */}
+      <div className="product-editor-body">
+        {/* Left structure panel */}
         <aside style={{
           width: 272,
           flexShrink: 0,
@@ -1277,7 +1273,7 @@ const CourseBuilder = () => {
                         }}>
                           <PackageOpen className="h-4 w-4 flex-shrink-0" style={{ color: "var(--ap-brand)" }} />
                           <span style={{ flex: 1, fontSize: "13px", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                            {lesson.scormTitle} — SCORM {lesson.scormVersion}
+                            {lesson.scormTitle}, SCORM {lesson.scormVersion}
                           </span>
                           <button
                             onClick={() => updateLesson(moduleId, lessonId, {

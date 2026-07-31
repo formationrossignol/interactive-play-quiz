@@ -114,7 +114,7 @@ export const SecuritySection = () => {
   };
 
   return (
-    <div className="ap-card ap-card--floaty" style={{ padding: "28px 32px" }}>
+    <div className="product-settings-panel">
       <h2 className="ap-h3" style={{ marginBottom: "20px", display: "flex", alignItems: "center", gap: "10px" }}>
         <KeyRound style={{ width: 18, height: 18 }} />
         {t("security")}

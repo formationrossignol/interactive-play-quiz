@@ -15,7 +15,7 @@ type Values = Omit<ReleaseAdminRow, "id">;
 // props, which adds real complexity for an MVP admin screen. Instead, when
 // editing an existing release, its items are fetched read-only via
 // `useReleaseItems` and simply listed below the release fields. Item editing
-// remains a known gap — flagged for a follow-up rather than blocking this task.
+// remains a known gap, flagged for a follow-up rather than blocking this task.
 export function ChangelogEditor({ open, onOpenChange, initial, onSave }: {
   open: boolean; onOpenChange: (o: boolean) => void;
   initial?: ReleaseAdminRow; onSave: (v: Values) => void;

@@ -32,7 +32,7 @@ const Admin = () => {
   const reports = useModerationReports();
   const subs = useSubscribers();
 
-  // / now lives in apps/marketing — full navigation (not react-router
+  // / now lives in apps/marketing, using full navigation (not react-router
   // <Navigate>) so the domain-level rewrite reaches it.
   useEffect(() => {
     if (!isLoading && !isAdmin) window.location.href = "/";
@@ -72,8 +72,8 @@ const Admin = () => {
         <div className="wrap">
           <div className="adm-top">
             <div>
-              <span className="adm-eyebrow">Console · en ligne</span>
               <h1>Administration</h1>
+              <p>Pilotez les contenus, la modération et les paramètres commerciaux de Brivia.</p>
             </div>
           </div>
 

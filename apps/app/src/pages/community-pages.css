@@ -117,6 +117,26 @@
 .lq .toprow .rank{font-family:var(--mono);font-weight:800;font-size:12px;color:var(--ap-muted);width:22px}
 .lq .toprow .tbadge{margin-left:auto;font-size:10.5px;font-weight:900;padding:2px 9px;border-radius:var(--ap-r-sm);background:var(--ap-flash-soft);color:var(--ap-flash-deep)}
 
+@media(max-width:640px){
+  .lq{width:100%;min-width:0;max-width:100vw;overflow:hidden}
+  .lq .wrap{width:100%;min-width:0;max-width:100vw;padding:0 16px}
+  .lq .page-hero{margin:26px 0 20px}
+  .lq .page-hero h1{font-size:24px;line-height:1.12;overflow-wrap:anywhere}
+  .lq .lead{font-size:13px}
+  .lq .ccats,.lq .comm-grid{display:block;width:100%;min-width:0}
+  .lq .ccat{width:100%;min-width:0;margin-bottom:10px}
+  .lq .comm-grid > .card{width:100%;min-width:0;margin-bottom:14px}
+  .lq .comm-grid > .card > div:first-child{display:grid!important;grid-template-columns:1fr;justify-items:start;gap:10px!important;padding:14px!important}
+  .lq .comm-grid > .card > div:first-child > span{display:none}
+  .lq .threadrow{display:grid;grid-template-columns:36px minmax(0,1fr);align-items:start;gap:5px 9px;padding:12px 14px}
+  .lq .threadrow .tt{min-width:0}
+  .lq .threadrow .tt b{font-size:13px}
+  .lq .threadrow .tt small{display:block;margin-top:2px;font-size:10.5px;line-height:1.35}
+  .lq .threadrow .solved{grid-column:2;margin:3px 0 0}
+  .lq .threadrow .tstats{grid-column:2;margin:3px 0 0}
+  .lq .iderow{padding-inline:6px}
+}
+
 /* =========================================================
    TÉMOIGNAGES
 ========================================================= */

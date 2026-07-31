@@ -2,6 +2,7 @@ import { useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { useSEO } from "@/hooks/useSEO";
 import { ChevronUp, MessageCircle, Megaphone, Handshake, Gift, Lightbulb, Heart, Trophy, Hammer, Calendar, Eye, CheckCircle2 } from "lucide-react";
+import { marketingUrl } from "@/lib/marketingOrigin";
 import "./community-pages.css";
 
 const CATS = [
@@ -21,7 +22,7 @@ const THREADS = [
 
 const IDEAS = [
   { base: 142, title: "Mode équipes (scores cumulés par table)", sub: "Pour les ateliers en sous-groupes", st: "idst--dev", stIcon: Hammer, stLabel: "En développement" },
-  { base: 98, title: "Intégration Moodle / LMS (export SCORM)", sub: "Pour les établissements", st: "idst--plan", stIcon: Calendar, stLabel: "Planifié — T4 2026" },
+  { base: 98, title: "Intégration Moodle / LMS (export SCORM)", sub: "Pour les établissements", st: "idst--plan", stIcon: Calendar, stLabel: "Planifié, T4 2026" },
   { base: 64, title: "Questions avec images et schémas", sub: "Indispensable en sciences et technique", st: "idst--new", stIcon: Eye, stLabel: "À l'étude" },
 ];
 
@@ -44,7 +45,6 @@ const Communaute = () => {
       <main className="lq" style={{ flex: 1 }}>
         <div className="wrap">
           <div className="page-hero">
-            <span className="eyebrow">Communauté</span>
             <h1 className="ap-h2">2 400 formateurs qui s'entraident.</h1>
             <p className="lead">Posez vos questions, partagez vos quiz, votez pour les prochaines fonctionnalités.</p>
           </div>
@@ -69,7 +69,7 @@ const Communaute = () => {
                 <h3 style={{ fontSize: "16px" }}>Discussions récentes</h3>
                 <span style={{ flex: 1 }} />
                 {/* /contact now lives in apps/marketing — full navigation. */}
-                <button className="ap-btn ap-btn--sm ap-btn--pill" onClick={() => { window.location.href = "/contact"; }}>Nouveau sujet</button>
+                <button className="ap-btn ap-btn--sm ap-btn--pill" onClick={() => { window.location.href = marketingUrl("/contact"); }}>Nouveau sujet</button>
               </div>
               {THREADS.map((th, i) => (
                 <div className="threadrow" key={i}>
@@ -111,7 +111,7 @@ const Communaute = () => {
                   );
                 })}
                 <a
-                  href="/contact"
+                  href={marketingUrl("/contact")}
                   style={{ display: "block", textAlign: "center", fontSize: "13px", marginTop: "10px" }}
                 >
                   Proposer une idée →

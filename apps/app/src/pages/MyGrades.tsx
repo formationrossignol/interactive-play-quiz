@@ -100,7 +100,7 @@ export default function MyGrades() {
 
   return (
     <AppLayout subtitle="Mes notes">
-      <div className="mx-auto max-w-6xl px-6 py-10">
+      <div className="product-page">
         <PageHeader
           title="Mes notes"
           description="Retrouvez vos résultats, barèmes, coefficients et appréciations. Les brouillons restent invisibles."
@@ -118,18 +118,18 @@ export default function MyGrades() {
           </section>
         ) : (
           <>
-            <div className="mb-6 grid gap-3 sm:grid-cols-3">
-              <div className="ap-card flex items-center gap-3 p-4">
-                <span className="grid h-11 w-11 place-items-center rounded-lg" style={{ background: "var(--ap-brand-soft)", color: "var(--ap-brand)" }}><Scale className="h-5 w-5" /></span>
-                <div><strong className="block text-xl">{average === null ? "—" : `${Math.round(average * 10) / 10}/20`}</strong><span className="ap-muted text-xs">Moyenne pondérée</span></div>
+            <div className="product-metric-grid">
+              <div className="product-metric">
+                <span className="product-metric__icon"><Scale className="h-5 w-5" /></span>
+                <div><strong>{average === null ? "-" : `${Math.round(average * 10) / 10}/20`}</strong><small>Moyenne pondérée</small></div>
               </div>
-              <div className="ap-card flex items-center gap-3 p-4">
-                <span className="grid h-11 w-11 place-items-center rounded-lg" style={{ background: "var(--ap-brand-soft)", color: "var(--ap-brand)" }}><ClipboardList className="h-5 w-5" /></span>
-                <div><strong className="block text-xl">{grades.length}</strong><span className="ap-muted text-xs">Résultats publiés</span></div>
+              <div className="product-metric">
+                <span className="product-metric__icon"><ClipboardList className="h-5 w-5" /></span>
+                <div><strong>{grades.length}</strong><small>Résultats publiés</small></div>
               </div>
-              <div className="ap-card flex items-center gap-3 p-4">
-                <span className="grid h-11 w-11 place-items-center rounded-lg" style={{ background: "color-mix(in srgb, var(--ap-pres) 14%, transparent)", color: "var(--ap-pres)" }}><Award className="h-5 w-5" /></span>
-                <div><strong className="block text-xl">{successCount}</strong><span className="ap-muted text-xs">Évaluations validées</span></div>
+              <div className="product-metric">
+                <span className="product-metric__icon" style={{ color: "var(--ap-pres)" }}><Award className="h-5 w-5" /></span>
+                <div><strong>{successCount}</strong><small>Évaluations validées</small></div>
               </div>
             </div>
 
@@ -195,7 +195,7 @@ export default function MyGrades() {
       <Dialog open={Boolean(historyGrade)} onOpenChange={(open) => { if (!open) setHistoryGrade(null); }}>
         <DialogContent className="max-h-[80vh] overflow-y-auto sm:max-w-lg" style={{ background: "var(--ap-card)", color: "var(--ap-ink)", borderColor: "var(--ap-line)" }}>
           <DialogHeader>
-            <DialogTitle>Historique — {historyGrade?.evaluation.name}</DialogTitle>
+            <DialogTitle>Historique : {historyGrade?.evaluation.name}</DialogTitle>
             <DialogDescription>Les révisions publiées de votre résultat.</DialogDescription>
           </DialogHeader>
           {historyLoading ? (

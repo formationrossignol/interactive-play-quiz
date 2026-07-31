@@ -123,7 +123,7 @@ const QuizResults = () => {
 
   return (
     <AppLayout subtitle="Résultats du quiz">
-      <div className="mx-auto max-w-4xl px-6 py-10">
+      <div className="product-page product-page--medium">
         <button
           className="ap-btn ap-btn--ghost ap-btn--sm"
           onClick={() => navigate("/my-quizzes")}
@@ -133,7 +133,7 @@ const QuizResults = () => {
           Mes quiz
         </button>
 
-        <div style={{ marginBottom: "32px" }}>
+        <div className="product-page-heading">
           <h1 className="ap-h2" style={{ fontSize: "26px", marginBottom: "4px" }}>{quizTitle}</h1>
           <p className="ap-muted" style={{ fontSize: "14px" }}>
             {totalSessions > 0
@@ -142,15 +142,15 @@ const QuizResults = () => {
           </p>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "16px", marginBottom: "32px" }}>
+        <div className="product-metric-grid product-metric-grid--wide">
           {stats.map(({ icon, label, value }) => (
-            <div key={label} className="ap-card" style={{ padding: "20px", display: "flex", alignItems: "center", gap: "14px" }}>
-              <div className="ap-tile__icon" style={{ background: "var(--ap-paper-2)", boxShadow: "0 3px 0 var(--ap-line)", marginBottom: 0, width: 40, height: 40 }}>
+            <div key={label} className="product-metric">
+              <div className="product-metric__icon">
                 {icon}
               </div>
               <div>
-                <div style={{ fontSize: "22px", fontWeight: 800, fontFamily: "var(--ap-font-display)", color: "var(--ap-ink)" }}>{value}</div>
-                <div className="ap-muted" style={{ fontSize: "12px" }}>{label}</div>
+                <strong>{value}</strong>
+                <small>{label}</small>
               </div>
             </div>
           ))}
@@ -163,7 +163,7 @@ const QuizResults = () => {
             <p className="ap-muted" style={{ fontSize: "13px" }}>Lancez le quiz et les résultats apparaîtront ici.</p>
           </div>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          <div className="product-result-list">
             <h2 className="ap-h3" style={{ fontSize: "16px" }}>Sessions ({totalSessions})</h2>
             {runs.map((run, i) => (
               <SessionCard key={run.id} run={run} defaultOpen={i === 0} />

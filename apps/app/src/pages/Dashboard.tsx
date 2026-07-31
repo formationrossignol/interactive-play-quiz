@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Navigate, useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout";
 import { KpiRow } from "@/components/dashboard/KpiRow";
 import { ActivityChart } from "@/components/dashboard/ActivityChart";
@@ -14,30 +15,28 @@ import { computeDashboardStats, computeDashboardCharts, type DashboardStats, typ
 /** Inline retry state for a dashboard section whose fetch failed — mirrors H5pPlayer's error/retry pattern, MaterialSymbol icons to match the rest of the dashboard. */
 function DashboardSectionError({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
-    <div
-      role="alert"
-      className="ap-card"
-      style={{ padding: 24, textAlign: "center", color: "var(--ap-danger-deep)" }}
-    >
+    <div role="alert" className="product-section-error">
+      <div>
       <MaterialSymbol name="warning" size={24} style={{ margin: "0 auto 8px" }} />
       <p style={{ fontWeight: 700, fontSize: 14 }}>{message}</p>
       <button
         type="button"
+        className="ap-btn ap-btn--ghost ap-btn--sm"
         onClick={onRetry}
-        style={{
-          display: "inline-flex", alignItems: "center", gap: 7, marginTop: 12,
-          padding: "8px 14px", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-sm)",
-          background: "var(--ap-card)", color: "var(--ap-ink)", cursor: "pointer", fontWeight: 800, fontSize: 13,
-        }}
+        style={{ marginTop: 12 }}
       >
         <MaterialSymbol name="refresh" size={14} /> Réessayer
       </button>
+      </div>
     </div>
   );
 }
 
 const Dashboard = () => {
-  const userId = getCurrentUser()?.id;
+  const navigate = useNavigate();
+  const currentUser = getCurrentUser();
+  const userId = currentUser?.id;
+  const firstName = currentUser?.username?.trim().split(/\s+/)[0];
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [charts, setCharts] = useState<DashboardCharts | null>(null);
   const [statsError, setStatsError] = useState(false);
@@ -65,17 +64,47 @@ const Dashboard = () => {
     return () => { cancelled = true; };
   }, [userId, chartsReloadKey]);
 
+  if (!currentUser) {
+    return <Navigate to="/auth" replace />;
+  }
+
   return (
     <AppLayout subtitle="Tableau de bord">
-      <div className="mx-auto max-w-6xl px-6 py-10">
-        <div style={{ marginBottom: "32px" }}>
-          <h1 className="ap-h2" style={{ fontSize: "26px", marginBottom: "4px" }}>Tableau de bord</h1>
-          <p className="ap-muted" style={{ fontSize: "14px" }}>Vue d'ensemble de vos créations et de l'actualité du produit.</p>
-        </div>
+      <div className="product-page product-dashboard">
+        <header className="product-dashboard__hero">
+          <div>
+            <h1>{firstName ? `Bonjour ${firstName}` : "Votre espace de travail"}</h1>
+            <p>Pilotez vos contenus, lancez une activité et suivez les résultats depuis un seul espace.</p>
+          </div>
+          <div className="product-quick-actions" aria-label="Actions rapides">
+            <button className="product-quick-action" type="button" onClick={() => navigate("/builder-start?type=quiz")}>
+              <MaterialSymbol name="add" size={18} />
+              Créer un quiz
+            </button>
+            <button className="product-quick-action" type="button" onClick={() => navigate("/builder-start?type=poll")}>
+              <MaterialSymbol name="poll" size={18} />
+              Sondage
+            </button>
+            <button className="product-quick-action" type="button" onClick={() => navigate("/course-builder")}>
+              <MaterialSymbol name="school" size={18} />
+              Cours
+            </button>
+            <button className="product-quick-action" type="button" onClick={() => navigate("/exam-builder")}>
+              <MaterialSymbol name="assignment" size={18} />
+              Examen
+            </button>
+          </div>
+        </header>
 
         {userId && <NeedsAttentionModule userId={userId} />}
 
-        <div style={{ marginBottom: "32px" }}>
+        <section aria-labelledby="dashboard-overview-title">
+          <div className="product-section-heading">
+            <div>
+              <h2 id="dashboard-overview-title">Vue d’ensemble</h2>
+              <p>Vos indicateurs cumulés et leur évolution sur les 14 derniers jours.</p>
+            </div>
+          </div>
           {statsError ? (
             <DashboardSectionError
               message="Impossible de charger vos statistiques."
@@ -84,32 +113,39 @@ const Dashboard = () => {
           ) : (
             <KpiRow stats={stats} />
           )}
-        </div>
+        </section>
 
-        {chartsError ? (
-          <div style={{ marginBottom: "32px" }}>
+        <section aria-labelledby="dashboard-performance-title">
+          <div className="product-section-heading">
+            <div>
+              <h2 id="dashboard-performance-title">Activité et performance</h2>
+              <p>Comprenez ce qui est utilisé et comment vos participants progressent.</p>
+            </div>
+          </div>
+          {chartsError ? (
             <DashboardSectionError
               message="Impossible de charger vos graphiques d'activité."
               onRetry={() => setChartsReloadKey((key) => key + 1)}
             />
-          </div>
-        ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "16px", marginBottom: "32px" }}>
-            <div id="dashboard-activity-chart">
-              <ActivityChart data={charts?.activity ?? []} hasCreations={(stats?.totalCreations ?? 0) > 0} />
+          ) : (
+            <div className="product-analytics-grid">
+              <div id="dashboard-activity-chart">
+                <ActivityChart data={charts?.activity ?? []} hasCreations={(stats?.totalCreations ?? 0) > 0} />
+              </div>
+              <div id="dashboard-score-chart">
+                <ScoreChart data={charts?.scoreByDay ?? []} />
+              </div>
+              <div id="dashboard-creations-chart">
+                <CreationsByTypeChart data={charts?.creationsByType ?? { quiz: 0, poll: 0, flashcard: 0, slide: 0, other: 0 }} />
+              </div>
             </div>
-            <div id="dashboard-score-chart">
-              <ScoreChart data={charts?.scoreByDay ?? []} />
-            </div>
-            <div id="dashboard-creations-chart">
-              <CreationsByTypeChart data={charts?.creationsByType ?? { quiz: 0, poll: 0, flashcard: 0, slide: 0, other: 0 }} />
-            </div>
-          </div>
-        )}
+          )}
+        </section>
 
-        {userId && <RecentWorks userId={userId} />}
-
-        <NewsModule />
+        <div className="product-dashboard__lower">
+          {userId && <RecentWorks userId={userId} />}
+          <NewsModule />
+        </div>
       </div>
     </AppLayout>
   );

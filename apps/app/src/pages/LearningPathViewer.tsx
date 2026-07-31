@@ -76,13 +76,8 @@ export default function LearningPathViewer() {
 
   return (
     <AppLayout subtitle={path.title}>
-      <div style={{ minHeight: "calc(100vh - var(--app-header-height, 64px))" }}>
-        <div style={{
-          padding: "22px clamp(20px, 5vw, 64px) 42px",
-          background: "linear-gradient(145deg, color-mix(in srgb, var(--ap-brand) 13%, var(--ap-paper)), color-mix(in srgb, var(--ap-pres) 9%, var(--ap-paper)))",
-          borderBottom: "var(--ap-border-w) solid var(--ap-line)",
-        }}>
-          <div style={{ maxWidth: 1120, margin: "0 auto" }}>
+      <div className="product-page">
+          <div>
             <div className="flex flex-wrap items-center justify-between gap-4">
               <Breadcrumb
                 onHome={() => navigate("/dashboard")}
@@ -97,13 +92,13 @@ export default function LearningPathViewer() {
               </button>
             </div>
 
-            <div className="grid items-end gap-8 lg:grid-cols-[minmax(0,1fr)_300px]" style={{ marginTop: 42 }}>
+            <div className="product-path-hero" style={{ marginTop: 24 }}>
               <div>
                 <span className="ap-pill" style={{ display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 14 }}>
                   <Route className="h-3.5 w-3.5" />
                   Parcours {path.isSequential ? "séquentiel" : "flexible"}
                 </span>
-                <h1 className="ap-h1" style={{ fontSize: "clamp(32px, 5vw, 50px)", maxWidth: 780 }}>{path.title}</h1>
+                <h1>{path.title}</h1>
                 {path.description && (
                   <p className="ap-muted" style={{ fontSize: 16, lineHeight: 1.65, maxWidth: 720, marginTop: 14 }}>{path.description}</p>
                 )}
@@ -114,10 +109,10 @@ export default function LearningPathViewer() {
                 </div>
               </div>
 
-              <div className="ap-card" style={{ padding: 20, background: "color-mix(in srgb, var(--ap-card) 92%, transparent)" }}>
+              <div className="product-path-progress-card">
                 <div className="flex items-end justify-between">
                   <div>
-                    <p className="ap-muted" style={{ fontSize: 12, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".06em" }}>Progression globale</p>
+                    <p className="ap-muted" style={{ fontSize: 12, fontWeight: 750 }}>Progression</p>
                     <p className="ap-h2" style={{ fontSize: 34, marginTop: 3 }}>{progress.progressPercentage}%</p>
                   </div>
                   {progress.isComplete && <Trophy style={{ width: 30, height: 30, color: "var(--ap-flash-deep)" }} />}
@@ -143,14 +138,12 @@ export default function LearningPathViewer() {
               </div>
             </div>
           </div>
-        </div>
 
-        <main style={{ padding: "38px clamp(20px, 5vw, 64px) 64px" }}>
-          <div style={{ maxWidth: 900, margin: "0 auto" }}>
-            <div className="flex items-end justify-between gap-4" style={{ marginBottom: 22 }}>
+        <main className="product-path-main">
+          <div>
+            <div className="product-path-section-heading">
               <div>
-                <p className="ap-muted" style={{ fontSize: 12, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".07em" }}>Programme</p>
-                <h2 className="ap-h2" style={{ fontSize: 26, marginTop: 4 }}>Votre progression étape par étape</h2>
+                <h2>Votre progression étape par étape</h2>
               </div>
               <button className="ap-btn ap-btn--ghost ap-btn--sm" onClick={() => navigate("/my-learning-paths")}>
                 <ArrowLeft className="h-4 w-4" />

@@ -3,6 +3,8 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ListSkeleton } from "@/components/ui/skeletons/ListSkeleton";
+import { AppLayout } from "@/components/AppLayout";
+import { PageHeader } from "@/components/ui/page-header";
 import { getCurrentUser } from "@/lib/auth";
 import { showError } from "@/lib/errorTaxonomy";
 import {
@@ -94,14 +96,16 @@ function MemberRoster({ orgId, isAdmin }: { orgId: string; isAdmin: boolean }) {
   if (loading) return <ListSkeleton rows={3} />;
 
   return (
-    <div className="space-y-2">
-      <h2 className="text-lg font-semibold">Membres</h2>
-      <ul className="space-y-2">
+    <section className="product-list-panel p-5">
+      <div className="product-panel-heading -mx-5 -mt-5 mb-4">
+        <div><h2>Membres</h2><p>Gérez les rôles et les accès de votre équipe.</p></div>
+      </div>
+      <ul className="space-y-2" aria-label="Membres de l’organisation">
         {members.map((member) => {
           const label = member.username ?? member.email;
           const grantable = roleOptions.filter((r) => !member.roles.includes(r.value));
           return (
-            <li key={member.user_id} className="rounded-md border p-3 space-y-2">
+            <li key={member.user_id} className="rounded-lg border p-3 space-y-2" style={{ borderColor: "var(--ap-line)" }}>
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-medium">{label}</p>
@@ -157,7 +161,7 @@ function MemberRoster({ orgId, isAdmin }: { orgId: string; isAdmin: boolean }) {
           );
         })}
       </ul>
-    </div>
+    </section>
   );
 }
 
@@ -216,28 +220,39 @@ export default function OrgInvitations() {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-8">
-        <ListSkeleton rows={4} />
-      </div>
+      <AppLayout subtitle="Organisation">
+        <div className="product-page product-page--medium"><ListSkeleton rows={4} /></div>
+      </AppLayout>
     );
   }
 
   if (!managedOrgId) {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-8">
-        <p>Vous devez être administrateur ou responsable pédagogique pour gérer les invitations.</p>
-      </div>
+      <AppLayout subtitle="Organisation">
+        <div className="product-page product-page--compact">
+          <div className="product-empty-inline">
+            <div><strong>Accès réservé</strong><span>Vous devez être administrateur ou responsable pédagogique pour gérer les invitations.</span></div>
+          </div>
+        </div>
+      </AppLayout>
     );
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8 space-y-6">
-      <h1 className="text-2xl font-semibold">Organisation</h1>
+    <AppLayout subtitle="Organisation">
+    <div className="product-page product-page--medium">
+      <PageHeader
+        title="Organisation"
+        description="Invitez votre équipe et attribuez à chacun les permissions adaptées."
+      />
 
       <MemberRoster orgId={managedOrgId} isAdmin={isOrgAdmin} />
 
-      <h2 className="text-lg font-semibold">Invitations</h2>
-      <form onSubmit={handleInvite} className="flex flex-wrap items-end gap-3">
+      <section className="product-list-panel p-5 mt-4">
+      <div className="product-panel-heading -mx-5 -mt-5 mb-4">
+        <div><h2>Invitations</h2><p>Ajoutez une personne avec un rôle défini dès son arrivée.</p></div>
+      </div>
+      <form onSubmit={handleInvite} className="flex flex-wrap items-end gap-3 mb-5">
         <div className="flex-1 min-w-[200px] space-y-1">
           <label htmlFor="invite-email" className="text-sm font-medium">Email</label>
           <Input
@@ -260,13 +275,17 @@ export default function OrgInvitations() {
         <Button type="submit" loading={sending}>Inviter</Button>
       </form>
 
-      <ul className="space-y-2">
+      {invitations.length === 0 ? (
+        <div className="product-empty-inline" style={{ minHeight: 130 }}>
+          <div><strong>Aucune invitation en attente</strong><span>Les invitations envoyées apparaîtront ici.</span></div>
+        </div>
+      ) : <ul className="space-y-2" aria-label="Invitations envoyées">
         {invitations.map((invitation) => (
           <li key={invitation.id} className="flex items-center justify-between rounded-md border p-3">
             <div>
               <p className="font-medium">{invitation.email}</p>
               <p className="text-sm text-muted-foreground">
-                {roleOptions.find((r) => r.value === invitation.role)?.label} · {invitation.status}
+                {roleOptions.find((r) => r.value === invitation.role)?.label}, {invitation.status}
               </p>
             </div>
             {invitation.status === "pending" && (
@@ -276,7 +295,9 @@ export default function OrgInvitations() {
             )}
           </li>
         ))}
-      </ul>
+      </ul>}
+      </section>
     </div>
+    </AppLayout>
   );
 }

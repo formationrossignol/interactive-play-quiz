@@ -68,7 +68,7 @@ const WheelTool = () => {
 
   const removeWinnerFromList = () => {
     if (winnerIndex === null) return;
-    // Filter by the drawn index, not the text value — items can contain
+    // Filter by the drawn index, not the text value. Items can contain
     // intentional duplicates (weighting the wheel), and removing by value
     // would delete every occurrence instead of just the one drawn.
     const next = items.filter((_, idx) => idx !== winnerIndex);
@@ -81,7 +81,7 @@ const WheelTool = () => {
 
   return (
     <AppLayout subtitle="Roue de tirage au sort">
-      <div className="mx-auto max-w-4xl px-6 py-10">
+      <div className="product-page product-page--medium">
         <ToolHeader
           icon={Dices}
           title="Roue de tirage au sort"
@@ -89,7 +89,7 @@ const WheelTool = () => {
           accent="var(--ap-quiz)"
         />
 
-        <div style={{ display: "grid", gridTemplateColumns: "minmax(240px, 320px) 1fr", gap: "32px", alignItems: "start" }}>
+        <div className="product-tool-workspace">
           <div className="ap-card" style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "10px" }}>
             <label htmlFor="wheel-items" className="ap-h3" style={{ fontSize: "14px" }}>Éléments</label>
             <textarea
@@ -115,7 +115,7 @@ const WheelTool = () => {
               Mettre à jour la roue
             </button>
             <p className="ap-muted" style={{ fontSize: 12, margin: 0 }}>
-              {items.length} élément{items.length > 1 ? "s" : ""} — minimum 2 pour lancer.
+              {items.length} élément{items.length > 1 ? "s" : ""}. Minimum 2 pour lancer.
             </p>
           </div>
 

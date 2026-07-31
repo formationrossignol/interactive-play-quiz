@@ -351,13 +351,13 @@ const QuestionBank = () => {
 
   return (
     <AppLayout subtitle={t("questionBank")}>
-      <div className="mx-auto max-w-6xl px-6 py-10">
+      <div className="product-page">
 
         {/* ── Page header ── */}
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "16px", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "36px" }}>
+        <div className="product-page-heading">
           <div>
-            <h1 className="ap-h2" style={{ fontSize: "28px", marginBottom: "6px" }}>{t("questionBank")}</h1>
-            <p className="ap-muted" style={{ fontSize: "14px" }}>{t("questionBankSubtitle")}</p>
+            <h1>{t("questionBank")}</h1>
+            <p>{t("questionBankSubtitle")}</p>
           </div>
           <div style={{ display: "flex", gap: "10px" }}>
             <button className="ap-btn ap-btn--ghost ap-btn--sm" onClick={() => navigate("/builder?type=quiz")}>

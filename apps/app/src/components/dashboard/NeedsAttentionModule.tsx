@@ -23,16 +23,12 @@ export function NeedsAttentionModule({ userId }: { userId: string }) {
 
   return (
     <section
-      className="ap-card"
-      style={{
-        padding: "20px", marginBottom: "32px",
-        display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap",
-      }}
+      className="product-panel product-attention"
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-        <div className="ap-tile__icon" style={{ background: "var(--ap-brand-soft)", boxShadow: "0 3px 0 var(--ap-line)", marginBottom: 0, width: 40, height: 40 }}>
-          <MaterialSymbol name="fact_check" size={20} style={{ color: "var(--ap-brand)" }} />
-        </div>
+      <div className="product-attention__copy">
+        <span className="product-attention__icon">
+          <MaterialSymbol name="fact_check" size={20} />
+        </span>
         <div>
           <strong style={{ fontFamily: "var(--ap-font-display)", fontSize: 16 }}>
             {pendingExamCount} copie{pendingExamCount > 1 ? "s" : ""} à examiner
@@ -42,8 +38,8 @@ export function NeedsAttentionModule({ userId }: { userId: string }) {
           </p>
         </div>
       </div>
-      <button type="button" className="ap-btn ap-btn--sm" onClick={() => navigate("/notifications")}>
-        Voir
+      <button type="button" className="ap-btn ap-btn--sm" onClick={() => navigate("/notifications?filter=exam")}>
+        Examiner les copies
       </button>
     </section>
   );

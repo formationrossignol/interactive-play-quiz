@@ -7,6 +7,8 @@ import { MaterialSymbol } from "@/components/MaterialSymbol";
 import { OrgSwitcher } from "@/components/org/OrgSwitcher";
 import { myOrgMemberships } from "@/lib/org/orgRepo";
 import { useNotifications } from "@/hooks/useNotifications";
+import { BrandMonogram } from "ui/BrandMonogram";
+import { BrandWordmark } from "ui/BrandWordmark";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -157,8 +159,25 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
 
   return (
     <Sidebar collapsible="icon">
-      {user && (
-        <SidebarHeader>
+      <SidebarHeader className="product-sidebar-header">
+        <button
+          type="button"
+          className="product-sidebar-brand"
+          onClick={() => navigate(user ? "/dashboard" : "/")}
+          aria-label="Brivia, tableau de bord"
+        >
+          <span className="product-sidebar-brand__mark">
+            <BrandMonogram size={21} />
+          </span>
+          {!collapsedIcon && (
+            <span className="product-sidebar-brand__copy">
+              <BrandWordmark size={19} />
+              <small>Workspace pédagogique</small>
+            </span>
+          )}
+        </button>
+
+        {user && (
           <DropdownMenu open={createOpen} onOpenChange={setCreateOpen}>
             <DropdownMenuTrigger asChild>
               {collapsedIcon ? (
@@ -224,8 +243,8 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
-        </SidebarHeader>
-      )}
+        )}
+      </SidebarHeader>
 
       <SidebarContent>
         <SidebarGroup>

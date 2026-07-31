@@ -1,12 +1,13 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Bell, BellOff, CheckCheck, SlidersHorizontal, Trash2 } from "lucide-react";
+import { BellOff, CheckCheck, SlidersHorizontal, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { AppLayout } from "@/components/AppLayout";
 import { ExplorerEmptyState } from "@/components/content/ExplorerEmptyState";
 import { NotificationItem } from "@/components/notifications/NotificationItem";
 import { NotificationPreferencesPanel } from "@/components/notifications/NotificationPreferencesPanel";
 import { ListSkeleton } from "@/components/ui/skeletons";
+import { PageHeader } from "@/components/ui/page-header";
 import { getCurrentUser } from "@/lib/auth";
 import { useNotifications } from "@/hooks/useNotifications";
 import type { NotificationCategory } from "@/lib/notifications/types";
@@ -44,17 +45,15 @@ export default function Notifications() {
 
   return (
     <AppLayout subtitle="Notifications">
-      <div className="mx-auto max-w-5xl px-6 py-10">
-        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 14, flexWrap: "wrap", marginBottom: 25 }}>
-          <div>
-            <h1 className="ap-h2" style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 26, marginBottom: 4 }}><Bell size={23} /> Notifications</h1>
-            <p className="ap-muted" style={{ fontSize: 14 }}>Suivez les partages, l’activité de vos examens et les réponses du support.</p>
-          </div>
-          <div style={{ display: "flex", gap: 8 }}>
+      <div className="product-page product-page--medium">
+        <PageHeader
+          title="Notifications"
+          description="Suivez les partages, l’activité de vos examens et les réponses du support."
+          action={<div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <button className="ap-btn ap-btn--ghost ap-btn--sm" disabled={center.unreadCount === 0} onClick={() => center.markAllRead.mutate(undefined, { onError: notifyError })}><CheckCheck size={15} /> Tout lire</button>
             <button className="ap-btn ap-btn--ghost ap-btn--sm" onClick={() => setSettingsOpen((value) => !value)}><SlidersHorizontal size={15} /> Préférences</button>
-          </div>
-        </div>
+          </div>}
+        />
 
         {settingsOpen && (
           <section className="ap-card" style={{ padding: "5px 20px 18px", marginBottom: 18 }}>
@@ -67,7 +66,7 @@ export default function Notifications() {
           </section>
         )}
 
-        <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap", marginBottom: 16 }}>
+        <div className="product-filter-bar">
           {FILTERS.map(({ key, label }) => (
             <button key={key} className={filter === key ? "ap-btn ap-btn--sm" : "ap-btn ap-btn--ghost ap-btn--sm"} onClick={() => setFilter(key)}>{label}</button>
           ))}

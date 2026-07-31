@@ -89,7 +89,7 @@ export default function ManualGrading() {
 
   return (
     <AppLayout subtitle="Saisie des notes">
-      <div className="mx-auto max-w-6xl px-6 py-10">
+      <div className="product-page">
         <PageHeader
           title="Saisie et gestion des notes"
           description="Notez les devoirs, TP, projets, soutenances et activités en présentiel, puis publiez les résultats au moment choisi."
@@ -116,25 +116,21 @@ export default function ManualGrading() {
             </Button>
           </section>
         ) : (
-          <div className="grid items-start gap-5 xl:grid-cols-[310px_minmax(0,1fr)]">
-            <aside className="ap-card overflow-hidden p-0 xl:sticky xl:top-[calc(var(--app-header-height,64px)+20px)]">
-              <div className="p-4" style={{ borderBottom: "var(--ap-border-w) solid var(--ap-line)" }}>
+          <div className="product-workspace-grid">
+            <aside className="product-master-panel">
+              <div className="product-panel-heading">
                 <h2 className="font-extrabold">Mes évaluations</h2>
                 <p className="ap-muted mt-1 text-xs">{evaluations.length} évaluation{evaluations.length !== 1 ? "s" : ""}</p>
               </div>
-              <div className="max-h-[65vh] overflow-y-auto p-2">
+              <div className="product-master-list max-h-[65vh] overflow-y-auto">
                 {evaluations.map((evaluation) => {
                   const active = evaluation.id === selectedEvaluation?.id;
                   return (
                     <button
                       key={evaluation.id}
                       type="button"
-                      className="mb-1 w-full rounded-lg p-3 text-left transition-colors"
-                      style={{
-                        background: active ? "var(--ap-brand-soft)" : "transparent",
-                        border: active ? "1px solid color-mix(in srgb, var(--ap-brand) 28%, var(--ap-line))" : "1px solid transparent",
-                        color: "var(--ap-ink)",
-                      }}
+                      className="product-master-item block"
+                      data-active={active}
                       onClick={() => setSearchParams({ evaluation: evaluation.id })}
                     >
                       <strong className="block truncate text-sm">{evaluation.name}</strong>

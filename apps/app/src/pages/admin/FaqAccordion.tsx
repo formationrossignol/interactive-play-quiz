@@ -57,7 +57,7 @@ function SortableQuestion({
       <div className="q">
         <button type="button" className="adm-drag" {...sortable.attributes} {...sortable.listeners} aria-label={`Déplacer ${row.question}`}><GripVertical size={16} /></button>
         {row.status !== "published" && <span className="draftdot">brouillon</span>}
-        {row.question || "—"}
+        {row.question || "-"}
       </div>
       <div className="a" dangerouslySetInnerHTML={{ __html: sanitizeHtml(row.answer) }} />
       <CardActions status={row.status} label={row.question} onEdit={() => onEdit(row)} onToggleStatus={() => onToggleStatus(row)} onDelete={() => onDelete(row.id)} />

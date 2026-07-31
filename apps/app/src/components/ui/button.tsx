@@ -6,15 +6,15 @@ import { cn } from "@/lib/utils";
 import { ButtonShimmerLabel } from "@/components/ui/skeleton";
 
 const buttonVariants = cva(
-  "inline-flex cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-semibold transition-[background-color,border-color,color,box-shadow,transform] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-50 disabled:active:translate-y-0 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-semibold transition-[background-color,border-color,color,box-shadow,transform] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 active:translate-y-1 active:shadow-none disabled:cursor-not-allowed disabled:opacity-50 disabled:active:translate-y-0 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
-        default: "border border-ap-brand bg-ap-brand text-white shadow-sm hover:border-ap-brand-deep hover:bg-ap-brand-deep hover:shadow-md",
-        destructive: "border border-destructive bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90 hover:shadow-md",
-        outline: "border border-primary bg-background text-primary hover:bg-primary/5 hover:border-primary/80",
-        secondary: "border border-transparent bg-ap-brand-soft text-ap-brand-deep hover:border-ap-brand/20 hover:bg-ap-brand-soft/70",
-        success: "border border-emerald-600 bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 hover:shadow-md",
+        default: "bg-ap-brand text-white shadow-ap hover:bg-ap-brand-deep hover:shadow-ap-hover",
+        destructive: "bg-destructive text-destructive-foreground shadow-ap hover:bg-destructive/90 hover:shadow-ap-hover",
+        outline: "border-2 border-primary bg-background text-primary hover:border-primary/80 hover:bg-primary/5",
+        secondary: "bg-ap-brand-soft text-ap-brand-deep shadow-ap hover:bg-ap-brand-soft/70",
+        success: "bg-emerald-600 text-white shadow-ap hover:bg-emerald-700 hover:shadow-ap-hover",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline hover:text-primary/80",
         hero: "bg-ap-brand text-white text-lg font-bold hover:bg-ap-brand-deep transition-colors",

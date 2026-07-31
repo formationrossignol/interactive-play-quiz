@@ -39,7 +39,7 @@ export default function CourseScormReport() {
 
   return (
     <AppLayout subtitle="Reporting SCORM">
-    <div style={{ maxWidth: 960, margin: "0 auto", padding: "24px 16px" }}>
+    <div className="product-page product-page--medium">
       <Breadcrumb
         onHome={() => { window.location.href = "/"; }}
         items={[
@@ -54,50 +54,55 @@ export default function CourseScormReport() {
         <ChevronLeft className="h-4 w-4" /> Retour à l'éditeur
       </button>
 
-      <h1 style={{ fontSize: 22, fontWeight: 800, marginBottom: 20 }}>
-        Reporting SCORM — {lesson?.title ?? "…"}
-      </h1>
+      <div className="product-page-heading">
+        <div>
+          <h1>Reporting SCORM</h1>
+          <p>{lesson?.title ?? "Leçon en cours de chargement"}</p>
+        </div>
+      </div>
 
       {loading ? (
         <div className="flex flex-col gap-6">
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
+          <div className="product-metric-grid product-metric-grid--wide">
             {[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}
           </div>
           <TableSkeleton rows={5} cols={5} />
         </div>
       ) : (
         <>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 24 }}>
+          <div className="product-metric-grid product-metric-grid--wide">
             <StatCard icon={<Users className="h-4 w-4" />} label="Apprenants" value={String(stats?.totalLearners ?? 0)} />
-            <StatCard icon={<CheckCircle2 className="h-4 w-4" />} label="Taux de complétion" value={stats?.completionRate != null ? `${stats.completionRate}%` : "—"} />
-            <StatCard icon={<Trophy className="h-4 w-4" />} label="Score moyen" value={stats?.avgScore != null ? String(stats.avgScore) : "—"} />
-            <StatCard icon={<Clock3 className="h-4 w-4" />} label="Temps moyen" value={stats?.avgTimeMinutes != null ? `${Math.round(stats.avgTimeMinutes)} min` : "—"} />
+            <StatCard icon={<CheckCircle2 className="h-4 w-4" />} label="Taux de complétion" value={stats?.completionRate != null ? `${stats.completionRate}%` : "-"} />
+            <StatCard icon={<Trophy className="h-4 w-4" />} label="Score moyen" value={stats?.avgScore != null ? String(stats.avgScore) : "-"} />
+            <StatCard icon={<Clock3 className="h-4 w-4" />} label="Temps moyen" value={stats?.avgTimeMinutes != null ? `${Math.round(stats.avgTimeMinutes)} min` : "-"} />
           </div>
 
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <div className="product-data-table-wrap">
+          <table className="product-data-table">
             <thead>
-              <tr style={{ textAlign: "left", borderBottom: "2px solid var(--ap-line)" }}>
-                <th style={{ padding: "8px 12px" }}>Apprenant</th>
-                <th style={{ padding: "8px 12px" }}>Statut</th>
-                <th style={{ padding: "8px 12px" }}>Score</th>
-                <th style={{ padding: "8px 12px" }}>Tentatives</th>
-                <th style={{ padding: "8px 12px" }}>Dernier accès</th>
+              <tr>
+                <th>Apprenant</th>
+                <th>Statut</th>
+                <th>Score</th>
+                <th>Tentatives</th>
+                <th>Dernier accès</th>
               </tr>
             </thead>
             <tbody>
               {rows.length === 0 ? (
                 <tr><td colSpan={5} style={{ padding: 16, color: "var(--ap-muted)" }}>Aucun apprenant n'a encore commencé cette leçon.</td></tr>
               ) : rows.map((r) => (
-                <tr key={r.user_id} style={{ borderBottom: "1px solid var(--ap-line)" }}>
-                  <td style={{ padding: "8px 12px", fontFamily: "monospace", fontSize: 12 }}>{r.user_id}</td>
-                  <td style={{ padding: "8px 12px" }}>{STATUS_LABEL[r.lesson_status ?? r.completion_status ?? ""] ?? "—"}</td>
-                  <td style={{ padding: "8px 12px" }}>{r.score_raw ?? "—"}</td>
-                  <td style={{ padding: "8px 12px" }}>{r.attempt_count}</td>
-                  <td style={{ padding: "8px 12px" }}>{new Date(r.updated_at).toLocaleString("fr")}</td>
+                <tr key={r.user_id}>
+                  <td style={{ fontFamily: "monospace", fontSize: 12 }}>{r.user_id}</td>
+                  <td>{STATUS_LABEL[r.lesson_status ?? r.completion_status ?? ""] ?? "-"}</td>
+                  <td>{r.score_raw ?? "-"}</td>
+                  <td>{r.attempt_count}</td>
+                  <td>{new Date(r.updated_at).toLocaleString("fr")}</td>
                 </tr>
               ))}
             </tbody>
           </table>
+          </div>
         </>
       )}
     </div>
@@ -107,9 +112,12 @@ export default function CourseScormReport() {
 
 function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <div style={{ background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-md)", padding: 16 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--ap-muted)", fontSize: 12, fontWeight: 700 }}>{icon}{label}</div>
-      <div style={{ fontSize: 22, fontWeight: 800, marginTop: 4 }}>{value}</div>
+    <div className="product-metric">
+      <div className="product-metric__icon">{icon}</div>
+      <div>
+        <strong>{value}</strong>
+        <small>{label}</small>
+      </div>
     </div>
   );
 }

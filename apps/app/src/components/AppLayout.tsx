@@ -78,54 +78,43 @@ export const AppLayout = ({ subtitle, extraSection, children }: AppLayoutProps) 
   }, []);
 
   return (
-    <SidebarProvider>
+    <SidebarProvider className="product-shell-root">
       <AppSidebar user={user} extraSection={extraSection} />
-      <SidebarInset>
+      <SidebarInset className="min-w-0 overflow-x-clip">
         <header
           ref={(node) => { topBarRef.current = node; }}
-          className="sticky top-0 z-40 flex items-center gap-3 px-4 py-3"
-          style={{
-            borderBottom: "var(--ap-border-w) solid var(--ap-line)",
-            backgroundColor: "var(--ap-paper)",
-            backgroundImage: "var(--ap-texture)",
-            backgroundSize: "28px 28px",
-          }}
+          className="product-topbar"
         >
           <SidebarTrigger />
 
           <button
             type="button"
-            className="flex cursor-pointer items-center gap-3 border-0 bg-transparent p-0 transition-opacity hover:opacity-80"
-            onClick={() => (user ? navigate("/my-quizzes") : (window.location.href = "/"))}
+            className="product-topbar__brand"
+            onClick={() => (user ? navigate("/dashboard") : (window.location.href = "/"))}
             title={subtitle}
             aria-label={subtitle ? `Brivia — ${subtitle}` : "Brivia"}
           >
-            <span className="ap-logo">
-              <BrandMonogram size={22} />
-            </span>
-            <BrandWordmark size={20} />
+            <BrandMonogram size={22} />
+            <BrandWordmark size={19} />
           </button>
 
-          <div className="ml-auto flex items-center gap-3">
+          <div className="product-topbar__context">
+            <strong>{subtitle || t("dashboard")}</strong>
+            <span>Brivia workspace</span>
+          </div>
+
+          <div className="product-topbar__actions">
             <GlobalSearch user={user} />
             {user && <NotificationCenter user={user} />}
             <button
               type="button"
-              className="ap-btn ap-btn--ghost ap-btn--sm"
-              style={{ padding: "8px 10px", display: "inline-flex", alignItems: "center", gap: 6 }}
+              className="ap-btn ap-btn--ghost ap-btn--sm product-topbar__command"
               aria-label={`${t("commandPaletteOpen")} (${navigator.platform.includes("Mac") ? "⌘" : "Ctrl+"}K)`}
               title={`${t("commandPaletteOpen")} (${navigator.platform.includes("Mac") ? "⌘K" : "Ctrl+K"})`}
               onClick={() => setPaletteOpen(true)}
             >
               <MaterialSymbol name="terminal" size={20} />
-              <span
-                aria-hidden="true"
-                style={{
-                  fontSize: 11, fontWeight: 700, color: "var(--ap-muted)",
-                  border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-sm)",
-                  padding: "1px 5px", lineHeight: 1.4,
-                }}
-              >
+              <span aria-hidden="true" className="product-topbar__command-key">
                 {navigator.platform.includes("Mac") ? "⌘K" : "Ctrl+K"}
               </span>
             </button>
@@ -255,8 +244,8 @@ export const AppLayout = ({ subtitle, extraSection, children }: AppLayoutProps) 
           </div>
         </header>
 
-        <div className="flex flex-1 flex-col">
-          <div className="flex-1">{children}</div>
+        <div className="product-content">
+          <main className="product-main">{children}</main>
           <Footer />
         </div>
       </SidebarInset>
