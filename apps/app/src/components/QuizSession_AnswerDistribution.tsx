@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { ArrowRight, BarChart3, Flag, Trophy } from "lucide-react";
+import { MaterialSymbol } from "@/components/MaterialSymbol";
 import { AnswerDistribution } from "./AnswerDistribution";
 import type { EditableQuestion } from "@/lib/questionTypes";
 
@@ -44,7 +44,7 @@ export const QuizSessionAnswerDistribution = ({
       <section className="live-results-frame" aria-labelledby="results-question">
         <header className="live-results-header">
           <div className="live-results-heading">
-            <span className="live-results-icon"><BarChart3 aria-hidden="true" /></span>
+            <span className="live-results-icon"><MaterialSymbol name="bar_chart" size={22} /></span>
             <div>
               <span className="live-results-kicker">Résultats de la question</span>
               <span className="live-results-votes">{totalVotes} réponse{totalVotes !== 1 ? 's' : ''}</span>
@@ -65,11 +65,11 @@ export const QuizSessionAnswerDistribution = ({
           <footer className="live-results-actions">
             {onSkipToNext && (
               <button onClick={onSkipToNext} className="live-results-action live-results-action--secondary">
-                Question suivante <ArrowRight aria-hidden="true" />
+                Question suivante <MaterialSymbol name="arrow_forward" size={18} />
               </button>
             )}
             <button onClick={onNext} className="live-results-action live-results-action--primary">
-              {isLastQuestion ? <Flag aria-hidden="true" /> : <Trophy aria-hidden="true" />}
+              <MaterialSymbol name={isLastQuestion ? 'flag' : 'trophy'} size={19} filled />
               {isLastQuestion ? 'Voir les résultats finaux' : 'Voir le classement'}
             </button>
           </footer>
