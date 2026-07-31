@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Rocket, PenLine, ShieldCheck, Mail, FileText, Users, Link2 } from "lucide-react";
+import { Rocket, PenLine, ShieldCheck, Mail, FileText, Users, Link2, Building2 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { useSEO } from "@/hooks/useSEO";
 import { useIsAdmin } from "@/lib/pages/useIsAdmin";
@@ -11,6 +11,7 @@ import { ContentTab } from "./ContentTab";
 import { ModerationTab } from "./ModerationTab";
 import { SubscribersTab } from "./SubscribersTab";
 import { SettingsTab } from "./SettingsTab";
+import { OrganizationsTab } from "./OrganizationsTab";
 import { AdminSidebarGroup, type AdminSection } from "./AdminSidebarGroup";
 import { PageSkeleton } from "@/components/ui/skeletons";
 import "./admin.css";
@@ -63,6 +64,7 @@ const Admin = () => {
     { key: "content", icon: FileText, label: "Contenu", count: allContent.length },
     { key: "moderation", icon: ShieldCheck, label: "Modération", count: pendingMod, alert: pendingMod > 0 },
     { key: "subscribers", icon: Users, label: "Abonnés", count: subCount },
+    { key: "organizations", icon: Building2, label: "Organisations", count: 0 },
     { key: "settings", icon: Link2, label: "Réglages", count: 0 },
   ];
 
@@ -104,6 +106,7 @@ const Admin = () => {
             {section === "content" && <ContentTab />}
             {section === "moderation" && <ModerationTab />}
             {section === "subscribers" && <SubscribersTab />}
+            {section === "organizations" && <OrganizationsTab />}
             {section === "settings" && <SettingsTab />}
           </div>
         </div>

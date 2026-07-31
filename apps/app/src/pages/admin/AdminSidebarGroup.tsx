@@ -7,7 +7,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 
-export type AdminSection = "content" | "moderation" | "subscribers" | "settings";
+export type AdminSection = "content" | "moderation" | "subscribers" | "organizations" | "settings";
 
 export interface AdminNavItem {
   key: AdminSection;
