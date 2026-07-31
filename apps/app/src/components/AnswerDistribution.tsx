@@ -12,11 +12,14 @@ const ANSWER_COLORS = [
 interface AnswerDistributionProps {
   answers: string[];
   distribution: number[];
-  correctAnswer: number | string | boolean;
+  correctAnswer: number | string | boolean | undefined;
 }
 
 export const AnswerDistribution = ({ answers, distribution, correctAnswer }: AnswerDistributionProps) => {
-  const correctIndex = (correctAnswer === 'true' || correctAnswer === true) ? 0 : (correctAnswer === 'false' || correctAnswer === false) ? 1 : correctAnswer as number;
+  const correctIndex = (correctAnswer === 'true' || correctAnswer === true) ? 0
+    : (correctAnswer === 'false' || correctAnswer === false) ? 1
+    : typeof correctAnswer === 'number' ? correctAnswer
+    : -1; // unanswered/unset — matches no bar
   const [animated, setAnimated] = useState(false);
 
   useEffect(() => {

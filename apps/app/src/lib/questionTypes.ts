@@ -39,7 +39,9 @@ export interface MultipleChoiceQuestion extends BaseQuestion {
 
 export interface TrueFalseQuestion extends BaseQuestion {
   type: 'true-false';
-  correctAnswer: 'true' | 'false';
+  // Optional: unset until the host explicitly picks one — a fresh question
+  // must never silently ship with a pre-selected correct answer.
+  correctAnswer?: 'true' | 'false';
   answers: ['True', 'False'];
 }
 

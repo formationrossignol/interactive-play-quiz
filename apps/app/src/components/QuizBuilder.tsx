@@ -415,6 +415,13 @@ const RailItem = ({
     question.type === "slide"      ? (question.title?.trim() || "Diapositive vide")
     : question.type === "flashcard" ? (question.recto?.trim() || "Flashcard vide")
     : (question.question?.trim() || "Sans titre");
+  // A fresh MC/True-False question no longer ships with a silently
+  // pre-checked correct answer (see questionDefaults.ts) — flag it here
+  // until the host has actually picked one, so it can't slip into "Publier"
+  // unnoticed.
+  const needsAnswerReview =
+    (question.type === "multiple-choice" && (question.correctAnswer === undefined || question.correctAnswer === -1))
+    || (question.type === "true-false" && question.correctAnswer === undefined);
 
   return (
     <div ref={setNodeRef} data-question-index={index} style={{ transform: CSS.Transform.toString(transform), transition }} className="group">
@@ -454,6 +461,16 @@ const RailItem = ({
           }}>
             <MetaIcon style={{ width: 13, height: 13, color: meta.dot, flexShrink: 0 }} aria-hidden="true" />
             {meta.label}
+            {needsAnswerReview && (
+              <span
+                title="Bonne réponse non choisie"
+                aria-label="Bonne réponse non choisie"
+                style={{
+                  width: 6, height: 6, borderRadius: "50%", flexShrink: 0,
+                  background: "var(--ap-danger)", marginLeft: 1,
+                }}
+              />
+            )}
           </span>
           <span style={{
             display: "-webkit-box" as React.CSSProperties["display"],
@@ -619,6 +636,12 @@ export const QuizBuilder = () => {
   const firstRender = useRef(true);
   const questionTextareaRef = useRef<HTMLTextAreaElement>(null);
   const railScrollRef = useRef<HTMLDivElement>(null);
+  // Set synchronously by applyLoadedQuiz before it calls any setState — lets
+  // the dirty-tracking effect below tell "reloaded what's already saved"
+  // apart from a real user edit, so a post-Publier reload (handleSaveQuiz
+  // navigates to ?quizId=X, which re-triggers the load effect) can't flip
+  // saveState back to "unsaved" for data that was just persisted.
+  const isLoadingQuizRef = useRef(false);
 
   // Keeps the selected/newly-added question visible in a long rail — without
   // this, adding question 30 leaves the scroll position at question 1 with
@@ -650,6 +673,7 @@ export const QuizBuilder = () => {
   // real persist (handleSaveQuiz). Never claim "saved" without one.
   useEffect(() => {
     if (firstRender.current) { firstRender.current = false; return; }
+    if (isLoadingQuizRef.current) { isLoadingQuizRef.current = false; return; }
     setSaveState("unsaved");
   }, [questions, title, liveReactionsEnabled, endChatEnabled]);
 
@@ -668,6 +692,7 @@ export const QuizBuilder = () => {
 
   // ── Load existing quiz ───────────────────────────────────────────────────
   const applyLoadedQuiz = (eq: SavedQuiz) => {
+    isLoadingQuizRef.current = true;
     setTitle(eq.title);
     setDescription(eq.description);
     setCategory(eq.category);
@@ -814,7 +839,13 @@ export const QuizBuilder = () => {
     setQuestions(prev => { const updated = [...prev, newQ]; setSelectedIdx(updated.length - 1); return updated; });
   };
 
+  // Deletion is instant (no confirm dialog — this is the common, fast path
+  // when cleaning up a draft) but always reversible: an undo toast restores
+  // both the question and the prior selection.
   const handleDeleteQuestion = (idx: number) => {
+    const removed = questions[idx];
+    const priorSelectedIdx = selectedIdx;
+    if (!removed) return;
     setQuestions(prev => {
       const updated = prev.filter((_, i) => i !== idx);
       setSelectedIdx(prev2 => {
@@ -824,6 +855,19 @@ export const QuizBuilder = () => {
         return prev2;
       });
       return updated;
+    });
+    toast("Question supprimée", {
+      action: {
+        label: "Annuler",
+        onClick: () => {
+          setQuestions(prev => {
+            const restored = [...prev];
+            restored.splice(idx, 0, removed);
+            return restored;
+          });
+          setSelectedIdx(priorSelectedIdx);
+        },
+      },
     });
   };
 

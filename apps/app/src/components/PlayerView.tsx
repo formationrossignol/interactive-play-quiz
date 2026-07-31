@@ -1045,7 +1045,9 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
         return q.answers?.[idx] ?? '';
       }
       if (q.type === 'true-false') {
-        return answerKey.correctAnswer === 'true' ? (q.answers?.[0] ?? 'Vrai') : (q.answers?.[1] ?? 'Faux');
+        if (answerKey.correctAnswer === 'true') return q.answers?.[0] ?? 'Vrai';
+        if (answerKey.correctAnswer === 'false') return q.answers?.[1] ?? 'Faux';
+        return '';
       }
       if (q.type === 'short-answer') return String(answerKey.correctAnswer ?? '');
       if (q.type === 'slider') return String(answerKey.correctValue ?? answerKey.correctAnswer ?? '');

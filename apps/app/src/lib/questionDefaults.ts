@@ -11,9 +11,13 @@ export const createDefaultQuizQuestion = (type: QuizQuestionType = "multiple-cho
 
   switch (type) {
     case "multiple-choice":
-      return { ...base, answers: ["", "", "", ""], correctAnswer: 0 };
+      // -1: no answer selected — matches the toggle's own "click again to
+      // clear" sentinel (QuizBuilder.tsx). A fresh question must never ship
+      // with a silently pre-checked correct answer.
+      return { ...base, answers: ["", "", "", ""], correctAnswer: -1 };
     case "true-false":
-      return { ...base, answers: ["Vrai", "Faux"], correctAnswer: "true" };
+      // Unset until the host explicitly picks Vrai or Faux — same reasoning.
+      return { ...base, answers: ["Vrai", "Faux"], correctAnswer: undefined };
     case "short-answer":
       return { ...base, correctAnswer: "", acceptableAnswers: [] };
     case "ranking":
@@ -51,6 +55,6 @@ export const createDefaultQuizQuestion = (type: QuizQuestionType = "multiple-cho
         maxLabel: "",
       };
     default:
-      return { ...base, answers: ["", "", "", ""], correctAnswer: 0 };
+      return { ...base, answers: ["", "", "", ""], correctAnswer: -1 };
   }
 };
