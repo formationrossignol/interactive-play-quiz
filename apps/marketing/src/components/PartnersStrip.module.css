@@ -1,33 +1,51 @@
 .partners {
-  border-top: 1px solid #d8dae5;
-  border-bottom: 1px solid #d8dae5;
-  background: #f4f5fa;
+  background: var(--home-bg, var(--ap-paper));
+}
+
+.partnersInner {
+  width: min(100% - 2rem, 80rem);
+  display: grid;
+  grid-template-columns: minmax(15rem, 0.72fr) minmax(0, 1.28fr);
+  align-items: center;
+  gap: clamp(2rem, 6vw, 6rem);
+  margin-inline: auto;
+  padding-block: clamp(1.35rem, 2.5vw, 1.8rem);
+  border-top: 1px solid var(--home-line, var(--ap-line));
+}
+
+.partnerMessage {
+  max-width: 27rem;
+  margin: 0;
+  color: var(--home-muted, var(--ap-muted));
+  font-family: var(--ap-font-display);
+  font-size: clamp(0.92rem, 1.25vw, 1.02rem);
+  font-weight: 650;
+  line-height: 1.55;
+  text-wrap: pretty;
 }
 
 .logoGrid {
-  width: min(100% - 2rem, 80rem);
-  min-height: 7rem;
+  min-width: 0;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
   flex-wrap: wrap;
-  gap: clamp(2rem, 6vw, 5.5rem);
-  margin-inline: auto;
-  padding-block: 1.5rem;
+  gap: clamp(1.75rem, 4vw, 4rem);
 }
 
 .logoGrid a,
 .logoGrid span {
   position: relative;
-  width: 9rem;
-  height: 2.8rem;
+  width: clamp(7.75rem, 10vw, 9rem);
+  height: 2.55rem;
   display: grid;
   place-items: center;
+  flex: 0 0 auto;
 }
 
 .logoGrid img {
   filter: grayscale(1);
-  opacity: 0.52;
+  opacity: 0.64;
   transition:
     filter 180ms var(--ap-ease),
     opacity 180ms var(--ap-ease),
@@ -36,33 +54,38 @@
 
 .logoGrid a:hover img {
   filter: grayscale(0);
-  opacity: 0.92;
+  opacity: 0.96;
   transform: translateY(-2px);
 }
 
 @media (prefers-color-scheme: dark) {
-  .partners {
-    border-color: #343646;
-    background: #12131d;
-  }
-
   .logoGrid img {
     filter: grayscale(1) brightness(1.6);
-    opacity: 0.58;
+    opacity: 0.68;
   }
 }
 
 @media (max-width: 680px) {
-  .logoGrid {
+  .partnersInner {
     width: min(100% - 1.25rem, 80rem);
-    min-height: 6rem;
-    gap: 2rem;
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+    padding-block: 1.5rem 1.75rem;
+  }
+
+  .partnerMessage {
+    max-width: 24rem;
+  }
+
+  .logoGrid {
+    justify-content: flex-start;
+    gap: 1.5rem 2rem;
   }
 
   .logoGrid a,
   .logoGrid span {
     width: 7.5rem;
-    height: 2.2rem;
+    height: 2.25rem;
   }
 }
 
