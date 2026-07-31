@@ -1,12 +1,23 @@
 import { getUserQuizzes } from "./quizStorage";
-import { getUserCourses } from "./courseStorage";
-import { getHostExams } from "./examStorage";
 import { readSessionHistory } from "./sessionState";
 import { getPollResults } from "./pollResults";
+import { listContent } from "./content/contentRepo";
+import { toDisplay, filterActive } from "./content/contentView";
+import { CONTENT_TYPES, type ContentType } from "./content/types";
 
 /** Trailing window used for both the "recent" half of a KPI trend and the
  *  Activity chart — one number so the two stay comparable. */
 const TREND_WINDOW_DAYS = 14;
+
+/** Every non-trashed creation across all 6 content kinds, read from the same
+ *  Supabase `content` table ContentExplorer/MyQuizzes read from — quiz/poll
+ *  session history stays on the legacy per-quiz localStorage store below
+ *  (readSessionHistory/getPollResults key off the legacy id), but creation
+ *  counts must never again drift from what the content browser actually shows. */
+async function fetchActiveContent(userId: string) {
+  const rows = await Promise.all(CONTENT_TYPES.map((type) => listContent(userId, type)));
+  return filterActive(rows.flat().map(toDisplay));
+}
 
 export interface PeriodDelta {
   /** Count in the trailing TREND_WINDOW_DAYS days. */
@@ -109,24 +120,17 @@ export async function computeDashboardStats(userId: string): Promise<DashboardSt
     }
   }
 
-  const [courses, exams] = await Promise.all([
-    Promise.resolve(getUserCourses(userId)),
-    getHostExams(userId),
-  ]);
+  const activeContent = await fetchActiveContent(userId);
 
   let creationsCurrent = 0, creationsPrevious = 0;
-  for (const created of [
-    ...items.map((i) => i.createdAt),
-    ...courses.map((c) => c.createdAt),
-    ...exams.map((e) => e.createdAt),
-  ]) {
-    const bucket = bucketOf(created, bounds);
+  for (const content of activeContent) {
+    const bucket = bucketOf(content.createdAt, bounds);
     if (bucket === "current") creationsCurrent += 1;
     else if (bucket === "previous") creationsPrevious += 1;
   }
 
   return {
-    totalCreations: items.length + courses.length + exams.length,
+    totalCreations: activeContent.length,
     totalSessions,
     totalParticipants,
     avgScore: scoreCount > 0 ? Math.round(scoreSum / scoreCount) : null,
@@ -182,17 +186,14 @@ export async function computeDashboardCharts(userId: string): Promise<DashboardC
   const quizItems = items.filter((item) => item.type === "quiz");
   const pollItems = items.filter((item) => item.type === "poll");
 
-  const [courses, exams] = await Promise.all([
-    Promise.resolve(getUserCourses(userId)),
-    getHostExams(userId),
-  ]);
-
+  const activeContent = await fetchActiveContent(userId);
+  const countByType = (type: ContentType) => activeContent.filter((c) => c.type === type).length;
   const creationsByType: CreationsByType = {
-    quiz: quizItems.length,
-    poll: pollItems.length,
-    flashcard: items.filter((item) => item.type === "flashcard").length,
-    slide: items.filter((item) => item.type === "slide").length,
-    other: courses.length + exams.length,
+    quiz: countByType("quiz"),
+    poll: countByType("poll"),
+    flashcard: countByType("flashcard"),
+    slide: countByType("slide"),
+    other: countByType("course") + countByType("exam"),
   };
 
   const buckets = new Map<string, { sessions: number; participants: number }>();

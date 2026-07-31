@@ -224,9 +224,23 @@ const PhonePreview = ({
   question: EditableQuestion; questionIndex: number; totalQuestions: number;
 }) => {
   if (!question) {
+    // Keeps the phone bezel/notch even with nothing to show — losing the
+    // frame here reads as a broken preview rather than an empty one.
     return (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1, color: "var(--ap-muted)", fontSize: 13, fontWeight: 700, textAlign: "center" }}>
-        Sélectionnez une question<br />pour voir l'aperçu joueur
+      <div style={{
+        width: 258, flexShrink: 0,
+        background: "var(--ap-ink)", borderRadius: "var(--ap-r-md)", padding: 9,
+        boxShadow: "0 10px 0 #16102a, 0 30px 50px rgba(36,27,58,.28)",
+      }}>
+        <div style={{
+          background: "var(--ap-paper)", borderRadius: "var(--ap-r-md)", overflow: "hidden",
+          display: "flex", flexDirection: "column", minHeight: 470,
+        }}>
+          <div style={{ width: 84, height: 20, background: "var(--ap-ink)", borderRadius: "0 0 13px 13px", margin: "0 auto", flexShrink: 0 }} />
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1, padding: 20, color: "var(--ap-muted)", fontSize: 13, fontWeight: 700, textAlign: "center" }}>
+            Sélectionnez une question<br />pour voir l'aperçu joueur
+          </div>
+        </div>
       </div>
     );
   }
@@ -401,7 +415,7 @@ const RailItem = ({
     : (question.question?.trim() || "Sans titre");
 
   return (
-    <div ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition }} className="group">
+    <div ref={setNodeRef} data-question-index={index} style={{ transform: CSS.Transform.toString(transform), transition }} className="group">
       <div
         onClick={() => onSelect(index)}
         style={{
@@ -449,31 +463,35 @@ const RailItem = ({
           </span>
         </span>
 
-        {/* Actions (hover) */}
-        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
+        {/* Actions — hover-revealed for a clean row, but focus-within keeps
+            them reachable without a pointer; hit area bumped from ~16x8px
+            (too small under any touch-target guideline) to ~28x28px. */}
+        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
           <button
             onClick={() => onDuplicate(index)}
             title="Dupliquer"
-            style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", color: "var(--ap-muted)", borderRadius: 6 }}
+            style={{ background: "none", border: "none", cursor: "pointer", padding: 8, minWidth: 28, minHeight: 28, display: "grid", placeItems: "center", color: "var(--ap-muted)", borderRadius: 6 }}
           >
             <Copy style={{ width: 12, height: 12 }} />
           </button>
           <button
             onClick={() => onDelete(index)}
             title="Supprimer"
-            style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", color: "var(--ap-muted)", borderRadius: 6 }}
+            style={{ background: "none", border: "none", cursor: "pointer", padding: 8, minWidth: 28, minHeight: 28, display: "grid", placeItems: "center", color: "var(--ap-muted)", borderRadius: 6 }}
           >
             <Trash2 style={{ width: 12, height: 12 }} />
           </button>
         </div>
 
-        {/* Drag grip */}
+        {/* Drag grip — glyph itself stays small, hit area grows to ~32x28px. */}
         <button
           {...attributes} {...listeners}
           onClick={e => e.stopPropagation()}
           style={{
             flexShrink: 0, background: "none", border: "none",
-            color: "var(--ap-line-2)", cursor: "grab", paddingTop: 2,
+            color: "var(--ap-line-2)", cursor: "grab",
+            padding: "10px 8px", minWidth: 32, minHeight: 28,
+            display: "grid", placeItems: "center",
             fontSize: 14, lineHeight: 1,
           }}
         >
@@ -601,6 +619,17 @@ export const QuizBuilder = () => {
 
   const firstRender = useRef(true);
   const questionTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const railScrollRef = useRef<HTMLDivElement>(null);
+
+  // Keeps the selected/newly-added question visible in a long rail — without
+  // this, adding question 30 leaves the scroll position at question 1 with
+  // no visible cue where the new item landed.
+  useEffect(() => {
+    if (selectedIdx === null) return;
+    railScrollRef.current
+      ?.querySelector(`[data-question-index="${selectedIdx}"]`)
+      ?.scrollIntoView({ block: "nearest" });
+  }, [selectedIdx]);
 
   const titleError = titleTouched && !title.trim() ? t("titleRequired") : undefined;
   const activeTheme = THEMES.find(t => t.id === theme) ?? THEMES[0];
@@ -966,7 +995,11 @@ export const QuizBuilder = () => {
               style={{
                 display: "inline-flex", alignItems: "center", gap: 8,
                 fontSize: 12.5, fontWeight: 800, padding: "7px 14px",
-                borderRadius: "var(--ap-r-sm)", cursor: "pointer", marginBottom: 18,
+                // 8px when a layout picker follows right below (same "meta"
+                // cluster); 32px when it doesn't (flashcards skip the
+                // picker) so the jump straight to Question content still
+                // reads as the deliberate xl break, not an accident.
+                borderRadius: "var(--ap-r-sm)", cursor: "pointer", marginBottom: isFlashcard ? 32 : 8,
                 color: meta.dot === "var(--ap-quiz)" ? "var(--ap-quiz-deep)" : meta.dot === "var(--ap-poll)" ? "var(--ap-poll-deep)" : "var(--ap-pres-deep)",
                 background: meta.dot === "var(--ap-quiz)" ? "var(--ap-quiz-soft)" : meta.dot === "var(--ap-poll)" ? "var(--ap-poll-soft)" : "var(--ap-pres-soft)",
                 border: `2px solid color-mix(in srgb, ${meta.dot} 40%, transparent)`,
@@ -1028,7 +1061,10 @@ export const QuizBuilder = () => {
         {!hoveredQuestionType && (
         <>
         {!isFlashcard && (
-          <div style={{ marginBottom: 22 }}>
+          // 32px (xl) — deliberately the biggest gap in this column: the
+          // real break between "what kind of question" (chip+layout, above)
+          // and the content itself (Question text, below).
+          <div style={{ marginBottom: 32 }}>
             <QuestionLayoutPicker
               value={q.layout}
               onChange={(layout) => upd({ layout })}
@@ -1037,8 +1073,8 @@ export const QuizBuilder = () => {
         )}
 
         {/* Question textarea */}
-        <div style={{ marginBottom: 18 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 12, fontWeight: 800, letterSpacing: ".09em", textTransform: "uppercase", color: "var(--ap-muted)", marginBottom: 9 }}>
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 12, fontWeight: 800, letterSpacing: ".09em", textTransform: "uppercase", color: "var(--ap-muted)", marginBottom: 8 }}>
             <span>Question</span>
             <span style={{ fontSize: 11.5, letterSpacing: 0, textTransform: "none", fontWeight: 700 }}>
               S'affiche en grand pour les joueurs
@@ -1066,7 +1102,7 @@ export const QuizBuilder = () => {
 
         {/* Media */}
         {q.image ? (
-          <div style={{ position: "relative", marginBottom: 18, borderRadius: "var(--ap-r-md)", overflow: "hidden" }}>
+          <div style={{ position: "relative", marginBottom: 20, borderRadius: "var(--ap-r-md)", overflow: "hidden" }}>
             <img src={q.image} alt="" style={{ width: "100%", maxHeight: 200, objectFit: "cover", display: "block" }} />
             <button
               onClick={() => upd({ image: "" })}
@@ -1076,7 +1112,7 @@ export const QuizBuilder = () => {
             </button>
           </div>
         ) : (
-          <label style={{ display: "block", marginBottom: 18, cursor: "pointer" }}>
+          <label style={{ display: "block", marginBottom: 20, cursor: "pointer" }}>
             <div
               style={{
                 border: "var(--ap-border-w) dashed var(--ap-line-2)", borderRadius: "var(--ap-r-md)",
@@ -1106,8 +1142,8 @@ export const QuizBuilder = () => {
 
         {/* Answers — MC */}
         {isMC && (
-          <div style={{ marginTop: 30 }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 12, fontWeight: 800, letterSpacing: ".09em", textTransform: "uppercase", color: "var(--ap-muted)", marginBottom: 9 }}>
+          <div style={{ marginTop: 20 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 12, fontWeight: 800, letterSpacing: ".09em", textTransform: "uppercase", color: "var(--ap-muted)", marginBottom: 8 }}>
               <span>Réponses</span>
               <span style={{ fontSize: 11.5, letterSpacing: 0, textTransform: "none", fontWeight: 700 }}>Cochez la bonne réponse</span>
             </div>
@@ -1127,8 +1163,8 @@ export const QuizBuilder = () => {
 
         {/* Answers — True/False */}
         {isTF && (
-          <div style={{ marginTop: 30 }}>
-            <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".09em", textTransform: "uppercase", color: "var(--ap-muted)", marginBottom: 9 }}>
+          <div style={{ marginTop: 20 }}>
+            <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".09em", textTransform: "uppercase", color: "var(--ap-muted)", marginBottom: 8 }}>
               Bonne réponse
             </div>
             <div style={{ display: "flex", gap: 12 }}>
@@ -1166,10 +1202,10 @@ export const QuizBuilder = () => {
 
         {/* Points + Time segments */}
         {!isPoll && (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18, marginTop: 30 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginTop: 20 }}>
             {/* Points */}
             <div>
-              <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".09em", textTransform: "uppercase", color: "var(--ap-muted)", marginBottom: 9 }}>Points</div>
+              <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".09em", textTransform: "uppercase", color: "var(--ap-muted)", marginBottom: 8 }}>Points</div>
               <div style={{ display: "flex", background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-md)", padding: 4, gap: 4, boxShadow: "0 3px 0 var(--ap-line)" }}>
                 {POINTS_OPTIONS.map(opt => {
                   const isOn = (q.points ?? 1000) === opt.value || (opt.value === 1000 && (q.points ?? 1000) !== 0 && (q.points ?? 1000) !== 2000);
@@ -1191,7 +1227,7 @@ export const QuizBuilder = () => {
             </div>
             {/* Time */}
             <div>
-              <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".09em", textTransform: "uppercase", color: "var(--ap-muted)", marginBottom: 9 }}>Temps de réponse</div>
+              <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".09em", textTransform: "uppercase", color: "var(--ap-muted)", marginBottom: 8 }}>Temps de réponse</div>
               <div style={{ display: "flex", background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-md)", padding: 4, gap: 4, boxShadow: "0 3px 0 var(--ap-line)" }}>
                 {TIME_OPTIONS.map(opt => {
                   const isOn = (q.timeLimit ?? 20) === opt.value;
@@ -1265,8 +1301,8 @@ export const QuizBuilder = () => {
         return null;
       case "ranking":
         return (
-          <div style={{ marginTop: 24 }}>
-            <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".09em", textTransform: "uppercase", color: "var(--ap-muted)", marginBottom: 9 }}>Éléments à classer</div>
+          <div style={{ marginTop: 20 }}>
+            <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".09em", textTransform: "uppercase", color: "var(--ap-muted)", marginBottom: 8 }}>Éléments à classer</div>
             {(q.items || ["", "", "", ""]).map((item: string, i: number) => (
               <Input key={i} value={item} placeholder={`Élément ${i + 1}`} className="mt-2"
                 onChange={e => { const items = [...(q.items || ["","","",""])]; items[i] = e.target.value; upd({ items }); }}
@@ -1276,7 +1312,7 @@ export const QuizBuilder = () => {
         );
       case "slider":
         return (
-          <div style={{ marginTop: 24 }} className="space-y-3">
+          <div style={{ marginTop: 20 }} className="space-y-3">
             <div><Label>Valeur min</Label><Input type="number" value={q.min ?? 0} className="mt-2" onChange={e => upd({ min: parseInt(e.target.value) })} /></div>
             <div><Label>Valeur max</Label><Input type="number" value={q.max ?? 100} className="mt-2" onChange={e => upd({ max: parseInt(e.target.value) })} /></div>
             <div><Label>Bonne réponse</Label><Input type="number" value={(q.correctAnswer as number) ?? 50} className="mt-2" onChange={e => upd({ correctAnswer: parseInt(e.target.value) })} /></div>
@@ -1285,8 +1321,8 @@ export const QuizBuilder = () => {
       case "likert-scale":
       case "frequency-scale":
         return (
-          <div style={{ marginTop: 24 }}>
-            <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".09em", textTransform: "uppercase", color: "var(--ap-muted)", marginBottom: 9 }}>Échelle</div>
+          <div style={{ marginTop: 20 }}>
+            <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".09em", textTransform: "uppercase", color: "var(--ap-muted)", marginBottom: 8 }}>Échelle</div>
             {(q.scale || []).map((item: string, i: number) => (
               <Input key={i} value={item} className="mt-2"
                 onChange={e => { const scale = [...(q.scale || [])]; scale[i] = e.target.value; upd({ scale }); }}
@@ -1295,16 +1331,16 @@ export const QuizBuilder = () => {
           </div>
         );
       case "star-rating":
-        return <div style={{ marginTop: 24 }}><Label>Nombre d'étoiles max</Label><Input type="number" min={1} max={10} value={q.maxStars ?? 5} className="mt-2" onChange={e => upd({ maxStars: parseInt(e.target.value) })} /></div>;
+        return <div style={{ marginTop: 20 }}><Label>Nombre d'étoiles max</Label><Input type="number" min={1} max={10} value={q.maxStars ?? 5} className="mt-2" onChange={e => upd({ maxStars: parseInt(e.target.value) })} /></div>;
       case "nps-scale":
         return (
-          <div style={{ marginTop: 24 }} className="space-y-3">
+          <div style={{ marginTop: 20 }} className="space-y-3">
             <div><Label>Label gauche (0)</Label><Input value={q.minLabel ?? ""} className="mt-2" onChange={e => upd({ minLabel: e.target.value })} /></div>
             <div><Label>Label droite (10)</Label><Input value={q.maxLabel ?? ""} className="mt-2" onChange={e => upd({ maxLabel: e.target.value })} /></div>
           </div>
         );
       case "open-text":
-        return <div style={{ marginTop: 24 }}><Label>Longueur max</Label><Input type="number" value={q.maxLength ?? 500} className="mt-2" onChange={e => upd({ maxLength: parseInt(e.target.value) })} /></div>;
+        return <div style={{ marginTop: 20 }}><Label>Longueur max</Label><Input type="number" value={q.maxLength ?? 500} className="mt-2" onChange={e => upd({ maxLength: parseInt(e.target.value) })} /></div>;
       default:
         return null;
     }
@@ -1408,7 +1444,11 @@ export const QuizBuilder = () => {
             {backLabel}
           </button>
           <ChevronRight style={{ width: 15, height: 15, color: "var(--ap-line-2)", flexShrink: 0 }} />
-          <div style={{ position: "relative" }}>
+          {/* minWidth:0 is load-bearing: without it, a flex child with no
+              explicit width defaults to its content's min-content size — the
+              input's fixed width below — so this slot could never shrink and
+              would push into the SaveStateIndicator at reduced widths. */}
+          <div style={{ position: "relative", minWidth: 0, flex: "0 1 280px" }}>
             <input
               ref={titleInputRef}
               value={title}
@@ -1420,7 +1460,7 @@ export const QuizBuilder = () => {
                 fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 15.5, color: "var(--ap-ink)",
                 border: `2px solid ${titleError ? "var(--ap-danger)" : "transparent"}`, borderRadius: "var(--ap-r-sm)",
                 background: titleError ? "var(--ap-danger-soft)" : "transparent",
-                padding: "5px 9px", width: 280, outline: "none",
+                padding: "5px 9px", width: "100%", minWidth: 0, outline: "none",
                 transition: "border-color .15s, background .15s",
               }}
               onFocus={e => { if (!titleError) { e.target.style.borderColor = "var(--ap-brand)"; e.target.style.background = "white"; } }}
@@ -1579,7 +1619,7 @@ export const QuizBuilder = () => {
             </div>
           </div>
 
-          <div style={{ flex: 1, overflowY: "auto", padding: "4px 12px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
+          <div ref={railScrollRef} style={{ flex: 1, overflowY: "auto", padding: "4px 12px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
               <SortableContext items={questions.map(q => q.id)} strategy={verticalListSortingStrategy}>
                 {questions.map((q, i) => (

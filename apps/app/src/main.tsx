@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import App from "./App.tsx";
 import "./index.css";
 import { getCurrentUser } from "./lib/auth";
-import { applySiteTheme, normalizeSiteTheme } from "./lib/siteTheme";
+import { applySiteTheme, resolveSiteThemeForPath } from "./lib/siteTheme";
 import { applyDensity, normalizeDensity } from "./lib/density";
 import { initMonitoring } from "./lib/monitoring";
 
@@ -20,7 +20,7 @@ const applyTheme = () => {
     document.documentElement.classList.remove('dark');
   }
 
-  applySiteTheme(normalizeSiteTheme(user?.siteTheme));
+  applySiteTheme(resolveSiteThemeForPath(window.location.pathname, user?.siteTheme));
   applyDensity(normalizeDensity(user?.density));
 };
 

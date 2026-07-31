@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Bell, BellOff, CheckCheck, SlidersHorizontal, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { AppLayout } from "@/components/AppLayout";
@@ -19,9 +20,17 @@ const FILTERS: { key: "all" | "unread" | NotificationCategory; label: string }[]
   { key: "product", label: "Produit" },
 ];
 
+const isFilterKey = (value: string | null): value is (typeof FILTERS)[number]["key"] =>
+  FILTERS.some((entry) => entry.key === value);
+
 export default function Notifications() {
   const user = getCurrentUser();
-  const [filter, setFilter] = useState<(typeof FILTERS)[number]["key"]>("all");
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const initialFilter = searchParams.get("filter");
+  const [filter, setFilter] = useState<(typeof FILTERS)[number]["key"]>(
+    isFilterKey(initialFilter) ? initialFilter : "all",
+  );
   const [settingsOpen, setSettingsOpen] = useState(false);
   const center = useNotifications(user?.id);
   const visible = useMemo(() => center.notifications.filter((notification) => {
@@ -87,7 +96,7 @@ export default function Notifications() {
               notification={notification}
               onOpen={() => {
                 if (!notification.readAt) center.markRead.mutate({ id: notification.id }, { onError: notifyError });
-                if (notification.actionUrl) window.location.href = notification.actionUrl;
+                if (notification.actionUrl) navigate(notification.actionUrl);
               }}
               onToggleRead={() => center.markRead.mutate({ id: notification.id, read: !notification.readAt }, { onError: notifyError })}
               onDelete={() => center.remove.mutate(notification.id, { onError: notifyError })}

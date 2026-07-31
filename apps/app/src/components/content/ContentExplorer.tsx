@@ -746,6 +746,10 @@ export function ContentExplorer({
                   </div>
                 )}
 
+                {/* Visually hidden — restores the h1 -> h2 -> h3 (card title)
+                    chain for screen readers; the h1 above and card h3s were
+                    adjacent with no h2 between them. */}
+                <h2 className="sr-only">{t("explorerResultsHeading")}</h2>
                 {content}
               </main>
             </div>

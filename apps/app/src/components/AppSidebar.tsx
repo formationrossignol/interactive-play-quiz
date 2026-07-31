@@ -6,6 +6,7 @@ import type { User as AuthUser } from "@/lib/auth";
 import { MaterialSymbol } from "@/components/MaterialSymbol";
 import { OrgSwitcher } from "@/components/org/OrgSwitcher";
 import { myOrgMemberships } from "@/lib/org/orgRepo";
+import { useNotifications } from "@/hooks/useNotifications";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,6 +26,7 @@ import {
   SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
+  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSub,
@@ -145,6 +147,13 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
     enabled: Boolean(user),
   });
   const isOrgAdmin = orgMemberships?.some((m) => m.role === "admin") ?? false;
+  // Shares the ["notifications", userId] query cache with Notifications.tsx and
+  // NeedsAttentionModule — mounting here doesn't add a network round-trip, it
+  // just makes the count visible without a trip through the dashboard banner.
+  const { notifications } = useNotifications(user?.id);
+  const pendingExamCount = notifications.filter(
+    (notification) => notification.category === "exam" && !notification.readAt,
+  ).length;
 
   return (
     <Sidebar collapsible="icon">
@@ -322,6 +331,30 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
           <SidebarGroup>
             <SidebarGroupLabel>{t("navGroupCorrection")}</SidebarGroupLabel>
             <SidebarMenu>
+              {/* First-class, always-visible entry point for exam submissions
+                  awaiting review — previously reachable only via the dashboard's
+                  "copies à examiner" banner -> generic Notifications inbox. */}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  isActive={location.pathname === "/notifications" && new URLSearchParams(location.search).get("filter") === "exam"}
+                  onClick={() => navigate("/notifications?filter=exam")}
+                  tooltip={t("navExamQueue")}
+                >
+                  <MaterialSymbol name="fact_check" size={20} />
+                  <span>{t("navExamQueue")}</span>
+                </SidebarMenuButton>
+                {pendingExamCount > 0 && (
+                  <SidebarMenuBadge
+                    style={{
+                      background: "var(--ap-primary)",
+                      color: "#ffffff",
+                      borderRadius: "var(--ap-r-pill)",
+                    }}
+                  >
+                    {pendingExamCount}
+                  </SidebarMenuBadge>
+                )}
+              </SidebarMenuItem>
               {CORRECTION_ITEMS.map((item) => (
                 <SidebarMenuItem key={item.path}>
                   <SidebarMenuButton
