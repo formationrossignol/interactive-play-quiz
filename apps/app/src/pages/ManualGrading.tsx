@@ -94,12 +94,12 @@ export default function ManualGrading() {
         <PageHeader
           title="Saisie et gestion des notes"
           description="Notez les devoirs, TP, projets, soutenances et activités en présentiel, puis publiez les résultats au moment choisi."
-          action={(
+          action={evaluations.length > 0 ? (
             <Button onClick={() => setCreateOpen(true)}>
               <Plus />
               Nouvelle évaluation
             </Button>
-          )}
+          ) : undefined}
         />
 
         {evaluations.length === 0 ? (

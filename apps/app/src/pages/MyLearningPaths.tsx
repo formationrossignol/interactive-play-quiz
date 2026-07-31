@@ -74,12 +74,12 @@ export default function MyLearningPaths() {
         <PageHeader
           title="Mes parcours"
           description="Assemblez vos cours, imposez des prérequis et pilotez la progression étape par étape."
-          action={(
+          action={paths.length > 0 ? (
             <Button onClick={() => navigate("/learning-path-builder")}>
               <Plus className="h-4 w-4" />
               Créer un parcours
             </Button>
-          )}
+          ) : undefined}
         />
 
           {paths.length === 0 ? (
