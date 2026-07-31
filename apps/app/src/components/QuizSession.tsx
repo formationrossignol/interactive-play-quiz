@@ -140,8 +140,10 @@ function QuestionMediaLayout({
           }}
         />
       )}
+      {/* Media-legibility scrim — matches QuizBuilder.tsx/PollSession.tsx's
+          identical-intent gradient. */}
       {background && (
-        <span aria-hidden="true" style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(0,0,0,.08), rgba(0,0,0,.82))" }} />
+        <span aria-hidden="true" style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(0,0,0,.1), rgba(0,0,0,.82))" }} />
       )}
       <h1
         className="relative z-10 flex flex-1 items-center justify-center text-center text-white drop-shadow-2xl leading-snug"

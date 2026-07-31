@@ -236,7 +236,7 @@ const PhonePreview = ({
           background: "var(--ap-paper)", borderRadius: "var(--ap-r-md)", overflow: "hidden",
           display: "flex", flexDirection: "column", minHeight: 470,
         }}>
-          <div style={{ width: 84, height: 20, background: "var(--ap-ink)", borderRadius: "0 0 13px 13px", margin: "0 auto", flexShrink: 0 }} />
+          <div style={{ width: 84, height: 20, background: "var(--ap-ink)", borderRadius: "0 0 var(--ap-r-xl) var(--ap-r-xl)", margin: "0 auto", flexShrink: 0 }} />
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1, padding: 20, color: "var(--ap-muted)", fontSize: 13, fontWeight: 700, textAlign: "center" }}>
             Sélectionnez une question<br />pour voir l'aperçu joueur
           </div>
@@ -284,7 +284,7 @@ const PhonePreview = ({
         display: "flex", flexDirection: "column", minHeight: 470,
       }}>
         {/* Notch */}
-        <div style={{ width: 84, height: 20, background: "var(--ap-ink)", borderRadius: "0 0 13px 13px", margin: "0 auto", flexShrink: 0 }} />
+        <div style={{ width: 84, height: 20, background: "var(--ap-ink)", borderRadius: "0 0 var(--ap-r-xl) var(--ap-r-xl)", margin: "0 auto", flexShrink: 0 }} />
 
         {/* HUD */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px 6px" }}>
@@ -338,8 +338,11 @@ const PhonePreview = ({
               }}
             />
           )}
+          {/* Media-legibility scrim — same value as QuizSession.tsx/PollSession.tsx's
+              identical-intent gradient; previously drifted brand-tinted rgb + a
+              different start-opacity in each of the three. */}
           {layout.mediaPosition === "background" && hasMedia && (
-            <span aria-hidden="true" style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(20,15,35,.1), rgba(20,15,35,.82))" }} />
+            <span aria-hidden="true" style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(0,0,0,.1), rgba(0,0,0,.82))" }} />
           )}
           <p style={{
             position: "relative",
@@ -388,7 +391,7 @@ const PhonePreview = ({
 
         <div style={{
           textAlign: "center", fontFamily: "var(--ap-font-display)", fontWeight: 600,
-          fontSize: 10.5, color: "var(--ap-muted)", paddingBottom: 10, letterSpacing: ".04em",
+          fontSize: 11, color: "var(--ap-muted)", paddingBottom: 10, letterSpacing: ".04em",
         }}>
           <span style={{ display: "inline-flex", verticalAlign: "-2px", marginRight: 4 }}>
             <BrandMonogram size={11} color="var(--ap-brand)" />
@@ -413,6 +416,13 @@ const RailItem = ({
     question.type === "slide"      ? (question.title?.trim() || "Diapositive vide")
     : question.type === "flashcard" ? (question.recto?.trim() || "Flashcard vide")
     : (question.question?.trim() || "Sans titre");
+  // A fresh MC/True-False question no longer ships with a silently
+  // pre-checked correct answer (see questionDefaults.ts) — flag it here
+  // until the host has actually picked one, so it can't slip into "Publier"
+  // unnoticed.
+  const needsAnswerReview =
+    (question.type === "multiple-choice" && (question.correctAnswer === undefined || question.correctAnswer === -1))
+    || (question.type === "true-false" && question.correctAnswer === undefined);
 
   return (
     <div ref={setNodeRef} data-question-index={index} style={{ transform: CSS.Transform.toString(transform), transition }} className="group">
@@ -447,11 +457,21 @@ const RailItem = ({
         <span style={{ minWidth: 0, flex: 1 }}>
           <span style={{
             display: "flex", alignItems: "center", gap: 5,
-            fontSize: 10.5, fontWeight: 800, letterSpacing: ".07em",
+            fontSize: 11, fontWeight: 800, letterSpacing: ".07em",
             textTransform: "uppercase", color: "var(--ap-muted)",
           }}>
             <MetaIcon style={{ width: 13, height: 13, color: meta.dot, flexShrink: 0 }} aria-hidden="true" />
             {meta.label}
+            {needsAnswerReview && (
+              <span
+                title="Bonne réponse non choisie"
+                aria-label="Bonne réponse non choisie"
+                style={{
+                  width: 6, height: 6, borderRadius: "50%", flexShrink: 0,
+                  background: "var(--ap-danger)", marginLeft: 1,
+                }}
+              />
+            )}
           </span>
           <span style={{
             display: "-webkit-box" as React.CSSProperties["display"],
@@ -529,7 +549,7 @@ const ThemePreviewPanel = ({ theme }: { theme?: Theme }) => {
       </div>
       <div className="flex items-center justify-between gap-3">
         <ThemePaletteChips theme={theme} />
-        <span className="text-[0.65rem] font-semibold uppercase tracking-widest text-muted-foreground">Palette</span>
+        <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Palette</span>
       </div>
     </div>
   );
@@ -620,6 +640,12 @@ export const QuizBuilder = () => {
   const firstRender = useRef(true);
   const questionTextareaRef = useRef<HTMLTextAreaElement>(null);
   const railScrollRef = useRef<HTMLDivElement>(null);
+  // Set synchronously by applyLoadedQuiz before it calls any setState — lets
+  // the dirty-tracking effect below tell "reloaded what's already saved"
+  // apart from a real user edit, so a post-Publier reload (handleSaveQuiz
+  // navigates to ?quizId=X, which re-triggers the load effect) can't flip
+  // saveState back to "unsaved" for data that was just persisted.
+  const isLoadingQuizRef = useRef(false);
 
   // Keeps the selected/newly-added question visible in a long rail — without
   // this, adding question 30 leaves the scroll position at question 1 with
@@ -651,6 +677,7 @@ export const QuizBuilder = () => {
   // real persist (handleSaveQuiz). Never claim "saved" without one.
   useEffect(() => {
     if (firstRender.current) { firstRender.current = false; return; }
+    if (isLoadingQuizRef.current) { isLoadingQuizRef.current = false; return; }
     setSaveState("unsaved");
   }, [questions, title, liveReactionsEnabled, endChatEnabled]);
 
@@ -669,6 +696,7 @@ export const QuizBuilder = () => {
 
   // ── Load existing quiz ───────────────────────────────────────────────────
   const applyLoadedQuiz = (eq: SavedQuiz) => {
+    isLoadingQuizRef.current = true;
     setTitle(eq.title);
     setDescription(eq.description);
     setCategory(eq.category);
@@ -816,7 +844,13 @@ export const QuizBuilder = () => {
     setQuestions(prev => { const updated = [...prev, newQ]; setSelectedIdx(updated.length - 1); return updated; });
   };
 
+  // Deletion is instant (no confirm dialog — this is the common, fast path
+  // when cleaning up a draft) but always reversible: an undo toast restores
+  // both the question and the prior selection.
   const handleDeleteQuestion = (idx: number) => {
+    const removed = questions[idx];
+    const priorSelectedIdx = selectedIdx;
+    if (!removed) return;
     setQuestions(prev => {
       const updated = prev.filter((_, i) => i !== idx);
       setSelectedIdx(prev2 => {
@@ -826,6 +860,19 @@ export const QuizBuilder = () => {
         return prev2;
       });
       return updated;
+    });
+    toast("Question supprimée", {
+      action: {
+        label: "Annuler",
+        onClick: () => {
+          setQuestions(prev => {
+            const restored = [...prev];
+            restored.splice(idx, 0, removed);
+            return restored;
+          });
+          setSelectedIdx(priorSelectedIdx);
+        },
+      },
     });
   };
 
@@ -1106,7 +1153,7 @@ export const QuizBuilder = () => {
             <img src={q.image} alt="" style={{ width: "100%", maxHeight: 200, objectFit: "cover", display: "block" }} />
             <button
               onClick={() => upd({ image: "" })}
-              style={{ position: "absolute", top: 8, right: 8, background: "rgba(0,0,0,.6)", color: "white", border: "none", borderRadius: 8, padding: "4px 8px", cursor: "pointer" }}
+              style={{ position: "absolute", top: 8, right: 8, background: "color-mix(in srgb, var(--ap-ink) 78%, transparent)", color: "white", border: "none", borderRadius: 8, padding: "4px 8px", cursor: "pointer" }}
             >
               <Trash2 style={{ width: 14, height: 14 }} />
             </button>

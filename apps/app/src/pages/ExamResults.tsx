@@ -329,7 +329,11 @@ function formatAnswer(q: { type: string; answers?: string[] }, given: number | s
 }
 
 function formatCorrect(q: { type: string; answers?: string[] }, correctAnswer: unknown): string {
-  if (q.type === 'true-false') return correctAnswer === 'true' ? 'Vrai' : 'Faux';
+  if (q.type === 'true-false') {
+    if (correctAnswer === 'true') return 'Vrai';
+    if (correctAnswer === 'false') return 'Faux';
+    return String(correctAnswer);
+  }
   if (q.type === 'short-answer') return String(correctAnswer);
   if (typeof correctAnswer === 'number' && q.answers) return q.answers[correctAnswer] ?? String(correctAnswer);
   return String(correctAnswer);
