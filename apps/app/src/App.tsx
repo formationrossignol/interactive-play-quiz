@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 import { initAuth, getCurrentUser } from "@/lib/auth";
+import { applySiteTheme, resolveSiteThemeForPath } from "@/lib/siteTheme";
 import { RouteTransition } from "@/components/RouteTransition";
 import { RouteFallback } from "@/components/RouteFallback";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -20,6 +21,19 @@ const PostHogPageview = () => {
   useEffect(() => {
     if (isPostHogEnabled()) posthog.capture('$pageview');
   }, [location.pathname, location.search]);
+  return null;
+};
+
+/** Keeps <html data-theme> in sync with the route on every navigation —
+ *  correction/admin/trust surfaces always render the Material 3 "calm
+ *  instructor" register (DESIGN.md), independent of the visitor's site-theme
+ *  pick; live game/exam-taking screens and the theme picker itself
+ *  (/profile) keep rendering that pick. See siteTheme.ts. */
+const SiteThemeEnforcer = () => {
+  const location = useLocation();
+  useEffect(() => {
+    applySiteTheme(resolveSiteThemeForPath(location.pathname, getCurrentUser()?.siteTheme));
+  }, [location.pathname]);
   return null;
 };
 
@@ -121,6 +135,7 @@ const App = () => (
         <AuthGate>
         <BrowserRouter>
           <PostHogPageview />
+          <SiteThemeEnforcer />
           <Suspense fallback={<RouteFallback />}>
             <RouteTransition>
             <Routes>

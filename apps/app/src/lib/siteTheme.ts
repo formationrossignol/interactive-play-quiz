@@ -88,3 +88,40 @@ export const applySiteTheme = (theme: SiteTheme) => {
     document.documentElement.setAttribute("data-theme", theme);
   }
 };
+
+/** The register DESIGN.md requires for correction/admin/trust surfaces,
+ *  independent of the visitor's site-theme pick. */
+export const FORCED_SITE_THEME: SiteTheme = "material";
+
+/** Routes exempt from FORCED_SITE_THEME — the visitor's own picked skin
+ *  applies here instead:
+ *   - pre-auth / onboarding: not yet an authenticated product surface
+ *   - live game/exam-taking screens: the "different register" DESIGN.md
+ *     explicitly reserves for playful, in-the-moment energy
+ *   - /profile: the theme picker itself lives here with an instant-preview
+ *     click handler — forcing Material would make 4 of 5 skins unpreviewable
+ *  Everything else authenticated renders FORCED_SITE_THEME regardless of
+ *  the picker. */
+const SITE_THEME_EXEMPT_PATTERNS: RegExp[] = [
+  /^\/$/,
+  /^\/auth$/,
+  /^\/reset-password$/,
+  /^\/invite\//,
+  /^\/onboarding\/org$/,
+  /^\/org\/invitations$/,
+  /^\/profile$/,
+  /^\/quiz\/[^/]+$/,
+  /^\/join\/[^/]+$/,
+  /^\/join-exam(\/.*)?$/,
+  /^\/take\/[^/]+$/,
+  /^\/presentation-audience$/,
+  /^\/preview\/[^/]+$/,
+];
+
+export const isSiteThemeExemptPath = (pathname: string): boolean =>
+  SITE_THEME_EXEMPT_PATTERNS.some((pattern) => pattern.test(pathname));
+
+/** The skin to stamp on <html> for a given route: the visitor's own pick on
+ *  exempt routes, FORCED_SITE_THEME everywhere else. */
+export const resolveSiteThemeForPath = (pathname: string, userSiteTheme: unknown): SiteTheme =>
+  isSiteThemeExemptPath(pathname) ? normalizeSiteTheme(userSiteTheme) : FORCED_SITE_THEME;
