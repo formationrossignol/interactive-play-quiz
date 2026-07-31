@@ -42,7 +42,7 @@ begin
   end if;
 
   return query
-    select o.id, o.name, o.slug, count(r.id), o.guest_access_enabled, o.created_at
+    select o.id, o.name, o.slug, count(distinct r.user_id), o.guest_access_enabled, o.created_at
     from public.organizations o
     left join public.user_org_roles r on r.org_id = o.id
     group by o.id
