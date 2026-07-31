@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Bug, CircleAlert, CircleHelp, CreditCard, Send, Ticket, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { AppLayout } from "@/components/AppLayout";
+import { PageHeader } from "@/components/ui/page-header";
 import { useSEO } from "@/hooks/useSEO";
 import { fetchMyReports, submitReport } from "@/lib/pages/publicRepo";
 import type { MyReport, ReportSeverity, ReportType } from "@/lib/pages/types";
@@ -49,7 +50,7 @@ export default function Report() {
   return (
     <AppLayout subtitle="Support">
       <div className="product-page">
-        <div className="product-page-heading"><div><h1>Signaler un problème</h1><p>Décrivez précisément ce qui s’est passé et suivez la résolution depuis l’application.</p></div></div>
+        <PageHeader title="Signaler un problème" description="Décrivez précisément ce qui s’est passé et suivez la résolution depuis l’application." />
         <div className="grid gap-[18px] lg:grid-cols-[minmax(0,1.45fr)_minmax(280px,.75fr)]" style={{ alignItems: "start" }}>
           <section className="ap-card" style={{ padding: 22, display: "grid", gap: 18 }}>
             <fieldset style={{ border: 0, padding: 0, margin: 0 }}><legend style={{ marginBottom: 9, fontWeight: 900, fontSize: 13 }}>Type de demande</legend><div className="grid gap-2 sm:grid-cols-3">{TYPES.map(({ key, label, detail, icon: Icon }) => <button key={key} type="button" className={type === key ? "ap-btn" : "ap-btn ap-btn--ghost"} onClick={() => setType(key)} style={{ minHeight: 76, display: "grid", justifyItems: "start", alignContent: "center", textAlign: "left" }}><span style={{ display: "flex", alignItems: "center", gap: 7 }}><Icon size={16} />{label}</span><small style={{ opacity: .72 }}>{detail}</small></button>)}</div></fieldset>

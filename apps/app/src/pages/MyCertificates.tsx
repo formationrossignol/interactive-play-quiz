@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Award, BookOpen, CalendarDays, Download, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { AppLayout } from "@/components/AppLayout";
+import { PageHeader } from "@/components/ui/page-header";
 import { ExplorerEmptyState } from "@/components/content/ExplorerEmptyState";
 import { ListSkeleton } from "@/components/ui/skeletons/ListSkeleton";
 import { getCurrentUser } from "@/lib/auth";
@@ -65,12 +66,10 @@ export default function MyCertificates() {
   return (
     <AppLayout subtitle="Mes certificats">
       <div className="product-page product-page--medium">
-        <div className="product-page-heading">
-          <div>
-            <h1>Mes certificats</h1>
-            <p>Retrouvez et téléchargez les attestations obtenues à la fin de vos formations.</p>
-          </div>
-        </div>
+        <PageHeader
+          title="Mes certificats"
+          description="Retrouvez et téléchargez les attestations obtenues à la fin de vos formations."
+        />
 
         {!loading && certificates.length > 0 && (
           <div className="product-metric-grid product-certificate-metrics">

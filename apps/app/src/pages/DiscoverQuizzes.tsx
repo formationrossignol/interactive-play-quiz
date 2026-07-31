@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AppLayout } from "@/components/AppLayout";
 import { Pagination } from "@/components/Pagination";
 import { RatingStars } from "@/components/RatingStars";
+import { PageHeader } from "@/components/ui/page-header";
 import { ExplorerEmptyState } from "@/components/content/ExplorerEmptyState";
 import { getPublicQuizzes, rateQuiz } from "@/lib/quizStorage";
 import { BarChart2, Compass, ListChecks, Search, Play, Clock, Users } from "lucide-react";
@@ -114,15 +115,10 @@ const DiscoverQuizzes = () => {
     <AppLayout subtitle={t("discoverPublic")}>
       <div className="product-page">
 
-        {/* Page header */}
-        <div className="product-page-heading">
-          <h1 className="ap-h2" style={{ fontSize: "26px", marginBottom: "4px" }}>
-            {t("discoverPublic")}
-          </h1>
-          <p className="ap-muted" style={{ fontSize: "14px" }}>
-            Explorez les quiz et sondages publics créés par la communauté.
-          </p>
-        </div>
+        <PageHeader
+          title={t("discoverPublic")}
+          description="Explorez les quiz et sondages publics créés par la communauté."
+        />
 
         {/* Filter bar */}
         <div className="product-list-panel" style={{ marginBottom: "20px", padding: "14px", display: "flex", flexDirection: "column", gap: "14px" }}>

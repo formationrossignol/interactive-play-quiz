@@ -18,6 +18,7 @@ import { t } from "@/lib/i18n";
 import { listSharedWithMe, type SharedContentRow } from "@/lib/sharing/sharingRepo";
 import type { ContentType } from "@/lib/content/types";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PageHeader } from "@/components/ui/page-header";
 import { ExplorerEmptyState } from "@/components/content/ExplorerEmptyState";
 
 const TYPE_META: Record<ContentType, { label: string; icon: typeof GraduationCap; color: string }> = {
@@ -89,12 +90,7 @@ const SharedWithMe = () => {
   return (
     <AppLayout subtitle={t("navSharedWithMe")}>
       <div className="product-page">
-        <div className="product-page-heading">
-          <div>
-            <h1>{t("navSharedWithMe")}</h1>
-            <p>{t("sharedWithMeSubtitle")}</p>
-          </div>
-        </div>
+        <PageHeader title={t("navSharedWithMe")} description={t("sharedWithMeSubtitle")} />
 
         {!loading && sharedContent.length === 0 && <SharedEmptyState onDiscover={() => navigate("/discover")} />}
 
