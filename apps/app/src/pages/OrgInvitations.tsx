@@ -172,6 +172,9 @@ export default function OrgInvitations() {
 
   const managedOrgId = memberships.find((m) => m.role === "admin" || m.role === "pedago")?.org_id ?? null;
   const isOrgAdmin = memberships.some((m) => m.org_id === managedOrgId && m.role === "admin");
+  const canManageGuestAccess = memberships.some(
+    (m) => m.org_id === managedOrgId && (m.role === "admin" || m.role === "pedago"),
+  );
 
   useEffect(() => {
     myOrgMemberships()
@@ -262,7 +265,7 @@ export default function OrgInvitations() {
         title="Organisation"
         description="Invitez votre équipe et attribuez à chacun les permissions adaptées."
         action={
-          isOrgAdmin ? (
+          canManageGuestAccess ? (
             <label className="flex items-center gap-2 text-sm">
               <span>Accès invité (sans compte)</span>
               <Switch checked={guestAccess} disabled={guestAccessSaving} onCheckedChange={handleGuestAccessChange} />
