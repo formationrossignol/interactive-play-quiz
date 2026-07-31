@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Dices, Timer } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
+import { PageHeader } from "@/components/ui/page-header";
 import { useSEO } from "@/hooks/useSEO";
 
 interface ToolCard {
@@ -42,14 +43,10 @@ const ToolsLibrary = () => {
   return (
     <AppLayout subtitle="Outils">
       <div className="product-page">
-        <div className="product-page-heading">
-          <div>
-          <h1>Outils de classe</h1>
-          <p>
-            Des mini-outils autonomes à utiliser en classe, sans quiz ni compte requis.
-          </p>
-          </div>
-        </div>
+        <PageHeader
+          title="Outils de classe"
+          description="Des mini-outils autonomes à utiliser en classe, sans quiz ni compte requis."
+        />
 
         <div className="product-tool-grid">
           {TOOLS.map((tool) => {

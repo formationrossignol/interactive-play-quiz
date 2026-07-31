@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { CalendarDays, Check, ChevronUp, Hammer, Lightbulb, Send } from "lucide-react";
 import { toast } from "sonner";
 import { AppLayout } from "@/components/AppLayout";
+import { PageHeader } from "@/components/ui/page-header";
 import { ExplorerEmptyState } from "@/components/content/ExplorerEmptyState";
 import { useSEO } from "@/hooks/useSEO";
 import { fetchRoadmap, setRoadmapVote, submitRoadmapIdea } from "@/lib/pages/publicRepo";
@@ -65,13 +66,11 @@ export default function Roadmap() {
   return (
     <AppLayout subtitle="Roadmap">
       <div className="product-page">
-        <div className="product-page-heading">
-          <div>
-            <h1>Roadmap produit</h1>
-            <p>Votez pour les fonctionnalités qui comptent pour vous.</p>
-          </div>
-          <span className="ap-pill" style={{ padding: "8px 12px", fontSize: 12 }}>{remaining}/3 votes disponibles</span>
-        </div>
+        <PageHeader
+          title="Roadmap produit"
+          description="Votez pour les fonctionnalités qui comptent pour vous."
+          action={<span className="ap-pill" style={{ padding: "8px 12px", fontSize: 12 }}>{remaining}/3 votes disponibles</span>}
+        />
         {!loading && COLUMNS.every((column) => view[column.key].length === 0) ? (
           <ExplorerEmptyState icon={<Lightbulb size={27} />} title="La roadmap est vide" body="Les prochaines évolutions apparaîtront ici." />
         ) : (

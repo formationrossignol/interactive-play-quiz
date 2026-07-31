@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout";
+import { PageHeader } from "@/components/ui/page-header";
 import { Pagination } from "@/components/Pagination";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -354,22 +355,22 @@ const QuestionBank = () => {
       <div className="product-page">
 
         {/* ── Page header ── */}
-        <div className="product-page-heading">
-          <div>
-            <h1>{t("questionBank")}</h1>
-            <p>{t("questionBankSubtitle")}</p>
-          </div>
-          <div style={{ display: "flex", gap: "10px" }}>
-            <button className="ap-btn ap-btn--ghost ap-btn--sm" onClick={() => navigate("/builder?type=quiz")}>
-              <ExternalLink className="h-4 w-4" />
-              {t("openQuizBuilder")}
-            </button>
-            <button className="ap-btn ap-btn--sm ap-btn--pill" onClick={openCreateDialog}>
-              <Plus className="h-4 w-4" />
-              {t("addQuestionToBank")}
-            </button>
-          </div>
-        </div>
+        <PageHeader
+          title={t("questionBank")}
+          description={t("questionBankSubtitle")}
+          action={(
+            <>
+              <button className="ap-btn ap-btn--ghost ap-btn--sm" onClick={() => navigate("/builder?type=quiz")}>
+                <ExternalLink className="h-4 w-4" />
+                {t("openQuizBuilder")}
+              </button>
+              <button className="ap-btn ap-btn--sm ap-btn--pill" onClick={openCreateDialog}>
+                <Plus className="h-4 w-4" />
+                {t("addQuestionToBank")}
+              </button>
+            </>
+          )}
+        />
 
         {/* ── Bank section ── */}
         <section style={{ marginBottom: "56px" }}>

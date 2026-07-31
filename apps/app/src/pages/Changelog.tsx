@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowUp, Bell, Check, Sparkles, Wrench } from "lucide-react";
 import { toast } from "sonner";
 import { AppLayout } from "@/components/AppLayout";
+import { PageHeader } from "@/components/ui/page-header";
 import { ExplorerEmptyState } from "@/components/content/ExplorerEmptyState";
 import { useSEO } from "@/hooks/useSEO";
 import { fetchChangelog, getChangelogSubscription, setChangelogSubscription } from "@/lib/pages/publicRepo";
@@ -44,12 +45,15 @@ export default function Changelog() {
   return (
     <AppLayout subtitle="Changelog">
       <div className="product-page product-page--medium">
-        <div className="product-page-heading">
-          <div><h1>Nouveautés produit</h1><p>Les nouveautés, améliorations et corrections de Brivia.</p></div>
-          <button className={subscribed ? "ap-btn ap-btn--ghost ap-btn--sm" : "ap-btn ap-btn--sm"} onClick={() => void toggleSubscription()}>
-            {subscribed ? <Check size={15} /> : <Bell size={15} />}{subscribed ? "Abonné" : "Recevoir les nouveautés"}
-          </button>
-        </div>
+        <PageHeader
+          title="Nouveautés produit"
+          description="Les nouveautés, améliorations et corrections de Brivia."
+          action={(
+            <button className={subscribed ? "ap-btn ap-btn--ghost ap-btn--sm" : "ap-btn ap-btn--sm"} onClick={() => void toggleSubscription()}>
+              {subscribed ? <Check size={15} /> : <Bell size={15} />}{subscribed ? "Abonné" : "Recevoir les nouveautés"}
+            </button>
+          )}
+        />
         <div className="product-filter-bar">
           {FILTERS.map(({ key, label, icon: Icon }) => <button key={key} className={filter === key ? "ap-btn ap-btn--sm" : "ap-btn ap-btn--ghost ap-btn--sm"} onClick={() => setFilter(key)}><Icon size={14} />{label}</button>)}
         </div>
