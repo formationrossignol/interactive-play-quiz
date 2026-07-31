@@ -83,6 +83,13 @@ export default function MyCertificates() {
           </div>
         )}
 
+        {!loading && certificates.length === 0 ? (
+          <ExplorerEmptyState
+            icon={<Award size={27} />}
+            title="Aucun certificat pour l'instant"
+            body="Terminez une formation jusqu'au bout pour obtenir votre première attestation."
+          />
+        ) : (
         <section className="product-panel product-certificate-panel">
           <div className="product-panel-heading">
             <div>
@@ -94,12 +101,6 @@ export default function MyCertificates() {
             <div className="product-certificate-loading">
               <ListSkeleton rows={3} avatarClassName="rounded-lg" />
             </div>
-          ) : certificates.length === 0 ? (
-            <ExplorerEmptyState
-              icon={<Award size={27} />}
-              title="Aucun certificat pour l'instant"
-              body="Terminez une formation jusqu'au bout pour obtenir votre première attestation."
-            />
           ) : (
             certificates.map((certificate) => (
               <div
@@ -141,6 +142,7 @@ export default function MyCertificates() {
             ))
           )}
         </section>
+        )}
       </div>
     </AppLayout>
   );
