@@ -1,7 +1,8 @@
 import { useRef, useState } from "react";
+import { ArrowRight, Check, Gamepad2, ShieldCheck } from "lucide-react";
+import { BrandWordmark } from "ui/BrandWordmark";
 import { ENHANCED_AVATARS, AvatarDisplay } from "./BetterAvatars";
 import { ensureSessionState, upsertPlayerInSession } from "@/lib/sessionState";
-import { ArrowRight, UsersRound } from "lucide-react";
 
 interface AvatarSelectorProps {
   onComplete: (name: string, avatar: string) => void;
@@ -16,8 +17,7 @@ export const AvatarSelector = ({ onComplete, gameCode, quizTitle }: AvatarSelect
 
   const handleSubmit = () => {
     const trimmedName = playerName.trim();
-    if (!trimmedName) return;
-    if (hasSubmittedRef.current) return;
+    if (!trimmedName || hasSubmittedRef.current) return;
     hasSubmittedRef.current = true;
 
     ensureSessionState(gameCode);
@@ -45,122 +45,92 @@ export const AvatarSelector = ({ onComplete, gameCode, quizTitle }: AvatarSelect
     onComplete(trimmedName, selectedAvatar);
   };
 
-  const selected = ENHANCED_AVATARS.find(a => a.emoji === selectedAvatar) || ENHANCED_AVATARS[0];
+  const selected = ENHANCED_AVATARS.find((avatar) => avatar.emoji === selectedAvatar) || ENHANCED_AVATARS[0];
 
   return (
-    <div className="product-entry-shell">
-      <div className="product-entry-card">
+    <main className="live-join-shell">
+      <header className="live-join-brand" aria-label="Brivia">
+        <BrandWordmark size={25} color="#fff" />
+        <span>Participation en direct</span>
+      </header>
 
-          {/* Header */}
-          <div className="product-entry-heading">
-            <span className="product-entry-heading__icon"><UsersRound className="h-6 w-6" /></span>
-            <h1>
-              Rejoindre le quiz
-            </h1>
-            {quizTitle ? (
-              <p style={{ color: 'var(--ap-brand-deep)', fontWeight: 720 }}>
-                {quizTitle}
-              </p>
-            ) : (
-              <p style={{ color: 'var(--ap-brand-deep)', fontFamily: 'var(--ap-font-mono)', fontSize: '1.1rem', fontWeight: 760, letterSpacing: '0.12em' }}>
-                {gameCode}
-              </p>
-            )}
+      <section className="live-join-card" aria-labelledby="join-heading">
+        <aside className="live-join-preview">
+          <div>
+            <span className="live-eyebrow"><Gamepad2 aria-hidden="true" /> Session en direct</span>
+            <h1 id="join-heading">Entre dans la partie.</h1>
+            <p>{quizTitle || "Choisis ton personnage et le nom qui apparaîtra à l’écran."}</p>
           </div>
 
-          {/* Avatar grid */}
-          <div style={{ marginBottom: 20 }}>
-            <div style={{ fontWeight: 750, color: 'var(--ap-ink)', fontSize: 13, marginBottom: 10 }}>
-              Choisis ton avatar
+          <div className="live-join-player-preview" aria-live="polite">
+            <span className="live-join-avatar-halo">
+              <AvatarDisplay emoji={selectedAvatar} size="xl" showGlow={false} />
+            </span>
+            <div>
+              <small>{selected.name}</small>
+              <strong>{playerName.trim() || "Ton pseudo"}</strong>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8 }}>
-              {ENHANCED_AVATARS.map((avatar) => (
+          </div>
+
+          <div className="live-join-trust">
+            <ShieldCheck aria-hidden="true" />
+            <span>Aucun compte requis</span>
+          </div>
+        </aside>
+
+        <form
+          className="live-join-form"
+          onSubmit={(event) => {
+            event.preventDefault();
+            handleSubmit();
+          }}
+        >
+          <div className="live-join-form__heading">
+            <div>
+              <span className="live-step">01</span>
+              <h2>Choisis ton avatar</h2>
+            </div>
+            <span className="live-session-code" aria-label={`Code de session ${gameCode}`}>{gameCode}</span>
+          </div>
+
+          <div className="live-avatar-grid" role="group" aria-label="Choix de l’avatar">
+            {ENHANCED_AVATARS.map((avatar) => {
+              const isSelected = selectedAvatar === avatar.emoji;
+              return (
                 <button
                   key={avatar.emoji}
+                  type="button"
+                  className="live-avatar-option"
+                  data-selected={isSelected}
+                  aria-pressed={isSelected}
                   onClick={() => setSelectedAvatar(avatar.emoji)}
-                  style={{
-                    background: selectedAvatar === avatar.emoji ? 'var(--ap-brand)' : 'var(--ap-paper)',
-                    border: selectedAvatar === avatar.emoji ? '2px solid var(--ap-brand)' : 'var(--ap-border-w) solid var(--ap-line)',
-                    borderRadius: 'var(--ap-r-md)',
-                    padding: 4,
-                    cursor: 'pointer',
-                    transform: selectedAvatar === avatar.emoji ? 'translateY(-2px)' : 'translateY(0)',
-                    transition: 'transform 0.15s ease, border-color 0.15s ease, background 0.15s ease',
-                    boxShadow: 'none',
-                  }}
                   title={avatar.name}
                 >
                   <AvatarDisplay emoji={avatar.emoji} size="sm" showGlow={false} />
+                  {isSelected && <span className="live-avatar-option__check"><Check aria-hidden="true" /></span>}
                 </button>
-              ))}
-            </div>
+              );
+            })}
           </div>
 
-          {/* Name input */}
-          <div style={{ marginBottom: 20 }}>
-            <label htmlFor="participant-name" style={{ fontWeight: 750, color: 'var(--ap-ink)', fontSize: 13, display: 'block', marginBottom: 8 }}>
-              Ton pseudo
-            </label>
+          <label className="live-name-field" htmlFor="participant-name">
+            <span><b className="live-step">02</b> Ton pseudo</span>
             <input
               id="participant-name"
-              placeholder="Entre ton pseudo…"
+              autoComplete="nickname"
+              placeholder="Ex. Camille"
               value={playerName}
-              onChange={(e) => setPlayerName(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+              onChange={(event) => setPlayerName(event.target.value)}
               maxLength={20}
-              style={{
-                width: '100%',
-                boxSizing: 'border-box',
-                padding: '12px 14px',
-                fontFamily: 'var(--ap-font-body)',
-                fontWeight: 700,
-                fontSize: '1rem',
-                color: 'var(--ap-ink)',
-                background: 'var(--ap-card)',
-                border: 'var(--ap-border-w) solid var(--ap-line)',
-                borderRadius: 'var(--ap-r-md)',
-                outline: 'none',
-              }}
             />
-          </div>
+            <small>{playerName.length}/20</small>
+          </label>
 
-          {/* Preview */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 14,
-            padding: '12px 16px',
-            background: 'var(--ap-paper)',
-            border: 'var(--ap-border-w) solid var(--ap-line)',
-            borderRadius: 'var(--ap-r-md)',
-            marginBottom: 20,
-          }}>
-            <AvatarDisplay emoji={selectedAvatar} size="lg" />
-            <div>
-              <div style={{ color: 'var(--ap-muted)', fontSize: 12, fontWeight: 700 }}>
-                {selected.name}
-              </div>
-              <div style={{ fontFamily: 'var(--ap-font-display)', fontSize: '1.3rem', fontWeight: 700, color: 'var(--ap-ink)' }}>
-                {playerName || '…'}
-              </div>
-            </div>
-          </div>
-
-          <button
-            onClick={handleSubmit}
-            disabled={!playerName.trim()}
-            className="ap-btn ap-btn--lg ap-btn--pill"
-            style={{
-              width: '100%',
-              background: playerName.trim() ? 'var(--ap-brand)' : 'var(--ap-muted)',
-              boxShadow: 'none',
-              cursor: playerName.trim() ? 'pointer' : 'not-allowed',
-              opacity: playerName.trim() ? 1 : 0.6,
-            }}
-          >
-            Rejoindre <ArrowRight className="h-4 w-4" />
+          <button type="submit" disabled={!playerName.trim()} className="live-join-submit">
+            Rejoindre la partie <ArrowRight aria-hidden="true" />
           </button>
-      </div>
-    </div>
+        </form>
+      </section>
+    </main>
   );
 };

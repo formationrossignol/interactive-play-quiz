@@ -1,12 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { HOST_ANSWER_STYLES } from "@/lib/answerVisuals";
 
-// Mêmes couleurs et formes que les tuiles de l'écran question du présentateur
 const ANSWER_COLORS = [
-  { bg: '#E74C3C', deep: '#B03A2E' },
-  { bg: '#2980B9', deep: '#1F618D' },
-  { bg: '#F39C12', deep: '#B9770E' },
-  { bg: '#27AE60', deep: '#1E8449' },
+  { bg: '#f06455', deep: '#b93931' },
+  { bg: '#3b82d0', deep: '#235c99' },
+  { bg: '#e7a51d', deep: '#a66b00' },
+  { bg: '#22a871', deep: '#116d49' },
 ];
 
 interface AnswerDistributionProps {
@@ -18,105 +17,49 @@ interface AnswerDistributionProps {
 export const AnswerDistribution = ({ answers, distribution, correctAnswer }: AnswerDistributionProps) => {
   const correctIndex = (correctAnswer === 'true' || correctAnswer === true) ? 0
     : (correctAnswer === 'false' || correctAnswer === false) ? 1
-    : typeof correctAnswer === 'number' ? correctAnswer
-    : -1; // unanswered/unset — matches no bar
+      : typeof correctAnswer === 'number' ? correctAnswer
+        : -1;
   const [animated, setAnimated] = useState(false);
 
   useEffect(() => {
-    const t = setTimeout(() => setAnimated(true), 80);
-    return () => clearTimeout(t);
+    const timeout = setTimeout(() => setAnimated(true), 80);
+    return () => clearTimeout(timeout);
   }, []);
 
   return (
-    <div>
-      <p style={{
-        fontFamily: 'var(--ap-font-display)',
-        fontSize: 14,
-        fontWeight: 600,
-        color: 'rgba(255,255,255,0.35)',
-        textAlign: 'center',
-        letterSpacing: '0.5px',
-        textTransform: 'uppercase',
-        marginBottom: 20,
-        margin: '0 0 20px',
-      }}>
-        Répartition des réponses
-      </p>
+    <section className="live-distribution" aria-labelledby="distribution-title">
+      <div className="live-distribution-label">
+        <span id="distribution-title">Répartition des réponses</span>
+        <span>Bonne réponse signalée en vert</span>
+      </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {answers.map((answer, i) => {
-          const color = ANSWER_COLORS[i % ANSWER_COLORS.length];
-          const pct = distribution[i] ?? 0;
-          const isCorrect = i === correctIndex;
+      <div className="live-distribution-list">
+        {answers.map((answer, index) => {
+          const color = ANSWER_COLORS[index % ANSWER_COLORS.length];
+          const percentage = distribution[index] ?? 0;
+          const isCorrect = index === correctIndex;
 
           return (
-            <div key={i} style={{ position: 'relative', height: 64, borderRadius: "var(--ap-r-md)", overflow: 'hidden' }}>
-              {/* Track */}
-              <div style={{
-                position: 'absolute', inset: 0,
-                background: 'rgba(255,255,255,0.04)',
-                border: `2px solid ${isCorrect ? 'rgba(34,197,94,0.5)' : 'rgba(255,255,255,0.07)'}`,
-                borderRadius: "var(--ap-r-md)",
-                boxShadow: isCorrect ? '0 0 20px rgba(34,197,94,0.15)' : 'none',
-              }} />
-
-              {/* Fill bar */}
-              <div style={{
-                position: 'absolute', top: 0, left: 0, bottom: 0,
-                width: animated ? `${pct}%` : '0%',
-                background: isCorrect
-                  ? 'linear-gradient(90deg,rgba(34,197,94,0.35),rgba(34,197,94,0.12))'
-                  : `linear-gradient(90deg,${color.bg}22,${color.bg}08)`,
-                transition: 'width 1s cubic-bezier(0.2,0.7,0.3,1)',
-                borderRadius: '12px 0 0 12px',
-              }} />
-
-              {/* Row content */}
-              <div style={{
-                position: 'relative',
-                display: 'flex', alignItems: 'center',
-                height: '100%', padding: '0 14px', gap: 12,
-              }}>
-                {/* Letter badge */}
-                <div style={{
-                  width: 38, height: 38, borderRadius: 10, flexShrink: 0,
-                  background: isCorrect ? '#22c55e' : color.bg,
-                  boxShadow: `0 3px 0 ${isCorrect ? '#16a34a' : color.deep}`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontFamily: 'var(--ap-font-display)',
-                  fontWeight: 700, fontSize: 17, color: '#fff',
-                }}>
-                  {isCorrect ? '✓' : HOST_ANSWER_STYLES[i % 4].shape}
-                </div>
-
-                {/* Answer text */}
-                <div style={{
-                  flex: 1, minWidth: 0,
-                  fontFamily: 'var(--ap-font-body)',
-                  fontWeight: 700, fontSize: 15,
-                  color: isCorrect ? '#fff' : 'rgba(255,255,255,0.75)',
-                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                }}>
-                  {answer}
-                </div>
-
-                {/* Percentage */}
-                <div style={{
-                  fontFamily: 'var(--ap-font-display)',
-                  fontWeight: 700,
-                  fontSize: pct >= 10 ? 26 : 22,
-                  color: isCorrect ? '#4ade80' : 'rgba(255,255,255,0.6)',
-                  flexShrink: 0, minWidth: 56, textAlign: 'right',
-                  fontVariantNumeric: 'tabular-nums',
-                  transition: 'color 0.3s',
-                }}>
-                  {pct}%
-                </div>
-              </div>
-            </div>
+            <article
+              key={`${answer}-${index}`}
+              className="live-distribution-row"
+              data-correct={isCorrect}
+              style={{ '--answer-color': color.bg, '--answer-deep': color.deep } as CSSProperties}
+            >
+              <div
+                className="live-distribution-fill"
+                style={{ transform: `scaleX(${animated ? percentage / 100 : 0})` }}
+                aria-hidden="true"
+              />
+              <span className="live-distribution-shape" aria-hidden="true">
+                {isCorrect ? '✓' : HOST_ANSWER_STYLES[index % 4].shape}
+              </span>
+              <strong>{answer}</strong>
+              <span className="live-distribution-value">{percentage}%</span>
+            </article>
           );
         })}
       </div>
-    </div>
+    </section>
   );
 };

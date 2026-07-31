@@ -72,6 +72,7 @@ export const PollSession = ({ poll }: PollSessionProps) => {
     [poll.questions, currentIndex]
   );
   const joinUrl = `${window.location.origin}/join/${poll.id}`;
+  const joinUrlLabel = joinUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
 
   const collectAnswers = useCallback((sessionPlayers: SharedPlayer[]) => {
     let changed = false;
@@ -250,8 +251,8 @@ export const PollSession = ({ poll }: PollSessionProps) => {
           {/* Join card */}
           <aside style={joinCardSt} aria-label="Comment rejoindre le sondage">
             <h2 style={{ fontFamily: "var(--ap-font-display)", fontWeight: 600, fontSize: 21, marginBottom: 4 }}>Rejoignez le sondage</h2>
-            <p style={{ fontWeight: 800, fontSize: 15, color: "var(--ap-muted)", marginBottom: 18 }}>
-              Sur <b style={{ color: "var(--ap-poll-deep)" }}>ludiq.app</b>, entrez le code
+            <p style={{ fontWeight: 800, fontSize: 14, color: "var(--ap-muted)", marginBottom: 18, overflowWrap: "anywhere" }}>
+              Ouvrez <b style={{ color: "var(--ap-poll-deep)" }}>{joinUrlLabel}</b>
             </p>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 12, alignItems: "center" }}>

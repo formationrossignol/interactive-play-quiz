@@ -399,6 +399,7 @@ export const QuizSession = ({ quiz, isHost = false, isSolo = false, onExitReques
   }, [players, gameState]);
 
   const joinUrl = `${window.location.origin}/join/${quiz.gameCode}`;
+  const joinUrlLabel = joinUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
   const currentQuestion = quiz.questions[currentQuestionIndex];
 
   const selectedTheme = useMemo(() => {
@@ -1218,10 +1219,10 @@ export const QuizSession = ({ quiz, isHost = false, isSolo = false, onExitReques
           <aside style={{ background:'var(--ap-card)',borderRadius:'var(--ap-r-xl)',boxShadow:'0 40px 80px rgba(20,10,60,.4),0 6px 0 rgba(20,10,60,.25)',padding:'30px 34px',textAlign:'center',position:'sticky',top:18 }} aria-label="Comment rejoindre la partie">
             <div style={{ display:'flex',alignItems:'center',justifyContent:'center',gap:10,color:'var(--ap-muted)',fontWeight:800,fontSize:14,marginBottom:10 }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M11 18h2"/></svg>
-              Sur votre téléphone, ouvrez
+              Sur votre téléphone, ouvrez ce lien
             </div>
-            <div style={{ fontFamily:'var(--ap-font-display)',fontWeight:600,fontSize:24,color:'var(--ap-ink)' }}>
-              ludiq.app/<b style={{ color:'var(--ap-brand)' }}>rejoindre</b>
+            <div style={{ fontFamily:'var(--ap-font-display)',fontWeight:650,fontSize:'clamp(17px,2vw,24px)',color:'var(--ap-ink)',overflowWrap:'anywhere',lineHeight:1.2 }}>
+              {joinUrlLabel}
             </div>
 
             {/* Big code digit boxes */}
@@ -1230,7 +1231,7 @@ export const QuizSession = ({ quiz, isHost = false, isSolo = false, onExitReques
                 <span key={i} style={{ fontFamily:'var(--ap-font-mono)',fontWeight:700,fontSize:digitSize,lineHeight:1,color:'var(--ap-ink)',background:'var(--ap-paper)',border:'var(--ap-border-w) solid var(--ap-line)',borderRadius:"var(--ap-r-md)",padding:'14px 10px',minWidth:digitBox,boxShadow:'0 4px 0 var(--ap-line)',fontVariantNumeric:'tabular-nums',animation:'pin-breathe 3.2s ease-in-out infinite' }}>{ch}</span>
               ))}
             </div>
-            <p style={{ color:'var(--ap-muted)',fontWeight:800,fontSize:13,margin:'0 0 6px' }}>puis saisissez ce code</p>
+            <p style={{ color:'var(--ap-muted)',fontWeight:800,fontSize:13,margin:'0 0 6px' }}>ou utilisez ce code pour rejoindre</p>
 
             {/* status + actions | QR */}
             <div style={{ display:'grid',gridTemplateColumns:'1fr auto',gap:22,alignItems:'center',marginTop:8,textAlign:'left' }}>
