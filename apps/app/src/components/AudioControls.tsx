@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { ChevronDown, Volume2, VolumeX } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { MaterialSymbol } from '@/components/MaterialSymbol';
 import type { GameAudioApi } from '@/hooks/useGameAudio';
 
 interface AudioControlsProps {
@@ -41,7 +41,7 @@ export const AudioControls = ({ audio, className, expanded = false }: AudioContr
         aria-pressed={audio.muted}
         className="live-audio-toggle"
       >
-        {audio.muted ? <VolumeX aria-hidden="true" /> : <Volume2 aria-hidden="true" />}
+        <MaterialSymbol name={audio.muted ? 'volume_off' : 'volume_up'} size={20} filled />
         {expanded && <span>{audio.muted ? 'Son coupé' : 'Son activé'}</span>}
       </button>
 
@@ -54,7 +54,7 @@ export const AudioControls = ({ audio, className, expanded = false }: AudioContr
             aria-label="Régler le volume"
             aria-expanded={open}
           >
-            <ChevronDown aria-hidden="true" />
+            <MaterialSymbol name={open ? 'keyboard_arrow_up' : 'keyboard_arrow_down'} size={20} />
           </button>
           {open && <div className="live-audio-popover">{slider}</div>}
         </>

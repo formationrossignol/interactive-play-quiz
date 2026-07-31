@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import type { EditableQuestion } from "@/lib/questionTypes";
 import { Button } from "@/components/ui/button";
-import { Users, LogOut, Zap, Ban, OctagonX, PartyPopper } from "lucide-react";
+import { Users, LogOut, Zap, Ban, OctagonX } from "lucide-react";
 import { AvatarDisplay } from "./BetterAvatars";
 import { MultiStepProgress } from "./MultiStepProgress";
 import { AudioControls } from "./AudioControls";
@@ -27,6 +27,7 @@ import {
 } from "@/lib/sessionState";
 import { supabase } from "@/lib/supabase";
 import { Skeleton } from "@/components/ui/skeleton";
+import { MaterialSymbol } from "@/components/MaterialSymbol";
 
 interface PlayerViewProps {
   gameCode: string;
@@ -213,6 +214,9 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
 
   // Wall-clock end time of the current timed phase (question or transition)
   const timerEndRef = useRef<number | null>(null);
+  // The visible bar is updated directly on the compositor. Keeping this out
+  // of React state avoids re-rendering the full answer panel on every frame.
+  const timerProgressBarRef = useRef<HTMLDivElement>(null);
   // Last question index for which we set timerEndRef — prevents mid-question Supabase resyncs
   const lastTimerQuestionRef = useRef<number>(-1);
   // Same guard for transition phase — prevents mid-transition poll from resetting timer to full duration
@@ -417,6 +421,26 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
     }, 250);
     return () => clearInterval(interval);
   }, [gameState, hasAnswered, currentQuestion, isKicked]);
+
+  // Smooth question timer: exact wall-clock progress on every animation frame.
+  // The numeric label continues to update at the lower cadence above.
+  useEffect(() => {
+    if (gameState !== 'question' || hasAnswered || !liveQuestion || isKicked) return;
+    let frameId = 0;
+    const totalMs = Math.max(1, liveQuestion.timeLimit * 1000);
+
+    const paint = () => {
+      const end = timerEndRef.current;
+      const progress = end === null ? 1 : Math.max(0, Math.min(1, (end - Date.now()) / totalMs));
+      if (timerProgressBarRef.current) {
+        timerProgressBarRef.current.style.transform = `scaleX(${progress})`;
+      }
+      if (progress > 0) frameId = window.requestAnimationFrame(paint);
+    };
+
+    frameId = window.requestAnimationFrame(paint);
+    return () => window.cancelAnimationFrame(frameId);
+  }, [gameState, hasAnswered, liveQuestion, currentQuestion, isKicked]);
 
   // Heartbeat: signals liveness to host every 5s so disconnects can be detected.
   // Only sent during 'question' — the only phase where the host checks for disconnects.
@@ -747,7 +771,6 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
     return (
       <main className="live-player-shell live-player-shell--waiting">
         <div className="live-player-topbar">
-          <span className="live-player-topbar__status"><i /> Connecté</span>
           <AudioControls audio={audio} expanded />
         </div>
 
@@ -756,6 +779,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
             <div className="live-waiting-avatar">
               <AvatarDisplay emoji={playerAvatar} size="xl" />
             </div>
+            <span className="live-waiting-connection"><i /> Connecté</span>
             <span className="live-eyebrow">Tu es dans la partie</span>
             <h1 id="waiting-title">Prêt, {playerName}&nbsp;?</h1>
             <p className="live-waiting-lead">
@@ -769,7 +793,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
               </div>
               <div>
                 <small>Dans la salle</small>
-                <strong><Users aria-hidden="true" /> {totalPlayers} joueur{totalPlayers !== 1 ? 's' : ''}</strong>
+                <strong><MaterialSymbol name="group" size={19} /> {totalPlayers} joueur{totalPlayers !== 1 ? 's' : ''}</strong>
               </div>
             </div>
 
@@ -846,6 +870,9 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
             </p>
             <p
               style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
                 fontFamily: 'var(--ap-font-body)',
                 fontSize: '0.9rem',
                 fontWeight: 700,
@@ -854,7 +881,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
                 animation: 'pulse 1.5s ease-in-out infinite',
               }}
             >
-              ⏳ Les réponses arrivent…
+              <MaterialSymbol name="hourglass_top" size={18} filled /> Les réponses arrivent…
             </p>
             <style>{`@keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }`}</style>
           </>
@@ -905,7 +932,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
                 }}
                 aria-label={`Série de ${streak}`}
               >
-                🔥 ×{streak}
+                <MaterialSymbol name="local_fire_department" size={17} filled /> ×{streak}
               </span>
             )}
             <div style={{ flex: 1 }} />
@@ -963,12 +990,16 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
                 aria-label={`Temps restant : ${timeLeft} secondes`}
               >
                 <div
+                  ref={timerProgressBarRef}
                   style={{
                     height: "100%",
-                    width: `${Math.max(0, Math.min(100, (liveQuestion.timeLimit > 0 ? timeLeft / liveQuestion.timeLimit : 0) * 100))}%`,
+                    width: "100%",
                     background: timeLeft <= 5 ? "var(--ap-danger)" : "var(--ap-brand)",
                     borderRadius: "var(--ap-r-md)",
-                    transition: "width .3s linear, background .3s",
+                    transform: `scaleX(${Math.max(0, Math.min(1, liveQuestion.timeLimit > 0 ? timeLeft / liveQuestion.timeLimit : 0))})`,
+                    transformOrigin: "left center",
+                    transition: "background .3s",
+                    willChange: "transform",
                   }}
                 />
               </div>
@@ -997,7 +1028,9 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
                 borderRadius: "var(--ap-r-xl)",
               }}
             >
-              <div className="text-4xl mb-3">{isPoll ? '🙏' : '⏳'}</div>
+              <div className="live-answer-sent-icon">
+                <MaterialSymbol name={isPoll ? 'volunteer_activism' : 'hourglass_top'} size={40} filled />
+              </div>
               <h3 className="ap-h3 text-white">{isPoll ? 'Merci pour votre réponse !' : 'Réponse envoyée !'}</h3>
               <p className="mt-2" style={{ color: "rgba(255,255,255,0.75)", fontFamily: "var(--ap-font-body)", fontSize: "14px" }}>
                 {isPoll ? 'En attente de la question suivante…' : 'En attente des autres joueurs…'}
@@ -1062,14 +1095,16 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
         <section className="live-feedback-card" aria-live="polite">
           {answerPending ? (
             <div className="live-feedback-pending">
-              <div className="live-feedback-pending__mark">•••</div>
+              <div className="live-feedback-pending__mark">
+                <MaterialSymbol name="hourglass_top" size={42} filled />
+              </div>
               <h1>Vérification en cours</h1>
               <p>Ta réponse arrive au serveur.</p>
             </div>
           ) : (
             <>
               <div className="live-feedback-mark" aria-hidden="true">
-                <span>{lastAnswerCorrect ? '✓' : '×'}</span>
+                <MaterialSymbol name={lastAnswerCorrect ? 'check' : 'close'} size={44} />
               </div>
               <span className="live-feedback-kicker">{lastAnswerCorrect ? 'Bien joué' : 'Réponse enregistrée'}</span>
               <h1>{lastAnswerCorrect ? 'Bonne réponse.' : 'Pas cette fois.'}</h1>
@@ -1079,7 +1114,10 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
               </div>
 
               {lastAnswerCorrect && streak >= 2 && (
-                <div className="live-feedback-streak">🔥 Série de {streak}</div>
+                <div className="live-feedback-streak">
+                  <MaterialSymbol name="local_fire_department" size={19} filled />
+                  Série de {streak}
+                </div>
               )}
 
               {!lastAnswerCorrect && correctAnswerText && (
@@ -1091,7 +1129,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
 
               <p className="live-feedback-rank">
                 {playerRank === 1
-                  ? 'Tu es en tête 🏆'
+                  ? <><span>Tu es en tête</span><MaterialSymbol name="trophy" size={19} filled /></>
                   : ahead
                     ? `Tu es ${ordinal} · ${deltaBehind.toLocaleString('fr-FR')} pts derrière ${ahead.name}`
                     : `Tu es ${ordinal}`}
@@ -1133,7 +1171,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
         style={{ background: "var(--ap-brand)" }}
       >
         <div className="max-w-md w-full text-center">
-          <div className="mb-4 text-6xl drop-shadow-xl animate-bounce">🏆</div>
+          <div className="mb-4 text-white"><MaterialSymbol name="trophy" size={48} filled /></div>
           <h2 className="ap-h2 text-white mb-6">Classement</h2>
 
           <div className="space-y-4 mb-6">
@@ -1192,7 +1230,8 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
                 color: "rgba(255,255,255,0.85)",
               }}
             >
-              ⏳ En attente de la prochaine question…
+              <MaterialSymbol name="hourglass_top" size={18} filled style={{ verticalAlign: 'middle', marginRight: 6 }} />
+              En attente de la prochaine question…
             </div>
           </div>
         </div>
@@ -1209,7 +1248,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
       >
         <div className="max-w-md w-full text-center text-white">
           <div style={{ width: 88, height: 88, borderRadius: '50%', background: 'rgba(255,255,255,0.14)', border: '2px solid rgba(255,255,255,0.3)', display: 'grid', placeItems: 'center', margin: '0 auto 16px' }}>
-            <PartyPopper style={{ width: 40, height: 40 }} strokeWidth={2} />
+            <MaterialSymbol name="celebration" size={40} filled />
           </div>
           <h2 className="ap-h2 text-white mb-3">Merci d'avoir participé !</h2>
           <p style={{ color: 'rgba(255,255,255,0.75)', fontFamily: 'var(--ap-font-body)', fontWeight: 700, marginBottom: 28 }}>
@@ -1227,271 +1266,117 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
     );
   }
 
-  const fp1 = allPlayers[0], fp2 = allPlayers[1], fp3 = allPlayers[2];
+  const displayedRanking = allPlayers.slice(0, 5);
+  const participantCount = allPlayers.length || totalPlayers;
 
   return (
-    <div
-      className="min-h-screen overflow-auto"
-      style={{ background: "var(--ap-brand)" }}
-    >
-      <div className="max-w-sm mx-auto px-4 pt-6 pb-8 text-center">
-        {/* Title */}
-        <h2
-          className="mb-5"
-          style={{
-            fontFamily: 'var(--ap-font-display)',
-            fontSize: '2.4rem',
-            fontWeight: 700,
-            color: '#fff',
-            textShadow: '0 2px 12px rgba(0,0,0,0.3)',
-          }}
-        >
-          🎉 Quiz terminé !
-        </h2>
-
-        {/* Player's own score + rank */}
-        <div
-          className="mb-6 p-4"
-          style={{
-            background: 'rgba(255,255,255,0.2)',
-            border: '2px solid rgba(255,255,255,0.35)',
-            borderRadius: 'var(--ap-r-xl)',
-          }}
-        >
-          <div
-            style={{
-              fontFamily: 'var(--ap-font-display)',
-              fontSize: '3rem',
-              fontWeight: 700,
-              color: '#fff',
-              lineHeight: 1,
-            }}
-          >
-            {playerScore}
-          </div>
-          <div style={{ color: 'rgba(255,255,255,0.7)', fontWeight: 700, fontSize: '13px', marginBottom: '8px' }}>
-            points
-          </div>
-          <div
-            style={{
-              fontFamily: 'var(--ap-font-display)',
-              fontSize: '1.3rem',
-              fontWeight: 700,
-              color: '#fff',
-              background: playerRank <= 3 ? 'rgba(255,184,0,0.35)' : 'rgba(255,255,255,0.15)',
-              padding: '5px 18px',
-              borderRadius: '999px',
-              display: 'inline-block',
-              border: playerRank <= 3 ? '1px solid rgba(255,184,0,0.5)' : '1px solid rgba(255,255,255,0.2)',
-            }}
-          >
-            #{playerRank} / {allPlayers.length || totalPlayers}
-          </div>
-        </div>
-
-        {/* Podium (when ≥ 2 players in ranking) */}
-        {allPlayers.length >= 2 && (
-          <>
-            <div className="flex items-end justify-center gap-0 mb-0">
-              {/* 2nd */}
-              {fp2 && (
-                <div className="flex flex-col items-center" style={{ flex: '0 0 33%' }}>
-                  <AvatarDisplay emoji={fp2.avatar} size="md" />
-                  <div
-                    style={{
-                      width: '100%', height: 90,
-                      background: 'linear-gradient(170deg,#E8E8E8,#B8B8B8)',
-                      borderRadius: '10px 10px 0 0',
-                      display: 'flex', flexDirection: 'column',
-                      alignItems: 'center', justifyContent: 'space-between',
-                      padding: '8px 4px',
-                      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.5)',
-                    }}
-                  >
-                    <span style={{ fontSize: '0.7rem', fontWeight: 800, color: '#444', fontFamily: 'var(--ap-font-display)', lineHeight: 1.1, textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>
-                      {fp2.name}
-                    </span>
-                    <span style={{ fontSize: '1.2rem' }}>🥈</span>
-                    <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#555' }}>{fp2.score} pts</span>
-                  </div>
-                </div>
-              )}
-
-              {/* 1st */}
-              {fp1 && (
-                <div className="flex flex-col items-center" style={{ flex: '0 0 34%' }}>
-                  <AvatarDisplay emoji={fp1.avatar} size="lg" />
-                  <div
-                    style={{
-                      width: '100%', height: 130,
-                      background: 'linear-gradient(170deg,#FFE566,#FFB800)',
-                      borderRadius: '10px 10px 0 0',
-                      display: 'flex', flexDirection: 'column',
-                      alignItems: 'center', justifyContent: 'space-between',
-                      padding: '10px 4px',
-                      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.5), 0 -8px 28px rgba(255,184,0,0.45)',
-                    }}
-                  >
-                    <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#7a4000', fontFamily: 'var(--ap-font-display)', lineHeight: 1.1, textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>
-                      {fp1.name}
-                    </span>
-                    <span style={{ fontSize: '1.6rem' }}>🥇</span>
-                    <span style={{ fontSize: '0.7rem', fontWeight: 800, color: '#7a4000' }}>{fp1.score} pts</span>
-                  </div>
-                </div>
-              )}
-
-              {/* 3rd */}
-              {fp3 ? (
-                <div className="flex flex-col items-center" style={{ flex: '0 0 33%' }}>
-                  <AvatarDisplay emoji={fp3.avatar} size="md" />
-                  <div
-                    style={{
-                      width: '100%', height: 65,
-                      background: 'linear-gradient(170deg,#E8A87C,#CD7F32)',
-                      borderRadius: '10px 10px 0 0',
-                      display: 'flex', flexDirection: 'column',
-                      alignItems: 'center', justifyContent: 'space-between',
-                      padding: '6px 4px',
-                      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.4)',
-                    }}
-                  >
-                    <span style={{ fontSize: '0.7rem', fontWeight: 800, color: '#4a2000', fontFamily: 'var(--ap-font-display)', lineHeight: 1.1, textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>
-                      {fp3.name}
-                    </span>
-                    <span style={{ fontSize: '0.95rem' }}>🥉</span>
-                    <span style={{ fontSize: '0.6rem', fontWeight: 800, color: '#5a2800' }}>{fp3.score} pts</span>
-                  </div>
-                </div>
-              ) : <div style={{ flex: '0 0 33%' }} />}
-            </div>
-
-            {/* Floor */}
-            <div
-              style={{
-                height: 5,
-                background: 'rgba(255,255,255,0.18)',
-                borderRadius: '0 0 8px 8px',
-                marginBottom: 20,
-              }}
-            />
-          </>
-        )}
-
-        {/* Rest of ranking (4+) */}
-        {allPlayers.length > 3 && (
-          <div className="space-y-2 mb-6">
-            {allPlayers.slice(3).map((p, idx) => {
-              const isMe = p.id === playerId;
-              return (
-                <div
-                  key={p.id}
-                  className="flex items-center gap-3 rounded-xl px-3 py-2"
-                  style={{
-                    background: isMe ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.1)',
-                    border: isMe ? '2px solid rgba(255,255,255,0.5)' : '1px solid rgba(255,255,255,0.15)',
-                  }}
-                >
-                  <span
-                    className="font-bold text-white/70 text-sm w-5 text-center"
-                    style={{ fontFamily: 'var(--ap-font-display)' }}
-                  >
-                    {idx + 4}
-                  </span>
-                  <AvatarDisplay emoji={p.avatar} size="sm" />
-                  <span className="flex-1 font-bold text-white truncate text-sm text-left">{p.name}</span>
-                  <span className="font-bold text-white/80 text-sm">{p.score} pts</span>
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        {endChatEnabled && <style>{`.reaction-comment-input::placeholder { color: rgba(255,255,255,0.85); }`}</style>}
-        {/* Reactions and end-of-game chat */}
-        {(liveReactionsEnabled || endChatEnabled) && <div
-          className="mb-6"
-          style={{
-            background: 'rgba(255,255,255,0.12)',
-            border: '2px solid rgba(255,255,255,0.2)',
-            borderRadius: 'var(--ap-r-xl)',
-            padding: '16px',
-          }}
-        >
-          <p style={{ color: 'rgba(255,255,255,0.75)', fontWeight: 700, fontSize: '13px', marginBottom: '10px', fontFamily: 'var(--ap-font-body)' }}>
-            {liveReactionsEnabled ? 'Réagis au quiz !' : 'Partage ton commentaire'}
-          </p>
-          {liveReactionsEnabled && <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: endChatEnabled ? '12px' : 0, flexWrap: 'wrap' }}>
-            {REACTION_EMOJIS.map((e) => (
-              <button
-                key={e}
-                onClick={() => sendReaction(e, reactionComment || undefined)}
-                style={{
-                  fontSize: '1.8rem',
-                  background: lastSentEmoji === e ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.1)',
-                  border: '2px solid rgba(255,255,255,0.2)',
-                  borderRadius: '12px',
-                  padding: '6px 10px',
-                  cursor: 'pointer',
-                  transition: 'transform 0.1s, background 0.1s',
-                  transform: lastSentEmoji === e ? 'scale(1.25)' : 'scale(1)',
-                }}
-              >
-                {e}
-              </button>
-            ))}
-          </div>}
-          {endChatEnabled && <div style={{ display: 'flex', gap: '8px' }}>
-            <input
-              value={reactionComment}
-              onChange={(e) => setReactionComment(e.target.value.slice(0, 100))}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && reactionComment.trim()) {
-                  sendReaction('💬', reactionComment);
-                }
-              }}
-              className="reaction-comment-input"
-              placeholder="Laisse un commentaire… (100 car. max)"
-              style={{
-                flex: 1,
-                background: 'rgba(255,255,255,0.15)',
-                border: '2px solid rgba(255,255,255,0.3)',
-                borderRadius: '999px',
-                padding: '8px 14px',
-                color: '#fff',
-                fontSize: '13px',
-                fontFamily: 'var(--ap-font-body)',
-                outline: 'none',
-              }}
-            />
-            <button
-              onClick={() => { if (reactionComment.trim()) sendReaction('💬', reactionComment); }}
-              disabled={!reactionComment.trim()}
-              style={{
-                background: reactionComment.trim() ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.08)',
-                border: '2px solid rgba(255,255,255,0.2)',
-                borderRadius: '999px',
-                padding: '8px 16px',
-                color: '#fff',
-                fontWeight: 700,
-                fontSize: '13px',
-                cursor: reactionComment.trim() ? 'pointer' : 'not-allowed',
-                fontFamily: 'var(--ap-font-body)',
-              }}
-            >
-              Envoyer
-            </button>
-          </div>}
-        </div>}
-
-        <button
-          className="ap-btn ap-btn--lg ap-btn--pill"
-          style={{ background: 'var(--ap-ink)', boxShadow: '0 5px 0 rgba(0,0,0,0.3)' }}
-          onClick={() => (window.location.href = '/')}
-        >
-          Retour à l&apos;accueil
-        </button>
+    <main className="live-final-shell">
+      <div className="live-final-topbar">
+        <span><MaterialSymbol name="check_circle" size={18} filled /> Session terminée</span>
+        <AudioControls audio={audio} />
       </div>
-    </div>
+
+      <header className="live-final-header">
+        <span className="live-final-header__icon"><MaterialSymbol name="celebration" size={34} filled /></span>
+        <div>
+          <span className="live-final-kicker">Résultats</span>
+          <h1>Quiz terminé.</h1>
+          <p>Ton score est enregistré. Voici ta place dans la partie.</p>
+        </div>
+      </header>
+
+      <div className="live-final-layout">
+        <section className="live-final-score" aria-labelledby="final-score-title">
+          <header>
+            <div className="live-final-player">
+              <AvatarDisplay emoji={playerAvatar} size="sm" />
+              <div><small>Ton résultat</small><strong id="final-score-title">{playerName}</strong></div>
+            </div>
+            <span className="live-final-rank">#{playerRank} sur {participantCount}</span>
+          </header>
+
+          <div className="live-final-score-value">
+            <strong>{playerScore.toLocaleString('fr-FR')}</strong>
+            <span>points</span>
+          </div>
+
+          {displayedRanking.length >= 2 ? (
+            <div className="live-final-ranking" aria-label="Classement final">
+              {displayedRanking.map((player, index) => (
+                <div key={player.id} data-current={player.id === playerId}>
+                  <span className="live-final-ranking__position">{index + 1}</span>
+                  <AvatarDisplay emoji={player.avatar} size="xs" />
+                  <strong>{player.name}{player.id === playerId ? ' · toi' : ''}</strong>
+                  <span>{player.score.toLocaleString('fr-FR')} pts</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="live-final-solo-note">
+              <MaterialSymbol name="verified" size={20} filled />
+              Partie terminée et score sauvegardé
+            </div>
+          )}
+        </section>
+
+        {(liveReactionsEnabled || endChatEnabled) && (
+          <aside className="live-final-social" aria-labelledby="final-reaction-title">
+            <header>
+              <span className="live-final-social__icon"><MaterialSymbol name="add_reaction" size={22} /></span>
+              <div>
+                <span className="live-final-kicker">Avant de partir</span>
+                <h2 id="final-reaction-title">{liveReactionsEnabled ? 'Une dernière réaction ?' : 'Un dernier mot ?'}</h2>
+              </div>
+            </header>
+
+            {liveReactionsEnabled && (
+              <div className="live-final-reactions">
+                {REACTION_EMOJIS.map((emoji) => (
+                  <button
+                    key={emoji}
+                    type="button"
+                    onClick={() => sendReaction(emoji, reactionComment || undefined)}
+                    data-sent={lastSentEmoji === emoji}
+                    aria-label={`Envoyer la réaction ${emoji}`}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {endChatEnabled && (
+              <div className="live-final-comment">
+                <label htmlFor="final-comment">Commentaire</label>
+                <div>
+                  <input
+                    id="final-comment"
+                    value={reactionComment}
+                    onChange={(event) => setReactionComment(event.target.value.slice(0, 100))}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' && reactionComment.trim()) sendReaction('💬', reactionComment);
+                    }}
+                    placeholder="Écris un message…"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => { if (reactionComment.trim()) sendReaction('💬', reactionComment); }}
+                    disabled={!reactionComment.trim()}
+                    aria-label="Envoyer le commentaire"
+                  >
+                    <MaterialSymbol name="send" size={20} filled />
+                  </button>
+                </div>
+                <small>{reactionComment.length}/100</small>
+              </div>
+            )}
+          </aside>
+        )}
+      </div>
+
+      <button className="live-final-home" onClick={() => (window.location.href = '/') }>
+        <MaterialSymbol name="home" size={20} filled /> Retour à l’accueil
+      </button>
+    </main>
   );
 };

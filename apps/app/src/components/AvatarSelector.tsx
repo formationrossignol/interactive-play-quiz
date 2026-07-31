@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
-import { ArrowRight, Check, Gamepad2, ShieldCheck } from "lucide-react";
 import { BrandWordmark } from "ui/BrandWordmark";
+import { MaterialSymbol } from "@/components/MaterialSymbol";
 import { ENHANCED_AVATARS, AvatarDisplay } from "./BetterAvatars";
 import { ensureSessionState, upsertPlayerInSession } from "@/lib/sessionState";
 
@@ -57,7 +57,7 @@ export const AvatarSelector = ({ onComplete, gameCode, quizTitle }: AvatarSelect
       <section className="live-join-card" aria-labelledby="join-heading">
         <aside className="live-join-preview">
           <div>
-            <span className="live-eyebrow"><Gamepad2 aria-hidden="true" /> Session en direct</span>
+            <span className="live-eyebrow"><MaterialSymbol name="stadia_controller" size={18} /> Session en direct</span>
             <h1 id="join-heading">Entre dans la partie.</h1>
             <p>{quizTitle || "Choisis ton personnage et le nom qui apparaîtra à l’écran."}</p>
           </div>
@@ -73,7 +73,7 @@ export const AvatarSelector = ({ onComplete, gameCode, quizTitle }: AvatarSelect
           </div>
 
           <div className="live-join-trust">
-            <ShieldCheck aria-hidden="true" />
+            <MaterialSymbol name="verified_user" size={17} />
             <span>Aucun compte requis</span>
           </div>
         </aside>
@@ -107,7 +107,7 @@ export const AvatarSelector = ({ onComplete, gameCode, quizTitle }: AvatarSelect
                   title={avatar.name}
                 >
                   <AvatarDisplay emoji={avatar.emoji} size="sm" showGlow={false} />
-                  {isSelected && <span className="live-avatar-option__check"><Check aria-hidden="true" /></span>}
+                  {isSelected && <span className="live-avatar-option__check"><MaterialSymbol name="check" size={12} /></span>}
                 </button>
               );
             })}
@@ -127,7 +127,7 @@ export const AvatarSelector = ({ onComplete, gameCode, quizTitle }: AvatarSelect
           </label>
 
           <button type="submit" disabled={!playerName.trim()} className="live-join-submit">
-            Rejoindre la partie <ArrowRight aria-hidden="true" />
+            Rejoindre la partie <MaterialSymbol name="arrow_forward" size={19} />
           </button>
         </form>
       </section>
