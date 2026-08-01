@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { ListSkeleton } from "@/components/ui/skeletons/ListSkeleton";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/ui/page-header";
@@ -9,6 +10,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { showError } from "@/lib/errorTaxonomy";
 import {
   createOrgInvitation,
+  fetchOrgSettings,
   grantOrgRole,
   listOrgInvitations,
   listOrgMembers,
@@ -17,21 +19,13 @@ import {
   revokeOrgInvitation,
   revokeOrgRole,
   sendOrgInvitationEmail,
+  updateGuestAccess,
   type OrgInvitation,
   type OrgMember,
   type OrgMembership,
   type OrgRole,
 } from "@/lib/org/orgRepo";
-
-const roleOptions: { value: OrgRole; label: string }[] = [
-  { value: "learner", label: "Apprenant" },
-  { value: "trainer", label: "Formateur" },
-  { value: "pedago", label: "Responsable pédagogique" },
-  { value: "registrar", label: "Gestionnaire de scolarité" },
-  { value: "admin", label: "Administrateur" },
-];
-
-const roleLabel = (role: OrgRole): string => roleOptions.find((r) => r.value === role)?.label ?? role;
+import { roleOptions, roleLabel } from "@/lib/org/roleLabels";
 
 /** Postgrest errors are plain {code,message,...} objects, not `instanceof Error`. */
 function errorMessage(err: unknown): string {
@@ -173,9 +167,14 @@ export default function OrgInvitations() {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<OrgRole>("learner");
   const [sending, setSending] = useState(false);
+  const [guestAccess, setGuestAccess] = useState(false);
+  const [guestAccessSaving, setGuestAccessSaving] = useState(false);
 
   const managedOrgId = memberships.find((m) => m.role === "admin" || m.role === "pedago")?.org_id ?? null;
   const isOrgAdmin = memberships.some((m) => m.org_id === managedOrgId && m.role === "admin");
+  const canManageGuestAccess = memberships.some(
+    (m) => m.org_id === managedOrgId && (m.role === "admin" || m.role === "pedago"),
+  );
 
   useEffect(() => {
     myOrgMemberships()
@@ -187,6 +186,11 @@ export default function OrgInvitations() {
   useEffect(() => {
     if (!managedOrgId) return;
     listOrgInvitations(managedOrgId).then(setInvitations).catch(showError);
+  }, [managedOrgId]);
+
+  useEffect(() => {
+    if (!managedOrgId) return;
+    fetchOrgSettings(managedOrgId).then((s) => setGuestAccess(s.guest_access_enabled)).catch(showError);
   }, [managedOrgId]);
 
   const handleInvite = async (e: React.FormEvent) => {
@@ -218,6 +222,22 @@ export default function OrgInvitations() {
     }
   };
 
+  const handleGuestAccessChange = async (enabled: boolean) => {
+    if (!managedOrgId) return;
+    const previous = guestAccess;
+    setGuestAccess(enabled);
+    setGuestAccessSaving(true);
+    try {
+      await updateGuestAccess(managedOrgId, enabled);
+      toast.success(enabled ? "Accès invité activé" : "Accès invité désactivé");
+    } catch (err) {
+      setGuestAccess(previous);
+      showError(err);
+    } finally {
+      setGuestAccessSaving(false);
+    }
+  };
+
   if (loading) {
     return (
       <AppLayout subtitle="Organisation">
@@ -244,6 +264,14 @@ export default function OrgInvitations() {
       <PageHeader
         title="Organisation"
         description="Invitez votre équipe et attribuez à chacun les permissions adaptées."
+        action={
+          canManageGuestAccess ? (
+            <label className="flex items-center gap-2 text-sm">
+              <span>Accès invité (sans compte)</span>
+              <Switch checked={guestAccess} disabled={guestAccessSaving} onCheckedChange={handleGuestAccessChange} />
+            </label>
+          ) : undefined
+        }
       />
 
       <MemberRoster orgId={managedOrgId} isAdmin={isOrgAdmin} />
