@@ -6,7 +6,7 @@ import { MultiStepProgress } from "@/components/MultiStepProgress";
 import { PLAYER_ANSWER_SHAPES } from "@/lib/answerVisuals";
 import { getPollOptions } from "@/lib/pollResults";
 import { Trophy, LogOut, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Play, X, RotateCcw } from "lucide-react";
-import { genGameCode, type SavedQuiz } from "@/lib/quizStorage";
+import { genGameCode, setQuizPlayCache, type SavedQuiz } from "@/lib/quizStorage";
 import type { EditableQuestion } from "@/lib/questionTypes";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -408,7 +408,7 @@ const PreviewPage = () => {
     // comme pour un quiz sauvegardé.
     if (quizId?.startsWith("preview-")) {
       const gameCode = genGameCode();
-      localStorage.setItem(`quiz-${gameCode}`, JSON.stringify({ ...quiz, id: gameCode }));
+      setQuizPlayCache(`quiz-${gameCode}`, { ...quiz, id: gameCode });
       navigate(`/quiz/${gameCode}`);
       return;
     }

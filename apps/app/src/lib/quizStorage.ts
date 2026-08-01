@@ -39,6 +39,32 @@ export interface SavedQuiz {
 
 export const QUIZ_STORAGE_KEY = 'saved_quizzes';
 
+/** Writes a one-shot `quiz-<code>`/`poll-<code>` play cache entry. These keys
+ *  accumulate forever (one per quiz ever launched on this device) and are
+ *  never cleaned up elsewhere, so a long-lived browser profile eventually
+ *  blows the localStorage quota on an unrelated write. On QuotaExceededError,
+ *  drop every other stale `quiz-`/`poll-` entry and retry once. */
+export function setQuizPlayCache(key: string, value: unknown): void {
+  const payload = JSON.stringify(value);
+  try {
+    localStorage.setItem(key, payload);
+  } catch {
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const k = localStorage.key(i);
+      if (k && k !== key && (k.startsWith('quiz-') || k.startsWith('poll-'))) {
+        localStorage.removeItem(k);
+      }
+    }
+    try {
+      localStorage.setItem(key, payload);
+    } catch {
+      // Still full after purge (huge single quiz, or quota consumed by
+      // unrelated keys) — swallow so play navigation isn't blocked; the
+      // player screen re-fetches from Supabase when the cache is empty.
+    }
+  }
+}
+
 /** 6-char game code, same non-ambiguous alphabet as examStorage.ts's
  *  genJoinCode (excludes I/O/0/1) — replaces the old 6-digit-numeric-only
  *  format (900,000 combinations, enumerable) with ~1.07 billion. Existing
