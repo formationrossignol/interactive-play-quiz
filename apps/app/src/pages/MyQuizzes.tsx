@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { ContentExplorer } from "@/components/content/ContentExplorer";
 import { GenericCard, GenericRow, type GenericItemConfig } from "@/components/content/GenericItem";
 import type { ContentDisplay } from "@/lib/content/contentView";
-import type { SavedQuiz } from "@/lib/quizStorage";
+import { setQuizPlayCache, type SavedQuiz } from "@/lib/quizStorage";
 import { t } from "@/lib/i18n";
 
 const idOf = (d: ContentDisplay) => String((d.data.id as string | undefined) ?? "");
@@ -21,7 +21,7 @@ const config: GenericItemConfig = {
     run: (d, navigate) => {
       const id = idOf(d);
       if (!id) { toast.error("Quiz introuvable"); return; }
-      localStorage.setItem(`quiz-${id}`, JSON.stringify(d.data as unknown as SavedQuiz));
+      setQuizPlayCache(`quiz-${id}`, d.data as unknown as SavedQuiz);
       navigate(`/quiz/${id}`);
     },
   },
