@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Clock, Send } from "lucide-react";
 import { toast } from "sonner";
 import styles from "./ContactForm.module.css";
 
@@ -26,31 +25,21 @@ function saveFlood(state: FloodState) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  fontFamily: "var(--ap-font-body)",
-  fontWeight: 700,
-  fontSize: "14px",
-  color: "var(--ap-ink)",
-  background: "var(--ap-card)",
-  border: "var(--ap-border-w) solid var(--ap-line)",
-  borderRadius: "var(--ap-r-sm)",
-  padding: "11px 14px",
-  outline: "none",
-  boxSizing: "border-box",
-  transition: "border-color .12s, box-shadow .12s",
-};
+function ClockGlyph({ large = false }: { large?: boolean }) {
+  return (
+    <svg className={large ? styles.statusGlyph : styles.buttonGlyph} viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3.2 2" />
+    </svg>
+  );
+}
 
-const labelStyle: React.CSSProperties = {
-  display: "block",
-  fontWeight: 800,
-  fontSize: "11px",
-  letterSpacing: "0.5px",
-  textTransform: "uppercase",
-  color: "var(--ap-muted)",
-  marginBottom: "7px",
-  fontFamily: "var(--ap-font-body)",
-};
+function SendGlyph() {
+  return (
+    <svg className={styles.buttonGlyph} viewBox="0 0 24 24" aria-hidden="true">
+      <path d="m4 5 16 7-16 7 2.5-7L4 5Z" /><path d="M6.5 12H20" />
+    </svg>
+  );
+}
 
 export function ContactForm() {
   const [formData, setFormData] = useState({
@@ -113,15 +102,6 @@ export function ContactForm() {
     }, 1000);
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [cooldown]);
-
-  const onFocus = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    e.currentTarget.style.borderColor = "var(--ap-brand)";
-    e.currentTarget.style.boxShadow = "0 0 0 4px var(--ap-brand-soft)";
-  };
-  const onBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    e.currentTarget.style.borderColor = "var(--ap-line)";
-    e.currentTarget.style.boxShadow = "none";
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -188,9 +168,9 @@ export function ContactForm() {
   if (hourlyBlocked) {
     return (
       <div className={styles.blocked}>
-        <Clock style={{ width: 40, height: 40, color: "var(--ap-muted)" }} />
-        <p className="ap-muted" style={{ fontWeight: 700 }}>Limite horaire atteinte ({MAX_PER_HOUR} messages/heure).</p>
-        <p className="ap-muted" style={{ fontSize: "13px" }}>Réessayez dans une heure ou écrivez-nous directement par email.</p>
+        <ClockGlyph large />
+        <p>Limite horaire atteinte ({MAX_PER_HOUR} messages/heure).</p>
+        <small>Réessayez dans une heure ou écrivez-nous directement par email.</small>
       </div>
     );
   }
@@ -204,66 +184,61 @@ export function ContactForm() {
 
       <div className={styles.identityGrid}>
         <div>
-          <label htmlFor="contact-name" style={labelStyle}>Nom</label>
+          <label htmlFor="contact-name" className={styles.label}>Nom</label>
           <input
             id="contact-name"
-            style={inputStyle}
+            className={styles.control}
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             placeholder="Votre nom"
             required
-            onFocus={onFocus} onBlur={onBlur}
           />
         </div>
         <div>
-          <label htmlFor="contact-email" style={labelStyle}>Email</label>
+          <label htmlFor="contact-email" className={styles.label}>Email</label>
           <input
             id="contact-email"
             type="email"
-            style={inputStyle}
+            className={styles.control}
             value={formData.email}
             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
             placeholder="votre@email.com"
             required
-            onFocus={onFocus} onBlur={onBlur}
           />
         </div>
       </div>
 
       <div className={styles.identityGrid}>
         <div>
-          <label htmlFor="contact-organization" style={labelStyle}>Organisation</label>
+          <label htmlFor="contact-organization" className={styles.label}>Organisation</label>
           <input
             id="contact-organization"
-            style={inputStyle}
+            className={styles.control}
             value={formData.organization}
             onChange={(e) => setFormData({ ...formData, organization: e.target.value })}
             placeholder="École, entreprise, organisme…"
-            onFocus={onFocus} onBlur={onBlur}
           />
         </div>
         <div>
-          <label htmlFor="contact-role" style={labelStyle}>Votre rôle</label>
+          <label htmlFor="contact-role" className={styles.label}>Votre rôle</label>
           <input
             id="contact-role"
-            style={inputStyle}
+            className={styles.control}
             value={formData.role}
             onChange={(e) => setFormData({ ...formData, role: e.target.value })}
             placeholder="Formation, RH, enseignement…"
-            onFocus={onFocus} onBlur={onBlur}
           />
         </div>
       </div>
 
       <div className={styles.identityGrid}>
         <div>
-          <label htmlFor="contact-type" style={labelStyle}>Votre projet</label>
+          <label htmlFor="contact-type" className={styles.label}>Votre projet</label>
           <select
             id="contact-type"
-            style={inputStyle}
+            className={styles.control}
             value={formData.requestType}
             onChange={(e) => setFormData({ ...formData, requestType: e.target.value })}
-            onFocus={onFocus} onBlur={onBlur}
           >
             <option value="demo">Réserver une démonstration</option>
             <option value="enterprise">Déploiement organisation</option>
@@ -274,13 +249,12 @@ export function ContactForm() {
           </select>
         </div>
         <div>
-          <label htmlFor="contact-team-size" style={labelStyle}>Audience envisagée</label>
+          <label htmlFor="contact-team-size" className={styles.label}>Audience envisagée</label>
           <select
             id="contact-team-size"
-            style={inputStyle}
+            className={styles.control}
             value={formData.teamSize}
             onChange={(e) => setFormData({ ...formData, teamSize: e.target.value })}
-            onFocus={onFocus} onBlur={onBlur}
           >
             <option value="">À préciser</option>
             <option value="1-20">1 à 20 personnes</option>
@@ -292,31 +266,30 @@ export function ContactForm() {
       </div>
 
       <div>
-        <label htmlFor="contact-message" style={labelStyle}>Message</label>
+        <label htmlFor="contact-message" className={styles.label}>Message</label>
         <textarea
           id="contact-message"
-          style={{ ...inputStyle, resize: "vertical", minHeight: "140px", lineHeight: 1.5 }}
+          className={`${styles.control} ${styles.messageControl}`}
           value={formData.message}
           onChange={(e) => setFormData({ ...formData, message: e.target.value })}
           placeholder="Contexte, objectifs, calendrier, contraintes techniques…"
           rows={6}
           required
-          onFocus={onFocus} onBlur={onBlur}
         />
       </div>
 
       <button
         type="submit"
-        className="ap-btn ap-btn--pill"
-        style={{ width: "100%", gap: "8px", opacity: isBlocked ? 0.5 : 1, cursor: isBlocked ? "not-allowed" : "pointer" }}
+        className={styles.submitButton}
         disabled={isBlocked}
+        aria-live="polite"
       >
         {submitting ? (
           <><span className={styles.spinner} aria-hidden="true" />Transmission…</>
         ) : cooldown > 0 ? (
-          <><Clock className="w-4 h-4" />Patienter {cooldown}s</>
+          <><ClockGlyph />Patienter {cooldown}s</>
         ) : (
-          <><Send className="w-4 h-4" />Envoyer le message</>
+          <><SendGlyph />Envoyer le message</>
         )}
       </button>
     </form>

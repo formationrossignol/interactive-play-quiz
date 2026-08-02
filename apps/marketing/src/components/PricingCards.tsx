@@ -1,6 +1,5 @@
 "use client";
 
-import { Building2, Check, Crown, Rocket } from "lucide-react";
 import { toast } from "sonner";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import { PlanComparator } from "@/components/PlanComparator";
@@ -31,7 +30,8 @@ const PLANS = [
     description: "Pour essayer Brivia et animer un petit groupe.",
     price: "Gratuit",
     cta: "Créer gratuitement",
-    icon: Rocket,
+    edition: "Pour commencer",
+    symbol: "spark",
     features: [
       "5 quiz, sondages, flashcards, présentations et examens",
       "1 cours",
@@ -48,7 +48,8 @@ const PLANS = [
     description: "Pour produire sans plafond et analyser chaque session.",
     price: "19 €",
     cta: "Passer en Pro",
-    icon: Crown,
+    edition: "Le choix des équipes",
+    symbol: "signal",
     features: [
       "Tous les formats en illimité",
       "200 participants par session",
@@ -65,7 +66,8 @@ const PLANS = [
     description: "Pour les déploiements qui dépassent le cadre d’une équipe.",
     price: "Sur devis",
     cta: "Nous contacter",
-    icon: Building2,
+    edition: "Pour déployer",
+    symbol: "structure",
     features: [
       "Contenus illimités",
       "Audience sans plafond produit",
@@ -80,17 +82,45 @@ const PLANS = [
   },
 ];
 
+function PlanGlyph({ kind }: { kind: string }) {
+  return (
+    <svg className={styles.planGlyph} viewBox="0 0 32 32" aria-hidden="true">
+      {kind === "spark" && <path d="M16 3.5c.4 7.6 4.9 12.1 12.5 12.5C20.9 16.4 16.4 20.9 16 28.5 15.6 20.9 11.1 16.4 3.5 16 11.1 15.6 15.6 11.1 16 3.5Z" />}
+      {kind === "signal" && <><circle cx="16" cy="16" r="3.2" /><path d="M9.7 22.3a8.9 8.9 0 0 1 0-12.6M22.3 9.7a8.9 8.9 0 0 1 0 12.6M5.4 26.6a15 15 0 0 1 0-21.2M26.6 5.4a15 15 0 0 1 0 21.2" /></>}
+      {kind === "structure" && <><path d="M5 27V11l11-6 11 6v16M10 27V15h12v12M16 15v12" /><path d="M3 27h26" /></>}
+    </svg>
+  );
+}
+
+function CheckGlyph() {
+  return (
+    <svg className={styles.checkGlyph} viewBox="0 0 18 18" aria-hidden="true">
+      <path d="m4.2 9.3 3 3 6.6-6.6" />
+    </svg>
+  );
+}
+
+function ArrowGlyph() {
+  return (
+    <svg viewBox="0 0 18 18" aria-hidden="true">
+      <path d="M4 9h9M9.5 5.5 13 9l-3.5 3.5" />
+    </svg>
+  );
+}
+
 export function PricingCards() {
   return (
     <div className={pageStyles.container}>
       <div className={styles.plans}>
         {PLANS.map((plan) => {
-          const Icon = plan.icon;
           return (
             <article className={styles.plan} key={plan.name}>
               <div className={styles.planHeader}>
+                <div className={styles.planEyebrow}>
+                  <span>{plan.edition}</span>
+                  <PlanGlyph kind={plan.symbol} />
+                </div>
                 <h2 className={styles.planName}>
-                  <Icon size={22} strokeWidth={1.7} aria-hidden="true" />
                   {plan.name}
                 </h2>
                 <p className={styles.planDescription}>{plan.description}</p>
@@ -100,13 +130,14 @@ export function PricingCards() {
               <ul className={styles.features}>
                 {plan.features.map((feature) => (
                   <li key={feature}>
-                    <Check size={17} strokeWidth={2.2} aria-hidden="true" />
+                    <CheckGlyph />
                     <span>{feature}</span>
                   </li>
                 ))}
               </ul>
               <button type="button" className={styles.button} onClick={plan.onClick}>
-                {plan.cta}
+                <span>{plan.cta}</span>
+                <span className={styles.buttonArrow}><ArrowGlyph /></span>
               </button>
             </article>
           );

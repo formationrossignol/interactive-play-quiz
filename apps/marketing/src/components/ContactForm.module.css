@@ -1,24 +1,6 @@
 .form {
   display: grid;
-  gap: 1.25rem;
-}
-
-.form input,
-.form select,
-.form textarea {
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / .7);
-}
-
-.form :global(label) {
-  color: var(--mp-ink);
-  font-size: .8rem;
-  font-weight: 800;
-}
-
-.form :global(input),
-.form :global(textarea),
-.form :global(select) {
-  transition: border-color .35s var(--ap-ease), box-shadow .35s var(--ap-ease), background-color .35s var(--ap-ease);
+  gap: 1.2rem;
 }
 
 .hidden {
@@ -34,14 +16,112 @@
   gap: 1rem;
 }
 
+.label {
+  display: block;
+  margin: 0 0 .5rem;
+  color: var(--mp-muted);
+  font-size: .65rem;
+  font-weight: 830;
+  letter-spacing: .105em;
+  text-transform: uppercase;
+}
+
+.control {
+  width: 100%;
+  min-height: 3.35rem;
+  box-sizing: border-box;
+  border: 1px solid color-mix(in srgb, var(--mp-line) 88%, transparent);
+  border-radius: .9rem;
+  outline: none;
+  padding: .8rem .95rem;
+  background: color-mix(in srgb, var(--mp-surface) 75%, white 25%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .72);
+  color: var(--mp-ink);
+  font-family: var(--ap-font-body);
+  font-size: .87rem;
+  font-weight: 650;
+  transition: border-color 250ms cubic-bezier(.16, 1, .3, 1), box-shadow 250ms cubic-bezier(.16, 1, .3, 1), background-color 250ms;
+}
+
+.control::placeholder { color: color-mix(in srgb, var(--mp-muted) 68%, transparent); }
+
+.control:hover { border-color: color-mix(in srgb, var(--mp-accent) 40%, var(--mp-line)); }
+
+.control:focus-visible {
+  border-color: var(--mp-accent);
+  background: var(--mp-surface);
+  box-shadow: 0 0 0 .3rem color-mix(in srgb, var(--mp-accent-soft) 82%, transparent), inset 0 1px 0 rgb(255 255 255 / .72);
+}
+
+select.control {
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--mp-muted) 50%),
+    linear-gradient(135deg, var(--mp-muted) 50%, transparent 50%);
+  background-position: calc(100% - 1.15rem) calc(50% - 2px), calc(100% - .85rem) calc(50% - 2px);
+  background-repeat: no-repeat;
+  background-size: .32rem .32rem, .32rem .32rem;
+  padding-right: 2.5rem;
+}
+
+.messageControl {
+  min-height: 9.5rem;
+  resize: vertical;
+  line-height: 1.55;
+}
+
+.submitButton {
+  width: 100%;
+  min-height: 3.7rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .65rem;
+  border: 1px solid var(--mp-accent-deep);
+  border-radius: 999px;
+  padding: .8rem 1.2rem;
+  background: var(--mp-accent-deep);
+  box-shadow: 0 .9rem 2rem color-mix(in srgb, var(--mp-accent-deep) 22%, transparent);
+  color: var(--mp-on-accent);
+  font: inherit;
+  font-size: .88rem;
+  font-weight: 810;
+  cursor: pointer;
+  transition: transform 300ms cubic-bezier(.16, 1, .3, 1), box-shadow 300ms, opacity 300ms;
+}
+
+.submitButton:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 1.15rem 2.7rem color-mix(in srgb, var(--mp-accent-deep) 28%, transparent);
+}
+
+.submitButton:active:not(:disabled) { transform: translateY(1px); }
+.submitButton:disabled { opacity: .5; cursor: not-allowed; }
+
+.buttonGlyph,
+.statusGlyph {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.65;
+}
+
+.buttonGlyph { width: 1.1rem; height: 1.1rem; }
+.statusGlyph { width: 2.6rem; height: 2.6rem; color: var(--mp-muted); }
+
 .blocked {
+  min-height: 22rem;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: .75rem;
-  padding: 2rem 0;
+  justify-content: center;
+  gap: .7rem;
   text-align: center;
 }
+
+.blocked p { margin: 0; color: var(--mp-ink); font-weight: 740; }
+.blocked small { max-width: 28rem; color: var(--mp-muted); font-size: .78rem; line-height: 1.5; }
 
 .spinner {
   width: 1rem;
@@ -52,16 +132,18 @@
   animation: contact-spin .75s cubic-bezier(.32,.72,0,1) infinite;
 }
 
-@keyframes contact-spin {
-  to { transform: rotate(1turn); }
+@keyframes contact-spin { to { transform: rotate(1turn); } }
+
+@media (prefers-color-scheme: dark) {
+  .control { background: color-mix(in srgb, var(--mp-surface) 88%, white 12%); box-shadow: inset 0 1px 0 rgb(255 255 255 / .08); }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .spinner { animation: none; }
+  .control,
+  .submitButton { transition: none; }
 }
 
 @media (max-width: 620px) {
-  .identityGrid {
-    grid-template-columns: 1fr;
-  }
+  .identityGrid { grid-template-columns: 1fr; }
 }
