@@ -3,7 +3,11 @@
   border: 1px solid var(--mp-line);
   border-radius: 1.5rem;
   background: var(--mp-surface);
-  box-shadow: 0 1.8rem 4.5rem color-mix(in srgb, var(--mp-accent-deep) 12%, transparent);
+  box-shadow:
+    0 0 0 .55rem color-mix(in srgb, var(--mp-surface-strong) 72%, transparent),
+    0 0 0 calc(.55rem + 1px) color-mix(in srgb, var(--mp-line) 70%, transparent),
+    0 2.8rem 6.5rem color-mix(in srgb, var(--mp-accent-deep) 18%, transparent);
+  rotate: .45deg;
 }
 
 .demoHeader,
@@ -13,7 +17,9 @@
   justify-content: space-between;
   gap: 1rem;
   padding: 1rem 1.2rem;
-  background: var(--mp-surface-strong);
+  background:
+    linear-gradient(110deg, color-mix(in srgb, var(--mp-surface) 64%, transparent), transparent 55%),
+    var(--mp-surface-strong);
 }
 
 .demoHeader > div {
@@ -109,7 +115,11 @@
   font-weight: 700;
   text-align: left;
   cursor: pointer;
+  transition: transform .35s var(--ap-ease), background-color .35s var(--ap-ease), border-color .35s var(--ap-ease), box-shadow .35s var(--ap-ease);
 }
+
+.choice:hover,
+.choiceSelected:hover { transform: translateY(-2px); border-color: var(--mp-accent); box-shadow: 0 .75rem 1.8rem color-mix(in srgb, var(--mp-accent-deep) 8%, transparent); }
 
 .choice span,
 .choiceSelected span,
@@ -129,6 +139,7 @@
 .choiceSelected {
   border-color: var(--mp-accent);
   background: var(--mp-accent-soft);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--mp-accent) 22%, transparent);
 }
 
 .choiceSelected span {
@@ -364,6 +375,7 @@
 }
 
 @media (max-width: 620px) {
+  .demo { rotate: none; }
   .choiceGrid,
   .matchingList label,
   .placementGrid label {
@@ -383,3 +395,11 @@
     flex-direction: column;
   }
 }
+
+@media (prefers-reduced-motion: no-preference) {
+  .demo { animation: demo-reveal var(--ap-ease) both; animation-range: entry 8% cover 28%; animation-timeline: view(); }
+}
+
+@keyframes demo-reveal { from { opacity: 0; transform: translateY(1.25rem) scale(.985); } to { opacity: 1; transform: none; } }
+
+@media (prefers-reduced-motion: reduce) { .choice, .choiceSelected { transition: none; } }

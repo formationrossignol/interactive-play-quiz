@@ -189,8 +189,8 @@ export default function FeaturesPage() {
             </div>
             <div className={styles.heroMedia}>
               <Image
-                src="/images/brivia-quiz-authoring.jpg"
-                alt="Un formateur prépare une activité interactive dans Brivia"
+                src="/images/brivia-platform-control.jpg"
+                alt="Un concepteur pédagogique pilote ses contenus depuis un poste de travail"
                 fill
                 priority
                 sizes="(max-width: 900px) 100vw, 46vw"
@@ -259,8 +259,8 @@ export default function FeaturesPage() {
               <section className={styles.questionTypeGroup}>
                 <div className={styles.questionTypeImage}>
                   <Image
-                    src="/images/brivia-results-debrief.jpg"
-                    alt="Deux responsables formation analysent les réponses du groupe"
+                    src="/images/brivia-analytics-review.jpg"
+                    alt="Deux responsables analysent ensemble les données d’une session"
                     fill
                     sizes="(max-width: 900px) 100vw, 34vw"
                   />
@@ -316,8 +316,8 @@ export default function FeaturesPage() {
           <div className={`${styles.container} ${styles.proofGrid}`}>
             <div className={styles.proofMedia}>
               <Image
-                src="/images/brivia-join-qr.jpg"
-                alt="Une participante rejoint une session Brivia en scannant le QR code projeté"
+                src="/images/brivia-live-entry-cinematic.jpg"
+                alt="Une participante rejoint une session depuis son téléphone face à la projection"
                 fill
                 sizes="(max-width: 900px) 100vw, 55vw"
               />

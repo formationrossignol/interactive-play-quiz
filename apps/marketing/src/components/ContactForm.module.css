@@ -3,6 +3,18 @@
   gap: 1.25rem;
 }
 
+.form :global(label) {
+  color: var(--mp-ink);
+  font-size: .8rem;
+  font-weight: 800;
+}
+
+.form :global(input),
+.form :global(textarea),
+.form :global(select) {
+  transition: border-color .35s var(--ap-ease), box-shadow .35s var(--ap-ease), background-color .35s var(--ap-ease);
+}
+
 .hidden {
   position: absolute;
   left: -9999px;

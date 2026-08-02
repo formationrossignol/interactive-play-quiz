@@ -35,8 +35,8 @@ export default async function ReviewsPage() {
             </div>
             <div className={styles.heroMedia}>
               <Image
-                src="/images/brivia-group-energy.jpg"
-                alt="Un groupe réagit ensemble pendant une activité interactive"
+                src="/images/brivia-reaction-celebration.jpg"
+                alt="Trois participants célèbrent spontanément le résultat d’une activité"
                 fill
                 priority
                 sizes="(max-width: 900px) 100vw, 46vw"

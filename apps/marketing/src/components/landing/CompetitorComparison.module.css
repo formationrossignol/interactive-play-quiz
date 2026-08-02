@@ -6,7 +6,9 @@
   overflow-x: auto;
   border: var(--ap-border-w) solid var(--ap-line);
   border-radius: var(--ap-r-xl);
-  background: var(--ap-card);
+  background:
+    linear-gradient(145deg, var(--ap-surface-highlight), transparent 26%),
+    var(--ap-card);
   box-shadow: var(--ap-shadow-card);
   scrollbar-color: var(--ap-brand) var(--ap-paper-2);
   scrollbar-width: thin;
@@ -41,7 +43,7 @@
 
 .table tbody tr:hover th,
 .table tbody tr:hover td {
-  background-color: var(--ap-paper-2);
+  background-color: color-mix(in srgb, var(--ap-brand-soft) 42%, var(--ap-card));
 }
 
 .featureHead,
@@ -84,7 +86,9 @@
 
 .briviaHead {
   position: relative;
-  background: color-mix(in srgb, var(--ap-brand-soft) 62%, var(--ap-card));
+  background:
+    linear-gradient(180deg, color-mix(in srgb, white 26%, transparent), transparent),
+    color-mix(in srgb, var(--ap-brand-soft) 72%, var(--ap-card));
   box-shadow: inset 1px 0 0 var(--ap-brand), inset -1px 0 0 var(--ap-brand);
 }
 
@@ -119,7 +123,7 @@
 }
 
 .briviaCell {
-  background: color-mix(in srgb, var(--ap-brand-soft) 42%, var(--ap-card));
+  background: color-mix(in srgb, var(--ap-brand-soft) 62%, var(--ap-card));
   box-shadow: inset 1px 0 0 var(--ap-brand), inset -1px 0 0 var(--ap-brand);
   color: var(--ap-ink);
 }
@@ -216,4 +220,13 @@
   .disclaimer {
     margin-inline: 0;
   }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .scroller { animation: comparison-reveal var(--ap-ease) both; animation-range: entry 10% cover 30%; animation-timeline: view(); }
+}
+
+@keyframes comparison-reveal {
+  from { opacity: 0; transform: translateY(1rem); }
+  to { opacity: 1; transform: none; }
 }

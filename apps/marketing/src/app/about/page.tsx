@@ -46,8 +46,8 @@ export default async function AboutPage() {
           <div className={`${styles.container} ${styles.proofGrid}`}>
             <div className={styles.proofMedia}>
               <Image
-                src="/images/brivia-group-energy.jpg"
-                alt="Un groupe échange autour des résultats d’une activité Brivia"
+                src="/images/brivia-learning-roundtable.jpg"
+                alt="Un groupe échange autour d’une table pendant un atelier pédagogique"
                 fill
                 sizes="(max-width: 900px) 100vw, 55vw"
               />

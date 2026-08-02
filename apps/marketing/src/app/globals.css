@@ -1,19 +1,32 @@
 @import "@fontsource-variable/plus-jakarta-sans";
+@import "@fontsource-variable/sora";
 @import "tailwindcss";
 
 :root {
-  --ap-brand: #4b45bf;
-  --ap-brand-deep: #302b8d;
-  --ap-brand-soft: #e4e4f7;
-  --ap-logo-diamond: #5650c9;
-  --ap-ink: #171827;
-  --ap-muted: #5b5d70;
-  --ap-paper: #f4f5fa;
-  --ap-paper-2: #e9eaf2;
+  --ap-brand: #5047c8;
+  --ap-brand-deep: #292462;
+  --ap-brand-soft: #e7e6f8;
+  --ap-logo-diamond: #5b52d0;
+  --ap-ink: #14151f;
+  --ap-muted: #626576;
+  --ap-paper: #f3f4f8;
+  --ap-paper-2: #e9eaf0;
   --ap-card: #fbfbfd;
-  --ap-line: #d8dae5;
-  --ap-line-2: #b9bccb;
-  --ap-font-display: "Plus Jakarta Sans Variable", "Avenir Next", "Segoe UI", sans-serif;
+  --ap-line: #d9dae3;
+  --ap-line-2: #b9bbc8;
+  --ap-chrome: rgb(251 251 253 / .76);
+  --ap-surface-highlight: rgb(255 255 255 / .72);
+  --ap-shadow-soft: 0 1px 2px rgb(25 24 58 / .05), 0 8px 24px rgb(25 24 58 / .035);
+  --ap-shadow-card: 0 22px 60px rgb(32 29 91 / .09), 0 2px 8px rgb(32 29 91 / .04);
+  --ap-shadow-float: 0 28px 80px rgb(32 29 91 / .16), 0 4px 16px rgb(32 29 91 / .06);
+  --ap-r-sm: .65rem;
+  --ap-r-md: .9rem;
+  --ap-r-lg: 1.2rem;
+  --ap-r-xl: 1.75rem;
+  --ap-r-pill: 999px;
+  --ap-ease: cubic-bezier(.16, 1, .3, 1);
+  --ap-spring: cubic-bezier(.2, .9, .2, 1.15);
+  --ap-font-display: "Sora Variable", "Avenir Next", "Segoe UI", sans-serif;
   --ap-font-body: "Plus Jakarta Sans Variable", "Avenir Next", "Segoe UI", sans-serif;
   color-scheme: light dark;
 }
@@ -22,15 +35,38 @@ html {
   scroll-behavior: smooth;
 }
 
+[id] {
+  scroll-margin-top: 6rem;
+}
+
 body {
-  background: var(--ap-paper);
+  background:
+    radial-gradient(circle at 12% -12%, color-mix(in srgb, var(--ap-brand-soft) 70%, transparent), transparent 34rem),
+    var(--ap-paper);
   color: var(--ap-ink);
   font-family: var(--ap-font-body);
   overflow-x: hidden;
 }
 
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+  opacity: .025;
+  background-image: repeating-radial-gradient(circle at 30% 20%, transparent 0, rgb(20 21 31 / .22) .45px, transparent .8px, transparent 4px);
+  background-size: 7px 7px;
+  mix-blend-mode: multiply;
+}
+
 .marketing-shell {
   min-height: 100dvh;
+}
+
+.marketing-shell main {
+  position: relative;
+  isolation: isolate;
 }
 
 ::selection {
@@ -45,17 +81,27 @@ body {
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --ap-brand: #9d98ea;
-    --ap-brand-deep: #c3c0ff;
+    --ap-brand: #aaa5f1;
+    --ap-brand-deep: #d0cdff;
     --ap-brand-soft: #292844;
-    --ap-logo-diamond: #b8b4fa;
-    --ap-ink: #f1f1f8;
-    --ap-muted: #b2b3c3;
-    --ap-paper: #12131d;
-    --ap-paper-2: #202231;
-    --ap-card: #191b28;
-    --ap-line: #343646;
-    --ap-line-2: #4a4d61;
+    --ap-logo-diamond: #c4c0ff;
+    --ap-ink: #f2f2f8;
+    --ap-muted: #b3b5c5;
+    --ap-paper: #0e0f16;
+    --ap-paper-2: #1b1c26;
+    --ap-card: #151620;
+    --ap-line: #30323f;
+    --ap-line-2: #484b5c;
+    --ap-chrome: rgb(21 22 32 / .78);
+    --ap-surface-highlight: rgb(255 255 255 / .08);
+    --ap-shadow-soft: 0 1px 2px rgb(0 0 0 / .24), 0 10px 28px rgb(0 0 0 / .12);
+    --ap-shadow-card: 0 24px 64px rgb(0 0 0 / .3), 0 2px 8px rgb(0 0 0 / .2);
+    --ap-shadow-float: 0 30px 84px rgb(0 0 0 / .44), 0 4px 16px rgb(0 0 0 / .22);
+  }
+
+  body::after {
+    opacity: .035;
+    mix-blend-mode: screen;
   }
 }
 
@@ -67,17 +113,23 @@ body {
 
 /* Legal / static page prose — rendered from admin-editable HTML body.
    Mirrors apps/app/src/pages/static-pages.css#.static-prose. */
-.static-prose { color: var(--ap-muted); font-size: 15px; line-height: 1.7; }
+.static-prose { color: var(--ap-muted); font-size: 15px; line-height: 1.82; }
 .static-prose h2 {
-  font-family: var(--ap-font-display); font-size: 20px; font-weight: 600;
-  color: var(--ap-ink); margin: 32px 0 12px;
+  font-family: var(--ap-font-display); font-size: clamp(20px, 2.4vw, 27px); font-weight: 650;
+  color: var(--ap-ink); margin: 44px 0 14px; letter-spacing: -.035em;
 }
 .static-prose h2:first-child { margin-top: 0; }
-.static-prose p { margin: 0 0 12px; }
+.static-prose p { margin: 0 0 16px; }
 .static-prose ul { padding-left: 20px; list-style: disc; margin: 0 0 12px; }
 .static-prose li { margin-bottom: 8px; }
 .static-prose strong { color: var(--ap-ink); }
 .static-prose a { color: var(--ap-brand); font-weight: 700; }
+
+@media (prefers-reduced-transparency: reduce) {
+  :root {
+    --ap-chrome: var(--ap-card);
+  }
+}
 
 /* About mission card: injected HTML paragraphs styled like .ap-lead. */
 .about-mission p {
