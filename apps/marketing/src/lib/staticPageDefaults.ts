@@ -1,5 +1,24 @@
 import type { StaticPage } from "./types";
 
+const escapeHtml = (value: string) => value
+  .replaceAll("&", "&amp;")
+  .replaceAll("<", "&lt;")
+  .replaceAll(">", "&gt;")
+  .replaceAll('"', "&quot;")
+  .replaceAll("'", "&#039;");
+
+const legalValues = [
+  process.env.LEGAL_ENTITY_NAME,
+  process.env.LEGAL_ENTITY_FORM,
+  process.env.LEGAL_ENTITY_ADDRESS,
+  process.env.LEGAL_ENTITY_REGISTRATION,
+].map((value) => value?.trim()).filter((value): value is string => Boolean(value));
+
+const legalEntityHtml = legalValues.length === 4
+  ? legalValues.map(escapeHtml).join("<br>")
+  : "<strong>Brivia</strong><br>Service numérique édité en France";
+const publicationDirector = escapeHtml(process.env.LEGAL_PUBLICATION_DIRECTOR?.trim() || "Direction de la publication Brivia");
+
 // Mirrors apps/app/src/lib/pages/staticPageDefaults.ts.
 export type StaticSlug = "mentions-legales" | "confidentialite" | "cgu" | "features" | "about";
 
@@ -41,10 +60,10 @@ export const STATIC_PAGE_DEFAULTS: Record<StaticSlug, StaticPage> = {
     blocks: [],
     body: `
 <h2>Éditeur du site</h2>
-<p>Brivia est édité par :</p>
-<p><strong>[Nom de la société / Nom du porteur de projet]</strong><br>[Forme juridique, ex. : Auto-entrepreneur / SAS]<br>[Adresse complète]<br>[SIRET / RCS]<br>Email : <a href="mailto:contact@quizmaster.app">contact@quizmaster.app</a></p>
+<p>${legalEntityHtml}</p>
+<p>Email : <a href="mailto:contact@brivia.app">contact@brivia.app</a></p>
 <h2>Directeur de la publication</h2>
-<p>[Prénom Nom], [Qualité]</p>
+<p>${publicationDirector}</p>
 <h2>Hébergement</h2>
 <p>Le site est hébergé par :<br><strong>Vercel Inc.</strong><br>340 Pine Street, Suite 701, San Francisco, CA 94104, États-Unis<br><a href="https://vercel.com" target="_blank" rel="noopener noreferrer">vercel.com</a></p>
 <h2>Propriété intellectuelle</h2>
@@ -52,7 +71,7 @@ export const STATIC_PAGE_DEFAULTS: Record<StaticSlug, StaticPage> = {
 <h2>Données personnelles</h2>
 <p>Le traitement de vos données personnelles est décrit dans notre <a href="/confidentialite">Politique de confidentialité</a>.</p>
 <h2>Cookies</h2>
-<p>Brivia dépose des cookies strictement nécessaires au fonctionnement du service (authentification, sécurité). Les cookies de préférence, de mesure d’audience et marketing ne sont déposés qu’avec votre consentement, recueilli via le bandeau affiché à votre première visite. Vous pouvez modifier votre choix à tout moment via le lien « Gérer les cookies » en pied de page. Consultez notre <a href="/confidentialite">Politique de confidentialité</a>.</p>
+<p>Brivia utilise uniquement les stockages strictement nécessaires au fonctionnement du service et à la sécurité. Aucun cookie publicitaire ou de mesure d’audience n’est déposé à ce jour. Consultez notre <a href="/confidentialite">Politique de confidentialité</a>.</p>
 <h2>Droit applicable</h2>
 <p>Les présentes mentions légales sont soumises au droit français. Tout litige relatif à leur interprétation ou à leur exécution relève de la compétence des tribunaux français.</p>`.trim(),
   },
@@ -64,7 +83,7 @@ export const STATIC_PAGE_DEFAULTS: Record<StaticSlug, StaticPage> = {
     blocks: [],
     body: `
 <h2>Responsable du traitement</h2>
-<p><strong>[Nom de la société / Porteur de projet]</strong><br>[Adresse]<br>Email DPO / contact RGPD : <a href="mailto:privacy@quizmaster.app">privacy@quizmaster.app</a></p>
+<p>${legalEntityHtml}<br>Contact RGPD : <a href="mailto:privacy@brivia.app">privacy@brivia.app</a></p>
 <h2>Données collectées et finalités</h2>
 <p>Brivia collecte les données suivantes :</p>
 <ul>
@@ -83,16 +102,15 @@ export const STATIC_PAGE_DEFAULTS: Record<StaticSlug, StaticPage> = {
 <p>Les données de compte sont conservées jusqu’à la suppression du compte et 30 jours après (purge définitive). Les données de quiz publics anonymisés peuvent être conservées plus longtemps à des fins statistiques agrégées.</p>
 <h2>Vos droits</h2>
 <p>Conformément au RGPD, vous disposez des droits suivants : accès, rectification, effacement, portabilité, opposition et limitation du traitement.</p>
-<p>Pour exercer ces droits, contactez-nous à <a href="mailto:privacy@quizmaster.app">privacy@quizmaster.app</a>. Vous pouvez également introduire une réclamation auprès de la <a href="https://www.cnil.fr" target="_blank" rel="noopener noreferrer">CNIL</a>.</p>
+<p>Pour exercer ces droits, contactez-nous à <a href="mailto:privacy@brivia.app">privacy@brivia.app</a>. Vous pouvez également introduire une réclamation auprès de la <a href="https://www.cnil.fr" target="_blank" rel="noopener noreferrer">CNIL</a>.</p>
 <h2>Cookies</h2>
 <p>Brivia distingue quatre catégories de cookies :</p>
 <ul>
 <li><strong>Nécessaires</strong> : session, authentification, sécurité. Indispensables au fonctionnement du site, exemptés de consentement (art. 82 loi Informatique et Libertés) et toujours actifs.</li>
-<li><strong>Préférences</strong> : mémorisation de vos choix d’affichage (langue, thème).</li>
 <li><strong>Analytics</strong> : mesure d’audience. Aucun cookie de ce type n’est déposé à ce jour.</li>
 <li><strong>Marketing</strong> : personnalisation publicitaire. Aucun cookie de ce type n’est déposé à ce jour.</li>
 </ul>
-<p>Les catégories Préférences, Analytics et Marketing ne sont activées qu’avec votre accord explicite, recueilli via le bandeau de consentement à votre première visite. Vous pouvez accepter, refuser ou personnaliser votre choix à tout moment depuis le lien « Gérer les cookies » en pied de page.</p>`.trim(),
+<p>Si de nouvelles catégories non nécessaires sont introduites, elles seront désactivées par défaut et soumises à un consentement explicite avant leur dépôt.</p>`.trim(),
   },
   cgu: {
     slug: "cgu",
@@ -124,11 +142,12 @@ export const STATIC_PAGE_DEFAULTS: Record<StaticSlug, StaticPage> = {
 /** Effective content = default, overlaid by DB row fields that carry real content. */
 export function mergeStaticPage(def: StaticPage, row?: StaticPage | null): StaticPage {
   if (!row) return def;
+  const staleLegalCopy = /\[[^\]]+\]|@quizmaster\.app/i.test(row.body ?? "");
   return {
     slug: def.slug,
     title: row.title?.trim() ? row.title : def.title,
     subtitle: row.subtitle?.trim() ? row.subtitle : def.subtitle,
-    body: row.body?.trim() ? row.body : def.body,
+    body: row.body?.trim() && !staleLegalCopy ? row.body : def.body,
     blocks: row.blocks?.length ? row.blocks : def.blocks,
     status: row.status ?? def.status,
   };

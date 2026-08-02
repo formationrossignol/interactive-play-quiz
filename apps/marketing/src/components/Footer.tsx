@@ -4,15 +4,12 @@ import Link from "next/link";
 import { BrandMonogram } from "ui/BrandMonogram";
 import { BrandWordmark } from "ui/BrandWordmark";
 import { SocialLinksRow } from "@/components/SocialLinksRow";
-import { useMarketingLanguage } from "./MarketingLanguage";
 import styles from "./MarketingChrome.module.css";
 
-const APP_ORIGIN = process.env.NEXT_PUBLIC_APP_ORIGIN ?? "https://interactive-play-quiz.vercel.app";
+const APP_ORIGIN = process.env.NEXT_PUBLIC_APP_ORIGIN ?? "https://app.brivia.app";
 
 export function Footer() {
-  const { language } = useMarketingLanguage();
-  const content = language === "fr"
-    ? {
+  const content = {
         home: "Brivia, accueil",
         statement: "Concevoir, animer et mesurer dans un seul espace.",
         summary: "Des formats interactifs pour faire participer, vérifier les acquis et améliorer chaque session.",
@@ -33,9 +30,13 @@ export function Footer() {
           ["Guides", "/guides"],
           ["Centre d’aide", "/help"],
           ["Avis clients", "/reviews"],
+          ["Intégrations", "/integrations"],
           ["Communauté", `${APP_ORIGIN}/community`],
         ],
         company: [
+          ["Entreprise", "/enterprise"],
+          ["Sécurité", "/security"],
+          ["Accessibilité", "/accessibility"],
           ["À propos", "/about"],
           ["Contact", "/contact"],
           ["Roadmap", `${APP_ORIGIN}/roadmap`],
@@ -45,41 +46,6 @@ export function Footer() {
           ["Mentions légales", "/mentions-legales"],
           ["Confidentialité", "/confidentialite"],
           ["CGU", "/cgu"],
-        ],
-      }
-    : {
-        home: "Brivia, home",
-        statement: "Design, deliver and measure in one workspace.",
-        summary: "Interactive formats to engage learners, assess knowledge and improve every session.",
-        productLabel: "Product",
-        resourcesLabel: "Resources",
-        companyLabel: "Company",
-        legalLabel: "Legal links",
-        copyright: "© 2026 Brivia. All rights reserved.",
-        product: [
-          ["Features", "/features"],
-          ["Quizzes", "/features#format-quiz"],
-          ["Polls", "/features#format-polls"],
-          ["Exams", "/features#format-exams"],
-          ["Courses", "/features#format-courses"],
-        ],
-        resources: [
-          ["Pricing", "/pricing"],
-          ["Guides", "/guides"],
-          ["Help center", "/help"],
-          ["Customer reviews", "/reviews"],
-          ["Community", `${APP_ORIGIN}/community`],
-        ],
-        company: [
-          ["About", "/about"],
-          ["Contact", "/contact"],
-          ["Roadmap", `${APP_ORIGIN}/roadmap`],
-          ["Changelog", `${APP_ORIGIN}/changelog`],
-        ],
-        legal: [
-          ["Legal notice", "/mentions-legales"],
-          ["Privacy", "/confidentialite"],
-          ["Terms", "/cgu"],
         ],
       };
 

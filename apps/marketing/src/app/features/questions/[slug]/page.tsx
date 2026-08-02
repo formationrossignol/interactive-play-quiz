@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, CheckCircle2, Lightbulb, Target } from "lucide-react";
 import { notFound } from "next/navigation";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { QuestionTypeDemo } from "@/components/QuestionTypeDemo";
+import { QuestionHeroVisual } from "@/components/QuestionHeroVisual";
 import styles from "@/components/MarketingPage.module.css";
 import { QUESTION_TYPE_BY_SLUG, QUESTION_TYPE_PAGES } from "@/lib/questionTypePages";
 
@@ -25,6 +25,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return {
     title: questionType.title,
     description: `${questionType.description} Découvrez le fonctionnement, les usages et un exemple interactif dans Brivia.`,
+    alternates: { canonical: `/features/questions/${questionType.slug}` },
   };
 }
 
@@ -57,13 +58,7 @@ export default async function QuestionTypePage({ params }: PageProps) {
               </div>
             </div>
             <div className={styles.heroMedia}>
-              <Image
-                src={questionType.image}
-                alt={questionType.imageAlt}
-                fill
-                priority
-                sizes="(max-width: 900px) 100vw, 46vw"
-              />
+              <QuestionHeroVisual questionType={questionType} />
             </div>
           </div>
         </section>

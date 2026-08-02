@@ -11,6 +11,7 @@ import { fetchPartners } from "@/lib/siteSettings";
 export const metadata: Metadata = {
   title: "Brivia - Quiz et sondages interactifs en temps réel",
   description: "Créez des quiz multijoueurs, sondages live et présentations interactives. QR code, classement instantané et ambiance arcade, sans rien sacrifier en puissance.",
+  alternates: { canonical: "/" },
 };
 
 export default async function HomePage() {

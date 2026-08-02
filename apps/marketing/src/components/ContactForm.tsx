@@ -53,10 +53,19 @@ const labelStyle: React.CSSProperties = {
 };
 
 export function ContactForm() {
-  const [formData, setFormData] = useState({ name: "", email: "", subject: "", message: "" });
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    organization: "",
+    role: "",
+    requestType: "demo",
+    teamSize: "",
+    message: "",
+  });
   const [honeypot, setHoneypot] = useState("");
   const [cooldown, setCooldown] = useState(0);
   const [hourlyBlocked, setHourlyBlocked] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -74,6 +83,16 @@ export function ContactForm() {
 
     const recentSubmits = flood.submits.filter((t) => now - t < 3600_000);
     if (recentSubmits.length >= MAX_PER_HOUR) setHourlyBlocked(true);
+
+    const intent = new URLSearchParams(window.location.search).get("intent");
+    const supportedIntent = ["demo", "enterprise", "education", "event", "support", "other"].includes(intent ?? "")
+      ? intent as string
+      : intent === "training" || intent === "integration" || intent === "security" || intent === "pilot"
+        ? "enterprise"
+        : intent === "accessibility" ? "support" : null;
+    if (supportedIntent) {
+      setFormData((current) => ({ ...current, requestType: supportedIntent }));
+    }
 
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, []);
@@ -95,21 +114,20 @@ export function ContactForm() {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [cooldown]);
 
-  const onFocus = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const onFocus = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     e.currentTarget.style.borderColor = "var(--ap-brand)";
     e.currentTarget.style.boxShadow = "0 0 0 4px var(--ap-brand-soft)";
   };
-  const onBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const onBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     e.currentTarget.style.borderColor = "var(--ap-line)";
     e.currentTarget.style.boxShadow = "none";
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (honeypot) {
       toast.success("Message envoyé. Nous vous répondrons rapidement.");
-      setFormData({ name: "", email: "", subject: "", message: "" });
       return;
     }
 
@@ -140,18 +158,32 @@ export function ContactForm() {
       return;
     }
 
-    const newFlood: FloodState = {
-      lastSubmit: now,
-      submits: [...recentSubmits, now],
-    };
-    saveFlood(newFlood);
-    setCooldown(COOLDOWN_SECONDS);
+    setSubmitting(true);
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          ...formData,
+          website: honeypot,
+          sourcePath: `${window.location.pathname}${window.location.search}`,
+        }),
+      });
+      const result = await response.json().catch(() => ({})) as { error?: string };
+      if (!response.ok) throw new Error(result.error || "Le message n’a pas pu être transmis.");
 
-    toast.success("Message envoyé. Nous vous répondrons rapidement.");
-    setFormData({ name: "", email: "", subject: "", message: "" });
+      saveFlood({ lastSubmit: now, submits: [...recentSubmits, now] });
+      setCooldown(COOLDOWN_SECONDS);
+      toast.success("Message transmis. Notre équipe revient vers vous rapidement.");
+      setFormData({ name: "", email: "", organization: "", role: "", requestType: "demo", teamSize: "", message: "" });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Le message n’a pas pu être transmis.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const isBlocked = cooldown > 0 || hourlyBlocked;
+  const isBlocked = cooldown > 0 || hourlyBlocked || submitting;
 
   if (hourlyBlocked) {
     return (
@@ -166,8 +198,8 @@ export function ContactForm() {
   return (
     <form onSubmit={handleSubmit} className={styles.form}>
       <div className={styles.hidden} aria-hidden>
-        <label>Ne pas remplir</label>
-        <input tabIndex={-1} autoComplete="off" value={honeypot} onChange={(e) => setHoneypot(e.target.value)} />
+        <label htmlFor="contact-website">Ne pas remplir</label>
+        <input id="contact-website" name="website" tabIndex={-1} autoComplete="off" value={honeypot} onChange={(e) => setHoneypot(e.target.value)} />
       </div>
 
       <div className={styles.identityGrid}>
@@ -198,17 +230,65 @@ export function ContactForm() {
         </div>
       </div>
 
-      <div>
-        <label htmlFor="contact-subject" style={labelStyle}>Sujet</label>
-        <input
-          id="contact-subject"
-          style={inputStyle}
-          value={formData.subject}
-          onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-          placeholder="De quoi souhaitez-vous parler ?"
-          required
-          onFocus={onFocus} onBlur={onBlur}
-        />
+      <div className={styles.identityGrid}>
+        <div>
+          <label htmlFor="contact-organization" style={labelStyle}>Organisation</label>
+          <input
+            id="contact-organization"
+            style={inputStyle}
+            value={formData.organization}
+            onChange={(e) => setFormData({ ...formData, organization: e.target.value })}
+            placeholder="École, entreprise, organisme…"
+            onFocus={onFocus} onBlur={onBlur}
+          />
+        </div>
+        <div>
+          <label htmlFor="contact-role" style={labelStyle}>Votre rôle</label>
+          <input
+            id="contact-role"
+            style={inputStyle}
+            value={formData.role}
+            onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+            placeholder="Formation, RH, enseignement…"
+            onFocus={onFocus} onBlur={onBlur}
+          />
+        </div>
+      </div>
+
+      <div className={styles.identityGrid}>
+        <div>
+          <label htmlFor="contact-type" style={labelStyle}>Votre projet</label>
+          <select
+            id="contact-type"
+            style={inputStyle}
+            value={formData.requestType}
+            onChange={(e) => setFormData({ ...formData, requestType: e.target.value })}
+            onFocus={onFocus} onBlur={onBlur}
+          >
+            <option value="demo">Réserver une démonstration</option>
+            <option value="enterprise">Déploiement organisation</option>
+            <option value="education">Éducation</option>
+            <option value="event">Événement</option>
+            <option value="support">Support produit</option>
+            <option value="other">Autre demande</option>
+          </select>
+        </div>
+        <div>
+          <label htmlFor="contact-team-size" style={labelStyle}>Audience envisagée</label>
+          <select
+            id="contact-team-size"
+            style={inputStyle}
+            value={formData.teamSize}
+            onChange={(e) => setFormData({ ...formData, teamSize: e.target.value })}
+            onFocus={onFocus} onBlur={onBlur}
+          >
+            <option value="">À préciser</option>
+            <option value="1-20">1 à 20 personnes</option>
+            <option value="21-200">21 à 200 personnes</option>
+            <option value="201-1000">201 à 1 000 personnes</option>
+            <option value="1000+">Plus de 1 000 personnes</option>
+          </select>
+        </div>
       </div>
 
       <div>
@@ -218,7 +298,7 @@ export function ContactForm() {
           style={{ ...inputStyle, resize: "vertical", minHeight: "140px", lineHeight: 1.5 }}
           value={formData.message}
           onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-          placeholder="Décrivez votre demande… (20 caractères minimum)"
+          placeholder="Contexte, objectifs, calendrier, contraintes techniques…"
           rows={6}
           required
           onFocus={onFocus} onBlur={onBlur}
@@ -231,7 +311,9 @@ export function ContactForm() {
         style={{ width: "100%", gap: "8px", opacity: isBlocked ? 0.5 : 1, cursor: isBlocked ? "not-allowed" : "pointer" }}
         disabled={isBlocked}
       >
-        {cooldown > 0 ? (
+        {submitting ? (
+          <><span className={styles.spinner} aria-hidden="true" />Transmission…</>
+        ) : cooldown > 0 ? (
           <><Clock className="w-4 h-4" />Patienter {cooldown}s</>
         ) : (
           <><Send className="w-4 h-4" />Envoyer le message</>
