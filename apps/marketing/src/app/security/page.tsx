@@ -8,7 +8,14 @@ import styles from "@/components/TrustPages.module.css";
 export const metadata: Metadata = {
   title: "Sécurité et confiance",
   description: "Consultez les contrôles actuels, les documents publics et les limites du dossier de confiance Brivia.",
-  alternates: { canonical: "/security" },
+  alternates: { canonical: "/security", languages: { fr: "/security", en: "/en/security", "x-default": "/security" } },
+  openGraph: {
+    title: "Sécurité et centre de confiance Brivia",
+    description: "Consultez les contrôles actuels, les documents publics et les limites déclarées par Brivia.",
+    url: "/security",
+    locale: "fr_FR",
+    alternateLocale: ["en_US"],
+  },
 };
 
 const CONTROLS = [

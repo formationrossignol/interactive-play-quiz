@@ -8,7 +8,14 @@ import styles from "@/components/ConversionPages.module.css";
 export const metadata: Metadata = {
   title: "Contact",
   description: "Contactez l’équipe Brivia pour parler du produit, du support ou d’un déploiement dans votre organisation.",
-  alternates: { canonical: "/contact" },
+  alternates: { canonical: "/contact", languages: { fr: "/contact", en: "/en/contact", "x-default": "/contact" } },
+  openGraph: {
+    title: "Contacter l’équipe Brivia",
+    description: "Présentez votre projet, votre public et vos contraintes à l’équipe Brivia.",
+    url: "/contact",
+    locale: "fr_FR",
+    alternateLocale: ["en_US"],
+  },
 };
 
 export default function ContactPage() {

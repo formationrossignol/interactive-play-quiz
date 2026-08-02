@@ -9,7 +9,14 @@ import styles from "@/components/TrustPages.module.css";
 export const metadata: Metadata = {
   title: "Brivia pour les organisations",
   description: "Cadrez le déploiement de Brivia autour de vos usages, de votre gouvernance, de vos données et de vos équipes.",
-  alternates: { canonical: "/enterprise" },
+  alternates: { canonical: "/enterprise", languages: { fr: "/enterprise", en: "/en/enterprise", "x-default": "/enterprise" } },
+  openGraph: {
+    title: "Brivia pour les organisations",
+    description: "Cadrez un déploiement Brivia autour de vos usages, de votre gouvernance et de vos exigences.",
+    url: "/enterprise",
+    locale: "fr_FR",
+    alternateLocale: ["en_US"],
+  },
 };
 
 const DECISION_AREAS = [
