@@ -15,7 +15,7 @@ export default function ContactPage() {
     <div className="marketing-shell">
       <Header />
       <main id="main-content" className={styles.page}>
-        <section className={`${styles.hero} ${styles.heroCompact}`} aria-labelledby="contact-title">
+        <section className={`${styles.hero} ${styles.contactHero}`} aria-labelledby="contact-title">
           <div className={`${styles.container} ${styles.heroGrid}`}>
             <div className={styles.heroCopy}>
               <h1 id="contact-title">Parlons de votre <span>prochaine session.</span></h1>
@@ -41,7 +41,7 @@ export default function ContactPage() {
                 <h3>Email</h3>
                 <p>Pour une demande directe ou l’envoi d’un document.</p>
                 <div className={styles.actions}>
-                  <a href="mailto:contact@quizmaster.app">contact@quizmaster.app</a>
+                <a href="mailto:contact@brivia.app">contact@brivia.app</a>
                 </div>
               </article>
               <article className={styles.panel}>
@@ -59,8 +59,8 @@ export default function ContactPage() {
 
             <div className={styles.formPanel}>
               <div className={styles.sectionLead}>
-                <h2>Envoyez votre message.</h2>
-                <p>Les détails concrets nous aident à vous répondre plus vite.</p>
+                <h2>Construisons le bon déploiement.</h2>
+                <p>Votre demande est enregistrée de façon sécurisée. Les détails concrets nous aident à vous répondre avec une recommandation utile.</p>
               </div>
               <ContactForm />
             </div>

@@ -75,6 +75,16 @@
   color: var(--mp-on-accent);
 }
 
+.guideIcon svg {
+  width: 1.35rem;
+  height: 1.35rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.35;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 .guide h3 {
   max-width: 22ch;
   margin: 2rem 0 0;

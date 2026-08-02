@@ -5,10 +5,11 @@ import type { NextConfig } from "next";
 // rewrites only fire when no Next page/file matches, so every app URL — including
 // ones already shared via QR codes and join links — stays byte-identical.
 // See docs/marketing-app-decoupling.md.
-const APP_ORIGIN = process.env.APP_ORIGIN ?? "https://interactive-play-quiz.vercel.app";
+const APP_ORIGIN = process.env.APP_ORIGIN ?? "https://app.brivia.app";
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ["isomorphic-dompurify"],
+  allowedDevOrigins: ["127.0.0.1"],
   async redirects() {
     return ["roadmap", "changelog", "report"].map((path) => ({
       source: `/${path}`,

@@ -56,6 +56,11 @@
   padding-block: clamp(4rem, 7vw, 6.5rem);
 }
 
+.contactHero {
+  min-height: min(37rem, calc(100dvh - 10rem));
+  padding-block: clamp(3rem, 5vw, 4.5rem);
+}
+
 .heroGrid {
   position: relative;
   z-index: 1;

@@ -38,6 +38,14 @@ const CATEGORIES: Category[] = [
       { label: "Export des résultats", values: [false, true, true] },
     ],
   },
+  {
+    title: "Déploiement & gouvernance",
+    rows: [
+      { label: "Organisations, groupes et partage de contenus", values: ["Basique", "Équipe", "Sur cadrage"] },
+      { label: "Revue sécurité et intégrations", values: [false, false, "Incluse"] },
+      { label: "Accompagnement au déploiement", values: [false, false, "Personnalisé"] },
+    ],
+  },
 ];
 
 const Cell = ({ value, accent }: { value: CellValue; accent: string }) => {

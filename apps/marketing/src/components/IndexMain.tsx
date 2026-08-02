@@ -135,10 +135,10 @@ export function IndexMain({
         <div className={`${styles.container} ${styles.heroGrid}`}>
           <div className={styles.heroCopy}>
             <h1 id="home-title" className={styles.heroTitle}>
-              Faites participer <span>toute la salle.</span>
+              Du direct aux résultats, <span>un seul rythme.</span>
             </h1>
             <p className={styles.heroText}>
-              Créez des quiz, sondages et présentations que vos participants rejoignent en un scan, sans compte ni installation.
+              Brivia relie participation, apprentissage et évaluation dans un même système — simple pour la salle, structuré pour l’organisation.
             </p>
             <div className={styles.heroActions}>
               <a className={styles.primaryButton} href="/builder-start?type=quiz">
@@ -255,8 +255,8 @@ export function IndexMain({
               <p>
                 Démarrez gratuitement avec 20 participants par session et réunissez quiz, flashcards et examens au même endroit.
               </p>
-              <a href="/builder-start?type=quiz">
-                Créer mon premier quiz
+              <a href="/solutions/education">
+                Découvrir l’enseignement
                 <ArrowRight size={17} strokeWidth={1.8} aria-hidden="true" />
               </a>
             </article>
@@ -269,8 +269,8 @@ export function IndexMain({
               <p>
                 Accueillez jusqu’à 200 participants avec Pro, puis exportez les résultats et suivez la progression.
               </p>
-              <a href="/pricing">
-                Comparer les formules
+              <a href="/enterprise">
+                Découvrir Brivia Enterprise
                 <ArrowRight size={17} strokeWidth={1.8} aria-hidden="true" />
               </a>
             </article>
@@ -343,7 +343,7 @@ export function IndexMain({
               <h2 id="reviews-title">L’énergie se voit tout de suite.</h2>
               {avgRating && (
                 <p className={styles.rating}>
-                  {avgRating}/5 sur {reviews.length} avis vérifiés
+                  {avgRating}/5 sur {reviews.length} retours publiés
                 </p>
               )}
             </div>
@@ -401,7 +401,7 @@ export function IndexMain({
             <ul>
               <li>
                 <ShieldCheck size={21} strokeWidth={1.7} aria-hidden="true" />
-                Données hébergées en Europe et conformité RGPD.
+                Hébergement européen et pratiques documentées publiquement.
               </li>
               <li>
                 <UsersRound size={21} strokeWidth={1.7} aria-hidden="true" />
@@ -412,6 +412,10 @@ export function IndexMain({
                 Aucune carte bancaire pour commencer.
               </li>
             </ul>
+            <a className={styles.textLink} href="/security">
+              Consulter le centre de confiance
+              <ArrowRight size={17} strokeWidth={1.8} aria-hidden="true" />
+            </a>
           </aside>
         </div>
       </section>
