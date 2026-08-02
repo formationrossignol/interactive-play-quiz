@@ -43,6 +43,7 @@
   font-style: normal;
   transition: transform .55s cubic-bezier(.32,.72,0,1);
 }
+.resourceAction i svg { width: 1.05rem; height: 1.05rem; }
 
 .resourceAction:hover { transform: translateY(-3px); }
 .resourceAction:hover i { transform: translate(.16rem, -.08rem) rotate(8deg); }

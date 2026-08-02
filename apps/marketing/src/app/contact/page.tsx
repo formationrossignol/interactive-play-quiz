@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { ContactForm } from "@/components/ContactForm";
+import { ProductGlyph } from "@/components/ProductGlyph";
 import styles from "@/components/ConversionPages.module.css";
 
 export const metadata: Metadata = {
@@ -25,11 +26,11 @@ export default function ContactPage() {
               <div className={styles.contactSignals} aria-label="Autres moyens de nous contacter">
                 <a className={styles.contactSignal} href="mailto:contact@brivia.app">
                   <span><span>Écrire directement</span><strong>contact@brivia.app</strong></span>
-                  <i className={styles.arrowMark} aria-hidden="true">↗</i>
+                  <i className={styles.arrowMark}><ProductGlyph name="external" /></i>
                 </a>
                 <a className={styles.contactSignal} href="/help">
                   <span><span>Trouver une réponse maintenant</span><strong>Centre d’aide Brivia</strong></span>
-                  <i className={styles.arrowMark} aria-hidden="true">↗</i>
+                  <i className={styles.arrowMark}><ProductGlyph name="external" /></i>
                 </a>
               </div>
             </div>

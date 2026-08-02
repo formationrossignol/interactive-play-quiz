@@ -4,6 +4,7 @@ import { Footer } from "@/components/Footer";
 import { GuidesGrid } from "@/components/GuidesGrid";
 import { fetchGuides } from "@/lib/repo";
 import { SITE_URL } from "@/lib/siteUrl";
+import { ProductGlyph } from "@/components/ProductGlyph";
 import styles from "@/components/ResourcePages.module.css";
 
 export const metadata: Metadata = {
@@ -43,7 +44,7 @@ export default async function GuidesPage() {
               <div><strong>{guides.length}</strong><span>guides publiés</span></div>
               <div><strong>{videos}</strong><span>formats vidéo</span></div>
             </div>
-            <a className={styles.resourceAction} href="/builder-start"><span>Créer un contenu</span><i aria-hidden="true">↗</i></a>
+            <a className={styles.resourceAction} href="/builder-start"><span>Créer un contenu</span><i><ProductGlyph name="external" /></i></a>
           </div>
         </div>
       </section>

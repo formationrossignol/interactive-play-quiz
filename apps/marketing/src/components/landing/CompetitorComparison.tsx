@@ -1,4 +1,4 @@
-import { Check, CircleDotDashed, Minus } from "lucide-react";
+import { ProductGlyph } from "@/components/ProductGlyph";
 import styles from "./CompetitorComparison.module.css";
 
 type Availability = "included" | "partial" | "absent";
@@ -91,12 +91,12 @@ const ROWS: ComparisonRow[] = [
 
 function AvailabilityIcon({ availability }: { availability: Availability }) {
   if (availability === "included") {
-    return <Check size={17} strokeWidth={3} aria-hidden="true" />;
+    return <ProductGlyph name="check" />;
   }
   if (availability === "partial") {
-    return <CircleDotDashed size={17} strokeWidth={2.4} aria-hidden="true" />;
+    return <ProductGlyph name="partial" />;
   }
-  return <Minus size={17} strokeWidth={2.6} aria-hidden="true" />;
+  return <ProductGlyph name="minus" />;
 }
 
 export function CompetitorComparison() {
@@ -157,9 +157,9 @@ export function CompetitorComparison() {
       </div>
 
       <div className={styles.legend} aria-label="Légende du comparatif">
-        <span><Check size={15} strokeWidth={3} aria-hidden="true" /> Inclus ou natif</span>
-        <span><CircleDotDashed size={15} strokeWidth={2.4} aria-hidden="true" /> Partiel, séparé ou selon l&apos;offre</span>
-        <span><Minus size={15} strokeWidth={2.6} aria-hidden="true" /> Pas de format dédié</span>
+        <span><ProductGlyph name="check" /> Inclus ou natif</span>
+        <span><ProductGlyph name="partial" /> Partiel, séparé ou selon l&apos;offre</span>
+        <span><ProductGlyph name="minus" /> Pas de format dédié</span>
       </div>
 
       <p className={styles.disclaimer}>
