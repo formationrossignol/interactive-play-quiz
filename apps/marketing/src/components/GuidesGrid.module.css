@@ -16,7 +16,10 @@
   font-size: .82rem;
   font-weight: 800;
   cursor: pointer;
+  transition: transform .35s var(--ap-ease), color .35s var(--ap-ease), background-color .35s var(--ap-ease), border-color .35s var(--ap-ease);
 }
+
+.filter:hover { transform: translateY(-2px); color: var(--mp-ink); }
 
 .active {
   border-color: var(--mp-accent);
@@ -38,10 +41,18 @@
   justify-content: space-between;
   border-radius: 1.25rem;
   padding: 1.4rem;
+  border: 1px solid color-mix(in srgb, var(--mp-line) 78%, transparent);
   background: var(--mp-surface);
+  box-shadow: 0 1rem 3rem color-mix(in srgb, var(--mp-accent-deep) 5%, transparent);
   color: var(--mp-ink);
   text-decoration: none;
+  transition: transform .24s var(--ap-ease), box-shadow .24s var(--ap-ease);
 }
+
+.guide:nth-child(4n + 1) { rotate: -.55deg; }
+.guide:nth-child(4n + 2) { rotate: .45deg; }
+
+.guide:hover { transform: translateY(-5px); box-shadow: 0 1.8rem 4rem color-mix(in srgb, var(--mp-accent-deep) 11%, transparent); }
 
 .guide:first-child,
 .guide:nth-child(5n) {
@@ -115,5 +126,14 @@
   .guide:nth-child(2),
   .guide:nth-child(6n) {
     grid-column: 1;
+    rotate: none;
   }
 }
+
+@media (prefers-reduced-motion: no-preference) {
+  .guide { animation: guide-reveal var(--ap-ease) both; animation-range: entry 10% cover 28%; animation-timeline: view(); }
+}
+
+@keyframes guide-reveal { from { opacity: 0; transform: translateY(1rem); } to { opacity: 1; transform: none; } }
+
+@media (prefers-reduced-motion: reduce) { .guide, .filter { transition: none; } }

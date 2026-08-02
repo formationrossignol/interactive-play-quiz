@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { ChevronUp } from "lucide-react";
+import { CalendarDays, CheckCircle2, ChevronUp, Eye, Hammer } from "lucide-react";
 import { mergeRoadmapVotes } from "@/lib/mappers";
 import { fetchVoteCounts, fetchMyVotes, castVote, removeVote, submitIdea, requireAuth } from "@/lib/interactionsRepo";
 import type { RoadmapView, RoadmapCard } from "@/lib/types";
@@ -16,10 +16,10 @@ const CHIPS: { key: Cat; label: string }[] = [
   { key: "integrations", label: "Intégrations" },
 ];
 
-const COLS: { key: "idea" | "planned" | "dev"; head: string; headStyle: React.CSSProperties }[] = [
-  { key: "idea", head: "👀 À l'étude", headStyle: { background: "var(--ap-paper-2)", borderColor: "var(--ap-line-2)", color: "var(--ap-muted)" } },
-  { key: "planned", head: "🗓 Planifié", headStyle: { background: "var(--ap-poll-soft)", borderColor: "var(--ap-poll)", color: "var(--ap-poll-deep)" } },
-  { key: "dev", head: "🔨 En développement", headStyle: { background: "var(--ap-flash-soft)", borderColor: "var(--ap-flash)", color: "var(--ap-flash-deep)" } },
+const COLS: { key: "idea" | "planned" | "dev"; head: string; icon: typeof Eye; headStyle: React.CSSProperties }[] = [
+  { key: "idea", head: "À l'étude", icon: Eye, headStyle: { background: "var(--ap-paper-2)", borderColor: "var(--ap-line-2)", color: "var(--ap-muted)" } },
+  { key: "planned", head: "Planifié", icon: CalendarDays, headStyle: { background: "var(--ap-poll-soft)", borderColor: "var(--ap-poll)", color: "var(--ap-poll-deep)" } },
+  { key: "dev", head: "En développement", icon: Hammer, headStyle: { background: "var(--ap-flash-soft)", borderColor: "var(--ap-flash)", color: "var(--ap-flash-deep)" } },
 ];
 
 export function RoadmapBoard({ baseView }: { baseView: RoadmapView }) {
@@ -117,9 +117,11 @@ export function RoadmapBoard({ baseView }: { baseView: RoadmapView }) {
           <>
             {COLS.map((col) => {
               const cards = view[col.key].filter((c) => match(c.cat));
+              const ColumnIcon = col.icon;
               return (
                 <div className="rcol" key={col.key}>
                   <div className="rcol-head" style={col.headStyle}>
+                    <ColumnIcon size={16} strokeWidth={2} aria-hidden="true" />
                     {col.head}
                     <span className="cnt">{cards.length}</span>
                   </div>
@@ -152,7 +154,8 @@ export function RoadmapBoard({ baseView }: { baseView: RoadmapView }) {
 
             <div className="rcol">
               <div className="rcol-head" style={{ background: "var(--ap-pres-soft)", borderColor: "var(--ap-pres)", color: "var(--ap-pres-deep)" }}>
-                ✅ Livré
+                <CheckCircle2 size={16} strokeWidth={2} aria-hidden="true" />
+                Livré
                 <span className="cnt">{view.shipped.filter((s) => match(s.cat)).length}</span>
               </div>
               {view.shipped.filter((s) => match(s.cat)).map((s) => (

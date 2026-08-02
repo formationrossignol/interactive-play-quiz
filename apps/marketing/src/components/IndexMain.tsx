@@ -157,11 +157,11 @@ export function IndexMain({
 
           <div className={styles.heroMedia}>
             <Image
-              src="/images/brivia-workshop-hero.jpg"
-              alt="Un formateur anime un atelier interactif avec des participants équipés de leur téléphone"
+              src="/images/brivia-workshop-editorial-v2.jpg"
+              alt="Une formatrice anime un quiz interactif pendant un atelier professionnel"
               fill
               preload
-              sizes="(max-width: 900px) 100vw, 48vw"
+              sizes="(max-width: 900px) 100vw, 52vw"
               className={styles.coverImage}
             />
           </div>
@@ -282,8 +282,8 @@ export function IndexMain({
         <div className={`${styles.container} ${styles.questionShowcase}`}>
           <div className={styles.questionShowcaseMedia}>
             <Image
-              src="/images/brivia-quiz-authoring.jpg"
-              alt="Un formateur prépare les questions de sa prochaine session"
+              src="/images/brivia-question-wall-cinematic.jpg"
+              alt="Une facilitatrice orchestre une question sur un mur de réponses immersif"
               fill
               sizes="(max-width: 900px) 100vw, 42vw"
               className={styles.coverImage}

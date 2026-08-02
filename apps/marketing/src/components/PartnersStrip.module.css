@@ -3,13 +3,13 @@
 }
 
 .partnersInner {
-  width: min(100% - 2rem, 80rem);
+  width: min(100% - 2.5rem, 88rem);
   display: grid;
   grid-template-columns: minmax(15rem, 0.72fr) minmax(0, 1.28fr);
   align-items: center;
   gap: clamp(2rem, 6vw, 6rem);
   margin-inline: auto;
-  padding-block: clamp(1.35rem, 2.5vw, 1.8rem);
+  padding-block: clamp(1.6rem, 3vw, 2.25rem);
   border-top: 1px solid var(--home-line, var(--ap-line));
 }
 
@@ -18,8 +18,8 @@
   margin: 0;
   color: var(--home-muted, var(--ap-muted));
   font-family: var(--ap-font-display);
-  font-size: clamp(0.92rem, 1.25vw, 1.02rem);
-  font-weight: 650;
+  font-size: clamp(0.9rem, 1.15vw, 1rem);
+  font-weight: 600;
   line-height: 1.55;
   text-wrap: pretty;
 }
