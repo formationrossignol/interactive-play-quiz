@@ -1,37 +1,128 @@
 import type { Metadata } from "next";
-import { AuthorityPage } from "@/components/AuthorityPage";
+import Link from "next/link";
+import { Footer } from "@/components/Footer";
+import { Header } from "@/components/Header";
+import { ProductGlyph } from "@/components/ProductGlyph";
+import styles from "@/components/TrustPages.module.css";
 
 export const metadata: Metadata = {
   title: "Sécurité et confiance",
-  description: "Architecture, données, accès et engagements de sécurité de Brivia, présentés sans revendication non vérifiée.",
+  description: "Consultez les contrôles actuels, les documents publics et les limites du dossier de confiance Brivia.",
   alternates: { canonical: "/security" },
 };
 
+const CONTROLS = [
+  {
+    area: "Données",
+    title: "Région européenne",
+    text: "Les données applicatives sont hébergées dans une région européenne déclarée.",
+    status: "Documenté",
+  },
+  {
+    area: "Transport",
+    title: "Connexion chiffrée",
+    text: "Les services hébergés utilisent TLS pour les échanges réseau.",
+    status: "Disponible",
+  },
+  {
+    area: "Accès",
+    title: "Contrôles applicatifs",
+    text: "Les espaces de création sont authentifiés et les accès sont séparés selon leur besoin.",
+    status: "Disponible",
+  },
+  {
+    area: "Participants",
+    title: "Accès public minimal",
+    text: "Une session publique peut être rejointe sans créer de compte participant.",
+    status: "Disponible",
+  },
+] as const;
+
+const LIMITS = [
+  "Aucune certification ISO 27001 ou SOC 2 n’est revendiquée actuellement.",
+  "Les audits indépendants et tests d’intrusion doivent être planifiés selon le périmètre attendu.",
+  "Le SSO, le DPA et les exigences contractuelles sont qualifiés avec chaque organisation.",
+] as const;
+
 export default function SecurityPage() {
-  return <AuthorityPage
-    layout="ledger"
-    tone="emerald"
-    eyebrow="Centre de confiance"
-    title="La confiance se"
-    accent="documente."
-    introduction="Une vue claire de l’architecture, des données et des contrôles actuels. Les statuts sont explicites afin que votre équipe puisse évaluer Brivia sans zone grise."
-    signal="Transparence active"
-    signalDetail="Disponible, en préparation ou contractuel : chaque engagement conserve son vrai statut."
-    facts={[
-      { value: "UE", label: "Région déclarée pour les données applicatives" },
-      { value: "TLS", label: "Transport chiffré sur les services hébergés" },
-      { value: "RGPD", label: "Droits et finalités documentés publiquement" },
-    ]}
-    chapters={[
-      { index: "01 — Données", title: "Collecter moins, expliquer mieux.", text: "Les données sont liées à une finalité produit identifiable et les participants publics peuvent rejoindre sans compte.", points: ["Comptes, contenus, réponses et résultats selon l’usage choisi.", "Sous-traitants principaux documentés dans la politique de confidentialité.", "Demandes d’accès, rectification et suppression via privacy@brivia.app."] },
-      { index: "02 — Contrôles", title: "Des barrières à chaque couche.", text: "Les accès applicatifs, politiques de données et surfaces publiques sont séparés selon leur besoin.", points: ["Authentification et contrôle d’accès pour les espaces de création.", "Politiques de lecture et d’écriture appliquées au niveau des données.", "Formulaire marketing persistant, write-only côté public et limité par origine réseau." ] },
-      { index: "03 — Assurance", title: "Aucune certification imaginaire.", text: "Le niveau de preuve doit progresser avec le produit et les attentes des organisations.", points: ["DPA, registre des sous-traitants et procédure d’incident à formaliser avec l’entité juridique.", "Tests d’intrusion et audits indépendants à planifier.", "SSO et exigences contractuelles examinés pendant la qualification Enterprise."], note: "Statut actuel : aucune certification ISO 27001 ou SOC 2 n’est revendiquée par Brivia." },
-    ]}
-    closingTitle="Votre équipe sécurité a des questions précises ?"
-    closingText="Envoyez votre questionnaire ou vos exigences. Nous répondrons avec des éléments factuels, sans promesse générique."
-    primaryLabel="Contacter l’équipe sécurité"
-    primaryHref="/contact?intent=security"
-    secondaryLabel="Lire la confidentialité"
-    secondaryHref="/confidentialite"
-  />;
+  return (
+    <div className="marketing-shell">
+      <Header />
+      <main id="main-content" className={styles.securityPage}>
+        <section className={styles.securityHero} aria-labelledby="security-title">
+          <div className={styles.securityHeroCopy}>
+            <p className={styles.securityEyebrow}>Centre de confiance</p>
+            <h1 id="security-title">La confiance se documente.</h1>
+            <p>Contrôles disponibles, travaux à mener et engagements contractuels gardent chacun leur véritable statut.</p>
+            <div className={styles.securityActions}>
+              <Link href="#controls-title" data-marketing-cta="security_controls">Voir les contrôles <ProductGlyph name="arrow" /></Link>
+              <Link href="/confidentialite" data-marketing-cta="security_privacy">Lire la confidentialité</Link>
+            </div>
+          </div>
+          <div className={styles.trustSeal} aria-label="Transparence active">
+            <div className={styles.trustSealCore}>
+              <ProductGlyph name="security" />
+              <strong>Transparence active</strong>
+              <span>Mis à jour avec le produit</span>
+            </div>
+            <span className={styles.trustOrbitOne} aria-hidden="true" />
+            <span className={styles.trustOrbitTwo} aria-hidden="true" />
+          </div>
+        </section>
+
+        <section className={styles.controlSection} aria-labelledby="controls-title">
+          <div className={styles.controlHeading}>
+            <h2 id="controls-title">État actuel des contrôles.</h2>
+            <p>Ces formulations restent volontairement précises. Elles ne remplacent pas une revue de sécurité adaptée à votre périmètre.</p>
+          </div>
+          <div className={styles.controlTable} role="list">
+            {CONTROLS.map((control) => (
+              <article key={control.title} role="listitem">
+                <span>{control.area}</span>
+                <div><h3>{control.title}</h3><p>{control.text}</p></div>
+                <strong>{control.status}</strong>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className={styles.trustDocuments} aria-labelledby="documents-title">
+          <div className={styles.documentIntro}>
+            <h2 id="documents-title">Le dossier public, sans intermédiaire.</h2>
+            <p>Les documents disponibles peuvent être transmis à votre équipe juridique, sécurité ou achats.</p>
+          </div>
+          <div className={styles.documentLinks}>
+            <Link href="/confidentialite">
+              <span>Traitement des données</span><strong>Confidentialité</strong><ProductGlyph name="external" />
+            </Link>
+            <Link href="/accessibility">
+              <span>Usage inclusif</span><strong>Accessibilité</strong><ProductGlyph name="external" />
+            </Link>
+            <Link href="/cgu">
+              <span>Cadre d’utilisation</span><strong>Conditions générales</strong><ProductGlyph name="external" />
+            </Link>
+          </div>
+        </section>
+
+        <section className={styles.limitSection} aria-labelledby="limits-title">
+          <div>
+            <h2 id="limits-title">Ce que nous ne prétendons pas.</h2>
+            <p>La confiance augmente lorsque les limites restent aussi visibles que les contrôles.</p>
+          </div>
+          <ul>
+            {LIMITS.map((limit) => <li key={limit}><ProductGlyph name="partial" /><span>{limit}</span></li>)}
+          </ul>
+        </section>
+
+        <section className={styles.securityClosing}>
+          <div>
+            <h2>Votre questionnaire mérite des réponses factuelles.</h2>
+            <p>Envoyez vos exigences et le calendrier de votre revue. Nous répondrons point par point.</p>
+          </div>
+          <Link href="/contact?intent=security" data-marketing-cta="security_questionnaire">Contacter l’équipe sécurité <ProductGlyph name="arrow" /></Link>
+        </section>
+      </main>
+      <Footer />
+    </div>
+  );
 }

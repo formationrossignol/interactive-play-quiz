@@ -194,6 +194,67 @@
   object-fit: cover;
 }
 
+.proofRail {
+  border-block: 1px solid var(--home-line);
+  background: color-mix(in srgb, var(--home-surface) 72%, transparent);
+}
+
+.proofRailInner {
+  display: grid;
+  grid-template-columns: .7fr 1.3fr;
+  align-items: stretch;
+}
+
+.proofRailCopy {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-right: 1px solid var(--home-line);
+  padding: 2rem 2rem 2rem 0;
+}
+
+.proofRailCopy h2 {
+  margin: 0;
+  font-family: var(--ap-font-display);
+  font-size: clamp(1.35rem, 2.1vw, 2rem);
+  font-weight: 650;
+  letter-spacing: -.04em;
+}
+
+.proofRailCopy p {
+  max-width: 29rem;
+  margin: .7rem 0 0;
+  color: var(--home-muted);
+  font-size: .75rem;
+  line-height: 1.55;
+}
+
+.proofRailLinks {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.proofRailLinks a {
+  min-width: 0;
+  min-height: 9.5rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-content: center;
+  gap: .35rem 1rem;
+  border-right: 1px solid var(--home-line);
+  padding: 1.4rem;
+  color: var(--home-ink);
+  text-decoration: none;
+  transition: background-color 250ms var(--ap-ease);
+}
+
+.proofRailLinks a:last-child { border-right: 0; }
+.proofRailLinks a:hover { background: var(--home-accent-soft); }
+.proofRailLinks span { font-size: .8rem; font-weight: 820; }
+.proofRailLinks small { grid-column: 1; color: var(--home-muted); font-size: .67rem; line-height: 1.4; }
+.proofRailLinks svg { grid-column: 2; grid-row: 1 / span 2; align-self: center; width: 1.15rem; height: 1.15rem; color: var(--home-accent); transition: transform 250ms var(--ap-ease); }
+.proofRailLinks a:hover svg { transform: translateX(.2rem); }
+
 .heroMedia .coverImage {
   object-position: 54% center;
   transform: scale(1.015);
@@ -1328,6 +1389,9 @@
 }
 
 @media (max-width: 900px) {
+  .proofRailInner { grid-template-columns: 1fr; }
+  .proofRailCopy { border-right: 0; border-bottom: 1px solid var(--home-line); padding-right: 0; }
+
   .hero {
     min-height: auto;
   }
@@ -1402,6 +1466,10 @@
     width: auto;
     margin-inline: 0.625rem;
   }
+
+  .proofRailLinks { grid-template-columns: 1fr; }
+  .proofRailLinks a { min-height: 6.8rem; border-right: 0; border-bottom: 1px solid var(--home-line); padding-inline: 0; }
+  .proofRailLinks a:last-child { border-bottom: 0; }
 
   .heroGrid,
   .heroCopy,

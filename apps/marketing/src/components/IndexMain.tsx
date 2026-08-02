@@ -119,16 +119,17 @@ export function IndexMain({
               Du direct aux résultats, <span>un seul rythme.</span>
             </h1>
             <p className={styles.heroText}>
-              Brivia relie participation, apprentissage et évaluation dans un même système — simple pour la salle, structuré pour l’organisation.
+              Brivia relie participation, apprentissage et évaluation dans un même système. Simple pour la salle, structuré pour l’organisation.
             </p>
             <div className={styles.heroActions}>
-              <a className={styles.primaryButton} href="/builder-start?type=quiz">
+              <a className={styles.primaryButton} href="/builder-start?type=quiz" data-marketing-cta="home_create">
                 Créer gratuitement
                 <ProductGlyph name="arrow" />
               </a>
               <button
                 className={styles.secondaryButton}
                 type="button"
+                data-marketing-cta="home_demo"
                 onClick={() => document.getElementById("demo")?.scrollIntoView({ behavior: "smooth" })}
               >
                 Essayer la démo
@@ -160,6 +161,32 @@ export function IndexMain({
       </section>
 
       <PartnersStrip partners={partners} />
+
+      <section className={styles.proofRail} aria-labelledby="home-proof-title">
+        <div className={`${styles.container} ${styles.proofRailInner}`}>
+          <div className={styles.proofRailCopy}>
+            <h2 id="home-proof-title">Les preuves restent accessibles.</h2>
+            <p>Avis, références autorisées et contrôles documentés ont chacun leur source publique.</p>
+          </div>
+          <nav className={styles.proofRailLinks} aria-label="Preuves Brivia">
+            <a href="/reviews">
+              <span>{reviews.length ? `${reviews.length} avis` : "Avis"}</span>
+              <small>{avgRating ? `${avgRating}/5 publié` : "Aucune moyenne inventée"}</small>
+              <ProductGlyph name="arrow" />
+            </a>
+            <a href="/customers">
+              <span>Références</span>
+              <small>{partners.length ? `${partners.length} autorisée${partners.length > 1 ? "s" : ""}` : "Protocole public"}</small>
+              <ProductGlyph name="arrow" />
+            </a>
+            <a href="/security">
+              <span>Confiance</span>
+              <small>Contrôles et limites</small>
+              <ProductGlyph name="arrow" />
+            </a>
+          </nav>
+        </div>
+      </section>
 
       <section id="demo" className={styles.section} aria-labelledby="demo-title">
         <div className={styles.container}>
@@ -427,8 +454,8 @@ export function IndexMain({
 
           <div className={styles.finalCta}>
             <p>Prêt à animer votre prochaine session ?</p>
-            <a href="/builder-start?type=quiz">
-              <span>Créer gratuitement</span>
+            <a href="/pricing">
+              <span>Voir les tarifs</span>
               <ProductGlyph name="arrow" />
             </a>
           </div>

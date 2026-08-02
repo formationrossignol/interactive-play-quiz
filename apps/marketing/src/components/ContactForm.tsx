@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
+import { trackMarketingEvent } from "@/lib/marketingAnalytics";
 import styles from "./ContactForm.module.css";
 
 const COOLDOWN_SECONDS = 60;
@@ -74,9 +75,9 @@ export function ContactForm() {
     if (recentSubmits.length >= MAX_PER_HOUR) setHourlyBlocked(true);
 
     const intent = new URLSearchParams(window.location.search).get("intent");
-    const supportedIntent = ["demo", "enterprise", "education", "event", "support", "other"].includes(intent ?? "")
+    const supportedIntent = ["demo", "enterprise", "education", "event", "security", "pilot", "support", "other"].includes(intent ?? "")
       ? intent as string
-      : intent === "training" || intent === "integration" || intent === "security" || intent === "pilot"
+      : intent === "training" || intent === "integration"
         ? "enterprise"
         : intent === "accessibility" ? "support" : null;
     if (supportedIntent) {
@@ -139,6 +140,7 @@ export function ContactForm() {
     }
 
     setSubmitting(true);
+    trackMarketingEvent("marketing_lead_submit", { requestType: formData.requestType });
     try {
       const response = await fetch("/api/contact", {
         method: "POST",
@@ -155,8 +157,10 @@ export function ContactForm() {
       saveFlood({ lastSubmit: now, submits: [...recentSubmits, now] });
       setCooldown(COOLDOWN_SECONDS);
       toast.success("Message transmis. Notre équipe revient vers vous rapidement.");
+      trackMarketingEvent("marketing_lead_success", { requestType: formData.requestType });
       setFormData({ name: "", email: "", organization: "", role: "", requestType: "demo", teamSize: "", message: "" });
     } catch (error) {
+      trackMarketingEvent("marketing_lead_error", { requestType: formData.requestType });
       toast.error(error instanceof Error ? error.message : "Le message n’a pas pu être transmis.");
     } finally {
       setSubmitting(false);
@@ -242,6 +246,8 @@ export function ContactForm() {
           >
             <option value="demo">Réserver une démonstration</option>
             <option value="enterprise">Déploiement organisation</option>
+            <option value="security">Questionnaire sécurité</option>
+            <option value="pilot">Cas pilote documenté</option>
             <option value="education">Éducation</option>
             <option value="event">Événement</option>
             <option value="support">Support produit</option>
@@ -272,7 +278,11 @@ export function ContactForm() {
           className={`${styles.control} ${styles.messageControl}`}
           value={formData.message}
           onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-          placeholder="Contexte, objectifs, calendrier, contraintes techniques…"
+          placeholder={formData.requestType === "security"
+            ? "Exigences, documents attendus, calendrier de revue…"
+            : formData.requestType === "pilot"
+              ? "Public, scénario, indicateurs et conditions de publication…"
+              : "Contexte, objectifs, calendrier, contraintes techniques…"}
           rows={6}
           required
         />

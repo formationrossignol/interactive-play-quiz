@@ -37,7 +37,7 @@ const NAV_MENUS = [
     items: [
       { label: "Guides", description: "Méthodes et bonnes pratiques", href: "/guides" },
       { label: "Centre d’aide", description: "Réponses et documentation", href: "/help" },
-      { label: "Références", description: "Résultats et retours vérifiables", href: "/customers" },
+      { label: "Clients", description: "Résultats et références vérifiables", href: "/customers" },
       { label: "Confiance", description: "Sécurité et accessibilité", href: "/security" },
       { label: "À propos", description: "Notre vision et nos engagements", href: "/about" },
     ],

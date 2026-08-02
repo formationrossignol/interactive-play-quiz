@@ -30,6 +30,7 @@ export function Footer() {
           ["Guides", "/guides"],
           ["Centre d’aide", "/help"],
           ["Avis clients", "/reviews"],
+          ["Références", "/customers"],
           ["Intégrations", "/integrations"],
           ["Communauté", `${APP_ORIGIN}/community`],
         ],
