@@ -9,8 +9,8 @@
   display: flex;
   min-height: 34rem;
   flex-direction: column;
-  border-radius: 1.25rem;
-  padding: 1.6rem;
+  border-radius: 1.65rem;
+  padding: clamp(1.45rem, 2.5vw, 2rem);
   position: relative;
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--mp-line) 78%, transparent);
@@ -32,7 +32,8 @@
   background: var(--mp-accent);
   color: var(--mp-on-accent);
   box-shadow:
-    0 0 0 .5rem color-mix(in srgb, var(--mp-accent-soft) 35%, transparent),
+    0 0 0 .55rem color-mix(in srgb, var(--mp-accent-soft) 40%, transparent),
+    0 0 0 calc(.55rem + 1px) color-mix(in srgb, var(--mp-accent) 24%, transparent),
     0 2.8rem 7rem color-mix(in srgb, var(--mp-accent-deep) 28%, transparent);
 }
 
@@ -42,7 +43,43 @@
 }
 
 .planHeader {
-  min-height: 8rem;
+  min-height: 9.25rem;
+}
+
+.planEyebrow {
+  display: flex;
+  min-height: 2.25rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  color: var(--mp-muted);
+  font-size: .64rem;
+  font-weight: 840;
+  letter-spacing: .115em;
+  text-transform: uppercase;
+}
+
+.plan:nth-child(2) .planEyebrow { color: color-mix(in srgb, var(--mp-on-accent) 76%, transparent); }
+
+.planGlyph {
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 auto;
+  overflow: visible;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.45;
+}
+
+.planGlyph circle { fill: currentColor; stroke: none; }
+
+.plan:first-child .planGlyph path { fill: currentColor; stroke: none; }
+
+.plan:nth-child(2) .planGlyph {
+  filter: drop-shadow(0 .5rem 1rem color-mix(in srgb, var(--mp-accent-deep) 25%, transparent));
 }
 
 .planName {
@@ -51,7 +88,7 @@
   gap: .65rem;
   margin: 0;
   font-family: var(--ap-font-display);
-  font-size: 1.55rem;
+  font-size: clamp(1.65rem, 2.4vw, 2.2rem);
   letter-spacing: -.035em;
 }
 
@@ -103,6 +140,16 @@
   line-height: 1.45;
 }
 
+.checkGlyph {
+  width: 1.1rem;
+  height: 1.1rem;
+  fill: none;
+  stroke: var(--mp-accent);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
 .features svg {
   color: var(--mp-accent);
 }
@@ -111,13 +158,19 @@
   color: var(--mp-on-accent);
 }
 
+.plan:nth-child(2) .checkGlyph { stroke: var(--mp-on-accent); }
+
 .button {
+  display: flex;
   width: 100%;
-  min-height: 3rem;
+  min-height: 3.4rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
   margin-top: auto;
   border: 1px solid var(--mp-line);
   border-radius: .75rem;
-  padding: .75rem;
+  padding: .55rem .55rem .55rem 1rem;
   background: transparent;
   color: var(--mp-ink);
   font: inherit;
@@ -127,12 +180,41 @@
   transition: transform .35s var(--ap-ease), background-color .35s var(--ap-ease), border-color .35s var(--ap-ease);
 }
 
+.buttonArrow {
+  width: 2.25rem;
+  height: 2.25rem;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--mp-accent-soft);
+  color: var(--mp-accent-deep);
+  transition: transform .35s cubic-bezier(.16, 1, .3, 1);
+}
+
+.buttonArrow svg {
+  width: 1.05rem;
+  height: 1.05rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.45;
+}
+
+.button:hover .buttonArrow { transform: rotate(-8deg) translateX(.12rem); }
+
 .button:hover { transform: translateY(-2px); border-color: var(--mp-accent); }
 
 .plan:nth-child(2) .button {
   border-color: var(--mp-on-accent);
   background: var(--mp-on-accent);
   color: var(--mp-accent-deep);
+}
+
+.plan:nth-child(2) .buttonArrow {
+  background: var(--mp-accent);
+  color: var(--mp-on-accent);
 }
 
 .button:active {
