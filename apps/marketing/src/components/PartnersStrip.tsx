@@ -2,14 +2,22 @@ import Image from "next/image";
 import type { Partner } from "@/lib/types";
 import styles from "./PartnersStrip.module.css";
 
-export const PartnersStrip = ({ partners }: { partners: Partner[] }) => {
+export const PartnersStrip = ({
+  partners,
+  language = "fr",
+}: {
+  partners: Partner[];
+  language?: "fr" | "en";
+}) => {
   if (partners.length === 0) return null;
 
   return (
     <section className={styles.partners} aria-labelledby="partners-title">
       <div className={styles.partnersInner}>
         <p id="partners-title" className={styles.partnerMessage}>
-          Des équipes pédagogiques choisissent Brivia pour faire participer leurs groupes.
+          {language === "en"
+            ? "Learning teams choose Brivia to turn their audiences into active participants."
+            : "Des équipes pédagogiques choisissent Brivia pour faire participer leurs groupes."}
         </p>
 
         <div className={styles.logoGrid}>
