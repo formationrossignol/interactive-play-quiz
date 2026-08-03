@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, CheckCircle2, Lightbulb, Target } from "lucide-react";
 import { notFound } from "next/navigation";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { QuestionTypeDemo } from "@/components/QuestionTypeDemo";
 import { QuestionHeroVisual } from "@/components/QuestionHeroVisual";
+import { ProductGlyph } from "@/components/ProductGlyph";
 import styles from "@/components/MarketingPage.module.css";
 import { QUESTION_TYPE_BY_SLUG, QUESTION_TYPE_PAGES } from "@/lib/questionTypePages";
 
@@ -50,7 +50,7 @@ export default async function QuestionTypePage({ params }: PageProps) {
               <div className={styles.actions}>
                 <a className={styles.primaryButton} href="/builder-start?type=quiz">
                   Créer une question
-                  <ArrowRight size={18} aria-hidden="true" />
+                  <ProductGlyph name="arrow" />
                 </a>
                 <Link className={styles.secondaryButton} href="/features#types-de-questions">
                   Voir les 15 types
@@ -92,7 +92,7 @@ export default async function QuestionTypePage({ params }: PageProps) {
             <div className={styles.useCaseGrid}>
               {questionType.bestFor.map((useCase, index) => (
                 <article className={styles.useCase} key={useCase.title}>
-                  {index === 0 ? <Target size={25} aria-hidden="true" /> : <Lightbulb size={25} aria-hidden="true" />}
+                  <ProductGlyph name={index === 0 ? "assessment" : "creation"} className={styles.productGlyph} />
                   <h3>{useCase.title}</h3>
                   <p>{useCase.text}</p>
                 </article>
@@ -110,7 +110,7 @@ export default async function QuestionTypePage({ params }: PageProps) {
             <div className={styles.settingGrid}>
               {questionType.capabilities.map((capability) => (
                 <article className={styles.setting} key={capability.title}>
-                  <CheckCircle2 size={22} aria-hidden="true" />
+                  <ProductGlyph name="check" className={styles.productGlyph} />
                   <div>
                     <h3>{capability.title}</h3>
                     <p>{capability.text}</p>
@@ -135,7 +135,7 @@ export default async function QuestionTypePage({ params }: PageProps) {
                 <p>Combinez plusieurs gestes pour maintenir l’attention et mieux comprendre les réponses.</p>
               </div>
               <Link href="/features#types-de-questions">
-                <ArrowLeft size={17} aria-hidden="true" />
+                <ProductGlyph name="arrow" className={styles.backGlyph} />
                 Tous les types
               </Link>
             </div>
@@ -145,7 +145,7 @@ export default async function QuestionTypePage({ params }: PageProps) {
                   <span>{item.mode}</span>
                   <strong>{item.navTitle}</strong>
                   <p>{item.description}</p>
-                  <ArrowRight size={18} aria-hidden="true" />
+                  <ProductGlyph name="arrow" />
                 </Link>
               ))}
             </div>
@@ -160,7 +160,7 @@ export default async function QuestionTypePage({ params }: PageProps) {
             </div>
             <a className={styles.primaryButton} href="/builder-start?type=quiz">
               Commencer
-              <ArrowRight size={18} aria-hidden="true" />
+              <ProductGlyph name="arrow" />
             </a>
           </div>
         </section>

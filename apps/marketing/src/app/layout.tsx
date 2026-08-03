@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Toaster } from "sonner";
+import { MarketingAnalytics } from "@/components/MarketingAnalytics";
 import { SITE_URL } from "@/lib/siteUrl";
 import "ui/tokens.css";
 import "ui/components.css";
@@ -70,6 +71,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
         />
         {children}
+        <MarketingAnalytics />
         <Toaster />
       </body>
     </html>

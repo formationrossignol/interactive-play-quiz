@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { ProductGlyph } from "@/components/ProductGlyph";
 import styles from "./AuthorityPage.module.css";
 
 export type AuthorityChapter = {
@@ -43,7 +44,7 @@ type SharedProps = AuthorityPageProps & { primaryLabel: string; primaryHref: str
 
 function Actions({ primaryLabel, primaryHref, secondaryLabel, secondaryHref }: Pick<SharedProps, "primaryLabel" | "primaryHref" | "secondaryLabel" | "secondaryHref">) {
   return <div className={styles.actions}>
-    <Link className={styles.primary} href={primaryHref}><span>{primaryLabel}</span><i aria-hidden="true">↗</i></Link>
+    <Link className={styles.primary} href={primaryHref}><span>{primaryLabel}</span><i><ProductGlyph name="external" /></i></Link>
     <Link className={styles.secondary} href={secondaryHref}>{secondaryLabel}</Link>
   </div>;
 }

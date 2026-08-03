@@ -2,18 +2,11 @@
 
 import { FormEvent, useState } from "react";
 import Image from "next/image";
-import {
-  ArrowRight,
-  BarChart3,
-  Check,
-  PencilLine,
-  QrCode,
-  ShieldCheck,
-  UsersRound,
-} from "lucide-react";
 import { HeroMiniQuiz } from "@/components/HeroMiniQuiz";
 import { PartnersStrip } from "@/components/PartnersStrip";
 import { CompetitorComparison } from "@/components/landing/CompetitorComparison";
+import { ProductGlyph, type ProductGlyphName } from "@/components/ProductGlyph";
+import { SignatureProductScene } from "@/components/SignatureProductScene";
 import { QUESTION_TYPE_PAGES } from "@/lib/questionTypePages";
 import type { Partner, Review } from "@/lib/types";
 import styles from "./IndexMain.module.css";
@@ -24,49 +17,37 @@ const FORMATS = [
     name: "Quiz live",
     description: "Questions chronométrées et classement en direct.",
     href: "/builder-start?type=quiz",
+    glyph: "quiz",
   },
   {
     name: "Sondages",
     description: "Opinions, échelles et nuages de mots instantanés.",
     href: "/builder-start?type=poll",
+    glyph: "poll",
   },
   {
     name: "Flashcards",
     description: "Révision active, seul ou en session guidée.",
     href: "/builder-start?type=flashcard",
+    glyph: "flashcards",
   },
   {
     name: "Présentations",
     description: "Texte, médias, formes, tableaux et mode présentateur.",
     href: "/builder-start?type=slide",
+    glyph: "presentation",
   },
   {
     name: "Examens",
     description: "Tentatives, seuils, fenêtres de passage et surveillance.",
     href: "/exam-builder",
+    glyph: "exam",
   },
   {
     name: "Cours",
     description: "Vidéo, documents, activités, SCORM, H5P et dépôts.",
     href: "/course-builder",
-  },
-] as const;
-
-const WORKFLOW = [
-  {
-    icon: PencilLine,
-    title: "Composez",
-    description: "Partez de zéro ou adaptez un contenu existant en quelques minutes.",
-  },
-  {
-    icon: QrCode,
-    title: "Lancez",
-    description: "Affichez le code ou le QR. Tout le monde rejoint depuis son navigateur.",
-  },
-  {
-    icon: BarChart3,
-    title: "Analysez",
-    description: "Suivez les réponses en direct et retrouvez les résultats après la session.",
+    glyph: "course",
   },
 ] as const;
 
@@ -138,16 +119,17 @@ export function IndexMain({
               Du direct aux résultats, <span>un seul rythme.</span>
             </h1>
             <p className={styles.heroText}>
-              Brivia relie participation, apprentissage et évaluation dans un même système — simple pour la salle, structuré pour l’organisation.
+              Brivia relie participation, apprentissage et évaluation dans un même système. Simple pour la salle, structuré pour l’organisation.
             </p>
             <div className={styles.heroActions}>
-              <a className={styles.primaryButton} href="/builder-start?type=quiz">
+              <a className={styles.primaryButton} href="/builder-start?type=quiz" data-marketing-cta="home_create">
                 Créer gratuitement
-                <ArrowRight size={18} strokeWidth={1.8} aria-hidden="true" />
+                <ProductGlyph name="arrow" />
               </a>
               <button
                 className={styles.secondaryButton}
                 type="button"
+                data-marketing-cta="home_demo"
                 onClick={() => document.getElementById("demo")?.scrollIntoView({ behavior: "smooth" })}
               >
                 Essayer la démo
@@ -164,11 +146,47 @@ export function IndexMain({
               sizes="(max-width: 900px) 100vw, 52vw"
               className={styles.coverImage}
             />
+            <div className={styles.heroLiveTag}>
+              <span aria-hidden="true" />
+              Brivia / session active
+            </div>
+            <div className={styles.heroMediaCard}>
+              <div><ProductGlyph name="live" /><span>Signal collectif</span></div>
+              <strong>Voir. Répondre. Comprendre.</strong>
+              <p>Le direct produit déjà la suite.</p>
+              <i aria-hidden="true"><b /><b /><b /><b /></i>
+            </div>
           </div>
         </div>
       </section>
 
       <PartnersStrip partners={partners} />
+
+      <section className={styles.proofRail} aria-labelledby="home-proof-title">
+        <div className={`${styles.container} ${styles.proofRailInner}`}>
+          <div className={styles.proofRailCopy}>
+            <h2 id="home-proof-title">Les preuves restent accessibles.</h2>
+            <p>Avis, références autorisées et contrôles documentés ont chacun leur source publique.</p>
+          </div>
+          <nav className={styles.proofRailLinks} aria-label="Preuves Brivia">
+            <a href="/reviews">
+              <span>{reviews.length ? `${reviews.length} avis` : "Avis"}</span>
+              <small>{avgRating ? `${avgRating}/5 publié` : "Aucune moyenne inventée"}</small>
+              <ProductGlyph name="arrow" />
+            </a>
+            <a href="/customers">
+              <span>Références</span>
+              <small>{partners.length ? `${partners.length} autorisée${partners.length > 1 ? "s" : ""}` : "Protocole public"}</small>
+              <ProductGlyph name="arrow" />
+            </a>
+            <a href="/security">
+              <span>Confiance</span>
+              <small>Contrôles et limites</small>
+              <ProductGlyph name="arrow" />
+            </a>
+          </nav>
+        </div>
+      </section>
 
       <section id="demo" className={styles.section} aria-labelledby="demo-title">
         <div className={styles.container}>
@@ -190,54 +208,27 @@ export function IndexMain({
               <nav aria-label="Créer un contenu Brivia">
                 {FORMATS.map((format) => (
                   <a key={format.name} href={format.href} className={styles.formatLink}>
-                    <span>
+                    <span className={styles.formatGlyph}>
+                      <ProductGlyph name={format.glyph as ProductGlyphName} />
+                    </span>
+                    <span className={styles.formatCopy}>
                       <strong>{format.name}</strong>
                       <small>{format.description}</small>
                     </span>
-                    <ArrowRight size={19} strokeWidth={1.8} aria-hidden="true" />
+                    <ProductGlyph className={styles.linkGlyph} name="arrow" />
                   </a>
                 ))}
               </nav>
               <a className={styles.allFeaturesLink} href="/features">
                 Explorer toutes les fonctionnalités
-                <ArrowRight size={18} strokeWidth={1.8} aria-hidden="true" />
+                <ProductGlyph name="arrow" />
               </a>
             </div>
           </div>
         </div>
       </section>
 
-      <section className={`${styles.section} ${styles.workflowSection}`} aria-labelledby="workflow-title">
-        <div className={`${styles.container} ${styles.workflowGrid}`}>
-          <div className={styles.workflowMedia}>
-            <Image
-              src="/images/brivia-join-qr.jpg"
-              alt="Une participante scanne le QR code projeté au début d’une formation"
-              fill
-              sizes="(max-width: 900px) 100vw, 52vw"
-              className={styles.coverImage}
-            />
-          </div>
-
-          <div className={styles.workflowCopy}>
-            <h2 id="workflow-title">Du premier clic aux résultats.</h2>
-            <p className={styles.sectionText}>
-              Brivia garde le parcours court pour vous laisser vous concentrer sur le groupe.
-            </p>
-            <div className={styles.workflowList}>
-              {WORKFLOW.map(({ icon: Icon, title, description }) => (
-                <article key={title} className={styles.workflowItem}>
-                  <Icon size={23} strokeWidth={1.7} aria-hidden="true" />
-                  <div>
-                    <h3>{title}</h3>
-                    <p>{description}</p>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
+      <SignatureProductScene />
 
       <section className={styles.audienceSection} aria-labelledby="audience-title">
         <div className={styles.container}>
@@ -249,7 +240,7 @@ export function IndexMain({
           <div className={styles.audienceGrid}>
             <article className={styles.audienceColumn}>
               <div className={styles.audienceIcon}>
-                <UsersRound size={25} strokeWidth={1.7} aria-hidden="true" />
+                <ProductGlyph name="learning" />
               </div>
               <h3>Enseignants et formateurs</h3>
               <p>
@@ -257,13 +248,13 @@ export function IndexMain({
               </p>
               <a href="/solutions/education">
                 Découvrir l’enseignement
-                <ArrowRight size={17} strokeWidth={1.8} aria-hidden="true" />
+                <ProductGlyph name="arrow" />
               </a>
             </article>
 
             <article className={styles.audienceColumn}>
               <div className={styles.audienceIcon}>
-                <BarChart3 size={25} strokeWidth={1.7} aria-hidden="true" />
+                <ProductGlyph name="analytics" />
               </div>
               <h3>Écoles et entreprises</h3>
               <p>
@@ -271,7 +262,7 @@ export function IndexMain({
               </p>
               <a href="/enterprise">
                 Découvrir Brivia Enterprise
-                <ArrowRight size={17} strokeWidth={1.8} aria-hidden="true" />
+                <ProductGlyph name="arrow" />
               </a>
             </article>
           </div>
@@ -296,13 +287,13 @@ export function IndexMain({
               {FEATURED_QUESTION_TYPES.map((questionType) => (
                 <a href={`/features/questions/${questionType.slug}`} key={questionType.slug}>
                   {questionType.navTitle}
-                  <ArrowRight size={16} aria-hidden="true" />
+                  <ProductGlyph name="arrow" />
                 </a>
               ))}
             </nav>
             <a className={styles.textLink} href="/features#types-de-questions">
               Voir les 15 types
-              <ArrowRight size={17} strokeWidth={1.8} aria-hidden="true" />
+              <ProductGlyph name="arrow" />
             </a>
           </div>
         </div>
@@ -320,7 +311,7 @@ export function IndexMain({
           <div className={styles.comparisonAction}>
             <a className={styles.textLink} href="/features#comparatif">
               Voir le comparatif détaillé
-              <ArrowRight size={17} strokeWidth={1.8} aria-hidden="true" />
+              <ProductGlyph name="arrow" />
             </a>
           </div>
         </div>
@@ -392,7 +383,7 @@ export function IndexMain({
             </div>
             <a className={styles.textLink} href="/help">
               Consulter le centre d’aide
-              <ArrowRight size={17} strokeWidth={1.8} aria-hidden="true" />
+              <ProductGlyph name="arrow" />
             </a>
           </div>
 
@@ -400,21 +391,21 @@ export function IndexMain({
             <h2 id="trust-title">Simple pour eux. Solide pour vous.</h2>
             <ul>
               <li>
-                <ShieldCheck size={21} strokeWidth={1.7} aria-hidden="true" />
+                <ProductGlyph name="security" />
                 Hébergement européen et pratiques documentées publiquement.
               </li>
               <li>
-                <UsersRound size={21} strokeWidth={1.7} aria-hidden="true" />
+                <ProductGlyph name="collaboration" />
                 Aucun compte requis pour les participants.
               </li>
               <li>
-                <Check size={21} strokeWidth={1.9} aria-hidden="true" />
+                <ProductGlyph name="check" />
                 Aucune carte bancaire pour commencer.
               </li>
             </ul>
             <a className={styles.textLink} href="/security">
               Consulter le centre de confiance
-              <ArrowRight size={17} strokeWidth={1.8} aria-hidden="true" />
+              <ProductGlyph name="arrow" />
             </a>
           </aside>
         </div>
@@ -463,9 +454,9 @@ export function IndexMain({
 
           <div className={styles.finalCta}>
             <p>Prêt à animer votre prochaine session ?</p>
-            <a href="/builder-start?type=quiz">
-              Créer gratuitement
-              <ArrowRight size={18} strokeWidth={1.8} aria-hidden="true" />
+            <a href="/pricing">
+              <span>Voir les tarifs</span>
+              <ProductGlyph name="arrow" />
             </a>
           </div>
         </div>

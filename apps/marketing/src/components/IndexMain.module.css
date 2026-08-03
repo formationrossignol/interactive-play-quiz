@@ -194,10 +194,134 @@
   object-fit: cover;
 }
 
+.proofRail {
+  border-block: 1px solid var(--home-line);
+  background: color-mix(in srgb, var(--home-surface) 72%, transparent);
+}
+
+.proofRailInner {
+  display: grid;
+  grid-template-columns: .7fr 1.3fr;
+  align-items: stretch;
+}
+
+.proofRailCopy {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-right: 1px solid var(--home-line);
+  padding: 2rem 2rem 2rem 0;
+}
+
+.proofRailCopy h2 {
+  margin: 0;
+  font-family: var(--ap-font-display);
+  font-size: clamp(1.35rem, 2.1vw, 2rem);
+  font-weight: 650;
+  letter-spacing: -.04em;
+}
+
+.proofRailCopy p {
+  max-width: 29rem;
+  margin: .7rem 0 0;
+  color: var(--home-muted);
+  font-size: .75rem;
+  line-height: 1.55;
+}
+
+.proofRailLinks {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.proofRailLinks a {
+  min-width: 0;
+  min-height: 9.5rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-content: center;
+  gap: .35rem 1rem;
+  border-right: 1px solid var(--home-line);
+  padding: 1.4rem;
+  color: var(--home-ink);
+  text-decoration: none;
+  transition: background-color 250ms var(--ap-ease);
+}
+
+.proofRailLinks a:last-child { border-right: 0; }
+.proofRailLinks a:hover { background: var(--home-accent-soft); }
+.proofRailLinks span { font-size: .8rem; font-weight: 820; }
+.proofRailLinks small { grid-column: 1; color: var(--home-muted); font-size: .67rem; line-height: 1.4; }
+.proofRailLinks svg { grid-column: 2; grid-row: 1 / span 2; align-self: center; width: 1.15rem; height: 1.15rem; color: var(--home-accent); transition: transform 250ms var(--ap-ease); }
+.proofRailLinks a:hover svg { transform: translateX(.2rem); }
+
 .heroMedia .coverImage {
   object-position: 54% center;
   transform: scale(1.015);
 }
+
+.heroLiveTag {
+  position: absolute;
+  z-index: 2;
+  top: 1.35rem;
+  left: 1.35rem;
+  display: inline-flex;
+  align-items: center;
+  gap: .55rem;
+  border: 1px solid rgb(255 255 255 / .27);
+  border-radius: 999px;
+  padding: .52rem .75rem;
+  color: #f9f9ff;
+  background: rgb(17 18 30 / .84);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .1), 0 .8rem 2rem rgb(0 0 0 / .16);
+  font-size: .62rem;
+  font-weight: 820;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.heroLiveTag > span {
+  width: .46rem;
+  height: .46rem;
+  border-radius: 50%;
+  background: #69e3b6;
+  box-shadow: 0 0 0 .28rem rgb(105 227 182 / .13);
+}
+
+.heroMediaCard {
+  position: absolute;
+  z-index: 2;
+  right: 1.35rem;
+  bottom: 1.35rem;
+  left: 1.35rem;
+  border: 1px solid rgb(255 255 255 / .2);
+  border-radius: 1.65rem;
+  padding: clamp(1.25rem, 3vw, 2rem);
+  color: #f8f8ff;
+  background: #171625;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .1), 0 2rem 4rem rgb(0 0 0 / .3);
+}
+
+.heroMediaCard > div {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  color: #aaa8c0;
+  font-size: .62rem;
+  font-weight: 820;
+  letter-spacing: .11em;
+  text-transform: uppercase;
+}
+
+.heroMediaCard > div svg { width: 1.15rem; height: 1.15rem; color: #a9a3ff; }
+.heroMediaCard > strong { display: block; max-width: 16ch; margin-top: .9rem; font-family: var(--ap-font-display); font-size: clamp(1.45rem, 3vw, 2.6rem); font-weight: 620; letter-spacing: -.045em; line-height: .98; }
+.heroMediaCard > p { margin: .55rem 0 0; color: #9b9aab; font-size: .75rem; font-weight: 620; }
+.heroMediaCard > i { display: grid; grid-template-columns: repeat(4, 1fr); gap: .35rem; margin-top: 1.2rem; }
+.heroMediaCard > i b { height: .22rem; border-radius: 99px; background: rgb(255 255 255 / .12); transform-origin: left; }
+.heroMediaCard > i b:nth-child(1) { background: #a39dff; transform: scaleX(.78); }
+.heroMediaCard > i b:nth-child(2) { background: #5ed7aa; transform: scaleX(.54); }
+.heroMediaCard > i b:nth-child(3) { background: #f0a239; transform: scaleX(.88); }
+.heroMediaCard > i b:nth-child(4) { background: #e36762; transform: scaleX(.42); }
 
 .section {
   padding-block: clamp(6rem, 10vw, 10rem);
@@ -299,10 +423,10 @@
 
 .formatLink {
   min-height: 5.35rem;
-  display: flex;
+  display: grid;
+  grid-template-columns: 2.55rem minmax(0, 1fr) 1.5rem;
   align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
+  gap: .85rem;
   border-bottom: 1px solid var(--home-line);
   color: var(--home-ink);
   transition:
@@ -315,8 +439,41 @@
   color: var(--home-accent);
 }
 
-.formatLink span {
+.formatCopy {
   min-width: 0;
+}
+
+.formatGlyph {
+  width: 2.45rem;
+  height: 2.45rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--home-accent) 20%, var(--home-line));
+  border-radius: .78rem;
+  color: var(--home-accent-deep);
+  background: color-mix(in srgb, var(--home-accent-soft) 54%, var(--home-surface));
+  transition: color 320ms var(--ap-ease), background-color 320ms var(--ap-ease), transform 320ms var(--ap-ease);
+}
+
+.formatGlyph svg {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+.formatLink:hover .formatGlyph {
+  color: var(--home-on-accent);
+  background: var(--home-accent);
+  transform: rotate(-4deg);
+}
+
+.linkGlyph {
+  width: 1.3rem;
+  height: 1.3rem;
+  transition: transform 320ms var(--ap-ease);
+}
+
+.formatLink:hover .linkGlyph {
+  transform: translateX(.2rem);
 }
 
 .formatLink strong,
@@ -381,31 +538,143 @@
   background: var(--home-surface);
 }
 
+.workflowMedia::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 48%, rgb(13 14 28 / .58));
+  pointer-events: none;
+}
+
+.workflowSignal {
+  position: absolute;
+  z-index: 2;
+  right: clamp(1rem, 4vw, 2.4rem);
+  bottom: clamp(1rem, 4vw, 2.4rem);
+  left: clamp(1rem, 4vw, 2.4rem);
+  padding: 1.25rem 1.35rem 1.3rem;
+  border: 1px solid rgb(255 255 255 / .2);
+  border-radius: 1.35rem;
+  background: #171629;
+  color: #f7f7fd;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / .1),
+    0 1.5rem 3.5rem rgb(0 0 0 / .3);
+}
+
+.signalHeader {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  color: #c9c7e7;
+  font-size: .68rem;
+  font-weight: 790;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+
+.signalHeader svg {
+  width: 1.2rem;
+  height: 1.2rem;
+  margin-left: auto;
+  color: #aaa5f1;
+}
+
+.liveDot {
+  width: .5rem;
+  height: .5rem;
+  border-radius: 50%;
+  background: #74e7bb;
+  box-shadow: 0 0 0 .28rem rgb(116 231 187 / .13);
+}
+
+.workflowSignal strong,
+.workflowSignal small {
+  display: block;
+}
+
+.workflowSignal strong {
+  max-width: 18ch;
+  margin-top: .9rem;
+  font-family: var(--ap-font-display);
+  font-size: clamp(1.25rem, 2.3vw, 2rem);
+  font-weight: 620;
+  letter-spacing: -.035em;
+  line-height: 1.05;
+}
+
+.workflowSignal small {
+  margin-top: .65rem;
+  color: #aaaabe;
+  font-size: .72rem;
+  font-weight: 650;
+}
+
 .workflowCopy {
   padding: clamp(2rem, 5vw, 4.5rem) clamp(1rem, 4vw, 3.75rem) clamp(2rem, 5vw, 4.5rem) 0;
 }
 
 .workflowList {
+  position: relative;
   margin-top: 2.4rem;
   border-top: 1px solid var(--home-line);
 }
 
+.workflowList::before {
+  content: "";
+  position: absolute;
+  top: 2.7rem;
+  bottom: 2.7rem;
+  left: 3.45rem;
+  width: 1px;
+  background: linear-gradient(var(--home-accent), color-mix(in srgb, var(--home-accent) 10%, var(--home-line)));
+}
+
 .workflowItem {
+  position: relative;
   display: grid;
-  grid-template-columns: 2.25rem 1fr;
-  gap: 1rem;
+  grid-template-columns: 1.7rem 3rem minmax(0, 1fr);
+  gap: .9rem;
+  align-items: start;
   padding-block: 1.55rem;
   border-bottom: 1px solid var(--home-line);
 }
 
-.workflowItem > svg {
+.workflowStep {
+  padding-top: .62rem;
+  color: var(--home-muted);
+  font-family: var(--ap-font-mono);
+  font-size: .68rem;
+  font-weight: 730;
+}
+
+.workflowGlyph {
+  position: relative;
+  z-index: 1;
+  width: 3rem;
+  height: 3rem;
+  display: grid;
+  place-items: center;
   color: var(--home-accent);
-  margin-top: 0.15rem;
-  padding: 0.45rem;
-  width: 2.2rem;
-  height: 2.2rem;
-  border-radius: 0.75rem;
-  background: var(--home-accent-soft);
+  border: 1px solid color-mix(in srgb, var(--home-accent) 28%, var(--home-line));
+  border-radius: 1rem;
+  background: var(--home-surface);
+  box-shadow: 0 0 0 .32rem var(--home-surface);
+}
+
+.workflowGlyph svg {
+  width: 1.55rem;
+  height: 1.55rem;
+}
+
+.workflowEyebrow {
+  display: block;
+  margin-bottom: .18rem;
+  color: var(--home-accent);
+  font-size: .66rem;
+  font-weight: 800;
+  letter-spacing: .11em;
+  text-transform: uppercase;
 }
 
 .workflowItem h3,
@@ -486,6 +755,11 @@
   color: var(--home-accent-deep);
 }
 
+.audienceIcon svg {
+  width: 1.55rem;
+  height: 1.55rem;
+}
+
 .audienceColumn:first-child .audienceIcon {
   background: rgb(255 255 255 / 0.12);
   color: var(--home-on-accent);
@@ -538,6 +812,15 @@
 .textLink:hover {
   gap: 0.8rem;
   color: var(--home-accent);
+}
+
+.audienceColumn a svg,
+.textLink svg,
+.allFeaturesLink svg,
+.finalCta a svg {
+  width: 1.15rem;
+  height: 1.15rem;
+  flex: 0 0 auto;
 }
 
 .questionSection {
@@ -633,6 +916,12 @@
   font-size: .84rem;
   font-weight: 680;
   transition: color .35s var(--ap-ease), padding-left .35s var(--ap-ease);
+}
+
+.questionShowcaseCopy nav a svg {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
 }
 
 .questionShowcaseCopy nav a:nth-child(odd) {
@@ -887,6 +1176,8 @@
 }
 
 .trustPanel li svg {
+  width: 1.35rem;
+  height: 1.35rem;
   margin-top: 0.05rem;
 }
 
@@ -1032,21 +1323,39 @@
 .finalCta a {
   display: inline-flex;
   align-items: center;
-  gap: 0.55rem;
-  border-bottom: 1px solid rgb(248 248 255 / 0.5);
-  padding-bottom: 0.3rem;
-  color: var(--home-on-accent);
+  gap: .25rem;
+  min-height: 3.65rem;
+  border: 1px solid rgb(248 248 255 / .42);
+  border-radius: 999px;
+  padding: .52rem .58rem .52rem 1.3rem;
+  background: var(--home-on-accent);
+  color: var(--home-accent-deep);
   font-family: var(--ap-font-display);
   font-size: 1rem;
   font-weight: 700;
   transition:
-    gap 180ms var(--ap-ease),
-    border-color 180ms var(--ap-ease);
+    transform 320ms var(--ap-ease),
+    box-shadow 320ms var(--ap-ease);
+}
+
+.finalCta a svg {
+  width: 2.45rem;
+  height: 2.45rem;
+  margin-left: .5rem;
+  padding: .56rem;
+  border-radius: 50%;
+  background: var(--home-accent-deep);
+  color: var(--home-on-accent);
+  transition: transform 420ms var(--ap-ease);
 }
 
 .finalCta a:hover {
-  gap: 0.85rem;
-  border-color: var(--home-on-accent);
+  transform: translateY(-2px);
+  box-shadow: 0 1rem 2.5rem rgb(0 0 0 / .18);
+}
+
+.finalCta a:hover svg {
+  transform: translateX(.18rem) rotate(-9deg);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -1080,6 +1389,9 @@
 }
 
 @media (max-width: 900px) {
+  .proofRailInner { grid-template-columns: 1fr; }
+  .proofRailCopy { border-right: 0; border-bottom: 1px solid var(--home-line); padding-right: 0; }
+
   .hero {
     min-height: auto;
   }
@@ -1127,6 +1439,10 @@
     min-height: 31rem;
   }
 
+  .workflowMedia {
+    min-height: 38rem;
+  }
+
   .workflowCopy,
   .reviewsCopy {
     padding: clamp(1.5rem, 5vw, 3rem);
@@ -1150,6 +1466,10 @@
     width: auto;
     margin-inline: 0.625rem;
   }
+
+  .proofRailLinks { grid-template-columns: 1fr; }
+  .proofRailLinks a { min-height: 6.8rem; border-right: 0; border-bottom: 1px solid var(--home-line); padding-inline: 0; }
+  .proofRailLinks a:last-child { border-bottom: 0; }
 
   .heroGrid,
   .heroCopy,
@@ -1218,6 +1538,28 @@
   .questionShowcaseMedia {
     min-height: 27rem;
     border-radius: 1.5rem;
+  }
+
+  .workflowMedia {
+    min-height: 32rem;
+  }
+
+  .workflowSignal {
+    border-radius: 1.1rem;
+  }
+
+  .workflowList::before {
+    left: 3.05rem;
+  }
+
+  .workflowItem {
+    grid-template-columns: 1.35rem 2.75rem minmax(0, 1fr);
+    gap: .7rem;
+  }
+
+  .workflowGlyph {
+    width: 2.75rem;
+    height: 2.75rem;
   }
 
   .workflowGrid,

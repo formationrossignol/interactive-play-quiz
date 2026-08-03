@@ -423,6 +423,15 @@
   color: var(--ap-ink);
 }
 
+.desktopNav .languageLink {
+  border: 1px solid var(--ap-line);
+  border-radius: 999px;
+  padding: .42rem .62rem;
+  color: var(--ap-ink);
+  font-size: .68rem;
+  letter-spacing: .08em;
+}
+
 .desktopNav .featureFormats a {
   color: var(--ap-ink);
   font-size: inherit;

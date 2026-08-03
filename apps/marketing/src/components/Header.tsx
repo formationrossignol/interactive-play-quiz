@@ -5,11 +5,12 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { BrandMonogram } from "ui/BrandMonogram";
 import { BrandWordmark } from "ui/BrandWordmark";
+import { isEnglishPath, languageCounterpart } from "@/lib/marketingLocale";
 import styles from "./MarketingChrome.module.css";
 
 const APP_ORIGIN = process.env.NEXT_PUBLIC_APP_ORIGIN ?? "https://app.brivia.app";
 
-const NAV_MENUS = [
+const FRENCH_NAV_MENUS = [
   {
     label: "Produit",
     match: ["/features", "/integrations"],
@@ -37,9 +38,41 @@ const NAV_MENUS = [
     items: [
       { label: "Guides", description: "Méthodes et bonnes pratiques", href: "/guides" },
       { label: "Centre d’aide", description: "Réponses et documentation", href: "/help" },
-      { label: "Références", description: "Résultats et retours vérifiables", href: "/customers" },
+      { label: "Clients", description: "Résultats et références vérifiables", href: "/customers" },
       { label: "Confiance", description: "Sécurité et accessibilité", href: "/security" },
       { label: "À propos", description: "Notre vision et nos engagements", href: "/about" },
+    ],
+  },
+] as const;
+
+const ENGLISH_NAV_MENUS = [
+  {
+    label: "Product",
+    match: ["/en"],
+    items: [
+      { label: "Overview", description: "The complete Brivia experience", href: "/en" },
+      { label: "Live sessions", description: "Turn every audience into participants", href: "/en#live" },
+      { label: "Learning", description: "Courses, practice and active recall", href: "/en#learning" },
+      { label: "Assessment", description: "Measure and review understanding", href: "/en#assessment" },
+    ],
+  },
+  {
+    label: "Solutions",
+    match: ["/en/enterprise"],
+    items: [
+      { label: "Education", description: "Make every class active", href: "/en#education" },
+      { label: "Training", description: "Run sessions and document progress", href: "/en#training" },
+      { label: "Enterprise", description: "Deploy with a clear framework", href: "/en/enterprise" },
+      { label: "Events", description: "Give the room a direct voice", href: "/en#events" },
+    ],
+  },
+  {
+    label: "Trust",
+    match: ["/en/security"],
+    items: [
+      { label: "Trust center", description: "Current controls and honest limits", href: "/en/security" },
+      { label: "Privacy", description: "How Brivia handles personal data", href: "/confidentialite" },
+      { label: "Accessibility", description: "Inclusive use and current status", href: "/accessibility" },
     ],
   },
 ] as const;
@@ -62,10 +95,25 @@ function NavArrow() {
 
 export function Header() {
   const pathname = usePathname();
+  const english = isEnglishPath(pathname);
+  const navMenus = english ? ENGLISH_NAV_MENUS : FRENCH_NAV_MENUS;
   const headerRef = useRef<HTMLElement>(null);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const labels = {
+  const labels = english ? {
+    skip: "Skip to content",
+    navigation: "Main navigation",
+    mobileNavigation: "Mobile navigation",
+    home: "Brivia home",
+    login: "Log in",
+    signup: "Create account",
+    openMenu: "Open menu",
+    closeMenu: "Close menu",
+    pricing: "Pricing",
+    mobileIntro: "From the first question to evidence your team can use.",
+    choose: "Choose",
+    explore: "Explore",
+  } : {
     skip: "Aller au contenu",
     navigation: "Navigation principale",
     mobileNavigation: "Navigation mobile",
@@ -74,6 +122,10 @@ export function Header() {
     signup: "Créer un compte",
     openMenu: "Ouvrir le menu",
     closeMenu: "Fermer le menu",
+    pricing: "Tarifs",
+    mobileIntro: "De l’idée à une expérience collective qui compte.",
+    choose: "Choisir",
+    explore: "Explorer",
   };
 
   useEffect(() => {
@@ -116,7 +168,7 @@ export function Header() {
       </a>
 
       <div className={styles.headerInner}>
-        <Link href="/" className={styles.brand} aria-label={labels.home} onClick={closeNavigation}>
+        <Link href={english ? "/en" : "/"} className={styles.brand} aria-label={labels.home} onClick={closeNavigation}>
           <span className={styles.brandMark}>
             <BrandMonogram size={19} />
           </span>
@@ -124,9 +176,11 @@ export function Header() {
         </Link>
 
         <nav className={styles.desktopNav} aria-label={labels.navigation}>
-          {NAV_MENUS.map((menu) => {
+          {navMenus.map((menu) => {
             const open = activeMenu === menu.label;
-            const current = menu.match.some((prefix) => pathname.startsWith(prefix));
+            const current = menu.match.some((prefix) =>
+              prefix === "/en" ? pathname === prefix : pathname.startsWith(prefix),
+            );
             const panelId = `nav-${menu.label.toLowerCase()}`;
 
             return (
@@ -147,7 +201,7 @@ export function Header() {
                   className={`${styles.navPanel} ${open ? styles.navPanelOpen : ""}`}
                   aria-hidden={!open}
                 >
-                  <span className={styles.navPanelLabel}>Explorer {menu.label.toLowerCase()}</span>
+                  <span className={styles.navPanelLabel}>{labels.explore} {menu.label.toLowerCase()}</span>
                   {menu.items.map((item) => (
                     <Link href={item.href} key={item.href} onClick={closeNavigation} tabIndex={open ? undefined : -1}>
                       <span><b>{item.label}</b><small>{item.description}</small></span>
@@ -158,7 +212,10 @@ export function Header() {
               </div>
             );
           })}
-          <Link href="/pricing" aria-current={pathname === "/pricing" ? "page" : undefined}>Tarifs</Link>
+          {!english && <Link href="/pricing" aria-current={pathname === "/pricing" ? "page" : undefined}>{labels.pricing}</Link>}
+          <Link className={styles.languageLink} href={languageCounterpart(pathname)} hrefLang={english ? "fr" : "en"}>
+            {english ? "FR" : "EN"}
+          </Link>
         </nav>
 
         <div className={styles.headerActions}>
@@ -188,10 +245,10 @@ export function Header() {
         <nav className={styles.mobileNav} aria-label={labels.mobileNavigation}>
           <div className={styles.mobileNavIntro}>
             <span>Navigation</span>
-            <p>De l’idée à une expérience collective qui compte.</p>
+            <p>{labels.mobileIntro}</p>
           </div>
           <div className={styles.mobileNavGroups}>
-            {NAV_MENUS.map((menu) => (
+            {navMenus.map((menu) => (
               <section className={styles.mobileNavGroup} key={menu.label}>
                 <p>{menu.label}</p>
                 {menu.items.map((item) => (
@@ -203,9 +260,13 @@ export function Header() {
               </section>
             ))}
             <section className={`${styles.mobileNavGroup} ${styles.mobilePricing}`}>
-              <p>Choisir</p>
-              <Link href="/pricing" onClick={closeNavigation} tabIndex={mobileOpen ? undefined : -1}>
-                <span>Tarifs</span>
+              <p>{labels.choose}</p>
+              {!english && <Link href="/pricing" onClick={closeNavigation} tabIndex={mobileOpen ? undefined : -1}>
+                <span>{labels.pricing}</span>
+                <NavArrow />
+              </Link>}
+              <Link href={languageCounterpart(pathname)} hrefLang={english ? "fr" : "en"} onClick={closeNavigation} tabIndex={mobileOpen ? undefined : -1}>
+                <span>{english ? "Français" : "English"}</span>
                 <NavArrow />
               </Link>
             </section>

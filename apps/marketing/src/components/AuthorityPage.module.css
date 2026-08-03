@@ -135,6 +135,7 @@
   font-style: normal;
   transition: transform .55s cubic-bezier(.32,.72,0,1);
 }
+.primary i svg { width: 1.1rem; height: 1.1rem; }
 .primary:hover { transform: translateY(-3px); }
 .primary:hover i { transform: translate(.18rem, -.08rem) rotate(8deg); }
 .primary:active { transform: scale(.98); }

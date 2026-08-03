@@ -6,6 +6,7 @@ import { fetchStaticPage } from "@/lib/repo";
 import { sanitizeHtml } from "@/lib/sanitizeHtml";
 import { STATIC_PAGE_DEFAULTS, mergeStaticPage } from "@/lib/staticPageDefaults";
 import styles from "@/components/ResourcePages.module.css";
+import { ProductGlyph } from "@/components/ProductGlyph";
 
 async function getPage() {
   const data = await fetchStaticPage("about");
@@ -59,7 +60,7 @@ export default async function AboutPage() {
         </div>
         <div className={styles.aboutClosing}>
           <p>La meilleure façon de juger cette vision reste de voir le produit fonctionner avec un vrai public.</p>
-          <a className={styles.resourceAction} href="/features"><span>Explorer le produit</span><i aria-hidden="true">↗</i></a>
+          <a className={styles.resourceAction} href="/features"><span>Explorer le produit</span><i><ProductGlyph name="external" /></i></a>
         </div>
       </section>
     </main>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { RotateCcw, Trophy } from "lucide-react";
+import { ProductGlyph } from "@/components/ProductGlyph";
 
 // Mirrors apps/app/src/components/HeroMiniQuiz.tsx verbatim — pure client
 // state (no data fetching, no auth), fully self-contained.
@@ -219,11 +219,9 @@ export function HeroMiniQuiz() {
 
       {done ? (
         <div style={{ textAlign: "center", padding: "20px 0" }}>
-          <Trophy
-            size={38}
-            strokeWidth={1.7}
-            aria-hidden="true"
-            style={{ color: "var(--ap-brand)", margin: "0 auto 12px" }}
+          <ProductGlyph
+            name="trophy"
+            style={{ width: 38, height: 38, color: "var(--ap-brand)", margin: "0 auto 12px" }}
           />
           <p style={{ fontFamily: "var(--ap-font-display)", fontSize: 18, fontWeight: 600, color: "var(--ap-muted)", marginBottom: 4 }}>
             Score final
@@ -236,7 +234,7 @@ export function HeroMiniQuiz() {
             style={{ fontSize: 14, padding: "10px 24px" }}
             onClick={restart}
           >
-            <RotateCcw size={16} aria-hidden="true" />
+            <ProductGlyph name="reset" style={{ width: 16, height: 16 }} />
             Rejouer
           </button>
         </div>
@@ -357,7 +355,7 @@ export function HeroMiniQuiz() {
                 whiteSpace: "nowrap", marginLeft: 12, flexShrink: 0,
               }}
             >
-              <RotateCcw size={14} aria-hidden="true" style={{ display: "inline", marginRight: 5, verticalAlign: -2 }} />
+              <ProductGlyph name="reset" style={{ display: "inline", width: 15, height: 15, marginRight: 5, verticalAlign: -3 }} />
               Rejouer
             </button>
           </div>

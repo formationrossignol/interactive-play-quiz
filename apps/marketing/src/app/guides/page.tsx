@@ -4,6 +4,7 @@ import { Footer } from "@/components/Footer";
 import { GuidesGrid } from "@/components/GuidesGrid";
 import { fetchGuides } from "@/lib/repo";
 import { SITE_URL } from "@/lib/siteUrl";
+import { ProductGlyph } from "@/components/ProductGlyph";
 import styles from "@/components/ResourcePages.module.css";
 
 export const metadata: Metadata = {
@@ -19,12 +20,20 @@ export default async function GuidesPage() {
     "@context": "https://schema.org",
     "@type": "ItemList",
     name: "Guides Brivia",
-    itemListElement: guides.map((guide, index) => ({
-      "@type": "ListItem",
-      position: index + 1,
-      name: guide.title,
-      url: guide.url ? new URL(guide.url, SITE_URL).toString() : `${SITE_URL}/guides`,
-    })),
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Comment créer un quiz interactif utile",
+        url: `${SITE_URL}/guides/quiz-interactif`,
+      },
+      ...guides.map((guide, index) => ({
+        "@type": "ListItem",
+        position: index + 2,
+        name: guide.title,
+        url: guide.url ? new URL(guide.url, SITE_URL).toString() : `${SITE_URL}/guides`,
+      })),
+    ],
   };
 
   return <div className="marketing-shell">
@@ -40,12 +49,26 @@ export default async function GuidesPage() {
           <div className={styles.guidesBrief}>
             <p>Des ressources courtes, organisées autour du prochain geste à accomplir — de la première question au débrief.</p>
             <div className={styles.guidesMeta}>
-              <div><strong>{guides.length}</strong><span>guides publiés</span></div>
+              <div><strong>{guides.length + 1}</strong><span>guides publiés</span></div>
               <div><strong>{videos}</strong><span>formats vidéo</span></div>
             </div>
-            <a className={styles.resourceAction} href="/builder-start"><span>Créer un contenu</span><i aria-hidden="true">↗</i></a>
+            <a className={styles.resourceAction} href="/builder-start"><span>Créer un contenu</span><i><ProductGlyph name="external" /></i></a>
           </div>
         </div>
+      </section>
+
+      <section className={styles.ownerGuide} aria-labelledby="owner-guide-title">
+        <div>
+          <span>Méthode Brivia</span>
+          <h2 id="owner-guide-title">Comment créer un quiz interactif utile.</h2>
+          <p>Objectif, formats, rythme, test et analyse. Un guide complet pour produire autre chose qu’un simple classement.</p>
+          <a href="/guides/quiz-interactif">Lire le guide <ProductGlyph name="arrow" /></a>
+        </div>
+        <ol aria-label="Contenu du guide">
+          <li><span>Objectif</span><strong>Décider avant d’écrire</strong></li>
+          <li><span>Conception</span><strong>Choisir le bon geste</strong></li>
+          <li><span>Analyse</span><strong>Transformer le résultat</strong></li>
+        </ol>
       </section>
 
       <section className={styles.guidesIndex} aria-labelledby="guide-list-title">

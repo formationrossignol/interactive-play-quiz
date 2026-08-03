@@ -43,6 +43,7 @@
   font-style: normal;
   transition: transform .55s cubic-bezier(.32,.72,0,1);
 }
+.resourceAction i svg { width: 1.05rem; height: 1.05rem; }
 
 .resourceAction:hover { transform: translateY(-3px); }
 .resourceAction:hover i { transform: translate(.16rem, -.08rem) rotate(8deg); }
@@ -104,6 +105,17 @@
 .guidesMeta div { border-top: 1px solid rgb(255 255 255 / .14); padding-top: 1rem; }
 .guidesMeta strong, .guidesMeta span { display: block; }.guidesMeta strong { font-family: var(--ap-font-display); font-size: 1.65rem; }.guidesMeta span { margin-top: .25rem; color: rgb(255 255 255 / .48); font-size: .68rem; }
 .guidesBrief .resourceAction { margin-top: 2.5rem; }
+.ownerGuide { width: min(100% - 2.5rem, 88rem); display: grid; grid-template-columns: 1.15fr .85fr; gap: clamp(3rem, 8vw, 8rem); margin: clamp(5rem, 9vw, 8rem) auto 0; border-radius: 2rem; padding: clamp(2rem, 5vw, 4.5rem); color: #f8f7ff; background: radial-gradient(circle at 100% 0%, rgb(133 122 255 / .26), transparent 24rem), #211e41; }
+.ownerGuide > div > span { color: #aaa4ff; font-size: .68rem; font-weight: 820; }
+.ownerGuide h2 { max-width: 13ch; margin: 1rem 0 0; font-family: var(--ap-font-display); font-size: clamp(2.5rem, 4.8vw, 5rem); font-weight: 620; letter-spacing: -.06em; line-height: .98; }
+.ownerGuide p { max-width: 39rem; margin: 1.2rem 0 0; color: rgb(248 247 255 / .65); line-height: 1.65; }
+.ownerGuide a { display: inline-flex; align-items: center; gap: .6rem; margin-top: 2rem; color: #d8d4ff; font-size: .8rem; font-weight: 820; }
+.ownerGuide a svg { width: 1rem; height: 1rem; }
+.ownerGuide ol { align-self: end; margin: 0; padding: 0; list-style: none; }
+.ownerGuide li { display: grid; grid-template-columns: .65fr 1.35fr; gap: 1rem; border-bottom: 1px solid rgb(255 255 255 / .14); padding: 1.1rem 0; }
+.ownerGuide li:first-child { border-top: 1px solid rgb(255 255 255 / .14); }
+.ownerGuide li span { color: rgb(248 247 255 / .48); font-size: .67rem; }
+.ownerGuide li strong { font-size: .77rem; }
 .guidesIndex { width: min(100% - 2.5rem, 88rem); margin: 0 auto; padding: clamp(6rem, 11vw, 11rem) 0; }
 .guidesIndexHeader { display: grid; grid-template-columns: .75fr 1.25fr; gap: 4rem; align-items: end; margin-bottom: 4rem; }
 .guidesIndexHeader span { color: #766aef; font-size: .68rem; font-weight: 850; letter-spacing: .16em; text-transform: uppercase; }
@@ -137,7 +149,7 @@
 .reviewMetrics { width: min(100% - 2.5rem, 88rem); display: grid; grid-template-columns: repeat(3, 1fr); margin: 0 auto; border-block: 1px solid #c9c0b2; }.reviewMetric { min-height: 11rem; display: flex; flex-direction: column; justify-content: center; padding: 2rem; border-right: 1px solid #c9c0b2; }.reviewMetric:first-child { padding-left: 0; }.reviewMetric:last-child { border: 0; }.reviewMetric strong { font-family: var(--ap-font-display); font-size: clamp(2.3rem, 5vw, 5rem); font-weight: 600; letter-spacing: -.06em; }.reviewMetric span { margin-top: .4rem; color: #6e685e; font-size: .75rem; line-height: 1.45; }.reviewExperience { padding-top: 2rem; }
 
 @media (max-width: 780px) {
-  .aboutHero, .aboutThesisInner, .aboutValuesHeader, .guidesHeroInner, .guidesIndexHeader, .reviewsDeck { grid-template-columns: 1fr; }
+  .aboutHero, .aboutThesisInner, .aboutValuesHeader, .guidesHeroInner, .ownerGuide, .guidesIndexHeader, .reviewsDeck { grid-template-columns: 1fr; }
   .aboutHero, .guidesHeroInner { padding-block: 4rem; }
   .aboutTitle h1, .guidesHero h1, .helpHero h1, .reviewsHero h1 { font-size: clamp(3.35rem, 16vw, 5.25rem); }
   .aboutPortrait { min-height: 28rem; }.aboutPortraitShell { transform: none; }
