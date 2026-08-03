@@ -47,8 +47,8 @@ const ENGLISH_CONTENT = {
   legalLabel: "Legal links",
   copyright: "© 2026 Brivia. All rights reserved.",
   product: [
-    ["Overview", "/en"], ["Live sessions", "/en#live"], ["Learning", "/en#learning"],
-    ["Assessment", "/en#assessment"],
+    ["Overview", "/en"], ["Live sessions", "/en#demo"], ["Learning", "/en#experience-signature"],
+    ["Assessment", "/en#question-types-home-title"],
   ],
   resources: [
     ["Trust center", "/en/security"], ["Enterprise", "/en/enterprise"],

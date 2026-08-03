@@ -74,7 +74,28 @@ const ALL_QUESTIONS = [
 // wouldn't match between the two passes and React throws a hydration
 // mismatch (#418). Deterministic content is required for anything rendered
 // on first paint.
-const QUESTIONS = ALL_QUESTIONS.slice(0, 3);
+const ENGLISH_QUESTIONS = [
+  {
+    q: "Which ocean is the deepest?",
+    answers: ["Atlantic", "Pacific", "Indian", "Arctic"],
+    correct: 1,
+    hint: "It was the Pacific: the Mariana Trench reaches 10,984 metres. ✓",
+  },
+  {
+    q: "In which country was Wi-Fi invented?",
+    answers: ["USA", "Japan", "Finland", "Australia"],
+    correct: 3,
+    hint: "It was Australia, through CSIRO research in 1992. ✓",
+  },
+  {
+    q: "Which land animal runs the fastest?",
+    answers: ["Lion", "Cheetah", "Falcon", "Elephant"],
+    correct: 1,
+    hint: "It was the cheetah, which can reach about 112 km/h. ✓",
+  },
+] as const;
+
+const FRENCH_QUESTIONS = ALL_QUESTIONS.slice(0, 3);
 
 const SHAPES = [
   <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" key="tri"><path d="M12 3 22 21H2z"/></svg>,
@@ -107,7 +128,11 @@ function useAnimatedNumber(target: number, duration = 500) {
   return display;
 }
 
-export function HeroMiniQuiz() {
+export function HeroMiniQuiz({ language = "fr" }: { language?: "fr" | "en" }) {
+  const questions = language === "en" ? ENGLISH_QUESTIONS : FRENCH_QUESTIONS;
+  const defaultHint = language === "en"
+    ? "Choose an answer. This is a working demo."
+    : "Cliquez sur une réponse, c'est une vraie démo.";
   const [qIndex, setQIndex] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
   const [revealed, setRevealed] = useState(false);
@@ -117,13 +142,13 @@ export function HeroMiniQuiz() {
   const [shakingIndex, setShakingIndex] = useState<number | null>(null);
   const [pillBonus, setPillBonus] = useState<number | null>(null);
   const [pillKey, setPillKey] = useState(0);
-  const [hintText, setHintText] = useState("Cliquez sur une réponse, c'est une vraie démo.");
+  const [hintText, setHintText] = useState(defaultHint);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const advanceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const advanceLockedRef = useRef(false);
   const animatedScore = useAnimatedNumber(score);
 
-  const q = QUESTIONS[Math.min(qIndex, QUESTIONS.length - 1)];
+  const q = questions[Math.min(qIndex, questions.length - 1)];
   const timerOffset = CIRC * (1 - timeLeft / TIMER_SECONDS);
   const isHot = timeLeft <= 5;
 
@@ -131,19 +156,19 @@ export function HeroMiniQuiz() {
     if (advanceLockedRef.current) return;
     advanceLockedRef.current = true;
     if (timerRef.current) clearInterval(timerRef.current);
-    if (qIndex + 1 < QUESTIONS.length) {
+    if (qIndex + 1 < questions.length) {
       advanceTimeoutRef.current = setTimeout(() => {
         setQIndex(qIndex + 1);
         setSelected(null);
         setRevealed(false);
         setTimeLeft(TIMER_SECONDS);
-        setHintText("Cliquez sur une réponse, c'est une vraie démo.");
+        setHintText(defaultHint);
         advanceLockedRef.current = false;
       }, 1600);
     } else {
       advanceTimeoutRef.current = setTimeout(() => setDone(true), 1600);
     }
-  }, [qIndex]);
+  }, [defaultHint, qIndex, questions.length]);
 
   const pick = useCallback((i: number) => {
     if (revealed) return;
@@ -160,10 +185,10 @@ export function HeroMiniQuiz() {
     } else {
       setShakingIndex(i);
       setTimeout(() => setShakingIndex(null), 500);
-      setHintText(`Presque ! ${q.hint}`);
+      setHintText(language === "en" ? `Almost. ${q.hint}` : `Presque ! ${q.hint}`);
     }
     advance();
-  }, [revealed, q, timeLeft, advance]);
+  }, [revealed, q, timeLeft, advance, language]);
 
   useEffect(() => {
     if (revealed || done) return;
@@ -172,7 +197,7 @@ export function HeroMiniQuiz() {
         if (t <= 1) {
           clearInterval(timerRef.current!);
           setRevealed(true);
-          setHintText(`Temps écoulé. ${q.hint}`);
+          setHintText(language === "en" ? `Time is up. ${q.hint}` : `Temps écoulé. ${q.hint}`);
           advance();
           return 0;
         }
@@ -180,7 +205,7 @@ export function HeroMiniQuiz() {
       });
     }, 1000);
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [revealed, done, qIndex, q.hint, advance]);
+  }, [revealed, done, qIndex, q.hint, advance, language]);
 
   useEffect(() => () => {
     if (timerRef.current) clearInterval(timerRef.current);
@@ -192,7 +217,7 @@ export function HeroMiniQuiz() {
     advanceLockedRef.current = false;
     setQIndex(0); setSelected(null); setRevealed(false);
     setScore(0); setTimeLeft(TIMER_SECONDS); setDone(false);
-    setHintText("Cliquez sur une réponse, c'est une vraie démo.");
+    setHintText(defaultHint);
   };
 
   return (
@@ -209,7 +234,7 @@ export function HeroMiniQuiz() {
         userSelect: "none",
       }}
       role="group"
-      aria-label="Démo interactive : essayez une question"
+      aria-label={language === "en" ? "Interactive demo: answer a question" : "Démo interactive : essayez une question"}
     >
       {pillBonus !== null && (
         <div key={pillKey} className="ap-score-pill" style={{ top: 60, left: "50%" }}>
@@ -224,7 +249,7 @@ export function HeroMiniQuiz() {
             style={{ width: 38, height: 38, color: "var(--ap-brand)", margin: "0 auto 12px" }}
           />
           <p style={{ fontFamily: "var(--ap-font-display)", fontSize: 18, fontWeight: 600, color: "var(--ap-muted)", marginBottom: 4 }}>
-            Score final
+            {language === "en" ? "Final score" : "Score final"}
           </p>
           <p className="ap-mono" style={{ fontFamily: "var(--ap-font-display)", fontSize: 44, fontWeight: 700, color: "var(--ap-brand)", marginBottom: 20 }}>
             {animatedScore}
@@ -235,7 +260,7 @@ export function HeroMiniQuiz() {
             onClick={restart}
           >
             <ProductGlyph name="reset" style={{ width: 16, height: 16 }} />
-            Rejouer
+            {language === "en" ? "Play again" : "Rejouer"}
           </button>
         </div>
       ) : (
@@ -270,7 +295,7 @@ export function HeroMiniQuiz() {
             </div>
 
             <span className="ap-badge ap-badge--flash" style={{ fontSize: 12.5, fontWeight: 800 }}>
-              Q{qIndex + 1}/{QUESTIONS.length} · {animatedScore} pts
+              Q{qIndex + 1}/{questions.length} · {animatedScore} pts
             </span>
           </div>
 
@@ -356,7 +381,7 @@ export function HeroMiniQuiz() {
               }}
             >
               <ProductGlyph name="reset" style={{ display: "inline", width: 15, height: 15, marginRight: 5, verticalAlign: -3 }} />
-              Rejouer
+              {language === "en" ? "Play again" : "Rejouer"}
             </button>
           </div>
         </>

@@ -51,9 +51,9 @@ const ENGLISH_NAV_MENUS = [
     match: ["/en"],
     items: [
       { label: "Overview", description: "The complete Brivia experience", href: "/en" },
-      { label: "Live sessions", description: "Turn every audience into participants", href: "/en#live" },
-      { label: "Learning", description: "Courses, practice and active recall", href: "/en#learning" },
-      { label: "Assessment", description: "Measure and review understanding", href: "/en#assessment" },
+      { label: "Live sessions", description: "Turn every audience into participants", href: "/en#demo" },
+      { label: "Learning", description: "Courses, practice and active recall", href: "/en#experience-signature" },
+      { label: "Assessment", description: "Measure and review understanding", href: "/en#question-types-home-title" },
     ],
   },
   {
@@ -61,9 +61,9 @@ const ENGLISH_NAV_MENUS = [
     match: ["/en/enterprise"],
     items: [
       { label: "Education", description: "Make every class active", href: "/en#education" },
-      { label: "Training", description: "Run sessions and document progress", href: "/en#training" },
+      { label: "Training", description: "Run sessions and document progress", href: "/en#education" },
       { label: "Enterprise", description: "Deploy with a clear framework", href: "/en/enterprise" },
-      { label: "Events", description: "Give the room a direct voice", href: "/en#events" },
+      { label: "Events", description: "Give the room a direct voice", href: "/en#audience-title" },
     ],
   },
   {
