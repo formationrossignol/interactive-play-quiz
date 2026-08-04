@@ -92,8 +92,9 @@ export default async function RootLayout({ children, params }: Props) {
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
         />
+        {/* next-intl's types resolve against the hoisted React 18 copy at the workspace root while this app runs React 19 — same shape at runtime, mismatched nominal type at compile time */}
         <NextIntlClientProvider locale={locale}>
-          {children}
+          {children as any}
         </NextIntlClientProvider>
         <MarketingAnalytics />
         <Toaster />
