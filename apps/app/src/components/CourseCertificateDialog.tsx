@@ -56,53 +56,181 @@ export async function createCertificatePdf({
   learnerId,
   totalLessons,
 }: CertificatePdfParams) {
-  const { jsPDF } = await import("jspdf");
+  const { jsPDF, GState } = await import("jspdf");
   const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
   const width = pdf.internal.pageSize.getWidth();
   const height = pdf.internal.pageSize.getHeight();
+  const cx = width / 2;
   const certificateId = certificateNumberFor(courseId, learnerId);
 
-  pdf.setFillColor(255, 252, 247);
+  const INK = [32, 24, 54] as const;
+  const INDIGO = [67, 56, 202] as const;
+  const MUTED = [109, 98, 136] as const;
+  const GOLD = [176, 141, 87] as const;
+  const CREAM = [255, 252, 247] as const;
+
+  const setDraw = (c: readonly [number, number, number]) => pdf.setDrawColor(c[0], c[1], c[2]);
+  const setText = (c: readonly [number, number, number]) => pdf.setTextColor(c[0], c[1], c[2]);
+  const setFill = (c: readonly [number, number, number]) => pdf.setFillColor(c[0], c[1], c[2]);
+
+  const diamond = (x: number, y: number, w: number, h: number) => {
+    pdf.triangle(x - w, y, x, y - h, x + w, y, "F");
+    pdf.triangle(x - w, y, x, y + h, x + w, y, "F");
+  };
+
+  // Background
+  setFill(CREAM);
   pdf.rect(0, 0, width, height, "F");
-  pdf.setDrawColor(67, 56, 202);
-  pdf.setLineWidth(1.2);
-  pdf.roundedRect(12, 12, width - 24, height - 24, 3, 3, "S");
 
-  pdf.setTextColor(67, 56, 202);
+  // Faint diagonal watermark for a security-document feel
+  pdf.setGState(new GState({ opacity: 0.028 }));
+  pdf.setFont("times", "bold");
+  pdf.setFontSize(78);
+  setText(INDIGO);
+  pdf.text("BRIVIA", cx, height / 2 + 22, { align: "center", angle: 28 });
+  pdf.setGState(new GState({ opacity: 1 }));
+
+  // Double frame: gold outer, indigo inner
+  setDraw(GOLD);
+  pdf.setLineWidth(0.5);
+  pdf.rect(9, 9, width - 18, height - 18, "S");
+  setDraw(INDIGO);
+  pdf.setLineWidth(0.3);
+  pdf.rect(12.5, 12.5, width - 25, height - 25, "S");
+
+  // Gold corner ornaments on the inner frame
+  setFill(GOLD);
+  [
+    [12.5, 12.5],
+    [width - 12.5, 12.5],
+    [12.5, height - 12.5],
+    [width - 12.5, height - 12.5],
+  ].forEach(([x, y]) => diamond(x, y, 2.1, 2.9));
+
+  // Emblem medallion
+  const emblemY = 30;
+  setDraw(GOLD);
+  pdf.setLineWidth(0.5);
+  pdf.circle(cx, emblemY, 8.4, "S");
+  pdf.setLineWidth(0.25);
+  pdf.circle(cx, emblemY, 6.6, "S");
+  pdf.setFont("times", "bolditalic");
+  pdf.setFontSize(15);
+  setText(INDIGO);
+  pdf.text("B", cx, emblemY + 3.3, { align: "center" });
+
+  // Wordmark flanked by thin gold rules
+  const wmY = 46;
   pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(18);
-  pdf.text("BRIVIA", width / 2, 32, { align: "center" });
+  pdf.setFontSize(12);
+  setText(GOLD);
+  pdf.text("B R I V I A", cx, wmY, { align: "center" });
+  setDraw(GOLD);
+  pdf.setLineWidth(0.25);
+  pdf.line(cx - 42, wmY - 1.4, cx - 20, wmY - 1.4);
+  pdf.line(cx + 20, wmY - 1.4, cx + 42, wmY - 1.4);
 
-  pdf.setTextColor(36, 27, 58);
-  pdf.setFontSize(28);
-  pdf.text("ATTESTATION DE REUSSITE", width / 2, 58, { align: "center" });
-  pdf.setFont("helvetica", "normal");
+  // Title
+  pdf.setFont("times", "bold");
+  pdf.setFontSize(30);
+  setText(INK);
+  pdf.text("ATTESTATION DE RÉUSSITE", cx, 65, { align: "center" });
+
+  // Ornamental divider: line – diamond – line
+  const dividerY = 73;
+  setDraw(GOLD);
+  pdf.setLineWidth(0.35);
+  pdf.line(cx - 26, dividerY, cx - 5, dividerY);
+  pdf.line(cx + 5, dividerY, cx + 26, dividerY);
+  diamond(cx, dividerY, 1.6, 2.2);
+
+  pdf.setFont("times", "italic");
   pdf.setFontSize(13);
-  pdf.setTextColor(109, 98, 136);
-  pdf.text("Cette attestation certifie que", width / 2, 76, { align: "center" });
+  setText(MUTED);
+  pdf.text("Cette attestation certifie que", cx, 86, { align: "center" });
 
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(24);
-  pdf.setTextColor(36, 27, 58);
-  pdf.text(learnerName, width / 2, 94, { align: "center" });
+  // Learner name with a gold underline sized to the text
+  pdf.setFont("times", "bold");
+  pdf.setFontSize(27);
+  setText(INK);
+  pdf.text(learnerName, cx, 104, { align: "center" });
+  const nameWidth = pdf.getTextWidth(learnerName);
+  setDraw(GOLD);
+  pdf.setLineWidth(0.4);
+  pdf.line(cx - nameWidth / 2 - 6, 108, cx + nameWidth / 2 + 6, 108);
 
-  pdf.setFont("helvetica", "normal");
+  pdf.setFont("times", "italic");
   pdf.setFontSize(13);
-  pdf.setTextColor(109, 98, 136);
-  pdf.text("a termine avec succes la formation", width / 2, 110, { align: "center" });
+  setText(MUTED);
+  pdf.text("a terminé avec succès la formation", cx, 119, { align: "center" });
 
-  pdf.setFont("helvetica", "bold");
+  pdf.setFont("times", "bold");
   pdf.setFontSize(20);
-  pdf.setTextColor(67, 56, 202);
+  setText(INDIGO);
   const titleLines = pdf.splitTextToSize(courseTitle, 190) as string[];
-  pdf.text(titleLines, width / 2, 126, { align: "center" });
+  pdf.text(titleLines, cx, 133, { align: "center" });
 
-  const metaY = 150 + Math.max(0, titleLines.length - 1) * 7;
-  pdf.setFont("helvetica", "normal");
-  pdf.setFontSize(11);
-  pdf.setTextColor(109, 98, 136);
-  pdf.text(`${totalLessons} leçon${totalLessons > 1 ? "s" : ""} validée${totalLessons > 1 ? "s" : ""} · Délivrée le ${completionDate()}`, width / 2, metaY, { align: "center" });
-  pdf.text(`Identifiant : ${certificateId}`, width / 2, metaY + 13, { align: "center" });
+  // Closing ornament, positioned to balance the space below the (variable-height) title
+  const closingY = 133 + Math.max(0, titleLines.length - 1) * 8 + 20;
+  setDraw(GOLD);
+  pdf.setLineWidth(0.3);
+  pdf.line(cx - 30, closingY, cx - 6, closingY);
+  pdf.line(cx + 6, closingY, cx + 30, closingY);
+  diamond(cx, closingY, 1.4, 1.9);
+
+  // Footer: signature block · seal · certificate reference
+  const footerRuleY = height - 40;
+  setDraw(GOLD);
+  pdf.setLineWidth(0.25);
+  pdf.line(30, footerRuleY, width - 30, footerRuleY);
+
+  const footerY = footerRuleY + 14;
+
+  // Left — signature line
+  pdf.setDrawColor(INDIGO[0], INDIGO[1], INDIGO[2]);
+  pdf.setLineWidth(0.3);
+  pdf.line(28, footerY, 78, footerY);
+  pdf.setFont("times", "italic");
+  pdf.setFontSize(9.5);
+  setText(MUTED);
+  pdf.text("Direction de la formation", 28, footerY + 5);
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(8);
+  setText(INDIGO);
+  pdf.text("BRIVIA", 28, footerY + 9.5);
+
+  // Center — wax-seal medallion with checkmark
+  const sealY = footerRuleY + 8.5;
+  setDraw(GOLD);
+  pdf.setLineWidth(0.5);
+  pdf.circle(cx, sealY, 7.6, "S");
+  pdf.setLineWidth(0.25);
+  pdf.circle(cx, sealY, 6, "S");
+  setDraw(INDIGO);
+  pdf.setLineWidth(1.1);
+  pdf.lines([[2.6, 2.8], [5, -6]], cx - 3, sealY + 0.3, [1, 1], "S");
+  setFill(GOLD);
+  pdf.triangle(cx - 3.6, sealY + 6.2, cx - 0.6, sealY + 6.2, cx - 2.1, sealY + 11.5, "F");
+  pdf.triangle(cx + 0.6, sealY + 6.2, cx + 3.6, sealY + 6.2, cx + 2.1, sealY + 11.5, "F");
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(6.5);
+  setText(GOLD);
+  pdf.text("AUTHENTIFIÉ", cx, footerY + 9.5, { align: "center" });
+
+  // Right — reference details
+  pdf.setFont("times", "normal");
+  pdf.setFontSize(9.5);
+  setText(MUTED);
+  pdf.text(
+    `${totalLessons} leçon${totalLessons > 1 ? "s" : ""} validée${totalLessons > 1 ? "s" : ""} · Délivrée le ${completionDate()}`,
+    width - 28,
+    footerY,
+    { align: "right" },
+  );
+  pdf.setFont("courier", "normal");
+  pdf.setFontSize(8.5);
+  setText(GOLD);
+  pdf.text(`N° ${certificateId}`, width - 28, footerY + 5, { align: "right" });
 
   return pdf.output("blob");
 }
