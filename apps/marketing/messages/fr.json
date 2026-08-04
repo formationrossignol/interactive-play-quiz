@@ -1,0 +1,556 @@
+{
+  "Header": {
+    "skip": "Aller au contenu",
+    "navigation": "Navigation principale",
+    "mobileNavigation": "Navigation mobile",
+    "home": "Brivia, accueil",
+    "login": "Se connecter",
+    "signup": "Créer un compte",
+    "openMenu": "Ouvrir le menu",
+    "closeMenu": "Fermer le menu",
+    "pricing": "Tarifs",
+    "mobileIntro": "De l’idée à une expérience collective qui compte.",
+    "choose": "Choisir",
+    "explore": "Explorer",
+    "menus": [
+      {
+        "label": "Produit",
+        "match": ["/features", "/integrations"],
+        "items": [
+          { "label": "Vue d’ensemble", "description": "L’expérience Brivia complète", "href": "/features" },
+          { "label": "Sessions en direct", "description": "Faites participer toute la salle", "href": "/features#live-sessions" },
+          { "label": "Apprentissage", "description": "Cours, flashcards et parcours", "href": "/features#learning-paths" },
+          { "label": "Évaluation", "description": "Mesurez et restituez les acquis", "href": "/features#assessment" },
+          { "label": "Intégrations", "description": "Reliez contenus et résultats", "href": "/integrations" }
+        ]
+      },
+      {
+        "label": "Solutions",
+        "match": ["/solutions", "/enterprise"],
+        "items": [
+          { "label": "Enseignement", "description": "Rendez chaque cours actif", "href": "/solutions/education" },
+          { "label": "Formation", "description": "Animez et prouvez la progression", "href": "/solutions/training" },
+          { "label": "Entreprises", "description": "Déployez avec un cadre maîtrisé", "href": "/enterprise" },
+          { "label": "Événements", "description": "Transformez l’audience en participants", "href": "/solutions/events" }
+        ]
+      },
+      {
+        "label": "Ressources",
+        "match": ["/guides", "/help", "/customers", "/security", "/accessibility", "/about"],
+        "items": [
+          { "label": "Guides", "description": "Méthodes et bonnes pratiques", "href": "/guides" },
+          { "label": "Centre d’aide", "description": "Réponses et documentation", "href": "/help" },
+          { "label": "Clients", "description": "Résultats et références vérifiables", "href": "/customers" },
+          { "label": "Confiance", "description": "Sécurité et accessibilité", "href": "/security" },
+          { "label": "À propos", "description": "Notre vision et nos engagements", "href": "/about" }
+        ]
+      }
+    ]
+  },
+  "Footer": {
+    "home": "Brivia, accueil",
+    "statement": "Concevoir, animer et mesurer dans un seul espace.",
+    "summary": "Des formats interactifs pour faire participer, vérifier les acquis et améliorer chaque session.",
+    "productLabel": "Produit",
+    "resourcesLabel": "Ressources",
+    "companyLabel": "Entreprise",
+    "legalLabel": "Liens légaux",
+    "copyright": "© 2026 Brivia. Tous droits réservés.",
+    "product": [
+      ["Fonctionnalités", "/features"], ["Quiz", "/features#format-quiz"],
+      ["Sondages", "/features#format-polls"], ["Examens", "/features#format-exams"],
+      ["Cours", "/features#format-courses"]
+    ],
+    "resources": [
+      ["Tarifs", "/pricing"], ["Guides", "/guides"], ["Centre d’aide", "/help"],
+      ["Avis clients", "/reviews"], ["Références", "/customers"],
+      ["Intégrations", "/integrations"], ["Communauté", "community"]
+    ],
+    "company": [
+      ["Entreprise", "/enterprise"], ["Sécurité", "/security"], ["Accessibilité", "/accessibility"],
+      ["À propos", "/about"], ["Contact", "/contact"], ["Roadmap", "roadmap"],
+      ["Changelog", "changelog"]
+    ],
+    "legal": [["Mentions légales", "/mentions-legales"], ["Confidentialité", "/confidentialite"], ["CGU", "/cgu"]]
+  },
+  "AuthorityPage": {
+    "factRail": "Repères essentiels",
+    "ecosystem": "Écosystème disponible",
+    "signal": "Signal opérationnel",
+    "control": "Contrôle",
+    "active": "Actif",
+    "nextStep": "Prochaine étape",
+    "primaryLabel": "Parler à l’équipe",
+    "primaryHref": "/contact?intent=demo",
+    "secondaryLabel": "Explorer le produit",
+    "secondaryHref": "/features"
+  },
+  "SolutionsEducationPage": {
+    "meta": { "title": "Brivia pour l’enseignement", "description": "Faites participer, vérifier les acquis et prolonger l’apprentissage dans un même environnement." },
+    "layout": "studio",
+    "tone": "blue",
+    "eyebrow": "Enseignement supérieur et écoles",
+    "title": "Une salle active laisse des",
+    "accent": "traces utiles.",
+    "introduction": "Sondez avant d’expliquer, vérifiez pendant le cours et transformez les réponses en décisions pédagogiques après la session.",
+    "signal": "Du direct au suivi",
+    "signalDetail": "Quiz, flashcards, cours et examens partagent un même fil pédagogique.",
+    "facts": [
+      { "value": "Sans compte", "label": "Participation publique depuis un téléphone" },
+      { "value": "15", "label": "Formats de questions documentés" },
+      { "value": "1 espace", "label": "Direct, révision, cours et évaluation" }
+    ],
+    "chapters": [
+      { "index": "01 — Avant", "title": "Révéler le point de départ.", "text": "Une activité courte permet d’ajuster le cours avant que les incompréhensions s’installent.", "points": ["Sondage d’ouverture et nuage de mots.", "Questions diagnostiques sans installation.", "Contenus préparés et réutilisables par l’équipe."] },
+      { "index": "02 — Pendant", "title": "Faire réfléchir toute la salle.", "text": "Alternez présentation, question et discussion sans casser le rythme.", "points": ["Accès par code ou QR.", "Affichage progressif et pilotage animateur.", "Réactions, classement ou anonymat selon le contexte."] },
+      { "index": "03 — Après", "title": "Prolonger au-delà du direct.", "text": "Les résultats deviennent un point de départ pour réviser, accompagner et évaluer.", "points": ["Résultats par question et exports.", "Flashcards et parcours séquentiels.", "Examens configurables et notation manuelle."] }
+    ],
+    "closingTitle": "Construisons votre scénario pédagogique.",
+    "closingText": "Présentez-nous un cours, un public et une contrainte. Nous montrerons le parcours complet plutôt qu’une démo générique.",
+    "primaryLabel": "Demander une démonstration",
+    "primaryHref": "/contact?intent=education"
+  },
+  "SolutionsTrainingPage": {
+    "meta": { "title": "Brivia pour la formation", "description": "Animez une formation, mesurez la compréhension et structurez la suite sans multiplier les outils." },
+    "layout": "timeline",
+    "eyebrow": "Formation professionnelle",
+    "title": "L’attention devient un",
+    "accent": "signal exploitable.",
+    "introduction": "Concevez une session vivante, détectez ce qui doit être réexpliqué et transmettez une preuve de progression à vos clients.",
+    "signal": "Une continuité pédagogique",
+    "signalDetail": "Le même espace relie animation, supports, exercices, résultats et suivi.",
+    "facts": [
+      { "value": "Live", "label": "Questions et réactions en temps réel" },
+      { "value": "Async", "label": "Cours, flashcards et examens" },
+      { "value": "Exports", "label": "Résultats à partager et analyser" }
+    ],
+    "chapters": [
+      { "index": "01 — Concevoir", "title": "Préparer sans dupliquer.", "text": "Transformez une base existante en formats adaptés aux différents temps de la formation.", "points": ["Banque de questions et modèles réutilisables.", "Import de contenus structurés.", "Cours mêlant texte, vidéo, fichiers, SCORM et H5P."] },
+      { "index": "02 — Animer", "title": "Maintenir un rythme humain.", "text": "Le produit s’efface au profit du groupe et rend chaque transition lisible.", "points": ["Entrée immédiate par QR ou code.", "Rythme contrôlé par le formateur.", "Débrief à partir des réponses réelles."] },
+      { "index": "03 — Prouver", "title": "Restituer ce qui s’est passé.", "text": "Les résultats ne restent pas enfermés dans la session.", "points": ["Analyse détaillée et exports.", "Parcours et seuils de progression.", "Certificats de complétion partageables."] }
+    ],
+    "closingTitle": "Montrez-nous une formation réelle.",
+    "closingText": "Nous construirons la démonstration à partir de vos contraintes de contenu, de groupe et de restitution.",
+    "primaryLabel": "Préparer ma démonstration",
+    "primaryHref": "/contact?intent=training"
+  },
+  "SolutionsEventsPage": {
+    "meta": { "title": "Brivia pour les événements", "description": "Transformez une audience en participants avec des interactions immédiates et un pilotage lisible." },
+    "layout": "stage",
+    "tone": "amber",
+    "eyebrow": "Événements et séminaires",
+    "title": "Une audience devient une",
+    "accent": "présence collective.",
+    "introduction": "Créez des moments de participation qui restent simples sur téléphone, lisibles sur grand écran et pilotables en régie.",
+    "signal": "Entrée immédiate",
+    "signalDetail": "Un code ou un QR suffit pour rejoindre, sans compte participant ni installation.",
+    "facts": [
+      { "value": "QR", "label": "Accès depuis le navigateur" },
+      { "value": "Live", "label": "Réactions, questions et classements" },
+      { "value": "Maîtrisé", "label": "Ouverture et rythme contrôlés par l’hôte" }
+    ],
+    "chapters": [
+      { "index": "01 — Entrée", "title": "Réduire la distance en dix secondes.", "text": "L’interface participant se concentre sur une seule action à la fois.", "points": ["Code court et QR projetable.", "Aucun téléchargement imposé.", "Identité et règles adaptées au contexte."] },
+      { "index": "02 — Scène", "title": "Donner du relief au direct.", "text": "Les transitions, réactions et résultats renforcent le moment sans voler la vedette au contenu.", "points": ["Réactions pilotables pendant l’attente.", "Questions plein écran et rythme hôte.", "Résultats instantanés et débrief collectif."] },
+      { "index": "03 — Après", "title": "Conserver le signal utile.", "text": "Exportez les réponses et commentaires pour prolonger la conversation.", "points": ["Distribution des réponses.", "Commentaires de fin de session.", "Exports pour le bilan organisateur."] }
+    ],
+    "closingTitle": "Préparons votre moment fort.",
+    "closingText": "Donnez-nous la jauge, le lieu et le conducteur. Nous testerons le scénario qui compte vraiment.",
+    "primaryLabel": "Parler de mon événement",
+    "primaryHref": "/contact?intent=event"
+  },
+  "ContactPage": {
+    "meta": { "title": "Contact", "description": "Contactez l’équipe Brivia pour parler du produit, du support ou d’un déploiement dans votre organisation." },
+    "ogTitle": "Contacter l’équipe Brivia",
+    "ogDescription": "Présentez votre projet, votre public et vos contraintes à l’équipe Brivia.",
+    "eyebrow": "Un échange utile, dès le départ",
+    "title": "Parlons du vrai sujet.",
+    "intro": "Votre public, votre contexte, vos contraintes. Donnez-nous la matière nécessaire pour vous répondre avec précision.",
+    "signalsLabel": "Autres moyens de nous contacter",
+    "writeLabel": "Écrire directement",
+    "helpLabel": "Trouver une réponse maintenant",
+    "helpTitle": "Centre d’aide Brivia",
+    "helpHref": "/help",
+    "formEyebrow": "Votre projet",
+    "formTitle": "Quelques détails. Une réponse mieux cadrée.",
+    "privacyNote": "Votre demande est transmise de façon sécurisée.",
+    "formIndex": "01 — 06"
+  },
+  "EnterprisePage": {
+    "meta": { "title": "Brivia pour les organisations", "description": "Cadrez le déploiement de Brivia autour de vos usages, de votre gouvernance, de vos données et de vos équipes." },
+    "ogTitle": "Brivia pour les organisations",
+    "ogDescription": "Cadrez un déploiement Brivia autour de vos usages, de votre gouvernance et de vos exigences.",
+    "eyebrow": "Brivia pour les organisations",
+    "title": "Décidez sur des faits.",
+    "intro": "Nous préparons la démonstration autour de votre public, de vos flux et de vos exigences réelles.",
+    "criteriaCta": "Voir les critères",
+    "trustCta": "Ouvrir le dossier de confiance",
+    "heroImageAlt": "Une équipe pilote une expérience Brivia dans un environnement professionnel",
+    "heroCaptionEyebrow": "Votre contexte",
+    "heroCaptionText": "avant notre démonstration",
+    "decisionTitle": "Trois dossiers. Une décision claire.",
+    "decisionText": "Chaque conversation Enterprise doit répondre à ces trois dimensions sans diluer les responsabilités.",
+    "explore": "Explorer",
+    "areas": [
+      { "label": "Usage", "title": "Une expérience cohérente", "detail": "Direct, cours et évaluation dans un espace commun, sans compte pour rejoindre une session publique.", "href": "/features", "glyph": "live" },
+      { "label": "Gouvernance", "title": "Des rôles lisibles", "detail": "Organisations, groupes, contenus partagés et exports sont cadrés selon le déploiement retenu.", "href": "/features#collaboration", "glyph": "collaboration" },
+      { "label": "Confiance", "title": "Un dossier factuel", "detail": "Données, contrôles actuels et limites sont distingués des engagements à contractualiser.", "href": "/security", "glyph": "security" }
+    ],
+    "proofTitle": "Ce que votre équipe peut vérifier maintenant.",
+    "proofText": "Les engagements sur les volumes, le support, l’authentification ou les intégrations sont définis dans la proposition, pas dans une promesse générale.",
+    "proofAccess": "Accès participant",
+    "proofAccessText": "Aucun compte requis pour rejoindre une session publique.",
+    "proofAccessStatus": "Disponible",
+    "proofData": "Implantation des données",
+    "proofDataText": "Région européenne déclarée pour les données applicatives.",
+    "proofDataStatus": "Documenté",
+    "proofSso": "SSO et exigences spécifiques",
+    "proofSsoText": "Le périmètre est étudié pendant la qualification Enterprise.",
+    "proofSsoStatus": "À cadrer",
+    "deploymentTitle": "Le déploiement garde un rythme humain.",
+    "deployment": [
+      ["Cadrage", "Publics, formats, volume, calendrier et critères de réussite."],
+      ["Configuration", "Espaces, rôles, contenus communs et règles de restitution."],
+      ["Lancement", "Session pilote, accompagnement des équipes et point de contrôle."],
+      ["Suivi", "Résultats, retours d’usage et ajustements documentés."]
+    ],
+    "closingTitle": "Montrez-nous votre réalité.",
+    "closingText": "Audience, calendrier, outils, gouvernance. Nous préparerons une démonstration qui répond à votre décision.",
+    "closingCta": "Préparer la démonstration"
+  },
+  "SecurityPage": {
+    "meta": { "title": "Sécurité et confiance", "description": "Consultez les contrôles actuels, les documents publics et les limites du dossier de confiance Brivia." },
+    "ogTitle": "Sécurité et centre de confiance Brivia",
+    "ogDescription": "Consultez les contrôles actuels, les documents publics et les limites déclarées par Brivia.",
+    "eyebrow": "Centre de confiance",
+    "title": "La confiance se documente.",
+    "intro": "Contrôles disponibles, travaux à mener et engagements contractuels gardent chacun leur véritable statut.",
+    "controlsCta": "Voir les contrôles",
+    "privacyCta": "Lire la confidentialité",
+    "trustSealLabel": "Transparence active",
+    "trustSealText": "Mis à jour avec le produit",
+    "controlsTitle": "État actuel des contrôles.",
+    "controlsText": "Ces formulations restent volontairement précises. Elles ne remplacent pas une revue de sécurité adaptée à votre périmètre.",
+    "controls": [
+      { "area": "Données", "title": "Région européenne", "text": "Les données applicatives sont hébergées dans une région européenne déclarée.", "status": "Documenté" },
+      { "area": "Transport", "title": "Connexion chiffrée", "text": "Les services hébergés utilisent TLS pour les échanges réseau.", "status": "Disponible" },
+      { "area": "Accès", "title": "Contrôles applicatifs", "text": "Les espaces de création sont authentifiés et les accès sont séparés selon leur besoin.", "status": "Disponible" },
+      { "area": "Participants", "title": "Accès public minimal", "text": "Une session publique peut être rejointe sans créer de compte participant.", "status": "Disponible" }
+    ],
+    "documentsTitle": "Le dossier public, sans intermédiaire.",
+    "documentsText": "Les documents disponibles peuvent être transmis à votre équipe juridique, sécurité ou achats.",
+    "docPrivacy": "Traitement des données",
+    "docPrivacyTitle": "Confidentialité",
+    "docAccessibility": "Usage inclusif",
+    "docAccessibilityTitle": "Accessibilité",
+    "docTerms": "Cadre d’utilisation",
+    "docTermsTitle": "Conditions générales",
+    "limitsTitle": "Ce que nous ne prétendons pas.",
+    "limitsText": "La confiance augmente lorsque les limites restent aussi visibles que les contrôles.",
+    "limits": [
+      "Aucune certification ISO 27001 ou SOC 2 n’est revendiquée actuellement.",
+      "Les audits indépendants et tests d’intrusion doivent être planifiés selon le périmètre attendu.",
+      "Le SSO, le DPA et les exigences contractuelles sont qualifiés avec chaque organisation."
+    ],
+    "closingTitle": "Votre questionnaire mérite des réponses factuelles.",
+    "closingText": "Envoyez vos exigences et le calendrier de votre revue. Nous répondrons point par point.",
+    "closingCta": "Contacter l’équipe sécurité"
+  },
+  "AboutPage": {
+    "meta": { "title": "À propos", "description": "Découvrez pourquoi Brivia réunit animation, apprentissage et évaluation dans un même outil." },
+    "eyebrow": "Notre point de vue",
+    "title": "L’interactivité sert",
+    "accent": "l’apprentissage.",
+    "intro": "Brivia rassemble le moment en salle et le travail qui continue après. Une continuité pensée pour les personnes avant les fonctionnalités.",
+    "heroImageAlt": "Un groupe échange autour d’une table pendant un atelier pédagogique",
+    "missionEyebrow": "Le principe fondateur",
+    "missionTitle": "Suivre la réalité pédagogique.",
+    "missionIntro": "Une session peut commencer par un sondage, continuer par un cours et se terminer par un examen. L’outil doit suivre ce mouvement, sans imposer sa propre logique.",
+    "valuesEyebrow": "Le produit en pratique",
+    "valuesTitle": "Des choix visibles, pas des slogans.",
+    "closingText": "La meilleure façon de juger cette vision reste de voir le produit fonctionner avec un vrai public.",
+    "exploreCta": "Explorer le produit",
+    "exploreHref": "/features"
+  },
+  "PricingPage": {
+    "meta": { "title": "Tarifs", "description": "Starter gratuit, Pro à 19 € par mois et offre Entreprise sur devis. Comparez les limites Brivia." },
+    "eyebrow": "Simple par conception",
+    "title": "Votre ambition,",
+    "accent": "au bon niveau.",
+    "intro": "Commencez librement. Passez à l’échelle quand l’usage le demande — sans engagement annuel dissimulé ni architecture tarifaire illisible.",
+    "lensLabel": "Vue d’ensemble des offres",
+    "lensTitle": "Une trajectoire, trois niveaux",
+    "lensNote": "Vous gardez le contrôle à chaque étape.",
+    "bodyEyebrow": "Choisir son niveau",
+    "bodyTitle": "Le même produit. Plus de portée lorsque vous en avez besoin."
+  },
+  "HomePage": {
+    "meta": { "title": "Brivia - Quiz et sondages interactifs en temps réel", "description": "Créez des quiz multijoueurs, sondages live et présentations interactives. QR code, classement instantané et ambiance arcade, sans rien sacrifier en puissance." }
+  },
+  "PricingCards": {
+    "comparisonTitle": "Les limites, plan par plan.",
+    "comparisonSubtitle": "Les capacités ci-dessous correspondent aux règles appliquées dans l’app.",
+    "paymentTitle": "Paiement et abonnement.",
+    "paymentSubtitle": "Le plan Pro passe par Stripe et reste sans engagement annuel.",
+    "checkoutError": "Impossible de préparer le paiement.",
+    "checkoutGenericError": "Erreur lors de la préparation du paiement.",
+    "plans": [
+      {
+        "name": "Starter",
+        "description": "Pour essayer Brivia et animer un petit groupe.",
+        "price": "Gratuit",
+        "cta": "Créer gratuitement",
+        "edition": "Pour commencer",
+        "symbol": "spark",
+        "features": ["5 quiz, sondages, flashcards, présentations et examens", "1 cours", "20 participants par session", "Types de questions classiques"],
+        "billing": "sans limite de durée",
+        "highlight": false
+      },
+      {
+        "name": "Pro",
+        "description": "Pour produire sans plafond et analyser chaque session.",
+        "priceValue": 19,
+        "cta": "Passer en Pro",
+        "edition": "Le choix des équipes",
+        "symbol": "signal",
+        "features": ["Tous les formats en illimité", "200 participants par session", "Classement, association, texte à trous et curseur", "Rapports détaillés et exports"],
+        "billing": "par mois, sans engagement",
+        "highlight": true
+      },
+      {
+        "name": "Entreprise",
+        "description": "Pour les déploiements qui dépassent le cadre d’une équipe.",
+        "price": "Sur devis",
+        "cta": "Nous contacter",
+        "edition": "Pour déployer",
+        "symbol": "structure",
+        "features": ["Contenus illimités", "Audience sans plafond produit", "Cadrage adapté à l’organisation", "Accompagnement au déploiement", "Revue sécurité et intégrations"],
+        "billing": "selon vos besoins",
+        "highlight": false
+      }
+    ]
+  },
+  "PlanComparator": {
+    "categories": [
+      {
+        "title": "Contenu",
+        "rows": [
+          { "label": "Quiz, sondages, flashcards, présentations, examens", "values": ["5 max", "Illimité", "Illimité"] },
+          { "label": "Cours", "values": ["1", "Illimité", "Illimité"] }
+        ]
+      },
+      {
+        "title": "Sessions en direct",
+        "rows": [
+          { "label": "Participants simultanés par session", "values": ["20", "200", "Illimité"] },
+          { "label": "Types de questions avancés (classement, association, texte à trous, curseur)", "values": [false, true, true] }
+        ]
+      },
+      {
+        "title": "Analyse & export",
+        "rows": [
+          { "label": "Rapports de performance", "values": ["Basique", "Détaillés", "Détaillés"] },
+          { "label": "Export des résultats", "values": [false, true, true] }
+        ]
+      },
+      {
+        "title": "Déploiement & gouvernance",
+        "rows": [
+          { "label": "Organisations, groupes et partage de contenus", "values": ["Basique", "Équipe", "Sur cadrage"] },
+          { "label": "Revue sécurité et intégrations", "values": [false, false, "Incluse"] },
+          { "label": "Accompagnement au déploiement", "values": [false, false, "Personnalisé"] }
+        ]
+      }
+    ]
+  },
+  "PaymentFaq": {
+    "items": [
+      { "q": "Quels moyens de paiement acceptez-vous ?", "a": "Le plan Pro se paie par carte bancaire via Stripe, notre prestataire de paiement sécurisé. Vos coordonnées bancaires ne transitent jamais par nos serveurs." },
+      { "q": "Puis-je annuler mon abonnement à tout moment ?", "a": "Oui. Depuis votre profil, ouvrez le portail de facturation Stripe pour annuler en un clic. L'accès Pro reste actif jusqu'à la fin de la période déjà payée, puis votre compte repasse automatiquement en Starter." },
+      { "q": "Y a-t-il une période d'essai gratuite ?", "a": "Il n'existe pas d'essai séparé, mais le plan Starter est gratuit sans limite de durée (jusqu'à 5 contenus et 20 participants par session) : de quoi tester Brivia avant de passer au plan Pro." },
+      { "q": "La facturation est-elle mensuelle ou annuelle ?", "a": "Le plan Pro est facturé 19 €/mois, sans engagement. Il n'existe pas encore de formule annuelle." },
+      { "q": "Que se passe-t-il si mon paiement échoue ?", "a": "Stripe retente automatiquement le prélèvement pendant quelques jours ; votre accès Pro reste actif durant cette période. Si le paiement échoue définitivement, votre compte repasse en plan Starter." },
+      { "q": "Puis-je récupérer mes factures ?", "a": "Oui, l'historique complet de vos factures est disponible à tout moment dans le portail de facturation Stripe, accessible depuis votre profil." },
+      { "q": "Comment fonctionne la facturation du plan Entreprise ?", "a": "Le plan Entreprise est sur devis : contactez notre équipe commerciale pour définir vos besoins, le mode de facturation est alors adapté à votre organisation." }
+    ]
+  },
+  "IndexMain": {
+    "invalidCode": "Saisissez les 6 caractères affichés à l’écran.",
+    "heroTitle": "Du direct aux résultats,",
+    "heroAccent": "un seul rythme.",
+    "heroText": "Brivia relie participation, apprentissage et évaluation dans un même système. Simple pour la salle, structuré pour l’organisation.",
+    "create": "Créer gratuitement",
+    "demo": "Essayer la démo",
+    "heroAlt": "Une formatrice anime un quiz interactif pendant un atelier professionnel",
+    "activeSession": "Brivia / session active",
+    "collectiveSignal": "Signal collectif",
+    "mediaTitle": "Voir. Répondre. Comprendre.",
+    "mediaText": "Le direct produit déjà la suite.",
+    "proofTitle": "Les preuves restent accessibles.",
+    "proofText": "Avis, références autorisées et contrôles documentés ont chacun leur source publique.",
+    "proofNav": "Preuves Brivia",
+    "reviewsCount": "{count, plural, =0 {Avis} other {# avis}}",
+    "ratingValue": "{hasValue, select, true {{value}/5 publié} other {Aucune moyenne inventée}}",
+    "references": "Références",
+    "referencesCount": "{count, plural, =0 {Protocole public} =1 {# autorisée} other {# autorisées}}",
+    "trust": "Confiance",
+    "trustDetail": "Contrôles et limites",
+    "demoTitle": "Une vraie question. Essayez.",
+    "demoText": "La preuve produit vient avant la promesse marketing.",
+    "formatsTitle": "Un outil, six formats.",
+    "formatsText": "Préparez une activité rapide ou un parcours complet sans disperser vos contenus.",
+    "formatsNav": "Créer un contenu Brivia",
+    "featuresLink": "Explorer toutes les fonctionnalités",
+    "audienceTitle": "Du cours au séminaire.",
+    "audienceText": "Le même geste simple, adapté à la taille et aux exigences de votre session.",
+    "educatorTitle": "Enseignants et formateurs",
+    "educatorText": "Démarrez gratuitement avec 20 participants par session et réunissez quiz, flashcards et examens au même endroit.",
+    "educatorLink": "Découvrir l’enseignement",
+    "organizationTitle": "Écoles et entreprises",
+    "organizationText": "Accueillez jusqu’à 200 participants avec Pro, puis exportez les résultats et suivez la progression.",
+    "organizationLink": "Découvrir Brivia Enterprise",
+    "questionTitle": "Quinze façons de faire réfléchir.",
+    "questionText": "Choix, rappel, ordre, association, image, échelles et réponses libres ont chacun leur page pratique.",
+    "questionAlt": "Une facilitatrice orchestre une question sur un mur de réponses immersif",
+    "questionNav": "Découvrir les types de questions",
+    "questionLink": "Voir les 15 types",
+    "comparisonTitle": "Brivia face aux outils du marché.",
+    "comparisonText": "Comparez ce qui est natif, ce qui dépend d’un autre produit et ce qui reste limité à un usage précis.",
+    "comparisonLink": "Voir le comparatif détaillé",
+    "reviewsTitle": "L’énergie se voit tout de suite.",
+    "reviewsAlt": "Un groupe de participants réagit ensemble aux résultats d’un quiz",
+    "ratingSummary": "{rating}/5 sur {count} retours publiés",
+    "stars": "{count} étoiles sur 5",
+    "emptyReviews": "Les premiers retours seront publiés ici.",
+    "reviewLink": "Voir les avis",
+    "faqTitle": "Les réponses avant de vous lancer.",
+    "helpLink": "Consulter le centre d’aide",
+    "trustTitle": "Simple pour eux. Solide pour vous.",
+    "trustFacts": ["Hébergement européen et pratiques documentées publiquement.", "Aucun compte requis pour les participants.", "Aucune carte bancaire pour commencer."],
+    "trustLink": "Consulter le centre de confiance",
+    "joinTitle": "Une partie vous attend ?",
+    "joinText": "Entrez le code affiché à l’écran pour rejoindre la session.",
+    "codeLabel": "Code de la partie",
+    "join": "Rejoindre",
+    "codeHelp": "6 caractères, sans espace.",
+    "examLink": "J’ai un code d’examen",
+    "finalCta": "Prêt à animer votre prochaine session ?",
+    "pricing": "Voir les tarifs",
+    "formats": [
+      { "name": "Quiz live", "description": "Questions chronométrées et classement en direct.", "href": "/builder-start?type=quiz", "glyph": "quiz" },
+      { "name": "Sondages", "description": "Opinions, échelles et nuages de mots instantanés.", "href": "/builder-start?type=poll", "glyph": "poll" },
+      { "name": "Flashcards", "description": "Révision active, seul ou en session guidée.", "href": "/builder-start?type=flashcard", "glyph": "flashcards" },
+      { "name": "Présentations", "description": "Texte, médias, formes, tableaux et mode présentateur.", "href": "/builder-start?type=slide", "glyph": "presentation" },
+      { "name": "Examens", "description": "Tentatives, seuils, fenêtres de passage et surveillance.", "href": "/exam-builder", "glyph": "exam" },
+      { "name": "Cours", "description": "Vidéo, documents, activités, SCORM, H5P et dépôts.", "href": "/course-builder", "glyph": "course" }
+    ],
+    "faq": [
+      { "question": "Est-ce vraiment gratuit pour commencer ?", "answer": "Oui. Le plan Starter permet de créer jusqu’à 5 contenus et d’accueillir 20 participants par session, sans limite de durée." },
+      { "question": "Les participants doivent-ils créer un compte ?", "answer": "Non. Ils rejoignent avec un code à 6 caractères ou un QR code, directement depuis leur navigateur." },
+      { "question": "Où sont hébergées les données ?", "answer": "Les données sont hébergées en Europe, conformément au RGPD." },
+      { "question": "Puis-je exporter les résultats ?", "answer": "Oui, à partir du plan Pro. Les rapports détaillés peuvent être exportés pour poursuivre l’analyse." }
+    ],
+    "questionLabels": {}
+  },
+  "HeroMiniQuiz": {
+    "ariaLabel": "Démo interactive : essayez une question",
+    "defaultHint": "Cliquez sur une réponse, c'est une vraie démo.",
+    "almostHint": "Presque ! {hint}",
+    "timeUpHint": "Temps écoulé. {hint}",
+    "finalScore": "Score final",
+    "playAgain": "Rejouer",
+    "questions": [
+      { "q": "Quel océan est le plus profond ?", "answers": ["Atlantique", "Pacifique", "Indien", "Arctique"], "correct": 1, "hint": "C'était le Pacifique : fosse des Mariannes, -10 984 m. ✓" },
+      { "q": "Dans quel pays a été inventé le WiFi ?", "answers": ["USA", "Japon", "Finlande", "Australie"], "correct": 3, "hint": "C'était l'Australie (CSIRO, 1992). ✓" },
+      { "q": "Quel animal terrestre court le plus vite ?", "answers": ["Lion", "Guépard", "Faucon", "Éléphant"], "correct": 1, "hint": "C'était le guépard, jusqu'à 112 km/h. ✓" }
+    ]
+  },
+  "PartnersStrip": {
+    "message": "Des équipes pédagogiques choisissent Brivia pour faire participer leurs groupes."
+  },
+  "SignatureProductScene": {
+    "eyebrow": "Le système Brivia",
+    "titleStart": "Une idée entre.",
+    "titleAccent": "Toute la salle répond.",
+    "intro": "De la première question à la lecture des résultats, chaque étape prolonge la précédente sans casser le rythme.",
+    "introBadge": "Expérience produit · quatre actes",
+    "stepsAriaLabel": "Étapes de l’expérience Brivia",
+    "activeFlow": "Flux actif",
+    "resume": "Reprendre",
+    "pause": "Pause",
+    "brandName": "Brivia",
+    "activeSessionLabel": "Session active",
+    "workshopMeta": "Atelier / Session 01",
+    "stages": [
+      { "id": "compose", "number": "01", "label": "Concevoir", "title": "La question prend forme.", "description": "Le contenu, le rythme et l’intention pédagogique restent réunis dans un même espace.", "glyph": "creation" },
+      { "id": "join", "number": "02", "label": "Rejoindre", "title": "La salle devient active.", "description": "Un code, un QR, aucun compte participant : l’attention reste sur la session.", "glyph": "qr" },
+      { "id": "respond", "number": "03", "label": "Répondre", "title": "Chaque réponse devient un signal.", "description": "Questions, réactions et progression se lisent pendant que le groupe avance.", "glyph": "live" },
+      { "id": "understand", "number": "04", "label": "Comprendre", "title": "Le direct devient une décision.", "description": "Les résultats prolongent la session avec une lecture claire et des exports exploitables.", "glyph": "analytics" }
+    ],
+    "compose": {
+      "draftSaved": "Brouillon enregistré",
+      "question": "Quel concept voulez-vous vérifier ?",
+      "answerPrecise": "Une réponse précise",
+      "answerAlternative": "Une alternative crédible",
+      "answerDiscuss": "Une idée à discuter",
+      "answerOpen": "Une réponse libre",
+      "time": "Temps · 30 s",
+      "points": "Points · 1 000",
+      "ready": "Prêt à lancer"
+    },
+    "join": {
+      "instantEntry": "Entrée instantanée",
+      "title": "La salle rejoint le même rythme.",
+      "codeAriaLabel": "Code de démonstration BRIVIA",
+      "connected": "Participants connectés",
+      "scanToJoin": "Scanner pour rejoindre"
+    },
+    "respond": {
+      "question": "Quel mécanisme protège un compte avec un second facteur ?",
+      "reactionsAriaLabel": "Réactions en direct",
+      "liveReactions": "Réactions en direct"
+    },
+    "understand": {
+      "instantReading": "Lecture instantanée",
+      "title": "La compréhension devient visible.",
+      "chartAriaLabel": "Aperçu illustratif de résultats",
+      "correctAnswer": "Bonne réponse",
+      "majority": "Majoritaire",
+      "needsExplanation": "À réexpliquer",
+      "review": "À revoir",
+      "noAnswer": "Sans réponse",
+      "low": "Faible",
+      "usefulSignal": "Signal utile",
+      "insight": "Consolider le second facteur avant la suite."
+    }
+  },
+  "CompetitorComparison": {
+    "ariaLabel": "Comparaison des fonctionnalités de Brivia, Kahoot, Mentimeter et Wooclap",
+    "featuresHeader": "Fonctionnalités",
+    "legendAriaLabel": "Légende du comparatif",
+    "legendIncluded": "Inclus ou natif",
+    "legendPartial": "Partiel, séparé ou selon l'offre",
+    "legendAbsent": "Pas de format dédié",
+    "disclaimerIntro": "Comparaison des fonctionnalités publiques consultées le 26 juillet 2026. La disponibilité peut varier selon les offres. Sources officielles : ",
+    "disclaimerAnd": "et leurs documentations ",
+    "disclaimerReports": "rapports",
+    "disclaimerAnd2": "et ",
+    "products": [
+      { "id": "brivia", "name": "Brivia", "note": "Tout-en-un" },
+      { "id": "kahoot", "name": "Kahoot!", "note": "Gamification" },
+      { "id": "mentimeter", "name": "Mentimeter", "note": "Présentation" },
+      { "id": "wooclap", "name": "Wooclap", "note": "Pédagogie active" }
+    ],
+    "rows": [
+      { "feature": "Quiz live et classement", "brivia": { "availability": "included", "label": "Inclus" }, "kahoot": { "availability": "included", "label": "Inclus" }, "mentimeter": { "availability": "included", "label": "Quiz compétition" }, "wooclap": { "availability": "included", "label": "Mode compétition" } },
+      { "feature": "Sondages et nuages de mots", "brivia": { "availability": "included", "label": "Inclus" }, "kahoot": { "availability": "included", "label": "Inclus" }, "mentimeter": { "availability": "included", "label": "Inclus" }, "wooclap": { "availability": "included", "label": "Inclus" } },
+      { "feature": "Présentations interactives", "brivia": { "availability": "included", "label": "Éditeur intégré" }, "kahoot": { "availability": "included", "label": "Slides et imports" }, "mentimeter": { "availability": "included", "label": "Cœur du produit" }, "wooclap": { "availability": "included", "label": "Slides et intégrations" } },
+      { "feature": "Flashcards", "brivia": { "availability": "included", "label": "Format natif" }, "kahoot": { "availability": "included", "label": "Mode étude" }, "mentimeter": { "availability": "absent", "label": "Pas de format dédié" }, "wooclap": { "availability": "partial", "label": "Via Wooflash" } },
+      { "feature": "Examens dédiés", "brivia": { "availability": "included", "label": "Accès, seuil et surveillance" }, "kahoot": { "availability": "partial", "label": "Devoirs et rapports" }, "mentimeter": { "availability": "partial", "label": "Sessions auto-rythmées" }, "wooclap": { "availability": "partial", "label": "Évaluation et Wooflash" } },
+      { "feature": "Parcours et cours structurés", "brivia": { "availability": "included", "label": "Créateur de cours" }, "kahoot": { "availability": "included", "label": "Courses" }, "mentimeter": { "availability": "absent", "label": "Pas de parcours dédié" }, "wooclap": { "availability": "partial", "label": "Via Wooflash" } },
+      { "feature": "Réactions et échanges live", "brivia": { "availability": "included", "label": "Emoji et chat configurables" }, "kahoot": { "availability": "partial", "label": "Réactions et feedback" }, "mentimeter": { "availability": "partial", "label": "Q&A anonyme" }, "wooclap": { "availability": "partial", "label": "Message wall" } },
+      { "feature": "Accès participant", "brivia": { "availability": "included", "label": "QR ou code, sans compte" }, "kahoot": { "availability": "included", "label": "QR ou PIN, sans compte" }, "mentimeter": { "availability": "included", "label": "QR ou code" }, "wooclap": { "availability": "included", "label": "QR ou code" } },
+      { "feature": "Exports de résultats", "brivia": { "availability": "included", "label": "PDF, XLSX, CSV et JSON" }, "kahoot": { "availability": "partial", "label": "XLSX ou Google Drive" }, "mentimeter": { "availability": "partial", "label": "XLSX, PDF et images" }, "wooclap": { "availability": "included", "label": "PDF, XLSX et CSV" } }
+    ]
+  }
+}

@@ -3,99 +3,16 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { ProductGlyph } from "@/components/ProductGlyph";
 
-// Mirrors apps/app/src/components/HeroMiniQuiz.tsx verbatim — pure client
-// state (no data fetching, no auth), fully self-contained.
-const ALL_QUESTIONS = [
-  {
-    q: "Quel océan est le plus profond ?",
-    answers: ["Atlantique", "Pacifique", "Indien", "Arctique"],
-    correct: 1,
-    hint: "C'était le Pacifique : fosse des Mariannes, -10 984 m. ✓",
-  },
-  {
-    q: "Dans quel pays a été inventé le WiFi ?",
-    answers: ["USA", "Japon", "Finlande", "Australie"],
-    correct: 3,
-    hint: "C'était l'Australie (CSIRO, 1992). ✓",
-  },
-  {
-    q: "Quel animal terrestre court le plus vite ?",
-    answers: ["Lion", "Guépard", "Faucon", "Éléphant"],
-    correct: 1,
-    hint: "C'était le guépard, jusqu'à 112 km/h. ✓",
-  },
-  {
-    q: "Combien de planètes dans le système solaire ?",
-    answers: ["7", "8", "9", "10"],
-    correct: 1,
-    hint: "C'était 8, Pluton est naine depuis 2006. ✓",
-  },
-  {
-    q: "Quelle langue est la plus parlée au monde ?",
-    answers: ["Anglais", "Espagnol", "Hindi", "Mandarin"],
-    correct: 3,
-    hint: "C'était le mandarin, 1,1 milliard de locuteurs natifs. ✓",
-  },
-  {
-    q: "Quelle est la capitale de l'Australie ?",
-    answers: ["Sydney", "Melbourne", "Canberra", "Brisbane"],
-    correct: 2,
-    hint: "C'était Canberra, pas Sydney ! ✓",
-  },
-  {
-    q: "En quelle année a eu lieu la Révolution française ?",
-    answers: ["1776", "1789", "1799", "1815"],
-    correct: 1,
-    hint: "C'était 1789, prise de la Bastille. ✓",
-  },
-  {
-    q: "Quel élément chimique a pour symbole Au ?",
-    answers: ["Argent", "Aluminium", "Or", "Cuivre"],
-    correct: 2,
-    hint: "C'était l'Or, du latin Aurum. ✓",
-  },
-  {
-    q: "Combien d'os y a-t-il dans le corps humain adulte ?",
-    answers: ["186", "206", "226", "256"],
-    correct: 1,
-    hint: "C'était 206, on en naît avec plus de 300 ! ✓",
-  },
-  {
-    q: "Quel pays a la plus grande superficie du monde ?",
-    answers: ["Canada", "USA", "Chine", "Russie"],
-    correct: 3,
-    hint: "C'était la Russie, 17,1 millions de km². ✓",
-  },
-];
-
-// Fixed order, not shuffled: this module evaluates independently on the
-// server (SSR) and again on the client (hydration) — a Math.random() shuffle
-// here picks a different order each time, so the rendered question text
-// wouldn't match between the two passes and React throws a hydration
-// mismatch (#418). Deterministic content is required for anything rendered
-// on first paint.
-const ENGLISH_QUESTIONS = [
-  {
-    q: "Which ocean is the deepest?",
-    answers: ["Atlantic", "Pacific", "Indian", "Arctic"],
-    correct: 1,
-    hint: "It was the Pacific: the Mariana Trench reaches 10,984 metres. ✓",
-  },
-  {
-    q: "In which country was Wi-Fi invented?",
-    answers: ["USA", "Japan", "Finland", "Australia"],
-    correct: 3,
-    hint: "It was Australia, through CSIRO research in 1992. ✓",
-  },
-  {
-    q: "Which land animal runs the fastest?",
-    answers: ["Lion", "Cheetah", "Falcon", "Elephant"],
-    correct: 1,
-    hint: "It was the cheetah, which can reach about 112 km/h. ✓",
-  },
-] as const;
-
-const FRENCH_QUESTIONS = ALL_QUESTIONS.slice(0, 3);
+export type HeroMiniQuizQuestion = { q: string; answers: string[]; correct: number; hint: string };
+export type HeroMiniQuizContent = {
+  ariaLabel: string;
+  defaultHint: string;
+  almostHint: string;
+  timeUpHint: string;
+  finalScore: string;
+  playAgain: string;
+  questions: HeroMiniQuizQuestion[];
+};
 
 const SHAPES = [
   <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" key="tri"><path d="M12 3 22 21H2z"/></svg>,
@@ -128,11 +45,8 @@ function useAnimatedNumber(target: number, duration = 500) {
   return display;
 }
 
-export function HeroMiniQuiz({ language = "fr" }: { language?: "fr" | "en" }) {
-  const questions = language === "en" ? ENGLISH_QUESTIONS : FRENCH_QUESTIONS;
-  const defaultHint = language === "en"
-    ? "Choose an answer. This is a working demo."
-    : "Cliquez sur une réponse, c'est une vraie démo.";
+export function HeroMiniQuiz({ content }: { content: HeroMiniQuizContent }) {
+  const { questions, defaultHint, almostHint, timeUpHint, finalScore, playAgain, ariaLabel } = content;
   const [qIndex, setQIndex] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
   const [revealed, setRevealed] = useState(false);
@@ -185,10 +99,10 @@ export function HeroMiniQuiz({ language = "fr" }: { language?: "fr" | "en" }) {
     } else {
       setShakingIndex(i);
       setTimeout(() => setShakingIndex(null), 500);
-      setHintText(language === "en" ? `Almost. ${q.hint}` : `Presque ! ${q.hint}`);
+      setHintText(almostHint.replace("{hint}", q.hint));
     }
     advance();
-  }, [revealed, q, timeLeft, advance, language]);
+  }, [revealed, q, timeLeft, advance, almostHint]);
 
   useEffect(() => {
     if (revealed || done) return;
@@ -197,7 +111,7 @@ export function HeroMiniQuiz({ language = "fr" }: { language?: "fr" | "en" }) {
         if (t <= 1) {
           clearInterval(timerRef.current!);
           setRevealed(true);
-          setHintText(language === "en" ? `Time is up. ${q.hint}` : `Temps écoulé. ${q.hint}`);
+          setHintText(timeUpHint.replace("{hint}", q.hint));
           advance();
           return 0;
         }
@@ -205,7 +119,7 @@ export function HeroMiniQuiz({ language = "fr" }: { language?: "fr" | "en" }) {
       });
     }, 1000);
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [revealed, done, qIndex, q.hint, advance, language]);
+  }, [revealed, done, qIndex, q.hint, advance, timeUpHint]);
 
   useEffect(() => () => {
     if (timerRef.current) clearInterval(timerRef.current);
@@ -234,7 +148,7 @@ export function HeroMiniQuiz({ language = "fr" }: { language?: "fr" | "en" }) {
         userSelect: "none",
       }}
       role="group"
-      aria-label={language === "en" ? "Interactive demo: answer a question" : "Démo interactive : essayez une question"}
+      aria-label={ariaLabel}
     >
       {pillBonus !== null && (
         <div key={pillKey} className="ap-score-pill" style={{ top: 60, left: "50%" }}>
@@ -249,7 +163,7 @@ export function HeroMiniQuiz({ language = "fr" }: { language?: "fr" | "en" }) {
             style={{ width: 38, height: 38, color: "var(--ap-brand)", margin: "0 auto 12px" }}
           />
           <p style={{ fontFamily: "var(--ap-font-display)", fontSize: 18, fontWeight: 600, color: "var(--ap-muted)", marginBottom: 4 }}>
-            {language === "en" ? "Final score" : "Score final"}
+            {finalScore}
           </p>
           <p className="ap-mono" style={{ fontFamily: "var(--ap-font-display)", fontSize: 44, fontWeight: 700, color: "var(--ap-brand)", marginBottom: 20 }}>
             {animatedScore}
@@ -260,7 +174,7 @@ export function HeroMiniQuiz({ language = "fr" }: { language?: "fr" | "en" }) {
             onClick={restart}
           >
             <ProductGlyph name="reset" style={{ width: 16, height: 16 }} />
-            {language === "en" ? "Play again" : "Rejouer"}
+            {playAgain}
           </button>
         </div>
       ) : (
@@ -381,7 +295,7 @@ export function HeroMiniQuiz({ language = "fr" }: { language?: "fr" | "en" }) {
               }}
             >
               <ProductGlyph name="reset" style={{ display: "inline", width: 15, height: 15, marginRight: 5, verticalAlign: -3 }} />
-              {language === "en" ? "Play again" : "Rejouer"}
+              {playAgain}
             </button>
           </div>
         </>

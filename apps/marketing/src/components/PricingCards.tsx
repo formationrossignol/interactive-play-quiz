@@ -2,85 +2,59 @@
 
 import { toast } from "sonner";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
-import { PlanComparator } from "@/components/PlanComparator";
-import { PaymentFaq } from "@/components/PaymentFaq";
+import { PlanComparator, type ComparatorCategory } from "@/components/PlanComparator";
+import { PaymentFaq, type PaymentFaqItem } from "@/components/PaymentFaq";
 import pageStyles from "./MarketingPage.module.css";
 import styles from "./PricingCards.module.css";
 
-async function startProCheckout(): Promise<{ ok: boolean; error?: string }> {
+export type PricingPlanContent = {
+  name: string;
+  description: string;
+  price?: string;
+  priceValue?: number;
+  cta: string;
+  edition: string;
+  symbol: string;
+  features: string[];
+  billing: string;
+  highlight: boolean;
+};
+
+type Props = {
+  locale: "fr" | "en";
+  plans: PricingPlanContent[];
+  categories: ComparatorCategory[];
+  faqItems: PaymentFaqItem[];
+  comparisonTitle: string;
+  comparisonSubtitle: string;
+  paymentTitle: string;
+  paymentSubtitle: string;
+  checkoutError: string;
+  checkoutGenericError: string;
+};
+
+async function startProCheckout(errorText: string): Promise<{ ok: boolean; error?: string }> {
   const { data, error } = await supabaseBrowser.functions.invoke("create-checkout-session", { body: {} });
-  if (error || !data?.url) return { ok: false, error: "Impossible de préparer le paiement." };
+  if (error || !data?.url) return { ok: false, error: errorText };
   window.location.href = data.url;
   return { ok: true };
 }
 
-async function onProClick() {
+async function onProClick(errorText: string, genericErrorText: string) {
   const { data } = await supabaseBrowser.auth.getSession();
   if (!data.session) {
     window.location.href = "/auth";
     return;
   }
-  const result = await startProCheckout();
-  if (!result.ok) toast.error(result.error ?? "Erreur lors de la préparation du paiement.");
+  const result = await startProCheckout(errorText);
+  if (!result.ok) toast.error(result.error ?? genericErrorText);
 }
 
-const PLANS = [
-  {
-    name: "Starter",
-    description: "Pour essayer Brivia et animer un petit groupe.",
-    price: "Gratuit",
-    cta: "Créer gratuitement",
-    edition: "Pour commencer",
-    symbol: "spark",
-    features: [
-      "5 quiz, sondages, flashcards, présentations et examens",
-      "1 cours",
-      "20 participants par session",
-      "Types de questions classiques",
-    ],
-    onClick: () => { window.location.href = "/builder-start?type=quiz"; },
-    billing: "sans limite de durée",
-    highlight: false,
-    accent: "--ap-brand",
-  },
-  {
-    name: "Pro",
-    description: "Pour produire sans plafond et analyser chaque session.",
-    price: "19 €",
-    cta: "Passer en Pro",
-    edition: "Le choix des équipes",
-    symbol: "signal",
-    features: [
-      "Tous les formats en illimité",
-      "200 participants par session",
-      "Classement, association, texte à trous et curseur",
-      "Rapports détaillés et exports",
-    ],
-    onClick: onProClick,
-    billing: "par mois, sans engagement",
-    highlight: true,
-    accent: "--ap-brand",
-  },
-  {
-    name: "Entreprise",
-    description: "Pour les déploiements qui dépassent le cadre d’une équipe.",
-    price: "Sur devis",
-    cta: "Nous contacter",
-    edition: "Pour déployer",
-    symbol: "structure",
-    features: [
-      "Contenus illimités",
-      "Audience sans plafond produit",
-      "Cadrage adapté à l’organisation",
-      "Accompagnement au déploiement",
-      "Revue sécurité et intégrations",
-    ],
-    onClick: () => { window.location.href = "/contact?intent=enterprise"; },
-    billing: "selon vos besoins",
-    highlight: false,
-    accent: "--ap-brand",
-  },
-];
+function planOnClick(name: string, locale: "fr" | "en", errorText: string, genericErrorText: string) {
+  if (name === "Starter") return () => { window.location.href = "/builder-start?type=quiz"; };
+  if (name === "Pro") return () => onProClick(errorText, genericErrorText);
+  return () => { window.location.href = locale === "en" ? "/en/contact?intent=enterprise" : "/contact?intent=enterprise"; };
+}
 
 function PlanGlyph({ kind }: { kind: string }) {
   return (
@@ -108,11 +82,25 @@ function ArrowGlyph() {
   );
 }
 
-export function PricingCards() {
+export function PricingCards({
+  locale, plans, categories, faqItems,
+  comparisonTitle, comparisonSubtitle, paymentTitle, paymentSubtitle,
+  checkoutError, checkoutGenericError,
+}: Props) {
+  const currency = new Intl.NumberFormat(locale === "en" ? "en-US" : "fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
+  const comparatorPlans = plans.map((plan) => ({
+    name: plan.name,
+    accent: "--ap-brand",
+    highlight: plan.highlight,
+    cta: plan.cta,
+    onClick: planOnClick(plan.name, locale, checkoutError, checkoutGenericError),
+  }));
+
   return (
     <div className={pageStyles.container}>
       <div className={styles.plans}>
-        {PLANS.map((plan) => {
+        {plans.map((plan, index) => {
+          const price = plan.priceValue !== undefined ? currency.format(plan.priceValue) : plan.price;
           return (
             <article className={styles.plan} key={plan.name}>
               <div className={styles.planHeader}>
@@ -125,7 +113,7 @@ export function PricingCards() {
                 </h2>
                 <p className={styles.planDescription}>{plan.description}</p>
               </div>
-              <p className={styles.price}>{plan.price}</p>
+              <p className={styles.price}>{price}</p>
               <p className={styles.billing}>{plan.billing}</p>
               <ul className={styles.features}>
                 {plan.features.map((feature) => (
@@ -135,7 +123,7 @@ export function PricingCards() {
                   </li>
                 ))}
               </ul>
-              <button type="button" className={styles.button} onClick={plan.onClick}>
+              <button type="button" className={styles.button} onClick={comparatorPlans[index].onClick}>
                 <span>{plan.cta}</span>
                 <span className={styles.buttonArrow}><ArrowGlyph /></span>
               </button>
@@ -146,18 +134,18 @@ export function PricingCards() {
 
       <section className={styles.subsection} aria-labelledby="plans-comparison-title">
         <div className={styles.subsectionHeader}>
-          <h2 id="plans-comparison-title">Les limites, plan par plan.</h2>
-          <p>Les capacités ci-dessous correspondent aux règles appliquées dans l’app.</p>
+          <h2 id="plans-comparison-title">{comparisonTitle}</h2>
+          <p>{comparisonSubtitle}</p>
         </div>
-        <PlanComparator plans={PLANS} />
+        <PlanComparator plans={comparatorPlans} categories={categories} />
       </section>
 
       <section className={styles.subsection} aria-labelledby="payment-title">
         <div className={styles.subsectionHeader}>
-          <h2 id="payment-title">Paiement et abonnement.</h2>
-          <p>Le plan Pro passe par Stripe et reste sans engagement annuel.</p>
+          <h2 id="payment-title">{paymentTitle}</h2>
+          <p>{paymentSubtitle}</p>
         </div>
-        <PaymentFaq />
+        <PaymentFaq items={faqItems} />
       </section>
     </div>
   );

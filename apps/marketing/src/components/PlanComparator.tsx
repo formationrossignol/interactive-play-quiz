@@ -9,44 +9,9 @@ export interface ComparatorPlan {
   onClick: () => void | Promise<void>;
 }
 
-type CellValue = string | boolean;
-type Row = { label: string; values: [CellValue, CellValue, CellValue] };
-type Category = { title: string; rows: Row[] };
-
-/** Mirrors apps/app/src/components/PlanComparator.tsx — grounded in
- *  apps/app/src/lib/plans.ts (CONTENT_CAPS, AUDIENCE_CAP, ADVANCED_QUIZ_TYPES)
- *  and the Pro-plan feature copy in i18n — no invented figures. */
-const CATEGORIES: Category[] = [
-  {
-    title: "Contenu",
-    rows: [
-      { label: "Quiz, sondages, flashcards, présentations, examens", values: ["5 max", "Illimité", "Illimité"] },
-      { label: "Cours", values: ["1", "Illimité", "Illimité"] },
-    ],
-  },
-  {
-    title: "Sessions en direct",
-    rows: [
-      { label: "Participants simultanés par session", values: ["20", "200", "Illimité"] },
-      { label: "Types de questions avancés (classement, association, texte à trous, curseur)", values: [false, true, true] },
-    ],
-  },
-  {
-    title: "Analyse & export",
-    rows: [
-      { label: "Rapports de performance", values: ["Basique", "Détaillés", "Détaillés"] },
-      { label: "Export des résultats", values: [false, true, true] },
-    ],
-  },
-  {
-    title: "Déploiement & gouvernance",
-    rows: [
-      { label: "Organisations, groupes et partage de contenus", values: ["Basique", "Équipe", "Sur cadrage"] },
-      { label: "Revue sécurité et intégrations", values: [false, false, "Incluse"] },
-      { label: "Accompagnement au déploiement", values: [false, false, "Personnalisé"] },
-    ],
-  },
-];
+export type CellValue = string | boolean;
+export type ComparatorRow = { label: string; values: [CellValue, CellValue, CellValue] };
+export type ComparatorCategory = { title: string; rows: ComparatorRow[] };
 
 const Cell = ({ value, accent }: { value: CellValue; accent: string }) => {
   if (typeof value === "string") return <span className="ap-compare__value">{value}</span>;
@@ -57,7 +22,7 @@ const Cell = ({ value, accent }: { value: CellValue; accent: string }) => {
   );
 };
 
-export const PlanComparator = ({ plans }: { plans: ComparatorPlan[] }) => {
+export const PlanComparator = ({ plans, categories }: { plans: ComparatorPlan[]; categories: ComparatorCategory[] }) => {
   return (
     <div className="ap-compare-wrap">
       <table className="ap-compare">
@@ -81,7 +46,7 @@ export const PlanComparator = ({ plans }: { plans: ComparatorPlan[] }) => {
           </tr>
         </thead>
         <tbody>
-          {CATEGORIES.map((cat) => (
+          {categories.map((cat) => (
             <Fragment key={cat.title}>
               <tr className="ap-compare__category">
                 <td colSpan={plans.length + 1}>{cat.title}</td>

@@ -2,246 +2,83 @@
 
 import { FormEvent, useState } from "react";
 import Image from "next/image";
-import { HeroMiniQuiz } from "@/components/HeroMiniQuiz";
+import { HeroMiniQuiz, type HeroMiniQuizContent } from "@/components/HeroMiniQuiz";
 import { PartnersStrip } from "@/components/PartnersStrip";
-import { CompetitorComparison } from "@/components/landing/CompetitorComparison";
+import { CompetitorComparison, type CompetitorComparisonContent } from "@/components/landing/CompetitorComparison";
 import { ProductGlyph, type ProductGlyphName } from "@/components/ProductGlyph";
-import { SignatureProductScene } from "@/components/SignatureProductScene";
+import { SignatureProductScene, type SignatureProductSceneContent } from "@/components/SignatureProductScene";
 import { QUESTION_TYPE_PAGES } from "@/lib/questionTypePages";
 import type { Partner, Review } from "@/lib/types";
 import styles from "./IndexMain.module.css";
 import pageStyles from "./MarketingPage.module.css";
 
-const FRENCH_FORMATS = [
-  {
-    name: "Quiz live",
-    description: "Questions chronométrées et classement en direct.",
-    href: "/builder-start?type=quiz",
-    glyph: "quiz",
-  },
-  {
-    name: "Sondages",
-    description: "Opinions, échelles et nuages de mots instantanés.",
-    href: "/builder-start?type=poll",
-    glyph: "poll",
-  },
-  {
-    name: "Flashcards",
-    description: "Révision active, seul ou en session guidée.",
-    href: "/builder-start?type=flashcard",
-    glyph: "flashcards",
-  },
-  {
-    name: "Présentations",
-    description: "Texte, médias, formes, tableaux et mode présentateur.",
-    href: "/builder-start?type=slide",
-    glyph: "presentation",
-  },
-  {
-    name: "Examens",
-    description: "Tentatives, seuils, fenêtres de passage et surveillance.",
-    href: "/exam-builder",
-    glyph: "exam",
-  },
-  {
-    name: "Cours",
-    description: "Vidéo, documents, activités, SCORM, H5P et dépôts.",
-    href: "/course-builder",
-    glyph: "course",
-  },
-] as const;
+type Format = { name: string; description: string; href: string; glyph: string };
+type FaqItem = { question: string; answer: string };
 
-const ENGLISH_FORMATS = [
-  { name: "Live quizzes", description: "Timed questions and a live leaderboard.", href: "/builder-start?type=quiz", glyph: "quiz" },
-  { name: "Polls", description: "Opinions, scales and instant word clouds.", href: "/builder-start?type=poll", glyph: "poll" },
-  { name: "Flashcards", description: "Active recall alone or in a guided session.", href: "/builder-start?type=flashcard", glyph: "flashcards" },
-  { name: "Presentations", description: "Text, media, shapes, tables and presenter mode.", href: "/builder-start?type=slide", glyph: "presentation" },
-  { name: "Assessments", description: "Attempts, thresholds, windows and monitoring.", href: "/exam-builder", glyph: "exam" },
-  { name: "Courses", description: "Video, documents, activities, SCORM, H5P and submissions.", href: "/course-builder", glyph: "course" },
-] as const;
-
-const FRENCH_FAQ = [
-  {
-    question: "Est-ce vraiment gratuit pour commencer ?",
-    answer:
-      "Oui. Le plan Starter permet de créer jusqu’à 5 contenus et d’accueillir 20 participants par session, sans limite de durée.",
-  },
-  {
-    question: "Les participants doivent-ils créer un compte ?",
-    answer:
-      "Non. Ils rejoignent avec un code à 6 caractères ou un QR code, directement depuis leur navigateur.",
-  },
-  {
-    question: "Où sont hébergées les données ?",
-    answer: "Les données sont hébergées en Europe, conformément au RGPD.",
-  },
-  {
-    question: "Puis-je exporter les résultats ?",
-    answer:
-      "Oui, à partir du plan Pro. Les rapports détaillés peuvent être exportés pour poursuivre l’analyse.",
-  },
-] as const;
-
-const ENGLISH_FAQ = [
-  {
-    question: "Is Brivia really free to start?",
-    answer: "Yes. The Starter plan lets you create up to 5 pieces of content and welcome 20 participants per session, with no time limit.",
-  },
-  {
-    question: "Do participants need to create an account?",
-    answer: "No. They join with a six-character code or QR code directly from their browser.",
-  },
-  {
-    question: "Where is the data hosted?",
-    answer: "Application data is hosted in a European region, as documented in the Trust Center.",
-  },
-  {
-    question: "Can I export the results?",
-    answer: "Yes, from the Pro plan. Detailed reports can be exported for further analysis.",
-  },
-] as const;
-
-const HOME_COPY = {
-  fr: {
-    invalidCode: "Saisissez les 6 caractères affichés à l’écran.",
-    heroTitle: "Du direct aux résultats,",
-    heroAccent: "un seul rythme.",
-    heroText: "Brivia relie participation, apprentissage et évaluation dans un même système. Simple pour la salle, structuré pour l’organisation.",
-    create: "Créer gratuitement",
-    demo: "Essayer la démo",
-    heroAlt: "Une formatrice anime un quiz interactif pendant un atelier professionnel",
-    activeSession: "Brivia / session active",
-    collectiveSignal: "Signal collectif",
-    mediaTitle: "Voir. Répondre. Comprendre.",
-    mediaText: "Le direct produit déjà la suite.",
-    proofTitle: "Les preuves restent accessibles.",
-    proofText: "Avis, références autorisées et contrôles documentés ont chacun leur source publique.",
-    proofNav: "Preuves Brivia",
-    reviews: (count: number) => count ? `${count} avis` : "Avis",
-    rating: (value: string | null) => value ? `${value}/5 publié` : "Aucune moyenne inventée",
-    references: "Références",
-    referencesCount: (count: number) => count ? `${count} autorisée${count > 1 ? "s" : ""}` : "Protocole public",
-    trust: "Confiance",
-    trustDetail: "Contrôles et limites",
-    demoTitle: "Une vraie question. Essayez.",
-    demoText: "La preuve produit vient avant la promesse marketing.",
-    formatsTitle: "Un outil, six formats.",
-    formatsText: "Préparez une activité rapide ou un parcours complet sans disperser vos contenus.",
-    formatsNav: "Créer un contenu Brivia",
-    featuresLink: "Explorer toutes les fonctionnalités",
-    audienceTitle: "Du cours au séminaire.",
-    audienceText: "Le même geste simple, adapté à la taille et aux exigences de votre session.",
-    educatorTitle: "Enseignants et formateurs",
-    educatorText: "Démarrez gratuitement avec 20 participants par session et réunissez quiz, flashcards et examens au même endroit.",
-    educatorLink: "Découvrir l’enseignement",
-    organizationTitle: "Écoles et entreprises",
-    organizationText: "Accueillez jusqu’à 200 participants avec Pro, puis exportez les résultats et suivez la progression.",
-    organizationLink: "Découvrir Brivia Enterprise",
-    questionTitle: "Quinze façons de faire réfléchir.",
-    questionText: "Choix, rappel, ordre, association, image, échelles et réponses libres ont chacun leur page pratique.",
-    questionAlt: "Une facilitatrice orchestre une question sur un mur de réponses immersif",
-    questionNav: "Découvrir les types de questions",
-    questionLink: "Voir les 15 types",
-    comparisonTitle: "Brivia face aux outils du marché.",
-    comparisonText: "Comparez ce qui est natif, ce qui dépend d’un autre produit et ce qui reste limité à un usage précis.",
-    comparisonLink: "Voir le comparatif détaillé",
-    reviewsTitle: "L’énergie se voit tout de suite.",
-    reviewsAlt: "Un groupe de participants réagit ensemble aux résultats d’un quiz",
-    ratingSummary: (rating: string, count: number) => `${rating}/5 sur ${count} retours publiés`,
-    stars: (count: number) => `${count} étoiles sur 5`,
-    emptyReviews: "Les premiers retours seront publiés ici.",
-    reviewLink: "Voir les avis",
-    faqTitle: "Les réponses avant de vous lancer.",
-    helpLink: "Consulter le centre d’aide",
-    trustTitle: "Simple pour eux. Solide pour vous.",
-    trustFacts: ["Hébergement européen et pratiques documentées publiquement.", "Aucun compte requis pour les participants.", "Aucune carte bancaire pour commencer."],
-    trustLink: "Consulter le centre de confiance",
-    joinTitle: "Une partie vous attend ?",
-    joinText: "Entrez le code affiché à l’écran pour rejoindre la session.",
-    codeLabel: "Code de la partie",
-    join: "Rejoindre",
-    codeHelp: "6 caractères, sans espace.",
-    examLink: "J’ai un code d’examen",
-    finalCta: "Prêt à animer votre prochaine session ?",
-    pricing: "Voir les tarifs",
-  },
-  en: {
-    invalidCode: "Enter the six characters shown on screen.",
-    heroTitle: "From live participation to results,",
-    heroAccent: "one continuous rhythm.",
-    heroText: "Brivia connects participation, learning and assessment in one system. Simple for the room, structured for the organization.",
-    create: "Create for free",
-    demo: "Try the demo",
-    heroAlt: "A facilitator runs an interactive quiz during a professional workshop",
-    activeSession: "Brivia / active session",
-    collectiveSignal: "Collective signal",
-    mediaTitle: "See. Respond. Understand.",
-    mediaText: "The live moment already informs what comes next.",
-    proofTitle: "The evidence stays accessible.",
-    proofText: "Reviews, approved references and documented controls each retain a public source.",
-    proofNav: "Brivia evidence",
-    reviews: (count: number) => count ? `${count} reviews` : "Reviews",
-    rating: (value: string | null) => value ? `${value}/5 published` : "No invented average",
-    references: "References",
-    referencesCount: (count: number) => count ? `${count} approved` : "Public protocol",
-    trust: "Trust",
-    trustDetail: "Controls and limitations",
-    demoTitle: "A real question. Try it.",
-    demoText: "Product evidence comes before the marketing promise.",
-    formatsTitle: "One tool, six formats.",
-    formatsText: "Prepare a quick activity or a complete learning path without scattering your content.",
-    formatsNav: "Create Brivia content",
-    featuresLink: "Explore all features",
-    audienceTitle: "From the classroom to the company event.",
-    audienceText: "The same simple action, adapted to the size and requirements of your session.",
-    educatorTitle: "Educators and trainers",
-    educatorText: "Start free with 20 participants per session and keep quizzes, flashcards and assessments in one place.",
-    educatorLink: "Explore education",
-    organizationTitle: "Schools and organizations",
-    organizationText: "Welcome up to 200 participants with Pro, then export results and review progress.",
-    organizationLink: "Explore Brivia Enterprise",
-    questionTitle: "Fifteen ways to make people think.",
-    questionText: "Choice, recall, order, matching, images, scales and open answers each support a distinct learning action.",
-    questionAlt: "A facilitator leads a question on an immersive wall of responses",
-    questionNav: "Explore question types",
-    questionLink: "See all 15 types",
-    comparisonTitle: "Brivia compared with established tools.",
-    comparisonText: "Compare what is native, what depends on another product and what remains limited to a specific use case.",
-    comparisonLink: "See the detailed comparison",
-    reviewsTitle: "You can see the energy immediately.",
-    reviewsAlt: "A group reacts together to the results of an interactive quiz",
-    ratingSummary: (rating: string, count: number) => `${rating}/5 from ${count} published reviews`,
-    stars: (count: number) => `${count} stars out of 5`,
-    emptyReviews: "The first reviews will be published here.",
-    reviewLink: "Read reviews",
-    faqTitle: "Answers before you get started.",
-    helpLink: "Open the help center",
-    trustTitle: "Simple for them. Dependable for you.",
-    trustFacts: ["European hosting and publicly documented practices.", "No participant account required.", "No payment card required to start."],
-    trustLink: "Open the Trust Center",
-    joinTitle: "Is a session waiting for you?",
-    joinText: "Enter the code shown on screen to join the session.",
-    codeLabel: "Session code",
-    join: "Join",
-    codeHelp: "Six characters, no spaces.",
-    examLink: "I have an assessment code",
-    finalCta: "Ready to run your next session?",
-    pricing: "View pricing",
-  },
-} as const;
-
-const ENGLISH_QUESTION_LABELS: Record<string, string> = {
-  "multiple-choice": "Multiple choice",
-  "true-false": "True or false",
-  "short-answer": "Short answer",
-  ranking: "Ranking",
-  matching: "Matching",
-  "fill-blank": "Fill in the blank",
-  "drag-drop": "Drag and drop",
-  hotspot: "Clickable area",
+export type IndexMainCopy = {
+  invalidCode: string;
+  heroTitle: string;
+  heroAccent: string;
+  heroText: string;
+  create: string;
+  demo: string;
+  heroAlt: string;
+  activeSession: string;
+  collectiveSignal: string;
+  mediaTitle: string;
+  mediaText: string;
+  proofTitle: string;
+  proofText: string;
+  proofNav: string;
+  references: string;
+  trust: string;
+  trustDetail: string;
+  demoTitle: string;
+  demoText: string;
+  formatsTitle: string;
+  formatsText: string;
+  formatsNav: string;
+  featuresLink: string;
+  audienceTitle: string;
+  audienceText: string;
+  educatorTitle: string;
+  educatorText: string;
+  educatorLink: string;
+  organizationTitle: string;
+  organizationText: string;
+  organizationLink: string;
+  questionTitle: string;
+  questionText: string;
+  questionAlt: string;
+  questionNav: string;
+  questionLink: string;
+  comparisonTitle: string;
+  comparisonText: string;
+  comparisonLink: string;
+  reviewsTitle: string;
+  reviewsAlt: string;
+  emptyReviews: string;
+  reviewLink: string;
+  faqTitle: string;
+  helpLink: string;
+  trustTitle: string;
+  trustFacts: [string, string, string];
+  trustLink: string;
+  joinTitle: string;
+  joinText: string;
+  codeLabel: string;
+  join: string;
+  codeHelp: string;
+  examLink: string;
+  finalCta: string;
+  pricing: string;
+  // Pre-resolved via getTranslations server-side (depend on reviews.length/avgRating,
+  // known before IndexMain renders — see [locale]/page.tsx).
+  reviewsCountText: string;
+  ratingValueText: string;
+  referencesCountText: string;
+  ratingSummaryText: string | null;
 };
-
-const FEATURED_QUESTION_TYPES = QUESTION_TYPE_PAGES.slice(0, 8);
 
 function getInitials(name: string) {
   return name
@@ -256,20 +93,34 @@ export function IndexMain({
   reviews,
   avgRating,
   partners,
-  language = "fr",
+  locale,
+  copy,
+  formats,
+  faq,
+  questionLabels,
+  partnersMessage,
+  heroQuiz,
+  signatureScene,
+  competitorComparison,
 }: {
   reviews: Review[];
   avgRating: string | null;
   partners: Partner[];
-  language?: "fr" | "en";
+  locale: "fr" | "en";
+  copy: IndexMainCopy;
+  formats: Format[];
+  faq: FaqItem[];
+  questionLabels: Record<string, string>;
+  partnersMessage: string;
+  heroQuiz: HeroMiniQuizContent;
+  signatureScene: SignatureProductSceneContent;
+  competitorComparison: CompetitorComparisonContent;
 }) {
-  const copy = HOME_COPY[language];
-  const formats = language === "en" ? ENGLISH_FORMATS : FRENCH_FORMATS;
-  const faq = language === "en" ? ENGLISH_FAQ : FRENCH_FAQ;
-  const english = language === "en";
+  const english = locale === "en";
   const [gameCode, setGameCode] = useState("");
   const [gameError, setGameError] = useState("");
   const featuredReviews = reviews.slice(0, 2);
+  const featuredQuestionTypes = QUESTION_TYPE_PAGES.slice(0, 8);
 
   const joinQuiz = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -285,7 +136,7 @@ export function IndexMain({
   };
 
   return (
-    <main id="main-content" className={styles.home} lang={language}>
+    <main id="main-content" className={styles.home} lang={locale}>
       <section className={styles.hero} aria-labelledby="home-title">
         <div className={`${styles.container} ${styles.heroGrid}`}>
           <div className={styles.heroCopy}>
@@ -334,7 +185,7 @@ export function IndexMain({
         </div>
       </section>
 
-      <PartnersStrip partners={partners} language={language} />
+      <PartnersStrip partners={partners} message={partnersMessage} />
 
       <section className={styles.proofRail} aria-labelledby="home-proof-title">
         <div className={`${styles.container} ${styles.proofRailInner}`}>
@@ -344,13 +195,13 @@ export function IndexMain({
           </div>
           <nav className={styles.proofRailLinks} aria-label={copy.proofNav}>
             <a href="/reviews">
-              <span>{copy.reviews(reviews.length)}</span>
-              <small>{copy.rating(avgRating)}</small>
+              <span>{copy.reviewsCountText}</span>
+              <small>{copy.ratingValueText}</small>
               <ProductGlyph name="arrow" />
             </a>
             <a href="/customers">
               <span>{copy.references}</span>
-              <small>{copy.referencesCount(partners.length)}</small>
+              <small>{copy.referencesCountText}</small>
               <ProductGlyph name="arrow" />
             </a>
             <a href={english ? "/en/security" : "/security"}>
@@ -371,7 +222,7 @@ export function IndexMain({
 
           <div className={styles.productGrid}>
             <div className={styles.demoStage}>
-              <HeroMiniQuiz language={language} />
+              <HeroMiniQuiz content={heroQuiz} />
             </div>
 
             <div className={styles.formatIndex}>
@@ -400,7 +251,7 @@ export function IndexMain({
         </div>
       </section>
 
-      <SignatureProductScene language={language} />
+      <SignatureProductScene content={signatureScene} />
 
       <section className={styles.audienceSection} aria-labelledby="audience-title">
         <div className={styles.container}>
@@ -452,9 +303,9 @@ export function IndexMain({
             <h2 id="question-types-home-title">{copy.questionTitle}</h2>
             <p>{copy.questionText}</p>
             <nav aria-label={copy.questionNav}>
-              {FEATURED_QUESTION_TYPES.map((questionType) => (
+              {featuredQuestionTypes.map((questionType) => (
                 <a href={`/features/questions/${questionType.slug}`} key={questionType.slug}>
-                  {english ? ENGLISH_QUESTION_LABELS[questionType.slug] ?? questionType.navTitle : questionType.navTitle}
+                  {questionLabels[questionType.slug] ?? questionType.navTitle}
                   <ProductGlyph name="arrow" />
                 </a>
               ))}
@@ -473,7 +324,7 @@ export function IndexMain({
             <h2 id="home-comparison-title">{copy.comparisonTitle}</h2>
             <p>{copy.comparisonText}</p>
           </div>
-          <CompetitorComparison language={language} />
+          <CompetitorComparison content={competitorComparison} />
           <div className={styles.comparisonAction}>
             <a className={styles.textLink} href="/features#comparatif">
               {copy.comparisonLink}
@@ -498,9 +349,9 @@ export function IndexMain({
           <div className={styles.reviewsCopy}>
             <div>
               <h2 id="reviews-title">{copy.reviewsTitle}</h2>
-              {avgRating && (
+              {copy.ratingSummaryText && (
                 <p className={styles.rating}>
-                  {copy.ratingSummary(avgRating, reviews.length)}
+                  {copy.ratingSummaryText}
                 </p>
               )}
             </div>
@@ -509,7 +360,7 @@ export function IndexMain({
               <div className={styles.reviewList}>
                 {featuredReviews.map((review) => (
                   <figure key={review.id} className={styles.review}>
-                    <div className={styles.stars} aria-label={copy.stars(review.stars)}>
+                    <div className={styles.stars} aria-label={english ? `${review.stars} stars out of 5` : `${review.stars} étoiles sur 5`}>
                       {"★★★★★".slice(0, review.stars)}
                     </div>
                     <blockquote lang="fr">{review.text}</blockquote>

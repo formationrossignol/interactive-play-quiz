@@ -13,141 +13,90 @@ type SceneStage = {
   glyph: ProductGlyphName;
 };
 
-const STAGES: Record<"fr" | "en", ReadonlyArray<SceneStage>> = {
-  fr: [
-  {
-    id: "compose",
-    number: "01",
-    label: "Concevoir",
-    title: "La question prend forme.",
-    description: "Le contenu, le rythme et l’intention pédagogique restent réunis dans un même espace.",
-    glyph: "creation",
-  },
-  {
-    id: "join",
-    number: "02",
-    label: "Rejoindre",
-    title: "La salle devient active.",
-    description: "Un code, un QR, aucun compte participant : l’attention reste sur la session.",
-    glyph: "qr",
-  },
-  {
-    id: "respond",
-    number: "03",
-    label: "Répondre",
-    title: "Chaque réponse devient un signal.",
-    description: "Questions, réactions et progression se lisent pendant que le groupe avance.",
-    glyph: "live",
-  },
-  {
-    id: "understand",
-    number: "04",
-    label: "Comprendre",
-    title: "Le direct devient une décision.",
-    description: "Les résultats prolongent la session avec une lecture claire et des exports exploitables.",
-    glyph: "analytics",
-  },
-  ],
-  en: [
-    {
-      id: "compose",
-      number: "01",
-      label: "Design",
-      title: "The question takes shape.",
-      description: "Content, pace and learning intent remain together in one workspace.",
-      glyph: "creation",
-    },
-    {
-      id: "join",
-      number: "02",
-      label: "Join",
-      title: "The room becomes active.",
-      description: "One code, one QR and no participant account keep attention on the session.",
-      glyph: "qr",
-    },
-    {
-      id: "respond",
-      number: "03",
-      label: "Respond",
-      title: "Every answer becomes a signal.",
-      description: "Questions, reactions and progress remain visible while the group moves forward.",
-      glyph: "live",
-    },
-    {
-      id: "understand",
-      number: "04",
-      label: "Understand",
-      title: "The live moment informs a decision.",
-      description: "Clear results and usable exports extend the session into the next action.",
-      glyph: "analytics",
-    },
-  ],
+type ComposeCopy = { draftSaved: string; question: string; answerPrecise: string; answerAlternative: string; answerDiscuss: string; answerOpen: string; time: string; points: string; ready: string };
+type JoinCopy = { instantEntry: string; title: string; codeAriaLabel: string; connected: string; scanToJoin: string };
+type RespondCopy = { question: string; reactionsAriaLabel: string; liveReactions: string };
+type UnderstandCopy = { instantReading: string; title: string; chartAriaLabel: string; correctAnswer: string; majority: string; needsExplanation: string; review: string; noAnswer: string; low: string; usefulSignal: string; insight: string };
+
+export type SignatureProductSceneContent = {
+  eyebrow: string;
+  titleStart: string;
+  titleAccent: string;
+  intro: string;
+  introBadge: string;
+  stepsAriaLabel: string;
+  activeFlow: string;
+  resume: string;
+  pause: string;
+  brandName: string;
+  activeSessionLabel: string;
+  workshopMeta: string;
+  stages: ReadonlyArray<SceneStage>;
+  compose: ComposeCopy;
+  join: JoinCopy;
+  respond: RespondCopy;
+  understand: UnderstandCopy;
 };
 
-function ComposePanel({ language }: { language: "fr" | "en" }) {
-  const english = language === "en";
+function ComposePanel({ copy }: { copy: ComposeCopy }) {
   return <div className={styles.composePanel}>
-    <div className={styles.windowLabel}><span>Question / 01</span><strong>{english ? "Draft saved" : "Brouillon enregistré"}</strong></div>
-    <h3>{english ? "Which concept do you want to check?" : "Quel concept voulez-vous vérifier ?"}</h3>
+    <div className={styles.windowLabel}><span>Question / 01</span><strong>{copy.draftSaved}</strong></div>
+    <h3>{copy.question}</h3>
     <div className={styles.composerAnswers}>
-      <span><i />{english ? "A precise answer" : "Une réponse précise"}</span>
-      <span><i />{english ? "A credible alternative" : "Une alternative crédible"}</span>
-      <span><i />{english ? "An idea to discuss" : "Une idée à discuter"}</span>
-      <span><i />{english ? "An open answer" : "Une réponse libre"}</span>
+      <span><i />{copy.answerPrecise}</span>
+      <span><i />{copy.answerAlternative}</span>
+      <span><i />{copy.answerDiscuss}</span>
+      <span><i />{copy.answerOpen}</span>
     </div>
-    <div className={styles.composerFooter}><span>{english ? "Time · 30 s" : "Temps · 30 s"}</span><span>{english ? "Points · 1,000" : "Points · 1 000"}</span><strong>{english ? "Ready to launch" : "Prêt à lancer"}</strong></div>
+    <div className={styles.composerFooter}><span>{copy.time}</span><span>{copy.points}</span><strong>{copy.ready}</strong></div>
   </div>;
 }
 
-function JoinPanel({ language }: { language: "fr" | "en" }) {
-  const english = language === "en";
+function JoinPanel({ copy }: { copy: JoinCopy }) {
   return <div className={styles.joinPanel}>
     <div className={styles.joinCopy}>
-      <span className={styles.windowEyebrow}>{english ? "Instant entry" : "Entrée instantanée"}</span>
-      <h3>{english ? "The room joins the same rhythm." : "La salle rejoint le même rythme."}</h3>
-      <div className={styles.codeTiles} aria-label={english ? "BRIVIA demonstration code" : "Code de démonstration BRIVIA"}>
+      <span className={styles.windowEyebrow}>{copy.instantEntry}</span>
+      <h3>{copy.title}</h3>
+      <div className={styles.codeTiles} aria-label={copy.codeAriaLabel}>
         {"BRIVIA".split("").map((letter, index) => <span key={`${letter}-${index}`}>{letter}</span>)}
       </div>
       <div className={styles.participantLine}>
         <div aria-hidden="true"><i /><i /><i /><i /></div>
-        <span>{english ? "Participants connected" : "Participants connectés"}</span>
+        <span>{copy.connected}</span>
       </div>
     </div>
-    <div className={styles.qrObject}><ProductGlyph name="qr" /><span>{english ? "Scan to join" : "Scanner pour rejoindre"}</span></div>
+    <div className={styles.qrObject}><ProductGlyph name="qr" /><span>{copy.scanToJoin}</span></div>
   </div>;
 }
 
-function RespondPanel({ language }: { language: "fr" | "en" }) {
-  const english = language === "en";
+function RespondPanel({ copy }: { copy: RespondCopy }) {
   return <div className={styles.respondPanel}>
     <div className={styles.questionProgress}><span>Question 03 / 08</span><i><b /></i></div>
-    <h3>{english ? "Which mechanism protects an account with a second factor?" : "Quel mécanisme protège un compte avec un second facteur ?"}</h3>
+    <h3>{copy.question}</h3>
     <div className={styles.liveAnswers}>
       <span className={styles.answerCoral}><i>01</i>MFA</span>
       <span className={styles.answerBlue}><i>02</i>VPN</span>
       <span className={styles.answerGreen}><i>03</i>WAF</span>
       <span className={styles.answerAmber}><i>04</i>RBAC</span>
     </div>
-    <div className={styles.reactionStream} aria-label={english ? "Live reactions" : "Réactions en direct"}><span>✦</span><span>●</span><span>♥</span><small>{english ? "Live reactions" : "Réactions en direct"}</small></div>
+    <div className={styles.reactionStream} aria-label={copy.reactionsAriaLabel}><span>✦</span><span>●</span><span>♥</span><small>{copy.liveReactions}</small></div>
   </div>;
 }
 
-function UnderstandPanel({ language }: { language: "fr" | "en" }) {
-  const english = language === "en";
+function UnderstandPanel({ copy }: { copy: UnderstandCopy }) {
   return <div className={styles.understandPanel}>
-    <div className={styles.resultLead}><span>{english ? "Instant reading" : "Lecture instantanée"}</span><h3>{english ? "Understanding becomes visible." : "La compréhension devient visible."}</h3></div>
-    <div className={styles.resultChart} aria-label={english ? "Illustrative results preview" : "Aperçu illustratif de résultats"}>
-      <div><span>{english ? "Correct answer" : "Bonne réponse"}</span><i><b className={styles.barStrong} /></i><strong>{english ? "Majority" : "Majoritaire"}</strong></div>
-      <div><span>{english ? "Needs explanation" : "À réexpliquer"}</span><i><b className={styles.barMedium} /></i><strong>{english ? "Review" : "À revoir"}</strong></div>
-      <div><span>{english ? "No answer" : "Sans réponse"}</span><i><b className={styles.barSoft} /></i><strong>{english ? "Low" : "Faible"}</strong></div>
+    <div className={styles.resultLead}><span>{copy.instantReading}</span><h3>{copy.title}</h3></div>
+    <div className={styles.resultChart} aria-label={copy.chartAriaLabel}>
+      <div><span>{copy.correctAnswer}</span><i><b className={styles.barStrong} /></i><strong>{copy.majority}</strong></div>
+      <div><span>{copy.needsExplanation}</span><i><b className={styles.barMedium} /></i><strong>{copy.review}</strong></div>
+      <div><span>{copy.noAnswer}</span><i><b className={styles.barSoft} /></i><strong>{copy.low}</strong></div>
     </div>
-    <div className={styles.resultInsight}><ProductGlyph name="analytics" /><span><small>{english ? "Useful signal" : "Signal utile"}</small><strong>{english ? "Reinforce the second factor before moving on." : "Consolider le second facteur avant la suite."}</strong></span></div>
+    <div className={styles.resultInsight}><ProductGlyph name="analytics" /><span><small>{copy.usefulSignal}</small><strong>{copy.insight}</strong></span></div>
   </div>;
 }
 
-export function SignatureProductScene({ language = "fr" }: { language?: "fr" | "en" }) {
-  const english = language === "en";
-  const stages = STAGES[language];
+export function SignatureProductScene({ content }: { content: SignatureProductSceneContent }) {
+  const { stages } = content;
   const [activeStage, setActiveStage] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -196,22 +145,22 @@ export function SignatureProductScene({ language = "fr" }: { language?: "fr" | "
       <div className={styles.sceneGlow} aria-hidden="true" />
       <div className={styles.intro}>
         <div>
-          <p>{english ? "The Brivia system" : "Le système Brivia"}</p>
-          <h2 id="signature-title">{english ? <>One idea enters. <span>The whole room responds.</span></> : <>Une idée entre. <span>Toute la salle répond.</span></>}</h2>
+          <p>{content.eyebrow}</p>
+          <h2 id="signature-title">{content.titleStart} <span>{content.titleAccent}</span></h2>
         </div>
         <div className={styles.introCopy}>
-          <p>{english ? "From the first question to the results, each step extends the previous one without breaking the rhythm." : "De la première question à la lecture des résultats, chaque étape prolonge la précédente sans casser le rythme."}</p>
-          <span><i aria-hidden="true" /> {english ? "Product experience · four acts" : "Expérience produit · quatre actes"}</span>
+          <p>{content.intro}</p>
+          <span><i aria-hidden="true" /> {content.introBadge}</span>
         </div>
       </div>
 
       <div className={styles.stageShell}>
         <div className={styles.stageCore}>
-          <div className={styles.stepRail} role="tablist" aria-label={english ? "Steps in the Brivia experience" : "Étapes de l’expérience Brivia"} onKeyDown={onKeyDown}>
+          <div className={styles.stepRail} role="tablist" aria-label={content.stepsAriaLabel} onKeyDown={onKeyDown}>
             <div className={styles.railHeader}>
-              <span>{english ? "Active flow" : "Flux actif"}</span>
+              <span>{content.activeFlow}</span>
               <button type="button" className={styles.pauseControl} aria-pressed={manualPaused} onClick={() => setManualPaused((paused) => !paused)}>
-                {manualPaused ? (english ? "Resume" : "Reprendre") : "Pause"}
+                {manualPaused ? content.resume : content.pause}
               </button>
               <strong>{active.number} / 04</strong>
             </div>
@@ -249,15 +198,15 @@ export function SignatureProductScene({ language = "fr" }: { language?: "fr" | "
             <div className={styles.productBezel} data-stage={active.id}>
               <div className={styles.productWindow}>
                 <div className={styles.productBar}>
-                  <span className={styles.productBrand}><i><ProductGlyph name="live" /></i> Brivia</span>
-                  <span className={styles.sessionStatus}><i /> {english ? "Active session" : "Session active"}</span>
-                  <span className={styles.productMeta}>{english ? "Workshop / Session 01" : "Atelier / Session 01"}</span>
+                  <span className={styles.productBrand}><i><ProductGlyph name="live" /></i> {content.brandName}</span>
+                  <span className={styles.sessionStatus}><i /> {content.activeSessionLabel}</span>
+                  <span className={styles.productMeta}>{content.workshopMeta}</span>
                 </div>
                 <div className={styles.panelStack}>
-                  <div className={`${styles.productPanel} ${active.id === "compose" ? styles.panelActive : ""}`} aria-hidden={active.id !== "compose"}><ComposePanel language={language} /></div>
-                  <div className={`${styles.productPanel} ${active.id === "join" ? styles.panelActive : ""}`} aria-hidden={active.id !== "join"}><JoinPanel language={language} /></div>
-                  <div className={`${styles.productPanel} ${active.id === "respond" ? styles.panelActive : ""}`} aria-hidden={active.id !== "respond"}><RespondPanel language={language} /></div>
-                  <div className={`${styles.productPanel} ${active.id === "understand" ? styles.panelActive : ""}`} aria-hidden={active.id !== "understand"}><UnderstandPanel language={language} /></div>
+                  <div className={`${styles.productPanel} ${active.id === "compose" ? styles.panelActive : ""}`} aria-hidden={active.id !== "compose"}><ComposePanel copy={content.compose} /></div>
+                  <div className={`${styles.productPanel} ${active.id === "join" ? styles.panelActive : ""}`} aria-hidden={active.id !== "join"}><JoinPanel copy={content.join} /></div>
+                  <div className={`${styles.productPanel} ${active.id === "respond" ? styles.panelActive : ""}`} aria-hidden={active.id !== "respond"}><RespondPanel copy={content.respond} /></div>
+                  <div className={`${styles.productPanel} ${active.id === "understand" ? styles.panelActive : ""}`} aria-hidden={active.id !== "understand"}><UnderstandPanel copy={content.understand} /></div>
                 </div>
               </div>
             </div>
