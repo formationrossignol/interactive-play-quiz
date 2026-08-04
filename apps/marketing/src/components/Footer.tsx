@@ -4,9 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BrandMonogram } from "ui/BrandMonogram";
 import { BrandWordmark } from "ui/BrandWordmark";
-import { isEnglishPath, languageCounterpart } from "@/lib/marketingLocale";
+import { TRANSLATED_PATHS } from "@/lib/translatedPaths";
 import { SocialLinksRow } from "@/components/SocialLinksRow";
 import styles from "./MarketingChrome.module.css";
+
+// See Header.tsx for why locale is derived from the URL prefix via plain
+// next/navigation instead of next-intl's useLocale()/Link.
 
 const APP_ORIGIN = process.env.NEXT_PUBLIC_APP_ORIGIN ?? "https://app.brivia.app";
 
@@ -55,7 +58,7 @@ const ENGLISH_CONTENT = {
     ["Help center", "/help"], ["Community", `${APP_ORIGIN}/community`],
   ],
   company: [
-    ["About", "/about"], ["Contact", "/en/contact"],
+    ["About", "/en/about"], ["Contact", "/en/contact"],
     ["Roadmap", `${APP_ORIGIN}/roadmap`], ["Changelog", `${APP_ORIGIN}/changelog`],
   ],
   legal: [["Legal notice", "/mentions-legales"], ["Privacy", "/confidentialite"], ["Terms", "/cgu"]],
@@ -63,8 +66,11 @@ const ENGLISH_CONTENT = {
 
 export function Footer() {
   const pathname = usePathname();
-  const english = isEnglishPath(pathname);
+  const english = pathname === "/en" || pathname.startsWith("/en/");
+  const strippedPathname = english ? (pathname.slice(3) || "/") : pathname;
   const content = english ? ENGLISH_CONTENT : FRENCH_CONTENT;
+  const switchTarget = TRANSLATED_PATHS.has(strippedPathname) ? strippedPathname : "/";
+  const switchHref = english ? switchTarget : `/en${switchTarget === "/" ? "" : switchTarget}`;
 
   const footerLink = ([label, href]: string[]) =>
     href.startsWith("http")
@@ -95,7 +101,7 @@ export function Footer() {
         <span>{content.copyright}</span>
         <nav aria-label={content.legalLabel}>
           {content.legal.map(footerLink)}
-          <Link href={languageCounterpart(pathname)} hrefLang={english ? "fr" : "en"}>{english ? "Français" : "English"}</Link>
+          <Link href={switchHref} hrefLang={english ? "fr" : "en"}>{english ? "Français" : "English"}</Link>
         </nav>
       </div>
     </footer>

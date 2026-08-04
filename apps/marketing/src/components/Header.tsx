@@ -5,8 +5,15 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { BrandMonogram } from "ui/BrandMonogram";
 import { BrandWordmark } from "ui/BrandWordmark";
-import { isEnglishPath, languageCounterpart } from "@/lib/marketingLocale";
+import { TRANSLATED_PATHS } from "@/lib/translatedPaths";
 import styles from "./MarketingChrome.module.css";
+
+// Locale is derived from the URL prefix via plain next/navigation, not
+// next-intl's useLocale()/Link — next-intl's client context has proven
+// unreliable for this component under Turbopack (crashes with "No intl
+// context found" on some but not all [locale] routes, root cause not
+// pinned down). Native Next.js primitives read the URL directly and don't
+// depend on that context, which sidesteps the issue entirely.
 
 const APP_ORIGIN = process.env.NEXT_PUBLIC_APP_ORIGIN ?? "https://app.brivia.app";
 
@@ -58,19 +65,20 @@ const ENGLISH_NAV_MENUS = [
   },
   {
     label: "Solutions",
-    match: ["/en/enterprise"],
+    match: ["/en/solutions", "/en/enterprise"],
     items: [
-      { label: "Education", description: "Make every class active", href: "/en#education" },
-      { label: "Training", description: "Run sessions and document progress", href: "/en#education" },
+      { label: "Education", description: "Make every class active", href: "/en/solutions/education" },
+      { label: "Training", description: "Run sessions and document progress", href: "/en/solutions/training" },
       { label: "Enterprise", description: "Deploy with a clear framework", href: "/en/enterprise" },
-      { label: "Events", description: "Give the room a direct voice", href: "/en#audience-title" },
+      { label: "Events", description: "Give the room a direct voice", href: "/en/solutions/events" },
     ],
   },
   {
     label: "Trust",
-    match: ["/en/security"],
+    match: ["/en/security", "/en/about"],
     items: [
       { label: "Trust center", description: "Current controls and honest limits", href: "/en/security" },
+      { label: "About", description: "Our vision and commitments", href: "/en/about" },
       { label: "Privacy", description: "How Brivia handles personal data", href: "/confidentialite" },
       { label: "Accessibility", description: "Inclusive use and current status", href: "/accessibility" },
     ],
@@ -95,7 +103,8 @@ function NavArrow() {
 
 export function Header() {
   const pathname = usePathname();
-  const english = isEnglishPath(pathname);
+  const english = pathname === "/en" || pathname.startsWith("/en/");
+  const strippedPathname = english ? (pathname.slice(3) || "/") : pathname;
   const navMenus = english ? ENGLISH_NAV_MENUS : FRENCH_NAV_MENUS;
   const headerRef = useRef<HTMLElement>(null);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
@@ -127,6 +136,9 @@ export function Header() {
     choose: "Choisir",
     explore: "Explorer",
   };
+
+  const switchTarget = TRANSLATED_PATHS.has(strippedPathname) ? strippedPathname : "/";
+  const switchHref = english ? switchTarget : `/en${switchTarget === "/" ? "" : switchTarget}`;
 
   useEffect(() => {
     const onPointerDown = (event: PointerEvent) => {
@@ -212,8 +224,8 @@ export function Header() {
               </div>
             );
           })}
-          {!english && <Link href="/pricing" aria-current={pathname === "/pricing" ? "page" : undefined}>{labels.pricing}</Link>}
-          <Link className={styles.languageLink} href={languageCounterpart(pathname)} hrefLang={english ? "fr" : "en"}>
+          <Link href={english ? "/en/pricing" : "/pricing"} aria-current={pathname === (english ? "/en/pricing" : "/pricing") ? "page" : undefined}>{labels.pricing}</Link>
+          <Link className={styles.languageLink} href={switchHref} hrefLang={english ? "fr" : "en"}>
             {english ? "FR" : "EN"}
           </Link>
         </nav>
@@ -261,11 +273,11 @@ export function Header() {
             ))}
             <section className={`${styles.mobileNavGroup} ${styles.mobilePricing}`}>
               <p>{labels.choose}</p>
-              {!english && <Link href="/pricing" onClick={closeNavigation} tabIndex={mobileOpen ? undefined : -1}>
+              <Link href={english ? "/en/pricing" : "/pricing"} onClick={closeNavigation} tabIndex={mobileOpen ? undefined : -1}>
                 <span>{labels.pricing}</span>
                 <NavArrow />
-              </Link>}
-              <Link href={languageCounterpart(pathname)} hrefLang={english ? "fr" : "en"} onClick={closeNavigation} tabIndex={mobileOpen ? undefined : -1}>
+              </Link>
+              <Link href={switchHref} hrefLang={english ? "fr" : "en"} onClick={closeNavigation} tabIndex={mobileOpen ? undefined : -1}>
                 <span>{english ? "Français" : "English"}</span>
                 <NavArrow />
               </Link>

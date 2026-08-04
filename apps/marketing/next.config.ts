@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import createNextIntlPlugin from "next-intl/plugin";
 
 // Everything not owned by a marketing page (the product app: /builder, /join/:code,
 // /quiz/:code, /admin, etc.) is proxied to the existing Vite app deployment. Fallback
@@ -26,4 +27,6 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
+
+export default withNextIntl(nextConfig);

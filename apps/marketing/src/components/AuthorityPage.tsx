@@ -29,7 +29,13 @@ type AuthorityPageProps = {
   secondaryHref?: string;
   tone?: "violet" | "emerald" | "blue" | "amber";
   layout?: "split" | "ledger" | "constellation" | "timeline" | "editorial" | "stage" | "canvas" | "studio";
+  language?: "fr" | "en";
 };
+
+const STRINGS = {
+  fr: { factRail: "Repères essentiels", ecosystem: "Écosystème disponible", signal: "Signal opérationnel", control: "Contrôle", active: "Actif", nextStep: "Prochaine étape", primaryLabel: "Parler à l’équipe", primaryHref: "/contact?intent=demo", secondaryLabel: "Explorer le produit", secondaryHref: "/features" },
+  en: { factRail: "Key figures", ecosystem: "Available ecosystem", signal: "Operational signal", control: "Control", active: "Active", nextStep: "Next step", primaryLabel: "Talk to the team", primaryHref: "/en/contact?intent=demo", secondaryLabel: "Explore the product", secondaryHref: "/en" },
+} as const;
 
 const SignalGlyph = () => (
   <svg viewBox="0 0 48 48" role="img" aria-label="Signal Brivia">
@@ -49,10 +55,10 @@ function Actions({ primaryLabel, primaryHref, secondaryLabel, secondaryHref }: P
   </div>;
 }
 
-function SignalCard({ signal, signalDetail }: Pick<SharedProps, "signal" | "signalDetail">) {
+function SignalCard({ signal, signalDetail, language }: Pick<SharedProps, "signal" | "signalDetail" | "language">) {
   return <div className={styles.signalCard}>
     <div className={styles.signalIcon}><SignalGlyph /></div>
-    <p>Signal opérationnel</p>
+    <p>{STRINGS[language ?? "fr"].signal}</p>
     <strong>{signal}</strong>
     <span>{signalDetail}</span>
     <div className={styles.signalTrack}><i /></div>
@@ -85,7 +91,7 @@ function SplitLayout(props: SharedProps) {
         <div className={styles.signalShell}><SignalCard {...props} /></div>
       </div>
     </section>
-    <FactRail facts={props.facts} />
+    <FactRail facts={props.facts} language={props.language} />
     <section className={styles.chapters}><div className={styles.chapterInner}>
       {props.chapters.map((chapter, index) => <article className={styles.chapter} key={chapter.index}>
         <ChapterHeading chapter={chapter} />
@@ -95,8 +101,8 @@ function SplitLayout(props: SharedProps) {
   </>;
 }
 
-function FactRail({ facts }: Pick<SharedProps, "facts">) {
-  return <section className={styles.factRail} aria-label="Repères essentiels"><div className={styles.factInner}>
+function FactRail({ facts, language }: Pick<SharedProps, "facts" | "language">) {
+  return <section className={styles.factRail} aria-label={STRINGS[language ?? "fr"].factRail}><div className={styles.factInner}>
     {facts.map((fact) => <div className={styles.fact} key={`${fact.value}-${fact.label}`}><strong>{fact.value}</strong><span>{fact.label}</span></div>)}
   </div></section>;
 }
@@ -106,16 +112,17 @@ function ChapterHeading({ chapter }: { chapter: AuthorityChapter }) {
 }
 
 function LedgerLayout(props: SharedProps) {
+  const t = STRINGS[props.language ?? "fr"];
   return <>
     <section className={styles.ledgerHero} aria-labelledby="authority-title">
       <div className={styles.ledgerHeroInner}>
         <p className={styles.eyebrow}>{props.eyebrow}</p>
         <h1 id="authority-title">{props.title} <span>{props.accent}</span></h1>
         <div className={styles.ledgerIntro}><p>{props.introduction}</p><Actions {...props} /></div>
-        <div className={styles.ledgerSignal}><span><SignalGlyph /></span><b>{props.signal}</b><p>{props.signalDetail}</p><i>Actif</i></div>
+        <div className={styles.ledgerSignal}><span><SignalGlyph /></span><b>{props.signal}</b><p>{props.signalDetail}</p><i>{t.active}</i></div>
       </div>
     </section>
-    <section className={styles.ledgerFacts} aria-label="Repères essentiels">
+    <section className={styles.ledgerFacts} aria-label={t.factRail}>
       {props.facts.map((fact, index) => <div key={fact.value}><span>0{index + 1}</span><strong>{fact.value}</strong><p>{fact.label}</p></div>)}
     </section>
     <section className={styles.ledgerBody}>
@@ -124,7 +131,7 @@ function LedgerLayout(props: SharedProps) {
         <div><h2>{chapter.title}</h2><p>{chapter.text}</p></div>
         <ul>{chapter.points.map((point) => <li key={point}>{point}</li>)}</ul>
         {chapter.note && <aside>{chapter.note}</aside>}
-        <span className={styles.ledgerStatus}>Contrôle {String(index + 1).padStart(2, "0")}</span>
+        <span className={styles.ledgerStatus}>{t.control} {String(index + 1).padStart(2, "0")}</span>
       </article>)}
     </section>
   </>;
@@ -138,7 +145,7 @@ function ConstellationLayout(props: SharedProps) {
         <h1 id="authority-title">{props.title} <span>{props.accent}</span></h1>
         <p>{props.introduction}</p><Actions {...props} />
       </div>
-      <div className={styles.constellationMap} aria-label="Écosystème disponible">
+      <div className={styles.constellationMap} aria-label={STRINGS[props.language ?? "fr"].ecosystem}>
         <div className={styles.constellationCore}><SignalGlyph /><strong>{props.signal}</strong><span>{props.signalDetail}</span></div>
         {props.facts.map((fact, index) => <div className={`${styles.constellationNode} ${styles[`node${index + 1}`]}`} key={fact.value}><strong>{fact.value}</strong><span>{fact.label}</span></div>)}
       </div>
@@ -229,21 +236,22 @@ function StudioLayout(props: SharedProps) {
 
 function Closing(props: SharedProps) {
   return <section className={styles.closing}><div className={styles.closingInner}>
-    <p className={styles.eyebrow}>Prochaine étape</p><h2>{props.closingTitle}</h2><p>{props.closingText}</p><Actions {...props} />
+    <p className={styles.eyebrow}>{STRINGS[props.language ?? "fr"].nextStep}</p><h2>{props.closingTitle}</h2><p>{props.closingText}</p><Actions {...props} />
   </div></section>;
 }
 
 export function AuthorityPage(rawProps: AuthorityPageProps) {
+  const t = STRINGS[rawProps.language ?? "fr"];
   const props: SharedProps = {
-    primaryLabel: "Parler à l’équipe",
-    primaryHref: "/contact?intent=demo",
-    secondaryLabel: "Explorer le produit",
-    secondaryHref: "/features",
+    primaryLabel: t.primaryLabel,
+    primaryHref: t.primaryHref,
+    secondaryLabel: t.secondaryLabel,
+    secondaryHref: t.secondaryHref,
     tone: "violet",
     layout: "split",
     ...rawProps,
   };
   const layouts = { split: SplitLayout, ledger: LedgerLayout, constellation: ConstellationLayout, timeline: TimelineLayout, editorial: EditorialLayout, stage: StageLayout, canvas: CanvasLayout, studio: StudioLayout };
   const Layout = layouts[props.layout ?? "split"];
-  return <div className="marketing-shell"><Header /><main id="main-content" className={`${styles.page} ${styles[props.tone ?? "violet"]} ${styles[props.layout ?? "split"]}`}><Layout {...props} /><Closing {...props} /></main><Footer /></div>;
+  return <div className="marketing-shell" lang={props.language ?? "fr"}><Header /><main id="main-content" className={`${styles.page} ${styles[props.tone ?? "violet"]} ${styles[props.layout ?? "split"]}`}><Layout {...props} /><Closing {...props} /></main><Footer /></div>;
 }

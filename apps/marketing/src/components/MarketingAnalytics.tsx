@@ -3,13 +3,11 @@
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 import { trackMarketingEvent } from "@/lib/marketingAnalytics";
-import { isEnglishPath } from "@/lib/marketingLocale";
 
 export function MarketingAnalytics() {
   const pathname = usePathname();
 
   useEffect(() => {
-    document.documentElement.lang = isEnglishPath(pathname) ? "en" : "fr";
     trackMarketingEvent("marketing_page_view", { pathname });
   }, [pathname]);
 
