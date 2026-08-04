@@ -111,7 +111,7 @@ const Dashboard = () => {
               onRetry={() => setStatsReloadKey((key) => key + 1)}
             />
           ) : (
-            <KpiRow stats={stats} />
+            <KpiRow stats={stats} charts={charts} />
           )}
         </section>
 

@@ -1,0 +1,287 @@
+/* ============================================================
+   Brivia · Thème « Nova » — système SaaS violet, sidebar sombre
+   ------------------------------------------------------------
+   Activé par data-theme="nova" sur <html> (réglage du profil).
+   Même grammaire de tokens et de classes que Arcade Pop, mais un
+   autre langage graphique, basé sur deux maquettes explorées pour
+   le dashboard :
+
+     · échelle violette douce (marque), turquoise = cours/succès,
+       rose = quiz/examens, ambre = flashcards/reconnaissance
+     · cartes sans bordure, portées par l'ombre douce plutôt que
+       par un filet — coins plus généreux que Arcade Pop
+     · compromis retenu : le reste de l'app reste clair (comme la
+       maquette « toutes les vues »), mais la sidebar garde la
+       présence de marque sombre de la maquette « v2 »
+     · boutons à léger soulèvement (translateY + ombre), jamais
+       l'ombre portée « décalée » façon arcade
+
+   Importé APRÈS arcade-pop.css : à spécificité égale ou
+   supérieure, ces règles gagnent la cascade. Se combine avec
+   la classe .dark (variante aubergine très sombre).
+   ============================================================ */
+
+@import '@fontsource-variable/outfit';
+
+/* ============================================================
+   1. TOKENS
+   ============================================================ */
+:root[data-theme="nova"] {
+  /* Couleurs par TYPE de contenu — même sémantique, palette Nova */
+  --ap-quiz:        #D06A8B;  --ap-quiz-deep:   #A34766;  --ap-quiz-soft:  #F9EBF0;
+  --ap-pres:        #14B8A6;  --ap-pres-deep:   #0E8577;  --ap-pres-soft:  #E2F5F1;
+  --ap-poll:        #6C6FE0;  --ap-poll-deep:   #4B4FC4;  --ap-poll-soft:  #EEEEFC;
+  --ap-flash:       #D9A441;  --ap-flash-deep:  #8A6A28;  --ap-flash-soft: #F8F0DE;
+
+  /* Danger/destructive — distinct du rose --ap-quiz */
+  --ap-danger:      #C5484A; --ap-danger-deep: #8A2F31; --ap-danger-soft: #F9E9E9;
+
+  /* Marque + neutres — violet doux, fond légèrement teinté */
+  --ap-brand:        #7C5CFA;  --ap-brand-deep:  #5338BF;  --ap-brand-soft: #F6F3FF;
+  --ap-logo-diamond:  #A57BFF;
+  --ap-ink:          #1D1A26;
+  --ap-muted:        #666173;
+  --ap-paper:        #F8F7FB;
+  --ap-paper-2:      #F4F2F9;
+  --ap-card:         #FFFFFF;
+  --ap-line:         #E6E1F0;
+  --ap-line-2:       #D5CEE6;
+
+  /* Géométrie plus généreuse que Arcade Pop */
+  --ap-r-sm: 8px;
+  --ap-r-md: 11px;
+  --ap-r-lg: 16px;
+  --ap-r-xl: 20px;
+  --ap-r-pill: 20px;
+
+  /* Élévation douce, teintée violet, jamais d'ombre décalée */
+  --ap-shadow-soft:  0 1px 2px rgba(66,45,152,.05), 0 4px 14px rgba(66,45,152,.05);
+  --ap-shadow-card:  0 2px 5px rgba(66,45,152,.06), 0 14px 32px rgba(66,45,152,.10);
+  --ap-shadow-float: 0 8px 22px rgba(66,45,152,.16);
+
+  /* Typo — Outfit pour titres et corps, une seule famille variable */
+  --ap-font-display: 'Outfit Variable', 'Outfit', system-ui, sans-serif;
+  --ap-font-body:    'Outfit Variable', 'Outfit', system-ui, sans-serif;
+
+  /* Transitions — léger rebond, jamais l'à-plat de Thales */
+  --ap-ease:   cubic-bezier(.2, .8, .3, 1.1);
+  --ap-spring: cubic-bezier(.2, .8, .3, 1.1);
+
+  --ap-texture: none;
+  --ap-border-w: 1px;
+}
+
+/* ── Variante sombre — aubergine très sombre ── */
+.dark[data-theme="nova"] {
+  --ap-paper:       #14101F;
+  --ap-paper-2:     #1B1530;
+  --ap-card:        #201936;
+  --ap-line:        #332852;
+  --ap-line-2:      #453868;
+  --ap-ink:         #F1EDFB;
+  --ap-muted:       #A79BC9;
+
+  --ap-brand:       #A57BFF;
+  --ap-brand-deep:  #7C5CFA;
+  --ap-brand-soft:  #2A2050;
+  --ap-logo-diamond:#C7AEFF;
+
+  --ap-quiz-soft:   #3A2430;
+  --ap-pres-soft:   #123A34;
+  --ap-poll-soft:   #232159;
+  --ap-flash-soft:  #382C13;
+  --ap-danger-soft: #3A2020;
+
+  --ap-shadow-soft:  none;
+  --ap-shadow-card:  0 14px 34px rgba(0,0,0,.42);
+  --ap-shadow-float: 0 10px 26px rgba(0,0,0,.5);
+}
+
+/* ============================================================
+   2. FOND & SIGNALÉTIQUE GLOBALE
+   ============================================================ */
+[data-theme="nova"] .ap-app { background-image: none; }
+
+[data-theme="nova"] .ap-app :focus-visible {
+  outline: 2px solid var(--ap-brand);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+[data-theme="nova"] .ap-app ::selection {
+  background: var(--ap-brand-soft);
+  color: var(--ap-brand-deep);
+}
+
+/* ============================================================
+   3. BOUTONS — soulèvement doux, jamais l'ombre décalée arcade
+   ============================================================ */
+[data-theme="nova"] .ap-btn,
+[data-theme="nova"] .ap-btn--quiz,
+[data-theme="nova"] .ap-btn--pres,
+[data-theme="nova"] .ap-btn--poll,
+[data-theme="nova"] .ap-btn--flash {
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--ap-brand) 30%, transparent);
+  transition: transform .16s var(--ap-ease), box-shadow .16s var(--ap-ease), background-color .16s var(--ap-ease);
+}
+[data-theme="nova"] .ap-btn:hover,
+[data-theme="nova"] .ap-btn--quiz:hover,
+[data-theme="nova"] .ap-btn--pres:hover,
+[data-theme="nova"] .ap-btn--poll:hover,
+[data-theme="nova"] .ap-btn--flash:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--ap-brand) 34%, transparent);
+}
+[data-theme="nova"] .ap-btn:active,
+[data-theme="nova"] .ap-btn--quiz:active,
+[data-theme="nova"] .ap-btn--pres:active,
+[data-theme="nova"] .ap-btn--poll:active,
+[data-theme="nova"] .ap-btn--flash:active {
+  transform: translateY(0);
+}
+[data-theme="nova"] .ap-btn--ghost {
+  box-shadow: none;
+}
+[data-theme="nova"] .ap-btn--ghost:hover {
+  transform: none;
+  background: var(--ap-brand-soft);
+  color: var(--ap-brand-deep);
+}
+
+/* ============================================================
+   4. CARTES — sans filet, portées par l'ombre douce
+   ============================================================ */
+[data-theme="nova"] .ap-card {
+  border: none;
+  box-shadow: var(--ap-shadow-soft);
+}
+[data-theme="nova"] .ap-card--hover:hover {
+  transform: translateY(-2px);
+  border: none;
+  box-shadow: var(--ap-shadow-card);
+}
+
+[data-theme="nova"] .product-analytics-card,
+[data-theme="nova"] .product-panel {
+  border: none;
+  box-shadow: var(--ap-shadow-soft);
+}
+
+/* ============================================================
+   5. TABLEAU DE BORD — KPI en cartes séparées + carte vedette
+   ============================================================ */
+[data-theme="nova"] .product-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  overflow: visible;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+[data-theme="nova"] .product-kpi {
+  border: none;
+  border-radius: var(--ap-r-lg);
+  background: var(--ap-card);
+  box-shadow: var(--ap-shadow-soft);
+  transition: transform .16s var(--ap-ease), box-shadow .16s var(--ap-ease);
+}
+[data-theme="nova"] .product-kpi:hover {
+  transform: translateY(-2px);
+  background: var(--ap-card);
+  box-shadow: var(--ap-shadow-card);
+}
+/* Première tuile : score en vedette, fond violet dégradé — inspiré de la
+   maquette v2. Purement décoratif, ne réordonne pas les données. */
+[data-theme="nova"] .product-kpi:first-child {
+  background: linear-gradient(160deg, #8f78fb 0%, var(--ap-brand-deep) 100%);
+  color: #fff;
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--ap-brand) 42%, transparent);
+}
+[data-theme="nova"] .product-kpi:first-child:hover {
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--ap-brand) 48%, transparent);
+}
+[data-theme="nova"] .product-kpi:first-child .product-kpi__label,
+[data-theme="nova"] .product-kpi:first-child .ap-muted {
+  color: rgba(255,255,255,.75);
+}
+[data-theme="nova"] .product-kpi:first-child .product-kpi__value {
+  color: #fff;
+}
+[data-theme="nova"] .product-kpi:first-child .product-kpi__icon {
+  background: rgba(255,255,255,.16);
+  color: #fff;
+}
+
+/* Icônes KPI : un seul ton violet neutre pour les 4 tuiles — la maquette
+   n'encode pas le type de métrique par couleur d'icône (contrairement au
+   badge de couverture) — remplace la couleur par-métrique (--ap-brand,
+   --ap-poll, ambre…) posée en inline style par KpiRow. !important
+   nécessaire : un style inline ne se laisse pas battre par une classe. */
+[data-theme="nova"] .product-kpi__icon {
+  background: var(--ap-brand-soft) !important;
+}
+[data-theme="nova"] .product-kpi__icon .material-symbol {
+  color: var(--ap-brand) !important;
+}
+[data-theme="nova"] .product-kpi:first-child .product-kpi__icon .material-symbol {
+  color: #fff !important;
+}
+
+/* Sparkline plus large et plus présente que le défaut compact partagé
+   par les autres thèmes (product-app.css) — la maquette lui donne
+   nettement plus de place qu'à la pastille de delta. */
+[data-theme="nova"] .product-kpi__spark {
+  width: 84px;
+  height: 30px;
+}
+
+/* ============================================================
+   5b. VAGUES DE FOND — motif des couvertures « travaux récents » ET
+   des cartes de l'explorateur de contenus (ContentCardHeader, mêmes
+   couvertures dans /my-quizzes, /my-courses, /my-exams…). Teinté à la
+   couleur du type de contenu (currentColor + mask), donc pas de
+   duplication par type. Motif carrelé en largeur (mask-repeat) —
+   PAS étiré en 100% 100% : un étirement non uniforme déformait la
+   courbe différemment selon la largeur de chaque carte. Une seule
+   tuile, taille fixe en px, se répète à l'identique partout.
+   Aplat uni sur les autres thèmes (aucune règle ici).
+   ============================================================ */
+[data-theme="nova"] .product-recent-item__media::before,
+[data-theme="nova"] .product-content-cover::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-color: currentColor;
+  opacity: .14;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='60' viewBox='0 0 120 60'%3E%3Cpath d='M0 38 Q30 20 60 38 T120 38' fill='none' stroke='black' stroke-width='3'/%3E%3Cpath d='M0 50 Q30 32 60 50 T120 50' fill='none' stroke='black' stroke-width='3' opacity='.65'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='60' viewBox='0 0 120 60'%3E%3Cpath d='M0 38 Q30 20 60 38 T120 38' fill='none' stroke='black' stroke-width='3'/%3E%3Cpath d='M0 50 Q30 32 60 50 T120 50' fill='none' stroke='black' stroke-width='3' opacity='.65'/%3E%3C/svg%3E");
+  -webkit-mask-size: 100px 50px;
+  mask-size: 100px 50px;
+  -webkit-mask-repeat: repeat-x;
+  mask-repeat: repeat-x;
+  -webkit-mask-position: left bottom -6px;
+  mask-position: left bottom -6px;
+}
+
+/* ============================================================
+   6. SIDEBAR — compromis : présence de marque sombre (maquette v2)
+   sur un système par ailleurs clair. Redéfinit localement les
+   tokens neutres/marque dans le scope de la sidebar : toutes les
+   règles de product-app.css (déjà écrites en var(--ap-*)) suivent
+   automatiquement, sans dupliquer leur logique ici.
+   ============================================================ */
+[data-theme="nova"] .product-shell-root [data-sidebar="sidebar"] {
+  --ap-card:       #1B1C26;
+  --ap-paper-2:    #23243A;
+  --ap-ink:        #FFFFFF;
+  --ap-muted:      #A6A8C0;
+  --ap-line:       rgba(255,255,255,.08);
+  --ap-brand:      #AAA5F1;
+  --ap-brand-deep: #C7C3FA;
+  --ap-brand-soft: rgba(255,255,255,.1);
+}
+
+.dark[data-theme="nova"] .product-shell-root [data-sidebar="sidebar"] {
+  --ap-card:       #100D1C;
+  --ap-line:       rgba(255,255,255,.06);
+}

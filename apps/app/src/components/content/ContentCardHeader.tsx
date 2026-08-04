@@ -1,23 +1,45 @@
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
+/** Decorative wave lines behind the cover icon — stroke inherits the card's
+ *  accent color via currentColor, same motif shape used across every
+ *  content-type cover in the design reference (quiz/exam/course/flashcard). */
+function CoverMotif() {
+  return (
+    <svg
+      className="motif"
+      viewBox="0 0 300 112"
+      preserveAspectRatio="none"
+      aria-hidden="true"
+      style={{ position: "absolute", inset: 0, opacity: .55 }}
+    >
+      <path d="M-10 90 Q60 40 150 70 T310 50" fill="none" stroke="currentColor" strokeWidth="1" opacity=".2" />
+      <path d="M-10 105 Q80 60 170 85 T310 70" fill="none" stroke="currentColor" strokeWidth="1" opacity=".1" />
+    </svg>
+  );
+}
+
 export function ContentCardHeader({
   image,
   alt,
   icon: Icon,
   accent,
+  /** Type badge shown top-left when there's no custom cover image — same
+   *  convention as the dashboard's RecentWorks cards (product-recent-item__badge). */
+  label,
   children,
 }: {
   image?: string;
   alt: string;
   icon: LucideIcon;
   accent: string;
+  label?: string;
   children?: ReactNode;
 }) {
   return (
     <div
-      className="relative h-52 w-full flex-shrink-0 overflow-hidden"
-      style={{ background: `color-mix(in srgb, ${accent} 14%, var(--ap-paper-2))` }}
+      className="product-content-cover relative h-52 w-full flex-shrink-0 overflow-hidden"
+      style={{ background: `color-mix(in srgb, ${accent} 14%, var(--ap-paper-2))`, color: accent }}
     >
       {image ? (
         <img
@@ -28,9 +50,13 @@ export function ContentCardHeader({
           style={{ display: "block", objectPosition: "center" }}
         />
       ) : (
-        <span style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", color: accent }}>
-          <Icon size={48} strokeWidth={1.8} style={{ opacity: .74 }} />
-        </span>
+        <>
+          <CoverMotif />
+          {label && <span className="product-recent-item__badge">{label}</span>}
+          <span style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", color: accent }}>
+            <Icon size={48} strokeWidth={1.8} style={{ opacity: .74, position: "relative" }} />
+          </span>
+        </>
       )}
       {children}
     </div>

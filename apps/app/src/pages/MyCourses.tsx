@@ -52,7 +52,7 @@ function CourseCard({ d, ctx, navigate, userId }: CourseItemProps) {
       style={{ opacity: isDragging ? 0.4 : 1, padding: 0 }}
       onClick={() => navigate(`/course/${course.id}`)}
     >
-      <ContentCardHeader image={course.coverImage} alt={course.title} icon={GraduationCap} accent="var(--ap-pres)">
+      <ContentCardHeader image={course.coverImage} alt={course.title} icon={GraduationCap} accent="var(--ap-pres)" label="Cours">
         <button type="button" {...attributes} {...listeners} style={gripOverlayStyle} className="ap-grip" onClick={(e) => e.stopPropagation()} aria-label={`Déplacer ${course.title}`}>
           <GripVertical style={{ width: 14, height: 14 }} />
         </button>

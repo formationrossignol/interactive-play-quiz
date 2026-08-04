@@ -3,7 +3,7 @@
 // The marketing application owns its own visual system; these themes belong
 // to the product and Arcade Pop remains the original application default.
 
-export type SiteTheme = "arcade" | "thales" | "innov" | "studio" | "material";
+export type SiteTheme = "arcade" | "thales" | "innov" | "studio" | "material" | "nova";
 
 export interface SiteThemeDef {
   id: SiteTheme;
@@ -66,6 +66,16 @@ export const SITE_THEMES: SiteThemeDef[] = [
     },
     colors: ["#65558F", "#EADDFF", "#625B71", "#7D5260"],
     previewFont: "'Roboto Flex Variable', 'Roboto Flex', system-ui, sans-serif",
+  },
+  {
+    id: "nova",
+    name: "Nova",
+    tagline: {
+      en: "Soft violet SaaS system with a dark, brand-forward sidebar",
+      fr: "Système SaaS violet et doux, sidebar sombre à forte présence de marque",
+    },
+    colors: ["#7C5CFA", "#1B1C26", "#14B8A6", "#D9A441"],
+    previewFont: "'Outfit Variable', 'Outfit', system-ui, sans-serif",
   },
 ];
 

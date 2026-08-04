@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { DashboardStats } from "@/lib/dashboardStats";
+import type { DashboardCharts, DashboardStats } from "@/lib/dashboardStats";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MaterialSymbol } from "@/components/MaterialSymbol";
 
@@ -11,8 +11,34 @@ interface Tile {
   /** Shown instead of TrendBadge when deltaPct is null and the value itself
    *  needs explaining (e.g. a bare "-" reads as broken, not "no data yet"). */
   emptyHint?: string;
+  /** Last N days of raw values behind this tile, oldest first — undefined
+   *  when no daily series exists for this metric (e.g. Créations). */
+  spark?: number[];
+  sparkColor: string;
   /** Where this KPI's detailed breakdown lives — REQ-DB-004. */
   onClick: () => void;
+}
+
+/** Minimal inline trend line — decorative, not a chart: no axes, no
+ *  tooltip. Drawn from raw values only when there are at least 2 points,
+ *  otherwise a flat/empty series would render as a meaningless dot or line. */
+function Sparkline({ values, color }: { values: number[]; color: string }) {
+  if (values.length < 2) return null;
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const span = max - min || 1;
+  const w = 64;
+  const h = 24;
+  const points = values.map((v, i) => {
+    const x = (i / (values.length - 1)) * w;
+    const y = h - 2 - ((v - min) / span) * (h - 4);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  });
+  return (
+    <svg className="product-kpi__spark" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" aria-hidden="true">
+      <polyline points={points.join(" ")} fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
 }
 
 /** Small up/down/flat indicator — never color-only (REQ-COL-004): the arrow
@@ -26,15 +52,26 @@ function TrendBadge({ deltaPct }: { deltaPct: number | null }) {
   const symbolName = flat ? "remove" : positive ? "arrow_upward" : "arrow_downward";
   const color = flat ? "var(--ap-muted)" : positive ? "#15c08a" : "#ff5a4d";
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10.5, fontWeight: 760, color }}>
-      <MaterialSymbol name={symbolName} size={11} />
-      {flat ? "stable" : `${positive ? "+" : ""}${deltaPct}%`}
-      <span className="ap-muted" style={{ fontWeight: 620 }}>vs 14 j préc.</span>
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+      <span
+        style={{
+          display: "inline-flex", alignItems: "center", gap: 3,
+          fontSize: 10.5, fontWeight: 760, color,
+          background: `color-mix(in srgb, ${color} 14%, transparent)`,
+          borderRadius: "var(--ap-r-sm)", padding: "3px 7px",
+        }}
+      >
+        <MaterialSymbol name={symbolName} size={11} />
+        {flat ? "stable" : `${positive ? "+" : ""}${deltaPct}%`}
+      </span>
+      <span className="ap-muted" style={{ fontWeight: 620, fontSize: 10.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+        vs 14 j préc.
+      </span>
     </span>
   );
 }
 
-export function KpiRow({ stats }: { stats: DashboardStats | null }) {
+export function KpiRow({ stats, charts }: { stats: DashboardStats | null; charts: DashboardCharts | null }) {
   if (!stats) {
     return (
       <div className="product-kpis" aria-label="Chargement des indicateurs">
@@ -66,23 +103,37 @@ export function KpiRow({ stats }: { stats: DashboardStats | null }) {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
 
+  // Décoratives : dérivées de la même série que les graphiques du bas, pas
+  // de nouvel appel réseau. Aucune série quotidienne pour les créations —
+  // creationsByType est une répartition par type, pas dans le temps.
+  const sessionsSpark = charts?.activity.map((a) => a.sessions);
+  const participantsSpark = charts?.activity.map((a) => a.participants);
+  const scoreSpark = charts?.scoreByDay
+    .filter((p) => p.avgScore !== null)
+    .map((p) => p.avgScore as number);
+
   const tiles: Tile[] = [
     {
       icon: <MaterialSymbol name="auto_awesome" size={20} style={{ color: "var(--ap-brand)" }} />,
       label: "Créations", value: s.totalCreations,
       deltaPct: s.trends.creations.deltaPct,
+      sparkColor: "var(--ap-brand)",
       onClick: scrollToChart("dashboard-creations-chart"),
     },
     {
       icon: <MaterialSymbol name="bar_chart" size={20} style={{ color: "var(--ap-brand-deep)" }} />,
       label: "Sessions totales", value: s.totalSessions,
       deltaPct: s.trends.sessions.deltaPct,
+      spark: sessionsSpark,
+      sparkColor: "var(--ap-brand-deep)",
       onClick: scrollToChart("dashboard-activity-chart"),
     },
     {
       icon: <MaterialSymbol name="group" size={20} style={{ color: "var(--ap-poll)" }} />,
       label: "Participants totaux", value: s.totalParticipants,
       deltaPct: s.trends.participants.deltaPct,
+      spark: participantsSpark,
+      sparkColor: "var(--ap-poll)",
       onClick: scrollToChart("dashboard-activity-chart"),
     },
     {
@@ -90,13 +141,15 @@ export function KpiRow({ stats }: { stats: DashboardStats | null }) {
       label: "Score moyen (quiz)", value: s.avgScore != null ? `${s.avgScore} pts` : "-",
       deltaPct: scoreDeltaPct,
       emptyHint: s.avgScore == null ? "Pas encore de score" : undefined,
+      spark: scoreSpark,
+      sparkColor: "#f59e0b",
       onClick: scrollToChart("dashboard-score-chart"),
     },
   ];
 
   return (
     <div className="product-kpis">
-      {tiles.map(({ icon, label, value, deltaPct, emptyHint, onClick }) => (
+      {tiles.map(({ icon, label, value, deltaPct, emptyHint, spark, sparkColor, onClick }) => (
         <button
           key={label}
           type="button"
@@ -117,6 +170,7 @@ export function KpiRow({ stats }: { stats: DashboardStats | null }) {
             {deltaPct !== null
               ? <TrendBadge deltaPct={deltaPct} />
               : emptyHint && <span className="ap-muted" style={{ fontSize: 10.5 }}>{emptyHint}</span>}
+            {spark && <Sparkline values={spark} color={sparkColor} />}
           </span>
         </button>
       ))}

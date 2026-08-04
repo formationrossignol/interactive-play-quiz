@@ -392,7 +392,7 @@ function ExamCard({ d, ctx, navigate, onDuplicate }: ExamItemProps) {
       style={{ opacity: isDragging ? 0.4 : 1, padding: 0 }}
       onClick={() => navigate(`/exam/${exam.id}/admin`)}
     >
-      <ContentCardHeader image={exam.headerImage} alt={exam.title} icon={ClipboardCheck} accent="var(--ap-brand)">
+      <ContentCardHeader image={exam.headerImage} alt={exam.title} icon={ClipboardCheck} accent="var(--ap-brand)" label="Examen">
         <button
           type="button"
           {...attributes}
