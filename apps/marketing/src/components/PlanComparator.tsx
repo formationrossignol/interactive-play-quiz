@@ -9,77 +9,9 @@ export interface ComparatorPlan {
   onClick: () => void | Promise<void>;
 }
 
-type CellValue = string | boolean;
-type Row = { label: string; values: [CellValue, CellValue, CellValue] };
-type Category = { title: string; rows: Row[] };
-
-/** Mirrors apps/app/src/components/PlanComparator.tsx — grounded in
- *  apps/app/src/lib/plans.ts (CONTENT_CAPS, AUDIENCE_CAP, ADVANCED_QUIZ_TYPES)
- *  and the Pro-plan feature copy in i18n — no invented figures. */
-const CATEGORIES: Record<"fr" | "en", Category[]> = {
-  fr: [
-    {
-      title: "Contenu",
-      rows: [
-        { label: "Quiz, sondages, flashcards, présentations, examens", values: ["5 max", "Illimité", "Illimité"] },
-        { label: "Cours", values: ["1", "Illimité", "Illimité"] },
-      ],
-    },
-    {
-      title: "Sessions en direct",
-      rows: [
-        { label: "Participants simultanés par session", values: ["20", "200", "Illimité"] },
-        { label: "Types de questions avancés (classement, association, texte à trous, curseur)", values: [false, true, true] },
-      ],
-    },
-    {
-      title: "Analyse & export",
-      rows: [
-        { label: "Rapports de performance", values: ["Basique", "Détaillés", "Détaillés"] },
-        { label: "Export des résultats", values: [false, true, true] },
-      ],
-    },
-    {
-      title: "Déploiement & gouvernance",
-      rows: [
-        { label: "Organisations, groupes et partage de contenus", values: ["Basique", "Équipe", "Sur cadrage"] },
-        { label: "Revue sécurité et intégrations", values: [false, false, "Incluse"] },
-        { label: "Accompagnement au déploiement", values: [false, false, "Personnalisé"] },
-      ],
-    },
-  ],
-  en: [
-    {
-      title: "Content",
-      rows: [
-        { label: "Quizzes, polls, flashcards, presentations, exams", values: ["5 max", "Unlimited", "Unlimited"] },
-        { label: "Courses", values: ["1", "Unlimited", "Unlimited"] },
-      ],
-    },
-    {
-      title: "Live sessions",
-      rows: [
-        { label: "Simultaneous participants per session", values: ["20", "200", "Unlimited"] },
-        { label: "Advanced question types (ranking, matching, fill-in-the-blank, slider)", values: [false, true, true] },
-      ],
-    },
-    {
-      title: "Analysis & export",
-      rows: [
-        { label: "Performance reports", values: ["Basic", "Detailed", "Detailed"] },
-        { label: "Results export", values: [false, true, true] },
-      ],
-    },
-    {
-      title: "Deployment & governance",
-      rows: [
-        { label: "Organizations, groups and shared content", values: ["Basic", "Team", "Scoped"] },
-        { label: "Security and integrations review", values: [false, false, "Included"] },
-        { label: "Deployment support", values: [false, false, "Custom"] },
-      ],
-    },
-  ],
-};
+export type CellValue = string | boolean;
+export type ComparatorRow = { label: string; values: [CellValue, CellValue, CellValue] };
+export type ComparatorCategory = { title: string; rows: ComparatorRow[] };
 
 const Cell = ({ value, accent }: { value: CellValue; accent: string }) => {
   if (typeof value === "string") return <span className="ap-compare__value">{value}</span>;
@@ -90,8 +22,7 @@ const Cell = ({ value, accent }: { value: CellValue; accent: string }) => {
   );
 };
 
-export const PlanComparator = ({ plans, language = "fr" }: { plans: ComparatorPlan[]; language?: "fr" | "en" }) => {
-  const categories = CATEGORIES[language];
+export const PlanComparator = ({ plans, categories }: { plans: ComparatorPlan[]; categories: ComparatorCategory[] }) => {
   return (
     <div className="ap-compare-wrap">
       <table className="ap-compare">

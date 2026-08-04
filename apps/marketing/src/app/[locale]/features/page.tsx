@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { CapabilityExplorer } from "@/components/CapabilityExplorer";
 import { ProductGlyph, type ProductGlyphName } from "@/components/ProductGlyph";
-import { CompetitorComparison } from "@/components/landing/CompetitorComparison";
+import { CompetitorComparison, type CompetitorComparisonContent } from "@/components/landing/CompetitorComparison";
 import { QUESTION_TYPE_PAGES } from "@/lib/questionTypePages";
 import styles from "@/components/MarketingPage.module.css";
 
@@ -74,6 +75,22 @@ type Props = { params: Promise<{ locale: string }> };
 export default async function FeaturesPage({ params }: Props) {
   const { locale } = await params;
   if (locale !== "fr") notFound();
+
+  const comparisonT = await getTranslations({ locale: "fr", namespace: "CompetitorComparison" });
+  const competitorComparison: CompetitorComparisonContent = {
+    ariaLabel: comparisonT("ariaLabel"),
+    featuresHeader: comparisonT("featuresHeader"),
+    legendAriaLabel: comparisonT("legendAriaLabel"),
+    legendIncluded: comparisonT("legendIncluded"),
+    legendPartial: comparisonT("legendPartial"),
+    legendAbsent: comparisonT("legendAbsent"),
+    disclaimerIntro: comparisonT("disclaimerIntro"),
+    disclaimerAnd: comparisonT("disclaimerAnd"),
+    disclaimerReports: comparisonT("disclaimerReports"),
+    disclaimerAnd2: comparisonT("disclaimerAnd2"),
+    products: comparisonT.raw("products"),
+    rows: comparisonT.raw("rows"),
+  };
 
   const quizQuestionTypes = QUESTION_TYPE_PAGES.filter((item) => item.mode !== "Sondage");
   const pollQuestionTypes = QUESTION_TYPE_PAGES.filter((item) => item.mode === "Sondage");
@@ -262,7 +279,7 @@ export default async function FeaturesPage({ params }: Props) {
                 présentation, examen et cours dans un seul environnement.
               </p>
             </div>
-            <CompetitorComparison />
+            <CompetitorComparison content={competitorComparison} />
           </div>
         </section>
 

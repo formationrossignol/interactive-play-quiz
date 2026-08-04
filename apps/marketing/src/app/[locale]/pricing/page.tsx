@@ -1,32 +1,39 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { PricingCards } from "@/components/PricingCards";
+import { PricingCards, type PricingPlanContent } from "@/components/PricingCards";
+import type { ComparatorCategory } from "@/components/PlanComparator";
+import type { PaymentFaqItem } from "@/components/PaymentFaq";
+import { getLocalizedAlternates } from "@/lib/pageAlternates";
 import styles from "@/components/ConversionPages.module.css";
 
 type Props = { params: Promise<{ locale: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
-
-  if (locale === "en") {
-    return {
-      title: "Pricing",
-      description: "Free Starter, Pro at €19/month and a custom Enterprise plan. Compare Brivia's limits.",
-      alternates: { canonical: "/en/pricing", languages: { fr: "/pricing", en: "/en/pricing", "x-default": "/pricing" } },
-    };
-  }
-
+  const t = await getTranslations({ locale, namespace: "PricingPage" });
   return {
-    title: "Tarifs",
-    description: "Starter gratuit, Pro à 19 € par mois et offre Entreprise sur devis. Comparez les limites Brivia.",
-    alternates: { canonical: "/pricing", languages: { fr: "/pricing", en: "/en/pricing", "x-default": "/pricing" } },
+    title: t("meta.title"),
+    description: t("meta.description"),
+    alternates: { canonical: getLocalizedAlternates("/pricing").languages[locale], ...getLocalizedAlternates("/pricing") },
   };
 }
 
 export default async function PricingPage({ params }: Props) {
   const { locale } = await params;
   const english = locale === "en";
+  const t = await getTranslations({ locale, namespace: "PricingPage" });
+  const cards = await getTranslations({ locale, namespace: "PricingCards" });
+  const comparator = await getTranslations({ locale, namespace: "PlanComparator" });
+  const faq = await getTranslations({ locale, namespace: "PaymentFaq" });
+
+  const plans = cards.raw("plans") as PricingPlanContent[];
+  const categories = comparator.raw("categories") as ComparatorCategory[];
+  const faqItems = faq.raw("items") as PaymentFaqItem[];
+  const currency = new Intl.NumberFormat(english ? "en-US" : "fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
+  const proPlan = plans.find((plan) => plan.name === "Pro");
+  const proPrice = proPlan?.priceValue !== undefined ? currency.format(proPlan.priceValue) : "";
 
   return (
     <div className="marketing-shell">
@@ -35,28 +42,39 @@ export default async function PricingPage({ params }: Props) {
         <section className={styles.pricingHero} aria-labelledby="pricing-title">
           <div className={styles.pricingHeroInner}>
             <div className={styles.pricingCopy}>
-              <p className={styles.eyebrow}>{english ? "Simple by design" : "Simple par conception"}</p>
-              <h1 id="pricing-title">{english ? <>Your ambition, <span>at the right level.</span></> : <>Votre ambition, <span>au bon niveau.</span></>}</h1>
-              <p>{english ? "Start freely. Scale when usage demands it — no hidden annual commitment, no unreadable pricing architecture." : "Commencez librement. Passez à l’échelle quand l’usage le demande — sans engagement annuel dissimulé ni architecture tarifaire illisible."}</p>
+              <p className={styles.eyebrow}>{t("eyebrow")}</p>
+              <h1 id="pricing-title">{t("title")} <span>{t("accent")}</span></h1>
+              <p>{t("intro")}</p>
             </div>
-            <aside className={styles.pricingLens} aria-label={english ? "Plan overview" : "Vue d’ensemble des offres"}>
-              <span>{english ? "One path, three levels" : "Une trajectoire, trois niveaux"}</span>
+            <aside className={styles.pricingLens} aria-label={t("lensLabel")}>
+              <span>{t("lensTitle")}</span>
               <div className={styles.pricingScale}>
-                <div><small>01</small><strong>Starter</strong><b>{english ? "€0" : "0 €"}</b></div>
-                <div><small>02</small><strong>Pro</strong><b>{english ? "€19 / month" : "19 € / mois"}</b></div>
-                <div><small>03</small><strong>{english ? "Enterprise" : "Entreprise"}</strong><b>{english ? "Custom" : "Sur devis"}</b></div>
+                <div><small>01</small><strong>Starter</strong><b>{plans[0]?.price}</b></div>
+                <div><small>02</small><strong>Pro</strong><b>{proPrice} / {english ? "month" : "mois"}</b></div>
+                <div><small>03</small><strong>{plans[2]?.name}</strong><b>{plans[2]?.price}</b></div>
               </div>
-              <p className={styles.pricingNote}>{english ? "You stay in control at every step." : "Vous gardez le contrôle à chaque étape."}</p>
+              <p className={styles.pricingNote}>{t("lensNote")}</p>
             </aside>
           </div>
         </section>
 
         <section className={styles.pricingBody} aria-labelledby="pricing-offers-title">
           <div className={styles.pricingBodyIntro}>
-            <span>{english ? "Choose your level" : "Choisir son niveau"}</span>
-            <h2 id="pricing-offers-title">{english ? "The same product. More reach when you need it." : "Le même produit. Plus de portée lorsque vous en avez besoin."}</h2>
+            <span>{t("bodyEyebrow")}</span>
+            <h2 id="pricing-offers-title">{t("bodyTitle")}</h2>
           </div>
-          <PricingCards language={english ? "en" : "fr"} />
+          <PricingCards
+            locale={english ? "en" : "fr"}
+            plans={plans}
+            categories={categories}
+            faqItems={faqItems}
+            comparisonTitle={cards("comparisonTitle")}
+            comparisonSubtitle={cards("comparisonSubtitle")}
+            paymentTitle={cards("paymentTitle")}
+            paymentSubtitle={cards("paymentSubtitle")}
+            checkoutError={cards("checkoutError")}
+            checkoutGenericError={cards("checkoutGenericError")}
+          />
         </section>
       </main>
       <Footer />

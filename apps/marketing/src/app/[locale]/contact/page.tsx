@@ -1,52 +1,34 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { ContactForm } from "@/components/ContactForm";
 import { ProductGlyph } from "@/components/ProductGlyph";
+import { getLocalizedAlternates } from "@/lib/pageAlternates";
 import styles from "@/components/ConversionPages.module.css";
 
 type Props = { params: Promise<{ locale: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
-
-  if (locale === "en") {
-    return {
-      title: "Contact the Brivia team",
-      description: "Tell the Brivia team about your audience, project, deployment requirements or security review.",
-      alternates: { canonical: "/en/contact", languages: { fr: "/contact", en: "/en/contact", "x-default": "/contact" } },
-      openGraph: {
-        title: "Contact the Brivia team",
-        description: "Tell us about your audience, project, deployment requirements or security review.",
-        url: "/en/contact",
-        locale: "en_US",
-        alternateLocale: ["fr_FR"],
-      },
-      twitter: {
-        card: "summary_large_image",
-        title: "Contact the Brivia team",
-        description: "Tell us about your audience, project, deployment requirements or security review.",
-        images: ["/opengraph-image"],
-      },
-    };
-  }
-
+  const t = await getTranslations({ locale, namespace: "ContactPage" });
   return {
-    title: "Contact",
-    description: "Contactez l’équipe Brivia pour parler du produit, du support ou d’un déploiement dans votre organisation.",
-    alternates: { canonical: "/contact", languages: { fr: "/contact", en: "/en/contact", "x-default": "/contact" } },
+    title: t("meta.title"),
+    description: t("meta.description"),
+    alternates: { canonical: getLocalizedAlternates("/contact").languages[locale], ...getLocalizedAlternates("/contact") },
     openGraph: {
-      title: "Contacter l’équipe Brivia",
-      description: "Présentez votre projet, votre public et vos contraintes à l’équipe Brivia.",
-      url: "/contact",
-      locale: "fr_FR",
-      alternateLocale: ["en_US"],
+      title: t("ogTitle"),
+      description: t("ogDescription"),
+      url: getLocalizedAlternates("/contact").languages[locale],
+      locale: locale === "en" ? "en_US" : "fr_FR",
+      alternateLocale: [locale === "en" ? "fr_FR" : "en_US"],
     },
   };
 }
 
 export default async function ContactPage({ params }: Props) {
   const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "ContactPage" });
   const english = locale === "en";
 
   return (
@@ -56,17 +38,17 @@ export default async function ContactPage({ params }: Props) {
         <section className={styles.contactStage} aria-labelledby="contact-title">
           <div className={styles.contactStageInner}>
             <div className={styles.contactCopy}>
-              <p className={styles.eyebrow}>{english ? "A useful conversation from the start" : "Un échange utile, dès le départ"}</p>
-              <h1 id="contact-title">{english ? "Start with the real context." : "Parlons du vrai sujet."}</h1>
-              <p>{english ? "Your audience, workflow and constraints give us what we need to answer precisely." : "Votre public, votre contexte, vos contraintes. Donnez-nous la matière nécessaire pour vous répondre avec précision."}</p>
+              <p className={styles.eyebrow}>{t("eyebrow")}</p>
+              <h1 id="contact-title">{t("title")}</h1>
+              <p>{t("intro")}</p>
 
-              <div className={styles.contactSignals} aria-label={english ? "Other ways to contact Brivia" : "Autres moyens de nous contacter"}>
+              <div className={styles.contactSignals} aria-label={t("signalsLabel")}>
                 <a className={styles.contactSignal} href="mailto:contact@brivia.app">
-                  <span><span>{english ? "Write directly" : "Écrire directement"}</span><strong>contact@brivia.app</strong></span>
+                  <span><span>{t("writeLabel")}</span><strong>contact@brivia.app</strong></span>
                   <i className={styles.arrowMark}><ProductGlyph name="external" /></i>
                 </a>
-                <a className={styles.contactSignal} href={english ? "/en/security" : "/help"}>
-                  <span><span>{english ? "Review current controls" : "Trouver une réponse maintenant"}</span><strong>{english ? "Brivia Trust Center" : "Centre d’aide Brivia"}</strong></span>
+                <a className={styles.contactSignal} href={t("helpHref")}>
+                  <span><span>{t("helpLabel")}</span><strong>{t("helpTitle")}</strong></span>
                   <i className={styles.arrowMark}><ProductGlyph name="external" /></i>
                 </a>
               </div>
@@ -76,11 +58,11 @@ export default async function ContactPage({ params }: Props) {
               <div className={styles.formSurface}>
                 <div className={styles.formHeader}>
                   <div>
-                    <p className={styles.eyebrow}>{english ? "Your project" : "Votre projet"}</p>
-                    <h2>{english ? "A few details. A better answer." : "Quelques détails. Une réponse mieux cadrée."}</h2>
-                    <p className={styles.privacyNote}>{english ? "Your request is transmitted securely." : "Votre demande est transmise de façon sécurisée."}</p>
+                    <p className={styles.eyebrow}>{t("formEyebrow")}</p>
+                    <h2>{t("formTitle")}</h2>
+                    <p className={styles.privacyNote}>{t("privacyNote")}</p>
                   </div>
-                  <span className={styles.formIndex}>{english ? "01 / 06" : "01 — 06"}</span>
+                  <span className={styles.formIndex}>{t("formIndex")}</span>
                 </div>
                 <ContactForm language={english ? "en" : "fr"} />
               </div>

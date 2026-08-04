@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
-import { HeroMiniQuiz } from "@/components/HeroMiniQuiz";
+import { HeroMiniQuiz, type HeroMiniQuizContent } from "@/components/HeroMiniQuiz";
 import { ProductGlyph } from "@/components/ProductGlyph";
 import { SITE_URL } from "@/lib/siteUrl";
 import styles from "@/components/GuideArticle.module.css";
@@ -46,6 +47,17 @@ type Props = { params: Promise<{ locale: string }> };
 export default async function InteractiveQuizGuidePage({ params }: Props) {
   const { locale } = await params;
   if (locale !== "fr") notFound();
+
+  const quizT = await getTranslations({ locale: "fr", namespace: "HeroMiniQuiz" });
+  const heroQuiz: HeroMiniQuizContent = {
+    ariaLabel: quizT("ariaLabel"),
+    defaultHint: quizT("defaultHint"),
+    almostHint: quizT("almostHint"),
+    timeUpHint: quizT("timeUpHint"),
+    finalScore: quizT("finalScore"),
+    playAgain: quizT("playAgain"),
+    questions: quizT.raw("questions"),
+  };
 
   const articleSchema = {
     "@context": "https://schema.org",
@@ -120,7 +132,7 @@ export default async function InteractiveQuizGuidePage({ params }: Props) {
               <section id="rythme">
                 <h2>Alternez réponse, lecture et débrief.</h2>
                 <p>Une session devient fatigante lorsque toutes les questions sollicitent le même geste. Alternez une réponse rapide, une situation à analyser et un moment d’explication. Le rythme vient de la variété cognitive, pas d’un chronomètre toujours plus court.</p>
-                <div className={styles.liveExample}><div><strong>Testez une question.</strong><p>Cette démonstration utilise un véritable composant du produit.</p></div><HeroMiniQuiz /></div>
+                <div className={styles.liveExample}><div><strong>Testez une question.</strong><p>Cette démonstration utilise un véritable composant du produit.</p></div><HeroMiniQuiz content={heroQuiz} /></div>
               </section>
 
               <section id="test">

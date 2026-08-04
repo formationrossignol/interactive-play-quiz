@@ -4,10 +4,10 @@ import styles from "./PartnersStrip.module.css";
 
 export const PartnersStrip = ({
   partners,
-  language = "fr",
+  message,
 }: {
   partners: Partner[];
-  language?: "fr" | "en";
+  message: string;
 }) => {
   if (partners.length === 0) return null;
 
@@ -15,9 +15,7 @@ export const PartnersStrip = ({
     <section className={styles.partners} aria-labelledby="partners-title">
       <div className={styles.partnersInner}>
         <p id="partners-title" className={styles.partnerMessage}>
-          {language === "en"
-            ? "Learning teams choose Brivia to turn their audiences into active participants."
-            : "Des équipes pédagogiques choisissent Brivia pour faire participer leurs groupes."}
+          {message}
         </p>
 
         <div className={styles.logoGrid}>
