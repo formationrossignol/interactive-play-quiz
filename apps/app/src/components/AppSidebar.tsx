@@ -114,6 +114,16 @@ export const SUPPORT_ITEMS = [
   { label: "Signaler un problème", icon: "support_agent", path: "/report", requiresAuth: false },
 ];
 
+// Two-letter monogram for the sidebar identity row — mirrors the avatar
+// fallback shown elsewhere in the app (e.g. ProfilePage), kept local since
+// it's a one-line derivation, not a shared concern.
+const initialsOf = (username: string): string => {
+  const parts = username.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[1][0]).toUpperCase();
+};
+
 interface AppSidebarProps {
   user: AuthUser | null;
   /** Extra menu group rendered below the main nav — e.g. Admin's own
@@ -477,6 +487,21 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
+
+          <SidebarSeparator />
+          <button type="button" className="product-sidebar-identity" onClick={() => navigate("/profile")}>
+            <span className="product-sidebar-identity__avatar">
+              {user.avatarUrl ? <img src={user.avatarUrl} alt="" /> : initialsOf(user.username)}
+            </span>
+            {!collapsedIcon && (
+              <>
+                <span className="product-sidebar-identity__name">{user.username}</span>
+                {(user.plan === "pro" || user.plan === "entreprise") && (
+                  <span className="product-sidebar-identity__plan">{user.plan === "pro" ? "PRO" : "ENTREPRISE"}</span>
+                )}
+              </>
+            )}
+          </button>
         </SidebarFooter>
       )}
 

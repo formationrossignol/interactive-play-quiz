@@ -105,6 +105,7 @@ export const AppLayout = ({ subtitle, extraSection, children }: AppLayoutProps) 
 
           <div className="product-topbar__actions">
             <GlobalSearch user={user} />
+            <div className="product-topbar__icons">
             <button
               type="button"
               className="ap-btn ap-btn--ghost ap-btn--sm ap-icon-btn product-topbar__command"
@@ -120,7 +121,9 @@ export const AppLayout = ({ subtitle, extraSection, children }: AppLayoutProps) 
               <DropdownMenu open={accountOpen} onOpenChange={setAccountOpen}>
                 <DropdownMenuTrigger asChild>
                   <button className="ap-avatar-btn" aria-label={user.username} title={user.username}>
-                    {avatarInitial}
+                    {user.avatarUrl
+                      ? <img src={user.avatarUrl} alt="" className="ap-avatar-btn__img" />
+                      : avatarInitial}
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
@@ -239,6 +242,7 @@ export const AppLayout = ({ subtitle, extraSection, children }: AppLayoutProps) 
                 </button>
               </>
             )}
+            </div>
           </div>
         </header>
 

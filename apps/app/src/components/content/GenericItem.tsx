@@ -253,6 +253,15 @@ const defaultHeaderIcon: Record<string, typeof ListChecks> = {
   "ap-btn--pres": Presentation,
 };
 
+/** Cover type badge label per content type — same i18n keys as the sidebar's
+ *  "Mes créations" submenu, keyed by the config accentBtn suffix. */
+const headerLabel: Record<string, string> = {
+  "ap-btn--quiz": t("creationTypeQuiz"),
+  "ap-btn--poll": t("creationTypePoll"),
+  "ap-btn--flash": t("creationTypeFlashcard"),
+  "ap-btn--pres": t("creationTypeSlide"),
+};
+
 export function GenericCard(props: GenericItemProps) {
   const { d, ctx, config, navigate } = props;
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: d.id });
@@ -269,7 +278,7 @@ export function GenericCard(props: GenericItemProps) {
       style={{ opacity: isDragging ? 0.4 : 1, padding: 0 }}
       onClick={() => navigate(config.editRoute(id))}
     >
-      <ContentCardHeader image={img} alt={d.title} icon={DefaultHeaderIcon} accent={`var(${accentVar})`}>
+      <ContentCardHeader image={img} alt={d.title} icon={DefaultHeaderIcon} accent={`var(${accentVar})`} label={headerLabel[config.accentBtn]}>
         <button
           type="button"
           {...attributes}

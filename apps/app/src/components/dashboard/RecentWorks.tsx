@@ -98,14 +98,28 @@ export function RecentWorks({ userId }: { userId: string }) {
                 <span
                   className="product-recent-item__media"
                   style={{
+                    color: meta.color,
                     background: image
                       ? "var(--ap-paper-2)"
                       : `color-mix(in srgb, ${meta.color} 13%, var(--ap-paper-2))`,
                   }}
                 >
+                  {!image && (
+                    <svg
+                      className="motif"
+                      viewBox="0 0 300 112"
+                      preserveAspectRatio="none"
+                      aria-hidden="true"
+                      style={{ position: "absolute", inset: 0, opacity: .55 }}
+                    >
+                      <path d="M-10 90 Q60 40 150 70 T310 50" fill="none" stroke="currentColor" strokeWidth="1" opacity=".2" />
+                      <path d="M-10 105 Q80 60 170 85 T310 70" fill="none" stroke="currentColor" strokeWidth="1" opacity=".1" />
+                    </svg>
+                  )}
+                  {!image && <span className="product-recent-item__badge">{meta.label}</span>}
                   {image
                     ? <img src={image} alt="" className="h-full w-full object-cover" />
-                    : <MaterialSymbol name={meta.icon} size={36} style={{ color: meta.color, opacity: .82 }} />}
+                    : <MaterialSymbol name={meta.icon} size={36} style={{ color: meta.color, opacity: .82, position: "relative" }} />}
                 </span>
                 <span className="product-recent-item__title">{title}</span>
                 <span className="product-recent-item__meta">

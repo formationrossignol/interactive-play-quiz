@@ -12,7 +12,9 @@ import { DENSITIES, applyDensity, normalizeDensity, type Density } from "@/lib/d
 import { AppLayout } from "@/components/AppLayout";
 import { SecuritySection } from "@/components/SecuritySection";
 import { MaterialSymbol } from "@/components/MaterialSymbol";
-import { AlertCircle, Check, Save, Trophy, BookOpen, Clock, Sun, Moon, Zap, Building2, User } from "lucide-react";
+import { ButtonShimmerLabel } from "@/components/ui/skeleton";
+import { uploadAvatar, validateAvatarFile } from "@/lib/avatarRepo";
+import { AlertCircle, Check, Save, Trophy, BookOpen, Clock, Sun, Moon, Zap, Building2, User, Camera } from "lucide-react";
 import { toast } from "sonner";
 
 const inputStyle: React.CSSProperties = {
@@ -107,6 +109,10 @@ const ProfilePage = () => {
   const [usernameTouched, setUsernameTouched] = useState(false);
   const usernameRef = useRef<HTMLInputElement>(null);
   const [email, setEmail] = useState("");
+  const [roleLabel, setRoleLabel] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | undefined>(undefined);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
   const [theme, setTheme] = useState<Theme>("light");
   const [siteTheme, setSiteTheme] = useState<SiteTheme>("arcade");
   const [density, setDensity] = useState<Density>("standard");
@@ -121,6 +127,8 @@ const ProfilePage = () => {
     setUser(currentUser);
     setUsername(currentUser.username);
     setEmail(currentUser.email);
+    setRoleLabel(currentUser.roleLabel || "");
+    setAvatarUrl(currentUser.avatarUrl);
     setTheme(currentUser.theme || "light");
     setSiteTheme(normalizeSiteTheme(currentUser.siteTheme));
     setDensity(normalizeDensity(currentUser.density));
@@ -176,7 +184,14 @@ const ProfilePage = () => {
       usernameRef.current?.focus();
       return;
     }
-    const updatedUser = await updateProfile({ username: username.trim(), theme, siteTheme, density, language });
+    const updatedUser = await updateProfile({
+      username: username.trim(),
+      theme,
+      siteTheme,
+      density,
+      language,
+      roleLabel: roleLabel.trim(),
+    });
     if (!updatedUser) { toast.error(t("loginError")); return; }
     setUser(updatedUser);
     setI18nLanguage(language);
@@ -185,6 +200,27 @@ const ProfilePage = () => {
     applyDensity(density);
     toast.success(t("profileUpdated"));
     setTimeout(() => window.location.reload(), 500);
+  };
+
+  const handleAvatarPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !user) return;
+    const validation = validateAvatarFile(file);
+    if (validation.ok === false) { toast.error(validation.error); return; }
+    setAvatarUploading(true);
+    try {
+      const url = await uploadAvatar(user.id, file);
+      const updatedUser = await updateProfile({ avatarUrl: url });
+      if (!updatedUser) { toast.error(t("loginError")); return; }
+      setUser(updatedUser);
+      setAvatarUrl(updatedUser.avatarUrl);
+      toast.success(t("profileUpdated"));
+    } catch {
+      toast.error("Échec de l'envoi de la photo, réessayez.");
+    } finally {
+      setAvatarUploading(false);
+    }
   };
 
   const onFocus = (e: React.FocusEvent<HTMLInputElement>) => {
@@ -204,12 +240,35 @@ const ProfilePage = () => {
 
         {/* Page header */}
         <div className="product-profile-hero">
-          <div className="product-profile-avatar" aria-hidden="true">
-            {user.username?.[0] ?? "?"}
+          <div className="product-profile-avatar-wrap">
+            <div className="product-profile-avatar" aria-hidden="true">
+              {avatarUrl
+                ? <img src={avatarUrl} alt="" className="product-profile-avatar__img" />
+                : (user.username?.[0] ?? "?")}
+            </div>
+            <button
+              type="button"
+              className="product-profile-avatar__edit"
+              aria-label="Changer la photo de profil"
+              title="Changer la photo de profil"
+              disabled={avatarUploading}
+              onClick={() => avatarInputRef.current?.click()}
+            >
+              <ButtonShimmerLabel loading={avatarUploading}>
+                <Camera className="h-3.5 w-3.5" />
+              </ButtonShimmerLabel>
+            </button>
+            <input
+              ref={avatarInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/gif"
+              style={{ display: "none" }}
+              onChange={handleAvatarPick}
+            />
           </div>
           <div>
             <h1>{user.username}</h1>
-            <p>{user.email}</p>
+            <p>{roleLabel || user.email}</p>
           </div>
           <span className="product-profile-plan">
             {(() => {
@@ -348,6 +407,20 @@ const ProfilePage = () => {
                   disabled
                 />
                 <p className="ap-muted" style={{ fontSize: "11px", marginTop: "5px" }}>{t("emailReadonly")}</p>
+              </div>
+              <div>
+                <label style={labelStyle} htmlFor="profile-role-label">Rôle</label>
+                <input
+                  id="profile-role-label"
+                  style={inputStyle}
+                  value={roleLabel}
+                  placeholder="Ex. Formateur, Étudiant, RH…"
+                  maxLength={60}
+                  onChange={(e) => setRoleLabel(e.target.value)}
+                  onFocus={onFocus}
+                  onBlur={onBlur}
+                />
+                <p className="ap-muted" style={{ fontSize: "11px", marginTop: "5px" }}>Affiché sur votre profil, sans effet sur vos permissions.</p>
               </div>
             </div>
           </div>

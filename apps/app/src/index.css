@@ -3,6 +3,7 @@
 @import "./theme-innov.css";
 @import "./theme-studio.css";
 @import "./theme-material.css";
+@import "./theme-nova.css";
 @import "./density.css";
 @import "./product-app.css";
 
@@ -436,6 +437,97 @@
     --sidebar-accent: 270 13% 31%;
     --sidebar-accent-foreground: 270 30% 92%;
     --sidebar-border: 270 7% 29%;
+  }
+
+  /* Thème « Nova » — miroir des tokens --ap-* de theme-nova.css pour les
+     composants shadcn (dialogs, selects, toasts…). Sidebar volontairement
+     sombre alors que le reste du thème est clair — c'est le compromis
+     "présence de marque" retenu, pas une erreur de copier-coller. */
+  :root[data-theme="nova"] {
+    --background: 255 33% 98%;       /* --ap-paper   #f8f7fb */
+    --foreground: 255 19% 13%;       /* --ap-ink     #1d1a26 */
+
+    --card: 0 0% 100%;               /* --ap-card    #ffffff */
+    --card-foreground: 255 19% 13%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 255 19% 13%;
+
+    --primary: 252 94% 67%;          /* --ap-brand   #7c5cfa */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 257 37% 96%;        /* --ap-paper-2 #f4f2f9 */
+    --secondary-foreground: 255 19% 13%;
+
+    --muted: 257 37% 96%;
+    --muted-foreground: 257 8% 42%;  /* --ap-muted   #666173 */
+
+    --accent: 255 100% 98%;          /* --ap-brand-soft #f6f3ff */
+    --accent-foreground: 252 55% 48%; /* --ap-brand-deep #5338bf */
+
+    --destructive: 359 52% 53%;      /* --ap-danger  #c5484a */
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 260 33% 91%;           /* --ap-line    #e6e1f0 */
+    --input: 260 33% 91%;
+    --ring: 252 94% 67%;
+
+    --radius: 1rem;                  /* --ap-r-lg    16px */
+
+    --success: 173 81% 29%;          /* --ap-pres    #0e8577 */
+    --success-foreground: 0 0% 100%;
+
+    --warning: 39 67% 55%;           /* --ap-flash   #d9a441 */
+    --warning-foreground: 0 0% 10%;
+
+    /* Sidebar : navy sombre (compromis maquette v2), pas le blanc des
+       autres thèmes — miroir de la section 6 de theme-nova.css. */
+    --sidebar-background: 235 17% 13%;  /* #1b1c26 */
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 244 73% 80%;     /* #aaa5f1 */
+    --sidebar-primary-foreground: 235 17% 13%;
+    --sidebar-accent: 233 19% 18%;      /* #262838 */
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 233 16% 22%;      /* #2e3040 */
+    --sidebar-ring: 244 73% 80%;
+
+    --quiz-accent:      341 52% 62%; /* #d06a8b */
+    --poll-accent:      238 65% 65%; /* #6c6fe0 */
+    --flashcard-accent: 39 67% 55%;  /* #d9a441 */
+    --slide-accent:     173 80% 40%; /* #14b8a6 */
+  }
+
+  .dark[data-theme="nova"] {
+    --background: 256 32% 9%;        /* --ap-paper   #14101f */
+    --foreground: 257 64% 96%;       /* --ap-ink     #f1edfb */
+
+    --card: 254 37% 15%;             /* --ap-card    #201936 */
+    --card-foreground: 257 64% 96%;
+
+    --popover: 254 37% 15%;
+    --popover-foreground: 257 64% 96%;
+
+    --primary: 259 100% 74%;         /* --ap-brand   #a57bff */
+    --primary-foreground: 256 32% 9%;
+
+    --secondary: 253 39% 14%;        /* --ap-paper-2 #1b1530 */
+    --secondary-foreground: 257 64% 96%;
+
+    --muted: 253 39% 14%;
+    --muted-foreground: 256 30% 70%; /* --ap-muted   #a79bc9 */
+
+    --accent: 252 43% 22%;           /* --ap-brand-soft #2a2050 */
+    --accent-foreground: 259 100% 84%; /* #c7aeff */
+
+    --border: 256 34% 24%;           /* --ap-line    #332852 */
+    --input: 256 34% 24%;
+    --ring: 259 100% 74%;
+
+    --sidebar-background: 252 37% 8%;   /* #100d1c */
+    --sidebar-foreground: 257 64% 96%;
+    --sidebar-accent: 250 33% 14%;      /* #1c1830 */
+    --sidebar-accent-foreground: 257 64% 96%;
+    --sidebar-border: 251 38% 23%;      /* #2c2450 */
   }
 
   * {

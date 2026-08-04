@@ -21,6 +21,10 @@ export interface User {
   density?: Density;
   language?: Language;
   plan?: Plan;
+  /** Free-text display label (e.g. "Formateur", "Étudiant") — cosmetic only,
+   *  unrelated to profiles.role which gates admin access. */
+  roleLabel?: string;
+  avatarUrl?: string;
 }
 
 export const AUTH_STORAGE_KEY = 'quiz_auth_user';
@@ -34,6 +38,8 @@ const mapUser = (u: SupabaseUser): User => ({
   siteTheme: u.user_metadata?.siteTheme as SiteTheme | undefined,
   density: u.user_metadata?.density as Density | undefined,
   language: u.user_metadata?.language as Language | undefined,
+  roleLabel: u.user_metadata?.roleLabel as string | undefined,
+  avatarUrl: u.user_metadata?.avatarUrl as string | undefined,
 });
 
 /**
@@ -239,7 +245,7 @@ export const changePassword = async (
 /* ── Profile metadata ─────────────────────────────────────────── */
 
 export const updateProfile = async (
-  patch: Partial<Pick<User, 'username' | 'theme' | 'siteTheme' | 'density' | 'language'>>
+  patch: Partial<Pick<User, 'username' | 'theme' | 'siteTheme' | 'density' | 'language' | 'roleLabel' | 'avatarUrl'>>
 ): Promise<User | null> => {
   const { data, error } = await supabase.auth.updateUser({ data: patch });
   if (error || !data.user) return null;
