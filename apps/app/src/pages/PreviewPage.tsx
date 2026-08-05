@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { QuizPreview } from "@/components/QuizPreview";
-import { CircularTimer } from "@/components/CircularTimer";
 import { MultiStepProgress } from "@/components/MultiStepProgress";
 import { PLAYER_ANSWER_SHAPES } from "@/lib/answerVisuals";
 import { getPollOptions } from "@/lib/pollResults";
@@ -170,7 +169,7 @@ const ParticipantPreview = ({ question, questionIndex, totalQuestions, isPoll }:
           {(question.answers ?? []).map((answer: string, index: number) => (
             <button
               key={index}
-              className={`ap-answer ap-answer--${(index % 4) + 1}`}
+              className={`ap-answer ap-answer--solid ap-answer--${(index % 4) + 1}`}
               onClick={() => handlePick(index)}
               style={{ fontSize: 13, padding: "12px 12px", gap: 9 }}
             >
@@ -188,7 +187,7 @@ const ParticipantPreview = ({ question, questionIndex, totalQuestions, isPoll }:
           {[{ label: question.answers?.[0] ?? "Vrai", value: "true" }, { label: question.answers?.[1] ?? "Faux", value: "false" }].map(({ label, value }, index) => (
             <button
               key={value}
-              className={`ap-answer ap-answer--${index + 1}`}
+              className={`ap-answer ap-answer--solid ap-answer--${index + 1}`}
               onClick={() => handlePick(value)}
               style={{ fontSize: 13, padding: "12px 12px", gap: 9 }}
             >
@@ -327,7 +326,7 @@ const ParticipantPreview = ({ question, questionIndex, totalQuestions, isPoll }:
             className="ap-pill"
             style={{ background: "rgba(255,255,255,0.15)", border: "2px solid rgba(255,255,255,0.2)", color: "#fff", fontSize: 11, padding: "4px 10px" }}
           >
-            {isPoll ? "📊 " : ""}Question {questionIndex + 1}
+            {isPoll ? "📊 " : ""}Question {questionIndex + 1}/{totalQuestions}
           </span>
           {!isPoll && (
             <span className="flex items-center gap-1 text-sm" style={{ fontFamily: "var(--ap-font-display)", fontWeight: 600 }}>
@@ -352,8 +351,20 @@ const ParticipantPreview = ({ question, questionIndex, totalQuestions, isPoll }:
       {/* Carte question blanche — identique au live */}
       <div className="ap-card ap-card--floaty" style={{ padding: 16 }}>
         {!isPoll && (
-          <div className="flex justify-center mb-3" style={{ transform: "scale(0.72)", transformOrigin: "center top", marginBottom: -8 }}>
-            <CircularTimer timeLeft={timeLeft} totalTime={question.timeLimit ?? 20} />
+          <div
+            style={{ height: 8, background: "var(--ap-paper-2)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-md)", overflow: "hidden", marginBottom: 16 }}
+            role="timer"
+            aria-label={`Temps restant : ${timeLeft} secondes`}
+          >
+            <div
+              style={{
+                height: "100%",
+                width: `${Math.max(0, Math.min(1, (question.timeLimit ?? 20) > 0 ? timeLeft / (question.timeLimit ?? 20) : 0)) * 100}%`,
+                background: timeLeft <= 5 ? "var(--ap-danger)" : "var(--ap-brand)",
+                borderRadius: "var(--ap-r-md)",
+                transition: "width 1s linear, background .3s",
+              }}
+            />
           </div>
         )}
 
