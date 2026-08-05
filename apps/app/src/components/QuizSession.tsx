@@ -409,7 +409,25 @@ export const QuizSession = ({ quiz, isHost = false, isSolo = false, onExitReques
 
   const isMillionnaire = selectedTheme?.id === 'qui-veut-gagner';
 
+  // Per-question background photo overrides the theme's background on the
+  // projected host screen (ThemedBackground below is only ever used for the
+  // per-question-cycle phases — transition/intro/question/distribution/
+  // leaderboard — never the lobby or final screen, so there's no "which
+  // question" ambiguity to gate this on).
+  const questionBackgroundImage = typeof currentQuestion?.backgroundImage === "string" && currentQuestion.backgroundImage
+    ? currentQuestion.backgroundImage
+    : undefined;
+
   const backgroundStyle = useMemo(() => {
+    if (questionBackgroundImage) {
+      return {
+        backgroundImage: `url(${questionBackgroundImage})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+      };
+    }
+
     if (!selectedTheme) {
       return {
         background: "linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.88))",
@@ -422,7 +440,7 @@ export const QuizSession = ({ quiz, isHost = false, isSolo = false, onExitReques
       backgroundPosition: "center",
       backgroundRepeat: "no-repeat",
     };
-  }, [selectedTheme]);
+  }, [selectedTheme, questionBackgroundImage]);
 
   const overlayColor = useMemo(() => {
     if (!selectedTheme?.palette?.length) {

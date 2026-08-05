@@ -5,6 +5,7 @@
 // primitive plus its highest-traffic call sites.
 import { toast } from 'sonner';
 import { PlanLimitError } from './plans';
+import { StorageQuotaError } from './quizStorage';
 
 export type ErrorKind = 'validation' | 'business' | 'system';
 
@@ -64,6 +65,9 @@ export function classifyError(e: unknown): ClassifiedError {
   }
   if (e instanceof ValidationError) {
     return { kind: 'validation', message: e.message };
+  }
+  if (e instanceof StorageQuotaError || (e instanceof DOMException && e.name === 'QuotaExceededError')) {
+    return { kind: 'business', message: e.message || 'Stockage local plein sur cet appareil.' };
   }
   const signals = getErrorSignals(e);
   if (
