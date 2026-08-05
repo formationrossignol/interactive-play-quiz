@@ -94,6 +94,7 @@ export default async function RootLayout({ children, params }: Props) {
         />
         {/* next-intl's types resolve against the hoisted React 18 copy at the workspace root while this app runs React 19 — same shape at runtime, mismatched nominal type at compile time */}
         <NextIntlClientProvider locale={locale}>
+          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
           {children as any}
         </NextIntlClientProvider>
         <MarketingAnalytics />
