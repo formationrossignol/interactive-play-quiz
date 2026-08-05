@@ -27,12 +27,16 @@
   --ap-r-md: 7px;
   --ap-r-lg: 9px;
   --ap-r-xl: 11px;
+  --ap-r-2xl: 20px;
   --ap-r-pill: 7px;
 
   /* Soft elevation without arcade-style offset shadows. */
-  --ap-shadow-soft:  0 1px 2px rgba(23,24,39,.06);
+  --ap-shadow-soft:  0 1px 2px rgba(23,24,39,.05), 0 4px 10px rgba(23,24,39,.04);
   --ap-shadow-card:  0 18px 44px rgba(23,24,39,.10), 0 2px 8px rgba(23,24,39,.05);
   --ap-shadow-float: 0 12px 30px rgba(23,24,39,.12);
+  /* Light neumorphism: soft dual-layer shadow, no visible border needed. */
+  --ap-shadow-neu:       0 1px 2px rgba(23,24,39,.04), 0 10px 24px rgba(23,24,39,.07);
+  --ap-shadow-neu-hover: 0 2px 4px rgba(23,24,39,.05), 0 16px 32px rgba(23,24,39,.10);
 
   /* Typo */
   --ap-font-display: 'Plus Jakarta Sans Variable', 'Avenir Next', 'Segoe UI', system-ui, sans-serif;
@@ -69,9 +73,11 @@
   --ap-poll-soft:   #182a4d;
   --ap-flash-soft:  #3a2c10;
 
-  --ap-shadow-soft:  0 1px 2px rgba(0,0,0,.24);
+  --ap-shadow-soft:  0 1px 2px rgba(0,0,0,.22), 0 4px 12px rgba(0,0,0,.16);
   --ap-shadow-card:  0 18px 44px rgba(0,0,0,.34), 0 2px 8px rgba(0,0,0,.22);
   --ap-shadow-float: 0 12px 30px rgba(0,0,0,.38);
+  --ap-shadow-neu:       0 1px 2px rgba(0,0,0,.20), 0 10px 26px rgba(0,0,0,.28);
+  --ap-shadow-neu-hover: 0 2px 4px rgba(0,0,0,.24), 0 16px 34px rgba(0,0,0,.34);
 }
 
 :root { color-scheme: light; }

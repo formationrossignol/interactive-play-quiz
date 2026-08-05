@@ -1,10 +1,10 @@
-import type { ReactNode } from "react";
 import type { DashboardCharts, DashboardStats } from "@/lib/dashboardStats";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MaterialSymbol } from "@/components/MaterialSymbol";
 
 interface Tile {
-  icon: ReactNode;
+  iconName: string;
+  iconColor: string;
   label: string;
   value: string | number;
   deltaPct: number | null;
@@ -45,19 +45,20 @@ function Sparkline({ values, color }: { values: number[]; color: string }) {
  *  direction and the "vs 14 j précédents" caption carry the meaning too.
  *  Renders nothing without a baseline: repeating "no comparison available"
  *  identically across all 4 tiles was noise, not information. */
-function TrendBadge({ deltaPct }: { deltaPct: number | null }) {
+function TrendBadge({ deltaPct, hero = false }: { deltaPct: number | null; hero?: boolean }) {
   if (deltaPct === null) return null;
   const flat = deltaPct === 0;
   const positive = deltaPct > 0;
   const symbolName = flat ? "remove" : positive ? "arrow_upward" : "arrow_downward";
-  const color = flat ? "var(--ap-muted)" : positive ? "#15c08a" : "#ff5a4d";
+  const color = hero ? "#fff" : flat ? "var(--ap-muted)" : positive ? "#15c08a" : "#ff5a4d";
+  const chipBg = hero ? "rgba(255, 255, 255, .2)" : `color-mix(in srgb, ${color} 14%, transparent)`;
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 6, minWidth: 0 }}>
       <span
         style={{
           display: "inline-flex", alignItems: "center", gap: 3,
           fontSize: 10.5, fontWeight: 760, color,
-          background: `color-mix(in srgb, ${color} 14%, transparent)`,
+          background: chipBg,
           borderRadius: "var(--ap-r-sm)", padding: "3px 7px",
         }}
       >
@@ -114,30 +115,7 @@ export function KpiRow({ stats, charts }: { stats: DashboardStats | null; charts
 
   const tiles: Tile[] = [
     {
-      icon: <MaterialSymbol name="auto_awesome" size={20} style={{ color: "var(--ap-brand)" }} />,
-      label: "Créations", value: s.totalCreations,
-      deltaPct: s.trends.creations.deltaPct,
-      sparkColor: "var(--ap-brand)",
-      onClick: scrollToChart("dashboard-creations-chart"),
-    },
-    {
-      icon: <MaterialSymbol name="bar_chart" size={20} style={{ color: "var(--ap-brand-deep)" }} />,
-      label: "Sessions totales", value: s.totalSessions,
-      deltaPct: s.trends.sessions.deltaPct,
-      spark: sessionsSpark,
-      sparkColor: "var(--ap-brand-deep)",
-      onClick: scrollToChart("dashboard-activity-chart"),
-    },
-    {
-      icon: <MaterialSymbol name="group" size={20} style={{ color: "var(--ap-poll)" }} />,
-      label: "Participants totaux", value: s.totalParticipants,
-      deltaPct: s.trends.participants.deltaPct,
-      spark: participantsSpark,
-      sparkColor: "var(--ap-poll)",
-      onClick: scrollToChart("dashboard-activity-chart"),
-    },
-    {
-      icon: <MaterialSymbol name="target" size={20} style={{ color: "#f59e0b" }} />,
+      iconName: "target", iconColor: "#f59e0b",
       label: "Score moyen (quiz)", value: s.avgScore != null ? `${s.avgScore} pts` : "-",
       deltaPct: scoreDeltaPct,
       emptyHint: s.avgScore == null ? "Pas encore de score" : undefined,
@@ -145,35 +123,61 @@ export function KpiRow({ stats, charts }: { stats: DashboardStats | null; charts
       sparkColor: "#f59e0b",
       onClick: scrollToChart("dashboard-score-chart"),
     },
+    {
+      iconName: "bar_chart", iconColor: "var(--ap-brand-deep)",
+      label: "Sessions totales", value: s.totalSessions,
+      deltaPct: s.trends.sessions.deltaPct,
+      spark: sessionsSpark,
+      sparkColor: "var(--ap-brand-deep)",
+      onClick: scrollToChart("dashboard-activity-chart"),
+    },
+    {
+      iconName: "group", iconColor: "var(--ap-poll)",
+      label: "Participants totaux", value: s.totalParticipants,
+      deltaPct: s.trends.participants.deltaPct,
+      spark: participantsSpark,
+      sparkColor: "var(--ap-poll)",
+      onClick: scrollToChart("dashboard-activity-chart"),
+    },
+    {
+      iconName: "auto_awesome", iconColor: "var(--ap-brand)",
+      label: "Créations", value: s.totalCreations,
+      deltaPct: s.trends.creations.deltaPct,
+      sparkColor: "var(--ap-brand)",
+      onClick: scrollToChart("dashboard-creations-chart"),
+    },
   ];
 
   return (
     <div className="product-kpis">
-      {tiles.map(({ icon, label, value, deltaPct, emptyHint, spark, sparkColor, onClick }) => (
-        <button
-          key={label}
-          type="button"
-          onClick={onClick}
-          className="product-kpi"
-          aria-label={`${label} : ${value}. Afficher le détail`}
-        >
-          <div>
-            <div className="product-kpi__top">
-              <span className="product-kpi__icon">
-              {icon}
-              </span>
-              <span className="product-kpi__label">{label}</span>
+      {tiles.map(({ iconName, iconColor, label, value, deltaPct, emptyHint, spark, sparkColor, onClick }, index) => {
+        const hero = index === 0;
+        return (
+          <button
+            key={label}
+            type="button"
+            onClick={onClick}
+            className={`product-kpi${hero ? " product-kpi--hero" : ""}`}
+            aria-label={`${label} : ${value}. Afficher le détail`}
+          >
+            <div>
+              <div className="product-kpi__top">
+                <span className="product-kpi__icon" style={hero ? undefined : { color: iconColor }}>
+                  <MaterialSymbol name={iconName} size={20} />
+                </span>
+                <span className="product-kpi__label">{label}</span>
+              </div>
+              <span className="product-kpi__value">{value}</span>
             </div>
-            <span className="product-kpi__value">{value}</span>
-          </div>
-          <span className="product-kpi__trend">
-            {deltaPct !== null
-              ? <TrendBadge deltaPct={deltaPct} />
-              : emptyHint && <span className="ap-muted" style={{ fontSize: 10.5 }}>{emptyHint}</span>}
-            {spark && <Sparkline values={spark} color={sparkColor} />}
-          </span>
-        </button>
-      ))}
+            <span className="product-kpi__trend">
+              {deltaPct !== null
+                ? <TrendBadge deltaPct={deltaPct} hero={hero} />
+                : emptyHint && <span className="ap-muted" style={{ fontSize: 10.5 }}>{emptyHint}</span>}
+              {spark && <Sparkline values={spark} color={hero ? "#fff" : sparkColor} />}
+            </span>
+          </button>
+        );
+      })}
     </div>
   );
 }

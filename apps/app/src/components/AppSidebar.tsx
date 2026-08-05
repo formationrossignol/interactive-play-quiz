@@ -495,7 +495,10 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
             </span>
             {!collapsedIcon && (
               <>
-                <span className="product-sidebar-identity__name">{user.username}</span>
+                <span className="product-sidebar-identity__meta">
+                  <span className="product-sidebar-identity__name">{user.username}</span>
+                  {user.roleLabel && <span className="product-sidebar-identity__role">{user.roleLabel}</span>}
+                </span>
                 {(user.plan === "pro" || user.plan === "entreprise") && (
                   <span className="product-sidebar-identity__plan">{user.plan === "pro" ? "PRO" : "ENTREPRISE"}</span>
                 )}
