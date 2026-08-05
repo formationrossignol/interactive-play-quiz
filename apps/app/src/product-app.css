@@ -520,10 +520,11 @@
 }
 
 .product-kpi__spark {
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   min-width: 36px;
   max-width: 112px;
   height: 26px;
+  margin-left: auto;
 }
 
 .product-analytics-grid {

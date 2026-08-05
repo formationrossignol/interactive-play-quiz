@@ -49,7 +49,7 @@ function TrendBadge({ deltaPct, hero = false }: { deltaPct: number | null; hero?
   if (deltaPct === null) return null;
   const flat = deltaPct === 0;
   const positive = deltaPct > 0;
-  const symbolName = flat ? "remove" : positive ? "arrow_upward" : "arrow_downward";
+  const symbolName = flat ? "remove" : positive ? "arrow_drop_up" : "arrow_drop_down";
   const color = hero ? "#fff" : flat ? "var(--ap-muted)" : positive ? "#15c08a" : "#ff5a4d";
   const chipBg = hero ? "rgba(255, 255, 255, .2)" : `color-mix(in srgb, ${color} 14%, transparent)`;
   return (
@@ -62,7 +62,7 @@ function TrendBadge({ deltaPct, hero = false }: { deltaPct: number | null; hero?
           borderRadius: "var(--ap-r-sm)", padding: "3px 7px",
         }}
       >
-        <MaterialSymbol name={symbolName} size={11} />
+        <MaterialSymbol name={symbolName} size={flat ? 11 : 16} style={{ margin: flat ? 0 : "0 -3px" }} />
         {flat ? "stable" : `${positive ? "+" : ""}${deltaPct}%`}
       </span>
       <span className="ap-muted" style={{ fontWeight: 620, fontSize: 10.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
@@ -163,7 +163,7 @@ export function KpiRow({ stats, charts }: { stats: DashboardStats | null; charts
             <div>
               <div className="product-kpi__top">
                 <span className="product-kpi__icon" style={hero ? undefined : { color: iconColor }}>
-                  <MaterialSymbol name={iconName} size={20} />
+                  <MaterialSymbol name={iconName} size={20} filled />
                 </span>
                 <span className="product-kpi__label">{label}</span>
               </div>
