@@ -1,9 +1,12 @@
 import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { getCurrentUser, logout } from "@/lib/auth";
 import { getLanguage, setLanguage, t, type Language } from "@/lib/i18n";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useIsAdmin } from "@/lib/pages/useIsAdmin";
+import { myOrgMemberships } from "@/lib/org/orgRepo";
+import { useActiveOrgId } from "@/components/org/OrgSwitcher";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -48,6 +51,16 @@ export const AppLayout = ({ subtitle, extraSection, children }: AppLayoutProps) 
   const topBarRef = useRef<HTMLElement | null>(null);
 
   const avatarInitial = (user?.username || "?").trim().charAt(0).toUpperCase();
+
+  // Shares the ["org","memberships",userId] cache with AppSidebar's OrgSwitcher —
+  // same queryKey, no extra network round-trip.
+  const { data: orgMemberships } = useQuery({
+    queryKey: ["org", "memberships", user?.id],
+    queryFn: myOrgMemberships,
+    enabled: Boolean(user),
+  });
+  const [activeOrgId] = useActiveOrgId(orgMemberships ?? []);
+  const activeOrgName = orgMemberships?.find((m) => m.org_id === activeOrgId)?.organizations.name;
 
   useEffect(() => {
     const currentUser = getCurrentUser();
@@ -100,7 +113,7 @@ export const AppLayout = ({ subtitle, extraSection, children }: AppLayoutProps) 
 
           <div className="product-topbar__context">
             <strong>{subtitle || t("dashboard")}</strong>
-            <span>Brivia workspace</span>
+            <span>{activeOrgName || "Brivia workspace"}</span>
           </div>
 
           <div className="product-topbar__actions">

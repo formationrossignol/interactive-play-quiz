@@ -37,9 +37,22 @@ export function OrgSwitcher() {
     myOrgMemberships().then(setMemberships).catch(() => setMemberships([]));
   }, []);
 
-  if (memberships.length <= 1) return null;
+  if (memberships.length === 0) return null;
 
   const active = memberships.find((m) => m.org_id === activeOrgId) ?? memberships[0];
+
+  // A single org still deserves a visible "you are here" — only the picker
+  // (and its dropdown chrome) needs 2+ orgs to make sense.
+  if (memberships.length === 1) {
+    return (
+      <SidebarMenuItem>
+        <SidebarMenuButton tooltip="Votre organisation">
+          <MaterialSymbol name="domain" size={20} />
+          <span>{active.organizations.name}</span>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    );
+  }
 
   return (
     <SidebarMenuItem>
