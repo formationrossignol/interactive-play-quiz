@@ -255,6 +255,47 @@
   font-weight: 570;
 }
 
+.choiceGrid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.choiceCard {
+  display: grid;
+  gap: 0.3rem;
+  border: 0;
+  border-radius: 0.9rem;
+  padding: 1rem 1.15rem;
+  background: var(--ap-card);
+  box-shadow: var(--ap-shadow-neu);
+  color: var(--ap-ink);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.choiceCard:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--ap-shadow-neu-hover);
+}
+
+.choiceCard:active {
+  transform: translateY(0) scale(0.99);
+}
+
+.choiceCard strong {
+  font-size: 0.95rem;
+}
+
+.choiceCard span {
+  color: var(--ap-muted);
+  font-size: 0.8rem;
+  font-weight: 540;
+  line-height: 1.45;
+}
+
 .centered {
   text-align: center;
 }

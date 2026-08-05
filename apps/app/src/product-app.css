@@ -443,7 +443,7 @@
   justify-content: space-between;
   gap: 14px;
   border: 0;
-  border-radius: var(--ap-r-2xl);
+  border-radius: var(--ap-r-2xl, 20px);
   padding: 20px;
   color: var(--ap-ink);
   background: var(--ap-card);
@@ -464,8 +464,8 @@
 }
 
 .product-kpi--hero .product-kpi__icon {
-  color: #fff;
-  background: rgba(255, 255, 255, .16);
+  color: var(--ap-brand);
+  background: rgba(255, 255, 255, .94);
 }
 
 .product-kpi--hero .product-kpi__label {
@@ -535,10 +535,10 @@
 
 .product-analytics-card,
 .product-panel {
-  border: var(--ap-border-w) solid var(--ap-line);
-  border-radius: var(--ap-r-lg);
+  border: 0;
+  border-radius: var(--ap-r-2xl, 20px);
   background: var(--ap-card);
-  box-shadow: 0 1px 3px color-mix(in srgb, var(--ap-ink) 6%, transparent);
+  box-shadow: var(--ap-shadow-neu);
 }
 
 .product-analytics-card {
@@ -861,7 +861,7 @@
   align-items: center;
   gap: 12px;
   border: 0;
-  border-radius: var(--ap-r-2xl);
+  border-radius: var(--ap-r-2xl, 20px);
   padding: 16px;
   background: var(--ap-card);
   box-shadow: var(--ap-shadow-neu);
