@@ -163,6 +163,7 @@
 [data-theme="nova"] .product-analytics-card,
 [data-theme="nova"] .product-panel {
   border: none;
+  border-radius: var(--ap-r-lg);
   box-shadow: var(--ap-shadow-soft);
 }
 
@@ -208,8 +209,8 @@
   color: #fff;
 }
 [data-theme="nova"] .product-kpi:first-child .product-kpi__icon {
-  background: rgba(255,255,255,.16);
-  color: #fff;
+  background: rgba(255,255,255,.94) !important;
+  color: var(--ap-brand);
 }
 
 /* Icônes KPI : un seul ton violet neutre pour les 4 tuiles — la maquette
@@ -224,7 +225,7 @@
   color: var(--ap-brand) !important;
 }
 [data-theme="nova"] .product-kpi:first-child .product-kpi__icon .material-symbol {
-  color: #fff !important;
+  color: var(--ap-brand) !important;
 }
 
 /* Sparkline plus large et plus présente que le défaut compact partagé
