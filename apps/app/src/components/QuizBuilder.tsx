@@ -79,6 +79,8 @@ import { CollaboratorsButton } from "@/components/CollaboratorsButton";
 import { QuestionLayoutPicker } from "@/components/QuestionLayoutPicker";
 import { getQuestionLayout } from "@/lib/contentLayouts";
 import { QuestionTypeExample } from "@/components/QuestionTypeExample";
+import { MultiStepProgress } from "@/components/MultiStepProgress";
+import { PLAYER_ANSWER_SHAPES } from "@/lib/answerVisuals";
 
 // ─── Design constants ──────────────────────────────────────────────────────
 // Ordre position → couleur/forme aligné sur l'écran joueur réel
@@ -233,11 +235,11 @@ const PhonePreview = ({
         boxShadow: "0 10px 0 #16102a, 0 30px 50px rgba(36,27,58,.28)",
       }}>
         <div style={{
-          background: "var(--ap-paper)", borderRadius: "var(--ap-r-md)", overflow: "hidden",
+          background: "var(--ap-brand)", borderRadius: "var(--ap-r-md)", overflow: "hidden",
           display: "flex", flexDirection: "column", minHeight: 470,
         }}>
           <div style={{ width: 84, height: 20, background: "var(--ap-ink)", borderRadius: "0 0 var(--ap-r-xl) var(--ap-r-xl)", margin: "0 auto", flexShrink: 0 }} />
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1, padding: 20, color: "var(--ap-muted)", fontSize: 13, fontWeight: 700, textAlign: "center" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1, padding: 20, color: "rgba(255,255,255,.7)", fontSize: 13, fontWeight: 700, textAlign: "center" }}>
             Sélectionnez une question<br />pour voir l'aperçu joueur
           </div>
         </div>
@@ -252,6 +254,7 @@ const PhonePreview = ({
   const layout = getQuestionLayout(question.layout ?? (question.image ? "media-top" : "standard"));
   const hasMedia = Boolean(question.image);
 
+  const isChoice = ["multiple-choice", "single-choice"].includes(question.type);
   const isTF = question.type === "true-false";
   const displayAnswers = isTF
     ? ["Vrai", "Faux"]
@@ -274,130 +277,152 @@ const PhonePreview = ({
                     : answers;
 
   return (
-    <div style={{
-      width: 258, flexShrink: 0,
-      background: "var(--ap-ink)", borderRadius: "var(--ap-r-md)", padding: 9,
-      boxShadow: "0 10px 0 #16102a, 0 30px 50px rgba(36,27,58,.28)",
-    }}>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, width: 258, flexShrink: 0 }}>
       <div style={{
-        background: "var(--ap-paper)", borderRadius: "var(--ap-r-md)", overflow: "hidden",
-        display: "flex", flexDirection: "column", minHeight: 470,
+        width: 258,
+        background: "var(--ap-ink)", borderRadius: "var(--ap-r-md)", padding: 9,
+        boxShadow: "0 10px 0 #16102a, 0 30px 50px rgba(36,27,58,.28)",
       }}>
-        {/* Notch */}
-        <div style={{ width: 84, height: 20, background: "var(--ap-ink)", borderRadius: "0 0 var(--ap-r-xl) var(--ap-r-xl)", margin: "0 auto", flexShrink: 0 }} />
-
-        {/* HUD */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px 6px" }}>
-          <span style={{
-            fontFamily: "var(--ap-font-display)", fontWeight: 600, fontSize: 13,
-            display: "inline-flex", alignItems: "center", gap: 5,
-            background: "white", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-sm)",
-            padding: "4px 10px",
-          }}>
-            <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--ap-brand)", display: "inline-block" }} />
-            {timeLimit} s
-          </span>
-          <span style={{
-            fontSize: 11, fontWeight: 800, color: "var(--ap-flash-deep)",
-            background: "var(--ap-flash-soft)",
-            border: "2px solid color-mix(in srgb, var(--ap-flash) 45%, transparent)",
-            padding: "4px 9px", borderRadius: "var(--ap-r-sm)",
-          }}>
-            Q{questionIndex + 1}/{totalQuestions || 1} · {pts} pts
-          </span>
-        </div>
-
-        {/* Question + media layout */}
-        <div
-          style={{
-            position: "relative",
-            display: "flex",
-            flexDirection: layout.mediaPosition === "left"
-              ? "row"
-              : layout.mediaPosition === "right"
-                ? "row-reverse"
-                : "column",
-            minHeight: layout.mediaPosition === "background" && hasMedia ? 176 : 74,
-            margin: "4px 12px 10px",
-            overflow: "hidden",
-            borderRadius: "var(--ap-r-md)",
-            background: layout.mediaPosition === "background" && hasMedia ? "var(--ap-ink)" : "transparent",
-          }}
-        >
-          {hasMedia && layout.mediaPosition !== "none" && (
-            <img
-              src={question.image}
-              alt=""
-              style={{
-                position: layout.mediaPosition === "background" ? "absolute" : "relative",
-                inset: layout.mediaPosition === "background" ? 0 : undefined,
-                width: layout.mediaPosition === "left" || layout.mediaPosition === "right" ? "42%" : "100%",
-                height: layout.mediaPosition === "top" ? 104 : layout.mediaPosition === "background" ? "100%" : 112,
-                objectFit: "cover",
-                flexShrink: 0,
-              }}
-            />
-          )}
-          {/* Media-legibility scrim — same value as QuizSession.tsx/PollSession.tsx's
-              identical-intent gradient; previously drifted brand-tinted rgb + a
-              different start-opacity in each of the three. */}
-          {layout.mediaPosition === "background" && hasMedia && (
-            <span aria-hidden="true" style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(0,0,0,.1), rgba(0,0,0,.82))" }} />
-          )}
-          <p style={{
-            position: "relative",
-            zIndex: 1,
-            flex: 1,
-            display: "flex",
-            alignItems: layout.mediaPosition === "background" ? "flex-end" : "center",
-            fontWeight: 800,
-            fontSize: layout.mediaPosition === "background" ? 17 : 14.5,
-            lineHeight: 1.35,
-            padding: "10px 12px",
-            minWidth: 0,
-            color: layout.mediaPosition === "background" && hasMedia ? "white" : "var(--ap-ink)",
-            textShadow: layout.mediaPosition === "background" && hasMedia ? "0 2px 8px rgba(0,0,0,.45)" : undefined,
-          }}>
-            {qText || <span style={{ color: "var(--ap-muted)" }}>Posez votre question…</span>}
-          </p>
-        </div>
-
-        {/* Answers */}
-        <div style={{ display: "grid", gap: 8, padding: "0 12px 14px", marginTop: "auto" }}>
-          {displayAnswers.slice(0, 4).map((ans: string, i: number) => {
-            if (i >= 3 && !ans && !isTF) return null;
-            const cfg = ANSWER_CONFIGS[i];
-            return (
-              <div key={i} style={{
-                display: "flex", alignItems: "center", gap: 9,
-                background: "white", border: "var(--ap-border-w) solid var(--ap-line)",
-                borderRadius: "var(--ap-r-md)", padding: "10px 11px",
-                fontWeight: 700, fontSize: 12.5,
-                boxShadow: "0 3px 0 var(--ap-line)", color: "var(--ap-ink)",
-              }}>
-                <span style={{
-                  flexShrink: 0, width: 24, height: 24, borderRadius: 7,
-                  background: cfg.color, display: "grid", placeItems: "center",
-                }}>
-                  <svg viewBox="0 0 24 24" style={{ width: 10, height: 10 }}>{cfg.shape}</svg>
-                </span>
-                <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: ans ? "var(--ap-ink)" : "var(--ap-muted)" }}>
-                  {ans || `Réponse ${i + 1}`}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-
+        {/* Réplique de l'écran joueur réel (PlayerView, état 'question') :
+            fond marque, pastille Question X/Y, barre de progression, carte
+            flottante avec barre de temps linéaire et tuiles ap-answer--solid
+            — mêmes classes/tokens que arcade-pop.css, pas une réinvention. */}
         <div style={{
-          textAlign: "center", fontFamily: "var(--ap-font-display)", fontWeight: 600,
-          fontSize: 11, color: "var(--ap-muted)", paddingBottom: 10, letterSpacing: ".04em",
+          background: "var(--ap-brand)", borderRadius: "var(--ap-r-md)", overflow: "hidden",
+          display: "flex", flexDirection: "column", minHeight: 470,
         }}>
-          <span style={{ display: "inline-flex", verticalAlign: "-2px", marginRight: 4 }}>
-            <BrandMonogram size={11} color="var(--ap-brand)" />
-          </span>
-          brivia
+          {/* Notch */}
+          <div style={{ width: 84, height: 20, background: "var(--ap-ink)", borderRadius: "0 0 var(--ap-r-xl) var(--ap-r-xl)", margin: "0 auto", flexShrink: 0 }} />
+
+          <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, padding: "12px 12px 14px" }}>
+            {/* Header : pastille Question X/Y, identique à PlayerView */}
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 10, flexShrink: 0 }}>
+              <span style={{
+                fontFamily: "var(--ap-font-display)", fontWeight: 700, fontSize: 11,
+                color: "#fff", background: "rgba(255,255,255,.15)", border: "2px solid rgba(255,255,255,.2)",
+                borderRadius: "var(--ap-r-pill)", padding: "4px 12px",
+              }}>
+                Question {questionIndex + 1}/{totalQuestions || 1}
+              </span>
+            </div>
+
+            <div style={{ marginBottom: 10, flexShrink: 0 }}>
+              <MultiStepProgress totalSteps={Math.min(totalQuestions || 1, 15)} currentStep={questionIndex} className="h-2" />
+            </div>
+
+            {/* Carte flottante blanche — identique à .ap-card.ap-card--floaty en session */}
+            <div className="ap-card ap-card--floaty" style={{ padding: 12, flexShrink: 0 }}>
+              {/* Barre de temps linéaire (statique — pas de décompte simulé dans l'éditeur) */}
+              <div style={{ height: 6, background: "var(--ap-paper-2)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-md)", overflow: "hidden", marginBottom: 10 }}>
+                <div style={{ height: "100%", width: "100%", background: "var(--ap-brand)" }} />
+              </div>
+
+              {/* Question + media layout */}
+              <div
+                style={{
+                  position: "relative",
+                  display: "flex",
+                  flexDirection: layout.mediaPosition === "left"
+                    ? "row"
+                    : layout.mediaPosition === "right"
+                      ? "row-reverse"
+                      : "column",
+                  minHeight: layout.mediaPosition === "background" && hasMedia ? 150 : 56,
+                  marginBottom: 10,
+                  overflow: "hidden",
+                  borderRadius: "var(--ap-r-md)",
+                  background: layout.mediaPosition === "background" && hasMedia ? "var(--ap-ink)" : "transparent",
+                }}
+              >
+                {hasMedia && layout.mediaPosition !== "none" && (
+                  <img
+                    src={question.image}
+                    alt=""
+                    style={{
+                      position: layout.mediaPosition === "background" ? "absolute" : "relative",
+                      inset: layout.mediaPosition === "background" ? 0 : undefined,
+                      width: layout.mediaPosition === "left" || layout.mediaPosition === "right" ? "42%" : "100%",
+                      height: layout.mediaPosition === "top" ? 90 : layout.mediaPosition === "background" ? "100%" : 96,
+                      objectFit: "cover",
+                      flexShrink: 0,
+                    }}
+                  />
+                )}
+                {/* Media-legibility scrim — same value as QuizSession.tsx/PollSession.tsx's
+                    identical-intent gradient; previously drifted brand-tinted rgb + a
+                    different start-opacity in each of the three. */}
+                {layout.mediaPosition === "background" && hasMedia && (
+                  <span aria-hidden="true" style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(0,0,0,.1), rgba(0,0,0,.82))" }} />
+                )}
+                <p style={{
+                  position: "relative",
+                  zIndex: 1,
+                  flex: 1,
+                  display: "flex",
+                  alignItems: layout.mediaPosition === "background" ? "flex-end" : "center",
+                  justifyContent: "center",
+                  textAlign: "center",
+                  fontFamily: "var(--ap-font-display)",
+                  fontWeight: 600,
+                  fontSize: layout.mediaPosition === "background" ? 15 : 13,
+                  lineHeight: 1.4,
+                  padding: "2px 4px",
+                  minWidth: 0,
+                  color: layout.mediaPosition === "background" && hasMedia ? "white" : "var(--ap-ink)",
+                  textShadow: layout.mediaPosition === "background" && hasMedia ? "0 2px 8px rgba(0,0,0,.45)" : undefined,
+                }}>
+                  {qText || <span style={{ color: "var(--ap-muted)" }}>Posez votre question…</span>}
+                </p>
+              </div>
+
+              {/* Réponses — mêmes classes/tokens que PlayerView (ap-answer--solid, PLAYER_ANSWER_SHAPES) */}
+              {isChoice || isTF ? (
+                <div className="ap-answers" style={{ gap: 8 }}>
+                  {(isTF ? [question.answers?.[0] ?? "Vrai", question.answers?.[1] ?? "Faux"] : answers).slice(0, 4).map((ans, i) => {
+                    if (!isTF && i >= 3 && !ans) return null;
+                    return (
+                      <div
+                        key={i}
+                        className={`ap-answer ap-answer--solid ap-answer--${(i % 4) + 1}`}
+                        style={{ padding: "9px 10px", fontSize: 11.5, cursor: "default" }}
+                      >
+                        <span className="ap-answer__shape" style={{ width: 22, height: 22, fontWeight: 800 }}>
+                          {isTF ? (i === 0 ? "V" : "F") : PLAYER_ANSWER_SHAPES[i % 4]}
+                        </span>
+                        <span className="ap-answer__text">{ans || `Réponse ${i + 1}`}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div style={{ display: "grid", gap: 6 }}>
+                  {displayAnswers.slice(0, 4).map((ans: string, i: number) => (
+                    <div key={i} style={{
+                      background: "var(--ap-paper)", border: "var(--ap-border-w) solid var(--ap-line)",
+                      borderRadius: "var(--ap-r-md)", padding: "8px 10px",
+                      fontWeight: 700, fontSize: 11.5, color: "var(--ap-ink)",
+                      overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                    }}>
+                      {ans}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
+      </div>
+
+      {/* Temps limite / points configurés — info éditeur, hors de l'écran mimé
+          (l'écran joueur réel ne les affiche pas pendant la question). */}
+      <div style={{
+        display: "flex", alignItems: "center", gap: 6,
+        fontFamily: "var(--ap-font-body)", fontWeight: 700, fontSize: 11.5, color: "var(--ap-muted)",
+      }}>
+        <span style={{ display: "inline-flex", verticalAlign: "-2px" }}>
+          <BrandMonogram size={11} color="var(--ap-brand)" />
+        </span>
+        {timeLimit}s · {pts} pts
       </div>
     </div>
   );
