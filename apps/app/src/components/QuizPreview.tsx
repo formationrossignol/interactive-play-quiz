@@ -41,8 +41,23 @@ export const QuizPreview = ({
   const selectedTheme = THEMES.find((themeOption) => themeOption.id === theme) ?? THEMES[0];
   const isMillionnaire = selectedTheme?.id === 'qui-veut-gagner';
 
-  // Mêmes calques que ThemedBackground dans QuizSession
-  const backgroundStyle = selectedTheme
+  const questionIndex =
+    selectedQuestionIndex !== null && selectedQuestionIndex !== undefined ? selectedQuestionIndex : 0;
+  const questionToShow = questions[questionIndex] ?? questions[0];
+
+  // Mêmes calques que ThemedBackground dans QuizSession, y compris la photo
+  // de fond par question si elle est définie (override du thème).
+  const questionBackgroundImage = typeof questionToShow?.backgroundImage === "string" && questionToShow.backgroundImage
+    ? questionToShow.backgroundImage
+    : undefined;
+  const backgroundStyle = questionBackgroundImage
+    ? {
+        backgroundImage: `url(${questionBackgroundImage})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+      }
+    : selectedTheme
     ? {
         backgroundImage: selectedTheme.background,
         backgroundSize: "cover",
@@ -64,10 +79,6 @@ export const QuizPreview = ({
   }, [selectedTheme]);
 
   const resolvedFont = resolveFontFamily(fontFamily);
-
-  const questionIndex =
-    selectedQuestionIndex !== null && selectedQuestionIndex !== undefined ? selectedQuestionIndex : 0;
-  const questionToShow = questions[questionIndex] ?? questions[0];
 
   const ANSWER_STYLES = isMillionnaire ? MILLIONAIRE_ANSWER_STYLES : HOST_ANSWER_STYLES;
 

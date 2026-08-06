@@ -1212,6 +1212,55 @@ export const QuizBuilder = () => {
           </label>
         )}
 
+        {/* Photo de fond plein écran — écran présentateur uniquement, remplace
+            le fond du thème pour cette question (distinct de l'image de la
+            carte question ci-dessus). */}
+        {!isFlashcard && (
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 12, fontWeight: 800, letterSpacing: ".09em", textTransform: "uppercase", color: "var(--ap-muted)", marginBottom: 8 }}>
+              <span>Photo de fond</span>
+              <span style={{ fontSize: 11.5, letterSpacing: 0, textTransform: "none", fontWeight: 700 }}>
+                Remplace le thème pour cette question, écran présentateur
+              </span>
+            </div>
+            {q.backgroundImage ? (
+              <div style={{ position: "relative", borderRadius: "var(--ap-r-md)", overflow: "hidden" }}>
+                <img src={q.backgroundImage} alt="" style={{ width: "100%", maxHeight: 140, objectFit: "cover", display: "block" }} />
+                <button
+                  onClick={() => upd({ backgroundImage: "" })}
+                  style={{ position: "absolute", top: 8, right: 8, background: "color-mix(in srgb, var(--ap-ink) 78%, transparent)", color: "white", border: "none", borderRadius: 8, padding: "4px 8px", cursor: "pointer" }}
+                >
+                  <Trash2 style={{ width: 14, height: 14 }} />
+                </button>
+              </div>
+            ) : (
+              <label style={{ display: "block", cursor: "pointer" }}>
+                <div
+                  style={{
+                    border: "var(--ap-border-w) dashed var(--ap-line-2)", borderRadius: "var(--ap-r-md)",
+                    padding: "13px 16px", display: "flex", alignItems: "center", gap: 10,
+                    color: "var(--ap-muted)", fontSize: 13, fontWeight: 700,
+                    transition: "border-color .15s, background .15s, color .15s",
+                  }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = "var(--ap-brand)"; (e.currentTarget as HTMLElement).style.color = "var(--ap-brand-deep)"; (e.currentTarget as HTMLElement).style.background = "var(--ap-brand-soft)"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = "var(--ap-line-2)"; (e.currentTarget as HTMLElement).style.color = "var(--ap-muted)"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+                >
+                  <ImageIcon style={{ width: 17, height: 17, flexShrink: 0 }} />
+                  Ajouter une photo de fond pour cette question
+                </div>
+                <input type="file" accept="image/*" className="hidden" onChange={e => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  const r = new FileReader();
+                  r.onloadend = () => upd({ backgroundImage: r.result as string });
+                  r.readAsDataURL(file);
+                  e.target.value = "";
+                }} />
+              </label>
+            )}
+          </div>
+        )}
+
         {/* Answers — MC */}
         {isMC && (
           <div style={{ marginTop: 20 }}>

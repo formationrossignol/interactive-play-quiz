@@ -25,6 +25,20 @@ export class ValidationError extends Error {
   }
 }
 
+/** Thrown when a localStorage write can't be persisted even after the
+ *  caller's own quota-recovery attempt (e.g. quizStorage.ts's
+ *  writeQuizStore, which purges stale play caches and retries first).
+ *  Lives here rather than in quizStorage.ts so this taxonomy module stays
+ *  free of quizStorage's own dependency chain (quizStorage -> auth ->
+ *  supabase, which eagerly constructs a client and blows up in any test
+ *  that imports errorTaxonomy without env vars configured). */
+export class StorageQuotaError extends Error {
+  constructor(message = 'Stockage local plein.') {
+    super(message);
+    this.name = 'StorageQuotaError';
+  }
+}
+
 const upgradeAction = { label: 'Passer Pro', onClick: () => { window.location.href = '/pricing'; } };
 const retryAction = { label: 'Réessayer', onClick: () => { window.location.reload(); } };
 const loginAction = { label: 'Se reconnecter', onClick: () => { window.location.href = '/auth'; } };
@@ -64,6 +78,9 @@ export function classifyError(e: unknown): ClassifiedError {
   }
   if (e instanceof ValidationError) {
     return { kind: 'validation', message: e.message };
+  }
+  if (e instanceof StorageQuotaError || (e instanceof DOMException && e.name === 'QuotaExceededError')) {
+    return { kind: 'business', message: e.message || 'Stockage local plein sur cet appareil.' };
   }
   const signals = getErrorSignals(e);
   if (

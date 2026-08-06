@@ -1,5 +1,6 @@
 import { getCurrentUser } from './auth';
 import { CONTENT_CAPS, getPlan, PlanLimitError, type ContentKind } from './plans';
+import { StorageQuotaError } from './errorTaxonomy';
 
 export interface SavedQuiz {
   id: string;
@@ -39,28 +40,62 @@ export interface SavedQuiz {
 
 export const QUIZ_STORAGE_KEY = 'saved_quizzes';
 
-/** Writes a one-shot `quiz-<code>`/`poll-<code>` play cache entry. These keys
- *  accumulate forever (one per quiz ever launched on this device) and are
- *  never cleaned up elsewhere, so a long-lived browser profile eventually
- *  blows the localStorage quota on an unrelated write. On QuotaExceededError,
- *  drop every other stale `quiz-`/`poll-` entry and retry once. */
+function isQuotaExceeded(e: unknown): boolean {
+  return e instanceof DOMException && (e.name === 'QuotaExceededError' || e.code === 22 || e.code === 1014);
+}
+
+/** Frees space by dropping every stale `quiz-`/`poll-` one-shot play-cache
+ *  entry (written by setQuizPlayCache below). These accumulate forever — one
+ *  per quiz ever launched on this device — and are never cleaned up
+ *  elsewhere, so a long-lived browser profile eventually blows the
+ *  localStorage quota on an unrelated write. `exceptKey` protects the entry
+ *  the caller is about to (re)write from being purged out from under itself. */
+function purgeStalePlayCaches(exceptKey?: string): void {
+  for (let i = localStorage.length - 1; i >= 0; i--) {
+    const k = localStorage.key(i);
+    if (k && k !== exceptKey && (k.startsWith('quiz-') || k.startsWith('poll-'))) {
+      localStorage.removeItem(k);
+    }
+  }
+}
+
+/** Writes a one-shot `quiz-<code>`/`poll-<code>` play cache entry. On
+ *  QuotaExceededError, purges stale entries (see purgeStalePlayCaches) and
+ *  retries once. */
 export function setQuizPlayCache(key: string, value: unknown): void {
   const payload = JSON.stringify(value);
   try {
     localStorage.setItem(key, payload);
   } catch {
-    for (let i = localStorage.length - 1; i >= 0; i--) {
-      const k = localStorage.key(i);
-      if (k && k !== key && (k.startsWith('quiz-') || k.startsWith('poll-'))) {
-        localStorage.removeItem(k);
-      }
-    }
+    purgeStalePlayCaches(key);
     try {
       localStorage.setItem(key, payload);
     } catch {
       // Still full after purge (huge single quiz, or quota consumed by
       // unrelated keys) — swallow so play navigation isn't blocked; the
       // player screen re-fetches from Supabase when the cache is empty.
+    }
+  }
+}
+
+/** Quota-safe write for the `saved_quizzes` blob itself: on
+ *  QuotaExceededError, purges stale play caches (the usual growth driver)
+ *  and retries once before giving up with an actionable StorageQuotaError —
+ *  callers (QuizBuilder.save et al.) previously let the raw DOMException
+ *  bubble up as an unclassified crash. */
+function writeQuizStore(quizzes: SavedQuiz[]): void {
+  const payload = JSON.stringify(quizzes);
+  try {
+    localStorage.setItem(QUIZ_STORAGE_KEY, payload);
+  } catch (e) {
+    if (!isQuotaExceeded(e)) throw e;
+    purgeStalePlayCaches();
+    try {
+      localStorage.setItem(QUIZ_STORAGE_KEY, payload);
+    } catch {
+      throw new StorageQuotaError(
+        "Stockage local plein. Ce contenu est trop volumineux pour cet appareil — réduisez la taille des images ou supprimez d'anciens quiz, puis réessayez.",
+      );
     }
   }
 }
@@ -98,7 +133,11 @@ export const getSavedQuizzes = (): SavedQuiz[] => {
       didMigrate = true;
       return { ...q, id: newId };
     });
-    if (didMigrate) localStorage.setItem(QUIZ_STORAGE_KEY, JSON.stringify(migrated));
+    // Best-effort: a quota failure here must not make getSavedQuizzes() look
+    // empty (its own try/catch below would otherwise swallow it and return
+    // []) — the migrated ids are still valid to use in-memory even if this
+    // particular write never lands.
+    if (didMigrate) { try { writeQuizStore(migrated); } catch { /* retried on next read */ } }
 
     return migrated;
   } catch {
@@ -144,7 +183,7 @@ export const purgeExpiredTrash = (userId: string): void => {
     return new Date(q.deletedAt) > cutoff;
   });
   if (kept.length !== all.length) {
-    localStorage.setItem(QUIZ_STORAGE_KEY, JSON.stringify(kept));
+    writeQuizStore(kept);
   }
 };
 
@@ -183,8 +222,8 @@ export const saveQuiz = (
   
   const quizzes = getSavedQuizzes();
   quizzes.push(newQuiz);
-  localStorage.setItem(QUIZ_STORAGE_KEY, JSON.stringify(quizzes));
-  
+  writeQuizStore(quizzes);
+
   return newQuiz;
 };
 
@@ -194,7 +233,7 @@ const writeQuiz = (id: string, updates: Partial<SavedQuiz>): SavedQuiz | null =>
   const index = quizzes.findIndex(q => q.id === id);
   if (index === -1) return null;
   quizzes[index] = { ...quizzes[index], ...updates };
-  localStorage.setItem(QUIZ_STORAGE_KEY, JSON.stringify(quizzes));
+  writeQuizStore(quizzes);
   return quizzes[index];
 };
 
@@ -222,7 +261,7 @@ export const deleteQuiz = (id: string): boolean => {
     trashedFromFolderId: quizzes[index].folderId ?? null,
     folderId: null,
   };
-  localStorage.setItem(QUIZ_STORAGE_KEY, JSON.stringify(quizzes));
+  writeQuizStore(quizzes);
   return true;
 };
 
@@ -232,7 +271,7 @@ export const permanentlyDeleteQuiz = (id: string): boolean => {
   const quizzes = getSavedQuizzes();
   const quiz = quizzes.find(q => q.id === id);
   if (!quiz || quiz.userId !== user.id) return false;
-  localStorage.setItem(QUIZ_STORAGE_KEY, JSON.stringify(quizzes.filter(q => q.id !== id)));
+  writeQuizStore(quizzes.filter(q => q.id !== id));
   return true;
 };
 
@@ -249,7 +288,7 @@ export const restoreFromTrash = (id: string): SavedQuiz | null => {
     folderId: quizzes[index].trashedFromFolderId ?? null,
     trashedFromFolderId: undefined,
   };
-  localStorage.setItem(QUIZ_STORAGE_KEY, JSON.stringify(quizzes));
+  writeQuizStore(quizzes);
   return quizzes[index];
 };
 
@@ -328,7 +367,7 @@ export const duplicateQuiz = (id: string): SavedQuiz | null => {
 
   const quizzes = getSavedQuizzes();
   quizzes.push(copy);
-  localStorage.setItem(QUIZ_STORAGE_KEY, JSON.stringify(quizzes));
+  writeQuizStore(quizzes);
   return copy;
 };
 
@@ -369,6 +408,6 @@ export const saveQuizAsTemplate = (id: string): SavedQuiz | null => {
 
   const quizzes = getSavedQuizzes();
   quizzes.push(template);
-  localStorage.setItem(QUIZ_STORAGE_KEY, JSON.stringify(quizzes));
+  writeQuizStore(quizzes);
   return template;
 };
