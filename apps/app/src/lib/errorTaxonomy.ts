@@ -5,7 +5,6 @@
 // primitive plus its highest-traffic call sites.
 import { toast } from 'sonner';
 import { PlanLimitError } from './plans';
-import { StorageQuotaError } from './quizStorage';
 
 export type ErrorKind = 'validation' | 'business' | 'system';
 
@@ -23,6 +22,20 @@ export class ValidationError extends Error {
   constructor(message: string) {
     super(message);
     this.name = 'ValidationError';
+  }
+}
+
+/** Thrown when a localStorage write can't be persisted even after the
+ *  caller's own quota-recovery attempt (e.g. quizStorage.ts's
+ *  writeQuizStore, which purges stale play caches and retries first).
+ *  Lives here rather than in quizStorage.ts so this taxonomy module stays
+ *  free of quizStorage's own dependency chain (quizStorage -> auth ->
+ *  supabase, which eagerly constructs a client and blows up in any test
+ *  that imports errorTaxonomy without env vars configured). */
+export class StorageQuotaError extends Error {
+  constructor(message = 'Stockage local plein.') {
+    super(message);
+    this.name = 'StorageQuotaError';
   }
 }
 

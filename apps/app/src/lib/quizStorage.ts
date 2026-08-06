@@ -1,5 +1,6 @@
 import { getCurrentUser } from './auth';
 import { CONTENT_CAPS, getPlan, PlanLimitError, type ContentKind } from './plans';
+import { StorageQuotaError } from './errorTaxonomy';
 
 export interface SavedQuiz {
   id: string;
@@ -38,16 +39,6 @@ export interface SavedQuiz {
 }
 
 export const QUIZ_STORAGE_KEY = 'saved_quizzes';
-
-/** Thrown when `saved_quizzes` can't be persisted even after purging stale
- *  play caches — surfaced by errorTaxonomy.ts as an actionable message
- *  instead of letting a raw QuotaExceededError reach the UI unclassified. */
-export class StorageQuotaError extends Error {
-  constructor(message = "Stockage local plein.") {
-    super(message);
-    this.name = 'StorageQuotaError';
-  }
-}
 
 function isQuotaExceeded(e: unknown): boolean {
   return e instanceof DOMException && (e.name === 'QuotaExceededError' || e.code === 22 || e.code === 1014);
