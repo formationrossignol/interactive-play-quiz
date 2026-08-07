@@ -7,7 +7,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 
-export type AdminSection = "content" | "moderation" | "subscribers" | "settings";
+export type AdminSection = "content" | "moderation" | "subscribers" | "users" | "revenue" | "settings";
 
 export interface AdminNavItem {
   key: AdminSection;
@@ -38,7 +38,7 @@ export const AdminSidebarGroup = ({ section, setSection, nav }: AdminSidebarGrou
               <Icon />
               <span>{item.label}</span>
             </SidebarMenuButton>
-            {item.key !== "settings" && (
+            {item.key !== "settings" && item.key !== "revenue" && (
               <SidebarMenuBadge style={item.alert && section !== item.key ? { color: "var(--ap-danger)" } : undefined}>
                 {item.count}
               </SidebarMenuBadge>

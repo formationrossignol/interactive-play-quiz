@@ -1,15 +1,17 @@
 import { useEffect, useState } from "react";
-import { Rocket, PenLine, ShieldCheck, Mail, FileText, Users, Link2 } from "lucide-react";
+import { Rocket, PenLine, ShieldCheck, Mail, FileText, Users, Euro, Link2 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { useSEO } from "@/hooks/useSEO";
 import { useIsAdmin } from "@/lib/pages/useIsAdmin";
 import {
   useAdminRoadmap, useAdminGuides, useAdminFaq, useAdminReleases,
-  useModerationReviews, useModerationIdeas, useModerationReports, useSubscribers,
+  useModerationReviews, useModerationIdeas, useModerationReports, useSubscribers, useAdminUsers,
 } from "@/lib/pages/adminHooks";
 import { ContentTab } from "./ContentTab";
 import { ModerationTab } from "./ModerationTab";
 import { SubscribersTab } from "./SubscribersTab";
+import { UsersTab } from "./UsersTab";
+import { RevenueTab } from "./RevenueTab";
 import { SettingsTab } from "./SettingsTab";
 import { AdminSidebarGroup, type AdminSection } from "./AdminSidebarGroup";
 import { PageSkeleton } from "@/components/ui/skeletons";
@@ -31,6 +33,7 @@ const Admin = () => {
   const ideas = useModerationIdeas();
   const reports = useModerationReports();
   const subs = useSubscribers();
+  const users = useAdminUsers();
 
   // / now lives in apps/marketing, using full navigation (not react-router
   // <Navigate>) so the domain-level rewrite reaches it.
@@ -58,11 +61,14 @@ const Admin = () => {
     (reviews.list.data?.length ?? 0) + (ideas.list.data?.length ?? 0) +
     (reports.list.data ?? []).filter((r) => r.status !== "resolved").length;
   const subCount = subs.data?.length ?? 0;
+  const userCount = users.data?.length ?? 0;
 
   const nav: { key: Section; icon: React.ElementType; label: string; count: number; alert?: boolean }[] = [
     { key: "content", icon: FileText, label: "Contenu", count: allContent.length },
     { key: "moderation", icon: ShieldCheck, label: "Modération", count: pendingMod, alert: pendingMod > 0 },
-    { key: "subscribers", icon: Users, label: "Abonnés", count: subCount },
+    { key: "subscribers", icon: Mail, label: "Abonnés", count: subCount },
+    { key: "users", icon: Users, label: "Comptes", count: userCount },
+    { key: "revenue", icon: Euro, label: "Revenus", count: 0 },
     { key: "settings", icon: Link2, label: "Réglages", count: 0 },
   ];
 
@@ -104,6 +110,8 @@ const Admin = () => {
             {section === "content" && <ContentTab />}
             {section === "moderation" && <ModerationTab />}
             {section === "subscribers" && <SubscribersTab />}
+            {section === "users" && <UsersTab />}
+            {section === "revenue" && <RevenueTab />}
             {section === "settings" && <SettingsTab />}
           </div>
         </div>
