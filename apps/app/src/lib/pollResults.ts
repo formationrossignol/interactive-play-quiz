@@ -1,3 +1,5 @@
+import { safeSetItem } from "./safeLocalStorage";
+
 // Options a participant can pick for a given poll question type.
 // Shared by the host session (live counts) and the player view (answer buttons).
 export const getPollOptions = (q: {
@@ -64,7 +66,7 @@ export const savePollSession = (pollId: string, pollTitle: string, session: Poll
     store.sessions.unshift(session);
   }
 
-  localStorage.setItem(key, JSON.stringify(store));
+  safeSetItem(key, store);
 };
 
 export const getPollResults = (pollId: string): PollResultsStore | null => {

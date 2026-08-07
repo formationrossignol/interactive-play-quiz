@@ -1,5 +1,6 @@
 import { getCurrentUser } from './auth';
 import { CONTENT_CAPS, getPlan, PlanLimitError } from './plans';
+import { safeSetItem } from './safeLocalStorage';
 
 export interface Lesson {
   id: string;
@@ -99,7 +100,7 @@ const getAllCourses = (): Course[] => {
 
 const writeAllCourses = (courses: Course[]): void => {
   try {
-    localStorage.setItem(COURSES_KEY, JSON.stringify(courses));
+    safeSetItem(COURSES_KEY, courses);
   } catch (e) {
     if (e instanceof DOMException && e.name === 'QuotaExceededError') {
       throw new Error('Stockage plein. Réduisez la taille des fichiers importés ou supprimez des cours.');
@@ -225,7 +226,7 @@ const getAllProgress = (): CourseProgress[] => {
 };
 
 const writeAllProgress = (progress: CourseProgress[]): void => {
-  localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress));
+  safeSetItem(PROGRESS_KEY, progress);
 };
 
 export const getCourseProgress = (courseId: string, userId: string): CourseProgress | null =>
@@ -286,7 +287,7 @@ const getAllSubmissions = (): CourseSubmission[] => {
 };
 
 const writeAllSubmissions = (submissions: CourseSubmission[]): void => {
-  localStorage.setItem(SUBMISSIONS_KEY, JSON.stringify(submissions));
+  safeSetItem(SUBMISSIONS_KEY, submissions);
 };
 
 export const getSubmission = (courseId: string, lessonId: string, userId: string): CourseSubmission | null =>
@@ -331,7 +332,7 @@ const getAllReviews = (): CourseReview[] => {
 };
 
 const writeAllReviews = (reviews: CourseReview[]): void => {
-  localStorage.setItem(REVIEWS_KEY, JSON.stringify(reviews));
+  safeSetItem(REVIEWS_KEY, reviews);
 };
 
 export const getCourseReviews = (courseId: string): CourseReview[] =>

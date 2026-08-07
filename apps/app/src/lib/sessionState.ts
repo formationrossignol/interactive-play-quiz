@@ -1,5 +1,6 @@
 import { isValid } from "date-fns";
 import { supabase } from "./supabase";
+import { safeSetItem } from "./safeLocalStorage";
 
 export type SharedGameState =
   | "waiting"
@@ -84,7 +85,7 @@ const getSessionKey = (gameCode: string) => `quiz-session-state-${gameCode}`;
 export const ensureSessionState = (gameCode: string) => {
   const key = getSessionKey(gameCode);
   if (!localStorage.getItem(key)) {
-    localStorage.setItem(key, JSON.stringify(DEFAULT_SESSION_STATE));
+    safeSetItem(key, DEFAULT_SESSION_STATE);
   }
 };
 
@@ -113,10 +114,10 @@ export const readSessionState = (gameCode: string): SharedSessionState => {
 
 export const writeSessionState = (gameCode: string, state: SharedSessionState) => {
   const key = getSessionKey(gameCode);
-  localStorage.setItem(key, JSON.stringify({
+  safeSetItem(key, {
     ...state,
     updatedAt: new Date().toISOString(),
-  }));
+  });
 };
 
 const pushStateToSupabase = (gameCode: string, state: SharedSessionState) => {
@@ -306,7 +307,7 @@ export const appendSessionHistory = (gameCode: string, players: SharedPlayer[], 
     })),
   };
   const next = [run, ...history].slice(0, MAX_HISTORY);
-  localStorage.setItem(getHistoryKey(gameCode), JSON.stringify(next));
+  safeSetItem(getHistoryKey(gameCode), next);
 };
 
 export const resetSessionForNewRun = async (gameCode: string, quizData?: object): Promise<boolean> => {

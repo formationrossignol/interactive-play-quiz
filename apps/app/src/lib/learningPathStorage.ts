@@ -5,6 +5,7 @@ import {
   getCourseProgress,
   type Course,
 } from "./courseStorage";
+import { safeSetItem } from "./safeLocalStorage";
 
 export interface LearningPathStep {
   id: string;
@@ -56,7 +57,7 @@ const getAllLearningPaths = (): LearningPath[] => {
 };
 
 const writeAllLearningPaths = (paths: LearningPath[]): void => {
-  localStorage.setItem(LEARNING_PATHS_KEY, JSON.stringify(paths));
+  safeSetItem(LEARNING_PATHS_KEY, paths);
 };
 
 const normalizeStep = (step: LearningPathStep): LearningPathStep => ({
