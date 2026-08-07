@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { safeSetItem } from './safeLocalStorage';
 
 export type H5pStatus = 'not_started' | 'in_progress' | 'completed' | 'passed' | 'failed';
 
@@ -55,7 +56,7 @@ const writeLocal = (record: H5pTrackingRecord): void => {
   try {
     const current = readLocal();
     current[recordKey(record)] = record;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(current));
+    safeSetItem(STORAGE_KEY, current);
   } catch {
     // Tracking still continues in memory if storage is unavailable.
   }

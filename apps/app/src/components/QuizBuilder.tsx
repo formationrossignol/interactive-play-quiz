@@ -37,7 +37,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { useSaveShortcut } from "@/hooks/useSaveShortcut";
 import { getPlan, isQuestionTypeLocked } from "@/lib/plans";
 import { showError } from "@/lib/errorTaxonomy";
-import { saveQuiz, updateQuiz, getQuizById, saveQuizAsTemplate, type SavedQuiz } from "@/lib/quizStorage";
+import { saveQuiz, updateQuiz, getQuizById, saveQuizAsTemplate, setQuizPlayCache, type SavedQuiz } from "@/lib/quizStorage";
 import { readSessionHistory } from "@/lib/sessionState";
 import {
   getContent,
@@ -1011,7 +1011,7 @@ export const QuizBuilder = () => {
       liveReactionsEnabled,
       endChatEnabled,
     };
-    localStorage.setItem(`quiz-${tmp.id}`, JSON.stringify(tmp));
+    setQuizPlayCache(`quiz-${tmp.id}`, tmp);
     setShouldBlockNavigation(false);
     navigate(`/preview/${tmp.id}`);
   };

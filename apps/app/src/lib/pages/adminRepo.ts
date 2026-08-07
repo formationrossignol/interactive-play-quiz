@@ -2,7 +2,7 @@ import { supabase } from '@/lib/supabase';
 import type {
   RoadmapAdminRow, GuideAdminRow, FaqAdminRow, ReleaseAdminRow, ChangelogItemAdminRow,
   PendingReview, ReviewAdminRow, IdeaRow, AdminReportRow, SubscriberRow, StaticPage, FaqSectionAdminRow,
-  Status, ReportStatus,
+  Status, ReportStatus, AdminUserRow, RevenueSummary,
 } from './types';
 
 // ── Generic content list / status / delete ──────────────────────────────────
@@ -151,4 +151,18 @@ export async function listSubscribers(): Promise<SubscriberRow[]> {
     .select('user_id,created_at').order('created_at', { ascending: false });
   if (error) throw error;
   return (data ?? []) as SubscriberRow[];
+}
+
+// ── Users (accounts) ─────────────────────────────────────────────────────────
+export async function listUsers(): Promise<AdminUserRow[]> {
+  const { data, error } = await supabase.rpc('admin_list_users');
+  if (error) throw error;
+  return (data ?? []) as AdminUserRow[];
+}
+
+// ── Revenue / MRR ────────────────────────────────────────────────────────────
+export async function getRevenueSummary(): Promise<RevenueSummary> {
+  const { data, error } = await supabase.functions.invoke('admin-revenue-summary');
+  if (error) throw error;
+  return data as RevenueSummary;
 }

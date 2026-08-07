@@ -83,7 +83,7 @@ export function setQuizPlayCache(key: string, value: unknown): void {
  *  and retries once before giving up with an actionable StorageQuotaError —
  *  callers (QuizBuilder.save et al.) previously let the raw DOMException
  *  bubble up as an unclassified crash. */
-function writeQuizStore(quizzes: SavedQuiz[]): void {
+export function writeQuizStore(quizzes: SavedQuiz[]): void {
   const payload = JSON.stringify(quizzes);
   try {
     localStorage.setItem(QUIZ_STORAGE_KEY, payload);

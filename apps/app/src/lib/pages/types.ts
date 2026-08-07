@@ -229,3 +229,22 @@ export interface AdminReportRow {
   title: string; body: string; status: ReportStatus; created_at: string;
 }
 export interface SubscriberRow { user_id: string; created_at: string; }
+
+export interface AdminUserRow {
+  user_id: string;
+  email: string | null;
+  username: string | null;
+  role: 'user' | 'admin';
+  plan: 'starter' | 'pro' | 'entreprise';
+  subscription_status: string | null;
+  created_at: string;
+  last_sign_in_at: string | null;
+}
+
+export interface RevenueSummary {
+  mrr: number;
+  currency: string;
+  activeSubscriptions: number;
+  totalUsers: number;
+  planBreakdown: Record<string, number>;
+}

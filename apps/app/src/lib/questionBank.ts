@@ -1,5 +1,6 @@
 import { getCurrentUser } from "@/lib/auth";
 import type { QuizQuestionType } from "@/lib/questionTypes";
+import { safeSetItem } from "@/lib/safeLocalStorage";
 
 export type QuestionDifficulty = "easy" | "medium" | "hard";
 
@@ -32,7 +33,7 @@ const getStoredQuestionBank = (): QuestionBankItem[] => {
 };
 
 const persistQuestionBank = (items: QuestionBankItem[]) => {
-  localStorage.setItem(QUESTION_BANK_STORAGE_KEY, JSON.stringify(items));
+  safeSetItem(QUESTION_BANK_STORAGE_KEY, items);
 };
 
 export const getQuestionBankForUser = (userId: string): QuestionBankItem[] => {

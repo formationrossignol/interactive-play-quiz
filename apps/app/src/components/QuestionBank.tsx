@@ -8,6 +8,7 @@ import { Database, Plus, Search, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { assertSafeImportFile } from "@/lib/fileValidation";
 import type { QuizQuestionType, PollQuestionType } from "@/lib/questionTypes";
+import { safeSetItem } from "@/lib/safeLocalStorage";
 
 export interface SavedQuestion {
   id: string;
@@ -42,7 +43,7 @@ export const QuestionBank = ({ onSelectQuestion }: QuestionBankProps) => {
   };
 
   const saveQuestions = (questions: SavedQuestion[]) => {
-    localStorage.setItem('questionBank', JSON.stringify(questions));
+    safeSetItem('questionBank', questions);
     setSavedQuestions(questions);
   };
 

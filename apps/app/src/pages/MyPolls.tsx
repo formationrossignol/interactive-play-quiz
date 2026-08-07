@@ -4,6 +4,7 @@ import { ContentExplorer } from "@/components/content/ContentExplorer";
 import { GenericCard, GenericRow, type GenericItemConfig } from "@/components/content/GenericItem";
 import type { ContentDisplay } from "@/lib/content/contentView";
 import { t } from "@/lib/i18n";
+import { setQuizPlayCache } from "@/lib/quizStorage";
 
 const idOf = (d: ContentDisplay) => String((d.data.id as string | undefined) ?? "");
 
@@ -18,7 +19,7 @@ const config: GenericItemConfig = {
     run: (d, navigate) => {
       const id = idOf(d);
       if (!id) { toast.error("Sondage introuvable"); return; }
-      localStorage.setItem(`poll-${id}`, JSON.stringify(d.data));
+      setQuizPlayCache(`poll-${id}`, d.data);
       navigate(`/quiz/${id}`);
     },
   },

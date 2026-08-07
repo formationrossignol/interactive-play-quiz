@@ -28,9 +28,10 @@ export interface BaseQuestion {
   points?: number;
   image?: string;
   /** Full-screen background photo for this question, overriding the quiz
-   *  theme's background on the host's projected screen only (players' own
-   *  phones never render a theme background, see PlayerView). Distinct from
-   *  `image`, which sits inside the question card per the layout picker. */
+   *  theme's background on the host's projected screen (QuizSession) and,
+   *  with a darkening overlay for legibility, the player's own phone
+   *  (PlayerView) for that question only. Distinct from `image`, which sits
+   *  inside the question card per the layout picker. */
   backgroundImage?: string;
   layout?: import("@/lib/contentLayouts").QuestionLayoutId;
   /** Free-text skill/competency labels — aggregated into "compétences les moins maîtrisées" analytics. */

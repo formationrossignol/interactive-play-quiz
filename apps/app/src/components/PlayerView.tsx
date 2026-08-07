@@ -95,6 +95,22 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
   const lastCommentTimeRef = useRef<number>(0);
   const totalQuestions = quizQuestions.length || 1;
   const liveQuestion = quizQuestions[currentQuestion] ?? null;
+  // Per-question background photo (see QuizSession/QuizPreview), mirrored
+  // here on the player's own phone across the same per-question-cycle
+  // phases as the host's projected screen: intro/question/transition/
+  // leaderboard. currentQuestion stays stable across that whole cycle, so
+  // there's no "which question" ambiguity to gate this on.
+  const questionBackgroundImage = typeof liveQuestion?.backgroundImage === "string" && liveQuestion.backgroundImage
+    ? liveQuestion.backgroundImage
+    : undefined;
+  const questionBackgroundStyle = questionBackgroundImage
+    ? {
+        backgroundImage: `linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.45)), url(${questionBackgroundImage})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+      }
+    : undefined;
 
   // Declared before syncFromSession so the callback can reference it without TDZ issues
   const answeredForIndexRef = useRef<number | null>(null);
@@ -838,7 +854,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
     return (
       <div
         className="min-h-screen flex flex-col items-center justify-center p-6 gap-8"
-        style={{ background: 'var(--ap-brand)' }}
+        style={questionBackgroundStyle ?? { background: 'var(--ap-brand)' }}
       >
         {liveQuestion ? (
           <>
@@ -915,7 +931,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
     return (
       <div
         className="min-h-screen p-4"
-        style={{ background: "var(--ap-brand)" }}
+        style={questionBackgroundStyle ?? { background: "var(--ap-brand)" }}
       >
         <div className="max-w-2xl mx-auto">
           {/* Header */}
@@ -1151,7 +1167,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
     return (
       <div
         className="min-h-screen flex items-center justify-center p-4"
-        style={{ background: "var(--ap-brand)" }}
+        style={questionBackgroundStyle ?? { background: "var(--ap-brand)" }}
       >
         <TransitionCountdown
           timeLeft={timeLeft}
@@ -1168,7 +1184,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
     return (
       <div
         className="min-h-screen flex items-center justify-center p-4"
-        style={{ background: "var(--ap-brand)" }}
+        style={questionBackgroundStyle ?? { background: "var(--ap-brand)" }}
       >
         <div className="max-w-md w-full text-center">
           <div className="mb-4 text-white"><MaterialSymbol name="trophy" size={48} filled /></div>

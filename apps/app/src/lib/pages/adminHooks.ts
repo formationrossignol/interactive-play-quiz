@@ -80,6 +80,10 @@ export function useModerationReports() {
 
 export const useSubscribers = () => useQuery({ queryKey: ['admin', 'subscribers'], queryFn: repo.listSubscribers });
 
+export const useAdminUsers = () => useQuery({ queryKey: ['admin', 'users'], queryFn: repo.listUsers });
+
+export const useAdminRevenue = () => useQuery({ queryKey: ['admin', 'revenue'], queryFn: repo.getRevenueSummary });
+
 // Published reviews — the testimonials shown on /reviews, curated in public form.
 export const useAdminReviews = () =>
   useQuery({ queryKey: ['admin', 'reviews', 'published'], queryFn: () => repo.listReviewsFull('published') });
