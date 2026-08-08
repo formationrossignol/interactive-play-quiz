@@ -25,7 +25,7 @@ export function NotificationCenter({ user }: { user: User }) {
       <SheetTrigger asChild>
         <button
           type="button"
-          className="ap-btn ap-btn--ghost ap-btn--sm ap-icon-btn"
+          className={`ap-btn ap-btn--ghost ap-btn--sm ap-icon-btn product-notification-trigger${center.unreadCount > 0 ? " product-notification-trigger--unread" : ""}`}
           style={{ position: "relative", height: 38, width: 38, padding: 0 }}
           aria-label={center.unreadCount > 0 ? `${center.unreadCount} notification${center.unreadCount > 1 ? "s" : ""} non lue${center.unreadCount > 1 ? "s" : ""}` : "Notifications"}
           title="Notifications"
@@ -33,6 +33,7 @@ export function NotificationCenter({ user }: { user: User }) {
           <Bell className="h-4 w-4" />
           {center.unreadCount > 0 && (
             <span
+              className="product-notification-badge"
               style={{
                 position: "absolute", top: -4, right: -4, minWidth: 18, height: 18, padding: "0 4px",
                 display: "grid", placeItems: "center", borderRadius: 9, background: "var(--ap-danger)",
