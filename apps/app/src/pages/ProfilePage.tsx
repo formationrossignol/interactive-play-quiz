@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
 import { getCurrentUser, updateProfile, User as AuthUser, type Theme, type Language } from "@/lib/auth";
 import { type Plan, CONTENT_KIND_LABELS, type ContentKind } from "@/lib/plans";
 import { getContentUsage, type ContentUsage } from "@/lib/planUsage";
@@ -120,6 +122,15 @@ const ProfilePage = () => {
   const [plan, setPlan] = useState<Plan>("starter");
   const [stats, setStats] = useState({ totalQuizzes: 0, publicQuizzes: 0, totalQuestions: 0 });
   const [usage, setUsage] = useState<Record<ContentKind, ContentUsage> | null>(null);
+  const [accountTab, setAccountTab] = useState("account");
+  const [notificationPrefs, setNotificationPrefs] = useState(() => {
+    try {
+      const saved = localStorage.getItem("brivia:notification-preferences");
+      return saved ? JSON.parse(saved) as Record<string, boolean> : { product: true, grading: true, digest: false };
+    } catch {
+      return { product: true, grading: true, digest: false };
+    }
+  });
 
   useEffect(() => {
     const currentUser = getCurrentUser();
@@ -232,6 +243,12 @@ const ProfilePage = () => {
     e.currentTarget.style.boxShadow = "none";
   };
 
+  const setNotificationPreference = (key: string, checked: boolean) => {
+    const next = { ...notificationPrefs, [key]: checked };
+    setNotificationPrefs(next);
+    localStorage.setItem("brivia:notification-preferences", JSON.stringify(next));
+  };
+
   if (!user) return null;
 
   return (
@@ -279,10 +296,18 @@ const ProfilePage = () => {
           </span>
         </div>
 
-        <div className="product-settings-stack">
+        <Tabs value={accountTab} onValueChange={setAccountTab} className="product-account-tabs">
+          <TabsList className="product-account-tabs__list" aria-label="Réglages du compte">
+            <TabsTrigger value="account"><MaterialSymbol name="account_circle" size={19} /> Compte</TabsTrigger>
+            <TabsTrigger value="notifications"><MaterialSymbol name="notifications_none" size={19} /> Notifications</TabsTrigger>
+            <TabsTrigger value="billing"><MaterialSymbol name="receipt_long" size={19} /> Facturation</TabsTrigger>
+            <TabsTrigger value="security"><MaterialSymbol name="lock" size={19} /> Sécurité</TabsTrigger>
+          </TabsList>
+
+          <div className="product-settings-stack" role="tabpanel" aria-live="polite">
 
           {/* Stats */}
-          <div className="product-metric-grid">
+          {accountTab === "account" && <div className="product-metric-grid">
             {statCards.map(({ key, labelKey, icon: Icon, accent }) => (
               <div key={key} className="product-metric">
                 <div className="product-metric__icon" style={{ color: `var(${accent})` }}>
@@ -294,14 +319,14 @@ const ProfilePage = () => {
                 </div>
               </div>
             ))}
-          </div>
+          </div>}
 
           {/* Account plan */}
-          {(() => {
+          {accountTab === "billing" && (() => {
             const meta = PLAN_META[plan];
             const PlanIcon = meta.icon;
             return (
-              <div className="product-settings-panel">
+              <div className="product-settings-panel product-settings-panel--wide">
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "16px", marginBottom: "20px" }}>
                   <h2 className="ap-h3" style={{ margin: 0 }}>Mon compte</h2>
                   <span
@@ -375,7 +400,7 @@ const ProfilePage = () => {
           })()}
 
           {/* Profile info */}
-          <div className="product-settings-panel">
+          {accountTab === "account" && <div className="product-settings-panel product-settings-panel--wide product-settings-panel--profile">
             <h2 className="ap-h3" style={{ marginBottom: "20px" }}>{t("profileInfo")}</h2>
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               <div>
@@ -423,10 +448,10 @@ const ProfilePage = () => {
                 <p className="ap-muted" style={{ fontSize: "11px", marginTop: "5px" }}>Affiché sur votre profil, sans effet sur vos permissions.</p>
               </div>
             </div>
-          </div>
+          </div>}
 
           {/* Preferences */}
-          <div className="product-settings-panel">
+          {accountTab === "account" && <div className="product-settings-panel product-settings-panel--wide product-settings-panel--preferences">
             <h2 className="ap-h3" style={{ marginBottom: "20px" }}>{t("preferences")}</h2>
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               <div>
@@ -555,12 +580,37 @@ const ProfilePage = () => {
                 </button>
               </div>
             </div>
+          </div>}
+
+          {accountTab === "notifications" && (
+            <div className="product-settings-panel product-settings-panel--wide product-notification-settings">
+              <h2 className="ap-h3">Préférences de notifications</h2>
+              <p className="product-settings-panel__intro">Choisissez les événements qui méritent votre attention. Les alertes critiques de sécurité restent toujours actives.</p>
+              {[
+                { key: "product", icon: "campaign", title: "Actualités produit", copy: "Nouveautés, améliorations et changements importants de Brivia." },
+                { key: "grading", icon: "fact_check", title: "Corrections et résultats", copy: "Travaux à corriger, résultats publiés et activité des apprenants." },
+                { key: "digest", icon: "mark_email_unread", title: "Résumé hebdomadaire", copy: "Un récapitulatif compact de votre activité chaque lundi." },
+              ].map((preference) => (
+                <div className="product-notification-setting" key={preference.key}>
+                  <span className="product-notification-setting__icon"><MaterialSymbol name={preference.icon} size={21} /></span>
+                  <span className="product-notification-setting__copy">
+                    <strong>{preference.title}</strong>
+                    <small>{preference.copy}</small>
+                  </span>
+                  <Switch
+                    checked={Boolean(notificationPrefs[preference.key])}
+                    onCheckedChange={(checked) => setNotificationPreference(preference.key, checked)}
+                    aria-label={preference.title}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+
+          {accountTab === "security" && <SecuritySection />}
+
           </div>
-
-          {/* Security */}
-          <SecuritySection />
-
-        </div>
+        </Tabs>
       </div>
     </AppLayout>
   );

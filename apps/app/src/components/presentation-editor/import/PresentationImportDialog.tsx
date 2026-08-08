@@ -1,9 +1,9 @@
 import { useRef, useState } from "react";
-import { FileUp, Link2, LoaderCircle, Presentation, Upload } from "lucide-react";
+import { FileUp, Link2, Presentation, Upload } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { importGoogleSlidesPresentation, importPresentationFile } from "./presentationImport";
 import type { Presentation as PresentationDocument } from "../types/presentation";
-import { ButtonShimmerLabel } from "@/components/ui/skeleton";
+import { ButtonShimmerLabel, Skeleton } from "@/components/ui/skeleton";
 
 interface ImportProgressState {
   message: string;
@@ -104,7 +104,7 @@ export function PresentationImportDialog({
           >
             <div>
               <span style={{ width: 54, height: 54, display: "grid", placeItems: "center", margin: "0 auto 14px", borderRadius: "var(--ap-r-md)", background: "var(--ap-pres-soft)", color: "var(--ap-pres-deep)" }}>
-                {busy ? <LoaderCircle className="h-6 w-6 animate-spin" /> : <Upload className="h-6 w-6" />}
+                {busy ? <Skeleton className="h-6 w-6 rounded-md" /> : <Upload className="h-6 w-6" />}
               </span>
               <b style={{ display: "block", fontSize: 16 }}>{progress?.message || "Déposez votre fichier ici"}</b>
               <span style={{ display: "block", marginTop: 6, color: "var(--ap-muted)", fontSize: 13 }}>
