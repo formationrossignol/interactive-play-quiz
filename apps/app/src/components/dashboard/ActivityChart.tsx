@@ -1,4 +1,4 @@
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { useNavigate } from "react-router-dom";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent, type ChartConfig } from "@/components/ui/chart";
 import type { ActivityPoint } from "@/lib/dashboardStats";
@@ -22,7 +22,6 @@ export function ActivityChart({ data, hasCreations }: { data: ActivityPoint[]; h
     <div className="product-analytics-card">
       <div className="product-analytics-card__header">
         <div>
-          <span className="product-chart-eyebrow">Vue analytique</span>
           <h3>Activité sur 14 jours</h3>
           <p>Sessions lancées et participants uniques, par jour.</p>
         </div>
@@ -30,18 +29,8 @@ export function ActivityChart({ data, hasCreations }: { data: ActivityPoint[]; h
       </div>
 
       {hasActivity ? (
-        <ChartContainer config={chartConfig} className="aspect-auto h-[220px] w-full">
-          <AreaChart data={data} margin={{ left: 0, right: 8, top: 12, bottom: 0 }}>
-            <defs>
-              <linearGradient id="activitySessionsFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="var(--color-sessions)" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="var(--color-sessions)" stopOpacity={0.02} />
-              </linearGradient>
-              <linearGradient id="activityParticipantsFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="var(--color-participants)" stopOpacity={0.24} />
-                <stop offset="95%" stopColor="var(--color-participants)" stopOpacity={0.01} />
-              </linearGradient>
-            </defs>
+        <ChartContainer config={chartConfig} className="aspect-auto h-[210px] w-full">
+          <BarChart data={data} margin={{ left: 0, right: 8, top: 12, bottom: 0 }} barGap={3} barCategoryGap="28%">
             <CartesianGrid vertical={false} strokeDasharray="0" />
             <XAxis
               dataKey="date"
@@ -54,25 +43,21 @@ export function ActivityChart({ data, hasCreations }: { data: ActivityPoint[]; h
             <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={28} />
             <ChartTooltip content={<ChartTooltipContent labelFormatter={(_, payload) => formatDay(payload[0]?.payload.date)} />} />
             <ChartLegend content={<ChartLegendContent verticalAlign="top" className="justify-start" />} verticalAlign="top" />
-            <Area
+            <Bar
               dataKey="sessions"
-              type="monotone"
-              stroke="var(--color-sessions)"
-              strokeWidth={3}
-              fill="url(#activitySessionsFill)"
-              dot={false}
-              activeDot={{ r: 5, strokeWidth: 3, stroke: "var(--ap-card)" }}
+              fill="var(--color-sessions)"
+              radius={[4, 4, 0, 0]}
+              maxBarSize={16}
+              isAnimationActive={false}
             />
-            <Area
+            <Bar
               dataKey="participants"
-              type="monotone"
-              stroke="var(--color-participants)"
-              strokeWidth={3}
-              fill="url(#activityParticipantsFill)"
-              dot={false}
-              activeDot={{ r: 5, strokeWidth: 3, stroke: "var(--ap-card)" }}
+              fill="var(--color-participants)"
+              radius={[4, 4, 0, 0]}
+              maxBarSize={16}
+              isAnimationActive={false}
             />
-          </AreaChart>
+          </BarChart>
         </ChartContainer>
       ) : (
         <div className="product-empty-inline" style={{ minHeight: 220 }}>

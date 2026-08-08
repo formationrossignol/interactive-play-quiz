@@ -356,7 +356,6 @@
 
 /* ── Loading ── */
 .adm-loading { display: grid; place-items: center; min-height: 40vh; }
-.adm-spinner { width: 34px; height: 34px; border-radius:var(--ap-r-sm); border: 4px solid var(--ap-line); border-top-color: var(--ap-brand); animation: spin .7s linear infinite; }
 
 /* ── Responsive: rail → horizontal scroller ── */
 @media (max-width: 860px) {

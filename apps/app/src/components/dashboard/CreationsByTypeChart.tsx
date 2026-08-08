@@ -23,7 +23,6 @@ export function CreationsByTypeChart({ data }: { data: CreationsByType }) {
     <div className="product-analytics-card">
       <div className="product-analytics-card__header">
         <div>
-          <span className="product-chart-eyebrow">Répartition</span>
           <h3>Bibliothèque</h3>
           <p>Répartition de vos créations par format.</p>
         </div>
@@ -35,7 +34,7 @@ export function CreationsByTypeChart({ data }: { data: CreationsByType }) {
           <ChartContainer config={chartConfig} className="aspect-square h-[210px] w-full max-w-[240px]">
             <PieChart>
               <ChartTooltip content={<ChartTooltipContent hideLabel nameKey="label" />} />
-              <Pie data={rows} dataKey="count" nameKey="label" innerRadius={64} outerRadius={88} paddingAngle={3} strokeWidth={0}>
+              <Pie data={rows} dataKey="count" nameKey="label" innerRadius={64} outerRadius={88} paddingAngle={3} strokeWidth={0} isAnimationActive={false}>
                 <Label
                   content={({ viewBox }) => {
                     if (!viewBox || !("cx" in viewBox) || !("cy" in viewBox)) return null;

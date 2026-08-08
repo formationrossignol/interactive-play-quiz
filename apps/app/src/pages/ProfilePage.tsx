@@ -16,7 +16,6 @@ import { SecuritySection } from "@/components/SecuritySection";
 import { MaterialSymbol } from "@/components/MaterialSymbol";
 import { ButtonShimmerLabel } from "@/components/ui/skeleton";
 import { uploadAvatar, validateAvatarFile } from "@/lib/avatarRepo";
-import { AlertCircle, Check, Save, Trophy, BookOpen, Clock, Sun, Moon, Zap, Building2, User, Camera } from "lucide-react";
 import { toast } from "sonner";
 
 const inputStyle: React.CSSProperties = {
@@ -55,15 +54,13 @@ const triggerStyle = {
 const PLAN_META: Record<Plan, {
   label: string;
   color: string;
-  colorDeep: string;
-  icon: React.ElementType;
+  icon: string;
   features: string[];
 }> = {
   starter: {
     label: 'Starter',
     color: '--ap-brand',
-    colorDeep: '--ap-brand-deep',
-    icon: User,
+    icon: "person",
     features: [
       '5 quiz, sondages, jeux de cartes et présentations',
       '1 cours',
@@ -74,8 +71,7 @@ const PLAN_META: Record<Plan, {
   pro: {
     label: 'Pro',
     color: '--ap-poll',
-    colorDeep: '--ap-poll-deep',
-    icon: Zap,
+    icon: "bolt",
     features: [
       'Quiz, sondages, jeux de cartes, présentations, examens et cours illimités',
       "Jusqu'à 200 participants en direct",
@@ -86,8 +82,7 @@ const PLAN_META: Record<Plan, {
   entreprise: {
     label: 'Entreprise',
     color: '--ap-pres',
-    colorDeep: '--ap-pres-deep',
-    icon: Building2,
+    icon: "apartment",
     features: [
       'Tout Pro inclus',
       'Participants illimités',
@@ -98,9 +93,9 @@ const PLAN_META: Record<Plan, {
 };
 
 const statCards = [
-  { key: "totalQuizzes",   labelKey: "quizzesCreated", icon: Trophy,   accent: "--ap-brand" },
-  { key: "publicQuizzes",  labelKey: "publicQuizzes",  icon: BookOpen, accent: "--ap-poll" },
-  { key: "totalQuestions", labelKey: "questions",      icon: Clock,    accent: "--ap-pres" },
+  { key: "totalQuizzes",   labelKey: "quizzesCreated", icon: "emoji_events", accent: "--ap-brand" },
+  { key: "publicQuizzes",  labelKey: "publicQuizzes",  icon: "menu_book", accent: "--ap-poll" },
+  { key: "totalQuestions", labelKey: "questions",      icon: "schedule", accent: "--ap-pres" },
 ] as const;
 
 const ProfilePage = () => {
@@ -272,7 +267,7 @@ const ProfilePage = () => {
               onClick={() => avatarInputRef.current?.click()}
             >
               <ButtonShimmerLabel loading={avatarUploading}>
-                <Camera className="h-3.5 w-3.5" />
+                <MaterialSymbol name="photo_camera" size={15} />
               </ButtonShimmerLabel>
             </button>
             <input
@@ -288,10 +283,7 @@ const ProfilePage = () => {
             <p>{roleLabel || user.email}</p>
           </div>
           <span className="product-profile-plan">
-            {(() => {
-              const PlanIcon = PLAN_META[plan].icon;
-              return <PlanIcon className="h-4 w-4" />;
-            })()}
+            <MaterialSymbol name={PLAN_META[plan].icon} size={17} />
             Offre {PLAN_META[plan].label}
           </span>
         </div>
@@ -308,10 +300,10 @@ const ProfilePage = () => {
 
           {/* Stats */}
           {accountTab === "account" && <div className="product-metric-grid">
-            {statCards.map(({ key, labelKey, icon: Icon, accent }) => (
+            {statCards.map(({ key, labelKey, icon, accent }) => (
               <div key={key} className="product-metric">
                 <div className="product-metric__icon" style={{ color: `var(${accent})` }}>
-                  <Icon className="h-5 w-5" />
+                  <MaterialSymbol name={icon} size={20} />
                 </div>
                 <div>
                   <strong>{stats[key]}</strong>
@@ -324,7 +316,6 @@ const ProfilePage = () => {
           {/* Account plan */}
           {accountTab === "billing" && (() => {
             const meta = PLAN_META[plan];
-            const PlanIcon = meta.icon;
             return (
               <div className="product-settings-panel product-settings-panel--wide">
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "16px", marginBottom: "20px" }}>
@@ -335,10 +326,10 @@ const ProfilePage = () => {
                       background: `var(${meta.color})`, color: "#fff",
                       fontFamily: "var(--ap-font-display)", fontWeight: 700,
                       fontSize: "13px", padding: "5px 14px", borderRadius: "var(--ap-r-sm)",
-                      boxShadow: `0 3px 0 var(${meta.colorDeep})`,
+                      boxShadow: "none",
                     }}
                   >
-                    <PlanIcon style={{ width: 14, height: 14 }} />
+                    <MaterialSymbol name={meta.icon} size={15} />
                     {meta.label}
                   </span>
                 </div>
@@ -346,7 +337,7 @@ const ProfilePage = () => {
                   {meta.features.map((f) => (
                     <li key={f} style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", color: "var(--ap-ink)", fontFamily: "var(--ap-font-body)", fontWeight: 600 }}>
                       <span style={{ width: 18, height: 18, borderRadius: "50%", background: `var(${meta.color})`, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                        <Check className="h-3 w-3" strokeWidth={2.4} />
+                        <MaterialSymbol name="check" size={13} />
                       </span>
                       {f}
                     </li>
@@ -381,7 +372,7 @@ const ProfilePage = () => {
                       if (!result.ok) toast.error(result.error ?? "Erreur lors de l'ouverture de la gestion d'abonnement.");
                     }}
                   >
-                    <Zap style={{ width: 15, height: 15 }} />
+                    <MaterialSymbol name="bolt" size={16} />
                     Gérer mon abonnement
                   </button>
                 )}
@@ -391,7 +382,7 @@ const ProfilePage = () => {
                     style={{ gap: "8px" }}
                     onClick={() => { window.location.href = "/pricing"; }}
                   >
-                    <Zap style={{ width: 15, height: 15 }} />
+                    <MaterialSymbol name="bolt" size={16} />
                     Passer à Pro
                   </button>
                 )}
@@ -418,7 +409,7 @@ const ProfilePage = () => {
                 />
                 {usernameError && (
                   <p id="profile-username-error" role="alert" style={{ margin: "8px 0 0", fontSize: "12.5px", fontWeight: 800, color: "var(--ap-danger-deep)", display: "flex", alignItems: "center", gap: "6px" }}>
-                    <AlertCircle className="h-4 w-4" />
+                    <MaterialSymbol name="error" size={17} />
                     {usernameError}
                   </p>
                 )}
@@ -526,12 +517,12 @@ const ProfilePage = () => {
                   <SelectContent style={{ background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-md)" }}>
                     <SelectItem value="light">
                       <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                        <Sun className="w-4 h-4" />{t("lightMode")}
+                        <MaterialSymbol name="light_mode" size={17} />{t("lightMode")}
                       </div>
                     </SelectItem>
                     <SelectItem value="dark">
                       <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                        <Moon className="w-4 h-4" />{t("darkMode")}
+                        <MaterialSymbol name="dark_mode" size={17} />{t("darkMode")}
                       </div>
                     </SelectItem>
                   </SelectContent>
@@ -575,7 +566,7 @@ const ProfilePage = () => {
 
               <div style={{ paddingTop: "8px" }}>
                 <button className="ap-btn ap-btn--pill" style={{ width: "100%", gap: "8px" }} onClick={handleSave}>
-                  <Save className="w-4 h-4" />
+                  <MaterialSymbol name="save" size={17} />
                   {t("saveChanges")}
                 </button>
               </div>

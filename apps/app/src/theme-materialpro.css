@@ -7,7 +7,11 @@
    Enabled by data-theme="materialpro" on <html>.
    ============================================================ */
 
-@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
+@import "@fontsource/poppins/latin-300.css";
+@import "@fontsource/poppins/latin-400.css";
+@import "@fontsource/poppins/latin-500.css";
+@import "@fontsource/poppins/latin-600.css";
+@import "@fontsource/poppins/latin-700.css";
 
 :root[data-theme="materialpro"] {
   color-scheme: light;
@@ -2607,6 +2611,205 @@
 
   [data-theme="materialpro"] .product-route-skeleton__grid {
     grid-template-columns: 1fr;
+  }
+}
+
+/* MaterialPro precision pass: compact widgets, deliberate section rhythm and
+   flat controls. Floating layers retain their shadow; in-flow controls do not. */
+[data-theme="materialpro"] {
+  --mp-card-shadow: 0 1px 2px rgb(58 75 122 / 7%);
+  --ap-shadow-soft: 0 1px 2px rgb(58 75 122 / 7%);
+  --ap-shadow-card: 0 1px 2px rgb(58 75 122 / 7%);
+  --ap-shadow-neu: 0 1px 2px rgb(58 75 122 / 7%);
+  --ap-shadow-neu-hover: 0 1px 2px rgb(58 75 122 / 7%);
+}
+
+[data-theme="materialpro"] .product-dashboard {
+  gap: 30px;
+}
+
+[data-theme="materialpro"] .product-dashboard > section,
+[data-theme="materialpro"] .product-dashboard__lower {
+  min-width: 0;
+  margin: 0;
+}
+
+[data-theme="materialpro"] .product-dashboard__performance {
+  padding-bottom: 4px;
+}
+
+[data-theme="materialpro"] .product-dashboard__lower,
+[data-theme="materialpro"] .product-analytics-grid {
+  gap: 22px;
+}
+
+[data-theme="materialpro"] .product-kpis {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+[data-theme="materialpro"] .product-kpi,
+[data-theme="materialpro"] .product-kpi--featured {
+  height: 132px;
+  min-height: 132px;
+  padding: 18px;
+  box-shadow: var(--mp-card-shadow);
+}
+
+[data-theme="materialpro"] .product-kpi--featured::after {
+  width: 116px;
+  height: 116px;
+  top: -66px;
+  right: -46px;
+  border-width: 18px;
+}
+
+[data-theme="materialpro"] .product-kpi--featured:hover::after {
+  transform: translate(-5px, 6px) scale(1.04);
+}
+
+[data-theme="materialpro"] .product-kpi--featured .product-kpi__top {
+  gap: 10px;
+}
+
+[data-theme="materialpro"] .product-kpi--featured .product-kpi__icon,
+[data-theme="materialpro"] .product-kpi__icon {
+  width: 40px;
+  height: 40px;
+  flex-basis: 40px;
+}
+
+[data-theme="materialpro"] .product-kpi--featured .product-kpi__label {
+  font-size: 13px;
+}
+
+[data-theme="materialpro"] .product-kpi__period {
+  margin: -8px 0 0 50px;
+  font-size: 10px;
+}
+
+[data-theme="materialpro"] .product-kpi--featured .product-kpi__value {
+  margin-top: 15px;
+  font-size: clamp(26px, 2.2vw, 32px);
+}
+
+[data-theme="materialpro"] .product-kpi__value,
+[data-theme="materialpro"] .product-metric strong {
+  font-size: 23px;
+}
+
+[data-theme="materialpro"] .product-kpi--featured .product-kpi__spark {
+  width: min(42%, 104px);
+  max-width: 104px;
+  height: 30px;
+}
+
+[data-theme="materialpro"] .product-kpi--featured .product-kpi__trend {
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  width: 94px;
+  min-height: 0;
+}
+
+[data-theme="materialpro"] .product-kpi--featured .product-kpi__trend > span {
+  display: none !important;
+}
+
+[data-theme="materialpro"] .product-kpi--featured .product-kpi__spark {
+  width: 94px;
+  margin-left: 0;
+}
+
+[data-theme="materialpro"] .product-analytics-card {
+  min-height: 300px;
+  padding: 22px;
+}
+
+[data-theme="materialpro"] .product-analytics-card__header {
+  min-height: 0;
+  margin-bottom: 14px;
+}
+
+[data-theme="materialpro"] .product-chart-eyebrow {
+  display: none !important;
+}
+
+[data-theme="materialpro"] .recharts-bar-rectangle > path {
+  transform: scaleY(.08);
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: mp-recharts-bar-enter 620ms var(--ap-ease) forwards;
+}
+
+[data-theme="materialpro"] .recharts-pie-sector > path {
+  animation: mp-recharts-pie-enter 420ms var(--ap-ease) both;
+}
+
+@keyframes mp-recharts-bar-enter {
+  to { transform: scaleY(1); }
+}
+
+@keyframes mp-recharts-pie-enter {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+[data-theme="materialpro"] [data-ui="button"],
+[data-theme="materialpro"] .ap-btn,
+[data-theme="materialpro"] .adm-btn,
+[data-theme="materialpro"] .product-quick-action,
+[data-theme="materialpro"] [data-ui="tabs-trigger"][data-state="active"],
+[data-theme="materialpro"] .product-ticket-options button[data-active="true"] {
+  box-shadow: none;
+}
+
+[data-theme="materialpro"] [data-ui="button"]:hover,
+[data-theme="materialpro"] .ap-btn:hover,
+[data-theme="materialpro"] .adm-btn:hover,
+[data-theme="materialpro"] .product-quick-action:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+[data-theme="materialpro"] .ap-card--hover:hover,
+[data-theme="materialpro"] [data-ui="folder-card"]:hover,
+[data-theme="materialpro"] .product-kpi:hover,
+[data-theme="materialpro"] .product-ticket-stat:hover,
+[data-theme="materialpro"] .product-kanban-card:hover {
+  transform: none;
+  box-shadow: var(--mp-card-shadow);
+}
+
+[data-theme="materialpro"] .product-kanban-card {
+  box-shadow: none;
+}
+
+@media (max-width: 1100px) {
+  [data-theme="materialpro"] .product-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  [data-theme="materialpro"] .product-dashboard__lower {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 620px) {
+  [data-theme="materialpro"] .product-dashboard {
+    gap: 24px;
+  }
+
+  [data-theme="materialpro"] .product-kpis {
+    grid-template-columns: 1fr;
+  }
+
+  [data-theme="materialpro"] .product-kpi,
+  [data-theme="materialpro"] .product-kpi--featured {
+    height: 128px;
+    min-height: 128px;
   }
 }
 

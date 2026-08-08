@@ -87,7 +87,7 @@ export default function Roadmap() {
 
         <section className="ap-card product-kanban-shell" aria-label="Roadmap organisée en kanban">
           <header className="product-kanban-toolbar">
-            <div><span className="product-chart-eyebrow">Roadmap collaborative</span><h2>Le travail rendu simple</h2></div>
+            <div><h2>Le travail rendu simple</h2></div>
             <Button onClick={() => setIdeaOpen(true)}><MaterialSymbol name="add" size={18} /> Proposer une idée</Button>
           </header>
 
