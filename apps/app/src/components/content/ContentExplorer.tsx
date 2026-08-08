@@ -13,18 +13,7 @@ import { useEffect, useMemo, useState, type MutableRefObject, type ReactNode } f
 import { useNavigate } from "react-router-dom";
 import { DndContext, useDroppable, type DragEndEvent } from "@dnd-kit/core";
 import { toast } from "sonner";
-import {
-  ChevronRight,
-  Folder as FolderIcon,
-  Globe,
-  LayoutGrid,
-  LayoutTemplate,
-  List,
-  Search,
-  Sparkles,
-  Star,
-  Trash2,
-} from "lucide-react";
+import { MaterialSymbol } from "@/components/MaterialSymbol";
 import { AppLayout } from "@/components/AppLayout";
 import { t, tVars } from "@/lib/i18n";
 import { Breadcrumb, type BreadcrumbItem } from "@/components/Breadcrumb";
@@ -237,7 +226,7 @@ function FolderDropCard({ folder, count, onOpen }: { folder: FolderRow; count: n
           flexShrink: 0,
         }}
       >
-        <FolderIcon style={{ width: 22, height: 22 }} />
+        <MaterialSymbol name="folder" size={24} filled />
       </div>
       <div style={{ minWidth: 0, flex: 1 }}>
         <b className="ap-h3" style={{ fontSize: 15, display: "block" }}>{folder.name}</b>
@@ -245,7 +234,7 @@ function FolderDropCard({ folder, count, onOpen }: { folder: FolderRow; count: n
           {count} {count === 1 ? t("explorerElementSingular") : t("explorerElementPlural")}
         </small>
       </div>
-      <ChevronRight style={{ width: 16, height: 16, color: "var(--ap-line-2)" }} />
+      <MaterialSymbol name="chevron_right" size={20} style={{ color: "var(--ap-muted)" }} />
     </div>
   );
 }
@@ -562,15 +551,15 @@ export function ContentExplorer({
   } else if (view === "favorites") {
     content = favorites.length
       ? paginatedBlock(favorites)
-      : emptyBox(t("explorerNoFavoritesTitle"), tVars("explorerNoFavoritesBody", { item: oneLabel }), <Star style={{ width: 26, height: 26 }} />);
+      : emptyBox(t("explorerNoFavoritesTitle"), tVars("explorerNoFavoritesBody", { item: oneLabel }), <MaterialSymbol name="star" size={28} />);
   } else if (view === "templates") {
     content = templates.length
       ? paginatedBlock(templates)
-      : emptyBox(t("explorerNoTemplatesTitle"), tVars("explorerNoTemplatesBody", { item: oneLabel }), <LayoutTemplate style={{ width: 26, height: 26 }} />);
+      : emptyBox(t("explorerNoTemplatesTitle"), tVars("explorerNoTemplatesBody", { item: oneLabel }), <MaterialSymbol name="dashboard_customize" size={28} />);
   } else if (view === "public") {
     content = publicDisplay.length
       ? paginatedBlock(publicDisplay)
-      : emptyBox(tVars("explorerNoPublicTitle", { item: oneLabel }), t("explorerNoPublicBody"), <Globe style={{ width: 26, height: 26 }} />);
+      : emptyBox(tVars("explorerNoPublicTitle", { item: oneLabel }), t("explorerNoPublicBody"), <MaterialSymbol name="public" size={28} />);
   } else {
     // library
     const showFolders = !searching && childFolders.length > 0;
@@ -578,11 +567,11 @@ export function ContentExplorer({
     let body: ReactNode;
     if (libraryItems.length === 0 && !showFolders) {
       if (searching) {
-        body = emptyBox(tVars("explorerNoResultsTitle", { query: search || category }), t("explorerNoResultsBody"), <Search style={{ width: 26, height: 26 }} />);
+        body = emptyBox(tVars("explorerNoResultsTitle", { query: search || category }), t("explorerNoResultsBody"), <MaterialSymbol name="search" size={28} />);
       } else if (inFolder) {
-        body = emptyBox(t("explorerEmptyFolderTitle"), tVars("explorerEmptyFolderBody", { item: oneLabel }), <FolderIcon style={{ width: 26, height: 26 }} />);
+        body = emptyBox(t("explorerEmptyFolderTitle"), tVars("explorerEmptyFolderBody", { item: oneLabel }), <MaterialSymbol name="folder" size={28} />);
       } else {
-        body = emptyBox(tVars("explorerFirstItemTitle", { item: oneLabel }), t("explorerFirstItemBody"), <Sparkles style={{ width: 26, height: 26 }} />);
+        body = emptyBox(tVars("explorerFirstItemTitle", { item: oneLabel }), t("explorerFirstItemBody"), <MaterialSymbol name="auto_awesome" size={28} />);
       }
     } else {
       body = (
@@ -648,28 +637,28 @@ export function ContentExplorer({
                 >
                   <div style={SIDE_LABEL}>{t("explorerShortcuts")}</div>
                   <ShortcutRow
-                    icon={<Star style={{ width: 16, height: 16 }} />}
+                    icon={<MaterialSymbol name="star" size={18} />}
                     label={t("favorites")}
                     count={filterFavorites(display).length}
                     active={view === "favorites"}
                     onClick={() => goShortcut("favorites")}
                   />
                   <ShortcutRow
-                    icon={<LayoutTemplate style={{ width: 16, height: 16 }} />}
+                    icon={<MaterialSymbol name="dashboard_customize" size={18} />}
                     label={t("explorerTemplates")}
                     count={filterTemplates(display).length}
                     active={view === "templates"}
                     onClick={() => goShortcut("templates")}
                   />
                   <ShortcutRow
-                    icon={<Globe style={{ width: 16, height: 16 }} />}
+                    icon={<MaterialSymbol name="public" size={18} />}
                     label={publicLabelFor(type)}
                     count={c.publicItems.length}
                     active={view === "public"}
                     onClick={() => goShortcut("public")}
                   />
                   <ShortcutRow
-                    icon={<Trash2 style={{ width: 16, height: 16 }} />}
+                    icon={<MaterialSymbol name="delete" size={18} />}
                     label={t("explorerTrash")}
                     count={trashed.length}
                     active={view === "trash"}
@@ -705,7 +694,7 @@ export function ContentExplorer({
                 {showToolbar && (
                   <div className="product-explorer-toolbar flex flex-col sm:flex-row gap-3 mb-5">
                     <div className="relative flex-1">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: "var(--ap-muted)" }} />
+                      <MaterialSymbol name="search" size={19} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--ap-muted)" }} />
                       <input
                         placeholder={t("explorerSearchPlaceholder")}
                         value={search}
@@ -743,8 +732,8 @@ export function ContentExplorer({
                       </SelectContent>
                     </Select>
                     <div className="product-view-toggle flex gap-1 flex-shrink-0">
-                      <button data-active={viewMode === "grid" || undefined} onClick={() => setViewMode("grid")} style={toggleBtnStyle(viewMode === "grid")} title={t("explorerGridView")}><LayoutGrid className="w-4 h-4" /></button>
-                      <button data-active={viewMode === "list" || undefined} onClick={() => setViewMode("list")} style={toggleBtnStyle(viewMode === "list")} title={t("explorerListView")}><List className="w-4 h-4" /></button>
+                      <button data-active={viewMode === "grid" || undefined} onClick={() => setViewMode("grid")} style={toggleBtnStyle(viewMode === "grid")} title={t("explorerGridView")}><MaterialSymbol name="grid_view" size={19} /></button>
+                      <button data-active={viewMode === "list" || undefined} onClick={() => setViewMode("list")} style={toggleBtnStyle(viewMode === "list")} title={t("explorerListView")}><MaterialSymbol name="view_list" size={19} /></button>
                     </div>
                   </div>
                 )}

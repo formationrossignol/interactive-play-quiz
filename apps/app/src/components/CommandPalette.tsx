@@ -126,14 +126,13 @@ export const CommandPalette = ({ user, open, onOpenChange: setOpen }: CommandPal
             <CommandGroup heading={t("commandPaletteContentGroup")}>
               {results.map((result) => {
                 const meta = TYPE_META[result.type];
-                const Icon = meta.icon;
                 return (
                   <CommandItem
                     key={result.rowId}
                     value={`${result.title || t("untitled")} ${result.rowId}`}
                     onSelect={() => go(getSearchResultRoute(result.type, result.itemId))}
                   >
-                    <Icon className="mr-2 h-4 w-4" />
+                    <MaterialSymbol name={meta.icon} size={18} className="mr-2" />
                     <span className="flex-1 truncate">{result.title || t("untitled")}</span>
                     <span className="ml-2 text-xs text-muted-foreground">{t(meta.labelKey)}</span>
                   </CommandItem>

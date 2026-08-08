@@ -9,24 +9,7 @@
 import type { ReactNode } from "react";
 import type { useNavigate } from "react-router-dom";
 import { useDraggable } from "@dnd-kit/core";
-import {
-  BarChart2,
-  ClipboardCheck,
-  Copy,
-  FolderInput,
-  FolderOpen,
-  GripVertical,
-  Layers,
-  Link2,
-  ListChecks,
-  MoreHorizontal,
-  Pencil,
-  Play,
-  Presentation,
-  Star,
-  Trash2,
-  Users,
-} from "lucide-react";
+import { MaterialSymbol } from "@/components/MaterialSymbol";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -133,7 +116,7 @@ function ItemMenu({
     <DropdownMenu>
       <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
         <button className="ap-btn ap-btn--ghost ap-btn--sm" style={{ padding: "5px 7px" }} title="Actions">
-          <MoreHorizontal className="h-4 w-4" />
+          <MaterialSymbol name="more_horiz" size={18} />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" style={menuStyle} onClick={(e) => e.stopPropagation()}>
@@ -142,7 +125,7 @@ function ItemMenu({
             onSelect={() => navigate(`/exam-builder?quizId=${id}`)}
             className="flex items-center gap-2 cursor-pointer text-sm"
           >
-            <ClipboardCheck className="h-3.5 w-3.5" /> Créer un examen
+            <MaterialSymbol name="assignment_turned_in" size={18} /> Créer un examen
           </DropdownMenuItem>
         )}
         {hasHistory && config.results && (
@@ -150,19 +133,19 @@ function ItemMenu({
             onSelect={() => navigate(config.results!(id))}
             className="flex items-center gap-2 cursor-pointer text-sm"
           >
-            <BarChart2 className="h-3.5 w-3.5" /> Résultats
+            <MaterialSymbol name="bar_chart" size={18} /> Résultats
           </DropdownMenuItem>
         )}
         <DropdownMenuItem onSelect={ctx.onDuplicate} className="flex items-center gap-2 cursor-pointer text-sm">
-          <Copy className="h-3.5 w-3.5" /> Dupliquer
+          <MaterialSymbol name="content_copy" size={18} /> Dupliquer
         </DropdownMenuItem>
         <DropdownMenuItem onSelect={ctx.onCopyLink} className="flex items-center gap-2 cursor-pointer text-sm">
-          <Link2 className="h-3.5 w-3.5" /> Copier le lien
+          <MaterialSymbol name="link" size={18} /> Copier le lien
         </DropdownMenuItem>
         {ctx.folders.length > 0 && (
           <DropdownMenuSub>
             <DropdownMenuSubTrigger className="flex items-center gap-2 cursor-pointer text-sm">
-              <FolderInput className="h-3.5 w-3.5" /> Déplacer vers
+              <MaterialSymbol name="drive_file_move" size={18} /> Déplacer vers
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent style={menuStyle}>
               {d.folderId && (
@@ -170,7 +153,7 @@ function ItemMenu({
                   onSelect={() => ctx.onMove(null)}
                   className="flex items-center gap-2 cursor-pointer text-sm"
                 >
-                  <FolderOpen className="h-3.5 w-3.5" /> Hors dossier
+                  <MaterialSymbol name="folder_open" size={18} /> Hors dossier
                 </DropdownMenuItem>
               )}
               {ctx.folders.map((f) => (
@@ -187,10 +170,10 @@ function ItemMenu({
           </DropdownMenuSub>
         )}
         <DropdownMenuItem onSelect={ctx.onManageAccess} className="flex items-center gap-2 cursor-pointer text-sm">
-          <Users className="h-3.5 w-3.5" /> {t("shareManageAccess")}
+          <MaterialSymbol name="group" size={18} /> {t("shareManageAccess")}
         </DropdownMenuItem>
         <DropdownMenuItem onSelect={ctx.onFavorite} className="flex items-center gap-2 cursor-pointer text-sm">
-          <Star className="h-3.5 w-3.5" style={d.isFavorite ? { fill: "#fbbf24", color: "#fbbf24" } : {}} />
+          <MaterialSymbol name="star" size={18} filled={d.isFavorite} style={d.isFavorite ? { color: "var(--mp-warning)" } : undefined} />
           {d.isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
@@ -199,7 +182,7 @@ function ItemMenu({
           className="flex items-center gap-2 cursor-pointer text-sm"
           style={{ color: "var(--ap-danger)" }}
         >
-          <Trash2 className="h-3.5 w-3.5" /> Mettre à la corbeille
+          <MaterialSymbol name="delete" size={18} /> Mettre à la corbeille
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -227,7 +210,7 @@ function primaryButton(
         className={`ap-btn ap-btn--sm ap-btn--pill ${config.accentBtn} gap-1.5`}
         style={{ fontSize: size.text, padding: size.pad }}
       >
-        <Play className="h-3.5 w-3.5" /> {config.play.label}
+        <MaterialSymbol name="play_arrow" size={18} filled /> {config.play.label}
       </Button>
     );
   }
@@ -246,11 +229,11 @@ function primaryButton(
 const accentVarOf = (accentBtn: string) => `--ap-${accentBtn.replace("ap-btn--", "")}`;
 
 /** Default header icon per content type, keyed by the config accentBtn suffix. */
-const defaultHeaderIcon: Record<string, typeof ListChecks> = {
-  "ap-btn--quiz": ListChecks,
-  "ap-btn--poll": BarChart2,
-  "ap-btn--flash": Layers,
-  "ap-btn--pres": Presentation,
+const defaultHeaderIcon: Record<string, string> = {
+  "ap-btn--quiz": "quiz",
+  "ap-btn--poll": "poll",
+  "ap-btn--flash": "style",
+  "ap-btn--pres": "co_present",
 };
 
 /** Cover type badge label per content type — same i18n keys as the sidebar's
@@ -269,7 +252,7 @@ export function GenericCard(props: GenericItemProps) {
   const n = config.countOf(d);
   const id = itemId(d);
   const accentVar = accentVarOf(config.accentBtn);
-  const DefaultHeaderIcon = defaultHeaderIcon[config.accentBtn] ?? ListChecks;
+  const defaultHeaderIconName = defaultHeaderIcon[config.accentBtn] ?? "dashboard_customize";
 
   return (
     <div
@@ -278,7 +261,7 @@ export function GenericCard(props: GenericItemProps) {
       style={{ opacity: isDragging ? 0.4 : 1, padding: 0 }}
       onClick={() => navigate(config.editRoute(id))}
     >
-      <ContentCardHeader image={img} alt={d.title} icon={DefaultHeaderIcon} accent={`var(${accentVar})`} label={headerLabel[config.accentBtn]}>
+      <ContentCardHeader image={img} alt={d.title} icon={defaultHeaderIconName} accent={`var(${accentVar})`} label={headerLabel[config.accentBtn]}>
         <button
           type="button"
           {...attributes}
@@ -289,7 +272,7 @@ export function GenericCard(props: GenericItemProps) {
           title="Déplacer"
           aria-label={`Déplacer ${d.title}`}
         >
-          <GripVertical style={{ width: 14, height: 14 }} />
+          <MaterialSymbol name="drag_indicator" size={16} />
         </button>
       </ContentCardHeader>
       <div className="flex flex-1 flex-col gap-2.5" style={{ padding: "var(--density-card-pad, 14px 16px 12px)" }}>
@@ -300,9 +283,12 @@ export function GenericCard(props: GenericItemProps) {
           </div>
           <button
             onClick={(e) => { e.stopPropagation(); ctx.onFavorite(); }}
-            className="text-amber-400 hover:text-amber-500 transition-colors cursor-pointer p-1 -mr-1 flex-shrink-0"
+            className="transition-colors cursor-pointer p-1 -mr-1 flex-shrink-0"
+            style={{ color: d.isFavorite ? "var(--mp-warning)" : "var(--ap-muted)" }}
+            title={d.isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
+            aria-label={d.isFavorite ? `Retirer ${d.title} des favoris` : `Ajouter ${d.title} aux favoris`}
           >
-            <Star className={`h-4 w-4 ${d.isFavorite ? "fill-amber-400" : ""}`} />
+            <MaterialSymbol name="star" size={19} filled={d.isFavorite} />
           </button>
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
@@ -335,7 +321,7 @@ export function GenericRow(props: GenericItemProps) {
   const n = config.countOf(d);
   const id = itemId(d);
   const accentVar = accentVarOf(config.accentBtn);
-  const DefaultHeaderIcon = defaultHeaderIcon[config.accentBtn] ?? ListChecks;
+  const defaultHeaderIconName = defaultHeaderIcon[config.accentBtn] ?? "dashboard_customize";
 
   return (
     <div
@@ -359,9 +345,9 @@ export function GenericRow(props: GenericItemProps) {
         title="Déplacer"
         aria-label={`Déplacer ${d.title}`}
       >
-        <GripVertical style={{ width: 14, height: 14 }} />
+        <MaterialSymbol name="drag_indicator" size={16} />
       </button>
-      <ContentRowThumbnail image={img} alt={d.title} icon={DefaultHeaderIcon} accent={`var(${accentVar})`} />
+      <ContentRowThumbnail image={img} alt={d.title} icon={defaultHeaderIconName} accent={`var(${accentVar})`} />
       <div className="flex-1 min-w-0">
         <p className="ap-h3 truncate" style={{ fontSize: "14px", marginBottom: "2px" }}>{d.title}</p>
         {d.description && <p className="ap-muted truncate" style={{ fontSize: "12px" }}>{d.description}</p>}
@@ -385,7 +371,7 @@ export function GenericRow(props: GenericItemProps) {
           aria-label={`Modifier ${d.title}`}
           onClick={() => navigate(config.editRoute(id))}
         >
-          <Pencil className="h-3.5 w-3.5" />
+          <MaterialSymbol name="edit" size={18} />
         </button>
         <button
           type="button"
@@ -394,7 +380,7 @@ export function GenericRow(props: GenericItemProps) {
           aria-label={`Copier le lien de ${d.title}`}
           onClick={ctx.onCopyLink}
         >
-          <Link2 className="h-3.5 w-3.5" />
+          <MaterialSymbol name="link" size={18} />
         </button>
         <button
           type="button"
@@ -404,7 +390,7 @@ export function GenericRow(props: GenericItemProps) {
           aria-label={`Mettre ${d.title} à la corbeille`}
           onClick={ctx.onTrash}
         >
-          <Trash2 className="h-3.5 w-3.5" />
+          <MaterialSymbol name="delete" size={18} />
         </button>
         <ItemMenu d={d} ctx={ctx} config={config} navigate={navigate} />
       </div>
