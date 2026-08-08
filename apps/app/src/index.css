@@ -4,6 +4,7 @@
 @import "./theme-studio.css";
 @import "./theme-material.css";
 @import "./theme-nova.css";
+@import "./theme-materialpro.css";
 @import "./density.css";
 @import "./product-app.css";
 
@@ -528,6 +529,68 @@
     --sidebar-accent: 250 33% 14%;      /* #1c1830 */
     --sidebar-accent-foreground: 257 64% 96%;
     --sidebar-border: 251 38% 23%;      /* #2c2450 */
+  }
+
+  /* MaterialPro — exact WrapPixel Blue_Theme roles, mirrored for shadcn. */
+  :root[data-theme="materialpro"] {
+    --background: 207 67% 96%;          /* #edf5fd */
+    --foreground: 208 22% 24%;          /* #2f3d4a */
+    --card: 0 0% 100%;
+    --card-foreground: 208 22% 24%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 208 22% 24%;
+    --primary: 212 100% 55%;            /* #1b84ff */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 184 64% 55%;           /* #43ced7 */
+    --secondary-foreground: 208 22% 24%;
+    --muted: 207 52% 95%;
+    --muted-foreground: 208 16% 54%;    /* #768b9e */
+    --accent: 207 100% 96%;
+    --accent-foreground: 212 100% 45%;
+    --destructive: 346 93% 56%;         /* #f8285a */
+    --destructive-foreground: 0 0% 100%;
+    --border: 207 41% 94%;              /* #ebf1f6 */
+    --input: 207 41% 94%;
+    --ring: 212 100% 55%;
+    --radius: .5rem;
+    --success: 149 63% 49%;             /* #2cd07e */
+    --success-foreground: 0 0% 100%;
+    --warning: 47 100% 48%;             /* #f6c000 */
+    --warning-foreground: 208 22% 24%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 208 22% 24%;
+    --sidebar-primary: 184 64% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 184 64% 55%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 207 41% 94%;
+    --sidebar-ring: 212 100% 55%;
+    --quiz-accent: 346 93% 56%;
+    --poll-accent: 184 64% 55%;
+    --flashcard-accent: 47 100% 48%;
+    --slide-accent: 149 63% 49%;
+  }
+
+  .dark[data-theme="materialpro"] {
+    --background: 209 38% 16%;          /* #192838 */
+    --foreground: 207 19% 92%;
+    --card: 209 39% 14%;                /* #152332 */
+    --card-foreground: 207 19% 92%;
+    --popover: 209 39% 14%;
+    --popover-foreground: 207 19% 92%;
+    --secondary: 210 25% 21%;
+    --secondary-foreground: 207 19% 92%;
+    --muted: 210 25% 21%;
+    --muted-foreground: 216 24% 58%;    /* #7c8fac */
+    --accent: 210 25% 21%;
+    --accent-foreground: 207 19% 92%;
+    --border: 216 25% 27%;              /* #333f55 */
+    --input: 216 25% 27%;
+    --sidebar-background: 209 39% 14%;
+    --sidebar-foreground: 207 19% 92%;
+    --sidebar-accent: 184 64% 55%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 216 25% 27%;
   }
 
   * {

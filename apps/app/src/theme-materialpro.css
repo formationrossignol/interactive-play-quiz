@@ -1,0 +1,612 @@
+/* ============================================================
+   Brivia · MaterialPro / WrapPixel Blue Theme
+   ------------------------------------------------------------
+   A faithful product skin based on the supplied MaterialPro demo.
+   It deliberately keeps Brivia's shared React components and only
+   changes their visual roles, density and shell composition.
+   Enabled by data-theme="materialpro" on <html>.
+   ============================================================ */
+
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
+
+:root[data-theme="materialpro"] {
+  color-scheme: light;
+
+  --mp-primary: #1b84ff;
+  --mp-secondary: #43ced7;
+  --mp-info: #2cabe3;
+  --mp-success: #2cd07e;
+  --mp-warning: #f6c000;
+  --mp-danger: #f8285a;
+  --mp-purple: #725af2;
+  --mp-heading: #2f3d4a;
+  --mp-muted: #768b9e;
+  --mp-canvas: #edf5fd;
+  --mp-border: #ebf1f6;
+
+  --ap-brand: var(--mp-primary);
+  --ap-brand-deep: #006fd6;
+  --ap-brand-soft: #edf5fd;
+  --ap-logo-diamond: #ffffff;
+  --ap-ink: var(--mp-heading);
+  --ap-muted: var(--mp-muted);
+  --ap-paper: var(--mp-canvas);
+  --ap-paper-2: #f5f9fc;
+  --ap-card: #ffffff;
+  --ap-line: var(--mp-border);
+  --ap-line-2: #dbe7ef;
+
+  --ap-quiz: var(--mp-danger);
+  --ap-quiz-deep: #cf1641;
+  --ap-quiz-soft: #fff0f4;
+  --ap-poll: var(--mp-secondary);
+  --ap-poll-deep: #20aeb8;
+  --ap-poll-soft: #ecfbfc;
+  --ap-flash: var(--mp-warning);
+  --ap-flash-deep: #9b7900;
+  --ap-flash-soft: #fff9e5;
+  --ap-pres: var(--mp-success);
+  --ap-pres-deep: #178b50;
+  --ap-pres-soft: #eafaf2;
+  --ap-danger: var(--mp-danger);
+  --ap-danger-deep: #cf1641;
+  --ap-danger-soft: #fff0f4;
+  --ap-success: var(--mp-success);
+
+  --ap-r-sm: 6px;
+  --ap-r-md: 8px;
+  --ap-r-lg: 8px;
+  --ap-r-xl: 24px;
+  --ap-r-pill: 999px;
+  --ap-r-2xl: 8px;
+  --ap-border-w: 1px;
+
+  --ap-shadow-soft: 0 1px 4px rgb(58 75 122 / 6%);
+  --ap-shadow-card: 0 4px 12px rgb(58 75 122 / 9%);
+  --ap-shadow-float: 0 12px 30px -2px rgb(58 75 122 / 18%);
+  --ap-shadow-neu: 0 1px 4px rgb(58 75 122 / 7%);
+  --ap-shadow-neu-hover: 0 8px 20px -8px rgb(27 132 255 / 24%);
+
+  --ap-font-display: "Poppins", "Aptos", "Segoe UI", system-ui, sans-serif;
+  --ap-font-body: "Poppins", "Aptos", "Segoe UI", system-ui, sans-serif;
+  --ap-ease: cubic-bezier(.2, .75, .3, 1);
+  --ap-spring: cubic-bezier(.2, .75, .3, 1);
+  --ap-texture: none;
+}
+
+.dark[data-theme="materialpro"] {
+  color-scheme: dark;
+  --ap-ink: #eaeff4;
+  --ap-muted: #7c8fac;
+  --ap-paper: #192838;
+  --ap-paper-2: #203143;
+  --ap-card: #152332;
+  --ap-line: #333f55;
+  --ap-line-2: #465670;
+  --ap-brand-soft: #203958;
+  --ap-quiz-soft: #4a2231;
+  --ap-poll-soft: #193d45;
+  --ap-flash-soft: #423917;
+  --ap-pres-soft: #173d30;
+  --ap-danger-soft: #4a2231;
+  --ap-shadow-soft: 0 1px 4px rgb(0 0 0 / 18%);
+  --ap-shadow-card: 0 8px 24px rgb(0 0 0 / 25%);
+  --ap-shadow-float: 0 14px 32px rgb(0 0 0 / 34%);
+  --ap-shadow-neu: 0 1px 4px rgb(0 0 0 / 18%);
+  --ap-shadow-neu-hover: 0 8px 22px rgb(0 0 0 / 28%);
+}
+
+/* Base surfaces and type scale. */
+[data-theme="materialpro"] body,
+[data-theme="materialpro"] .ap-app {
+  font-family: var(--ap-font-body);
+  font-weight: 400;
+}
+
+[data-theme="materialpro"] .ap-app {
+  color: var(--ap-ink);
+  background: var(--ap-paper);
+  background-image: none;
+}
+
+[data-theme="materialpro"] .ap-h1,
+[data-theme="materialpro"] .ap-h2,
+[data-theme="materialpro"] .ap-h3,
+[data-theme="materialpro"] h1,
+[data-theme="materialpro"] h2,
+[data-theme="materialpro"] h3 {
+  font-family: var(--ap-font-display);
+  color: var(--ap-ink);
+  font-weight: 600;
+  letter-spacing: -.02em;
+}
+
+[data-theme="materialpro"] .ap-app :focus-visible {
+  outline: 2px solid var(--mp-primary);
+  outline-offset: 2px;
+}
+
+[data-theme="materialpro"] .ap-app ::selection {
+  color: #ffffff;
+  background: var(--mp-primary);
+}
+
+/* Continuous blue app bar: the sidebar brand block visually joins the topbar. */
+[data-theme="materialpro"] .product-shell-root {
+  --product-page-max: 1440px;
+  --product-gutter: clamp(24px, 2.2vw, 34px);
+  --product-section-gap: 28px;
+  background: var(--ap-paper);
+}
+
+[data-theme="materialpro"] .product-shell-root [data-sidebar="sidebar"] {
+  border-color: var(--ap-line);
+  background: var(--ap-card);
+  box-shadow: 1px 0 0 var(--ap-line);
+}
+
+[data-theme="materialpro"] .product-sidebar-header {
+  gap: 14px;
+  padding: 0 14px 14px;
+}
+
+[data-theme="materialpro"] .product-sidebar-brand {
+  width: calc(100% + 28px);
+  min-height: 60px;
+  margin-inline: -14px;
+  padding-inline: 18px;
+  color: #ffffff;
+  background: var(--mp-primary);
+}
+
+[data-theme="materialpro"] .product-sidebar-brand__mark {
+  width: 34px;
+  height: 34px;
+  flex-basis: 34px;
+  border: 0;
+  border-radius: 0;
+  color: #ffffff;
+  background: transparent;
+}
+
+[data-theme="materialpro"] .product-sidebar-brand__mark svg,
+[data-theme="materialpro"] .product-sidebar-brand__copy svg {
+  color: #ffffff;
+  filter: brightness(0) invert(1);
+}
+
+[data-theme="materialpro"] .product-sidebar-brand__copy small {
+  color: rgb(255 255 255 / 70%);
+  font-weight: 400;
+}
+
+[data-theme="materialpro"] .product-topbar {
+  min-height: 60px;
+  padding-block: 8px;
+  color: #ffffff;
+  background: var(--mp-primary);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+[data-theme="materialpro"] .product-topbar [data-sidebar="trigger"],
+[data-theme="materialpro"] .product-topbar .ap-icon-btn,
+[data-theme="materialpro"] .product-topbar .ap-avatar-btn {
+  border-color: transparent;
+  color: #ffffff;
+  background: transparent;
+  box-shadow: none;
+}
+
+[data-theme="materialpro"] .product-topbar [data-sidebar="trigger"]:hover,
+[data-theme="materialpro"] .product-topbar .ap-icon-btn:hover {
+  color: #ffffff;
+  background: rgb(255 255 255 / 13%);
+}
+
+[data-theme="materialpro"] .product-topbar__context {
+  display: none;
+}
+
+[data-theme="materialpro"] .product-topbar__actions {
+  margin-left: 4px;
+}
+
+[data-theme="materialpro"] .product-topbar .product-global-search {
+  max-width: 300px !important;
+}
+
+[data-theme="materialpro"] .product-topbar .product-global-search input {
+  height: 38px !important;
+  border-color: rgb(255 255 255 / 16%) !important;
+  color: #ffffff !important;
+  background: rgb(255 255 255 / 10%) !important;
+}
+
+[data-theme="materialpro"] .product-topbar .product-global-search input::placeholder {
+  color: rgb(255 255 255 / 72%);
+}
+
+[data-theme="materialpro"] .product-topbar .product-global-search > div > svg {
+  color: #ffffff !important;
+}
+
+[data-theme="materialpro"] .product-content,
+[data-theme="materialpro"] [data-sidebar="inset"] {
+  background: var(--ap-paper);
+}
+
+[data-theme="materialpro"] .product-page {
+  padding-top: 30px;
+  padding-bottom: 52px;
+}
+
+/* Sidebar density and MaterialPro's cyan active capsule. */
+[data-theme="materialpro"] .product-shell-root [data-sidebar="group"] {
+  padding: 7px 14px;
+}
+
+[data-theme="materialpro"] .product-shell-root [data-sidebar="group-label"] {
+  height: 30px;
+  padding-inline: 0;
+  color: var(--ap-ink);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+[data-theme="materialpro"] .product-shell-root [data-sidebar="menu-button"] {
+  min-height: 42px;
+  gap: 12px;
+  border-radius: 24px;
+  padding-inline: 15px;
+  color: var(--ap-ink);
+  font-size: 13px;
+  font-weight: 400;
+}
+
+[data-theme="materialpro"] .product-shell-root [data-sidebar="menu-button"]:hover {
+  color: var(--mp-primary);
+  background: var(--ap-brand-soft);
+}
+
+[data-theme="materialpro"] .product-shell-root [data-sidebar="menu-button"][data-active="true"] {
+  color: #ffffff;
+  background: var(--mp-secondary);
+  box-shadow: none;
+}
+
+[data-theme="materialpro"] .product-shell-root [data-sidebar="menu-sub"] {
+  border-color: var(--ap-line);
+}
+
+[data-theme="materialpro"] .product-shell-root [data-sidebar="menu-sub-button"] {
+  color: var(--ap-muted);
+  font-weight: 400;
+}
+
+[data-theme="materialpro"] .product-shell-root [data-sidebar="menu-sub-button"][data-active="true"] {
+  color: var(--mp-primary);
+  background: var(--ap-brand-soft);
+}
+
+[data-theme="materialpro"] .product-sidebar-header > .ap-btn {
+  border: 0;
+  color: #ffffff;
+  background: var(--mp-secondary);
+  box-shadow: none;
+}
+
+[data-theme="materialpro"] .product-sidebar-identity {
+  border-radius: 8px;
+  padding: 8px;
+}
+
+[data-theme="materialpro"] .product-sidebar-identity__avatar {
+  background: var(--ap-brand-soft);
+  color: var(--mp-primary);
+}
+
+/* Buttons and shared controls. */
+[data-theme="materialpro"] .ap-btn,
+[data-theme="materialpro"] .adm-btn {
+  min-height: 38px;
+  border-radius: 20px;
+  font-family: var(--ap-font-body);
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: none;
+  transition: background-color 160ms ease, color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+[data-theme="materialpro"] .ap-btn:hover,
+[data-theme="materialpro"] .adm-btn:hover {
+  box-shadow: 0 8px 20px -8px rgb(27 132 255 / 35%);
+  transform: translateY(-1px);
+}
+
+[data-theme="materialpro"] .ap-btn:active,
+[data-theme="materialpro"] .adm-btn:active {
+  transform: translateY(0);
+}
+
+[data-theme="materialpro"] .ap-btn--ghost {
+  border-color: var(--ap-line);
+  color: var(--mp-primary);
+  background: transparent;
+}
+
+[data-theme="materialpro"] input,
+[data-theme="materialpro"] textarea,
+[data-theme="materialpro"] select,
+[data-theme="materialpro"] [role="combobox"] {
+  border-color: var(--ap-line);
+  border-radius: 8px;
+  font-family: var(--ap-font-body);
+  font-weight: 400;
+  box-shadow: none;
+}
+
+/* White cards on the cool blue canvas — same hierarchy as the demo. */
+[data-theme="materialpro"] .ap-card,
+[data-theme="materialpro"] .product-panel,
+[data-theme="materialpro"] .product-analytics-card,
+[data-theme="materialpro"] .product-settings-panel,
+[data-theme="materialpro"] .product-master-panel,
+[data-theme="materialpro"] .product-detail-panel,
+[data-theme="materialpro"] .product-list-panel {
+  border: 0;
+  border-radius: 8px;
+  background: var(--ap-card);
+  box-shadow: var(--ap-shadow-soft);
+}
+
+[data-theme="materialpro"] .product-page-heading h1,
+[data-theme="materialpro"] .product-dashboard__hero h1 {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -.02em;
+}
+
+[data-theme="materialpro"] .product-page-heading p,
+[data-theme="materialpro"] .product-dashboard__hero p {
+  color: var(--ap-muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+[data-theme="materialpro"] .product-dashboard__hero {
+  align-items: center;
+  padding-bottom: 2px;
+}
+
+[data-theme="materialpro"] .product-quick-actions {
+  gap: 8px;
+}
+
+[data-theme="materialpro"] .product-quick-action {
+  min-height: 36px;
+  border-color: transparent;
+  border-radius: 20px;
+  color: var(--mp-primary);
+  background: var(--ap-card);
+  box-shadow: var(--ap-shadow-soft);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+[data-theme="materialpro"] .product-quick-action:first-child {
+  color: #ffffff;
+  background: var(--mp-primary);
+}
+
+[data-theme="materialpro"] .product-section-heading h2 {
+  font-size: 17px;
+  font-weight: 600;
+}
+
+[data-theme="materialpro"] .product-section-heading p {
+  color: var(--ap-muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+/* Dashboard cards echo the exact blue/cyan/purple chart language. */
+[data-theme="materialpro"] .product-kpis {
+  gap: 18px;
+}
+
+[data-theme="materialpro"] .product-kpi {
+  min-height: 118px;
+  border-radius: 8px;
+  padding: 18px;
+  background: var(--ap-card);
+  box-shadow: var(--ap-shadow-soft);
+}
+
+[data-theme="materialpro"] .product-kpi--hero {
+  color: var(--ap-ink);
+  background: var(--ap-card);
+}
+
+[data-theme="materialpro"] .product-kpi--hero .product-kpi__label,
+[data-theme="materialpro"] .product-kpi--hero .product-kpi__trend .ap-muted {
+  color: var(--ap-muted);
+}
+
+[data-theme="materialpro"] .product-kpi__icon,
+[data-theme="materialpro"] .product-kpi--hero .product-kpi__icon {
+  border-radius: 50%;
+  color: var(--mp-primary);
+  background: var(--ap-brand-soft);
+}
+
+[data-theme="materialpro"] .product-kpi__label {
+  font-weight: 400;
+}
+
+[data-theme="materialpro"] .product-kpi__value {
+  font-size: 26px;
+  font-weight: 500;
+}
+
+[data-theme="materialpro"] .product-kpi--hero .product-kpi__spark {
+  color: var(--mp-primary);
+}
+
+[data-theme="materialpro"] .product-analytics-grid {
+  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+  gap: 28px;
+}
+
+[data-theme="materialpro"] .product-analytics-grid > :first-child {
+  grid-column: 1;
+}
+
+[data-theme="materialpro"] .product-analytics-grid > :nth-child(2) {
+  grid-column: 2;
+}
+
+[data-theme="materialpro"] .product-analytics-grid > :nth-child(3) {
+  grid-column: 1 / -1;
+}
+
+[data-theme="materialpro"] .product-analytics-card {
+  padding: 28px 30px;
+}
+
+[data-theme="materialpro"] .product-analytics-card__header h3 {
+  font-size: 17px;
+  font-weight: 600;
+}
+
+[data-theme="materialpro"] .product-analytics-card__header p {
+  font-size: 12px;
+  font-weight: 400;
+}
+
+[data-theme="materialpro"] .recharts-cartesian-grid line {
+  stroke: var(--ap-line);
+}
+
+[data-theme="materialpro"] .recharts-text {
+  fill: var(--ap-muted);
+  font-family: var(--ap-font-body);
+  font-size: 10px;
+}
+
+[data-theme="materialpro"] .product-dashboard__lower {
+  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+  gap: 28px;
+}
+
+[data-theme="materialpro"] .product-panel {
+  padding: 26px 28px;
+}
+
+[data-theme="materialpro"] .product-recent-item__media {
+  border: 0;
+  border-radius: 8px;
+}
+
+[data-theme="materialpro"] .product-recent-item__badge {
+  color: var(--mp-primary);
+  background: var(--ap-brand-soft);
+  box-shadow: none;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+[data-theme="materialpro"] .product-news-item__icon {
+  color: var(--mp-primary);
+  background: var(--ap-brand-soft);
+}
+
+[data-theme="materialpro"] .product-empty-inline {
+  border-color: var(--ap-line-2);
+  border-radius: 8px;
+  background: var(--ap-paper-2);
+}
+
+[data-theme="materialpro"] .product-footer {
+  background: var(--ap-card);
+}
+
+/* Tables and settings pages keep the same flat white panel vocabulary. */
+[data-theme="materialpro"] table thead,
+[data-theme="materialpro"] .product-table thead {
+  color: var(--ap-muted);
+  background: var(--ap-paper-2);
+}
+
+[data-theme="materialpro"] table th {
+  font-weight: 500;
+}
+
+[data-theme="materialpro"] table td,
+[data-theme="materialpro"] table th {
+  border-color: var(--ap-line);
+}
+
+[data-theme="materialpro"] .product-metric {
+  border: 0;
+  border-radius: 8px;
+  background: var(--ap-card);
+  box-shadow: var(--ap-shadow-soft);
+}
+
+[data-theme="materialpro"] .product-metric__icon {
+  border-radius: 50%;
+  background: var(--ap-brand-soft);
+}
+
+@media (max-width: 1100px) {
+  [data-theme="materialpro"] .product-analytics-grid,
+  [data-theme="materialpro"] .product-dashboard__lower {
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+  }
+
+  [data-theme="materialpro"] .product-analytics-grid > :first-child,
+  [data-theme="materialpro"] .product-analytics-grid > :nth-child(2) {
+    grid-column: auto;
+  }
+
+  [data-theme="materialpro"] .product-analytics-grid > :nth-child(3) {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 767px) {
+  [data-theme="materialpro"] .product-topbar {
+    padding-inline: 14px;
+  }
+
+  [data-theme="materialpro"] .product-topbar__brand {
+    display: flex;
+    color: #ffffff;
+  }
+
+  [data-theme="materialpro"] .product-topbar__brand svg {
+    filter: brightness(0) invert(1);
+  }
+
+  [data-theme="materialpro"] .product-topbar .product-global-search {
+    display: none;
+  }
+
+  [data-theme="materialpro"] .product-analytics-grid,
+  [data-theme="materialpro"] .product-dashboard__lower {
+    grid-template-columns: 1fr;
+  }
+
+  [data-theme="materialpro"] .product-analytics-grid > :nth-child(n) {
+    grid-column: 1;
+  }
+
+  [data-theme="materialpro"] .product-analytics-card,
+  [data-theme="materialpro"] .product-panel {
+    padding: 20px;
+  }
+}
