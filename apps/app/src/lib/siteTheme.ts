@@ -3,7 +3,7 @@
 // The marketing application owns its own visual system; these themes belong
 // to the product and Arcade Pop remains the original application default.
 
-export type SiteTheme = "arcade" | "thales" | "innov" | "studio" | "material" | "nova";
+export type SiteTheme = "arcade" | "thales" | "innov" | "studio" | "material" | "nova" | "materialpro";
 
 export interface SiteThemeDef {
   id: SiteTheme;
@@ -76,6 +76,16 @@ export const SITE_THEMES: SiteThemeDef[] = [
     },
     colors: ["#7C5CFA", "#1B1C26", "#14B8A6", "#D9A441"],
     previewFont: "'Outfit Variable', 'Outfit', system-ui, sans-serif",
+  },
+  {
+    id: "materialpro",
+    name: "MaterialPro",
+    tagline: {
+      en: "WrapPixel-inspired blue dashboard: crisp, dense and data-first",
+      fr: "Dashboard bleu inspiré de WrapPixel : net, dense et orienté données",
+    },
+    colors: ["#1B84FF", "#43CED7", "#2F3D4A", "#EDF5FD"],
+    previewFont: "'Poppins', 'Aptos', 'Segoe UI', system-ui, sans-serif",
   },
 ];
 
