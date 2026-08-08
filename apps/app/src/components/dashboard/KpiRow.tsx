@@ -16,6 +16,10 @@ interface Tile {
    *  when no daily series exists for this metric (e.g. Créations). */
   spark?: number[];
   sparkColor: string;
+  /** MaterialPro's two large data widgets use different integrated chart
+   *  shapes and solid surfaces; the remaining metrics stay compact. */
+  featured?: "primary" | "secondary";
+  sparkVariant?: "line" | "bars";
   /** Where this KPI's detailed breakdown lives — REQ-DB-004. */
   onClick: () => void;
 }
@@ -23,7 +27,7 @@ interface Tile {
 /** Minimal inline trend line — decorative, not a chart: no axes, no
  *  tooltip. Drawn from raw values only when there are at least 2 points,
  *  otherwise a flat/empty series would render as a meaningless dot or line. */
-function Sparkline({ values, color }: { values: number[]; color: string }) {
+function Sparkline({ values, color, variant = "line" }: { values: number[]; color: string; variant?: "line" | "bars" }) {
   if (values.length < 2) return null;
   const min = Math.min(...values);
   const max = Math.max(...values);
@@ -35,9 +39,20 @@ function Sparkline({ values, color }: { values: number[]; color: string }) {
     const y = h - 2 - ((v - min) / span) * (h - 4);
     return `${x.toFixed(1)},${y.toFixed(1)}`;
   });
+  if (variant === "bars") {
+    const barWidth = Math.max(2.5, w / values.length - 3);
+    return (
+      <svg className="product-kpi__spark product-kpi__spark--bars" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" aria-hidden="true">
+        {values.map((value, index) => {
+          const barHeight = 4 + ((value - min) / span) * (h - 6);
+          return <rect key={index} x={(index / values.length) * w + 1} y={h - barHeight} width={barWidth} height={barHeight} rx={barWidth / 2} fill={color} />;
+        })}
+      </svg>
+    );
+  }
   return (
-    <svg className="product-kpi__spark" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" aria-hidden="true">
-      <polyline points={points.join(" ")} fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+    <svg className="product-kpi__spark product-kpi__spark--line" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" aria-hidden="true">
+      <polyline className="product-kpi__spark-path" points={points.join(" ")} fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" pathLength="1" />
     </svg>
   );
 }
@@ -116,22 +131,14 @@ export function KpiRow({ stats, charts }: { stats: DashboardStats | null; charts
 
   const tiles: Tile[] = [
     {
-      iconName: "target", iconColor: "#f59e0b",
-      tone: "warning",
-      label: "Score moyen (quiz)", value: s.avgScore != null ? `${s.avgScore} pts` : "-",
-      deltaPct: scoreDeltaPct,
-      emptyHint: s.avgScore == null ? "Pas encore de score" : undefined,
-      spark: scoreSpark,
-      sparkColor: "#f59e0b",
-      onClick: scrollToChart("dashboard-score-chart"),
-    },
-    {
-      iconName: "bar_chart", iconColor: "var(--ap-brand-deep)",
+      iconName: "database", iconColor: "var(--ap-brand-deep)",
       tone: "primary",
       label: "Sessions totales", value: s.totalSessions,
       deltaPct: s.trends.sessions.deltaPct,
       spark: sessionsSpark,
-      sparkColor: "var(--ap-brand-deep)",
+      sparkColor: "rgba(255,255,255,.9)",
+      featured: "primary",
+      sparkVariant: "line",
       onClick: scrollToChart("dashboard-activity-chart"),
     },
     {
@@ -140,8 +147,20 @@ export function KpiRow({ stats, charts }: { stats: DashboardStats | null; charts
       label: "Participants totaux", value: s.totalParticipants,
       deltaPct: s.trends.participants.deltaPct,
       spark: participantsSpark,
-      sparkColor: "var(--ap-poll)",
+      sparkColor: "rgba(255,255,255,.78)",
+      featured: "secondary",
+      sparkVariant: "bars",
       onClick: scrollToChart("dashboard-activity-chart"),
+    },
+    {
+      iconName: "target", iconColor: "#f59e0b",
+      tone: "warning",
+      label: "Score moyen (quiz)", value: s.avgScore != null ? `${s.avgScore} pts` : "-",
+      deltaPct: scoreDeltaPct,
+      emptyHint: s.avgScore == null ? "Pas encore de score" : undefined,
+      spark: scoreSpark,
+      sparkColor: "#f59e0b",
+      onClick: scrollToChart("dashboard-score-chart"),
     },
     {
       iconName: "auto_awesome", iconColor: "var(--ap-brand)",
@@ -155,15 +174,16 @@ export function KpiRow({ stats, charts }: { stats: DashboardStats | null; charts
 
   return (
     <div className="product-kpis">
-      {tiles.map(({ iconName, iconColor, tone, label, value, deltaPct, emptyHint, spark, sparkColor, onClick }, index) => {
-        const hero = index === 0;
+      {tiles.map(({ iconName, iconColor, tone, label, value, deltaPct, emptyHint, spark, sparkColor, featured, sparkVariant, onClick }) => {
+        const hero = Boolean(featured);
         return (
           <button
             key={label}
             type="button"
             onClick={onClick}
             data-tone={tone}
-            className={`product-kpi${hero ? " product-kpi--hero" : ""}`}
+            data-featured={featured || undefined}
+            className={`product-kpi${hero ? " product-kpi--hero product-kpi--featured" : ""}`}
             aria-label={`${label} : ${value}. Afficher le détail`}
           >
             <div>
@@ -173,13 +193,14 @@ export function KpiRow({ stats, charts }: { stats: DashboardStats | null; charts
                 </span>
                 <span className="product-kpi__label">{label}</span>
               </div>
+              {hero && <span className="product-kpi__period">14 derniers jours</span>}
               <span className="product-kpi__value">{value}</span>
             </div>
             <span className="product-kpi__trend">
               {deltaPct !== null
                 ? <TrendBadge deltaPct={deltaPct} hero={hero} />
                 : emptyHint && <span className="ap-muted" style={{ fontSize: 10.5 }}>{emptyHint}</span>}
-              {spark && <Sparkline values={spark} color={hero ? "var(--product-kpi-hero-contrast, #fff)" : sparkColor} />}
+              {spark && <Sparkline values={spark} color={sparkColor} variant={sparkVariant} />}
             </span>
           </button>
         );
