@@ -127,7 +127,7 @@ export const AppLayout = ({ subtitle, extraSection, children }: AppLayoutProps) 
               title={`${t("commandPaletteOpen")} (${navigator.platform.includes("Mac") ? "⌘K" : "Ctrl+K"})`}
               onClick={() => setPaletteOpen(true)}
             >
-              <MaterialSymbol name="terminal" size={20} />
+              <MaterialSymbol name="grid_view" size={20} />
             </button>
             {user && <NotificationCenter user={user} />}
             {user ? (

@@ -189,19 +189,21 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
 
         {user && (
           <DropdownMenu open={createOpen} onOpenChange={setCreateOpen}>
-            <DropdownMenuTrigger asChild>
-              {collapsedIcon ? (
-                <Tooltip>
+            {collapsedIcon ? (
+              <Tooltip>
+                <DropdownMenuTrigger asChild>
                   <TooltipTrigger asChild>
                     <button className="ap-btn ap-btn--sm ap-icon-btn" aria-label={t("createNew")}>
                       <MaterialSymbol name="add" size={20} />
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent side="right" align="center">
-                    {t("createNew")}
-                  </TooltipContent>
-                </Tooltip>
-              ) : (
+                </DropdownMenuTrigger>
+                <TooltipContent side="right" align="center">
+                  {t("createNew")}
+                </TooltipContent>
+              </Tooltip>
+            ) : (
+              <DropdownMenuTrigger asChild>
                 <button className="ap-btn ap-btn--sm" style={{ width: "100%", justifyContent: "space-between" }}>
                   <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <MaterialSymbol name="add" size={20} />
@@ -209,8 +211,8 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
                   </span>
                   <MaterialSymbol name="keyboard_arrow_down" size={20} className="chevron-icon" />
                 </button>
-              )}
-            </DropdownMenuTrigger>
+              </DropdownMenuTrigger>
+            )}
             <DropdownMenuContent
               className="z-50 w-56 p-1.5 ap-mega-menu"
               style={{

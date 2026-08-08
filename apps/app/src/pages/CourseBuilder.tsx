@@ -50,7 +50,6 @@ import {
   Sparkles,
   Trash2,
   Info,
-  Loader2,
   Type as TypeIcon,
   Upload,
   Video,
@@ -58,6 +57,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { CollaboratorsButton } from "@/components/CollaboratorsButton";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const extractYouTubeId = (url: string): string | null => {
   const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
@@ -1227,7 +1227,7 @@ const CourseBuilder = () => {
                         opacity: h5pImports[lessonId]?.busy ? .75 : 1,
                       }}>
                         {h5pImports[lessonId]?.busy
-                          ? <Loader2 className="h-5 w-5 animate-spin" style={{ color: "var(--ap-brand)" }} />
+                          ? <Skeleton className="h-5 w-5 rounded-md" />
                           : <PackageOpen className="h-5 w-5" style={{ color: "var(--ap-muted)" }} />}
                         <span style={{ fontSize: 13, fontWeight: 700, color: "var(--ap-muted)" }}>
                           {h5pImports[lessonId]?.busy

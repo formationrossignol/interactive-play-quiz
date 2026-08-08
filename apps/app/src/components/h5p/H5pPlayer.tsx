@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { AlertTriangle, CheckCircle2, Clock3, RotateCcw, Trophy } from 'lucide-react';
 import type { User } from '@/lib/auth';
 import { getH5pContentPath } from '@/lib/h5pImport';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   applyXapiStatement,
   formatH5pDuration,
@@ -296,19 +297,26 @@ export function H5pPlayer({
         {loading && (
           <div
             role="status"
+            aria-label="Chargement de l’activité H5P"
             style={{
               position: 'absolute',
               inset: 0,
               zIndex: 2,
-              display: 'grid',
-              placeItems: 'center',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              gap: 12,
+              padding: 24,
               background: 'var(--ap-card)',
-              color: 'var(--ap-muted)',
-              fontSize: 14,
-              fontWeight: 700,
             }}
           >
-            Chargement de l’activité H5P…
+            <Skeleton className="h-7 w-2/5" />
+            <Skeleton className="h-4 w-3/5" />
+            <Skeleton className="mt-3 h-24 w-full rounded-xl" />
+            <div className="grid grid-cols-2 gap-3">
+              <Skeleton className="h-11 w-full rounded-lg" />
+              <Skeleton className="h-11 w-full rounded-lg" />
+            </div>
           </div>
         )}
         {error && (
