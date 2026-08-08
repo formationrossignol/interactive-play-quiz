@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 function Skeleton({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("ap-skeleton-shimmer rounded-md", className)} aria-hidden="true" {...props} />;
+  return <div data-ui="skeleton" className={cn("ap-skeleton-shimmer rounded-md", className)} aria-hidden="true" {...props} />;
 }
 
 /** Wrap a button's label with this to show shimmer instead of a spinner while an

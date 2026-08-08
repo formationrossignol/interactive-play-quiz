@@ -610,3 +610,1097 @@
     padding: 20px;
   }
 }
+
+/* ============================================================
+   MaterialPro component system
+   ------------------------------------------------------------
+   The first version of this theme stopped at tokens and a handful of
+   dashboard selectors.  This layer deliberately covers the reusable React
+   primitives and the recurring page templates used by every sidebar route:
+   app/list, data table, master-detail, forms, profile and analytics.
+   ============================================================ */
+
+[data-theme="materialpro"] {
+  --mp-card-radius: 10px;
+  --mp-control-height: 42px;
+  --mp-control-radius: 8px;
+  --mp-card-shadow: 0 3px 4px rgb(0 0 0 / 3%), 0 0 1px rgb(0 0 0 / 10%);
+  --mp-float-shadow: 0 12px 30px rgb(58 75 122 / 14%);
+  --mp-soft-primary: color-mix(in srgb, var(--mp-primary) 11%, var(--ap-card));
+  --mp-soft-secondary: color-mix(in srgb, var(--mp-secondary) 14%, var(--ap-card));
+  --mp-soft-success: color-mix(in srgb, var(--mp-success) 13%, var(--ap-card));
+  --mp-soft-warning: color-mix(in srgb, var(--mp-warning) 15%, var(--ap-card));
+  --mp-soft-danger: color-mix(in srgb, var(--mp-danger) 11%, var(--ap-card));
+}
+
+[data-theme="materialpro"] .product-shell-root {
+  --product-page-max: 1460px;
+  --product-gutter: clamp(20px, 2.3vw, 36px);
+  --product-section-gap: 30px;
+}
+
+[data-theme="materialpro"] .product-content {
+  min-height: calc(100svh - 60px);
+}
+
+[data-theme="materialpro"] .product-page {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding-top: 26px;
+}
+
+/* Page breadcrumb template, shared by every PageHeader route. */
+[data-theme="materialpro"] .product-page-heading,
+[data-theme="materialpro"] .product-dashboard__hero {
+  min-height: 82px;
+  align-items: flex-end;
+  margin-bottom: 26px;
+  padding: 0 0 18px;
+  border-bottom: 1px solid var(--ap-line);
+}
+
+[data-theme="materialpro"] .product-page-heading > div:first-child,
+[data-theme="materialpro"] .product-dashboard__hero-main {
+  min-width: 0;
+}
+
+[data-theme="materialpro"] .product-page-heading__breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 8px;
+  color: var(--ap-muted);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+}
+
+[data-theme="materialpro"] .product-page-heading__breadcrumb strong {
+  color: var(--mp-primary);
+  font-weight: 500;
+}
+
+[data-theme="materialpro"] .product-page-heading h1,
+[data-theme="materialpro"] .product-dashboard__hero h1 {
+  font-size: clamp(20px, 2vw, 25px);
+  line-height: 1.2;
+}
+
+[data-theme="materialpro"] .product-page-heading p,
+[data-theme="materialpro"] .product-dashboard__hero p {
+  max-width: 780px;
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+[data-theme="materialpro"] .product-page-heading__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* Topbar behaves like MaterialPro's app toolbar, including context on wide screens. */
+[data-theme="materialpro"] .product-topbar__context {
+  display: block;
+  margin-left: 2px;
+}
+
+[data-theme="materialpro"] .product-topbar__context strong {
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+[data-theme="materialpro"] .product-topbar__context span {
+  color: rgb(255 255 255 / 68%);
+  font-size: 10px;
+  font-weight: 400;
+}
+
+[data-theme="materialpro"] .product-topbar .ap-avatar-btn {
+  border: 2px solid rgb(255 255 255 / 55%);
+  background: rgb(255 255 255 / 16%);
+}
+
+[data-theme="materialpro"] .product-sidebar-brand__copy small,
+[data-theme="materialpro"] .product-sidebar-identity__role,
+[data-theme="materialpro"] .product-shell-root [data-sidebar="group-label"] {
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+[data-theme="materialpro"] .product-shell-root [data-sidebar="group-label"] {
+  margin-top: 8px;
+  color: color-mix(in srgb, var(--ap-ink) 80%, var(--ap-muted));
+  font-size: 11px;
+  font-weight: 600;
+}
+
+[data-theme="materialpro"] .product-shell-root [data-sidebar="menu-button"] svg,
+[data-theme="materialpro"] .product-shell-root [data-sidebar="menu-button"] .material-symbols-rounded {
+  opacity: .82;
+}
+
+[data-theme="materialpro"] .product-shell-root [data-sidebar="menu-button"][data-active="true"] svg,
+[data-theme="materialpro"] .product-shell-root [data-sidebar="menu-button"][data-active="true"] .material-symbols-rounded {
+  opacity: 1;
+}
+
+/* Cards and widget variants. */
+[data-theme="materialpro"] .ap-card,
+[data-theme="materialpro"] [data-ui="card"],
+[data-theme="materialpro"] .product-panel,
+[data-theme="materialpro"] .product-analytics-card,
+[data-theme="materialpro"] .product-settings-panel,
+[data-theme="materialpro"] .product-master-panel,
+[data-theme="materialpro"] .product-detail-panel,
+[data-theme="materialpro"] .product-list-panel,
+[data-theme="materialpro"] .adm-card,
+[data-theme="materialpro"] .adm-panel {
+  border: 0;
+  border-radius: var(--mp-card-radius);
+  background: var(--ap-card);
+  box-shadow: var(--mp-card-shadow);
+}
+
+[data-theme="materialpro"] [data-ui="card-header"] {
+  gap: 4px;
+  padding: 22px 24px 18px;
+  border-bottom: 1px solid var(--ap-line);
+}
+
+[data-theme="materialpro"] [data-ui="card-title"] {
+  color: var(--ap-ink);
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: -.015em;
+}
+
+[data-theme="materialpro"] [data-ui="card-description"] {
+  color: var(--ap-muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+[data-theme="materialpro"] [data-ui="card-content"] {
+  padding: 22px 24px;
+}
+
+[data-theme="materialpro"] [data-ui="card-footer"] {
+  padding: 16px 24px 22px;
+  border-top: 1px solid var(--ap-line);
+}
+
+[data-theme="materialpro"] .ap-card--hover,
+[data-theme="materialpro"] [data-ui="folder-card"] {
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+[data-theme="materialpro"] .ap-card--hover:hover,
+[data-theme="materialpro"] [data-ui="folder-card"]:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 9px 24px rgb(58 75 122 / 12%);
+}
+
+[data-theme="materialpro"] .ap-pill,
+[data-theme="materialpro"] .ap-badge,
+[data-theme="materialpro"] [data-ui="badge"] {
+  min-height: 22px;
+  align-items: center;
+  border-width: 0;
+  border-radius: 7px;
+  padding: 3px 9px;
+  color: var(--mp-primary);
+  background: var(--mp-soft-primary);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.2;
+  box-shadow: none;
+}
+
+[data-theme="materialpro"] .ap-badge--quiz { color: var(--mp-danger); background: var(--mp-soft-danger); }
+[data-theme="materialpro"] .ap-badge--poll { color: #20aeb8; background: var(--mp-soft-secondary); }
+[data-theme="materialpro"] .ap-badge--pres { color: #178b50; background: var(--mp-soft-success); }
+[data-theme="materialpro"] .ap-badge--flash { color: #9b7900; background: var(--mp-soft-warning); }
+
+/* Complete form-elements family. */
+[data-theme="materialpro"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+[data-theme="materialpro"] textarea,
+[data-theme="materialpro"] select,
+[data-theme="materialpro"] [data-ui="input"],
+[data-theme="materialpro"] [data-ui="textarea"],
+[data-theme="materialpro"] [data-ui="select-trigger"],
+[data-theme="materialpro"] .ap-input,
+[data-theme="materialpro"] .ap-textarea {
+  min-height: var(--mp-control-height);
+  border: 1px solid var(--ap-line-2);
+  border-radius: var(--mp-control-radius);
+  color: var(--ap-ink);
+  background: var(--ap-card);
+  font-family: var(--ap-font-body);
+  font-size: 13px;
+  font-weight: 400;
+  box-shadow: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+}
+
+[data-theme="materialpro"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus,
+[data-theme="materialpro"] textarea:focus,
+[data-theme="materialpro"] select:focus,
+[data-theme="materialpro"] [data-ui="input"]:focus,
+[data-theme="materialpro"] [data-ui="textarea"]:focus,
+[data-theme="materialpro"] [data-ui="select-trigger"]:focus,
+[data-theme="materialpro"] .ap-input:focus,
+[data-theme="materialpro"] .ap-textarea:focus {
+  border-color: var(--mp-primary);
+  outline: 0;
+  box-shadow: 0 0 0 3px rgb(27 132 255 / 12%);
+}
+
+[data-theme="materialpro"] input:disabled,
+[data-theme="materialpro"] textarea:disabled,
+[data-theme="materialpro"] [data-ui="input"]:disabled,
+[data-theme="materialpro"] [data-ui="textarea"]:disabled {
+  color: var(--ap-muted);
+  background: var(--ap-paper-2);
+  opacity: .76;
+}
+
+[data-theme="materialpro"] label {
+  color: var(--ap-ink);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+[data-theme="materialpro"] [data-ui="select-content"],
+[data-theme="materialpro"] [data-ui="dropdown-content"],
+[data-theme="materialpro"] [data-ui="dropdown-sub-content"],
+[data-theme="materialpro"] [data-ui="popover-content"] {
+  border: 1px solid var(--ap-line);
+  border-radius: var(--mp-control-radius);
+  color: var(--ap-ink);
+  background: var(--ap-card);
+  box-shadow: var(--mp-float-shadow);
+}
+
+[data-theme="materialpro"] [data-ui="select-item"],
+[data-theme="materialpro"] [data-ui="dropdown-item"],
+[data-theme="materialpro"] [data-ui="dropdown-checkbox-item"],
+[data-theme="materialpro"] [data-ui="dropdown-radio-item"],
+[data-theme="materialpro"] [data-ui="dropdown-sub-trigger"] {
+  min-height: 34px;
+  border-radius: 6px;
+  padding-block: 7px;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+[data-theme="materialpro"] [data-ui="select-item"]:focus,
+[data-theme="materialpro"] [data-ui="dropdown-item"]:focus,
+[data-theme="materialpro"] [data-ui="dropdown-sub-trigger"]:focus,
+[data-theme="materialpro"] [data-ui="dropdown-sub-trigger"][data-state="open"] {
+  color: var(--mp-primary);
+  background: var(--mp-soft-primary);
+}
+
+[data-theme="materialpro"] [data-ui="dropdown-label"] {
+  color: var(--ap-muted);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .045em;
+  text-transform: uppercase;
+}
+
+[data-theme="materialpro"] [data-ui="dropdown-separator"] {
+  background: var(--ap-line);
+}
+
+[data-theme="materialpro"] [data-ui="checkbox"] {
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--ap-line-2);
+  border-radius: 4px;
+  color: #fff;
+}
+
+[data-theme="materialpro"] [data-ui="checkbox"][data-state="checked"],
+[data-theme="materialpro"] [data-ui="radio-item"][data-state="checked"] {
+  border-color: var(--mp-primary);
+  background: var(--mp-primary);
+}
+
+[data-theme="materialpro"] [data-ui="radio-item"] {
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--ap-line-2);
+  color: #fff;
+}
+
+[data-theme="materialpro"] [data-ui="switch"] {
+  width: 42px;
+  height: 23px;
+  border: 0;
+  background: var(--ap-line-2);
+}
+
+[data-theme="materialpro"] [data-ui="switch"][data-state="checked"] {
+  background: var(--mp-primary);
+}
+
+[data-theme="materialpro"] [data-ui="switch-thumb"] {
+  width: 19px;
+  height: 19px;
+  background: #fff;
+  box-shadow: 0 2px 5px rgb(58 75 122 / 24%);
+}
+
+[data-theme="materialpro"] [data-ui="slider-track"] {
+  height: 5px;
+  background: var(--ap-line);
+}
+
+[data-theme="materialpro"] [data-ui="slider-range"] { background: var(--mp-primary); }
+[data-theme="materialpro"] [data-ui="slider-thumb"] {
+  width: 18px;
+  height: 18px;
+  border: 4px solid #fff;
+  background: var(--mp-primary);
+  box-shadow: 0 0 0 1px var(--mp-primary), 0 3px 8px rgb(27 132 255 / 24%);
+}
+
+/* Buttons mirror Bootstrap/MaterialPro filled, outline and soft variants. */
+[data-theme="materialpro"] [data-ui="button"],
+[data-theme="materialpro"] .ap-btn,
+[data-theme="materialpro"] .adm-btn {
+  min-height: 38px;
+  border-width: 1px;
+  border-radius: 7px;
+  padding-inline: 16px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+[data-theme="materialpro"] .ap-btn--pill,
+[data-theme="materialpro"] [data-ui="button"].rounded-full {
+  border-radius: 22px;
+}
+
+[data-theme="materialpro"] .ap-btn--quiz { background: var(--mp-danger); box-shadow: none; }
+[data-theme="materialpro"] .ap-btn--poll { background: var(--mp-secondary); box-shadow: none; }
+[data-theme="materialpro"] .ap-btn--pres { background: var(--mp-success); box-shadow: none; }
+[data-theme="materialpro"] .ap-btn--flash { color: #fff; background: var(--mp-warning); box-shadow: none; }
+
+[data-theme="materialpro"] [data-ui="button"]:hover,
+[data-theme="materialpro"] .ap-btn:hover,
+[data-theme="materialpro"] .adm-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 16px -8px rgb(27 132 255 / 38%);
+}
+
+[data-theme="materialpro"] [data-ui="button"]:active,
+[data-theme="materialpro"] .ap-btn:active,
+[data-theme="materialpro"] .adm-btn:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+/* Accordions, tabs, alerts, progress and overlays. */
+[data-theme="materialpro"] [data-ui="tabs-list"] {
+  height: 42px;
+  gap: 2px;
+  border-radius: 8px;
+  padding: 4px;
+  color: var(--ap-muted);
+  background: var(--ap-paper-2);
+}
+
+[data-theme="materialpro"] [data-ui="tabs-trigger"] {
+  min-height: 34px;
+  border-radius: 6px;
+  padding-inline: 14px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+[data-theme="materialpro"] [data-ui="tabs-trigger"][data-state="active"] {
+  color: #fff;
+  background: var(--mp-primary);
+  box-shadow: 0 3px 8px rgb(27 132 255 / 22%);
+}
+
+[data-theme="materialpro"] [data-ui="accordion-item"] {
+  border-color: var(--ap-line);
+}
+
+[data-theme="materialpro"] [data-ui="accordion-trigger"] {
+  min-height: 54px;
+  padding: 15px 2px;
+  color: var(--ap-ink);
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+[data-theme="materialpro"] [data-ui="accordion-trigger"]:hover {
+  color: var(--mp-primary);
+  text-decoration: none;
+}
+
+[data-theme="materialpro"] [data-ui="accordion-content"] {
+  color: var(--ap-muted);
+  line-height: 1.7;
+}
+
+[data-theme="materialpro"] [data-ui="alert"] {
+  border: 0;
+  border-left: 4px solid var(--mp-info);
+  border-radius: 8px;
+  color: #1976a2;
+  background: color-mix(in srgb, var(--mp-info) 11%, var(--ap-card));
+}
+
+[data-theme="materialpro"] [data-ui="alert"][data-variant="destructive"] {
+  border-left-color: var(--mp-danger);
+  color: var(--mp-danger);
+  background: var(--mp-soft-danger);
+}
+
+[data-theme="materialpro"] [data-ui="progress"] {
+  height: 7px;
+  background: var(--ap-line);
+}
+
+[data-theme="materialpro"] [data-ui="progress-indicator"] {
+  border-radius: inherit;
+  background: var(--mp-primary);
+}
+
+[data-theme="materialpro"] [data-ui="dialog-overlay"] {
+  background: rgb(25 40 56 / 58%);
+  backdrop-filter: blur(3px);
+}
+
+[data-theme="materialpro"] [data-ui="dialog-content"] {
+  overflow: hidden;
+  gap: 0;
+  border: 0;
+  border-radius: 10px;
+  padding: 0;
+  background: var(--ap-card);
+  box-shadow: 0 22px 60px rgb(18 38 63 / 28%);
+}
+
+[data-theme="materialpro"] [data-ui="dialog-header"] {
+  padding: 22px 24px 18px;
+  border-bottom: 1px solid var(--ap-line);
+}
+
+[data-theme="materialpro"] [data-ui="dialog-title"] {
+  font-size: 17px;
+  font-weight: 600;
+}
+
+[data-theme="materialpro"] [data-ui="dialog-description"] {
+  margin-top: 5px;
+  color: var(--ap-muted);
+  font-size: 12px;
+}
+
+[data-theme="materialpro"] [data-ui="dialog-content"] > :not([data-ui="dialog-header"]):not([data-ui="dialog-footer"]):not(button) {
+  margin-inline: 24px;
+}
+
+[data-theme="materialpro"] [data-ui="dialog-footer"] {
+  margin-top: 20px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--ap-line);
+  background: var(--ap-paper-2);
+}
+
+[data-theme="materialpro"] [data-ui="tooltip-content"] {
+  border: 0;
+  border-radius: 5px;
+  color: #fff;
+  background: #253443;
+  font-size: 11px;
+  box-shadow: 0 6px 16px rgb(18 38 63 / 22%);
+}
+
+/* Data-table template used in grading, groups, results, admin and organisation. */
+[data-theme="materialpro"] [data-ui="table-wrap"],
+[data-theme="materialpro"] .table-responsive,
+[data-theme="materialpro"] .product-table-wrap {
+  border: 1px solid var(--ap-line);
+  border-radius: 8px;
+  background: var(--ap-card);
+}
+
+[data-theme="materialpro"] [data-ui="table"] {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+[data-theme="materialpro"] [data-ui="table-header"],
+[data-theme="materialpro"] table thead,
+[data-theme="materialpro"] .product-table thead {
+  color: var(--ap-muted);
+  background: var(--ap-paper-2);
+}
+
+[data-theme="materialpro"] [data-ui="table-head"],
+[data-theme="materialpro"] table th {
+  height: 46px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--ap-line);
+  color: var(--ap-muted);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .045em;
+  text-transform: uppercase;
+}
+
+[data-theme="materialpro"] [data-ui="table-cell"],
+[data-theme="materialpro"] table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--ap-line);
+  color: var(--ap-ink);
+  font-size: 12px;
+}
+
+[data-theme="materialpro"] [data-ui="table-row"]:hover,
+[data-theme="materialpro"] table tbody tr:hover {
+  background: color-mix(in srgb, var(--mp-primary) 3.5%, var(--ap-card));
+}
+
+[data-theme="materialpro"] [data-ui="pagination"] {
+  justify-content: flex-end;
+}
+
+[data-theme="materialpro"] [data-ui="pagination-link"] {
+  min-width: 34px;
+  height: 34px;
+  border: 1px solid var(--ap-line);
+  border-radius: 6px;
+  color: var(--ap-muted);
+  background: var(--ap-card);
+  box-shadow: none;
+}
+
+[data-theme="materialpro"] [data-ui="pagination-link"][aria-current="page"] {
+  border-color: var(--mp-primary);
+  color: #fff;
+  background: var(--mp-primary);
+}
+
+/* Content explorer = MaterialPro application/list template. */
+[data-theme="materialpro"] .product-page--explorer .product-page-heading {
+  margin-bottom: 20px;
+}
+
+[data-theme="materialpro"] .product-explorer-nav {
+  padding: 14px 10px !important;
+}
+
+[data-theme="materialpro"] .product-explorer-shortcut {
+  transition: color 150ms ease, background-color 150ms ease;
+}
+
+[data-theme="materialpro"] .product-explorer-shortcut[data-active="true"] {
+  color: var(--mp-primary) !important;
+  background: var(--mp-soft-primary) !important;
+}
+
+[data-theme="materialpro"] .product-explorer-toolbar {
+  align-items: center;
+  border: 0;
+  border-radius: var(--mp-card-radius);
+  padding: 14px;
+  background: var(--ap-card);
+  box-shadow: var(--mp-card-shadow);
+}
+
+[data-theme="materialpro"] .product-explorer-toolbar input {
+  height: 42px;
+  font-size: 12px !important;
+  font-weight: 400 !important;
+}
+
+[data-theme="materialpro"] .product-view-toggle {
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid var(--ap-line);
+  border-radius: 7px;
+}
+
+[data-theme="materialpro"] .product-view-toggle button {
+  width: 40px;
+  height: 40px;
+  border: 0 !important;
+  border-radius: 0 !important;
+  color: var(--ap-muted) !important;
+  background: var(--ap-card) !important;
+}
+
+[data-theme="materialpro"] .product-view-toggle button + button {
+  border-left: 1px solid var(--ap-line) !important;
+}
+
+[data-theme="materialpro"] .product-view-toggle button[data-active="true"] {
+  color: #fff !important;
+  background: var(--mp-primary) !important;
+}
+
+[data-theme="materialpro"] [data-ui="folder-card"] {
+  border-left: 3px solid var(--mp-primary);
+}
+
+[data-theme="materialpro"] .ap-row:hover {
+  background: var(--ap-paper-2) !important;
+}
+
+/* Master-detail templates: groups, grading, question bank and admin. */
+[data-theme="materialpro"] .product-workspace-grid {
+  grid-template-columns: minmax(270px, 340px) minmax(0, 1fr);
+  gap: 24px;
+}
+
+[data-theme="materialpro"] .product-master-panel,
+[data-theme="materialpro"] .product-detail-panel {
+  overflow: hidden;
+}
+
+[data-theme="materialpro"] .product-panel-heading {
+  min-height: 62px;
+  padding: 17px 20px;
+  border-bottom: 1px solid var(--ap-line);
+}
+
+[data-theme="materialpro"] .product-panel-heading h2,
+[data-theme="materialpro"] .product-panel-heading .ap-h2 {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+[data-theme="materialpro"] .product-panel-toolbar,
+[data-theme="materialpro"] .product-filter-bar {
+  gap: 10px;
+  border: 0;
+  border-radius: var(--mp-card-radius);
+  padding: 14px;
+  background: var(--ap-card);
+  box-shadow: var(--mp-card-shadow);
+}
+
+[data-theme="materialpro"] .product-master-list {
+  padding: 8px;
+}
+
+[data-theme="materialpro"] .product-master-item {
+  min-height: 58px;
+  border: 0;
+  border-radius: 7px;
+  padding: 10px 12px;
+  transition: color 150ms ease, background-color 150ms ease;
+}
+
+[data-theme="materialpro"] .product-master-item:hover,
+[data-theme="materialpro"] .product-master-item[data-active="true"] {
+  color: var(--mp-primary);
+  background: var(--mp-soft-primary);
+}
+
+[data-theme="materialpro"] .product-master-item__icon {
+  border-radius: 50%;
+  color: var(--mp-primary);
+  background: var(--mp-soft-primary);
+}
+
+/* KPI and widget-data template. */
+[data-theme="materialpro"] .product-kpis,
+[data-theme="materialpro"] .product-metric-grid {
+  gap: 20px;
+}
+
+[data-theme="materialpro"] .product-kpi,
+[data-theme="materialpro"] .product-metric {
+  position: relative;
+  overflow: hidden;
+  min-height: 126px;
+  border: 0;
+  border-radius: var(--mp-card-radius);
+  padding: 20px;
+  background: var(--ap-card);
+  box-shadow: var(--mp-card-shadow);
+}
+
+[data-theme="materialpro"] .product-kpi::before,
+[data-theme="materialpro"] .product-metric::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  content: "";
+  background: var(--mp-primary);
+}
+
+[data-theme="materialpro"] .product-kpi[data-tone="warning"]::before { background: var(--mp-warning); }
+[data-theme="materialpro"] .product-kpi[data-tone="secondary"]::before { background: var(--mp-secondary); }
+[data-theme="materialpro"] .product-kpi[data-tone="success"]::before { background: var(--mp-success); }
+
+[data-theme="materialpro"] .product-kpi--hero {
+  --product-kpi-hero-contrast: var(--mp-primary);
+  --product-kpi-hero-chip: var(--mp-soft-primary);
+  color: var(--ap-ink);
+}
+
+[data-theme="materialpro"] .product-kpi__icon,
+[data-theme="materialpro"] .product-metric__icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  color: var(--mp-primary);
+  background: var(--mp-soft-primary);
+}
+
+[data-theme="materialpro"] .product-kpi[data-tone="warning"] .product-kpi__icon { color: #b78900; background: var(--mp-soft-warning); }
+[data-theme="materialpro"] .product-kpi[data-tone="secondary"] .product-kpi__icon { color: #20aeb8; background: var(--mp-soft-secondary); }
+[data-theme="materialpro"] .product-kpi[data-tone="success"] .product-kpi__icon { color: #178b50; background: var(--mp-soft-success); }
+
+[data-theme="materialpro"] .product-kpi__label,
+[data-theme="materialpro"] .product-metric small {
+  color: var(--ap-muted);
+  font-size: 11px;
+  font-weight: 400;
+}
+
+[data-theme="materialpro"] .product-kpi__value,
+[data-theme="materialpro"] .product-metric strong {
+  color: var(--ap-ink);
+  font-size: 25px;
+  font-weight: 500;
+}
+
+/* Apex-inspired chart cards, tooltips and legends. */
+[data-theme="materialpro"] .product-analytics-grid {
+  grid-template-columns: minmax(0, 1.55fr) minmax(320px, .85fr);
+  gap: 24px;
+}
+
+[data-theme="materialpro"] .product-analytics-grid > :nth-child(3) {
+  grid-column: 1 / -1;
+}
+
+[data-theme="materialpro"] .product-analytics-card {
+  min-height: 330px;
+  padding: 24px;
+}
+
+[data-theme="materialpro"] .product-analytics-card__header {
+  display: flex;
+  min-height: 60px;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+[data-theme="materialpro"] .product-chart-eyebrow {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--mp-primary);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+[data-theme="materialpro"] .product-analytics-card__header h3 {
+  font-size: 17px;
+  font-weight: 600;
+}
+
+[data-theme="materialpro"] .product-chart-period {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+  border-radius: 7px;
+  padding: 7px 10px;
+  color: var(--ap-muted);
+  background: var(--ap-paper-2);
+  font-size: 10px;
+  font-weight: 500;
+}
+
+[data-theme="materialpro"] .product-chart-value {
+  color: var(--mp-success);
+  font-size: 25px;
+  font-weight: 500;
+  line-height: 1;
+}
+
+[data-theme="materialpro"] .product-chart-value small {
+  color: var(--ap-muted);
+  font-size: 10px;
+  font-weight: 400;
+}
+
+[data-theme="materialpro"] [data-ui="chart"] {
+  color: var(--ap-muted);
+}
+
+[data-theme="materialpro"] [data-ui="chart-tooltip"] {
+  gap: 8px;
+  border: 0;
+  border-radius: 7px;
+  padding: 10px 12px;
+  color: var(--ap-ink);
+  background: var(--ap-card);
+  box-shadow: var(--mp-float-shadow);
+}
+
+[data-theme="materialpro"] [data-ui="chart-legend"] {
+  color: var(--ap-muted);
+  font-size: 10px;
+  font-weight: 400;
+}
+
+[data-theme="materialpro"] .recharts-cartesian-grid line {
+  stroke: color-mix(in srgb, var(--ap-line) 80%, transparent);
+}
+
+[data-theme="materialpro"] .recharts-text {
+  fill: var(--ap-muted);
+  font-size: 9px;
+  font-weight: 400;
+}
+
+[data-theme="materialpro"] .product-donut-layout {
+  display: grid;
+  grid-template-columns: minmax(210px, 1fr) minmax(220px, .9fr);
+  align-items: center;
+  gap: 26px;
+}
+
+[data-theme="materialpro"] .product-donut-total {
+  fill: var(--ap-ink);
+  font-family: var(--ap-font-display);
+  font-size: 25px;
+  font-weight: 600;
+}
+
+[data-theme="materialpro"] .product-donut-label {
+  fill: var(--ap-muted);
+  font-size: 9px;
+  font-weight: 400;
+  text-transform: uppercase;
+}
+
+[data-theme="materialpro"] .product-chart-breakdown {
+  display: grid;
+  gap: 2px;
+}
+
+[data-theme="materialpro"] .product-chart-breakdown__item {
+  display: grid;
+  grid-template-columns: 9px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  min-height: 38px;
+  border-bottom: 1px solid var(--ap-line);
+  color: var(--ap-muted);
+  font-size: 11px;
+}
+
+[data-theme="materialpro"] .product-chart-breakdown__item strong {
+  color: var(--ap-ink);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+[data-theme="materialpro"] .product-chart-breakdown__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+/* Profile and settings template. */
+[data-theme="materialpro"] .product-profile-hero {
+  position: relative;
+  overflow: hidden;
+  min-height: 210px;
+  align-items: flex-end;
+  border: 0;
+  border-radius: var(--mp-card-radius);
+  padding: 36px;
+  color: #fff;
+  background:
+    linear-gradient(120deg, rgb(27 132 255 / 94%), rgb(67 206 215 / 88%)),
+    radial-gradient(circle at 80% 20%, rgb(255 255 255 / 22%), transparent 36%);
+  box-shadow: var(--mp-card-shadow);
+}
+
+[data-theme="materialpro"] .product-profile-hero::after {
+  position: absolute;
+  right: -45px;
+  bottom: -100px;
+  width: 270px;
+  height: 270px;
+  border: 34px solid rgb(255 255 255 / 10%);
+  border-radius: 50%;
+  content: "";
+}
+
+[data-theme="materialpro"] .product-profile-hero h1,
+[data-theme="materialpro"] .product-profile-hero p {
+  color: #fff;
+}
+
+[data-theme="materialpro"] .product-profile-avatar {
+  border: 5px solid #fff;
+  background: var(--mp-soft-primary);
+  box-shadow: 0 10px 24px rgb(18 38 63 / 22%);
+}
+
+[data-theme="materialpro"] .product-profile-plan {
+  border: 1px solid rgb(255 255 255 / 32%);
+  color: #fff;
+  background: rgb(255 255 255 / 16%);
+}
+
+[data-theme="materialpro"] .product-settings-stack {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 24px;
+}
+
+[data-theme="materialpro"] .product-settings-panel {
+  padding: 24px;
+}
+
+[data-theme="materialpro"] .product-settings-panel > h2:first-child {
+  margin: -24px -24px 22px;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--ap-line);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+/* Template selector / gallery pages. */
+[data-theme="materialpro"] .product-template-start {
+  padding: 0;
+}
+
+[data-theme="materialpro"] .product-template-start > h1 {
+  font-size: 24px;
+  font-weight: 600;
+}
+
+[data-theme="materialpro"] .qb-template-strip {
+  gap: 18px;
+}
+
+[data-theme="materialpro"] .qb-template-card {
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--mp-card-radius);
+  background: var(--ap-card);
+  box-shadow: var(--mp-card-shadow);
+}
+
+[data-theme="materialpro"] .product-empty-inline,
+[data-theme="materialpro"] .rounded-lg.border.border-dashed {
+  border: 1px dashed var(--ap-line-2);
+  border-radius: 8px;
+  color: var(--ap-muted);
+  background: var(--ap-paper-2);
+}
+
+[data-theme="materialpro"] [data-ui="skeleton"],
+[data-theme="materialpro"] .ap-skeleton-shimmer {
+  background: linear-gradient(90deg, var(--ap-paper-2), color-mix(in srgb, var(--ap-line) 80%, var(--ap-card)), var(--ap-paper-2));
+  background-size: 220% 100%;
+}
+
+[data-theme="materialpro"] [data-sonner-toast] {
+  border: 0 !important;
+  border-left: 4px solid var(--mp-primary) !important;
+  border-radius: 8px !important;
+  color: var(--ap-ink) !important;
+  background: var(--ap-card) !important;
+  box-shadow: var(--mp-float-shadow) !important;
+  font-family: var(--ap-font-body) !important;
+}
+
+@media (max-width: 1100px) {
+  [data-theme="materialpro"] .product-settings-stack {
+    grid-template-columns: 1fr;
+  }
+
+  [data-theme="materialpro"] .product-donut-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 767px) {
+  [data-theme="materialpro"] .product-topbar__context {
+    display: none;
+  }
+
+  [data-theme="materialpro"] .product-analytics-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  [data-theme="materialpro"] .product-analytics-grid > :nth-child(n) {
+    min-width: 0;
+    grid-column: 1;
+  }
+
+  [data-theme="materialpro"] .product-analytics-card {
+    width: 100%;
+    min-width: 0;
+  }
+
+  [data-theme="materialpro"] .product-page-heading,
+  [data-theme="materialpro"] .product-dashboard__hero {
+    min-height: 0;
+    align-items: flex-start;
+    padding-bottom: 16px;
+  }
+
+  [data-theme="materialpro"] .product-page-heading__actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  [data-theme="materialpro"] .product-workspace-grid,
+  [data-theme="materialpro"] .product-donut-layout {
+    grid-template-columns: 1fr;
+  }
+
+  [data-theme="materialpro"] .product-profile-hero {
+    min-height: 240px;
+    padding: 28px 22px;
+  }
+
+  [data-theme="materialpro"] [data-ui="dialog-content"] {
+    width: calc(100vw - 24px);
+    border-radius: 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-theme="materialpro"] *,
+  [data-theme="materialpro"] *::before,
+  [data-theme="materialpro"] *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}

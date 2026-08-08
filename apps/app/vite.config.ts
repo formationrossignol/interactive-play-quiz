@@ -6,6 +6,10 @@ import { readFileSync } from "fs";
 const { version: appVersion } = JSON.parse(readFileSync(path.resolve(__dirname, "package.json"), "utf-8"));
 
 export default defineConfig(() => ({
+  // The monorepo keeps the shared Supabase variables in the repository root.
+  // Vite otherwise resolves .env files from apps/app and the application
+  // crashes before React mounts when launched from this workspace.
+  envDir: path.resolve(__dirname, "../.."),
   server: {
     host: "::",
     port: 8080,
