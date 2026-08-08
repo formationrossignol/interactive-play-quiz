@@ -8,7 +8,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { ArrowDown, ArrowUp, ArrowUpDown, EyeOff } from "lucide-react";
+import { MaterialSymbol } from "@/components/MaterialSymbol";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import {
@@ -60,7 +60,7 @@ export function DataTable<TData, TValue>({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-1.5">
-                  <EyeOff className="h-3.5 w-3.5" /> Colonnes
+                  <MaterialSymbol name="visibility_off" size={18} /> Colonnes
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -98,7 +98,7 @@ export function DataTable<TData, TValue>({
                           title="Trier — Maj+clic pour trier sur plusieurs colonnes"
                         >
                           {flexRender(header.column.columnDef.header, header.getContext())}
-                          {sortDir === "asc" ? <ArrowUp className="h-3.5 w-3.5" /> : sortDir === "desc" ? <ArrowDown className="h-3.5 w-3.5" /> : <ArrowUpDown className="h-3.5 w-3.5 opacity-40" />}
+                          {sortDir === "asc" ? <MaterialSymbol name="arrow_upward" size={17} /> : sortDir === "desc" ? <MaterialSymbol name="arrow_downward" size={17} /> : <MaterialSymbol name="swap_vert" size={17} className="opacity-40" />}
                           {sortDir && sorting.length > 1 && (
                             <span className="text-[10px] font-bold opacity-60">{sortIndex + 1}</span>
                           )}

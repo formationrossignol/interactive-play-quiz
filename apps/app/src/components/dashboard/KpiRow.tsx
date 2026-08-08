@@ -187,21 +187,23 @@ export function KpiRow({ stats, charts }: { stats: DashboardStats | null; charts
             className={`product-kpi${hero ? " product-kpi--hero product-kpi--featured" : ""}`}
             aria-label={`${label} : ${value}. Afficher le détail`}
           >
-            <div>
-              <div className="product-kpi__top">
-                <span className="product-kpi__icon" style={hero ? undefined : { color: iconColor }}>
-                  <MaterialSymbol name={iconName} size={20} />
-                </span>
+            <div className="product-kpi__top">
+              <span className="product-kpi__icon" style={hero ? undefined : { color: iconColor }}>
+                <MaterialSymbol name={iconName} size={20} />
+              </span>
+              <span className="product-kpi__copy">
                 <span className="product-kpi__label">{label}</span>
-              </div>
-              {hero && <span className="product-kpi__period">14 derniers jours</span>}
-              <span className="product-kpi__value">{value}</span>
+                <span className="product-kpi__period">14 derniers jours</span>
+              </span>
             </div>
-            <span className="product-kpi__trend">
-              {deltaPct !== null
-                ? <TrendBadge deltaPct={deltaPct} hero={hero} />
-                : emptyHint && <span className="ap-muted" style={{ fontSize: 10.5 }}>{emptyHint}</span>}
-              {spark && <Sparkline values={spark} color={sparkColor} variant={sparkVariant} />}
+            <span className="product-kpi__bottom">
+              <span className="product-kpi__value">{value}</span>
+              <span className="product-kpi__trend">
+                {deltaPct !== null
+                  ? <TrendBadge deltaPct={deltaPct} hero={hero} />
+                  : emptyHint && <span className="ap-muted" style={{ fontSize: 10.5 }}>{emptyHint}</span>}
+                {spark && <Sparkline values={spark} color={sparkColor} variant={sparkVariant} />}
+              </span>
             </span>
           </button>
         );

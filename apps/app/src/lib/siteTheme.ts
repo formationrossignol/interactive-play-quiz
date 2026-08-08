@@ -79,12 +79,12 @@ export const SITE_THEMES: SiteThemeDef[] = [
   },
   {
     id: "materialpro",
-    name: "Midnight Pro",
+    name: "Light Pro",
     tagline: {
-      en: "Premium midnight SaaS interface with a restrained indigo accent",
-      fr: "Interface SaaS premium nocturne, structurée par un indigo maîtrisé",
+      en: "Crisp premium SaaS interface with a restrained indigo accent",
+      fr: "Interface SaaS premium lumineuse, structurée par un indigo maîtrisé",
     },
-    colors: ["#080B12", "#10141D", "#6C63FF", "#F5F7FA"],
+    colors: ["#F8F9FB", "#FFFFFF", "#5B5CF0", "#111318"],
     previewFont: "'Poppins', 'Aptos', 'Segoe UI', system-ui, sans-serif",
   },
 ];

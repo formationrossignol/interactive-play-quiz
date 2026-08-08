@@ -17,19 +17,7 @@
  */
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
-import {
-  Check,
-  ChevronDown,
-  ChevronRight,
-  Folder,
-  FolderOpen,
-  FolderPlus,
-  GripVertical,
-  MoreHorizontal,
-  Pencil,
-  Trash2,
-  X,
-} from 'lucide-react';
+import { MaterialSymbol } from '@/components/MaterialSymbol';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -190,10 +178,10 @@ const NameInput = ({
         style={inlineInputStyle}
       />
       <button type="button" style={{ ...iconBtn, color: 'var(--ap-brand)' }} title={t('folderValidate')} onClick={commit}>
-        <Check style={{ width: 15, height: 15 }} />
+        <MaterialSymbol name="check" size={17} />
       </button>
       <button type="button" style={iconBtn} title={t('cancel')} onClick={onCancel}>
-        <X style={{ width: 15, height: 15 }} />
+        <MaterialSymbol name="close" size={17} />
       </button>
     </div>
   );
@@ -277,7 +265,7 @@ const NodeRow = ({ node, depth }: { node: FolderNode; depth: number }) => {
             style={{ ...iconBtn, cursor: 'grab', touchAction: 'none' }}
             aria-label={tVars('folderMoveAria', { name: node.name })}
           >
-            <GripVertical style={{ width: 13, height: 13 }} />
+            <MaterialSymbol name="drag_indicator" size={16} />
           </button>
 
           {hasChildren ? (
@@ -290,16 +278,16 @@ const NodeRow = ({ node, depth }: { node: FolderNode; depth: number }) => {
                 toggle(node.id);
               }}
             >
-              {isExpanded ? <ChevronDown style={{ width: 15, height: 15 }} /> : <ChevronRight style={{ width: 15, height: 15 }} />}
+              <MaterialSymbol name={isExpanded ? "expand_more" : "chevron_right"} size={18} />
             </button>
           ) : (
             <span style={{ width: 17, flexShrink: 0 }} />
           )}
 
           {isExpanded && hasChildren ? (
-            <FolderOpen style={{ width: 15, height: 15, flexShrink: 0, color: isCurrent ? 'var(--ap-brand)' : 'var(--ap-muted)' }} />
+            <MaterialSymbol name="folder_open" size={18} style={{ flexShrink: 0, color: isCurrent ? 'var(--ap-brand)' : 'var(--ap-muted)' }} />
           ) : (
-            <Folder style={{ width: 15, height: 15, flexShrink: 0, color: isCurrent ? 'var(--ap-brand)' : 'var(--ap-muted)' }} />
+            <MaterialSymbol name="folder" size={18} style={{ flexShrink: 0, color: isCurrent ? 'var(--ap-brand)' : 'var(--ap-muted)' }} />
           )}
 
           <button
@@ -338,7 +326,7 @@ const NodeRow = ({ node, depth }: { node: FolderNode; depth: number }) => {
                   setConfirmingId(null);
                 }}
               >
-                <Check style={{ width: 14, height: 14 }} />
+                <MaterialSymbol name="check" size={17} />
               </button>
               <button
                 type="button"
@@ -349,7 +337,7 @@ const NodeRow = ({ node, depth }: { node: FolderNode; depth: number }) => {
                   setConfirmingId(null);
                 }}
               >
-                <X style={{ width: 14, height: 14 }} />
+                <MaterialSymbol name="close" size={17} />
               </button>
             </span>
           ) : (
@@ -360,7 +348,7 @@ const NodeRow = ({ node, depth }: { node: FolderNode; depth: number }) => {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                   <button type="button" style={iconBtn} title={t('folderActions')}>
-                    <MoreHorizontal style={{ width: 15, height: 15 }} />
+                    <MaterialSymbol name="more_horiz" size={18} />
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
@@ -375,13 +363,13 @@ const NodeRow = ({ node, depth }: { node: FolderNode; depth: number }) => {
                       setSubfolderParentId(node.id);
                     }}
                   >
-                    <FolderPlus className="h-3.5 w-3.5" /> {t('folderNewSubfolder')}
+                    <MaterialSymbol name="create_new_folder" size={18} /> {t('folderNewSubfolder')}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     className="flex items-center gap-2 cursor-pointer text-sm"
                     onSelect={() => setRenamingId(node.id)}
                   >
-                    <Pencil className="h-3.5 w-3.5" /> {t('folderRename')}
+                    <MaterialSymbol name="edit" size={18} /> {t('folderRename')}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
@@ -389,7 +377,7 @@ const NodeRow = ({ node, depth }: { node: FolderNode; depth: number }) => {
                     style={{ color: 'var(--ap-danger)' }}
                     onSelect={() => setConfirmingId(node.id)}
                   >
-                    <Trash2 className="h-3.5 w-3.5" /> {t('delete')}
+                    <MaterialSymbol name="delete" size={18} /> {t('delete')}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -442,7 +430,7 @@ const RootRow = () => {
         if (!isCurrent && !isOver) e.currentTarget.style.background = 'transparent';
       }}
     >
-      <FolderOpen style={{ width: 15, height: 15, flexShrink: 0, color: isCurrent ? 'var(--ap-brand)' : 'var(--ap-muted)' }} />
+      <MaterialSymbol name="folder_open" size={18} style={{ flexShrink: 0, color: isCurrent ? 'var(--ap-brand)' : 'var(--ap-muted)' }} />
       <span style={{ flex: 1 }}>{rootLabel}</span>
       {rootCount != null && (
         <span style={{ ...badgeStyle, ...(isCurrent ? { background: 'var(--ap-card)', color: 'var(--ap-brand)' } : {}) }}>
@@ -575,7 +563,7 @@ export const FolderExplorer = ({
               cursor: 'pointer',
             }}
           >
-            <FolderPlus style={{ width: 15, height: 15 }} /> {t('folderNewFolder')}
+            <MaterialSymbol name="create_new_folder" size={18} /> {t('folderNewFolder')}
           </button>
         )}
       </nav>
