@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { BellOff, CheckCheck, SlidersHorizontal, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { AppLayout } from "@/components/AppLayout";
 import { ExplorerEmptyState } from "@/components/content/ExplorerEmptyState";
@@ -11,6 +10,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { getCurrentUser } from "@/lib/auth";
 import { useNotifications } from "@/hooks/useNotifications";
 import type { NotificationCategory } from "@/lib/notifications/types";
+import { MaterialSymbol } from "@/components/MaterialSymbol";
 
 const FILTERS: { key: "all" | "unread" | NotificationCategory; label: string }[] = [
   { key: "all", label: "Toutes" },
@@ -50,8 +50,8 @@ export default function Notifications() {
           title="Notifications"
           description="Suivez les partages, l’activité de vos examens et les réponses du support."
           action={<div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button className="ap-btn ap-btn--ghost ap-btn--sm" disabled={center.unreadCount === 0} onClick={() => center.markAllRead.mutate(undefined, { onError: notifyError })}><CheckCheck size={15} /> Tout lire</button>
-            <button className="ap-btn ap-btn--ghost ap-btn--sm" onClick={() => setSettingsOpen((value) => !value)}><SlidersHorizontal size={15} /> Préférences</button>
+            <button className="ap-btn ap-btn--ghost ap-btn--sm" disabled={center.unreadCount === 0} onClick={() => center.markAllRead.mutate(undefined, { onError: notifyError })}><MaterialSymbol name="done_all" size={17} /> Tout lire</button>
+            <button className="ap-btn ap-btn--ghost ap-btn--sm" onClick={() => setSettingsOpen((value) => !value)}><MaterialSymbol name="tune" size={17} /> Préférences</button>
           </div>}
         />
 
@@ -77,7 +77,7 @@ export default function Notifications() {
               disabled={!center.notifications.some((notification) => notification.readAt)}
               onClick={() => center.clearRead.mutate(undefined, { onError: notifyError })}
             >
-              <Trash2 size={14} /> Effacer les lues
+              <MaterialSymbol name="delete" size={16} /> Effacer les lues
             </button>
           </div>
         )}
@@ -87,7 +87,7 @@ export default function Notifications() {
             <div style={{ padding: 20 }}><ListSkeleton rows={5} /></div>
           ) : visible.length === 0 ? (
             <ExplorerEmptyState
-              icon={<BellOff size={27} />}
+              icon={<MaterialSymbol name="notifications_off" size={28} />}
               title={filter === "unread" ? "Tout est lu" : "Aucune notification"}
               body="Vos prochaines activités importantes apparaîtront ici."
             />

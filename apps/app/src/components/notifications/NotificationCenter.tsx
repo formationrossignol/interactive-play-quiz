@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Bell, BellOff, CheckCheck, Settings2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -8,6 +7,7 @@ import { useNotifications } from "@/hooks/useNotifications";
 import type { User } from "@/lib/auth";
 import { NotificationItem } from "./NotificationItem";
 import { NotificationPreferencesPanel } from "./NotificationPreferencesPanel";
+import { MaterialSymbol } from "@/components/MaterialSymbol";
 
 export function NotificationCenter({ user }: { user: User }) {
   const navigate = useNavigate();
@@ -30,7 +30,7 @@ export function NotificationCenter({ user }: { user: User }) {
           aria-label={center.unreadCount > 0 ? `${center.unreadCount} notification${center.unreadCount > 1 ? "s" : ""} non lue${center.unreadCount > 1 ? "s" : ""}` : "Notifications"}
           title="Notifications"
         >
-          <Bell className="h-4 w-4" />
+          <MaterialSymbol name="notifications_none" size={20} />
           {center.unreadCount > 0 && (
             <span
               className="product-notification-badge"
@@ -52,7 +52,7 @@ export function NotificationCenter({ user }: { user: User }) {
       >
         <SheetHeader style={{ padding: "20px 20px 10px", textAlign: "left" }}>
           <SheetTitle style={{ display: "flex", alignItems: "center", gap: 9, fontFamily: "var(--ap-font-display)", color: "var(--ap-ink)" }}>
-            <Bell size={19} /> Notifications
+            <MaterialSymbol name="notifications" size={20} /> Notifications
             {center.unreadCount > 0 && <span className="ap-pill" style={{ marginLeft: 2, fontSize: 10 }}>{center.unreadCount} non lue{center.unreadCount > 1 ? "s" : ""}</span>}
           </SheetTitle>
         </SheetHeader>
@@ -64,7 +64,7 @@ export function NotificationCenter({ user }: { user: User }) {
             ["settings", "Préférences"],
           ] as const).map(([key, label]) => (
             <button key={key} className={view === key ? "ap-btn ap-btn--sm" : "ap-btn ap-btn--ghost ap-btn--sm"} onClick={() => setView(key)}>
-              {key === "settings" && <Settings2 size={14} />}{label}
+              {key === "settings" && <MaterialSymbol name="tune" size={16} />}{label}
             </button>
           ))}
         </div>
@@ -83,7 +83,7 @@ export function NotificationCenter({ user }: { user: User }) {
           ) : visible.length === 0 ? (
             <div style={{ minHeight: 280, display: "grid", placeItems: "center", padding: 28, textAlign: "center" }}>
               <div>
-                <BellOff size={30} style={{ margin: "0 auto 12px", color: "var(--ap-muted)" }} />
+                <MaterialSymbol name="notifications_off" size={30} style={{ margin: "0 auto 12px", color: "var(--ap-muted)" }} />
                 <strong style={{ display: "block", marginBottom: 5 }}>{view === "unread" ? "Tout est lu" : "Aucune notification"}</strong>
                 <p className="ap-muted" style={{ margin: 0, fontSize: 12.5 }}>Les partages, copies d’examen et mises à jour apparaîtront ici.</p>
               </div>
@@ -115,7 +115,7 @@ export function NotificationCenter({ user }: { user: User }) {
               disabled={center.unreadCount === 0}
               onClick={() => center.markAllRead.mutate(undefined, { onError: notifyError })}
             >
-              <CheckCheck size={15} /> Tout marquer comme lu
+              <MaterialSymbol name="done_all" size={17} /> Tout marquer comme lu
             </button>
             <button className="ap-btn ap-btn--sm" style={{ marginLeft: "auto" }} onClick={() => { setOpen(false); navigate("/notifications"); }}>
               Voir tout

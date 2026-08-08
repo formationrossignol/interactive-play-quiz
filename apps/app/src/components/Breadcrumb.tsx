@@ -1,4 +1,4 @@
-import { ChevronRight, Home } from "lucide-react";
+import { MaterialSymbol } from "@/components/MaterialSymbol";
 
 export interface BreadcrumbItem {
   label: string;
@@ -18,13 +18,13 @@ export function Breadcrumb({ onHome, items }: { onHome: () => void; items: Bread
           background: "var(--ap-card)", cursor: "pointer", flexShrink: 0,
         }}
       >
-        <Home style={{ width: 16, height: 16, color: "var(--ap-ink)" }} />
+        <MaterialSymbol name="home" size={17} style={{ color: "var(--ap-ink)" }} />
       </button>
       {items.map((item, i) => {
         const isLast = i === items.length - 1;
         return (
           <span key={i} style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-            <ChevronRight style={{ width: 15, height: 15, color: "var(--ap-line-2)", flexShrink: 0 }} />
+            <MaterialSymbol name="chevron_right" size={17} style={{ color: "var(--ap-line-2)", flexShrink: 0 }} />
             {item.onClick ? (
               <button
                 onClick={item.onClick}

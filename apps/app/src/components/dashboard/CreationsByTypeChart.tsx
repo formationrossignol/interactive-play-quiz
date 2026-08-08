@@ -4,11 +4,11 @@ import type { CreationsByType } from "@/lib/dashboardStats";
 import { MaterialSymbol } from "@/components/MaterialSymbol";
 
 const chartConfig = {
-  quiz: { label: "Quiz", color: "var(--ap-quiz)" },
-  poll: { label: "Sondages", color: "var(--ap-poll)" },
-  flashcard: { label: "Flashcards", color: "var(--ap-flash)" },
-  slide: { label: "Slides", color: "var(--ap-pres)" },
-  other: { label: "Cours + examens", color: "var(--ap-muted)" },
+  quiz: { label: "Quiz", color: "#6c63ff" },
+  poll: { label: "Sondages", color: "#827bff" },
+  flashcard: { label: "Flashcards", color: "#98a2b3" },
+  slide: { label: "Slides", color: "#252b38" },
+  other: { label: "Cours + examens", color: "#171c27" },
 } satisfies ChartConfig;
 
 export function CreationsByTypeChart({ data }: { data: CreationsByType }) {

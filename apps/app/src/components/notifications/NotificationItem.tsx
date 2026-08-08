@@ -1,19 +1,12 @@
-import {
-  Bell,
-  BookOpenCheck,
-  CheckCircle2,
-  Megaphone,
-  Share2,
-  Trash2,
-} from "lucide-react";
 import type { AppNotification, NotificationCategory } from "@/lib/notifications/types";
+import { MaterialSymbol } from "@/components/MaterialSymbol";
 
-const CATEGORY_META: Record<NotificationCategory, { label: string; icon: typeof Bell; color: string; soft: string }> = {
-  share: { label: "Partage", icon: Share2, color: "var(--ap-brand)", soft: "var(--ap-brand-soft)" },
-  exam: { label: "Examen", icon: BookOpenCheck, color: "var(--ap-pres)", soft: "var(--ap-pres-soft)" },
-  support: { label: "Support", icon: CheckCircle2, color: "var(--ap-poll)", soft: "var(--ap-poll-soft)" },
-  product: { label: "Produit", icon: Megaphone, color: "var(--ap-flash-deep)", soft: "var(--ap-flash-soft)" },
-  system: { label: "Système", icon: Bell, color: "var(--ap-muted)", soft: "var(--ap-paper-2)" },
+const CATEGORY_META: Record<NotificationCategory, { label: string; icon: string; color: string; soft: string }> = {
+  share: { label: "Partage", icon: "share", color: "var(--ap-brand)", soft: "var(--ap-brand-soft)" },
+  exam: { label: "Examen", icon: "fact_check", color: "var(--ap-brand)", soft: "var(--ap-brand-soft)" },
+  support: { label: "Support", icon: "support_agent", color: "var(--ap-brand)", soft: "var(--ap-brand-soft)" },
+  product: { label: "Produit", icon: "campaign", color: "var(--ap-brand)", soft: "var(--ap-brand-soft)" },
+  system: { label: "Système", icon: "notifications", color: "var(--ap-muted)", soft: "var(--ap-paper-2)" },
 };
 
 const relativeTime = (iso: string) => {
@@ -43,7 +36,6 @@ export function NotificationItem({
   compact?: boolean;
 }) {
   const meta = CATEGORY_META[notification.category];
-  const Icon = meta.icon;
   return (
     <article
       style={{
@@ -69,7 +61,7 @@ export function NotificationItem({
         style={{ display: "contents", color: "inherit", cursor: "pointer" }}
       >
         <span style={{ width: 36, height: 36, display: "grid", placeItems: "center", borderRadius: "var(--ap-r-md)", background: meta.soft, color: meta.color }}>
-          <Icon size={17} />
+          <MaterialSymbol name={meta.icon} size={18} />
         </span>
         <span style={{ minWidth: 0, textAlign: "left" }}>
           <span style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 3 }}>
@@ -89,7 +81,7 @@ export function NotificationItem({
           aria-label={notification.readAt ? "Marquer comme non lue" : "Marquer comme lue"}
           style={{ width: 30, height: 30, minHeight: 30, padding: 0 }}
         >
-          <CheckCircle2 size={14} style={{ opacity: notification.readAt ? .45 : 1 }} />
+          <MaterialSymbol name="check_circle" size={16} style={{ opacity: notification.readAt ? .45 : 1 }} />
         </button>
         <button
           type="button"
@@ -99,7 +91,7 @@ export function NotificationItem({
           aria-label="Supprimer la notification"
           style={{ width: 30, height: 30, minHeight: 30, padding: 0, color: "var(--ap-danger)" }}
         >
-          <Trash2 size={14} />
+          <MaterialSymbol name="delete" size={16} />
         </button>
       </span>
     </article>

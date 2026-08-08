@@ -14,47 +14,47 @@
 @import "@fontsource/poppins/latin-700.css";
 
 :root[data-theme="materialpro"] {
-  color-scheme: light;
+  color-scheme: dark;
 
-  --mp-primary: #1b84ff;
-  --mp-secondary: #43ced7;
-  --mp-info: #2cabe3;
-  --mp-success: #2cd07e;
-  --mp-warning: #f6c000;
-  --mp-danger: #f8285a;
-  --mp-purple: #725af2;
-  --mp-heading: #2f3d4a;
-  --mp-muted: #768b9e;
-  --mp-canvas: #edf5fd;
-  --mp-border: #ebf1f6;
+  --mp-primary: #6c63ff;
+  --mp-secondary: #827bff;
+  --mp-info: #827bff;
+  --mp-success: #2ccb8c;
+  --mp-warning: #f5b942;
+  --mp-danger: #f06464;
+  --mp-purple: #6c63ff;
+  --mp-heading: #f5f7fa;
+  --mp-muted: #98a2b3;
+  --mp-canvas: #080b12;
+  --mp-border: #252b38;
 
   --ap-brand: var(--mp-primary);
-  --ap-brand-deep: #006fd6;
-  --ap-brand-soft: #edf5fd;
+  --ap-brand-deep: #827bff;
+  --ap-brand-soft: color-mix(in srgb, #6c63ff 15%, #10141d);
   --ap-logo-diamond: #ffffff;
   --ap-ink: var(--mp-heading);
   --ap-muted: var(--mp-muted);
   --ap-paper: var(--mp-canvas);
-  --ap-paper-2: #f5f9fc;
-  --ap-card: #ffffff;
+  --ap-paper-2: #171c27;
+  --ap-card: #10141d;
   --ap-line: var(--mp-border);
-  --ap-line-2: #dbe7ef;
+  --ap-line-2: var(--mp-border);
 
-  --ap-quiz: var(--mp-danger);
-  --ap-quiz-deep: #cf1641;
-  --ap-quiz-soft: #fff0f4;
-  --ap-poll: var(--mp-secondary);
-  --ap-poll-deep: #20aeb8;
-  --ap-poll-soft: #ecfbfc;
-  --ap-flash: var(--mp-warning);
-  --ap-flash-deep: #9b7900;
-  --ap-flash-soft: #fff9e5;
-  --ap-pres: var(--mp-success);
-  --ap-pres-deep: #178b50;
-  --ap-pres-soft: #eafaf2;
+  --ap-quiz: var(--mp-primary);
+  --ap-quiz-deep: var(--mp-secondary);
+  --ap-quiz-soft: var(--ap-brand-soft);
+  --ap-poll: var(--mp-primary);
+  --ap-poll-deep: var(--mp-secondary);
+  --ap-poll-soft: var(--ap-brand-soft);
+  --ap-flash: var(--mp-primary);
+  --ap-flash-deep: var(--mp-secondary);
+  --ap-flash-soft: var(--ap-brand-soft);
+  --ap-pres: var(--mp-primary);
+  --ap-pres-deep: var(--mp-secondary);
+  --ap-pres-soft: var(--ap-brand-soft);
   --ap-danger: var(--mp-danger);
-  --ap-danger-deep: #cf1641;
-  --ap-danger-soft: #fff0f4;
+  --ap-danger-deep: var(--mp-danger);
+  --ap-danger-soft: color-mix(in srgb, var(--mp-danger) 14%, var(--ap-card));
   --ap-success: var(--mp-success);
 
   --ap-r-sm: 6px;
@@ -65,11 +65,11 @@
   --ap-r-2xl: 8px;
   --ap-border-w: 1px;
 
-  --ap-shadow-soft: 0 1px 4px rgb(58 75 122 / 6%);
-  --ap-shadow-card: 0 4px 12px rgb(58 75 122 / 9%);
-  --ap-shadow-float: 0 12px 30px -2px rgb(58 75 122 / 18%);
-  --ap-shadow-neu: 0 1px 4px rgb(58 75 122 / 7%);
-  --ap-shadow-neu-hover: 0 8px 20px -8px rgb(27 132 255 / 24%);
+  --ap-shadow-soft: 0 1px 2px rgb(0 0 0 / 18%);
+  --ap-shadow-card: 0 18px 42px rgb(0 0 0 / 24%);
+  --ap-shadow-float: 0 24px 64px rgb(0 0 0 / 42%);
+  --ap-shadow-neu: 0 1px 2px rgb(0 0 0 / 18%);
+  --ap-shadow-neu-hover: 0 1px 2px rgb(0 0 0 / 18%);
 
   --ap-font-display: "Poppins", "Aptos", "Segoe UI", system-ui, sans-serif;
   --ap-font-body: "Poppins", "Aptos", "Segoe UI", system-ui, sans-serif;
@@ -80,24 +80,24 @@
 
 .dark[data-theme="materialpro"] {
   color-scheme: dark;
-  --ap-ink: #eaeff4;
-  --ap-muted: #7c8fac;
-  --ap-paper: #192838;
-  --ap-paper-2: #203143;
-  --ap-card: #152332;
-  --ap-line: #333f55;
-  --ap-line-2: #465670;
-  --ap-brand-soft: #203958;
-  --ap-quiz-soft: #4a2231;
-  --ap-poll-soft: #193d45;
-  --ap-flash-soft: #423917;
-  --ap-pres-soft: #173d30;
-  --ap-danger-soft: #4a2231;
-  --ap-shadow-soft: 0 1px 4px rgb(0 0 0 / 18%);
-  --ap-shadow-card: 0 8px 24px rgb(0 0 0 / 25%);
-  --ap-shadow-float: 0 14px 32px rgb(0 0 0 / 34%);
-  --ap-shadow-neu: 0 1px 4px rgb(0 0 0 / 18%);
-  --ap-shadow-neu-hover: 0 8px 22px rgb(0 0 0 / 28%);
+  --ap-ink: #f5f7fa;
+  --ap-muted: #98a2b3;
+  --ap-paper: #080b12;
+  --ap-paper-2: #171c27;
+  --ap-card: #10141d;
+  --ap-line: #252b38;
+  --ap-line-2: #252b38;
+  --ap-brand-soft: color-mix(in srgb, #6c63ff 15%, #10141d);
+  --ap-quiz-soft: var(--ap-brand-soft);
+  --ap-poll-soft: var(--ap-brand-soft);
+  --ap-flash-soft: var(--ap-brand-soft);
+  --ap-pres-soft: var(--ap-brand-soft);
+  --ap-danger-soft: color-mix(in srgb, #f06464 14%, #10141d);
+  --ap-shadow-soft: 0 1px 2px rgb(0 0 0 / 18%);
+  --ap-shadow-card: 0 18px 42px rgb(0 0 0 / 24%);
+  --ap-shadow-float: 0 24px 64px rgb(0 0 0 / 42%);
+  --ap-shadow-neu: 0 1px 2px rgb(0 0 0 / 18%);
+  --ap-shadow-neu-hover: 0 1px 2px rgb(0 0 0 / 18%);
 }
 
 /* Base surfaces and type scale. */
@@ -2811,6 +2811,307 @@
     height: 128px;
     min-height: 128px;
   }
+}
+
+/* Midnight premium system. The accent is reserved for actions, focus and
+   active data; surfaces stay neutral and status colors remain semantic. */
+[data-theme="materialpro"] {
+  --mp-card-shadow: 0 1px 2px rgb(0 0 0 / 18%);
+  --mp-float-shadow: 0 24px 64px rgb(0 0 0 / 42%);
+  --ap-shadow-soft: 0 1px 2px rgb(0 0 0 / 18%);
+  --ap-shadow-card: 0 18px 42px rgb(0 0 0 / 24%);
+  --ap-shadow-neu: 0 1px 2px rgb(0 0 0 / 18%);
+  --ap-shadow-neu-hover: 0 1px 2px rgb(0 0 0 / 18%);
+}
+
+[data-theme="materialpro"] body,
+[data-theme="materialpro"] .product-shell-root,
+[data-theme="materialpro"] .product-content,
+[data-theme="materialpro"] [data-sidebar="inset"] {
+  color: #f5f7fa;
+  background: #080b12;
+}
+
+[data-theme="materialpro"] .product-shell-root [data-sidebar="sidebar"] {
+  border-right: 1px solid #252b38;
+  background: #10141d;
+}
+
+[data-theme="materialpro"] .product-sidebar-brand,
+[data-theme="materialpro"] .product-topbar {
+  color: #f5f7fa;
+  background: #10141d;
+}
+
+[data-theme="materialpro"] .product-topbar {
+  border-bottom: 1px solid #252b38;
+}
+
+[data-theme="materialpro"] .product-sidebar-brand__copy small,
+[data-theme="materialpro"] .product-topbar__context span {
+  color: #98a2b3;
+}
+
+[data-theme="materialpro"] .product-topbar__context strong {
+  color: #f5f7fa;
+}
+
+[data-theme="materialpro"] .product-topbar [data-sidebar="trigger"],
+[data-theme="materialpro"] .product-topbar .ap-icon-btn,
+[data-theme="materialpro"] .product-topbar .ap-avatar-btn {
+  color: #98a2b3;
+}
+
+[data-theme="materialpro"] .product-topbar [data-sidebar="trigger"]:hover,
+[data-theme="materialpro"] .product-topbar .ap-icon-btn:hover {
+  color: #f5f7fa;
+  background: #171c27;
+}
+
+[data-theme="materialpro"] .product-topbar .ap-avatar-btn {
+  border: 1px solid #252b38;
+  background: #171c27;
+}
+
+[data-theme="materialpro"] .product-topbar .product-global-search input {
+  border-color: #252b38 !important;
+  color: #f5f7fa !important;
+  background: #171c27 !important;
+}
+
+[data-theme="materialpro"] .product-topbar .product-global-search input::placeholder,
+[data-theme="materialpro"] .product-topbar .product-global-search .material-symbol {
+  color: #98a2b3 !important;
+}
+
+[data-theme="materialpro"] .product-shell-root [data-sidebar="menu-button"] {
+  color: #98a2b3;
+}
+
+[data-theme="materialpro"] .product-shell-root [data-sidebar="menu-button"]:hover,
+[data-theme="materialpro"] .product-shell-root [data-sidebar="menu-button"][data-active="true"] {
+  color: #f5f7fa;
+  background: color-mix(in srgb, #6c63ff 14%, #171c27);
+}
+
+[data-theme="materialpro"] .product-shell-root [data-sidebar="menu-button"][data-active="true"] .material-symbol {
+  color: #827bff;
+}
+
+[data-theme="materialpro"] .product-sidebar-header > .ap-btn,
+[data-theme="materialpro"] .ap-btn:not(.ap-btn--ghost),
+[data-theme="materialpro"] .adm-btn:not(.adm-btn--ghost),
+[data-theme="materialpro"] .ap-btn--quiz,
+[data-theme="materialpro"] .ap-btn--poll,
+[data-theme="materialpro"] .ap-btn--pres,
+[data-theme="materialpro"] .ap-btn--flash,
+[data-theme="materialpro"] .product-quick-action:first-child {
+  border-color: #6c63ff;
+  color: #ffffff;
+  background: #6c63ff;
+}
+
+[data-theme="materialpro"] .product-sidebar-header > .ap-btn:hover,
+[data-theme="materialpro"] .ap-btn:not(.ap-btn--ghost):hover,
+[data-theme="materialpro"] .adm-btn:not(.adm-btn--ghost):hover,
+[data-theme="materialpro"] .product-quick-action:first-child:hover {
+  border-color: #827bff;
+  color: #ffffff;
+  background: #827bff;
+}
+
+[data-theme="materialpro"] .ap-btn--ghost,
+[data-theme="materialpro"] .product-quick-action:not(:first-child) {
+  border-color: #252b38;
+  color: #98a2b3;
+  background: transparent;
+}
+
+[data-theme="materialpro"] .ap-btn--ghost:hover,
+[data-theme="materialpro"] .product-quick-action:not(:first-child):hover {
+  border-color: #252b38;
+  color: #f5f7fa;
+  background: #171c27;
+}
+
+[data-theme="materialpro"] .ap-card,
+[data-theme="materialpro"] [data-ui="card"],
+[data-theme="materialpro"] .product-panel,
+[data-theme="materialpro"] .product-analytics-card,
+[data-theme="materialpro"] .product-settings-panel,
+[data-theme="materialpro"] .product-master-panel,
+[data-theme="materialpro"] .product-detail-panel,
+[data-theme="materialpro"] .product-list-panel,
+[data-theme="materialpro"] .adm-card,
+[data-theme="materialpro"] .adm-panel,
+[data-theme="materialpro"] .product-kpi,
+[data-theme="materialpro"] .product-metric {
+  border: 1px solid #252b38;
+  color: #f5f7fa;
+  background: #10141d;
+}
+
+[data-theme="materialpro"] .product-kpi--featured,
+[data-theme="materialpro"] .product-kpi--featured[data-featured="secondary"] {
+  color: #f5f7fa;
+  background: #10141d;
+  box-shadow: var(--mp-card-shadow);
+}
+
+[data-theme="materialpro"] .product-kpi--featured::after {
+  border-color: color-mix(in srgb, #6c63ff 12%, transparent);
+}
+
+[data-theme="materialpro"] .product-kpi__icon,
+[data-theme="materialpro"] .product-kpi[data-tone="warning"] .product-kpi__icon,
+[data-theme="materialpro"] .product-kpi[data-tone="secondary"] .product-kpi__icon,
+[data-theme="materialpro"] .product-kpi[data-tone="success"] .product-kpi__icon,
+[data-theme="materialpro"] .product-kpi--featured .product-kpi__icon,
+[data-theme="materialpro"] .product-kpi--featured[data-featured="secondary"] .product-kpi__icon {
+  color: #827bff;
+  background: color-mix(in srgb, #6c63ff 15%, #171c27);
+}
+
+[data-theme="materialpro"] .product-kpi--featured .product-kpi__label,
+[data-theme="materialpro"] .product-kpi__label,
+[data-theme="materialpro"] .product-kpi__period {
+  color: #98a2b3;
+}
+
+[data-theme="materialpro"] .product-kpi--featured .product-kpi__value,
+[data-theme="materialpro"] .product-kpi__value {
+  color: #f5f7fa;
+}
+
+[data-theme="materialpro"] .product-kpi--featured .product-kpi__spark rect {
+  fill: #6c63ff;
+}
+
+[data-theme="materialpro"] .product-kpi--featured[data-featured="secondary"] .product-kpi__spark rect {
+  fill: #98a2b3;
+}
+
+[data-theme="materialpro"] .product-chart-value {
+  color: #827bff;
+}
+
+[data-theme="materialpro"] .recharts-cartesian-grid line {
+  stroke: #252b38;
+}
+
+[data-theme="materialpro"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+[data-theme="materialpro"] textarea,
+[data-theme="materialpro"] select,
+[data-theme="materialpro"] [data-ui="input"],
+[data-theme="materialpro"] [data-ui="textarea"],
+[data-theme="materialpro"] [data-ui="select-trigger"],
+[data-theme="materialpro"] .ap-input,
+[data-theme="materialpro"] .ap-textarea {
+  border-color: #252b38;
+  color: #f5f7fa;
+  background: #10141d;
+}
+
+[data-theme="materialpro"] input::placeholder,
+[data-theme="materialpro"] textarea::placeholder {
+  color: #98a2b3;
+}
+
+[data-theme="materialpro"] [data-ui="select-content"],
+[data-theme="materialpro"] [data-ui="dropdown-content"],
+[data-theme="materialpro"] [data-ui="dropdown-sub-content"],
+[data-theme="materialpro"] [data-ui="popover-content"],
+[data-theme="materialpro"] [data-ui="dialog-content"],
+[data-theme="materialpro"] [data-ui="sheet-content"] {
+  border-color: #252b38;
+  color: #f5f7fa;
+  background: #10141d;
+}
+
+[data-theme="materialpro"] [data-ui="tabs-list"] {
+  border: 1px solid #252b38;
+  background: #171c27;
+}
+
+[data-theme="materialpro"] [data-ui="tabs-trigger"][data-state="active"] {
+  color: #f5f7fa;
+  background: #6c63ff;
+}
+
+[data-theme="materialpro"] .product-filter-bar,
+[data-theme="materialpro"] .product-panel-toolbar {
+  border: 1px solid #252b38;
+  background: #10141d;
+}
+
+[data-theme="materialpro"] .product-profile-hero {
+  border: 1px solid #252b38;
+  background: linear-gradient(135deg, #171c27 0%, #10141d 70%);
+}
+
+[data-theme="materialpro"] .product-profile-hero::after {
+  border-color: color-mix(in srgb, #6c63ff 12%, transparent);
+}
+
+[data-theme="materialpro"] .product-profile-plan {
+  border-color: #252b38;
+  color: #f5f7fa;
+  background: #171c27;
+}
+
+[data-theme="materialpro"] .product-recent-item__badge,
+[data-theme="materialpro"] .ap-pill,
+[data-theme="materialpro"] .ap-badge,
+[data-theme="materialpro"] [data-ui="badge"] {
+  color: #827bff;
+  background: color-mix(in srgb, #6c63ff 15%, #10141d);
+}
+
+[data-theme="materialpro"] .product-route-skeleton__toolbar,
+[data-theme="materialpro"] .product-route-skeleton__filters,
+[data-theme="materialpro"] .product-route-skeleton__card,
+[data-theme="materialpro"] .product-route-skeleton__card-footer {
+  border-color: #252b38;
+  background: #10141d;
+}
+
+[data-theme="materialpro"] [data-sidebar="separator"] {
+  background: #252b38;
+}
+
+[data-theme="materialpro"] [data-ui="tooltip-content"] {
+  border: 1px solid #252b38;
+  color: #f5f7fa;
+  background: #171c27;
+  box-shadow: var(--mp-float-shadow);
+}
+
+[data-theme="materialpro"] [data-ui="switch-thumb"] {
+  background: #f5f7fa;
+  box-shadow: none;
+}
+
+[data-theme="materialpro"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus,
+[data-theme="materialpro"] textarea:focus,
+[data-theme="materialpro"] select:focus,
+[data-theme="materialpro"] [data-ui="input"]:focus,
+[data-theme="materialpro"] [data-ui="textarea"]:focus,
+[data-theme="materialpro"] [data-ui="select-trigger"]:focus,
+[data-theme="materialpro"] .ap-input:focus,
+[data-theme="materialpro"] .ap-textarea:focus {
+  border-color: #6c63ff;
+  box-shadow: 0 0 0 3px color-mix(in srgb, #6c63ff 20%, transparent);
+}
+
+[data-theme="materialpro"] .product-kanban-column__header > span:last-child,
+[data-theme="materialpro"] .product-kanban-empty {
+  color: #98a2b3;
+  background: #10141d;
+}
+
+[data-theme="materialpro"] .product-kanban-card {
+  border-color: #252b38;
+  background: #10141d;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -1,8 +1,8 @@
 // apps/app/src/components/GlobalSearch.tsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { BarChart2, BookOpen, Clock, GraduationCap, Layers, Presentation, Search, X, ClipboardCheck } from "lucide-react";
 import { t } from "@/lib/i18n";
+import { MaterialSymbol } from "@/components/MaterialSymbol";
 import type { User as AuthUser } from "@/lib/auth";
 import type { ContentType } from "@/lib/content/types";
 import { getSearchResultRoute, searchContent, type SearchResult } from "@/lib/content/searchContent";
@@ -10,13 +10,13 @@ import { addRecentSearch, getRecentSearches, removeRecentSearch } from "@/lib/co
 
 type LabelKey = "creationTypeQuiz" | "creationTypePoll" | "creationTypeFlashcard" | "creationTypeSlide" | "creationTypeCourse" | "creationTypeExam";
 
-export const TYPE_META: Record<ContentType, { icon: typeof BookOpen; labelKey: LabelKey }> = {
-  quiz: { icon: BookOpen, labelKey: "creationTypeQuiz" },
-  poll: { icon: BarChart2, labelKey: "creationTypePoll" },
-  flashcard: { icon: Layers, labelKey: "creationTypeFlashcard" },
-  slide: { icon: Presentation, labelKey: "creationTypeSlide" },
-  course: { icon: GraduationCap, labelKey: "creationTypeCourse" },
-  exam: { icon: ClipboardCheck, labelKey: "creationTypeExam" },
+export const TYPE_META: Record<ContentType, { icon: string; labelKey: LabelKey }> = {
+  quiz: { icon: "quiz", labelKey: "creationTypeQuiz" },
+  poll: { icon: "poll", labelKey: "creationTypePoll" },
+  flashcard: { icon: "style", labelKey: "creationTypeFlashcard" },
+  slide: { icon: "co_present", labelKey: "creationTypeSlide" },
+  course: { icon: "school", labelKey: "creationTypeCourse" },
+  exam: { icon: "assignment", labelKey: "creationTypeExam" },
 };
 
 type SearchStatus = "idle" | "loading" | "error" | "done";
@@ -139,8 +139,9 @@ export const GlobalSearch = ({ user }: GlobalSearchProps) => {
   return (
     <div ref={containerRef} className="product-global-search" style={{ position: "relative", flex: "1 1 auto", maxWidth: 640, minWidth: 0 }}>
       <div style={{ position: "relative" }}>
-        <Search
-          className="h-4 w-4"
+        <MaterialSymbol
+          name="search"
+          size={18}
           style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--ap-muted)", pointerEvents: "none" }}
         />
         <input
@@ -210,7 +211,7 @@ export const GlobalSearch = ({ user }: GlobalSearchProps) => {
                       background: "transparent", border: "none", textAlign: "left", cursor: "pointer", fontFamily: "var(--ap-font-body)",
                     }}
                   >
-                    <Clock className="h-3.5 w-3.5" style={{ color: "var(--ap-muted)", flexShrink: 0 }} />
+                    <MaterialSymbol name="history" size={16} style={{ color: "var(--ap-muted)", flexShrink: 0 }} />
                     <span style={{ fontSize: 13, fontWeight: 700, color: "var(--ap-ink)" }}>{q}</span>
                   </button>
                   <button
@@ -219,7 +220,7 @@ export const GlobalSearch = ({ user }: GlobalSearchProps) => {
                     onClick={() => user && setRecent(removeRecentSearch(user.id, q))}
                     style={{ background: "transparent", border: "none", cursor: "pointer", padding: "6px 10px", color: "var(--ap-muted)" }}
                   >
-                    <X className="h-3.5 w-3.5" />
+                    <MaterialSymbol name="close" size={16} />
                   </button>
                 </div>
               ))}
@@ -231,11 +232,10 @@ export const GlobalSearch = ({ user }: GlobalSearchProps) => {
           ) : (
             Array.from(grouped.entries()).map(([type, items]) => {
               const meta = TYPE_META[type];
-              const GroupIcon = meta.icon;
               return (
                 <div key={type}>
                   <div style={{ padding: "6px 12px 2px", display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 800, letterSpacing: ".04em", textTransform: "uppercase", color: "var(--ap-muted)" }}>
-                    <GroupIcon className="h-3 w-3" /> {t(meta.labelKey)}
+                    <MaterialSymbol name={meta.icon} size={15} /> {t(meta.labelKey)}
                   </div>
                   {items.map((result) => {
                     const i = displayOrder.indexOf(result);

@@ -1,5 +1,5 @@
-import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
+import { MaterialSymbol } from "@/components/MaterialSymbol";
 
 /** Decorative wave lines behind the cover icon — stroke inherits the card's
  *  accent color via currentColor, same motif shape used across every
@@ -22,7 +22,7 @@ function CoverMotif() {
 export function ContentCardHeader({
   image,
   alt,
-  icon: Icon,
+  icon,
   accent,
   /** Type badge shown top-left when there's no custom cover image — same
    *  convention as the dashboard's RecentWorks cards (product-recent-item__badge). */
@@ -31,7 +31,7 @@ export function ContentCardHeader({
 }: {
   image?: string;
   alt: string;
-  icon: LucideIcon;
+  icon: string;
   accent: string;
   label?: string;
   children?: ReactNode;
@@ -54,7 +54,7 @@ export function ContentCardHeader({
           <CoverMotif />
           {label && <span className="product-recent-item__badge">{label}</span>}
           <span style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", color: accent }}>
-            <Icon size={48} strokeWidth={1.8} style={{ opacity: .74, position: "relative" }} />
+            <MaterialSymbol name={icon} size={48} style={{ opacity: .82, position: "relative" }} />
           </span>
         </>
       )}
@@ -66,12 +66,12 @@ export function ContentCardHeader({
 export function ContentRowThumbnail({
   image,
   alt,
-  icon: Icon,
+  icon,
   accent,
 }: {
   image?: string;
   alt: string;
-  icon: LucideIcon;
+  icon: string;
   accent: string;
 }) {
   return (
@@ -90,7 +90,7 @@ export function ContentRowThumbnail({
     >
       {image
         ? <img src={image} alt={alt} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center", display: "block" }} />
-        : <Icon size={23} strokeWidth={1.8} style={{ opacity: .78 }} />}
+        : <MaterialSymbol name={icon} size={24} style={{ opacity: .82 }} />}
     </span>
   );
 }

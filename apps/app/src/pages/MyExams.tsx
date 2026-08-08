@@ -392,7 +392,7 @@ function ExamCard({ d, ctx, navigate, onDuplicate }: ExamItemProps) {
       style={{ opacity: isDragging ? 0.4 : 1, padding: 0 }}
       onClick={() => navigate(`/exam/${exam.id}/admin`)}
     >
-      <ContentCardHeader image={exam.headerImage} alt={exam.title} icon={ClipboardCheck} accent="var(--ap-brand)" label="Examen">
+      <ContentCardHeader image={exam.headerImage} alt={exam.title} icon="assignment_turned_in" accent="var(--ap-brand)" label="Examen">
         <button
           type="button"
           {...attributes}
@@ -461,7 +461,7 @@ function ExamRow({ d, ctx, navigate, onDuplicate }: ExamItemProps) {
       <button type="button" {...attributes} {...listeners} style={gripStyle} onClick={(e) => e.stopPropagation()} aria-label={`Déplacer ${exam.title}`}>
         <GripVertical className="h-4 w-4" />
       </button>
-      <ContentRowThumbnail image={exam.headerImage} alt={exam.title} icon={ClipboardCheck} accent="var(--ap-brand)" />
+      <ContentRowThumbnail image={exam.headerImage} alt={exam.title} icon="assignment_turned_in" accent="var(--ap-brand)" />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
           <span style={{ fontFamily: 'var(--ap-font-display)', fontWeight: 600, fontSize: 16 }}>
