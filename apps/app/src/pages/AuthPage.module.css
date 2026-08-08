@@ -1,11 +1,103 @@
 .shell {
-  --auth-font: "Plus Jakarta Sans Variable", "Plus Jakarta Sans", Inter, system-ui, sans-serif;
+  --auth-font: var(--ap-font-body, "Plus Jakarta Sans Variable", "Plus Jakarta Sans", Inter, system-ui, sans-serif);
   min-height: 100dvh;
   display: grid;
   grid-template-columns: minmax(28rem, 0.92fr) minmax(30rem, 1.08fr);
   background: var(--ap-paper);
   color: var(--ap-ink);
   font-family: var(--auth-font);
+}
+
+/* MaterialPro auth template: the same split-screen structure, expressed with the
+   shared product tokens so authentication is part of the theme system too. */
+:global([data-theme="materialpro"]) .shell {
+  grid-template-columns: minmax(28rem, 0.94fr) minmax(32rem, 1.06fr);
+  background: var(--mp-canvas);
+}
+
+:global([data-theme="materialpro"]) .visual {
+  background: #152c47;
+}
+
+:global([data-theme="materialpro"]) .visualImage {
+  filter: saturate(0.84) contrast(1.04);
+}
+
+:global([data-theme="materialpro"]) .visualScrim {
+  background:
+    linear-gradient(180deg, rgba(5, 25, 48, 0.18) 0%, rgba(5, 25, 48, 0.1) 34%, rgba(5, 25, 48, 0.9) 100%),
+    linear-gradient(125deg, color-mix(in srgb, var(--mp-primary) 48%, transparent), transparent 58%);
+}
+
+:global([data-theme="materialpro"]) .brandMark {
+  border-color: rgba(255, 255, 255, 0.32);
+  border-radius: var(--ap-r-md);
+  background: color-mix(in srgb, var(--mp-primary) 76%, transparent);
+  box-shadow: 0 10px 24px rgba(7, 33, 61, 0.2);
+}
+
+:global([data-theme="materialpro"]) .visualCopy h1 {
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 1.04;
+}
+
+:global([data-theme="materialpro"]) .visualCopy p {
+  font-weight: 400;
+}
+
+:global([data-theme="materialpro"]) .formSide {
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 88% 10%, color-mix(in srgb, var(--mp-info) 12%, transparent) 0 7.5rem, transparent 7.6rem),
+    radial-gradient(circle at 10% 92%, color-mix(in srgb, var(--mp-primary) 10%, transparent) 0 10rem, transparent 10.1rem),
+    var(--mp-canvas);
+}
+
+:global([data-theme="materialpro"]) .formIntro h2 {
+  color: var(--mp-heading);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+
+:global([data-theme="materialpro"]) .formIntro p {
+  color: var(--mp-muted);
+  font-weight: 400;
+}
+
+:global([data-theme="materialpro"]) .authCard {
+  border-color: var(--mp-border);
+  border-radius: var(--ap-r-lg);
+  padding: clamp(1.5rem, 3vw, 2.1rem);
+  background: var(--ap-card);
+  box-shadow: var(--ap-shadow-card);
+}
+
+:global([data-theme="materialpro"]) .socialButton {
+  min-height: 2.75rem;
+  border-color: var(--mp-border);
+  border-radius: var(--ap-r-md);
+  color: var(--mp-heading);
+  font-weight: 500;
+}
+
+:global([data-theme="materialpro"]) .socialButton:hover {
+  border-color: color-mix(in srgb, var(--mp-primary) 46%, var(--mp-border));
+  background: var(--ap-brand-soft);
+}
+
+:global([data-theme="materialpro"]) .submitButton {
+  min-height: 2.75rem;
+  border-radius: var(--ap-r-md) !important;
+  background: var(--mp-primary) !important;
+  color: #fff !important;
+  font-weight: 500 !important;
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--mp-primary) 24%, transparent) !important;
+}
+
+:global([data-theme="materialpro"]) .submitButton:hover:not(:disabled) {
+  background: var(--ap-brand-deep) !important;
 }
 
 .visual {

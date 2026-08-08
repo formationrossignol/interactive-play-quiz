@@ -72,7 +72,13 @@ const Dashboard = () => {
     <AppLayout subtitle="Tableau de bord">
       <div className="product-page product-dashboard">
         <header className="product-dashboard__hero">
-          <div>
+          <div className="product-dashboard__hero-main">
+            <div className="product-page-heading__breadcrumb" aria-label="Brivia, tableau de bord">
+              <MaterialSymbol name="home" size={15} />
+              <span>Brivia</span>
+              <MaterialSymbol name="chevron_right" size={15} />
+              <strong>Dashboard</strong>
+            </div>
             <h1>{firstName ? `Bonjour ${firstName}` : "Votre espace de travail"}</h1>
             <p>Pilotez vos contenus, lancez une activité et suivez les résultats depuis un seul espace.</p>
           </div>

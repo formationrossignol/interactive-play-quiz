@@ -51,6 +51,7 @@ import {
 import type { ContentType, FolderRow } from "@/lib/content/types";
 import type { ItemCtx } from "./GenericItem";
 import { ExplorerEmptyState } from "./ExplorerEmptyState";
+import { PageHeader } from "@/components/ui/page-header";
 
 const PAGE_SIZE = 12;
 
@@ -164,6 +165,8 @@ function ShortcutRow({
 }) {
   return (
     <div
+      className="product-explorer-shortcut"
+      data-active={active || undefined}
       onClick={onClick}
       style={{
         display: "flex",
@@ -210,6 +213,7 @@ function FolderDropCard({ folder, count, onOpen }: { folder: FolderRow; count: n
       ref={setNodeRef}
       onClick={onOpen}
       className="ap-card ap-card--hover"
+      data-ui="folder-card"
       style={{
         display: "flex",
         alignItems: "center",
@@ -607,16 +611,17 @@ export function ContentExplorer({
     <AppLayout subtitle={headerTitle}>
       <div className="product-page product-page--explorer">
         {/* Page head */}
-        <div className="product-page-heading">
-          <div>
-            <h1>{headerTitle}</h1>
-            <p>{headerSubtitle}</p>
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
+        <PageHeader
+          title={headerTitle}
+          description={headerSubtitle}
+          eyebrow="Bibliothèque"
+          action={
+            <div className="flex items-center gap-2 flex-wrap">
             {headerExtras}
             <button className={`ap-btn ap-btn--sm ap-btn--pill ${accentBtn}`} onClick={cta.onClick}>{cta.label}</button>
-          </div>
-        </div>
+            </div>
+          }
+        />
 
         {statsRow}
 
@@ -632,7 +637,7 @@ export function ContentExplorer({
               {/* ===== Unified sidebar ===== */}
               <aside className="md:w-64 md:flex-shrink-0 w-full">
                 <div
-                  className="ap-card"
+                  className="ap-card product-explorer-nav"
                   style={{
                     padding: 12,
                     position: "sticky",
@@ -698,7 +703,7 @@ export function ContentExplorer({
                 </div>
 
                 {showToolbar && (
-                  <div className="flex flex-col sm:flex-row gap-3 mb-5">
+                  <div className="product-explorer-toolbar flex flex-col sm:flex-row gap-3 mb-5">
                     <div className="relative flex-1">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: "var(--ap-muted)" }} />
                       <input
@@ -737,9 +742,9 @@ export function ContentExplorer({
                         <SelectItem value="az">{t("explorerSortAZ")}</SelectItem>
                       </SelectContent>
                     </Select>
-                    <div className="flex gap-1 flex-shrink-0">
-                      <button onClick={() => setViewMode("grid")} style={toggleBtnStyle(viewMode === "grid")} title={t("explorerGridView")}><LayoutGrid className="w-4 h-4" /></button>
-                      <button onClick={() => setViewMode("list")} style={toggleBtnStyle(viewMode === "list")} title={t("explorerListView")}><List className="w-4 h-4" /></button>
+                    <div className="product-view-toggle flex gap-1 flex-shrink-0">
+                      <button data-active={viewMode === "grid" || undefined} onClick={() => setViewMode("grid")} style={toggleBtnStyle(viewMode === "grid")} title={t("explorerGridView")}><LayoutGrid className="w-4 h-4" /></button>
+                      <button data-active={viewMode === "list" || undefined} onClick={() => setViewMode("list")} style={toggleBtnStyle(viewMode === "list")} title={t("explorerListView")}><List className="w-4 h-4" /></button>
                     </div>
                   </div>
                 )}

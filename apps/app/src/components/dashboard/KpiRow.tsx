@@ -5,6 +5,7 @@ import { MaterialSymbol } from "@/components/MaterialSymbol";
 interface Tile {
   iconName: string;
   iconColor: string;
+  tone: "warning" | "primary" | "secondary" | "success";
   label: string;
   value: string | number;
   deltaPct: number | null;
@@ -50,8 +51,8 @@ function TrendBadge({ deltaPct, hero = false }: { deltaPct: number | null; hero?
   const flat = deltaPct === 0;
   const positive = deltaPct > 0;
   const symbolName = flat ? "remove" : positive ? "arrow_drop_up" : "arrow_drop_down";
-  const color = hero ? "#fff" : flat ? "var(--ap-muted)" : positive ? "#15c08a" : "#ff5a4d";
-  const chipBg = hero ? "rgba(255, 255, 255, .2)" : `color-mix(in srgb, ${color} 14%, transparent)`;
+  const color = hero ? "var(--product-kpi-hero-contrast, #fff)" : flat ? "var(--ap-muted)" : positive ? "#15c08a" : "#ff5a4d";
+  const chipBg = hero ? "var(--product-kpi-hero-chip, rgba(255, 255, 255, .2))" : `color-mix(in srgb, ${color} 14%, transparent)`;
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 6, minWidth: 0 }}>
       <span
@@ -116,6 +117,7 @@ export function KpiRow({ stats, charts }: { stats: DashboardStats | null; charts
   const tiles: Tile[] = [
     {
       iconName: "target", iconColor: "#f59e0b",
+      tone: "warning",
       label: "Score moyen (quiz)", value: s.avgScore != null ? `${s.avgScore} pts` : "-",
       deltaPct: scoreDeltaPct,
       emptyHint: s.avgScore == null ? "Pas encore de score" : undefined,
@@ -125,6 +127,7 @@ export function KpiRow({ stats, charts }: { stats: DashboardStats | null; charts
     },
     {
       iconName: "bar_chart", iconColor: "var(--ap-brand-deep)",
+      tone: "primary",
       label: "Sessions totales", value: s.totalSessions,
       deltaPct: s.trends.sessions.deltaPct,
       spark: sessionsSpark,
@@ -133,6 +136,7 @@ export function KpiRow({ stats, charts }: { stats: DashboardStats | null; charts
     },
     {
       iconName: "group", iconColor: "var(--ap-poll)",
+      tone: "secondary",
       label: "Participants totaux", value: s.totalParticipants,
       deltaPct: s.trends.participants.deltaPct,
       spark: participantsSpark,
@@ -141,6 +145,7 @@ export function KpiRow({ stats, charts }: { stats: DashboardStats | null; charts
     },
     {
       iconName: "auto_awesome", iconColor: "var(--ap-brand)",
+      tone: "success",
       label: "Créations", value: s.totalCreations,
       deltaPct: s.trends.creations.deltaPct,
       sparkColor: "var(--ap-brand)",
@@ -150,13 +155,14 @@ export function KpiRow({ stats, charts }: { stats: DashboardStats | null; charts
 
   return (
     <div className="product-kpis">
-      {tiles.map(({ iconName, iconColor, label, value, deltaPct, emptyHint, spark, sparkColor, onClick }, index) => {
+      {tiles.map(({ iconName, iconColor, tone, label, value, deltaPct, emptyHint, spark, sparkColor, onClick }, index) => {
         const hero = index === 0;
         return (
           <button
             key={label}
             type="button"
             onClick={onClick}
+            data-tone={tone}
             className={`product-kpi${hero ? " product-kpi--hero" : ""}`}
             aria-label={`${label} : ${value}. Afficher le détail`}
           >
@@ -173,7 +179,7 @@ export function KpiRow({ stats, charts }: { stats: DashboardStats | null; charts
               {deltaPct !== null
                 ? <TrendBadge deltaPct={deltaPct} hero={hero} />
                 : emptyHint && <span className="ap-muted" style={{ fontSize: 10.5 }}>{emptyHint}</span>}
-              {spark && <Sparkline values={spark} color={hero ? "#fff" : sparkColor} />}
+              {spark && <Sparkline values={spark} color={hero ? "var(--product-kpi-hero-contrast, #fff)" : sparkColor} />}
             </span>
           </button>
         );
