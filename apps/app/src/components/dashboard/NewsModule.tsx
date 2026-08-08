@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { Rocket } from "lucide-react";
 import { fetchLatestChangelog, type ChangelogRelease } from "@/lib/changelog";
 import { ListSkeleton } from "@/components/ui/skeletons";
 import { Link } from "react-router-dom";
+import { MaterialSymbol } from "@/components/MaterialSymbol";
 
 export function NewsModule() {
   const [releases, setReleases] = useState<ChangelogRelease[] | null>(null);
@@ -26,7 +26,7 @@ export function NewsModule() {
       ) : releases.length === 0 ? (
         <div className="product-empty-inline" style={{ minHeight: 180 }}>
           <div>
-            <Rocket size={24} style={{ margin: "0 auto" }} />
+            <MaterialSymbol name="rocket_launch" size={24} />
             <strong>Vous êtes à jour</strong>
             <span style={{ fontSize: 12 }}>Les prochaines versions seront publiées ici.</span>
           </div>
@@ -36,7 +36,7 @@ export function NewsModule() {
           {releases.map((r) => (
             <div key={r.id} className="product-news-item">
               <span className="product-news-item__icon">
-                <Rocket style={{ width: 15, height: 15 }} />
+                <MaterialSymbol name="rocket_launch" size={18} />
               </span>
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontWeight: 720, fontSize: "12.5px", color: "var(--ap-ink)" }}>

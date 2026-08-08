@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { changePassword, enrollMfa, verifyMfaCode, unenrollMfa, getVerifiedTotpFactor, type MfaEnrollment } from "@/lib/auth";
 import { toast } from "sonner";
 import { t } from "@/lib/i18n";
-import { ShieldCheck, Shield, KeyRound } from "lucide-react";
+import { MaterialSymbol } from "@/components/MaterialSymbol";
 
 const inputStyle: React.CSSProperties = {
   width: "100%",
@@ -116,7 +116,7 @@ export const SecuritySection = () => {
   return (
     <div className="product-settings-panel">
       <h2 className="ap-h3" style={{ marginBottom: "20px", display: "flex", alignItems: "center", gap: "10px" }}>
-        <KeyRound style={{ width: 18, height: 18 }} />
+        <MaterialSymbol name="key" size={19} />
         {t("security")}
       </h2>
 
@@ -143,8 +143,8 @@ export const SecuritySection = () => {
       <div style={{ borderTop: "var(--ap-border-w) solid var(--ap-line)", paddingTop: "24px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px" }}>
           {mfaEnabled
-            ? <ShieldCheck style={{ width: 18, height: 18, color: "var(--ap-pres)" }} />
-            : <Shield style={{ width: 18, height: 18, color: "var(--ap-muted)" }} />}
+            ? <MaterialSymbol name="verified_user" size={19} style={{ color: "var(--ap-pres)" }} />
+            : <MaterialSymbol name="shield" size={19} style={{ color: "var(--ap-muted)" }} />}
           <span style={{ fontFamily: "var(--ap-font-display)", fontWeight: 700, fontSize: "15px", color: "var(--ap-ink)" }}>{t("mfaTitle")}</span>
         </div>
         <p className="ap-muted" style={{ fontSize: "13px", marginBottom: "16px" }}>

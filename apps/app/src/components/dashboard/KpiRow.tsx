@@ -131,18 +131,18 @@ export function KpiRow({ stats, charts }: { stats: DashboardStats | null; charts
 
   const tiles: Tile[] = [
     {
-      iconName: "database", iconColor: "var(--ap-brand-deep)",
+      iconName: "dns", iconColor: "var(--ap-brand-deep)",
       tone: "primary",
       label: "Sessions totales", value: s.totalSessions,
       deltaPct: s.trends.sessions.deltaPct,
       spark: sessionsSpark,
       sparkColor: "rgba(255,255,255,.9)",
       featured: "primary",
-      sparkVariant: "line",
+      sparkVariant: "bars",
       onClick: scrollToChart("dashboard-activity-chart"),
     },
     {
-      iconName: "group", iconColor: "var(--ap-poll)",
+      iconName: "bar_chart", iconColor: "var(--ap-poll)",
       tone: "secondary",
       label: "Participants totaux", value: s.totalParticipants,
       deltaPct: s.trends.participants.deltaPct,
@@ -153,17 +153,18 @@ export function KpiRow({ stats, charts }: { stats: DashboardStats | null; charts
       onClick: scrollToChart("dashboard-activity-chart"),
     },
     {
-      iconName: "target", iconColor: "#f59e0b",
+      iconName: "analytics", iconColor: "#f59e0b",
       tone: "warning",
       label: "Score moyen (quiz)", value: s.avgScore != null ? `${s.avgScore} pts` : "-",
       deltaPct: scoreDeltaPct,
       emptyHint: s.avgScore == null ? "Pas encore de score" : undefined,
       spark: scoreSpark,
       sparkColor: "#f59e0b",
+      sparkVariant: "bars",
       onClick: scrollToChart("dashboard-score-chart"),
     },
     {
-      iconName: "auto_awesome", iconColor: "var(--ap-brand)",
+      iconName: "category", iconColor: "var(--ap-brand)",
       tone: "success",
       label: "Créations", value: s.totalCreations,
       deltaPct: s.trends.creations.deltaPct,
@@ -189,7 +190,7 @@ export function KpiRow({ stats, charts }: { stats: DashboardStats | null; charts
             <div>
               <div className="product-kpi__top">
                 <span className="product-kpi__icon" style={hero ? undefined : { color: iconColor }}>
-                  <MaterialSymbol name={iconName} size={20} filled />
+                  <MaterialSymbol name={iconName} size={20} />
                 </span>
                 <span className="product-kpi__label">{label}</span>
               </div>

@@ -121,7 +121,7 @@ const Dashboard = () => {
           )}
         </section>
 
-        <section aria-labelledby="dashboard-performance-title">
+        <section className="product-dashboard__performance" aria-labelledby="dashboard-performance-title">
           <div className="product-section-heading">
             <div>
               <h2 id="dashboard-performance-title">Activité et performance</h2>
