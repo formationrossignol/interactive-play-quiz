@@ -6,13 +6,13 @@ import { listRecentContent } from "@/lib/content/contentRepo";
 import { getSearchResultRoute } from "@/lib/content/searchContent";
 import type { ContentRow, ContentType } from "@/lib/content/types";
 
-const META: Record<ContentType, { label: string; color: string; icon: string }> = {
-  quiz: { label: "Quiz", color: "var(--ap-quiz)", icon: "menu_book" },
-  poll: { label: "Sondage", color: "var(--ap-poll)", icon: "bar_chart" },
-  flashcard: { label: "Flashcards", color: "var(--ap-flash)", icon: "layers" },
-  slide: { label: "Présentation", color: "var(--ap-pres)", icon: "slideshow" },
-  course: { label: "Cours", color: "var(--ap-pres)", icon: "school" },
-  exam: { label: "Examen", color: "var(--ap-brand)", icon: "fact_check" },
+const META: Record<ContentType, { label: string; color: string; background: string; icon: string }> = {
+  quiz: { label: "Quiz", color: "var(--content-quiz-accent)", background: "var(--content-quiz-surface)", icon: "menu_book" },
+  poll: { label: "Sondage", color: "var(--content-poll-accent)", background: "var(--content-poll-surface)", icon: "bar_chart" },
+  flashcard: { label: "Flashcards", color: "var(--content-flashcard-accent)", background: "var(--content-flashcard-surface)", icon: "layers" },
+  slide: { label: "Présentation", color: "var(--content-slide-accent)", background: "var(--content-slide-surface)", icon: "slideshow" },
+  course: { label: "Cours", color: "var(--content-course-accent)", background: "var(--content-course-surface)", icon: "school" },
+  exam: { label: "Examen", color: "var(--content-exam-accent)", background: "var(--content-exam-surface)", icon: "fact_check" },
 };
 
 const itemId = (row: ContentRow) => String((row.data?.id as string | undefined) ?? row.source_id ?? row.id);
@@ -101,7 +101,7 @@ export function RecentWorks({ userId }: { userId: string }) {
                     color: meta.color,
                     background: image
                       ? "var(--ap-paper-2)"
-                      : `color-mix(in srgb, ${meta.color} 13%, var(--ap-paper-2))`,
+                      : meta.background,
                   }}
                 >
                   {!image && (
@@ -116,7 +116,7 @@ export function RecentWorks({ userId }: { userId: string }) {
                       <path d="M-10 105 Q80 60 170 85 T310 70" fill="none" stroke="currentColor" strokeWidth="1" opacity=".1" />
                     </svg>
                   )}
-                  {!image && <span className="product-recent-item__badge">{meta.label}</span>}
+                  {!image && <span className="product-recent-item__badge" style={{ color: meta.color, background: "var(--ap-card)" }}>{meta.label}</span>}
                   {image
                     ? <img src={image} alt="" className="h-full w-full object-cover" />
                     : <MaterialSymbol name={meta.icon} size={36} style={{ color: meta.color, opacity: .82, position: "relative" }} />}

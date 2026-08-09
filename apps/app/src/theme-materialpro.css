@@ -51,6 +51,21 @@
   --ap-line: var(--mp-border);
   --ap-line-2: var(--mp-border);
 
+  --content-quiz-accent: #655cf6;
+  --content-quiz-surface: #eeecff;
+  --content-flashcard-accent: #3498db;
+  --content-flashcard-surface: #eaf7ff;
+  --content-slide-accent: #e8873a;
+  --content-slide-surface: #fff1e8;
+  --content-exam-accent: #d95c5c;
+  --content-exam-surface: #fdecec;
+  --content-poll-accent: #2fa66d;
+  --content-poll-surface: #eaf8f1;
+  --content-course-accent: #8a5cf6;
+  --content-course-surface: #f3edff;
+  --content-path-accent: #c79220;
+  --content-path-surface: #fff7dd;
+
   --ap-quiz: var(--mp-primary);
   --ap-quiz-deep: var(--mp-secondary);
   --ap-quiz-soft: var(--ap-brand-soft);
@@ -123,6 +138,13 @@
   --ap-line: var(--mp-border);
   --ap-line-2: var(--mp-border);
   --ap-brand-soft: color-mix(in srgb, var(--mp-primary) 12%, #11151d);
+  --content-quiz-surface: color-mix(in srgb, var(--content-quiz-accent) 16%, #11151d);
+  --content-flashcard-surface: color-mix(in srgb, var(--content-flashcard-accent) 16%, #11151d);
+  --content-slide-surface: color-mix(in srgb, var(--content-slide-accent) 16%, #11151d);
+  --content-exam-surface: color-mix(in srgb, var(--content-exam-accent) 16%, #11151d);
+  --content-poll-surface: color-mix(in srgb, var(--content-poll-accent) 16%, #11151d);
+  --content-course-surface: color-mix(in srgb, var(--content-course-accent) 16%, #11151d);
+  --content-path-surface: color-mix(in srgb, var(--content-path-accent) 16%, #11151d);
   --ap-quiz-soft: var(--ap-brand-soft);
   --ap-poll-soft: var(--ap-brand-soft);
   --ap-flash-soft: var(--ap-brand-soft);

@@ -52,7 +52,7 @@ function CourseCard({ d, ctx, navigate, userId }: CourseItemProps) {
       style={{ opacity: isDragging ? 0.4 : 1, padding: 0 }}
       onClick={() => navigate(`/course/${course.id}`)}
     >
-      <ContentCardHeader image={course.coverImage} alt={course.title} icon="school" accent="var(--ap-pres)" label="Cours">
+      <ContentCardHeader image={course.coverImage} alt={course.title} icon="school" accent="var(--content-course-accent)" background="var(--content-course-surface)" label="Cours">
         <button type="button" {...attributes} {...listeners} style={gripOverlayStyle} className="ap-grip" onClick={(e) => e.stopPropagation()} aria-label={`Déplacer ${course.title}`}>
           <GripVertical style={{ width: 14, height: 14 }} />
         </button>
@@ -86,7 +86,7 @@ function CourseCard({ d, ctx, navigate, userId }: CourseItemProps) {
               <span className="text-xs" style={{ color: "var(--ap-muted)" }}>{completed}/{total}</span>
             </div>
             <div style={{ height: 4, background: "var(--ap-line)", borderRadius: "var(--ap-r-sm)" }}>
-              <div style={{ height: "100%", width: `${pct}%`, background: "var(--ap-pres)", borderRadius: "var(--ap-r-sm)", transition: "width 0.3s" }} />
+              <div style={{ height: "100%", width: `${pct}%`, background: "var(--content-course-accent)", borderRadius: "var(--ap-r-sm)", transition: "width 0.3s" }} />
             </div>
           </div>
         )}
@@ -135,13 +135,13 @@ function CourseRow({ d, ctx, navigate, userId }: CourseItemProps) {
       <button type="button" {...attributes} {...listeners} style={gripStyle} className="ap-grip" onClick={(e) => e.stopPropagation()} aria-label={`Déplacer ${course.title}`}>
         <GripVertical className="h-4 w-4" />
       </button>
-      <ContentRowThumbnail image={course.coverImage} alt={course.title} icon="school" accent="var(--ap-pres)" />
+      <ContentRowThumbnail image={course.coverImage} alt={course.title} icon="school" accent="var(--content-course-accent)" background="var(--content-course-surface)" />
       <div className="flex-1 min-w-0">
         <p className="ap-h3 truncate" style={{ fontSize: "14px", marginBottom: "2px" }}>{course.title}</p>
         {course.description && <p className="ap-muted truncate" style={{ fontSize: "12px" }}>{course.description}</p>}
         {total > 0 && progress && (
           <div style={{ height: 3, background: "var(--ap-line)", borderRadius: "var(--ap-r-sm)", marginTop: 4, width: 120 }}>
-            <div style={{ height: "100%", width: `${pct}%`, background: "var(--ap-pres)", borderRadius: "var(--ap-r-sm)" }} />
+            <div style={{ height: "100%", width: `${pct}%`, background: "var(--content-course-accent)", borderRadius: "var(--ap-r-sm)" }} />
           </div>
         )}
       </div>

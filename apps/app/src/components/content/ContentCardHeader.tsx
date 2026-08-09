@@ -24,6 +24,7 @@ export function ContentCardHeader({
   alt,
   icon,
   accent,
+  background,
   /** Type badge shown top-left when there's no custom cover image — same
    *  convention as the dashboard's RecentWorks cards (product-recent-item__badge). */
   label,
@@ -33,13 +34,14 @@ export function ContentCardHeader({
   alt: string;
   icon: string;
   accent: string;
+  background?: string;
   label?: string;
   children?: ReactNode;
 }) {
   return (
     <div
       className="product-content-cover relative h-52 w-full flex-shrink-0 overflow-hidden"
-      style={{ background: `color-mix(in srgb, ${accent} 14%, var(--ap-paper-2))`, color: accent }}
+      style={{ background: background ?? `color-mix(in srgb, ${accent} 14%, var(--ap-paper-2))`, color: accent }}
     >
       {image ? (
         <img
@@ -52,7 +54,7 @@ export function ContentCardHeader({
       ) : (
         <>
           <CoverMotif />
-          {label && <span className="product-recent-item__badge">{label}</span>}
+          {label && <span className="product-recent-item__badge" style={{ color: accent, background: "var(--ap-card)" }}>{label}</span>}
           <span style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", color: accent }}>
             <MaterialSymbol name={icon} size={48} style={{ opacity: .82, position: "relative" }} />
           </span>
@@ -68,11 +70,13 @@ export function ContentRowThumbnail({
   alt,
   icon,
   accent,
+  background,
 }: {
   image?: string;
   alt: string;
   icon: string;
   accent: string;
+  background?: string;
 }) {
   return (
     <span
@@ -84,7 +88,7 @@ export function ContentRowThumbnail({
         placeItems: "center",
         overflow: "hidden",
         borderRadius: "var(--ap-r-sm)",
-        background: `color-mix(in srgb, ${accent} 14%, var(--ap-paper-2))`,
+        background: background ?? `color-mix(in srgb, ${accent} 14%, var(--ap-paper-2))`,
         color: accent,
       }}
     >

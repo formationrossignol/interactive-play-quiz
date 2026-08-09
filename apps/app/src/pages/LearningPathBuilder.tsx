@@ -290,7 +290,7 @@ export default function LearningPathBuilder() {
                     return (
                       <article key={step.id} style={{ border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-md)", overflow: "hidden", background: "var(--ap-card)" }}>
                         <div className="flex items-center gap-3" style={{ padding: "14px 16px", background: "var(--ap-paper-2)", borderBottom: "var(--ap-border-w) solid var(--ap-line)" }}>
-                          <div style={{ width: 34, height: 34, flexShrink: 0, display: "grid", placeItems: "center", borderRadius: "50%", background: "var(--ap-brand)", color: "#fff", fontWeight: 900 }}>
+                          <div style={{ width: 34, height: 34, flexShrink: 0, display: "grid", placeItems: "center", borderRadius: "var(--ap-r-sm)", background: "var(--content-path-accent)", color: "#fff", fontWeight: 900 }}>
                             {index + 1}
                           </div>
                           <div style={{ minWidth: 0, flex: 1 }}>
@@ -331,8 +331,8 @@ export default function LearningPathBuilder() {
                             {index === 0 ? (
                               <p className="ap-muted" style={{ fontSize: 13, paddingTop: 8 }}>Aucun, première étape</p>
                             ) : isSequential ? (
-                              <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 11px", background: "color-mix(in srgb, var(--ap-brand) 9%, transparent)", borderRadius: "var(--ap-r-sm)", fontSize: 12.5, fontWeight: 700 }}>
-                                <Link2 className="h-4 w-4" style={{ color: "var(--ap-brand)" }} />
+                              <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 11px", background: "var(--content-path-surface)", borderRadius: "var(--ap-r-sm)", fontSize: 12.5, fontWeight: 700 }}>
+                                <Link2 className="h-4 w-4" style={{ color: "var(--content-path-accent)" }} />
                                 Étape {index} validée automatiquement
                               </div>
                             ) : (
@@ -366,8 +366,8 @@ export default function LearningPathBuilder() {
 
             <aside className="flex flex-col gap-5">
               <div className="ap-card" style={{ position: "sticky", top: "calc(var(--app-header-height, 64px) + 20px)" }}>
-                <div style={{ width: 48, height: 48, borderRadius: "var(--ap-r-md)", display: "grid", placeItems: "center", background: "color-mix(in srgb, var(--ap-brand) 12%, transparent)", marginBottom: 14 }}>
-                  <GitBranch style={{ width: 24, height: 24, color: "var(--ap-brand)" }} />
+                <div style={{ width: 48, height: 48, borderRadius: "var(--ap-r-md)", display: "grid", placeItems: "center", background: "var(--content-path-surface)", marginBottom: 14 }}>
+                  <GitBranch style={{ width: 24, height: 24, color: "var(--content-path-accent)" }} />
                 </div>
                 <h2 className="ap-h3" style={{ fontSize: 17 }}>Règle de progression</h2>
                 <p className="ap-muted" style={{ fontSize: 13, lineHeight: 1.55, margin: "6px 0 16px" }}>
