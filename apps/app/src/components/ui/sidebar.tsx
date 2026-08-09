@@ -207,7 +207,10 @@ const Sidebar = React.forwardRef<
         <div
           data-sidebar="sidebar"
           className="flex h-full w-full flex-col overflow-y-auto group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow"
-          style={{ backgroundColor: "var(--ap-card)", borderColor: "var(--ap-line)" }}
+          style={{
+            backgroundColor: "var(--mp-sidebar, var(--ap-card))",
+            borderColor: "var(--mp-sidebar-border, var(--ap-line))",
+          }}
         >
           {children}
         </div>
