@@ -38,6 +38,16 @@
   --mp-chart-grid: #e5e7eb;
   --mp-chart-axis: #697386;
   --mp-text-muted: #697386;
+  --metric-score-surface: #f0eeff;
+  --metric-score-accent: #655cf6;
+  --metric-participants-surface: #eaf7ff;
+  --metric-participants-accent: #3498db;
+  --metric-success-surface: #ecf8f2;
+  --metric-success-accent: #2fa66d;
+  --metric-warning-surface: #fff7e6;
+  --metric-warning-accent: #d89a2b;
+  --metric-danger-surface: #fdeeee;
+  --metric-danger-accent: #d95c5c;
 
   --ap-brand: var(--mp-primary);
   --ap-brand-deep: #4d4ed8;
@@ -128,6 +138,16 @@
   --mp-chart-grid: #202632;
   --mp-chart-axis: #747f90;
   --mp-text-muted: #667085;
+  --metric-score-surface: color-mix(in srgb, #655cf6 15%, #11151d);
+  --metric-score-accent: #8178ff;
+  --metric-participants-surface: color-mix(in srgb, #3498db 15%, #11151d);
+  --metric-participants-accent: #55b8e8;
+  --metric-success-surface: color-mix(in srgb, #2fa66d 15%, #11151d);
+  --metric-success-accent: #32d296;
+  --metric-warning-surface: color-mix(in srgb, #d89a2b 15%, #11151d);
+  --metric-warning-accent: #f0b95a;
+  --metric-danger-surface: color-mix(in srgb, #d95c5c 15%, #11151d);
+  --metric-danger-accent: #f06a6a;
   --ap-brand-deep: #857dff;
   --ap-logo-diamond: #7168f8;
   --ap-ink: var(--mp-heading);
@@ -3285,6 +3305,148 @@
   width: 84px;
   max-width: 84px;
   height: 24px;
+}
+
+/* Profile identity block: quiet premium surface with one restrained halo. */
+:root:not(.dark)[data-theme="materialpro"] .product-profile-hero {
+  align-items: center;
+  border: 1px solid #e0e4ea;
+  color: #171a22;
+  background: #f8f9fc;
+  box-shadow: none;
+}
+
+:root:not(.dark)[data-theme="materialpro"] .product-profile-hero > * {
+  position: relative;
+  z-index: 1;
+}
+
+:root:not(.dark)[data-theme="materialpro"] .product-profile-hero::after {
+  top: -72px;
+  right: -68px;
+  bottom: auto;
+  width: 250px;
+  height: 250px;
+  border: 36px solid #ecebff;
+  background: transparent;
+}
+
+:root:not(.dark)[data-theme="materialpro"] .product-profile-hero h1 {
+  color: #171a22;
+}
+
+:root:not(.dark)[data-theme="materialpro"] .product-profile-hero p {
+  color: #7a8496;
+}
+
+:root:not(.dark)[data-theme="materialpro"] .product-profile-avatar {
+  border: 1px solid #d9dde6;
+  color: #5b5cf0;
+  background: #e9e7ff;
+  box-shadow: none;
+}
+
+:root:not(.dark)[data-theme="materialpro"] .product-profile-plan {
+  border: 1px solid #d9dde6;
+  color: #252936;
+  background: #ffffff;
+}
+
+/* All preference controls share the same top baseline. */
+[data-theme="materialpro"] .product-settings-panel--preferences > div:last-child {
+  align-items: start;
+}
+
+/* Lets Icons inherit these states directly through currentColor. */
+:root:not(.dark)[data-theme="materialpro"] .product-shell-root [data-sidebar="menu-button"] {
+  border-radius: 10px;
+  color: #4b5568;
+}
+
+:root:not(.dark)[data-theme="materialpro"] .product-shell-root [data-sidebar="menu-button"] .lets-icon {
+  color: #697386;
+}
+
+:root:not(.dark)[data-theme="materialpro"] .product-shell-root [data-sidebar="menu-button"]:hover {
+  color: #2b275a;
+  background: #f1f0ff;
+}
+
+:root:not(.dark)[data-theme="materialpro"] .product-shell-root [data-sidebar="menu-button"]:hover .lets-icon {
+  color: #655cf6;
+}
+
+:root:not(.dark)[data-theme="materialpro"] .product-shell-root [data-sidebar="menu-button"][data-active="true"] {
+  color: #29235c;
+  background: #e7e5ff;
+}
+
+:root:not(.dark)[data-theme="materialpro"] .product-shell-root [data-sidebar="menu-button"][data-active="true"] .lets-icon {
+  color: #5b5cf0;
+}
+
+.dark[data-theme="materialpro"] .product-shell-root [data-sidebar="menu-button"] .lets-icon {
+  color: var(--mp-text-muted);
+}
+
+.dark[data-theme="materialpro"] .product-shell-root [data-sidebar="menu-button"][data-active="true"] .lets-icon {
+  color: var(--ap-brand-deep);
+}
+
+/* Semantic KPI surfaces remain distinct from global CTA colors. */
+[data-theme="materialpro"] .product-kpi[data-surface="participants"] {
+  border-color: color-mix(in srgb, var(--metric-participants-accent) 18%, var(--ap-line));
+  background: var(--metric-participants-surface);
+}
+
+[data-theme="materialpro"] .product-kpi[data-surface="participants"] .product-kpi__icon,
+[data-theme="materialpro"] .product-kpi[data-surface="participants"] .product-kpi__value {
+  color: var(--metric-participants-accent);
+}
+
+[data-theme="materialpro"] .product-kpi[data-surface="score"] {
+  border-color: color-mix(in srgb, var(--metric-score-accent) 18%, var(--ap-line));
+  background: var(--metric-score-surface);
+}
+
+[data-theme="materialpro"] .product-kpi[data-surface="score"] .product-kpi__icon,
+[data-theme="materialpro"] .product-kpi[data-surface="score"] .product-kpi__value {
+  color: var(--metric-score-accent);
+}
+
+[data-theme="materialpro"] .product-kpi[data-surface="success"] {
+  border-color: color-mix(in srgb, var(--metric-success-accent) 18%, var(--ap-line));
+  background: var(--metric-success-surface);
+}
+
+[data-theme="materialpro"] .product-kpi[data-surface="success"] .product-kpi__icon,
+[data-theme="materialpro"] .product-kpi[data-surface="success"] .product-kpi__value {
+  color: var(--metric-success-accent);
+}
+
+[data-theme="materialpro"] .product-kpi[data-surface="warning"] {
+  border-color: color-mix(in srgb, var(--metric-warning-accent) 18%, var(--ap-line));
+  background: var(--metric-warning-surface);
+}
+
+[data-theme="materialpro"] .product-kpi[data-surface="warning"] .product-kpi__icon,
+[data-theme="materialpro"] .product-kpi[data-surface="warning"] .product-kpi__value {
+  color: var(--metric-warning-accent);
+}
+
+[data-theme="materialpro"] .product-kpi[data-surface="danger"] {
+  border-color: color-mix(in srgb, var(--metric-danger-accent) 18%, var(--ap-line));
+  background: var(--metric-danger-surface);
+}
+
+[data-theme="materialpro"] .product-kpi[data-surface="danger"] .product-kpi__icon,
+[data-theme="materialpro"] .product-kpi[data-surface="danger"] .product-kpi__value {
+  color: var(--metric-danger-accent);
+}
+
+[data-theme="materialpro"] .product-analytics-card .recharts-area-curve {
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 @media (prefers-reduced-motion: reduce) {
