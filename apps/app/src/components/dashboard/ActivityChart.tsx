@@ -5,8 +5,8 @@ import type { ActivityPoint } from "@/lib/dashboardStats";
 import { MaterialSymbol } from "@/components/MaterialSymbol";
 
 const chartConfig = {
-  sessions: { label: "Sessions", color: "var(--ap-brand)" },
-  participants: { label: "Participants", color: "var(--ap-muted)" },
+  sessions: { label: "Sessions", color: "var(--mp-chart-primary)" },
+  participants: { label: "Participants", color: "var(--mp-chart-secondary)" },
 } satisfies ChartConfig;
 
 const formatDay = (iso: string) => {

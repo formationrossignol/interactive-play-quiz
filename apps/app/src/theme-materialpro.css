@@ -27,6 +27,17 @@
   --mp-muted: #697386;
   --mp-canvas: #f8f9fb;
   --mp-border: #e5e7eb;
+  --mp-sidebar: #ffffff;
+  --mp-sidebar-border: #e5e7eb;
+  --mp-elevated: #ffffff;
+  --mp-hover: #f3f4f7;
+  --mp-sidebar-active: color-mix(in srgb, #5b5cf0 10%, #ffffff);
+  --mp-chart-primary: #5b5cf0;
+  --mp-chart-secondary: #38bdf8;
+  --mp-chart-positive: #2ccb8c;
+  --mp-chart-grid: #e5e7eb;
+  --mp-chart-axis: #697386;
+  --mp-text-muted: #697386;
 
   --ap-brand: var(--mp-primary);
   --ap-brand-deep: #4d4ed8;
@@ -80,28 +91,48 @@
 
 .dark[data-theme="materialpro"] {
   color-scheme: dark;
-  --mp-heading: #f5f7fa;
-  --mp-muted: #98a2b3;
-  --mp-canvas: #080b12;
-  --mp-border: #252b38;
-  --ap-ink: #f5f7fa;
-  --ap-muted: #98a2b3;
-  --ap-paper: #080b12;
-  --ap-paper-2: #171c27;
-  --ap-card: #10141d;
-  --ap-line: #252b38;
-  --ap-line-2: #252b38;
-  --ap-brand-soft: color-mix(in srgb, var(--mp-primary) 15%, #10141d);
+  --mp-primary: #7168f8;
+  --mp-secondary: #857dff;
+  --mp-info: #55b8e8;
+  --mp-success: #32d296;
+  --mp-warning: #f0b95a;
+  --mp-danger: #f06a6a;
+  --mp-purple: #7168f8;
+  --mp-heading: #f4f6f8;
+  --mp-muted: #9aa4b2;
+  --mp-canvas: #090b10;
+  --mp-border: #242b38;
+  --mp-sidebar: #0c0f15;
+  --mp-sidebar-border: #1d2330;
+  --mp-elevated: #161b25;
+  --mp-hover: #1a202b;
+  --mp-sidebar-active: #171c27;
+  --mp-chart-primary: #8178ff;
+  --mp-chart-secondary: #55b8e8;
+  --mp-chart-positive: #32d296;
+  --mp-chart-grid: #202632;
+  --mp-chart-axis: #747f90;
+  --mp-text-muted: #667085;
+  --ap-brand-deep: #857dff;
+  --ap-logo-diamond: #7168f8;
+  --ap-ink: var(--mp-heading);
+  --ap-muted: var(--mp-muted);
+  --ap-paper: var(--mp-canvas);
+  --ap-paper-2: #161b25;
+  --ap-card: #11151d;
+  --ap-line: var(--mp-border);
+  --ap-line-2: var(--mp-border);
+  --ap-brand-soft: color-mix(in srgb, var(--mp-primary) 12%, #11151d);
   --ap-quiz-soft: var(--ap-brand-soft);
   --ap-poll-soft: var(--ap-brand-soft);
   --ap-flash-soft: var(--ap-brand-soft);
   --ap-pres-soft: var(--ap-brand-soft);
-  --ap-danger-soft: color-mix(in srgb, #f06464 14%, #10141d);
-  --ap-shadow-soft: 0 1px 2px rgb(0 0 0 / 18%);
-  --ap-shadow-card: 0 18px 42px rgb(0 0 0 / 24%);
-  --ap-shadow-float: 0 24px 64px rgb(0 0 0 / 42%);
-  --ap-shadow-neu: 0 1px 2px rgb(0 0 0 / 18%);
-  --ap-shadow-neu-hover: 0 1px 2px rgb(0 0 0 / 18%);
+  --ap-danger-soft: color-mix(in srgb, var(--mp-danger) 12%, #11151d);
+  --ap-shadow-soft: 0 1px 2px rgb(0 0 0 / 24%);
+  --ap-shadow-card: 0 10px 30px rgb(0 0 0 / 20%);
+  --ap-shadow-float: 0 24px 64px rgb(0 0 0 / 45%);
+  --ap-shadow-neu: 0 1px 2px rgb(0 0 0 / 24%);
+  --ap-shadow-neu-hover: 0 8px 24px rgb(0 0 0 / 24%);
 }
 
 /* Base surfaces and type scale. */
@@ -2833,18 +2864,18 @@
 }
 
 [data-theme="materialpro"] .product-shell-root [data-sidebar="sidebar"] {
-  border-right: 1px solid var(--ap-line);
-  background: var(--ap-card);
+  border-right: 1px solid var(--mp-sidebar-border);
+  background: var(--mp-sidebar);
 }
 
 [data-theme="materialpro"] .product-sidebar-brand,
 [data-theme="materialpro"] .product-topbar {
   color: var(--ap-ink);
-  background: var(--ap-card);
+  background: var(--mp-sidebar);
 }
 
 [data-theme="materialpro"] .product-topbar {
-  border-bottom: 1px solid var(--ap-line);
+  border-bottom: 1px solid var(--mp-sidebar-border);
 }
 
 [data-theme="materialpro"] .product-sidebar-brand__copy small,
@@ -2865,18 +2896,18 @@
 [data-theme="materialpro"] .product-topbar [data-sidebar="trigger"]:hover,
 [data-theme="materialpro"] .product-topbar .ap-icon-btn:hover {
   color: var(--ap-ink);
-  background: var(--ap-paper-2);
+  background: var(--mp-hover);
 }
 
 [data-theme="materialpro"] .product-topbar .ap-avatar-btn {
-  border: 1px solid var(--ap-line);
-  background: var(--ap-paper-2);
+  border: 1px solid var(--mp-sidebar-border);
+  background: var(--mp-elevated);
 }
 
 [data-theme="materialpro"] .product-topbar .product-global-search input {
-  border-color: var(--ap-line) !important;
+  border-color: var(--mp-sidebar-border) !important;
   color: var(--ap-ink) !important;
-  background: var(--ap-paper-2) !important;
+  background: var(--mp-elevated) !important;
 }
 
 [data-theme="materialpro"] .product-topbar .product-global-search input::placeholder,
@@ -2891,11 +2922,40 @@
 [data-theme="materialpro"] .product-shell-root [data-sidebar="menu-button"]:hover,
 [data-theme="materialpro"] .product-shell-root [data-sidebar="menu-button"][data-active="true"] {
   color: var(--ap-ink);
-  background: var(--ap-brand-soft);
+  background: var(--mp-sidebar-active);
 }
 
 [data-theme="materialpro"] .product-shell-root [data-sidebar="menu-button"][data-active="true"] .material-symbol {
-  color: var(--ap-brand);
+  color: var(--ap-brand-deep);
+}
+
+.dark[data-theme="materialpro"] .product-shell-root [data-sidebar="menu-button"][data-active="true"] {
+  position: relative;
+  box-shadow: none;
+}
+
+.dark[data-theme="materialpro"] .product-shell-root [data-sidebar="menu-button"][data-active="true"]::before {
+  position: absolute;
+  top: 9px;
+  bottom: 9px;
+  left: 0;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--ap-brand);
+  content: "";
+}
+
+.dark[data-theme="materialpro"] .product-shell-root [data-sidebar="menu-button"] .material-symbol {
+  color: var(--mp-text-muted);
+}
+
+.dark[data-theme="materialpro"] .product-shell-root [data-sidebar="menu-button"]:hover:not([data-active="true"]) {
+  color: var(--ap-muted);
+  background: var(--mp-hover);
+}
+
+.dark[data-theme="materialpro"] .product-shell-root [data-sidebar="menu-button"][data-active="true"] .material-symbol {
+  color: var(--ap-brand-deep);
 }
 
 [data-theme="materialpro"] .product-sidebar-header > .ap-btn,
@@ -2959,7 +3019,7 @@
 }
 
 [data-theme="materialpro"] .product-kpi--featured::after {
-  border-color: color-mix(in srgb, var(--ap-brand) 10%, transparent);
+  display: none;
 }
 
 [data-theme="materialpro"] .product-kpi__icon,
@@ -2969,7 +3029,7 @@
 [data-theme="materialpro"] .product-kpi--featured .product-kpi__icon,
 [data-theme="materialpro"] .product-kpi--featured[data-featured="secondary"] .product-kpi__icon {
   color: var(--ap-brand);
-  background: var(--ap-brand-soft);
+  background: transparent;
 }
 
 [data-theme="materialpro"] .product-kpi--featured .product-kpi__label,
@@ -2984,19 +3044,23 @@
 }
 
 [data-theme="materialpro"] .product-kpi--featured .product-kpi__spark rect {
-  fill: var(--ap-brand);
+  fill: var(--mp-chart-primary);
 }
 
 [data-theme="materialpro"] .product-kpi--featured[data-featured="secondary"] .product-kpi__spark rect {
-  fill: var(--ap-muted);
+  fill: var(--mp-chart-secondary);
 }
 
 [data-theme="materialpro"] .product-chart-value {
-  color: var(--ap-brand);
+  color: var(--mp-chart-primary);
 }
 
 [data-theme="materialpro"] .recharts-cartesian-grid line {
-  stroke: var(--ap-line);
+  stroke: var(--mp-chart-grid);
+}
+
+[data-theme="materialpro"] .recharts-text {
+  fill: var(--mp-chart-axis);
 }
 
 [data-theme="materialpro"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
@@ -3009,7 +3073,7 @@
 [data-theme="materialpro"] .ap-textarea {
   border-color: var(--ap-line);
   color: var(--ap-ink);
-  background: var(--ap-card);
+  background: var(--mp-elevated);
 }
 
 [data-theme="materialpro"] input::placeholder,
@@ -3025,7 +3089,7 @@
 [data-theme="materialpro"] [data-ui="sheet-content"] {
   border-color: var(--ap-line);
   color: var(--ap-ink);
-  background: var(--ap-card);
+  background: var(--mp-elevated);
 }
 
 [data-theme="materialpro"] [data-ui="tabs-list"] {
@@ -3136,9 +3200,20 @@
 
 [data-theme="materialpro"] .product-kpi__icon,
 [data-theme="materialpro"] .product-kpi--featured .product-kpi__icon {
-  width: 40px;
-  height: 40px;
-  flex-basis: 40px;
+  width: 24px;
+  height: 24px;
+  flex-basis: 24px;
+  border-radius: 0;
+  background: transparent;
+  transform: none;
+}
+
+[data-theme="materialpro"] .product-kpi--featured:hover .product-kpi__icon {
+  transform: none;
+}
+
+.dark[data-theme="materialpro"] .product-dashboard__hero {
+  background: radial-gradient(circle at 50% 0%, rgb(113 104 248 / 12%), transparent 45%);
 }
 
 [data-theme="materialpro"] .product-kpi__copy {

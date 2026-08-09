@@ -48,7 +48,7 @@ export function NotificationCenter({ user }: { user: User }) {
       <SheetContent
         side="right"
         className="w-full p-0 sm:max-w-[440px]"
-        style={{ display: "grid", gridTemplateRows: "auto auto minmax(0,1fr) auto", background: "var(--ap-card)", color: "var(--ap-ink)", borderColor: "var(--ap-line)" }}
+        style={{ display: "grid", gridTemplateRows: "auto auto minmax(0,1fr) auto", background: "var(--mp-elevated, var(--ap-card))", color: "var(--ap-ink)", borderColor: "var(--ap-line)" }}
       >
         <SheetHeader style={{ padding: "20px 20px 10px", textAlign: "left" }}>
           <SheetTitle style={{ display: "flex", alignItems: "center", gap: 9, fontFamily: "var(--ap-font-display)", color: "var(--ap-ink)" }}>

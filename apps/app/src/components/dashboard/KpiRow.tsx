@@ -66,7 +66,7 @@ function TrendBadge({ deltaPct, hero = false }: { deltaPct: number | null; hero?
   const flat = deltaPct === 0;
   const positive = deltaPct > 0;
   const symbolName = flat ? "remove" : positive ? "arrow_drop_up" : "arrow_drop_down";
-  const color = hero ? "var(--product-kpi-hero-contrast, #fff)" : flat ? "var(--ap-muted)" : positive ? "#15c08a" : "#ff5a4d";
+  const color = hero ? "var(--product-kpi-hero-contrast, #fff)" : flat ? "var(--ap-muted)" : positive ? "var(--mp-success)" : "var(--mp-danger)";
   const chipBg = hero ? "var(--product-kpi-hero-chip, rgba(255, 255, 255, .2))" : `color-mix(in srgb, ${color} 14%, transparent)`;
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 6, minWidth: 0 }}>
@@ -136,7 +136,7 @@ export function KpiRow({ stats, charts }: { stats: DashboardStats | null; charts
       label: "Sessions totales", value: s.totalSessions,
       deltaPct: s.trends.sessions.deltaPct,
       spark: sessionsSpark,
-      sparkColor: "var(--ap-brand)",
+      sparkColor: "var(--mp-chart-primary)",
       featured: "primary",
       sparkVariant: "bars",
       onClick: scrollToChart("dashboard-activity-chart"),
@@ -147,7 +147,7 @@ export function KpiRow({ stats, charts }: { stats: DashboardStats | null; charts
       label: "Participants totaux", value: s.totalParticipants,
       deltaPct: s.trends.participants.deltaPct,
       spark: participantsSpark,
-      sparkColor: "var(--ap-muted)",
+      sparkColor: "var(--mp-chart-secondary)",
       featured: "secondary",
       sparkVariant: "bars",
       onClick: scrollToChart("dashboard-activity-chart"),
@@ -159,7 +159,7 @@ export function KpiRow({ stats, charts }: { stats: DashboardStats | null; charts
       deltaPct: scoreDeltaPct,
       emptyHint: s.avgScore == null ? "Pas encore de score" : undefined,
       spark: scoreSpark,
-      sparkColor: "var(--ap-brand)",
+      sparkColor: "var(--mp-chart-primary)",
       sparkVariant: "bars",
       onClick: scrollToChart("dashboard-score-chart"),
     },
@@ -168,7 +168,7 @@ export function KpiRow({ stats, charts }: { stats: DashboardStats | null; charts
       tone: "success",
       label: "Créations", value: s.totalCreations,
       deltaPct: s.trends.creations.deltaPct,
-      sparkColor: "var(--ap-brand)",
+      sparkColor: "var(--mp-chart-primary)",
       onClick: scrollToChart("dashboard-creations-chart"),
     },
   ];

@@ -4,7 +4,7 @@ import type { ScorePoint } from "@/lib/dashboardStats";
 import { MaterialSymbol } from "@/components/MaterialSymbol";
 
 const chartConfig = {
-  avgScore: { label: "Score moyen", color: "var(--ap-brand)" },
+  avgScore: { label: "Score moyen", color: "var(--mp-chart-primary)" },
 } satisfies ChartConfig;
 
 const formatDay = (iso: string) => {
