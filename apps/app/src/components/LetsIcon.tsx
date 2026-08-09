@@ -1,37 +1,43 @@
 import type { CSSProperties } from "react";
-import add from "lets-icons/icons/add-light.svg";
-import arrowDown from "lets-icons/icons/arrow-drop-down.svg";
-import bell from "lets-icons/icons/bell-light.svg";
-import book from "lets-icons/icons/book-light.svg";
-import bookCheck from "lets-icons/icons/book-check-light.svg";
-import bookOpen from "lets-icons/icons/book-open-light.svg";
-import chart from "lets-icons/icons/chart-alt-light.svg";
-import clock from "lets-icons/icons/clock-light.svg";
-import close from "lets-icons/icons/close-round-light.svg";
-import compass from "lets-icons/icons/compass-light.svg";
-import edit from "lets-icons/icons/edit-light.svg";
-import flag from "lets-icons/icons/flag-light.svg";
-import folders from "lets-icons/icons/folders-light.svg";
-import gamepad from "lets-icons/icons/gamepad-light.svg";
-import group from "lets-icons/icons/group-light.svg";
-import groupShare from "lets-icons/icons/group-share-light.svg";
-import layers from "lets-icons/icons/layers-light.svg";
-import map from "lets-icons/icons/map-light.svg";
-import message from "lets-icons/icons/message-light.svg";
-import question from "lets-icons/icons/question-light.svg";
-import road from "lets-icons/icons/road-light.svg";
-import settings from "lets-icons/icons/setting-alt-line-light.svg";
-import suitCase from "lets-icons/icons/suitcase-light.svg";
-import trophy from "lets-icons/icons/trophy-light.svg";
-import videoFile from "lets-icons/icons/video-file-light.svg";
-import widget from "lets-icons/icons/widget-light.svg";
+import add from "lets-icons/icons/add-light.svg?raw";
+import arrowBack from "lets-icons/icons/arrow-left-long-light.svg?raw";
+import arrowDown from "lets-icons/icons/arrow-drop-down.svg?raw";
+import arrowForward from "lets-icons/icons/arrow-right-long-light.svg?raw";
+import bell from "lets-icons/icons/bell-light.svg?raw";
+import book from "lets-icons/icons/book-light.svg?raw";
+import bookCheck from "lets-icons/icons/book-check-light.svg?raw";
+import bookOpen from "lets-icons/icons/book-open-light.svg?raw";
+import chart from "lets-icons/icons/chart-alt-light.svg?raw";
+import check from "lets-icons/icons/check-ring-light.svg?raw";
+import clock from "lets-icons/icons/clock-light.svg?raw";
+import close from "lets-icons/icons/close-round-light.svg?raw";
+import compass from "lets-icons/icons/compass-light.svg?raw";
+import edit from "lets-icons/icons/edit-light.svg?raw";
+import flag from "lets-icons/icons/flag-light.svg?raw";
+import folders from "lets-icons/icons/folders-light.svg?raw";
+import gamepad from "lets-icons/icons/gamepad-light.svg?raw";
+import group from "lets-icons/icons/group-light.svg?raw";
+import groupShare from "lets-icons/icons/group-share-light.svg?raw";
+import layers from "lets-icons/icons/layers-light.svg?raw";
+import map from "lets-icons/icons/map-light.svg?raw";
+import message from "lets-icons/icons/message-light.svg?raw";
+import question from "lets-icons/icons/question-light.svg?raw";
+import road from "lets-icons/icons/road-light.svg?raw";
+import settings from "lets-icons/icons/setting-alt-line-light.svg?raw";
+import suitCase from "lets-icons/icons/suitcase-light.svg?raw";
+import trophy from "lets-icons/icons/trophy-light.svg?raw";
+import videoFile from "lets-icons/icons/video-file-light.svg?raw";
+import widget from "lets-icons/icons/widget-light.svg?raw";
 
 const icons: Record<string, string> = {
   add,
+  arrow_back: arrowBack,
+  arrow_forward: arrowForward,
   assignment: bookCheck,
   campaign: flag,
   casino: gamepad,
   category: folders,
+  check,
   close,
   co_present: videoFile,
   dashboard: widget,
@@ -71,6 +77,13 @@ export function LetsIcon({
   style?: CSSProperties;
 }) {
   const source = icons[name] ?? question;
+  // Trusted local assets from Lets Icons: rendering the SVG itself preserves
+  // currentColor without relying on masks that can degrade into solid squares.
+  const markup = source.replace(
+    "<svg ",
+    '<svg width="100%" height="100%" focusable="false" style="display:block" ',
+  );
+
   return (
     <span
       aria-hidden="true"
@@ -79,19 +92,11 @@ export function LetsIcon({
       style={{
         width: size,
         height: size,
-        display: "inline-block",
+        display: "inline-flex",
         flex: "0 0 auto",
-        backgroundColor: "currentColor",
-        WebkitMaskImage: `url(${source})`,
-        maskImage: `url(${source})`,
-        WebkitMaskPosition: "center",
-        maskPosition: "center",
-        WebkitMaskRepeat: "no-repeat",
-        maskRepeat: "no-repeat",
-        WebkitMaskSize: "contain",
-        maskSize: "contain",
         ...style,
       }}
+      dangerouslySetInnerHTML={{ __html: markup }}
     />
   );
 }
