@@ -6,6 +6,7 @@ interface Tile {
   iconName: string;
   iconColor: string;
   tone: "warning" | "primary" | "secondary" | "success";
+  surface: "neutral" | "participants" | "score" | "success" | "warning" | "danger";
   label: string;
   value: string | number;
   deltaPct: number | null;
@@ -133,6 +134,7 @@ export function KpiRow({ stats, charts }: { stats: DashboardStats | null; charts
     {
       iconName: "dns", iconColor: "var(--ap-brand)",
       tone: "primary",
+      surface: "neutral",
       label: "Sessions totales", value: s.totalSessions,
       deltaPct: s.trends.sessions.deltaPct,
       spark: sessionsSpark,
@@ -144,6 +146,7 @@ export function KpiRow({ stats, charts }: { stats: DashboardStats | null; charts
     {
       iconName: "bar_chart", iconColor: "var(--ap-brand)",
       tone: "secondary",
+      surface: "participants",
       label: "Participants totaux", value: s.totalParticipants,
       deltaPct: s.trends.participants.deltaPct,
       spark: participantsSpark,
@@ -155,6 +158,7 @@ export function KpiRow({ stats, charts }: { stats: DashboardStats | null; charts
     {
       iconName: "analytics", iconColor: "var(--ap-brand)",
       tone: "warning",
+      surface: "score",
       label: "Score moyen (quiz)", value: s.avgScore != null ? `${s.avgScore} pts` : "-",
       deltaPct: scoreDeltaPct,
       emptyHint: s.avgScore == null ? "Pas encore de score" : undefined,
@@ -166,6 +170,7 @@ export function KpiRow({ stats, charts }: { stats: DashboardStats | null; charts
     {
       iconName: "category", iconColor: "var(--ap-brand)",
       tone: "success",
+      surface: "success",
       label: "Créations", value: s.totalCreations,
       deltaPct: s.trends.creations.deltaPct,
       sparkColor: "var(--mp-chart-primary)",
@@ -175,7 +180,7 @@ export function KpiRow({ stats, charts }: { stats: DashboardStats | null; charts
 
   return (
     <div className="product-kpis">
-      {tiles.map(({ iconName, iconColor, tone, label, value, deltaPct, emptyHint, spark, sparkColor, featured, sparkVariant, onClick }) => {
+      {tiles.map(({ iconName, iconColor, tone, surface, label, value, deltaPct, emptyHint, spark, sparkColor, featured, sparkVariant, onClick }) => {
         const hero = Boolean(featured);
         return (
           <button
@@ -183,6 +188,7 @@ export function KpiRow({ stats, charts }: { stats: DashboardStats | null; charts
             type="button"
             onClick={onClick}
             data-tone={tone}
+            data-surface={surface}
             data-featured={featured || undefined}
             className={`product-kpi${hero ? " product-kpi--hero product-kpi--featured" : ""}`}
             aria-label={`${label} : ${value}. Afficher le détail`}

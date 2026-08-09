@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { t } from "@/lib/i18n";
 import type { User as AuthUser } from "@/lib/auth";
-import { MaterialSymbol } from "@/components/MaterialSymbol";
+import { LetsIcon } from "@/components/LetsIcon";
 import { OrgSwitcher } from "@/components/org/OrgSwitcher";
 import { myOrgMemberships } from "@/lib/org/orgRepo";
 import { useNotifications } from "@/hooks/useNotifications";
@@ -194,7 +194,7 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
                 <DropdownMenuTrigger asChild>
                   <TooltipTrigger asChild>
                     <button className="ap-btn ap-btn--sm ap-icon-btn" aria-label={t("createNew")}>
-                      <MaterialSymbol name="add" size={20} />
+                      <LetsIcon name="add" size={20} />
                     </button>
                   </TooltipTrigger>
                 </DropdownMenuTrigger>
@@ -206,10 +206,10 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
               <DropdownMenuTrigger asChild>
                 <button className="ap-btn ap-btn--sm" style={{ width: "100%", justifyContent: "space-between" }}>
                   <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <MaterialSymbol name="add" size={20} />
+                    <LetsIcon name="add" size={20} />
                     {t("createNew")}
                   </span>
-                  <MaterialSymbol name="keyboard_arrow_down" size={20} className="chevron-icon" />
+                  <LetsIcon name="keyboard_arrow_down" size={20} className="chevron-icon" />
                 </button>
               </DropdownMenuTrigger>
             )}
@@ -229,7 +229,7 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
                 aria-label="Fermer le menu"
                 onClick={() => setCreateOpen(false)}
               >
-                <MaterialSymbol name="close" size={20} />
+                <LetsIcon name="close" size={20} />
               </button>
               {CREATE_GROUPS.map((group, groupIndex) => (
                 <DropdownMenuGroup key={group.label}>
@@ -247,7 +247,7 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
                       style={{ color: "var(--ap-ink)", fontFamily: "var(--ap-font-body)" }}
                       onSelect={() => navigate(item.path)}
                     >
-                      <MaterialSymbol name={item.icon} size={20} style={{ color: "var(--ap-muted)" }} />
+                      <LetsIcon name={item.icon} size={20} style={{ color: "var(--ap-muted)" }} />
                       {item.label}
                     </DropdownMenuItem>
                   ))}
@@ -268,7 +268,7 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
                   onClick={() => navigate("/dashboard")}
                   tooltip={t("dashboard")}
                 >
-                  <MaterialSymbol name="dashboard" size={20} />
+                  <LetsIcon name="dashboard" size={20} />
                   <span>{t("dashboard")}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -286,10 +286,10 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
                       onClick={collapsedIcon ? () => navigate(CREATIONS_ITEMS[0].path) : undefined}
                       tooltip={t("myCreations")}
                     >
-                      <MaterialSymbol name="category" size={20} />
+                      <LetsIcon name="category" size={20} />
                       <span>{t("myCreations")}</span>
                       {!collapsedIcon && (
-                        <MaterialSymbol
+                        <LetsIcon
                           name="keyboard_arrow_down"
                           size={20}
                           className="chevron-icon ml-auto"
@@ -329,7 +329,7 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
                 <CollapsibleTrigger className="flex w-full items-center justify-between cursor-pointer">
                   <span>{t("navGroupCollab")}</span>
                   {!collapsedIcon && (
-                    <MaterialSymbol
+                    <LetsIcon
                       name="keyboard_arrow_down"
                       size={16}
                       className="chevron-icon"
@@ -347,7 +347,7 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
                         onClick={() => navigate(item.path)}
                         tooltip={item.label}
                       >
-                        <MaterialSymbol name={item.icon} size={20} />
+                        <LetsIcon name={item.icon} size={20} />
                         <span>{item.label}</span>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -371,7 +371,7 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
                   onClick={() => navigate("/notifications?filter=exam")}
                   tooltip={t("navExamQueue")}
                 >
-                  <MaterialSymbol name="fact_check" size={20} />
+                  <LetsIcon name="fact_check" size={20} />
                   <span>{t("navExamQueue")}</span>
                 </SidebarMenuButton>
                 {pendingExamCount > 0 && (
@@ -393,7 +393,7 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
                     onClick={() => navigate(item.path)}
                     tooltip={item.label}
                   >
-                    <MaterialSymbol name={item.icon} size={20} />
+                    <LetsIcon name={item.icon} size={20} />
                     <span>{item.label}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -412,7 +412,7 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
                   onClick={() => navigate(item.path)}
                   tooltip={item.label}
                 >
-                  <MaterialSymbol name={item.icon} size={20} />
+                  <LetsIcon name={item.icon} size={20} />
                   <span>{item.label}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -431,7 +431,7 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
                     onClick={() => navigate(item.path)}
                     tooltip={item.label}
                   >
-                    <MaterialSymbol name={item.icon} size={20} />
+                    <LetsIcon name={item.icon} size={20} />
                     <span>{item.label}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -450,7 +450,7 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
                   onClick={() => navigate(item.path)}
                   tooltip={item.label}
                 >
-                  <MaterialSymbol name={item.icon} size={20} />
+                  <LetsIcon name={item.icon} size={20} />
                   <span>{item.label}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -473,7 +473,7 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
                   onClick={() => navigate("/org/invitations")}
                   tooltip="Organisation"
                 >
-                  <MaterialSymbol name="domain" size={20} />
+                  <LetsIcon name="domain" size={20} />
                   <span>Organisation</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -484,7 +484,7 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
                 onClick={() => navigate("/profile")}
                 tooltip={t("settings")}
               >
-                <MaterialSymbol name="settings" size={20} />
+                <LetsIcon name="settings" size={20} />
                 <span>{t("settings")}</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
