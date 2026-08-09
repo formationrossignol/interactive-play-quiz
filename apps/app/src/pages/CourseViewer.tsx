@@ -49,6 +49,7 @@ import { assertSafeImportFile } from "@/lib/fileValidation";
 import { sanitizeHtml } from "@/lib/sanitizeHtml";
 import { toast } from "sonner";
 import { CourseCertificateDialog } from "@/components/CourseCertificateDialog";
+import { LetsIcon } from "@/components/LetsIcon";
 import { recordCertificate } from "@/lib/certificates";
 import { ScormPlayer } from "@/components/ScormPlayer";
 import { H5pPlayer } from "@/components/h5p/H5pPlayer";
@@ -1311,65 +1312,40 @@ const CourseViewer = () => {
 
         {/* ── Lesson footer banner — pinned to the bottom, doesn't scroll away ── */}
         {lesson && (
-          <div style={{
-            flexShrink: 0, borderTop: "var(--ap-border-w) solid var(--ap-line)",
-            background: "var(--ap-card)", padding: "18px 32px",
-          }}>
-            <div style={{ maxWidth: 720, margin: "0 auto", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+          <footer className="product-course-footer">
+            <div className="product-course-footer__inner">
               <button
-                className={`cv-done-btn cv-btn${doneBtnPop ? " pop" : ""}`}
+                className={`cv-done-btn product-course-footer__button product-course-footer__button--done${doneBtnPop ? " pop" : ""}`}
+                data-completed={isCompleted}
                 onClick={toggleComplete}
-                style={{
-                  display: "inline-flex", alignItems: "center", gap: 9,
-                  fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 14.5,
-                  padding: "12px 22px", borderRadius: "var(--ap-r-sm)", border: "none", cursor: "pointer",
-                  color: isCompleted ? "var(--ap-pres-deep)" : "#fff",
-                  background: isCompleted ? "var(--ap-card)" : "var(--ap-pres-deep)",
-                  boxShadow: isCompleted
-                    ? "0 4px 0 var(--ap-line), inset 0 0 0 2px color-mix(in srgb, var(--ap-pres) 45%, transparent)"
-                    : "0 4px 0 #076346",
-                  transition: "background .25s, color .25s, box-shadow .25s",
-                }}
               >
-                {isCompleted ? "✓ Leçon terminée" : "Marquer comme terminée"}
+                <LetsIcon name="check" size={18} />
+                {isCompleted ? "Leçon terminée" : "Marquer comme terminée"}
               </button>
 
-              <div style={{ flex: 1 }} />
+              <div className="product-course-footer__nav">
+                {prevLesson && (
+                  <button
+                    className="product-course-footer__button product-course-footer__button--previous"
+                    onClick={() => setCurrentLessonId(prevLesson.lesson.id)}
+                  >
+                    <LetsIcon name="arrow_back" size={18} />
+                    Précédente
+                  </button>
+                )}
 
-              {prevLesson && (
-                <button
-                  className="cv-btn"
-                  onClick={() => setCurrentLessonId(prevLesson.lesson.id)}
-                  style={{
-                    display: "inline-flex", alignItems: "center", gap: 9,
-                    fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 14.5,
-                    padding: "12px 22px", borderRadius: "var(--ap-r-sm)", cursor: "pointer",
-                    color: "var(--ap-ink)", background: "var(--ap-card)", border: "none",
-                    boxShadow: "0 4px 0 var(--ap-line), inset 0 0 0 2px var(--ap-line)",
-                  }}
-                >
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
-                  Précédente
-                </button>
-              )}
-
-              {nextLesson && (
-                <button
-                  className="cv-btn"
-                  onClick={() => { if (!isCompleted) toggleComplete(); else setCurrentLessonId(nextLesson.lesson.id); }}
-                  style={{
-                    display: "inline-flex", alignItems: "center", gap: 9,
-                    fontFamily: "var(--ap-font-body)", fontWeight: 800, fontSize: 14.5,
-                    padding: "12px 22px", borderRadius: "var(--ap-r-sm)", border: "none", cursor: "pointer",
-                    color: "#fff", background: "var(--ap-brand)", boxShadow: "0 4px 0 var(--ap-brand-deep)",
-                  }}
-                >
-                  Suivante
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-                </button>
-              )}
+                {nextLesson && (
+                  <button
+                    className="product-course-footer__button product-course-footer__button--next"
+                    onClick={() => { if (!isCompleted) toggleComplete(); else setCurrentLessonId(nextLesson.lesson.id); }}
+                  >
+                    Suivante
+                    <LetsIcon name="arrow_forward" size={18} />
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
+          </footer>
         )}
         </div>
       </div>
