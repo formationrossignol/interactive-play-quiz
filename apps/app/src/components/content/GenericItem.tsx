@@ -225,8 +225,15 @@ function primaryButton(
   );
 }
 
-/** Accent CSS var derived from the config accentBtn suffix (ap-btn--quiz → --ap-quiz). */
-const accentVarOf = (accentBtn: string) => `--ap-${accentBtn.replace("ap-btn--", "")}`;
+/** Content colors stay independent from CTA and functional-state colors. */
+const contentTokenOf = (accentBtn: string) => ({
+  "ap-btn--quiz": "quiz",
+  "ap-btn--poll": "poll",
+  "ap-btn--flash": "flashcard",
+  "ap-btn--pres": "slide",
+}[accentBtn] ?? "quiz");
+const accentVarOf = (accentBtn: string) => `--content-${contentTokenOf(accentBtn)}-accent`;
+const softVarOf = (accentBtn: string) => `--content-${contentTokenOf(accentBtn)}-surface`;
 
 /** Default header icon per content type, keyed by the config accentBtn suffix. */
 const defaultHeaderIcon: Record<string, string> = {
@@ -252,6 +259,7 @@ export function GenericCard(props: GenericItemProps) {
   const n = config.countOf(d);
   const id = itemId(d);
   const accentVar = accentVarOf(config.accentBtn);
+  const softVar = softVarOf(config.accentBtn);
   const defaultHeaderIconName = defaultHeaderIcon[config.accentBtn] ?? "dashboard_customize";
 
   return (
@@ -261,7 +269,7 @@ export function GenericCard(props: GenericItemProps) {
       style={{ opacity: isDragging ? 0.4 : 1, padding: 0 }}
       onClick={() => navigate(config.editRoute(id))}
     >
-      <ContentCardHeader image={img} alt={d.title} icon={defaultHeaderIconName} accent={`var(${accentVar})`} label={headerLabel[config.accentBtn]}>
+      <ContentCardHeader image={img} alt={d.title} icon={defaultHeaderIconName} accent={`var(${accentVar})`} background={`var(${softVar})`} label={headerLabel[config.accentBtn]}>
         <button
           type="button"
           {...attributes}
@@ -321,6 +329,7 @@ export function GenericRow(props: GenericItemProps) {
   const n = config.countOf(d);
   const id = itemId(d);
   const accentVar = accentVarOf(config.accentBtn);
+  const softVar = softVarOf(config.accentBtn);
   const defaultHeaderIconName = defaultHeaderIcon[config.accentBtn] ?? "dashboard_customize";
 
   return (
@@ -347,7 +356,7 @@ export function GenericRow(props: GenericItemProps) {
       >
         <MaterialSymbol name="drag_indicator" size={16} />
       </button>
-      <ContentRowThumbnail image={img} alt={d.title} icon={defaultHeaderIconName} accent={`var(${accentVar})`} />
+      <ContentRowThumbnail image={img} alt={d.title} icon={defaultHeaderIconName} accent={`var(${accentVar})`} background={`var(${softVar})`} />
       <div className="flex-1 min-w-0">
         <p className="ap-h3 truncate" style={{ fontSize: "14px", marginBottom: "2px" }}>{d.title}</p>
         {d.description && <p className="ap-muted truncate" style={{ fontSize: "12px" }}>{d.description}</p>}

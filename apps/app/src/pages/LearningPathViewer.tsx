@@ -121,7 +121,7 @@ export default function LearningPathViewer() {
                   <div style={{
                     width: `${progress.progressPercentage}%`,
                     height: "100%",
-                    background: progress.isComplete ? "var(--ap-flash)" : "var(--ap-brand)",
+                    background: progress.isComplete ? "var(--mp-success)" : "var(--content-path-accent)",
                     transition: "width .3s",
                   }} />
                 </div>
@@ -183,15 +183,15 @@ export default function LearningPathViewer() {
                         borderRadius: "50%",
                         display: "grid",
                         placeItems: "center",
-                        color: state.isComplete ? "#fff" : state.isLocked ? "var(--ap-muted)" : "var(--ap-brand)",
-                        background: state.isComplete ? "var(--ap-pres-deep)" : "var(--ap-card)",
-                        border: `2px solid ${state.isComplete ? "var(--ap-pres-deep)" : current ? "var(--ap-brand)" : "var(--ap-line-2)"}`,
+                        color: state.isComplete ? "#fff" : state.isLocked ? "var(--ap-muted)" : "var(--content-path-accent)",
+                        background: state.isComplete ? "var(--mp-success)" : "var(--ap-card)",
+                        border: `2px solid ${state.isComplete ? "var(--mp-success)" : current ? "var(--content-path-accent)" : "var(--ap-line-2)"}`,
                         zIndex: 1,
                       }}>
                         {state.isComplete ? <Check className="h-5 w-5" /> : state.isLocked ? <Lock className="h-4 w-4" /> : <Circle className="h-4 w-4" />}
                       </div>
                       {index < progress.steps.length - 1 && (
-                        <div style={{ width: 2, minHeight: 34, flex: 1, background: state.isComplete ? "var(--ap-pres-deep)" : "var(--ap-line)", margin: "4px 0" }} />
+                        <div style={{ width: 2, minHeight: 34, flex: 1, background: state.isComplete ? "var(--mp-success)" : "var(--ap-line)", margin: "4px 0" }} />
                       )}
                     </div>
 
@@ -200,8 +200,8 @@ export default function LearningPathViewer() {
                       style={{
                         marginBottom: index < progress.steps.length - 1 ? 18 : 0,
                         opacity: state.isLocked ? 0.72 : 1,
-                        borderColor: current ? "color-mix(in srgb, var(--ap-brand) 55%, var(--ap-line))" : undefined,
-                        boxShadow: current ? "0 8px 28px color-mix(in srgb, var(--ap-brand) 12%, transparent)" : undefined,
+                        borderColor: current ? "color-mix(in srgb, var(--content-path-accent) 55%, var(--ap-line))" : undefined,
+                        boxShadow: current ? "0 8px 28px color-mix(in srgb, var(--content-path-accent) 12%, transparent)" : undefined,
                       }}
                     >
                       <div className="flex flex-wrap items-start gap-4">
@@ -210,7 +210,7 @@ export default function LearningPathViewer() {
                             <span className="ap-pill" style={{ fontSize: 10.5 }}>Étape {index + 1}</span>
                             {state.isComplete && <span className="ap-pill" style={{ fontSize: 10.5, color: "var(--ap-pres-deep)" }}>Validée</span>}
                             {state.isLocked && <span className="ap-pill" style={{ fontSize: 10.5 }}>Verrouillée</span>}
-                            {current && <span className="ap-pill" style={{ fontSize: 10.5, color: "var(--ap-brand)" }}>À suivre</span>}
+                            {current && <span className="ap-pill" style={{ fontSize: 10.5, color: "var(--content-path-accent)" }}>À suivre</span>}
                           </div>
                           <h3 className="ap-h3" style={{ fontSize: 18 }}>{state.course?.title ?? "Cours indisponible"}</h3>
                           {state.course?.description && (
@@ -232,7 +232,7 @@ export default function LearningPathViewer() {
                               <div style={{
                                 height: "100%",
                                 width: `${state.progressPercentage}%`,
-                                background: state.isComplete ? "var(--ap-pres-deep)" : "var(--ap-brand)",
+                                background: state.isComplete ? "var(--mp-success)" : "var(--content-path-accent)",
                               }} />
                             </div>
                           </div>

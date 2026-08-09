@@ -21,13 +21,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/ui/page-header";
 import { ExplorerEmptyState } from "@/components/content/ExplorerEmptyState";
 
-const TYPE_META: Record<ContentType, { label: string; icon: typeof GraduationCap; color: string }> = {
-  quiz: { label: "Quiz", icon: ListChecks, color: "var(--ap-quiz)" },
-  poll: { label: "Sondage", icon: BarChart3, color: "var(--ap-poll)" },
-  flashcard: { label: "Flashcards", icon: Layers3, color: "var(--ap-flash-deep)" },
-  slide: { label: "Slides", icon: Presentation, color: "var(--ap-pres)" },
-  course: { label: "Cours", icon: GraduationCap, color: "var(--ap-brand)" },
-  exam: { label: "Examen", icon: ListChecks, color: "var(--ap-quiz)" },
+const TYPE_META: Record<ContentType, { label: string; icon: typeof GraduationCap; color: string; background: string }> = {
+  quiz: { label: "Quiz", icon: ListChecks, color: "var(--content-quiz-accent)", background: "var(--content-quiz-surface)" },
+  poll: { label: "Sondage", icon: BarChart3, color: "var(--content-poll-accent)", background: "var(--content-poll-surface)" },
+  flashcard: { label: "Flashcards", icon: Layers3, color: "var(--content-flashcard-accent)", background: "var(--content-flashcard-surface)" },
+  slide: { label: "Slides", icon: Presentation, color: "var(--content-slide-accent)", background: "var(--content-slide-surface)" },
+  course: { label: "Cours", icon: GraduationCap, color: "var(--content-course-accent)", background: "var(--content-course-surface)" },
+  exam: { label: "Examen", icon: ListChecks, color: "var(--content-exam-accent)", background: "var(--content-exam-surface)" },
 };
 
 const destinationFor = (row: SharedContentRow) => {
@@ -118,7 +118,9 @@ const SharedWithMe = () => {
                 onClick={() => navigate(destinationFor(row))}
               >
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-                  <Icon style={{ width: 28, height: 28, color: meta.color }} />
+                  <span style={{ width: 40, height: 40, display: "grid", placeItems: "center", borderRadius: "var(--ap-r-md)", color: meta.color, background: meta.background }}>
+                    <Icon style={{ width: 21, height: 21 }} />
+                  </span>
                   <span
                     className="ap-pill"
                     style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, padding: "4px 9px" }}

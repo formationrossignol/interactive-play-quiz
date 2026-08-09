@@ -3,7 +3,7 @@ import { MaterialSymbol } from "@/components/MaterialSymbol";
 
 const CATEGORY_META: Record<NotificationCategory, { label: string; icon: string; color: string; soft: string }> = {
   share: { label: "Partage", icon: "share", color: "var(--ap-brand)", soft: "var(--ap-brand-soft)" },
-  exam: { label: "Examen", icon: "fact_check", color: "var(--ap-brand)", soft: "var(--ap-brand-soft)" },
+  exam: { label: "Examen", icon: "fact_check", color: "var(--content-exam-accent)", soft: "var(--content-exam-surface)" },
   support: { label: "Support", icon: "support_agent", color: "var(--ap-brand)", soft: "var(--ap-brand-soft)" },
   product: { label: "Produit", icon: "campaign", color: "var(--ap-brand)", soft: "var(--ap-brand-soft)" },
   system: { label: "Système", icon: "notifications", color: "var(--ap-muted)", soft: "var(--ap-paper-2)" },

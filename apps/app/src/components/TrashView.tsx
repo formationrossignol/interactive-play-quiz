@@ -30,12 +30,12 @@ const triggerStyle = {
 };
 
 const typeVisual: Record<ContentDisplay["type"], { Icon: LucideIcon; color: string }> = {
-  quiz: { Icon: ListChecks, color: "var(--ap-quiz)" },
-  poll: { Icon: BarChart2, color: "var(--ap-poll)" },
-  flashcard: { Icon: Layers3, color: "var(--ap-flash)" },
-  slide: { Icon: Presentation, color: "var(--ap-pres)" },
-  course: { Icon: GraduationCap, color: "var(--ap-pres)" },
-  exam: { Icon: FileCheck2, color: "var(--ap-quiz)" },
+  quiz: { Icon: ListChecks, color: "var(--content-quiz-accent)" },
+  poll: { Icon: BarChart2, color: "var(--content-poll-accent)" },
+  flashcard: { Icon: Layers3, color: "var(--content-flashcard-accent)" },
+  slide: { Icon: Presentation, color: "var(--content-slide-accent)" },
+  course: { Icon: GraduationCap, color: "var(--content-course-accent)" },
+  exam: { Icon: FileCheck2, color: "var(--content-exam-accent)" },
 };
 
 const headerImageOf = (item: ContentDisplay): string | undefined => {

@@ -107,12 +107,12 @@ export default function MyLearningPaths() {
                     <div style={{
                       minHeight: 94,
                       padding: "20px 20px 16px",
-                      background: "linear-gradient(135deg, color-mix(in srgb, var(--ap-brand) 18%, var(--ap-card)), color-mix(in srgb, var(--ap-pres) 12%, var(--ap-card)))",
+                      background: "var(--content-path-surface)",
                       borderBottom: "var(--ap-border-w) solid var(--ap-line)",
                     }}>
                       <div className="flex items-start justify-between gap-3">
                         <div style={{ width: 42, height: 42, borderRadius: "var(--ap-r-md)", display: "grid", placeItems: "center", background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)" }}>
-                          <Route style={{ width: 22, height: 22, color: "var(--ap-brand)" }} />
+                          <Route style={{ width: 22, height: 22, color: "var(--content-path-accent)" }} />
                         </div>
                         <span className="ap-pill" style={{ fontSize: 11 }}>
                           {path.isSequential ? "Séquentiel" : "Flexible"}
@@ -146,7 +146,7 @@ export default function MyLearningPaths() {
                           <div style={{
                             height: "100%",
                             width: `${progress?.progressPercentage ?? 0}%`,
-                            background: progress?.isComplete ? "var(--ap-pres)" : "var(--ap-brand)",
+                            background: progress?.isComplete ? "var(--mp-success)" : "var(--content-path-accent)",
                             borderRadius: 999,
                           }} />
                         </div>
