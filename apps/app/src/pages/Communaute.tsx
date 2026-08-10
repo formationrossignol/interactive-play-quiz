@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { AppLayout } from "@/components/AppLayout";
@@ -14,7 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import RichTextEditor from "@/components/RichTextEditor";
 import { useSEO } from "@/hooks/useSEO";
 import { getCurrentUser } from "@/lib/auth";
 import {
@@ -26,7 +26,9 @@ import {
   type CommunityCategory,
   type CommunityThread,
 } from "@/lib/community/communityRepo";
+import { uploadCommunityImage, validateCommunityImage } from "@/lib/community/communityMediaRepo";
 import { myOrgMemberships } from "@/lib/org/orgRepo";
+import { sanitizeHtml } from "@/lib/sanitizeHtml";
 import "./community-pages.css";
 
 const CATEGORY_META: Array<{ key: CommunityCategory; icon: string; title: string; description: string }> = [
@@ -44,6 +46,10 @@ function formatDate(value: string) {
   return new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
 }
 
+function plainText(html: string) {
+  return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+}
+
 const Communaute = () => {
   const user = getCurrentUser();
   const queryClient = useQueryClient();
@@ -52,12 +58,19 @@ const Communaute = () => {
   const [newTopicCategory, setNewTopicCategory] = useState<CommunityCategory>("help");
   const [newTopicTitle, setNewTopicTitle] = useState("");
   const [newTopicBody, setNewTopicBody] = useState("");
+  const [newTopicImage, setNewTopicImage] = useState<File | null>(null);
+  const [newTopicImagePreview, setNewTopicImagePreview] = useState("");
   const [openedThreadId, setOpenedThreadId] = useState<string | null>(null);
   const [editingThreadId, setEditingThreadId] = useState<string | null>(null);
   const [editCategory, setEditCategory] = useState<CommunityCategory>("help");
   const [editTitle, setEditTitle] = useState("");
   const [editBody, setEditBody] = useState("");
+  const [editImageUrl, setEditImageUrl] = useState<string | null>(null);
+  const [editImage, setEditImage] = useState<File | null>(null);
+  const [editImagePreview, setEditImagePreview] = useState("");
   const [deletingThread, setDeletingThread] = useState<CommunityThread | null>(null);
+  const newImageInputRef = useRef<HTMLInputElement>(null);
+  const editImageInputRef = useRef<HTMLInputElement>(null);
 
   const { data: memberships = [], isLoading: membershipsLoading } = useQuery({
     queryKey: ["org", "memberships", user?.id],
@@ -76,18 +89,24 @@ const Communaute = () => {
   });
 
   const createThread = useMutation({
-    mutationFn: () => createCommunityThread({
-      orgId: resolvedOrgId as string,
-      authorUserId: user?.id as string,
-      authorName: user?.username || user?.email || "Membre",
-      category: newTopicCategory,
-      title: newTopicTitle,
-      body: newTopicBody,
-    }),
+    mutationFn: async () => {
+      const imageUrl = newTopicImage ? await uploadCommunityImage(user?.id as string, newTopicImage) : null;
+      await createCommunityThread({
+        orgId: resolvedOrgId as string,
+        authorUserId: user?.id as string,
+        authorName: user?.username || user?.email || "Membre",
+        category: newTopicCategory,
+        title: newTopicTitle,
+        body: newTopicBody,
+        imageUrl,
+      });
+    },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["community", resolvedOrgId] });
       setNewTopicTitle("");
       setNewTopicBody("");
+      setNewTopicImage(null);
+      setNewTopicImagePreview("");
       setNewTopicOpen(false);
       toast.success("Sujet publié dans votre organisation");
     },
@@ -102,11 +121,15 @@ const Communaute = () => {
   });
 
   const updateThread = useMutation({
-    mutationFn: () => updateCommunityThread(editingThreadId as string, {
-      category: editCategory,
-      title: editTitle,
-      body: editBody,
-    }),
+    mutationFn: async () => {
+      const imageUrl = editImage ? await uploadCommunityImage(user?.id as string, editImage) : editImageUrl;
+      await updateCommunityThread(editingThreadId as string, {
+        category: editCategory,
+        title: editTitle,
+        body: editBody,
+        imageUrl,
+      });
+    },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["community", resolvedOrgId] });
       setEditingThreadId(null);
@@ -149,6 +172,9 @@ const Communaute = () => {
     setEditCategory(thread.category);
     setEditTitle(thread.title);
     setEditBody(thread.body);
+    setEditImageUrl(thread.imageUrl);
+    setEditImage(null);
+    setEditImagePreview(thread.imageUrl ?? "");
   };
 
   useSEO({
@@ -229,8 +255,10 @@ const Communaute = () => {
                           <span className="tav" aria-hidden="true">{thread.authorName.trim().charAt(0).toUpperCase()}</span>
                           <span className="tt">
                             <b>{thread.title}</b>
+                            {thread.body && <span className="community-thread-excerpt">{plainText(thread.body)}</span>}
                             <small>{CATEGORY_LABEL[thread.category]} · par {thread.authorName} · {formatDate(thread.createdAt)}</small>
                           </span>
+                          {thread.imageUrl && <img className="community-thread-thumb" src={thread.imageUrl} alt="" />}
                           {thread.solved && <span className="solved"><MaterialSymbol name="task_alt" size={14} /> Résolu</span>}
                           <span className="tstats">
                             <span><MaterialSymbol name="favorite" size={15} /> {thread.likes}</span>
@@ -266,7 +294,7 @@ const Communaute = () => {
                           <MaterialSymbol name="keyboard_arrow_up" size={18} />
                           <span>{idea.likes}</span>
                         </button>
-                        <div className="it"><b>{idea.title}</b><small>{idea.body || "Idée proposée à votre organisation"}</small></div>
+                        <div className="it"><b>{idea.title}</b><small>{plainText(idea.body) || "Idée proposée à votre organisation"}</small></div>
                       </div>
                     ))}
                     <button type="button" className="community-text-action" onClick={() => { setNewTopicCategory("ideas"); setNewTopicOpen(true); }}>
@@ -311,10 +339,25 @@ const Communaute = () => {
               <span>Titre</span>
               <Input id="community-topic-title" value={newTopicTitle} maxLength={180} onChange={(event) => setNewTopicTitle(event.target.value)} placeholder="Votre question ou votre idée" />
             </label>
-            <label htmlFor="community-topic-body">
+            <div className="community-editor-field">
               <span>Message</span>
-              <Textarea id="community-topic-body" value={newTopicBody} maxLength={12000} onChange={(event) => setNewTopicBody(event.target.value)} placeholder="Ajoutez le contexte utile aux membres de votre organisation" rows={6} />
-            </label>
+              <RichTextEditor value={newTopicBody} onChange={setNewTopicBody} placeholder="Ajoutez le contexte utile aux membres de votre organisation" minHeight={150} />
+            </div>
+            <div className="community-image-field">
+              <span>Image du post <small>· facultative</small></span>
+              {newTopicImagePreview && (
+                <div className="community-image-preview"><img src={newTopicImagePreview} alt="Aperçu du post" /><button type="button" onClick={() => { setNewTopicImage(null); setNewTopicImagePreview(""); }} aria-label="Retirer l’image"><MaterialSymbol name="close" size={17} /></button></div>
+              )}
+              <input ref={newImageInputRef} hidden type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (!file) return;
+                const invalid = validateCommunityImage(file);
+                if (invalid) { toast.error(invalid); return; }
+                setNewTopicImage(file);
+                setNewTopicImagePreview(URL.createObjectURL(file));
+              }} />
+              <Button type="button" variant="outline" onClick={() => newImageInputRef.current?.click()}><MaterialSymbol name="image" size={17} /> {newTopicImagePreview ? "Remplacer l’image" : "Ajouter une image"}</Button>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setNewTopicOpen(false)}>Annuler</Button>
@@ -337,7 +380,10 @@ const Communaute = () => {
                 <DialogDescription>{CATEGORY_LABEL[openedThread.category]} · par {openedThread.authorName} · {formatDate(openedThread.createdAt)}</DialogDescription>
               </DialogHeader>
               <div className="community-thread-message">
-                {openedThread.body || <span>Aucun message complémentaire.</span>}
+                {openedThread.imageUrl && <img className="community-thread-hero-image" src={openedThread.imageUrl} alt="Illustration du post" />}
+                {openedThread.body
+                  ? <div className="community-rich-content" dangerouslySetInnerHTML={{ __html: sanitizeHtml(openedThread.body) }} />
+                  : <span>Aucun message complémentaire.</span>}
               </div>
               <DialogFooter>
                 {openedThread.authorUserId === user?.id && (
@@ -368,9 +414,22 @@ const Communaute = () => {
             <label htmlFor="community-edit-title"><span>Titre</span>
               <Input id="community-edit-title" value={editTitle} maxLength={180} onChange={(event) => setEditTitle(event.target.value)} />
             </label>
-            <label htmlFor="community-edit-body"><span>Message</span>
-              <Textarea id="community-edit-body" value={editBody} maxLength={12000} rows={7} onChange={(event) => setEditBody(event.target.value)} />
-            </label>
+            <div className="community-editor-field"><span>Message</span>
+              <RichTextEditor value={editBody} onChange={setEditBody} minHeight={150} />
+            </div>
+            <div className="community-image-field">
+              <span>Image du post <small>· facultative</small></span>
+              {editImagePreview && <div className="community-image-preview"><img src={editImagePreview} alt="Aperçu du post" /><button type="button" onClick={() => { setEditImage(null); setEditImageUrl(null); setEditImagePreview(""); }} aria-label="Retirer l’image"><MaterialSymbol name="close" size={17} /></button></div>}
+              <input ref={editImageInputRef} hidden type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (!file) return;
+                const invalid = validateCommunityImage(file);
+                if (invalid) { toast.error(invalid); return; }
+                setEditImage(file);
+                setEditImagePreview(URL.createObjectURL(file));
+              }} />
+              <Button type="button" variant="outline" onClick={() => editImageInputRef.current?.click()}><MaterialSymbol name="image" size={17} /> {editImagePreview ? "Remplacer l’image" : "Ajouter une image"}</Button>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditingThreadId(null)}>Annuler</Button>

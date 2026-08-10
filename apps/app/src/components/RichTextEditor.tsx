@@ -29,6 +29,7 @@ interface Props {
   value: string;
   onChange: (html: string) => void;
   placeholder?: string;
+  minHeight?: number;
 }
 
 const btn = (active: boolean): React.CSSProperties => ({
@@ -49,7 +50,7 @@ const Sep = () => (
   <div style={{ width: 1, height: 18, background: "var(--ap-line)", margin: "0 4px", flexShrink: 0 }} />
 );
 
-const RichTextEditor = ({ value, onChange, placeholder = "Rédigez le contenu de cette leçon..." }: Props) => {
+const RichTextEditor = ({ value, onChange, placeholder = "Rédigez le contenu de cette leçon...", minHeight = 400 }: Props) => {
   const editor = useEditor({
     extensions: [
       StarterKit.configure({ underline: false, link: false }),
@@ -65,7 +66,7 @@ const RichTextEditor = ({ value, onChange, placeholder = "Rédigez le contenu de
     editorProps: {
       attributes: {
         style: [
-          "min-height:400px",
+          `min-height:${minHeight}px`,
           "padding:16px",
           "outline:none",
           "font-size:15px",
@@ -75,7 +76,7 @@ const RichTextEditor = ({ value, onChange, placeholder = "Rédigez le contenu de
         ].join(";"),
       },
     },
-  });
+  }, [minHeight]);
 
   // Sync external value changes (e.g. lesson switch)
   useEffect(() => {

@@ -18,6 +18,7 @@ interface CommunityThreadRow {
   category: CommunityCategory;
   title: string;
   body: string;
+  image_url: string | null;
   solved: boolean;
   created_at: string;
   community_thread_likes: CommunityReactionRow[] | null;
@@ -32,6 +33,7 @@ export interface CommunityThread {
   category: CommunityCategory;
   title: string;
   body: string;
+  imageUrl: string | null;
   solved: boolean;
   createdAt: string;
   likes: number;
@@ -42,7 +44,7 @@ export interface CommunityThread {
 export async function listCommunityThreads(orgId: string, currentUserId: string): Promise<CommunityThread[]> {
   const { data, error } = await supabase
     .from("community_threads")
-    .select("id,org_id,author_user_id,author_name,category,title,body,solved,created_at,community_thread_likes(user_id),community_thread_replies(id)")
+    .select("id,org_id,author_user_id,author_name,category,title,body,image_url,solved,created_at,community_thread_likes(user_id),community_thread_replies(id)")
     .eq("org_id", orgId)
     .order("created_at", { ascending: false });
   if (error) throw error;
@@ -55,6 +57,7 @@ export async function listCommunityThreads(orgId: string, currentUserId: string)
     category: row.category,
     title: row.title,
     body: row.body,
+    imageUrl: row.image_url,
     solved: row.solved,
     createdAt: row.created_at,
     likes: row.community_thread_likes?.length ?? 0,
@@ -70,6 +73,7 @@ export async function createCommunityThread(input: {
   category: CommunityCategory;
   title: string;
   body: string;
+  imageUrl?: string | null;
 }): Promise<void> {
   const { error } = await supabase.from("community_threads").insert({
     org_id: input.orgId,
@@ -78,13 +82,14 @@ export async function createCommunityThread(input: {
     category: input.category,
     title: input.title.trim(),
     body: input.body.trim(),
+    image_url: input.imageUrl ?? null,
   });
   if (error) throw error;
 }
 
 export async function updateCommunityThread(
   threadId: string,
-  input: { category: CommunityCategory; title: string; body: string },
+  input: { category: CommunityCategory; title: string; body: string; imageUrl?: string | null },
 ): Promise<void> {
   const { error } = await supabase
     .from("community_threads")
@@ -92,6 +97,7 @@ export async function updateCommunityThread(
       category: input.category,
       title: input.title.trim(),
       body: input.body.trim(),
+      image_url: input.imageUrl ?? null,
     })
     .eq("id", threadId);
   if (error) throw error;

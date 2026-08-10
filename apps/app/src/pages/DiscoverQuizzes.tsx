@@ -7,7 +7,8 @@ import { Pagination } from "@/components/Pagination";
 import { RatingStars } from "@/components/RatingStars";
 import { PageHeader } from "@/components/ui/page-header";
 import { ExplorerEmptyState } from "@/components/content/ExplorerEmptyState";
-import { getPublicQuizzes, rateQuiz } from "@/lib/quizStorage";
+import { getPublicQuizzes, rateQuiz, type SavedQuiz } from "@/lib/quizStorage";
+import { listPublicContent } from "@/lib/content/contentRepo";
 import { BarChart2, Compass, ListChecks, Search, Play, Clock, Users, Plus } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { toast } from "sonner";
@@ -70,8 +71,19 @@ const DiscoverQuizzes = () => {
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [typeFilter, setTypeFilter] = useState<"all" | "quiz" | "poll">("all");
   const [page, setPage] = useState(1);
+  const [publicQuizzes, setPublicQuizzes] = useState<SavedQuiz[]>(() => getPublicQuizzes().filter((q) => q.type === "quiz" || q.type === "poll"));
 
-  const publicQuizzes = getPublicQuizzes().filter((q) => q.type === "quiz" || q.type === "poll");
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([listPublicContent("quiz"), listPublicContent("poll")])
+      .then(([quizzes, polls]) => {
+        if (cancelled) return;
+        const remote = [...quizzes, ...polls].map((row) => row.data as unknown as SavedQuiz);
+        if (remote.length > 0) setPublicQuizzes(remote);
+      })
+      .catch(() => undefined);
+    return () => { cancelled = true; };
+  }, []);
 
   const allTags = useMemo(() => {
     const tags = new Set<string>();
@@ -96,12 +108,16 @@ const DiscoverQuizzes = () => {
 
   const playQuiz = (quizId: string) => {
     const quiz = publicQuizzes.find((q) => q.id === quizId);
-    if (quiz) { localStorage.setItem("current-quiz", JSON.stringify(quiz)); navigate(`/quiz/${quizId}`); }
+    if (!quiz) return;
+    if (quiz.type === "quiz") { navigate(`/public/quiz/${quizId}`); return; }
+    localStorage.setItem("current-quiz", JSON.stringify(quiz));
+    navigate(`/quiz/${quizId}`);
   };
 
   const playQuizSolo = (quizId: string) => {
     const quiz = publicQuizzes.find((q) => q.id === quizId);
     if (!quiz) return;
+    if (quiz.type === "quiz") { navigate(`/public/quiz/${quizId}`); return; }
     localStorage.setItem("current-quiz", JSON.stringify(quiz));
     sessionStorage.setItem(`quiz-solo-${quizId}`, "1");
     navigate(`/quiz/${quizId}`);

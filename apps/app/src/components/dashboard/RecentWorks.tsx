@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { CardSkeleton } from "@/components/ui/skeletons";
 import { MaterialSymbol } from "@/components/MaterialSymbol";
+import { ContentCoverArtwork } from "@/components/content/ContentCardHeader";
 import { listRecentContent } from "@/lib/content/contentRepo";
 import { getSearchResultRoute } from "@/lib/content/searchContent";
 import type { ContentRow, ContentType } from "@/lib/content/types";
@@ -36,22 +37,11 @@ export function RecentWorkCard({ row }: { row: ContentRow }) {
         className="product-recent-item__media"
         style={{ color: meta.color, background: image ? "var(--ap-paper-2)" : meta.background }}
       >
-        {!image && (
-          <svg
-            className="motif"
-            viewBox="0 0 300 112"
-            preserveAspectRatio="none"
-            aria-hidden="true"
-            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: .55 }}
-          >
-            <path d="M-10 90 Q60 40 150 70 T310 50" fill="none" stroke="currentColor" strokeWidth="1" opacity=".2" />
-            <path d="M-10 105 Q80 60 170 85 T310 70" fill="none" stroke="currentColor" strokeWidth="1" opacity=".1" />
-          </svg>
-        )}
+        {!image && <ContentCoverArtwork type={row.type} />}
         {!image && <span className="product-recent-item__badge" style={{ color: meta.color, background: "var(--ap-card)" }}>{meta.label}</span>}
         {image
           ? <img src={image} alt="" className="h-full w-full object-cover" />
-          : <MaterialSymbol name={meta.icon} size={36} style={{ color: meta.color, opacity: .82, position: "relative" }} />}
+          : null}
       </span>
       <span className="product-recent-item__title">{title}</span>
       <span className="product-recent-item__meta">

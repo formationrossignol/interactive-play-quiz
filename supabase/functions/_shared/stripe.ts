@@ -6,7 +6,7 @@ let cachedCryptoProvider:
 
 export function getStripeClient(): Stripe {
   return new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, {
-    apiVersion: "2024-06-20",
+    apiVersion: "2025-02-24.acacia",
     httpClient: Stripe.createFetchHttpClient(),
   });
 }
