@@ -103,6 +103,7 @@ const LmsAccessibility = lazy(() => import("./pages/lms/Accessibility"));
 const LmsAutomation = lazy(() => import("./pages/lms/Automation"));
 const LmsAnalytics = lazy(() => import("./pages/lms/Analytics"));
 const LmsItemBank = lazy(() => import("./pages/lms/ItemBank"));
+const LmsLiveEngagement = lazy(() => import("./pages/lms/LiveEngagement"));
 const PresentationEditorPage = lazy(() => import("./pages/PresentationEditorPage"));
 const PresentationAudience = lazy(() => import("./pages/PresentationAudience"));
 
@@ -213,6 +214,7 @@ const App = () => (
               <Route path="/lms/automation" element={<LmsAutomation />} />
               <Route path="/lms/analytics" element={<LmsAnalytics />} />
               <Route path="/lms/item-bank" element={<LmsItemBank />} />
+              <Route path="/lms/live" element={<LmsLiveEngagement />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
