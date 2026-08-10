@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useDraggable } from "@dnd-kit/core";
 import { toast } from "sonner";
 import { BookOpen, GripVertical, Link2, Pencil, Sparkles, Star, Trash2 } from "lucide-react";
+import { MaterialSymbol } from "@/components/MaterialSymbol";
 import { Badge } from "@/components/ui/badge";
 import { ContentExplorer } from "@/components/content/ContentExplorer";
 import type { ItemCtx } from "@/components/content/GenericItem";
@@ -19,13 +20,6 @@ const CATEGORIES = ["Tous", "Informatique", "Langues", "Sciences", "Histoire", "
 const gripStyle: React.CSSProperties = {
   cursor: "grab", color: "var(--ap-muted)", display: "flex", alignItems: "center",
   touchAction: "none", flexShrink: 0, background: "none", border: "none", padding: 2,
-};
-
-/** Drag handle overlaid on the header block (top-left) so the title row keeps the full card width. */
-const gripOverlayStyle: React.CSSProperties = {
-  position: "absolute", top: 8, left: 8, display: "flex", alignItems: "center", justifyContent: "center",
-  background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", color: "var(--ap-muted)",
-  cursor: "grab", touchAction: "none", padding: 4, borderRadius: 6, zIndex: 1,
 };
 
 const totalLessons = (course: Course) => course.modules.reduce((s, m) => s + m.lessons.length, 0);
@@ -53,8 +47,8 @@ function CourseCard({ d, ctx, navigate, userId }: CourseItemProps) {
       onClick={() => navigate(`/course/${course.id}`)}
     >
       <ContentCardHeader image={course.coverImage} alt={course.title} icon="school" accent="var(--content-course-accent)" background="var(--content-course-surface)" type="course" label="Cours">
-        <button type="button" {...attributes} {...listeners} style={gripOverlayStyle} className="ap-grip" onClick={(e) => e.stopPropagation()} aria-label={`Déplacer ${course.title}`}>
-          <GripVertical style={{ width: 14, height: 14 }} />
+        <button type="button" {...attributes} {...listeners} className="ap-grip product-content-drag-handle" onClick={(e) => e.stopPropagation()} aria-label={`Déplacer ${course.title}`}>
+          <MaterialSymbol name="drag_handle" size={17} />
         </button>
       </ContentCardHeader>
       <div className="flex flex-1 flex-col" style={{ padding: "var(--density-card-pad, 14px 16px 12px)" }}>
@@ -201,8 +195,7 @@ const MyCourses = () => {
         headerExtras={
           <button
             onClick={() => setGeneratorOpen(true)}
-            className="ap-btn ap-btn--sm ap-btn--pill"
-            style={{ background: "var(--ap-flash)", color: "var(--ap-ink)", border: "none", boxShadow: "0 4px 0 var(--ap-flash-deep)", gap: 6, display: "flex", alignItems: "center", fontWeight: 800 }}
+            className="ap-btn ap-btn--sm ap-btn--pill product-ai-button"
           >
             <Sparkles className="h-4 w-4" /> Générer par IA
           </button>

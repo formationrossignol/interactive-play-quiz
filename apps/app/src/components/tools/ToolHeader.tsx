@@ -33,7 +33,8 @@ export const ToolHeader = ({ icon: Icon, title, description, accent }: ToolHeade
         alignItems: "center",
         justifyContent: "center",
         background: accent,
-        boxShadow: "0 4px 0 rgba(0,0,0,0.12)",
+        border: "1px solid color-mix(in srgb, var(--ap-line) 70%, transparent)",
+        boxShadow: "none",
       }}
     >
       <Icon style={{ width: 36, height: 36, color: "#fff" }} strokeWidth={2} />

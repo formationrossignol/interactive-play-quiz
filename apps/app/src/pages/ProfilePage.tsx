@@ -278,9 +278,13 @@ const ProfilePage = () => {
               onChange={handleAvatarPick}
             />
           </div>
-          <div>
+          <div className="product-profile-identity">
             <h1>{user.username}</h1>
-            <p>{roleLabel || user.email}</p>
+            <p>{email || user.email}</p>
+            <div className="product-profile-hero__meta">
+              <span><MaterialSymbol name="check_circle" size={15} /> Compte actif</span>
+              {roleLabel && <span><MaterialSymbol name="badge" size={15} /> {roleLabel}</span>}
+            </div>
           </div>
           <span className="product-profile-plan">
             <MaterialSymbol name={PLAN_META[plan].icon} size={17} />

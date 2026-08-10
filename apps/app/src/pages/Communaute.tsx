@@ -323,7 +323,7 @@ const Communaute = () => {
       </main>
 
       <Dialog open={newTopicOpen} onOpenChange={setNewTopicOpen}>
-        <DialogContent className="community-topic-dialog sm:max-w-lg">
+        <DialogContent className="community-topic-dialog sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>Nouveau sujet</DialogTitle>
             <DialogDescription>Publié uniquement dans {activeOrgName}.</DialogDescription>

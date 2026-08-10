@@ -1,12 +1,9 @@
 import { useId, useRef, useState } from "react";
 
-// Validated categorical palette (8 hues, adjacent-pair CVD-safe) — decorative
-// wheel segments aren't tied to app content-type semantics like --ap-quiz/
-// --ap-poll, so a dedicated fixed palette (light/dark pair) fits better than
-// reusing the 5-token brand accent set, which collides once a wheel has more
-// items than tokens.
-const PALETTE_LIGHT = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#4a3aa7", "#e34948"];
-const PALETTE_DARK = ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181", "#008300", "#9085e9", "#e66767"];
+// Same restrained semantic family as the rest of the product. The wheel stays
+// readable without introducing a separate, arcade-like rainbow palette.
+const PALETTE_LIGHT = ["#655CF6", "#3498DB", "#2FA66D", "#E8873A", "#8A5CF6", "#C79220", "#D95C5C"];
+const PALETTE_DARK = ["#8178FF", "#55B8E8", "#32D296", "#E99755", "#9B73F7", "#D2A643", "#E57979"];
 
 const SPIN_DURATION_MS = 4200;
 const EXTRA_SPINS = 6;
@@ -107,8 +104,8 @@ export const SpinWheel = ({ items, disabled, onResult }: SpinWheelProps) => {
             height: "100%",
             borderRadius: "50%",
             background: `${gradient}, var(--ap-paper)`,
-            border: "3px solid var(--ap-ink)",
-            boxShadow: "0 18px 40px -12px rgba(0,0,0,0.35), var(--ap-shadow-card)",
+            border: "2px solid var(--ap-line)",
+            boxShadow: "0 16px 36px -24px rgba(16,24,40,.28)",
             position: "relative",
             transform: `rotate(${rotation}deg)`,
             transition: spinning ? `transform ${SPIN_DURATION_MS}ms cubic-bezier(0.12, 0.72, 0.14, 1)` : undefined,
@@ -162,7 +159,7 @@ export const SpinWheel = ({ items, disabled, onResult }: SpinWheelProps) => {
             borderRadius: "50%",
             background: "var(--ap-ink)",
             border: "4px solid var(--ap-paper)",
-            boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
+            boxShadow: "none",
             zIndex: 2,
           }}
         />
