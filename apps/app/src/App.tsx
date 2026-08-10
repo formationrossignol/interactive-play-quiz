@@ -96,6 +96,7 @@ const PreviewPage = lazy(() => import("./pages/PreviewPage"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const Admin = lazy(() => import("./pages/admin/Admin"));
 const LmsSessions = lazy(() => import("./pages/lms/Sessions"));
+const LmsAssignments = lazy(() => import("./pages/lms/Assignments"));
 const PresentationEditorPage = lazy(() => import("./pages/PresentationEditorPage"));
 const PresentationAudience = lazy(() => import("./pages/PresentationAudience"));
 
@@ -199,6 +200,7 @@ const App = () => (
               <Route path="/tools/chronometre" element={<ChronometerTool />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="/lms/sessions" element={<LmsSessions />} />
+              <Route path="/lms/assignments" element={<LmsAssignments />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
