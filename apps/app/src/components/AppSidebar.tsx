@@ -177,7 +177,7 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
           aria-label="Brivia, tableau de bord"
         >
           <span className="product-sidebar-brand__mark">
-            <BrandMonogram size={21} />
+            <BrandMonogram size={21} color="currentColor" />
           </span>
           {!collapsedIcon && (
             <span className="product-sidebar-brand__copy">
@@ -244,10 +244,11 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
                     <DropdownMenuItem
                       key={item.label}
                       className="gap-2 rounded-md text-sm cursor-pointer"
-                      style={{ color: "var(--ap-ink)", fontFamily: "var(--ap-font-body)" }}
+                      data-active={item.path === `${location.pathname}${location.search}` || undefined}
+                      style={{ fontFamily: "var(--ap-font-body)" }}
                       onSelect={() => navigate(item.path)}
                     >
-                      <LetsIcon name={item.icon} size={20} style={{ color: "var(--ap-muted)" }} />
+                      <LetsIcon name={item.icon} size={20} />
                       {item.label}
                     </DropdownMenuItem>
                   ))}
