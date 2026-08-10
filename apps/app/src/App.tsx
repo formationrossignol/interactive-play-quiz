@@ -95,6 +95,7 @@ const QuizResults = lazy(() => import("./pages/QuizResults"));
 const PreviewPage = lazy(() => import("./pages/PreviewPage"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const Admin = lazy(() => import("./pages/admin/Admin"));
+const LmsSessions = lazy(() => import("./pages/lms/Sessions"));
 const PresentationEditorPage = lazy(() => import("./pages/PresentationEditorPage"));
 const PresentationAudience = lazy(() => import("./pages/PresentationAudience"));
 
@@ -197,6 +198,7 @@ const App = () => (
               <Route path="/tools/wheel" element={<WheelTool />} />
               <Route path="/tools/chronometre" element={<ChronometerTool />} />
               <Route path="/admin" element={<Admin />} />
+              <Route path="/lms/sessions" element={<LmsSessions />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
