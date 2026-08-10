@@ -1,20 +1,60 @@
-import type { ReactNode } from "react";
+import { useId, type ReactNode } from "react";
 import { MaterialSymbol } from "@/components/MaterialSymbol";
+import type { ContentType } from "@/lib/content/types";
 
-/** Decorative wave lines behind the cover icon — stroke inherits the card's
- *  accent color via currentColor, same motif shape used across every
- *  content-type cover in the design reference (quiz/exam/course/flashcard). */
-function CoverMotif() {
+/** A compact product preview instead of a generic icon on decorative waves.
+ *  Every type keeps its own information hierarchy while sharing the same
+ *  quiet, editorial cover vocabulary. */
+export function ContentCoverArtwork({ type }: { type: ContentType }) {
+  const gradientId = useId().replace(/:/g, "");
+  const common = { fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
   return (
     <svg
-      className="motif"
-      viewBox="0 0 300 112"
+      className="product-content-artwork"
+      viewBox="0 0 320 180"
       preserveAspectRatio="none"
       aria-hidden="true"
-      style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: .55 }}
+      style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
     >
-      <path d="M-10 90 Q60 40 150 70 T310 50" fill="none" stroke="currentColor" strokeWidth="1" opacity=".2" />
-      <path d="M-10 105 Q80 60 170 85 T310 70" fill="none" stroke="currentColor" strokeWidth="1" opacity=".1" />
+      <defs>
+        <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="currentColor" stopOpacity=".12" />
+          <stop offset="1" stopColor="currentColor" stopOpacity=".02" />
+        </linearGradient>
+      </defs>
+      <rect x="0" y="0" width="320" height="180" fill={`url(#${gradientId})`} />
+      <path d="M24 34H296M24 146H296" stroke="currentColor" strokeOpacity=".12" />
+      {type === "quiz" && <>
+        <rect x="74" y="36" width="172" height="110" rx="13" fill="var(--ap-card)" fillOpacity=".92" stroke="currentColor" strokeOpacity=".18" />
+        <path d="M96 62H206M96 76H182" {...common} strokeOpacity=".55" />
+        {[0, 1, 2, 3].map((index) => <rect key={index} x={96 + (index % 2) * 61} y={94 + Math.floor(index / 2) * 24} width="52" height="16" rx="5" fill="currentColor" opacity={index === 1 ? .68 : .18} />)}
+      </>}
+      {type === "poll" && <>
+        <rect x="65" y="37" width="190" height="108" rx="13" fill="var(--ap-card)" fillOpacity=".92" stroke="currentColor" strokeOpacity=".18" />
+        <path d="M88 62H201M88 75H174" {...common} strokeOpacity=".48" />
+        {[58, 104, 78].map((width, index) => <g key={width}><rect x="88" y={92 + index * 15} width="120" height="7" rx="3.5" fill="currentColor" opacity=".1" /><rect x="88" y={92 + index * 15} width={width} height="7" rx="3.5" fill="currentColor" opacity={.65 - index * .12} /></g>)}
+      </>}
+      {type === "flashcard" && <>
+        <rect x="92" y="47" width="144" height="88" rx="12" fill="currentColor" opacity=".12" transform="rotate(5 164 91)" />
+        <rect x="84" y="42" width="144" height="88" rx="12" fill="var(--ap-card)" fillOpacity=".96" stroke="currentColor" strokeOpacity=".28" />
+        <path d="M108 72H192M108 88H176" {...common} strokeOpacity=".55" />
+        <rect x="108" y="105" width="52" height="8" rx="4" fill="currentColor" opacity=".2" />
+      </>}
+      {type === "slide" && <>
+        <rect x="61" y="35" width="198" height="112" rx="10" fill="var(--ap-card)" fillOpacity=".94" stroke="currentColor" strokeOpacity=".22" />
+        <rect x="76" y="50" width="47" height="82" rx="6" fill="currentColor" opacity=".12" />
+        <rect x="136" y="52" width="98" height="36" rx="6" fill="currentColor" opacity=".2" />
+        <path d="M136 105H222M136 117H198" {...common} strokeOpacity=".46" />
+      </>}
+      {type === "course" && <>
+        <rect x="67" y="35" width="186" height="112" rx="12" fill="var(--ap-card)" fillOpacity=".94" stroke="currentColor" strokeOpacity=".2" />
+        {[0, 1, 2].map((index) => <g key={index}><rect x="88" y={55 + index * 27} width="20" height="20" rx="6" fill="currentColor" opacity={.18 + index * .08} /><path d={`M120 ${62 + index * 27}H220M120 ${70 + index * 27}H188`} {...common} strokeOpacity=".38" /></g>)}
+      </>}
+      {type === "exam" && <>
+        <path d="M102 35H202L230 63V146H102Z" fill="var(--ap-card)" fillOpacity=".94" stroke="currentColor" strokeOpacity=".24" />
+        <path d="M202 35V64H230M124 79H204M124 95H190M124 111H178" {...common} strokeOpacity=".4" />
+        <path d="M185 124L194 133L211 113" {...common} strokeWidth="4" strokeOpacity=".72" />
+      </>}
     </svg>
   );
 }
@@ -22,9 +62,9 @@ function CoverMotif() {
 export function ContentCardHeader({
   image,
   alt,
-  icon,
   accent,
   background,
+  type,
   /** Type badge shown top-left when there's no custom cover image — same
    *  convention as the dashboard's RecentWorks cards (product-recent-item__badge). */
   label,
@@ -35,6 +75,7 @@ export function ContentCardHeader({
   icon: string;
   accent: string;
   background?: string;
+  type?: ContentType;
   label?: string;
   children?: ReactNode;
 }) {
@@ -53,11 +94,8 @@ export function ContentCardHeader({
         />
       ) : (
         <>
-          <CoverMotif />
+          <ContentCoverArtwork type={type ?? "quiz"} />
           {label && <span className="product-recent-item__badge" style={{ color: accent, background: "var(--ap-card)" }}>{label}</span>}
-          <span style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", color: accent }}>
-            <MaterialSymbol name={icon} size={48} style={{ opacity: .82, position: "relative" }} />
-          </span>
         </>
       )}
       {children}

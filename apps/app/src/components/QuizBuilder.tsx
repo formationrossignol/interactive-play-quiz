@@ -625,6 +625,8 @@ export const QuizBuilder = () => {
   const [questions, setQuestions] = useState<EditableQuestion[]>([]);
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [isPublic, setIsPublic] = useState(false);
+  const [monetizationEnabled, setMonetizationEnabled] = useState(false);
+  const [priceEuros, setPriceEuros] = useState("9.90");
   const [speedBonus, setSpeedBonus] = useState(true);
   const [transitionTime, setTransitionTime] = useState(5);
   const [readingTime, setReadingTime] = useState(3);
@@ -694,7 +696,7 @@ export const QuizBuilder = () => {
     if (firstRender.current) { firstRender.current = false; return; }
     if (isLoadingQuizRef.current) { isLoadingQuizRef.current = false; return; }
     setSaveState("unsaved");
-  }, [questions, title, liveReactionsEnabled, endChatEnabled]);
+  }, [questions, title, liveReactionsEnabled, endChatEnabled, isPublic, monetizationEnabled, priceEuros]);
 
   // ── Auth guard ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -716,6 +718,8 @@ export const QuizBuilder = () => {
     setDescription(eq.description);
     setCategory(eq.category);
     setIsPublic(eq.isPublic);
+    setMonetizationEnabled(eq.monetization?.enabled ?? false);
+    setPriceEuros(((eq.monetization?.priceCents ?? 990) / 100).toFixed(2));
     setSpeedBonus(eq.speedBonus);
     setTransitionTime(eq.transitionTime);
     setReadingTime(eq.readingTime ?? 3);
@@ -931,6 +935,12 @@ export const QuizBuilder = () => {
         transitionTime, readingTime, category, type: quizType,
         headerImage, theme, font: previewFont, ambianceId,
         liveReactionsEnabled, endChatEnabled,
+        creatorName: user?.username || user?.email || "Créateur Brivia",
+        monetization: {
+          enabled: !isPoll && isPublic && monetizationEnabled,
+          priceCents: Math.max(100, Math.round((Number.parseFloat(priceEuros.replace(",", ".")) || 9.9) * 100)),
+          currency: "eur" as const,
+        },
       };
       let saved: SavedQuiz | null;
       if (contentRow && user && contentRow.user_id !== user.id) {
@@ -1875,6 +1885,58 @@ export const QuizBuilder = () => {
                   <p className="m-0 px-3 text-xs font-semibold text-muted-foreground">
                     Seul le propriétaire peut modifier la visibilité de cette ressource.
                   </p>
+                )}
+                {isPublic && (!contentRow || contentRow.user_id === user?.id) && (
+                  <div className="rounded-lg border border-border bg-background p-3 space-y-3">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <Label className="cursor-pointer">Monétiser ce quiz</Label>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Demandez un paiement unique avant de donner accès au quiz public.
+                        </p>
+                      </div>
+                      <Switch checked={monetizationEnabled} onCheckedChange={setMonetizationEnabled} />
+                    </div>
+                    {monetizationEnabled && (
+                      <div className="grid gap-2 sm:grid-cols-[160px_1fr] sm:items-end">
+                        <div>
+                          <Label htmlFor="quiz-price">Prix TTC</Label>
+                          <div className="relative mt-2">
+                            <Input
+                              id="quiz-price"
+                              type="number"
+                              min="1"
+                              step="0.50"
+                              value={priceEuros}
+                              onChange={(event) => setPriceEuros(event.target.value)}
+                              className="pr-8"
+                            />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">€</span>
+                          </div>
+                        </div>
+                        <p className="m-0 text-xs text-muted-foreground">
+                          Le paiement et l’accès sont suivis dans votre espace Brivia.
+                        </p>
+                      </div>
+                    )}
+                    {quizId && (
+                      <div className="flex items-center gap-2 rounded-md bg-muted/50 px-3 py-2">
+                        <MaterialSymbol name="link" size={17} />
+                        <code className="min-w-0 flex-1 truncate text-xs">{`${window.location.origin}/public/quiz/${quizId}`}</code>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            void navigator.clipboard.writeText(`${window.location.origin}/public/quiz/${quizId}`);
+                            toast.success("Lien public copié");
+                          }}
+                        >
+                          <MaterialSymbol name="content_copy" size={16} /> Copier
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                 )}
                 <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                   <div className="flex items-center gap-2">

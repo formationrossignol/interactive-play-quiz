@@ -23,7 +23,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { ContentDisplay } from "@/lib/content/contentView";
-import type { FolderRow } from "@/lib/content/types";
+import type { ContentType, FolderRow } from "@/lib/content/types";
 import { readSessionHistory } from "@/lib/sessionState";
 import { t } from "@/lib/i18n";
 import { ContentCardHeader, ContentRowThumbnail } from "@/components/content/ContentCardHeader";
@@ -272,7 +272,7 @@ export function GenericCard(props: GenericItemProps) {
       style={{ opacity: isDragging ? 0.4 : 1, padding: 0 }}
       onClick={() => navigate(config.editRoute(id))}
     >
-      <ContentCardHeader image={img} alt={d.title} icon={defaultHeaderIconName} accent={`var(${accentVar})`} background={`var(${softVar})`} label={headerLabel[config.accentBtn]}>
+      <ContentCardHeader image={img} alt={d.title} icon={defaultHeaderIconName} accent={`var(${accentVar})`} background={`var(${softVar})`} type={contentTokenOf(config.accentBtn) as ContentType} label={headerLabel[config.accentBtn]}>
         <button
           type="button"
           {...attributes}

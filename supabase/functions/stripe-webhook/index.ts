@@ -35,7 +35,24 @@ Deno.serve(async (req) => {
   try {
     switch (event.type) {
       case "checkout.session.completed": {
-        const session = event.data.object as { customer: string; subscription: string };
+        const session = event.data.object as {
+          id: string;
+          customer: string;
+          subscription: string;
+          payment_status?: string;
+          metadata?: Record<string, string>;
+        };
+        if (session.metadata?.kind === "quiz_purchase") {
+          const { error } = await supabaseAdmin
+            .from("quiz_purchases")
+            .update({ status: "paid", paid_at: new Date().toISOString() })
+            .eq("stripe_checkout_session_id", session.id);
+          if (error) {
+            console.error("[stripe-webhook] quiz purchase update failed:", error);
+            return new Response(JSON.stringify({ error: "Database update failed" }), { status: 500 });
+          }
+          break;
+        }
         const { data, error } = await supabaseAdmin
           .from("profiles")
           .update({

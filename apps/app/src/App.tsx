@@ -48,6 +48,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 // Public community pages that belong inside the product shell.
 const Communaute = lazy(() => import("./pages/Communaute"));
 const DiscoverQuizzes = lazy(() => import("./pages/DiscoverQuizzes"));
+const PublicQuizPage = lazy(() => import("./pages/PublicQuizPage"));
 const Roadmap = lazy(() => import("./pages/Roadmap"));
 const Changelog = lazy(() => import("./pages/Changelog"));
 const Report = lazy(() => import("./pages/Report"));
@@ -64,6 +65,7 @@ const QuizBuilder = lazy(() => import("./pages/QuizBuilder"));
 const QuizBuilderStart = lazy(() => import("./pages/QuizBuilderStart"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const RecentWorksPage = lazy(() => import("./pages/RecentWorksPage"));
+const PlanningPage = lazy(() => import("./pages/PlanningPage"));
 const SharedWithMe = lazy(() => import("./pages/SharedWithMe"));
 const Groups = lazy(() => import("./pages/Groups"));
 const Signatures = lazy(() => import("./pages/Signatures"));
@@ -148,6 +150,7 @@ const App = () => (
               <Route path="/builder" element={<QuizBuilder />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/recent" element={<RecentWorksPage />} />
+              <Route path="/planning" element={<PlanningPage />} />
               <Route path="/shared-with-me" element={<SharedWithMe />} />
               <Route path="/groups" element={<Groups />} />
               <Route path="/signatures" element={<Signatures />} />
@@ -165,6 +168,7 @@ const App = () => (
               <Route path="/learning-path-builder" element={<LearningPathBuilder />} />
               <Route path="/learning-path/:pathId" element={<LearningPathViewer />} />
               <Route path="/discover" element={<DiscoverQuizzes />} />
+              <Route path="/public/quiz/:quizId" element={<PublicQuizPage />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/question-bank" element={<QuestionBank />} />
               <Route path="/poll-results/:pollId" element={<PollResults />} />

@@ -276,6 +276,19 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
             )}
 
             {user && (
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  isActive={location.pathname === "/planning"}
+                  onClick={() => navigate("/planning")}
+                  tooltip="Planning"
+                >
+                  <LetsIcon name="calendar_month" size={20} />
+                  <span>Planning</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )}
+
+            {user && (
               <Collapsible open={creationsOpen && !collapsedIcon} onOpenChange={setCreationsOpen}>
                 <SidebarMenuItem>
                   <CollapsibleTrigger asChild>
@@ -479,16 +492,6 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
                 </SidebarMenuButton>
               </SidebarMenuItem>
             )}
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                isActive={location.pathname === "/profile"}
-                onClick={() => navigate("/profile")}
-                tooltip={t("settings")}
-              >
-                <LetsIcon name="settings" size={20} />
-                <span>{t("settings")}</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
           </SidebarMenu>
 
           <SidebarSeparator />

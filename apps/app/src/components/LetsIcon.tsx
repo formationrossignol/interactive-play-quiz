@@ -46,8 +46,12 @@ import map from "lets-icons/icons/map-light.svg?raw";
 import menu from "lets-icons/icons/menu.svg?raw";
 import message from "lets-icons/icons/message-light.svg?raw";
 import messageOpen from "lets-icons/icons/message-open-light.svg?raw";
+import comment from "lets-icons/icons/comment-light.svg?raw";
+import image from "lets-icons/icons/img-light.svg?raw";
+import money from "lets-icons/icons/money-light.svg?raw";
 import moon from "lets-icons/icons/moon-light.svg?raw";
 import more from "lets-icons/icons/meatballs-menu.svg?raw";
+import move from "lets-icons/icons/move-light.svg?raw";
 import paper from "lets-icons/icons/paper-light.svg?raw";
 import play from "lets-icons/icons/play-light.svg?raw";
 import question from "lets-icons/icons/question-light.svg?raw";
@@ -120,13 +124,18 @@ const icons: Record<string, string> = {
   delete: trash,
   dns: server,
   domain: suitCase,
+  domain_disabled: suitCase,
   done_all: check,
   donut_small: chart,
   drag_indicator: more,
+  drag_handle: move,
   draw: edit,
   drive_file_move: folder,
+  edit,
   edit_note: edit,
   edit_square: edit,
+  mode_edit: edit,
+  pencil: edit,
   emoji_events: trophy,
   error: chield,
   event_upcoming: calendar,
@@ -137,6 +146,7 @@ const icons: Record<string, string> = {
   flag,
   folder,
   folder_open: folderOpen,
+  forum: comment,
   grading: bookCheck,
   grid_view: widget,
   group,
@@ -146,6 +156,8 @@ const icons: Record<string, string> = {
   history: clock,
   home,
   hourglass_top: hourglass,
+  image,
+  image_outline: image,
   how_to_vote: check,
   key,
   keyboard_arrow_down: arrowDown,
@@ -157,6 +169,7 @@ const icons: Record<string, string> = {
   lightbulb: lamp,
   link,
   local_fire_department: fire,
+  leaderboard: chart,
   lock,
   login: signIn,
   logout: signOut,
@@ -166,6 +179,7 @@ const icons: Record<string, string> = {
   menu,
   menu_book: book,
   monitoring: chart,
+  paid: money,
   more_horiz: more,
   more_vert: more,
   notifications: bell,
@@ -175,11 +189,12 @@ const icons: Record<string, string> = {
   palette: widget,
   person: user,
   photo_camera: camera,
+  photo: image,
   play_arrow: play,
   poll: chart,
   priority_high: chield,
   public: globe,
-  quiz: question,
+  quiz: bookCheck,
   receipt_long: paper,
   refresh,
   remove,
@@ -199,6 +214,10 @@ const icons: Record<string, string> = {
   star,
   style: layers,
   support_agent: message,
+  chat: comment,
+  chat_bubble: comment,
+  chat_bubble_outline: comment,
+  favorite: thumbUp,
   swap_vert: list,
   target,
   task_alt: check,
@@ -206,15 +225,18 @@ const icons: Record<string, string> = {
   workspace_premium: trophy,
   trophy,
   tune: filter,
+  timer: clock,
   verified: check,
   verified_user: chield,
   view_list: list,
+  view_kanban: widget,
   visibility_off: hideEye,
   visibility: eye,
   volunteer_activism: groupShare,
   volume_off: soundMute,
   volume_up: soundMax,
   warning: chield,
+  calendar_month: calendar,
 };
 
 interface LetsIconProps extends Omit<HTMLAttributes<HTMLSpanElement>, "children"> {

@@ -31,6 +31,13 @@ export interface SavedQuiz {
   liveReactionsEnabled?: boolean;
   /** Player text chat shown at the end of a live quiz. Defaults to true for legacy quizzes. */
   endChatEnabled?: boolean;
+  /** Optional one-time purchase configuration. It is effective only while the quiz is public. */
+  monetization?: {
+    enabled: boolean;
+    priceCents: number;
+    currency: 'eur';
+  };
+  creatorName?: string;
   rating?: number;
   ratingCount?: number;
   folderId?: string | null;
