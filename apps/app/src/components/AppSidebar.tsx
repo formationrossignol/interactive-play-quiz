@@ -92,6 +92,22 @@ export const CORRECTION_ITEMS = [
   { label: t("navMyGrades"), icon: "grading", path: "/my-grades" },
 ];
 
+// Program LMS (docs/product-specs/2026-08-10-lms-program) — each page
+// self-gates its staff-vs-learner view internally, so the entry point is
+// shown to every authenticated user regardless of org role.
+export const LMS_ITEMS = [
+  { label: "Sessions & inscriptions", icon: "how_to_reg", path: "/lms/sessions" },
+  { label: "Devoirs & gradebook", icon: "assignment_turned_in", path: "/lms/assignments" },
+  { label: "Compétences", icon: "military_tech", path: "/lms/competencies" },
+  { label: "Parcours adaptatifs", icon: "alt_route", path: "/lms/automation" },
+  { label: "Accessibilité", icon: "accessibility_new", path: "/lms/accessibility" },
+  { label: "Analytics pédagogiques", icon: "monitoring", path: "/lms/analytics" },
+  { label: "Banque d'items", icon: "inventory_2", path: "/lms/item-bank" },
+  { label: "Sondage live & Q&A", icon: "live_help", path: "/lms/live" },
+  { label: "Gouvernance de contenu", icon: "history_edu", path: "/lms/content-governance" },
+  { label: "Intégrations Enterprise", icon: "hub", path: "/lms/integrations" },
+];
+
 // Public discovery — no auth required, kept short and always visible.
 export const DISCOVER_ITEMS = [
   { label: t("discoverPublic"), icon: "explore", path: "/discover", requiresAuth: false },
@@ -149,6 +165,9 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
   // a group for progressive disclosure to earn its click.
   const [collabOpen, setCollabOpen] = useState(
     () => COLLAB_ITEMS.some((item) => item.path === location.pathname),
+  );
+  const [lmsOpen, setLmsOpen] = useState(
+    () => LMS_ITEMS.some((item) => item.path === location.pathname),
   );
   // React Query caches this across route changes — AppSidebar remounts on
   // every navigation (see AppLayout), so a plain useEffect was refetching
@@ -413,6 +432,42 @@ export const AppSidebar = ({ user, extraSection }: AppSidebarProps) => {
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
+          </SidebarGroup>
+        )}
+
+        {user && (
+          <SidebarGroup>
+            <Collapsible open={lmsOpen || collapsedIcon} onOpenChange={setLmsOpen}>
+              <SidebarGroupLabel asChild>
+                <CollapsibleTrigger className="flex w-full items-center justify-between cursor-pointer">
+                  <span>LMS</span>
+                  {!collapsedIcon && (
+                    <LetsIcon
+                      name="keyboard_arrow_down"
+                      size={16}
+                      className="chevron-icon"
+                      style={{ transform: lmsOpen ? "rotate(180deg)" : undefined }}
+                    />
+                  )}
+                </CollapsibleTrigger>
+              </SidebarGroupLabel>
+              <CollapsibleContent>
+                <SidebarMenu>
+                  {LMS_ITEMS.map((item) => (
+                    <SidebarMenuItem key={item.path}>
+                      <SidebarMenuButton
+                        isActive={location.pathname === item.path}
+                        onClick={() => navigate(item.path)}
+                        tooltip={item.label}
+                      >
+                        <LetsIcon name={item.icon} size={20} />
+                        <span>{item.label}</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </CollapsibleContent>
+            </Collapsible>
           </SidebarGroup>
         )}
 
