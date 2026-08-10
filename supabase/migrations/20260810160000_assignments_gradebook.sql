@@ -58,7 +58,7 @@ as $$
     where t.assignment_id = p_assignment_id
       and (
         (t.target_type = 'learner' and t.target_id = p_learner_id)
-        or (t.target_type = 'group' and exists (select 1 from public.group_members gm where gm.group_id = t.target_id and gm.user_id = p_learner_id))
+        or (t.target_type = 'group' and exists (select 1 from public.share_group_members gm where gm.group_id = t.target_id and gm.user_id = p_learner_id))
         or (t.target_type = 'session' and exists (select 1 from public.enrollments e where e.session_id = t.target_id and e.learner_id = p_learner_id and e.status = 'active'))
       )
   );
@@ -69,7 +69,7 @@ create table public.submissions (
   id            uuid primary key default gen_random_uuid(),
   assignment_id uuid not null references public.assignments(id) on delete cascade,
   learner_id    uuid not null references auth.users(id) on delete cascade,
-  group_id      uuid references public.groups(id) on delete set null,
+  group_id      uuid references public.share_groups(id) on delete set null,
   status        text not null default 'draft' check (status in ('draft','submitted','late','returned','resubmission_requested','graded','excused','void')),
   active_version integer not null default 0,
   created_at    timestamptz not null default now(),

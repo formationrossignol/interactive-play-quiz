@@ -147,7 +147,7 @@ create index enrollment_history_enrollment_idx on public.enrollment_history(enro
 create table public.enrollment_group_sources (
   id            uuid primary key default gen_random_uuid(),
   enrollment_id uuid not null references public.enrollments(id) on delete cascade,
-  group_id      uuid not null references public.groups(id) on delete cascade,
+  group_id      uuid not null references public.share_groups(id) on delete cascade,
   added_at      timestamptz not null default now()
 );
 create index enrollment_group_sources_enrollment_idx on public.enrollment_group_sources(enrollment_id);
