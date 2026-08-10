@@ -15,14 +15,12 @@ import {
   BarChart3,
   CalendarDays,
   CheckCircle2,
-  ClipboardCheck,
   Clock3,
   GripVertical,
   Link2,
   Pencil,
   Star,
   Trash2,
-  Trophy,
   UserRound,
 } from 'lucide-react';
 import { ContentExplorer } from '@/components/content/ContentExplorer';
@@ -30,6 +28,7 @@ import type { ItemCtx } from '@/components/content/GenericItem';
 import { ExamContextMenu } from '@/components/ExamContextMenu';
 import type { ContentDisplay } from '@/lib/content/contentView';
 import { ContentCardHeader, ContentRowThumbnail } from '@/components/content/ContentCardHeader';
+import { MaterialSymbol } from '@/components/MaterialSymbol';
 
 const STATUS_LABEL: Record<string, { label: string; color: string; bg: string }> = {
   draft:     { label: 'Brouillon', color: 'var(--ap-muted)', bg: 'var(--ap-paper-2)' },
@@ -230,10 +229,10 @@ function PromotionComparisonPanel({ hostId }: { hostId: string }) {
   );
 }
 
-function HostStatTile({ icon: Icon, label, value }: { icon: typeof Trophy; label: string; value: string }) {
+function HostStatTile({ icon, label, value }: { icon: string; label: string; value: string }) {
   return (
-    <div className="product-metric">
-      <span className="product-metric__icon"><Icon aria-hidden="true" /></span>
+    <div className="product-metric product-host-stat">
+      <span className="product-metric__icon"><MaterialSymbol name={icon} size={22} /></span>
       <div>
         <strong>{value}</strong>
         <small>{label}</small>
@@ -256,7 +255,7 @@ function HostStatsRow({ hostId }: { hostId: string }) {
   if (groups.length === 0 && stats.totalExams === 0) return null;
 
   return (
-    <section className="product-panel product-insight-panel">
+    <section className="product-panel product-insight-panel product-host-overview">
       <div className="product-panel-heading">
         <div>
           <h2>Vue d’ensemble</h2>
@@ -283,11 +282,11 @@ function HostStatsRow({ hostId }: { hostId: string }) {
       )}
       {(stats.totalExams > 0 || groupId) && (
         <div className="product-metric-grid product-metric-grid--wide product-metric-grid--compact">
-          <HostStatTile icon={ClipboardCheck} label="Examens" value={String(stats.totalExams)} />
-          <HostStatTile icon={UserRound} label="Tentatives" value={String(stats.completedAttempts)} />
-          <HostStatTile icon={Trophy} label="Taux de réussite" value={stats.passRate !== null ? `${stats.passRate}%` : '-'} />
-          <HostStatTile icon={BarChart3} label="Score moyen" value={stats.avgScore !== null ? `${stats.avgScore}%` : '-'} />
-          <HostStatTile icon={Clock3} label="Durée moy." value={stats.avgTimeMinutes !== null ? `${stats.avgTimeMinutes} min` : '-'} />
+          <HostStatTile icon="fact_check" label="Examens" value={String(stats.totalExams)} />
+          <HostStatTile icon="person" label="Tentatives" value={String(stats.completedAttempts)} />
+          <HostStatTile icon="trophy" label="Taux de réussite" value={stats.passRate !== null ? `${stats.passRate}%` : '-'} />
+          <HostStatTile icon="analytics" label="Score moyen" value={stats.avgScore !== null ? `${stats.avgScore}%` : '-'} />
+          <HostStatTile icon="schedule" label="Durée moy." value={stats.avgTimeMinutes !== null ? `${stats.avgTimeMinutes} min` : '-'} />
         </div>
       )}
     </section>

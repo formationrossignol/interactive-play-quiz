@@ -16,7 +16,6 @@ import {
   Gamepad2,
   LogOut,
   PencilLine,
-  Settings,
   Trophy,
   Users,
 } from "lucide-react";

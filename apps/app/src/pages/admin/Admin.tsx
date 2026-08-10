@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Rocket, PenLine, ShieldCheck, Mail, FileText, Users, Euro, Link2 } from "lucide-react";
+import { Rocket, PenLine, ShieldCheck, Mail } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { useSEO } from "@/hooks/useSEO";
 import { useIsAdmin } from "@/lib/pages/useIsAdmin";
@@ -63,13 +63,13 @@ const Admin = () => {
   const subCount = subs.data?.length ?? 0;
   const userCount = users.data?.length ?? 0;
 
-  const nav: { key: Section; icon: React.ElementType; label: string; count: number; alert?: boolean }[] = [
-    { key: "content", icon: FileText, label: "Contenu", count: allContent.length },
-    { key: "moderation", icon: ShieldCheck, label: "Modération", count: pendingMod, alert: pendingMod > 0 },
-    { key: "subscribers", icon: Mail, label: "Abonnés", count: subCount },
-    { key: "users", icon: Users, label: "Comptes", count: userCount },
-    { key: "revenue", icon: Euro, label: "Revenus", count: 0 },
-    { key: "settings", icon: Link2, label: "Réglages", count: 0 },
+  const nav: { key: Section; icon: string; label: string; count: number; alert?: boolean }[] = [
+    { key: "content", icon: "receipt_long", label: "Contenu", count: allContent.length },
+    { key: "moderation", icon: "shield", label: "Modération", count: pendingMod, alert: pendingMod > 0 },
+    { key: "subscribers", icon: "mark_email_unread", label: "Abonnés", count: subCount },
+    { key: "users", icon: "groups", label: "Comptes", count: userCount },
+    { key: "revenue", icon: "credit_card", label: "Revenus", count: 0 },
+    { key: "settings", icon: "settings", label: "Réglages", count: 0 },
   ];
 
   return (

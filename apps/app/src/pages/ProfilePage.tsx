@@ -564,10 +564,10 @@ const ProfilePage = () => {
                 </Select>
               </div>
 
-              <div style={{ paddingTop: "8px" }}>
-                <button className="ap-btn ap-btn--pill" style={{ width: "100%", gap: "8px" }} onClick={handleSave}>
+              <div className="product-profile-save">
+                <button className="ap-btn ap-btn--pill" onClick={handleSave}>
                   <MaterialSymbol name="save" size={17} />
-                  {t("saveChanges")}
+                  {t("save")}
                 </button>
               </div>
             </div>

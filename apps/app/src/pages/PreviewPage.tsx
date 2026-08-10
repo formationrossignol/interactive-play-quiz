@@ -4,10 +4,11 @@ import { QuizPreview } from "@/components/QuizPreview";
 import { MultiStepProgress } from "@/components/MultiStepProgress";
 import { PLAYER_ANSWER_SHAPES } from "@/lib/answerVisuals";
 import { getPollOptions } from "@/lib/pollResults";
-import { Trophy, LogOut, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Play, X, RotateCcw } from "lucide-react";
+import { Trophy, LogOut, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, X, RotateCcw } from "lucide-react";
 import { genGameCode, setQuizPlayCache, type SavedQuiz } from "@/lib/quizStorage";
 import type { EditableQuestion } from "@/lib/questionTypes";
 import { Skeleton } from "@/components/ui/skeleton";
+import { MaterialSymbol } from "@/components/MaterialSymbol";
 
 interface ParticipantPreviewProps {
   question: EditableQuestion;
@@ -550,26 +551,14 @@ const PreviewPage = () => {
         {/* Launch demo */}
         <button
           onClick={launchDemo}
+          className="ap-btn ap-btn--pill"
           style={{
-            display: "flex",
-            alignItems: "center",
             gap: 8,
-            background: "var(--ap-brand)",
-            border: "none",
-            borderRadius: "var(--ap-r-sm)",
-            color: "#fff",
-            fontFamily: "var(--ap-font-display)",
-            fontWeight: 800,
             fontSize: 14,
-            padding: "10px 22px",
-            cursor: "pointer",
-            boxShadow: "0 4px 0 var(--ap-brand-deep)",
-            transition: "transform .1s",
+            padding: "10px 18px",
           }}
-          onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.transform = "translateY(-2px)")}
-          onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.transform = "")}
         >
-          <Play style={{ width: 15, height: 15 }} />
+          <MaterialSymbol name="play_arrow" size={17} />
           Lancer en réel
         </button>
       </div>
