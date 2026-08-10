@@ -103,7 +103,7 @@ function QuestionMediaLayout({
   image?: string;
   layoutId?: QuestionLayoutId;
 }) {
-  const layout = getQuestionLayout(layoutId);
+  const layout = getQuestionLayout(layoutId, Boolean(image));
   const sideBySide = Boolean(image && (layout.mediaPosition === "left" || layout.mediaPosition === "right"));
   const background = Boolean(image && layout.mediaPosition === "background");
 

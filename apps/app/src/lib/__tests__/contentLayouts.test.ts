@@ -16,4 +16,9 @@ describe("question layouts", () => {
     expect(getQuestionLayout().id).toBe("standard");
     expect(getQuestionLayout("legacy-layout").id).toBe("standard");
   });
+
+  it("keeps attached media visible in the standard composition", () => {
+    expect(getQuestionLayout("standard", true).mediaPosition).toBe("top");
+    expect(getQuestionLayout("standard", false).mediaPosition).toBe("none");
+  });
 });

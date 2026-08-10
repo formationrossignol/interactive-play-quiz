@@ -96,7 +96,7 @@ export function SlideNavigator() {
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: 12, overflowY: "auto", width: 184 }}>
+    <div style={{ display: "flex", height: "100%", minHeight: 0, flexDirection: "column", gap: 8, padding: 12, overflowY: "auto", overscrollBehavior: "contain", scrollbarGutter: "stable", boxSizing: "border-box", width: 184 }}>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button className="ap-btn ap-btn--sm ap-btn--pill">

@@ -148,7 +148,7 @@ export function PresentationEditor({ contentId, userId, initialPresenting = fals
   return (
     <div style={{ height: "100vh", display: "flex", flexDirection: "column" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 16px", borderBottom: "var(--ap-border-w) solid var(--ap-line)" }}>
-        <nav aria-label="Fil d'ariane" style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+        <nav aria-label="Fil d'ariane" style={{ display: "flex", flex: 1, alignItems: "center", gap: 8, minWidth: 0, overflow: "hidden", paddingRight: 12, boxSizing: "border-box" }}>
           <button
             onClick={() => { window.location.href = "/"; }}
             aria-label="Accueil"
@@ -185,12 +185,14 @@ export function PresentationEditor({ contentId, userId, initialPresenting = fals
             style={{
               fontFamily: "var(--ap-font-display)", fontWeight: 700, fontSize: "inherit",
               border: "var(--ap-border-w) solid var(--ap-brand)", borderRadius: "var(--ap-r-sm)",
-              padding: "2px 6px", background: "var(--ap-card)", color: "var(--ap-ink)",
+              width: "min(360px, 34vw)", minWidth: 120, maxWidth: 360,
+              padding: "5px 10px", background: "var(--ap-card)", color: "var(--ap-ink)",
+              outline: "none",
             }}
           />
         ) : (
           <span
-            style={{ fontFamily: "var(--ap-font-display)", fontWeight: 700, cursor: "text", padding: "2px 6px", borderRadius: "var(--ap-r-sm)" }}
+            style={{ minWidth: 0, maxWidth: "min(360px, 34vw)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontFamily: "var(--ap-font-display)", fontWeight: 700, cursor: "text", padding: "2px 6px", borderRadius: "var(--ap-r-sm)" }}
             title="Cliquer pour renommer"
             onClick={() => { setTitleDraft(presentation.title); setEditingTitle(true); }}
           >
@@ -198,8 +200,8 @@ export function PresentationEditor({ contentId, userId, initialPresenting = fals
           </span>
         )}
         </nav>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 12, color: "var(--ap-muted)" }}>
+        <div style={{ display: "flex", flexShrink: 0, alignItems: "center", gap: 8 }}>
+          <span style={{ flexShrink: 0, fontSize: 12, color: "var(--ap-muted)" }}>
             {status === "saving" ? "Enregistrement…" : status === "saved" ? "Enregistré" : status === "error" ? "Erreur d'enregistrement" : ""}
           </span>
           <CollaboratorsButton
@@ -262,7 +264,7 @@ export function PresentationEditor({ contentId, userId, initialPresenting = fals
       <EditorToolbar slideId={activeSlideId} />
       <div style={{ flex: 1, display: "flex", overflow: "hidden", position: "relative" }}>
         {leftPanelOpen ? (
-          <div style={{ display: "flex", flexDirection: "column", flexShrink: 0, borderRight: "var(--ap-border-w) solid var(--ap-line)", background: "var(--ap-card)" }}>
+          <div style={{ display: "flex", height: "100%", minHeight: 0, flexDirection: "column", flexShrink: 0, overflow: "hidden", borderRight: "var(--ap-border-w) solid var(--ap-line)", background: "var(--ap-card)" }}>
             <div style={{ display: "flex", justifyContent: "flex-end", padding: "6px 6px 0" }}>
               <button
                 type="button"
