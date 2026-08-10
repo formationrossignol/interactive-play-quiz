@@ -95,6 +95,16 @@ const QuizResults = lazy(() => import("./pages/QuizResults"));
 const PreviewPage = lazy(() => import("./pages/PreviewPage"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const Admin = lazy(() => import("./pages/admin/Admin"));
+const LmsSessions = lazy(() => import("./pages/lms/Sessions"));
+const LmsAssignments = lazy(() => import("./pages/lms/Assignments"));
+const LmsCompetencies = lazy(() => import("./pages/lms/Competencies"));
+const LmsIntegrations = lazy(() => import("./pages/lms/Integrations"));
+const LmsAccessibility = lazy(() => import("./pages/lms/Accessibility"));
+const LmsAutomation = lazy(() => import("./pages/lms/Automation"));
+const LmsAnalytics = lazy(() => import("./pages/lms/Analytics"));
+const LmsItemBank = lazy(() => import("./pages/lms/ItemBank"));
+const LmsLiveEngagement = lazy(() => import("./pages/lms/LiveEngagement"));
+const LmsContentGovernance = lazy(() => import("./pages/lms/ContentGovernance"));
 const PresentationEditorPage = lazy(() => import("./pages/PresentationEditorPage"));
 const PresentationAudience = lazy(() => import("./pages/PresentationAudience"));
 
@@ -197,6 +207,16 @@ const App = () => (
               <Route path="/tools/wheel" element={<WheelTool />} />
               <Route path="/tools/chronometre" element={<ChronometerTool />} />
               <Route path="/admin" element={<Admin />} />
+              <Route path="/lms/sessions" element={<LmsSessions />} />
+              <Route path="/lms/assignments" element={<LmsAssignments />} />
+              <Route path="/lms/competencies" element={<LmsCompetencies />} />
+              <Route path="/lms/integrations" element={<LmsIntegrations />} />
+              <Route path="/lms/accessibility" element={<LmsAccessibility />} />
+              <Route path="/lms/automation" element={<LmsAutomation />} />
+              <Route path="/lms/analytics" element={<LmsAnalytics />} />
+              <Route path="/lms/item-bank" element={<LmsItemBank />} />
+              <Route path="/lms/live" element={<LmsLiveEngagement />} />
+              <Route path="/lms/content-governance" element={<LmsContentGovernance />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
