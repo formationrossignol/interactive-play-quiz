@@ -3393,6 +3393,72 @@
   color: var(--ap-brand-deep);
 }
 
+/* The neutral premium header uses the original brand colors. Earlier blue
+   toolbar rules inverted both SVG marks, making the monogram and diamond
+   disappear against the light sidebar. */
+[data-theme="materialpro"] .product-sidebar-brand__mark {
+  color: var(--ap-brand);
+}
+
+[data-theme="materialpro"] .product-sidebar-brand__mark svg,
+[data-theme="materialpro"] .product-sidebar-brand__copy svg {
+  filter: none;
+}
+
+/* Keep search and utility actions as one right-aligned cluster. */
+[data-theme="materialpro"] .product-topbar__actions {
+  justify-content: flex-end;
+}
+
+[data-theme="materialpro"] .product-topbar .product-global-search {
+  flex: 0 1 360px !important;
+  width: min(360px, 34vw);
+  max-width: 360px !important;
+  margin-left: auto;
+}
+
+[data-theme="materialpro"] .product-topbar__icons {
+  margin-left: 0;
+}
+
+/* Create menu: quiet violet states, no cyan focus ring or saturated fill. */
+:root:not(.dark)[data-theme="materialpro"] .ap-mega-menu [role="menuitem"] {
+  min-height: 38px;
+  border: 1px solid transparent;
+  color: var(--ap-muted);
+  background: transparent;
+  box-shadow: none;
+  outline: none;
+}
+
+:root:not(.dark)[data-theme="materialpro"] .ap-mega-menu [role="menuitem"] .lets-icon {
+  color: #697386;
+}
+
+:root:not(.dark)[data-theme="materialpro"] .ap-mega-menu [role="menuitem"]:hover,
+:root:not(.dark)[data-theme="materialpro"] .ap-mega-menu [role="menuitem"]:focus,
+:root:not(.dark)[data-theme="materialpro"] .ap-mega-menu [role="menuitem"][data-highlighted] {
+  border-color: #d8d5ff;
+  color: #4f46e5;
+  background: #f3f2ff;
+}
+
+:root:not(.dark)[data-theme="materialpro"] .ap-mega-menu [role="menuitem"]:hover .lets-icon,
+:root:not(.dark)[data-theme="materialpro"] .ap-mega-menu [role="menuitem"]:focus .lets-icon,
+:root:not(.dark)[data-theme="materialpro"] .ap-mega-menu [role="menuitem"][data-highlighted] .lets-icon {
+  color: #4f46e5;
+}
+
+:root:not(.dark)[data-theme="materialpro"] .ap-mega-menu [role="menuitem"][data-active="true"] {
+  border-color: #cfcbff;
+  color: #4f46e5;
+  background: #e9e7ff;
+}
+
+:root:not(.dark)[data-theme="materialpro"] .ap-mega-menu [role="menuitem"][data-active="true"] .lets-icon {
+  color: #4f46e5;
+}
+
 /* Semantic KPI surfaces remain distinct from global CTA colors. */
 [data-theme="materialpro"] .product-kpi[data-surface="participants"] {
   border-color: color-mix(in srgb, var(--metric-participants-accent) 18%, var(--ap-line));

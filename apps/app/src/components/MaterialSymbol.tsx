@@ -1,4 +1,5 @@
 import type { CSSProperties, HTMLAttributes } from "react";
+import { LetsIcon } from "@/components/LetsIcon";
 
 type MaterialSymbolSize = 18 | 20 | 24 | 32 | 40 | 48;
 
@@ -30,15 +31,13 @@ export const MaterialSymbol = ({
   } as CSSProperties;
 
   return (
-    <span
+    <LetsIcon
       {...props}
+      name={name}
+      size={size}
+      label={label}
       className={`material-symbol${filled ? " material-symbol--filled" : ""}${className ? ` ${className}` : ""}`}
       style={symbolStyle}
-      role={label ? "img" : undefined}
-      aria-label={label}
-      aria-hidden={label ? undefined : true}
-    >
-      {name}
-    </span>
+    />
   );
 };
