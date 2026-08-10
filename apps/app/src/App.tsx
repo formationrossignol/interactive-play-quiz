@@ -63,6 +63,7 @@ const MyCertificates = lazy(() => import("./pages/MyCertificates"));
 const QuizBuilder = lazy(() => import("./pages/QuizBuilder"));
 const QuizBuilderStart = lazy(() => import("./pages/QuizBuilderStart"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
+const RecentWorksPage = lazy(() => import("./pages/RecentWorksPage"));
 const SharedWithMe = lazy(() => import("./pages/SharedWithMe"));
 const Groups = lazy(() => import("./pages/Groups"));
 const Signatures = lazy(() => import("./pages/Signatures"));
@@ -146,6 +147,7 @@ const App = () => (
               <Route path="/builder-start" element={<QuizBuilderStart />} />
               <Route path="/builder" element={<QuizBuilder />} />
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/recent" element={<RecentWorksPage />} />
               <Route path="/shared-with-me" element={<SharedWithMe />} />
               <Route path="/groups" element={<Groups />} />
               <Route path="/signatures" element={<Signatures />} />

@@ -82,6 +82,26 @@ export async function createCommunityThread(input: {
   if (error) throw error;
 }
 
+export async function updateCommunityThread(
+  threadId: string,
+  input: { category: CommunityCategory; title: string; body: string },
+): Promise<void> {
+  const { error } = await supabase
+    .from("community_threads")
+    .update({
+      category: input.category,
+      title: input.title.trim(),
+      body: input.body.trim(),
+    })
+    .eq("id", threadId);
+  if (error) throw error;
+}
+
+export async function deleteCommunityThread(threadId: string): Promise<void> {
+  const { error } = await supabase.from("community_threads").delete().eq("id", threadId);
+  if (error) throw error;
+}
+
 export async function setCommunityThreadLike(threadId: string, userId: string, liked: boolean): Promise<void> {
   const query = liked
     ? supabase.from("community_thread_likes").delete().eq("thread_id", threadId).eq("user_id", userId)

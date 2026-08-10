@@ -70,21 +70,24 @@ const gripStyle: React.CSSProperties = {
   flexShrink: 0,
 };
 
-/** Drag handle overlaid on the header block (top-left) so the title row keeps the full card width. */
+/** Drag handle overlaid opposite the type badge so neither control collides. */
 const gripOverlayStyle: React.CSSProperties = {
   position: "absolute",
-  top: 8,
-  left: 8,
+  top: 10,
+  right: 10,
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  background: "var(--ap-card)",
-  border: "var(--ap-border-w) solid var(--ap-line)",
+  width: 30,
+  height: 30,
+  background: "color-mix(in srgb, var(--ap-card) 88%, transparent)",
+  border: "1px solid color-mix(in srgb, var(--ap-line) 78%, transparent)",
   color: "var(--ap-muted)",
   cursor: "grab",
   touchAction: "none",
-  padding: "4px",
-  borderRadius: "6px",
+  padding: 0,
+  borderRadius: "8px",
+  boxShadow: "none",
   zIndex: 1,
 };
 
@@ -280,7 +283,7 @@ export function GenericCard(props: GenericItemProps) {
           title="Déplacer"
           aria-label={`Déplacer ${d.title}`}
         >
-          <MaterialSymbol name="drag_indicator" size={16} />
+          <MaterialSymbol name="drag_handle" size={17} />
         </button>
       </ContentCardHeader>
       <div className="flex flex-1 flex-col gap-2.5" style={{ padding: "var(--density-card-pad, 14px 16px 12px)" }}>

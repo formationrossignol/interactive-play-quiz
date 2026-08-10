@@ -607,7 +607,9 @@ export function ContentExplorer({
           action={
             <div className="flex items-center gap-2 flex-wrap">
             {headerExtras}
-            <button className={`ap-btn ap-btn--sm ap-btn--pill ${accentBtn}`} onClick={cta.onClick}>{cta.label}</button>
+            <button className={`ap-btn ap-btn--sm ap-btn--pill ${accentBtn}`} onClick={cta.onClick}>
+              <MaterialSymbol name="add" size={17} /> {cta.label}
+            </button>
             </div>
           }
         />

@@ -269,7 +269,7 @@ const PhonePreview = ({
                     : answers;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, width: 258, flexShrink: 0 }}>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14, width: 258, paddingBottom: 8, flexShrink: 0 }}>
       <div style={{
         width: 258,
         background: "var(--ap-ink)", borderRadius: 32, padding: 9,
@@ -409,11 +409,11 @@ const PhonePreview = ({
       {/* Temps limite / points configurés — info éditeur, hors de l'écran mimé
           (l'écran joueur réel ne les affiche pas pendant la question). */}
       <div style={{
-        display: "flex", alignItems: "center", gap: 6,
-        fontFamily: "var(--ap-font-body)", fontWeight: 700, fontSize: 11.5, color: "var(--ap-muted)",
+        display: "flex", alignItems: "center", gap: 9,
+        marginTop: 4, fontFamily: "var(--ap-font-body)", fontWeight: 700, fontSize: 11.5, color: "var(--ap-muted)",
       }}>
         <span style={{ display: "inline-flex", verticalAlign: "-2px" }}>
-          <BrandMonogram size={11} color="var(--ap-brand)" />
+          <BrandMonogram size={14} color="var(--ap-brand)" />
         </span>
         {timeLimit}s · {pts} pts
       </div>
@@ -457,29 +457,30 @@ const RailItem = ({
           transition: "border-color .15s ease, background .15s ease",
         }}
       >
-        {/* Number and row actions stay in one left-hand utility rail. */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5, flexShrink: 0 }}>
+        {/* Stable utility rail: the number and actions remain together on the
+            left without stacking the actions into an oversized card. */}
+        <div style={{ width: 58, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, flexShrink: 0 }}>
           <span style={{
-            width: 26, height: 26, borderRadius: 8,
-            background: isActive ? "var(--ap-brand)" : "var(--ap-paper-2)",
-            color: isActive ? "white" : "var(--ap-muted)",
-            fontFamily: "var(--ap-font-display)", fontWeight: 600, fontSize: 15,
-            display: "grid", placeItems: "center",
-          }}>
-            {index + 1}
+              width: 30, height: 30, borderRadius: 9,
+              background: isActive ? "var(--ap-brand)" : "var(--ap-paper-2)",
+              color: isActive ? "white" : "var(--ap-muted)",
+              fontFamily: "var(--ap-font-display)", fontWeight: 600, fontSize: 15,
+              display: "grid", placeItems: "center",
+            }}>
+              {index + 1}
           </span>
-          <div className="flex flex-col items-center opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
+          <div className="flex items-center gap-0.5 opacity-70 group-hover:opacity-100 focus-within:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
             <button
               onClick={() => onDuplicate(index)}
               title="Dupliquer"
-              style={{ background: "none", border: "none", cursor: "pointer", padding: 5, width: 26, height: 26, display: "grid", placeItems: "center", color: "var(--ap-muted)", borderRadius: 6 }}
+              style={{ background: "transparent", border: "none", cursor: "pointer", width: 27, height: 26, display: "grid", placeItems: "center", color: "var(--ap-muted)", borderRadius: 7 }}
             >
               <MaterialSymbol name="content_copy" size={15} />
             </button>
             <button
               onClick={() => onDelete(index)}
               title="Supprimer"
-              style={{ background: "none", border: "none", cursor: "pointer", padding: 5, width: 26, height: 26, display: "grid", placeItems: "center", color: "var(--ap-muted)", borderRadius: 6 }}
+              style={{ background: "transparent", border: "none", cursor: "pointer", width: 27, height: 26, display: "grid", placeItems: "center", color: "var(--ap-muted)", borderRadius: 7 }}
             >
               <MaterialSymbol name="delete" size={15} />
             </button>
@@ -487,7 +488,7 @@ const RailItem = ({
         </div>
 
         {/* Body */}
-        <span style={{ minWidth: 0, flex: 1 }}>
+        <div style={{ minWidth: 0, flex: 1 }}>
           <span style={{
             display: "flex", alignItems: "center", gap: 5,
             fontSize: 11, fontWeight: 800, letterSpacing: ".07em",
@@ -514,7 +515,7 @@ const RailItem = ({
           }}>
             {displayText}
           </span>
-        </span>
+        </div>
 
         {/* Drag grip — glyph itself stays small, hit area grows to ~32x28px. */}
         <button
@@ -523,12 +524,13 @@ const RailItem = ({
           style={{
             flexShrink: 0, background: "none", border: "none",
             color: "var(--ap-line-2)", cursor: "grab",
-            padding: "10px 8px", minWidth: 32, minHeight: 28,
+            padding: "4px", minWidth: 30, minHeight: 30,
             display: "grid", placeItems: "center",
-            fontSize: 14, lineHeight: 1,
           }}
+          title="Réorganiser"
+          aria-label="Réorganiser la question"
         >
-          ⋮⋮
+          <MaterialSymbol name="drag_handle" size={17} />
         </button>
       </div>
     </div>
@@ -1152,11 +1154,11 @@ export const QuizBuilder = () => {
               lineHeight: 1.35, color: "var(--ap-ink)",
               background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)",
               borderRadius: "var(--ap-r-lg)", padding: "18px 20px",
-              boxShadow: "var(--ap-shadow-soft)", outline: "none",
+              boxShadow: "none", outline: "none",
               transition: "border-color .15s, box-shadow .15s",
             }}
-            onFocus={e => { e.target.style.borderColor = "var(--ap-brand)"; e.target.style.boxShadow = "0 4px 0 color-mix(in srgb, var(--ap-brand) 40%, transparent)"; }}
-            onBlur={e => { e.target.style.borderColor = "var(--ap-line)"; e.target.style.boxShadow = "var(--ap-shadow-soft)"; }}
+            onFocus={e => { e.target.style.borderColor = "var(--ap-brand)"; e.target.style.boxShadow = "none"; }}
+            onBlur={e => { e.target.style.borderColor = "var(--ap-line)"; e.target.style.boxShadow = "none"; }}
           />
         </div>
 
@@ -1787,8 +1789,8 @@ export const QuizBuilder = () => {
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          justifyContent: "center",
-          padding: "20px 20px 24px",
+          justifyContent: "flex-start",
+          padding: "26px 20px 32px",
           minHeight: 0,
           overflowY: "auto",
         }}>

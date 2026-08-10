@@ -4,7 +4,6 @@ import { MaterialSymbol } from "@/components/MaterialSymbol";
 
 interface Tile {
   iconName: string;
-  iconColor: string;
   tone: "warning" | "primary" | "secondary" | "success";
   surface: "neutral" | "participants" | "score" | "success" | "warning" | "danger";
   label: string;
@@ -26,10 +25,12 @@ interface Tile {
 }
 
 /** Minimal inline trend line — decorative, not a chart: no axes, no
- *  tooltip. Drawn from raw values only when there are at least 2 points,
+ *  tooltip. Drawn from raw values only when there are at least 3 points,
  *  otherwise a flat/empty series would render as a meaningless dot or line. */
 function Sparkline({ values, color, variant = "line" }: { values: number[]; color: string; variant?: "line" | "bars" }) {
-  if (values.length < 2) return null;
+  // Two rounded bars read as an arbitrary circle + pill instead of a trend.
+  // Wait for a minimally meaningful series before drawing any decoration.
+  if (values.length < 3) return null;
   const min = Math.min(...values);
   const max = Math.max(...values);
   const span = max - min || 1;
@@ -132,7 +133,7 @@ export function KpiRow({ stats, charts }: { stats: DashboardStats | null; charts
 
   const tiles: Tile[] = [
     {
-      iconName: "dns", iconColor: "var(--ap-brand)",
+      iconName: "dns",
       tone: "primary",
       surface: "neutral",
       label: "Sessions totales", value: s.totalSessions,
@@ -140,11 +141,11 @@ export function KpiRow({ stats, charts }: { stats: DashboardStats | null; charts
       spark: sessionsSpark,
       sparkColor: "var(--mp-chart-primary)",
       featured: "primary",
-      sparkVariant: "bars",
+      sparkVariant: "line",
       onClick: scrollToChart("dashboard-activity-chart"),
     },
     {
-      iconName: "bar_chart", iconColor: "var(--ap-brand)",
+      iconName: "bar_chart",
       tone: "secondary",
       surface: "participants",
       label: "Participants totaux", value: s.totalParticipants,
@@ -156,7 +157,7 @@ export function KpiRow({ stats, charts }: { stats: DashboardStats | null; charts
       onClick: scrollToChart("dashboard-activity-chart"),
     },
     {
-      iconName: "analytics", iconColor: "var(--ap-brand)",
+      iconName: "analytics",
       tone: "warning",
       surface: "score",
       label: "Score moyen (quiz)", value: s.avgScore != null ? `${s.avgScore} pts` : "-",
@@ -164,11 +165,11 @@ export function KpiRow({ stats, charts }: { stats: DashboardStats | null; charts
       emptyHint: s.avgScore == null ? "Pas encore de score" : undefined,
       spark: scoreSpark,
       sparkColor: "var(--mp-chart-primary)",
-      sparkVariant: "bars",
+      sparkVariant: "line",
       onClick: scrollToChart("dashboard-score-chart"),
     },
     {
-      iconName: "category", iconColor: "var(--ap-brand)",
+      iconName: "category",
       tone: "success",
       surface: "success",
       label: "Créations", value: s.totalCreations,
@@ -180,7 +181,7 @@ export function KpiRow({ stats, charts }: { stats: DashboardStats | null; charts
 
   return (
     <div className="product-kpis">
-      {tiles.map(({ iconName, iconColor, tone, surface, label, value, deltaPct, emptyHint, spark, sparkColor, featured, sparkVariant, onClick }) => {
+      {tiles.map(({ iconName, tone, surface, label, value, deltaPct, emptyHint, spark, sparkColor, featured, sparkVariant, onClick }) => {
         const hero = Boolean(featured);
         return (
           <button
@@ -194,7 +195,7 @@ export function KpiRow({ stats, charts }: { stats: DashboardStats | null; charts
             aria-label={`${label} : ${value}. Afficher le détail`}
           >
             <div className="product-kpi__top">
-              <span className="product-kpi__icon" style={hero ? undefined : { color: iconColor }}>
+              <span className="product-kpi__icon">
                 <MaterialSymbol name={iconName} size={20} />
               </span>
               <span className="product-kpi__copy">
