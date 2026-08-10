@@ -45,6 +45,12 @@ export const QUESTION_LAYOUTS: QuestionLayoutDefinition[] = [
   },
 ];
 
-export function getQuestionLayout(id?: string): QuestionLayoutDefinition {
-  return QUESTION_LAYOUTS.find((layout) => layout.id === id) ?? QUESTION_LAYOUTS[0];
+export function getQuestionLayout(id?: string, hasMedia = false): QuestionLayoutDefinition {
+  const layout = QUESTION_LAYOUTS.find((candidate) => candidate.id === id) ?? QUESTION_LAYOUTS[0];
+  // "Standard" remains text-only when no media exists, but must never hide
+  // an image that is already attached to the question. In that case it uses
+  // the restrained top composition instead of silently discarding the media.
+  return hasMedia && layout.id === "standard"
+    ? { ...layout, mediaPosition: "top" }
+    : layout;
 }

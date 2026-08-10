@@ -10,6 +10,7 @@ import { MaterialSymbol } from "@/components/MaterialSymbol";
 import { myOrgMemberships, type OrgMembership } from "@/lib/org/orgRepo";
 
 const ACTIVE_ORG_KEY = "quiz_active_org_id";
+const ACTIVE_ORG_EVENT = "brivia:active-org-change";
 
 export function useActiveOrgId(memberships: OrgMembership[]): [string | null, (id: string) => void] {
   const [activeOrgId, setActiveOrgIdState] = useState<string | null>(() => localStorage.getItem(ACTIVE_ORG_KEY));
@@ -17,13 +18,33 @@ export function useActiveOrgId(memberships: OrgMembership[]): [string | null, (i
   useEffect(() => {
     if (memberships.length === 0) return;
     if (!activeOrgId || !memberships.some((m) => m.org_id === activeOrgId)) {
-      setActiveOrgIdState(memberships[0].org_id);
+      const fallbackId = memberships[0].org_id;
+      localStorage.setItem(ACTIVE_ORG_KEY, fallbackId);
+      setActiveOrgIdState(fallbackId);
     }
   }, [memberships, activeOrgId]);
+
+  useEffect(() => {
+    const syncActiveOrg = (event: Event) => {
+      const nextId = event instanceof CustomEvent
+        ? String(event.detail ?? "")
+        : localStorage.getItem(ACTIVE_ORG_KEY) ?? "";
+      if (nextId && memberships.some((membership) => membership.org_id === nextId)) {
+        setActiveOrgIdState(nextId);
+      }
+    };
+    window.addEventListener(ACTIVE_ORG_EVENT, syncActiveOrg);
+    window.addEventListener("storage", syncActiveOrg);
+    return () => {
+      window.removeEventListener(ACTIVE_ORG_EVENT, syncActiveOrg);
+      window.removeEventListener("storage", syncActiveOrg);
+    };
+  }, [memberships]);
 
   const setActiveOrgId = (id: string) => {
     localStorage.setItem(ACTIVE_ORG_KEY, id);
     setActiveOrgIdState(id);
+    window.dispatchEvent(new CustomEvent(ACTIVE_ORG_EVENT, { detail: id }));
   };
 
   return [activeOrgId, setActiveOrgId];

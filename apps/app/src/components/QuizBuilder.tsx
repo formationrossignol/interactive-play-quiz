@@ -27,7 +27,7 @@ import {
 import {
   Plus, Trash2, Upload, GripVertical,
   ChevronRight, ChevronDown, Eye, ImageIcon, MoreHorizontal,
-  ArrowRight, Copy, Library, HelpCircle, Home, type LucideIcon,
+  ArrowRight, Library, HelpCircle, Home, type LucideIcon,
   ListChecks, CircleDot, ToggleLeft, TextCursorInput, ArrowUpDown,
   Link2, TextSelect, SlidersHorizontal, Rows3, ChartNoAxesColumn,
   Star, MessageSquareText, Gauge, Layers3, Presentation, BarChart2,
@@ -80,19 +80,7 @@ import { QuestionLayoutPicker } from "@/components/QuestionLayoutPicker";
 import { getQuestionLayout } from "@/lib/contentLayouts";
 import { QuestionTypeExample } from "@/components/QuestionTypeExample";
 import { MultiStepProgress } from "@/components/MultiStepProgress";
-import { PLAYER_ANSWER_SHAPES } from "@/lib/answerVisuals";
 import { MaterialSymbol } from "@/components/MaterialSymbol";
-
-// ─── Design constants ──────────────────────────────────────────────────────
-// Ordre position → couleur/forme aligné sur l'écran joueur réel
-// (arcade-pop.css .ap-answer--N + PLAYER_ANSWER_SHAPES) :
-// 1 triangle rouge, 2 cercle bleu, 3 carré vert, 4 losange jaune.
-const ANSWER_CONFIGS = [
-  { color: "var(--ap-quiz)",  shape: <path d="M12 3 22 21H2z" fill="white" /> },
-  { color: "var(--ap-poll)",  shape: <circle cx="12" cy="12" r="9" fill="white" /> },
-  { color: "var(--ap-pres)",  shape: <rect x="4" y="4" width="16" height="16" rx="2" fill="white" /> },
-  { color: "var(--ap-flash)", shape: <path d="M12 2 22 12 12 22 2 12z" fill="white" /> },
-] as const;
 
 const QTYPE_META: Record<string, { label: string; dot: string; icon: LucideIcon }> = {
   "multiple-choice":  { label: "QCM",            dot: "var(--ap-quiz)",  icon: ListChecks },
@@ -168,7 +156,7 @@ const AnswerRow = ({
   index: number; value: string; isCorrect: boolean;
   onChange: (v: string) => void; onToggleCorrect: () => void; placeholder: string;
 }) => {
-  const cfg = ANSWER_CONFIGS[index];
+  const answerLetter = String.fromCharCode(65 + index);
   return (
     <div
       style={{
@@ -183,10 +171,11 @@ const AnswerRow = ({
       <span
         style={{
           flexShrink: 0, width: 34, height: 34, borderRadius: 9,
-          display: "grid", placeItems: "center", background: cfg.color,
+          display: "grid", placeItems: "center", background: "var(--ap-brand)",
+          color: "white", fontFamily: "var(--ap-font-display)", fontWeight: 700,
         }}
       >
-        <svg viewBox="0 0 24 24" style={{ width: 14, height: 14 }}>{cfg.shape}</svg>
+        {answerLetter}
       </span>
       <input
         value={value}
@@ -231,11 +220,11 @@ const PhonePreview = ({
     return (
       <div style={{
         width: 258, flexShrink: 0,
-        background: "var(--ap-ink)", borderRadius: "var(--ap-r-md)", padding: 9,
+        background: "var(--ap-ink)", borderRadius: 32, padding: 9,
         boxShadow: "0 10px 0 #16102a, 0 30px 50px rgba(36,27,58,.28)",
       }}>
         <div style={{
-          background: "var(--ap-brand)", borderRadius: "var(--ap-r-md)", overflow: "hidden",
+          background: "var(--ap-brand)", borderRadius: 24, overflow: "hidden",
           display: "flex", flexDirection: "column", minHeight: 470,
         }}>
           <div style={{ width: 84, height: 20, background: "var(--ap-ink)", borderRadius: "0 0 var(--ap-r-xl) var(--ap-r-xl)", margin: "0 auto", flexShrink: 0 }} />
@@ -251,8 +240,11 @@ const PhonePreview = ({
   const pts = question.points ?? 1000;
   const answers: string[] = question.answers || [];
   const qText = question.question || "";
-  const layout = getQuestionLayout(question.layout ?? (question.image ? "media-top" : "standard"));
   const hasMedia = Boolean(question.image);
+  const layout = getQuestionLayout(
+    question.layout ?? (question.image ? "media-top" : "standard"),
+    hasMedia,
+  );
 
   const isChoice = ["multiple-choice", "single-choice"].includes(question.type);
   const isTF = question.type === "true-false";
@@ -280,7 +272,7 @@ const PhonePreview = ({
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, width: 258, flexShrink: 0 }}>
       <div style={{
         width: 258,
-        background: "var(--ap-ink)", borderRadius: "var(--ap-r-md)", padding: 9,
+        background: "var(--ap-ink)", borderRadius: 32, padding: 9,
         boxShadow: "0 10px 0 #16102a, 0 30px 50px rgba(36,27,58,.28)",
       }}>
         {/* Réplique de l'écran joueur réel (PlayerView, état 'question') :
@@ -288,7 +280,7 @@ const PhonePreview = ({
             flottante avec barre de temps linéaire et tuiles ap-answer--solid
             — mêmes classes/tokens que arcade-pop.css, pas une réinvention. */}
         <div style={{
-          background: "var(--ap-brand)", borderRadius: "var(--ap-r-md)", overflow: "hidden",
+          background: "var(--ap-brand)", borderRadius: 24, overflow: "hidden",
           display: "flex", flexDirection: "column", minHeight: 470,
         }}>
           {/* Notch */}
@@ -375,7 +367,8 @@ const PhonePreview = ({
                 </p>
               </div>
 
-              {/* Réponses — mêmes classes/tokens que PlayerView (ap-answer--solid, PLAYER_ANSWER_SHAPES) */}
+              {/* Réponses — repères alphabétiques cohérents entre l'éditeur
+                  et le miroir joueur. */}
               {isChoice || isTF ? (
                 <div className="ap-answers" style={{ gap: 8 }}>
                   {(isTF ? [question.answers?.[0] ?? "Vrai", question.answers?.[1] ?? "Faux"] : answers).slice(0, 4).map((ans, i) => {
@@ -387,7 +380,7 @@ const PhonePreview = ({
                         style={{ padding: "9px 10px", fontSize: 11.5, cursor: "default" }}
                       >
                         <span className="ap-answer__shape" style={{ width: 22, height: 22, fontWeight: 800 }}>
-                          {isTF ? (i === 0 ? "V" : "F") : PLAYER_ANSWER_SHAPES[i % 4]}
+                          {isTF ? (i === 0 ? "V" : "F") : String.fromCharCode(65 + i)}
                         </span>
                         <span className="ap-answer__text">{ans || `Réponse ${i + 1}`}</span>
                       </div>
@@ -464,16 +457,34 @@ const RailItem = ({
           transition: "border-color .15s ease, background .15s ease",
         }}
       >
-        {/* Number badge */}
-        <span style={{
-          flexShrink: 0, width: 26, height: 26, borderRadius: 8,
-          background: isActive ? "var(--ap-brand)" : "var(--ap-paper-2)",
-          color: isActive ? "white" : "var(--ap-muted)",
-          fontFamily: "var(--ap-font-display)", fontWeight: 600, fontSize: 15,
-          display: "grid", placeItems: "center",
-        }}>
-          {index + 1}
-        </span>
+        {/* Number and row actions stay in one left-hand utility rail. */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5, flexShrink: 0 }}>
+          <span style={{
+            width: 26, height: 26, borderRadius: 8,
+            background: isActive ? "var(--ap-brand)" : "var(--ap-paper-2)",
+            color: isActive ? "white" : "var(--ap-muted)",
+            fontFamily: "var(--ap-font-display)", fontWeight: 600, fontSize: 15,
+            display: "grid", placeItems: "center",
+          }}>
+            {index + 1}
+          </span>
+          <div className="flex flex-col items-center opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
+            <button
+              onClick={() => onDuplicate(index)}
+              title="Dupliquer"
+              style={{ background: "none", border: "none", cursor: "pointer", padding: 5, width: 26, height: 26, display: "grid", placeItems: "center", color: "var(--ap-muted)", borderRadius: 6 }}
+            >
+              <MaterialSymbol name="content_copy" size={15} />
+            </button>
+            <button
+              onClick={() => onDelete(index)}
+              title="Supprimer"
+              style={{ background: "none", border: "none", cursor: "pointer", padding: 5, width: 26, height: 26, display: "grid", placeItems: "center", color: "var(--ap-muted)", borderRadius: 6 }}
+            >
+              <MaterialSymbol name="delete" size={15} />
+            </button>
+          </div>
+        </div>
 
         {/* Body */}
         <span style={{ minWidth: 0, flex: 1 }}>
@@ -504,26 +515,6 @@ const RailItem = ({
             {displayText}
           </span>
         </span>
-
-        {/* Actions — hover-revealed for a clean row, but focus-within keeps
-            them reachable without a pointer; hit area bumped from ~16x8px
-            (too small under any touch-target guideline) to ~28x28px. */}
-        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
-          <button
-            onClick={() => onDuplicate(index)}
-            title="Dupliquer"
-            style={{ background: "none", border: "none", cursor: "pointer", padding: 8, minWidth: 28, minHeight: 28, display: "grid", placeItems: "center", color: "var(--ap-muted)", borderRadius: 6 }}
-          >
-            <Copy style={{ width: 12, height: 12 }} />
-          </button>
-          <button
-            onClick={() => onDelete(index)}
-            title="Supprimer"
-            style={{ background: "none", border: "none", cursor: "pointer", padding: 8, minWidth: 28, minHeight: 28, display: "grid", placeItems: "center", color: "var(--ap-muted)", borderRadius: 6 }}
-          >
-            <Trash2 style={{ width: 12, height: 12 }} />
-          </button>
-        </div>
 
         {/* Drag grip — glyph itself stays small, hit area grows to ~32x28px. */}
         <button
@@ -1169,9 +1160,15 @@ export const QuizBuilder = () => {
           />
         </div>
 
+        <div className={isFlashcard ? undefined : "quiz-builder-media-grid"}>
         {/* Media */}
-        {q.image ? (
-          <div style={{ position: "relative", marginBottom: 20, borderRadius: "var(--ap-r-md)", overflow: "hidden" }}>
+        <div>
+          <div className="quiz-builder-field-heading">
+            <span>Image de la question</span>
+            <span>Illustration affichée avec l’énoncé</span>
+          </div>
+          {q.image ? (
+          <div style={{ position: "relative", borderRadius: "var(--ap-r-md)", overflow: "hidden" }}>
             <img src={q.image} alt="" style={{ width: "100%", maxHeight: 200, objectFit: "cover", display: "block" }} />
             <button
               onClick={() => upd({ image: "" })}
@@ -1181,7 +1178,7 @@ export const QuizBuilder = () => {
             </button>
           </div>
         ) : (
-          <label style={{ display: "block", marginBottom: 20, cursor: "pointer" }}>
+          <label style={{ display: "block", cursor: "pointer" }}>
             <div
               style={{
                 border: "var(--ap-border-w) dashed var(--ap-line-2)", borderRadius: "var(--ap-r-md)",
@@ -1199,22 +1196,20 @@ export const QuizBuilder = () => {
               const file = e.target.files?.[0];
               if (!file) return;
               const r = new FileReader();
-              r.onloadend = () => upd({
-                image: r.result as string,
-                layout: !q.layout || q.layout === "standard" ? "media-top" : q.layout,
-              });
+              r.onloadend = () => upd({ image: r.result as string });
               r.readAsDataURL(file);
               e.target.value = "";
             }} />
           </label>
-        )}
+          )}
+        </div>
 
         {/* Photo de fond plein écran — écran présentateur uniquement, remplace
             le fond du thème pour cette question (distinct de l'image de la
             carte question ci-dessus). */}
         {!isFlashcard && (
-          <div style={{ marginBottom: 20 }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 12, fontWeight: 800, letterSpacing: ".09em", textTransform: "uppercase", color: "var(--ap-muted)", marginBottom: 8 }}>
+          <div>
+            <div className="quiz-builder-field-heading">
               <span>Photo de fond</span>
               <span style={{ fontSize: 11.5, letterSpacing: 0, textTransform: "none", fontWeight: 700 }}>
                 Remplace le thème pour cette question, écran présentateur
@@ -1257,6 +1252,7 @@ export const QuizBuilder = () => {
             )}
           </div>
         )}
+        </div>
 
         {/* Answers — MC */}
         {isMC && (
@@ -1512,12 +1508,6 @@ export const QuizBuilder = () => {
           questionIndex={selectedIdx ?? 0}
           totalQuestions={questions.length}
         />
-        {participantPreviewQuestion && (
-          <p style={{ marginTop: 16, fontSize: 12, fontWeight: 700, color: "var(--ap-muted)", textAlign: "center", lineHeight: 1.5 }}>
-            Tout ce que vous tapez apparaît ici<br />
-            <strong style={{ color: "var(--ap-ink)" }}>instantanément</strong>
-          </p>
-        )}
       </>
     );
   };
@@ -1764,7 +1754,7 @@ export const QuizBuilder = () => {
           <button
             onClick={() => handleAddQuestion()}
             style={{
-              margin: "0 12px 14px",
+              margin: "12px 12px 14px",
               padding: 11,
               border: "var(--ap-border-w) dashed var(--ap-line-2)",
               borderRadius: "var(--ap-r-md)",
@@ -1797,6 +1787,7 @@ export const QuizBuilder = () => {
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
+          justifyContent: "center",
           padding: "20px 20px 24px",
           minHeight: 0,
           overflowY: "auto",
@@ -1807,11 +1798,11 @@ export const QuizBuilder = () => {
 
       {/* ── Settings dialog ── */}
       <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="quiz-builder-settings-dialog max-w-2xl">
           <DialogHeader>
             <DialogTitle>Paramètres</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 mt-4">
+          <div className="quiz-builder-settings-dialog__body space-y-4">
             <div>
               <Label>Catégorie</Label>
               <Select value={category} onValueChange={setCategory}>

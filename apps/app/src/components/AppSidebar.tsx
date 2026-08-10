@@ -95,7 +95,7 @@ export const CORRECTION_ITEMS = [
 // Public discovery — no auth required, kept short and always visible.
 export const DISCOVER_ITEMS = [
   { label: t("discoverPublic"), icon: "explore", path: "/discover", requiresAuth: false },
-  { label: t("footerCommunity"), icon: "groups", path: "/community", requiresAuth: false },
+  { label: t("footerCommunity"), icon: "groups", path: "/community", requiresAuth: true },
   { label: t("navTools"), icon: "casino", path: "/tools", requiresAuth: false },
 ];
 

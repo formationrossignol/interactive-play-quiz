@@ -3,8 +3,8 @@
  *
  * Deux univers coexistent volontairement :
  *  - HOST  (grand écran, QuizSession) : tuiles pleines type plateau TV.
- *  - PLAYER (téléphone, PlayerView)   : cartes blanches Arcade Pop + puce
- *    géométrique colorée par position.
+ *  - PLAYER (téléphone, PlayerView)   : cartes blanches Arcade Pop + repère
+ *    alphabétique coloré par position.
  *
  * Tout aperçu (builder, PreviewPage) DOIT consommer ces constantes pour
  * rester aligné sur les écrans réels.
@@ -12,10 +12,10 @@
 
 /** Tuiles réponses côté présentateur — thème standard. */
 export const HOST_ANSWER_STYLES = [
-  { bg: '#E74C3C', shadow: 'rgba(231,76,60,0.45)', shape: '▲' },
-  { bg: '#2980B9', shadow: 'rgba(41,128,185,0.45)', shape: '◆' },
-  { bg: '#F39C12', shadow: 'rgba(243,156,18,0.45)', shape: '●' },
-  { bg: '#27AE60', shadow: 'rgba(39,174,96,0.45)', shape: '■' },
+  { bg: '#E74C3C', shadow: 'rgba(231,76,60,0.45)', shape: 'A' },
+  { bg: '#2980B9', shadow: 'rgba(41,128,185,0.45)', shape: 'B' },
+  { bg: '#F39C12', shadow: 'rgba(243,156,18,0.45)', shape: 'C' },
+  { bg: '#27AE60', shadow: 'rgba(39,174,96,0.45)', shape: 'D' },
 ] as const;
 
 /** Tuiles réponses côté présentateur — thème « Qui veut gagner ». */
@@ -27,17 +27,11 @@ export const MILLIONAIRE_ANSWER_STYLES = [
 ] as const;
 
 /**
- * Formes géométriques côté joueur (puce de la carte .ap-answer).
- * L'ordre position → couleur est fixé par arcade-pop.css :
- *  1 = triangle / --ap-quiz (rouge)   2 = cercle / --ap-poll (bleu)
- *  3 = carré   / --ap-pres (vert)    4 = losange / --ap-flash (jaune)
+ * Repères alphabétiques côté joueur (puce de la carte .ap-answer).
+ * Les mêmes lettres A–D sont utilisées dans le builder, l'aperçu, l'écran
+ * joueur et l'écran présentateur pour ne plus obliger à traduire des formes.
  */
-export const PLAYER_ANSWER_SHAPES = [
-  <svg key="tri" width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 2 L15 14 H1 Z"/></svg>,
-  <svg key="cir" width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><circle cx="8" cy="8" r="7"/></svg>,
-  <svg key="sq" width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><rect x="1" y="1" width="14" height="14" rx="2"/></svg>,
-  <svg key="dia" width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1 L15 8 L8 15 L1 8 Z"/></svg>,
-] as const;
+export const PLAYER_ANSWER_SHAPES = ['A', 'B', 'C', 'D'] as const;
 
 /** Couleur de puce joueur par position (mêmes tokens que .ap-answer--N). */
 export const PLAYER_ANSWER_COLORS = [

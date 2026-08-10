@@ -347,7 +347,10 @@ export const PollSession = ({ poll }: PollSessionProps) => {
   const maxCount = Math.max(...counts, 1);
   const texts = Array.from(textResponsesRef.current.get(currentIndex)?.values() ?? []);
   const answeredCount = currentQuestion.type === "open-text" ? texts.length : totalVotes;
-  const questionLayout = getQuestionLayout(currentQuestion.layout ?? (currentQuestion.image ? "media-top" : "standard"));
+  const questionLayout = getQuestionLayout(
+    currentQuestion.layout ?? (currentQuestion.image ? "media-top" : "standard"),
+    Boolean(currentQuestion.image),
+  );
   const sideBySide = currentQuestion.image && (
     questionLayout.mediaPosition === "left" || questionLayout.mediaPosition === "right"
   );

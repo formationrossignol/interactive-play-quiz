@@ -2057,6 +2057,63 @@
   padding-inline: 18px;
 }
 
+[data-theme="materialpro"] .quiz-builder-media-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 18px;
+  margin-bottom: 20px;
+}
+
+[data-theme="materialpro"] .quiz-builder-field-heading {
+  display: flex;
+  min-height: 34px;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+  color: var(--ap-muted);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .09em;
+  line-height: 1.35;
+  text-transform: uppercase;
+}
+
+[data-theme="materialpro"] .quiz-builder-field-heading > span:last-child {
+  max-width: 62%;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0;
+  text-align: right;
+  text-transform: none;
+}
+
+/* The generic dialog surface intentionally clips its chrome; the builder
+   settings body is the scroll owner so the title and close control stay put. */
+[data-theme="materialpro"] [data-ui="dialog-content"].quiz-builder-settings-dialog {
+  display: flex;
+  width: min(672px, calc(100vw - 32px));
+  max-height: min(80vh, 760px);
+  flex-direction: column;
+  overflow: hidden;
+}
+
+[data-theme="materialpro"] .quiz-builder-settings-dialog__body {
+  min-height: 0;
+  margin: 0 !important;
+  padding: 20px 24px 24px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+@media (max-width: 760px) {
+  [data-theme="materialpro"] .quiz-builder-media-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Ticket application template. */
 [data-theme="materialpro"] .product-ticket-period {
   display: grid;
