@@ -6,7 +6,7 @@ import { listRecentContent } from "@/lib/content/contentRepo";
 import { getSearchResultRoute } from "@/lib/content/searchContent";
 import type { ContentRow, ContentType } from "@/lib/content/types";
 
-const META: Record<ContentType, { label: string; color: string; background: string; icon: string }> = {
+const RECENT_CONTENT_META: Record<ContentType, { label: string; color: string; background: string; icon: string }> = {
   quiz: { label: "Quiz", color: "var(--content-quiz-accent)", background: "var(--content-quiz-surface)", icon: "menu_book" },
   poll: { label: "Sondage", color: "var(--content-poll-accent)", background: "var(--content-poll-surface)", icon: "bar_chart" },
   flashcard: { label: "Flashcards", color: "var(--content-flashcard-accent)", background: "var(--content-flashcard-surface)", icon: "layers" },
@@ -20,6 +20,48 @@ const imageOf = (row: ContentRow) => {
   const value = row.data?.headerImage ?? row.data?.coverImage;
   return typeof value === "string" && value ? value : null;
 };
+
+export function RecentWorkCard({ row }: { row: ContentRow }) {
+  const navigate = useNavigate();
+  const meta = RECENT_CONTENT_META[row.type];
+  const image = imageOf(row);
+  const title = String(row.data?.title ?? "Sans titre");
+  return (
+    <button
+      type="button"
+      className="product-recent-item"
+      onClick={() => navigate(getSearchResultRoute(row.type, itemId(row)))}
+    >
+      <span
+        className="product-recent-item__media"
+        style={{ color: meta.color, background: image ? "var(--ap-paper-2)" : meta.background }}
+      >
+        {!image && (
+          <svg
+            className="motif"
+            viewBox="0 0 300 112"
+            preserveAspectRatio="none"
+            aria-hidden="true"
+            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: .55 }}
+          >
+            <path d="M-10 90 Q60 40 150 70 T310 50" fill="none" stroke="currentColor" strokeWidth="1" opacity=".2" />
+            <path d="M-10 105 Q80 60 170 85 T310 70" fill="none" stroke="currentColor" strokeWidth="1" opacity=".1" />
+          </svg>
+        )}
+        {!image && <span className="product-recent-item__badge" style={{ color: meta.color, background: "var(--ap-card)" }}>{meta.label}</span>}
+        {image
+          ? <img src={image} alt="" className="h-full w-full object-cover" />
+          : <MaterialSymbol name={meta.icon} size={36} style={{ color: meta.color, opacity: .82, position: "relative" }} />}
+      </span>
+      <span className="product-recent-item__title">{title}</span>
+      <span className="product-recent-item__meta">
+        <span style={{ color: meta.color, fontWeight: 800 }}>{meta.label}</span>
+        <span aria-hidden="true">·</span>
+        {new Date(row.updated_at).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })}
+      </span>
+    </button>
+  );
+}
 
 function RecentWorksSkeleton() {
   return (
@@ -58,7 +100,7 @@ export function RecentWorks({ userId }: { userId: string }) {
         <button
           type="button"
           className="ap-btn ap-btn--ghost ap-btn--sm ap-btn--pill"
-          onClick={() => navigate("/my-quizzes")}
+          onClick={() => navigate("/recent")}
         >
           Voir tout <MaterialSymbol name="arrow_forward" size={16} />
         </button>
@@ -78,58 +120,13 @@ export function RecentWorks({ userId }: { userId: string }) {
               style={{ marginTop: 14 }}
               onClick={() => navigate("/builder-start?type=quiz")}
             >
-              Créer un quiz
+              <MaterialSymbol name="add" size={17} /> Créer un quiz
             </button>
           </div>
         </div>
       ) : (
         <div className="product-recent-grid">
-          {rows.map((row) => {
-            const meta = META[row.type];
-            const image = imageOf(row);
-            const title = String(row.data?.title ?? "Sans titre");
-            return (
-              <button
-                type="button"
-                key={row.id}
-                className="product-recent-item"
-                onClick={() => navigate(getSearchResultRoute(row.type, itemId(row)))}
-              >
-                <span
-                  className="product-recent-item__media"
-                  style={{
-                    color: meta.color,
-                    background: image
-                      ? "var(--ap-paper-2)"
-                      : meta.background,
-                  }}
-                >
-                  {!image && (
-                    <svg
-                      className="motif"
-                      viewBox="0 0 300 112"
-                      preserveAspectRatio="none"
-                      aria-hidden="true"
-                      style={{ position: "absolute", inset: 0, opacity: .55 }}
-                    >
-                      <path d="M-10 90 Q60 40 150 70 T310 50" fill="none" stroke="currentColor" strokeWidth="1" opacity=".2" />
-                      <path d="M-10 105 Q80 60 170 85 T310 70" fill="none" stroke="currentColor" strokeWidth="1" opacity=".1" />
-                    </svg>
-                  )}
-                  {!image && <span className="product-recent-item__badge" style={{ color: meta.color, background: "var(--ap-card)" }}>{meta.label}</span>}
-                  {image
-                    ? <img src={image} alt="" className="h-full w-full object-cover" />
-                    : <MaterialSymbol name={meta.icon} size={36} style={{ color: meta.color, opacity: .82, position: "relative" }} />}
-                </span>
-                <span className="product-recent-item__title">{title}</span>
-                <span className="product-recent-item__meta">
-                  <span style={{ color: meta.color, fontWeight: 800 }}>{meta.label}</span>
-                  <span aria-hidden="true">·</span>
-                  {new Date(row.updated_at).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })}
-                </span>
-              </button>
-            );
-          })}
+          {rows.map((row) => <RecentWorkCard key={row.id} row={row} />)}
         </div>
       )}
     </section>

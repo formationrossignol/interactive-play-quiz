@@ -11,7 +11,7 @@ function CoverMotif() {
       viewBox="0 0 300 112"
       preserveAspectRatio="none"
       aria-hidden="true"
-      style={{ position: "absolute", inset: 0, opacity: .55 }}
+      style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: .55 }}
     >
       <path d="M-10 90 Q60 40 150 70 T310 50" fill="none" stroke="currentColor" strokeWidth="1" opacity=".2" />
       <path d="M-10 105 Q80 60 170 85 T310 70" fill="none" stroke="currentColor" strokeWidth="1" opacity=".1" />

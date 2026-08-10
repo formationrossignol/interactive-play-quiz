@@ -2003,7 +2003,59 @@
    bubble, no decorative elevation, and one stable baseline for every value. */
 [data-theme="materialpro"] .product-host-overview .product-metric-grid--compact {
   gap: 12px;
-  padding: 16px 20px 20px;
+  padding: 0;
+}
+
+[data-theme="materialpro"] .product-host-overview .product-section-heading {
+  margin-bottom: 16px;
+}
+
+/* The content sub-navigation stays within the restrained violet system. The
+   shared sidebar primitive otherwise leaves its legacy cyan focus border in
+   place after a mouse click. */
+:root:not(.dark)[data-theme="materialpro"] .product-shell-root [data-sidebar="menu-sub-button"] {
+  border: 1px solid transparent;
+  border-radius: 10px;
+  outline: none;
+  color: #697386;
+  background: transparent;
+  box-shadow: none;
+}
+
+:root:not(.dark)[data-theme="materialpro"] .product-shell-root [data-sidebar="menu-sub-button"]:hover {
+  border-color: transparent;
+  color: #4f46e5;
+  background: #f3f2ff;
+  box-shadow: none;
+}
+
+:root:not(.dark)[data-theme="materialpro"] .product-shell-root [data-sidebar="menu-sub-button"][data-active="true"] {
+  border-color: transparent;
+  color: #4f46e5;
+  background: #e9e7ff;
+  box-shadow: none;
+}
+
+:root:not(.dark)[data-theme="materialpro"] .product-shell-root [data-sidebar="menu-sub-button"]:focus:not(:focus-visible) {
+  border-color: transparent;
+  outline: none;
+  box-shadow: none;
+}
+
+:root:not(.dark)[data-theme="materialpro"] .product-shell-root [data-sidebar="menu-sub-button"]:focus-visible {
+  border-color: transparent;
+  outline: 2px solid #d8d5ff;
+  outline-offset: 1px;
+  box-shadow: none;
+}
+
+[data-theme="materialpro"] .product-recent-grid--all {
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 22px;
+}
+
+[data-theme="materialpro"] .product-recent-page .product-recent-item__media {
+  height: 160px;
 }
 
 [data-theme="materialpro"] .product-host-stat {

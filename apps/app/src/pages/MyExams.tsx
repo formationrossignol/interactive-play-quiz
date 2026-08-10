@@ -255,8 +255,8 @@ function HostStatsRow({ hostId }: { hostId: string }) {
   if (groups.length === 0 && stats.totalExams === 0) return null;
 
   return (
-    <section className="product-panel product-insight-panel product-host-overview">
-      <div className="product-panel-heading">
+    <section className="product-host-overview">
+      <div className="product-section-heading">
         <div>
           <h2>Vue d’ensemble</h2>
           <p>Les indicateurs clés de votre activité d’évaluation.</p>
