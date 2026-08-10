@@ -41,10 +41,16 @@ create table public.assignment_targets (
 );
 create index assignment_targets_assignment_idx on public.assignment_targets(assignment_id);
 
+-- security definer: this is read from inside assignment_targets_learner_read
+-- below (a policy on the very table this function queries) — as invoker it
+-- would recurse into that same policy for every candidate row and blow the
+-- stack (same trap as live_engagement's is_live_event_staff), so it must
+-- run as the table owner, who bypasses RLS.
 create or replace function public.assignment_visible_to_learner(p_assignment_id uuid, p_learner_id uuid)
 returns boolean
 language sql
 stable
+security definer
 set search_path = public
 as $$
   select exists (
