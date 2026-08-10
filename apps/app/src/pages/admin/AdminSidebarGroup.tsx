@@ -6,12 +6,13 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { MaterialSymbol } from "@/components/MaterialSymbol";
 
 export type AdminSection = "content" | "moderation" | "subscribers" | "users" | "revenue" | "settings";
 
 export interface AdminNavItem {
   key: AdminSection;
-  icon: React.ElementType;
+  icon: string;
   label: string;
   count: number;
   alert?: boolean;
@@ -31,11 +32,10 @@ export const AdminSidebarGroup = ({ section, setSection, nav }: AdminSidebarGrou
     <SidebarGroupLabel>Administration</SidebarGroupLabel>
     <SidebarMenu>
       {nav.map((item) => {
-        const Icon = item.icon;
         return (
           <SidebarMenuItem key={item.key}>
             <SidebarMenuButton isActive={section === item.key} onClick={() => setSection(item.key)}>
-              <Icon />
+              <MaterialSymbol name={item.icon} size={20} />
               <span>{item.label}</span>
             </SidebarMenuButton>
             {item.key !== "settings" && item.key !== "revenue" && (

@@ -25,12 +25,12 @@ import {
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Plus, Trash2, Upload, GripVertical, Settings,
+  Plus, Trash2, Upload, GripVertical,
   ChevronRight, ChevronDown, Eye, ImageIcon, MoreHorizontal,
   ArrowRight, Copy, Library, HelpCircle, Home, type LucideIcon,
   ListChecks, CircleDot, ToggleLeft, TextCursorInput, ArrowUpDown,
   Link2, TextSelect, SlidersHorizontal, Rows3, ChartNoAxesColumn,
-  Star, MessageSquareText, Gauge, Layers3, Presentation, LayoutTemplate, BarChart2,
+  Star, MessageSquareText, Gauge, Layers3, Presentation, BarChart2,
 } from "lucide-react";
 import { ImportFileModal } from "./ImportFileModal";
 import { getCurrentUser } from "@/lib/auth";
@@ -81,6 +81,7 @@ import { getQuestionLayout } from "@/lib/contentLayouts";
 import { QuestionTypeExample } from "@/components/QuestionTypeExample";
 import { MultiStepProgress } from "@/components/MultiStepProgress";
 import { PLAYER_ANSWER_SHAPES } from "@/lib/answerVisuals";
+import { MaterialSymbol } from "@/components/MaterialSymbol";
 
 // ─── Design constants ──────────────────────────────────────────────────────
 // Ordre position → couleur/forme aligné sur l'écran joueur réel
@@ -176,7 +177,6 @@ const AnswerRow = ({
         border: "var(--ap-border-w) solid var(--ap-line)",
         borderRadius: "var(--ap-r-md)",
         padding: "8px 10px",
-        boxShadow: "0 3px 0 var(--ap-line)",
         marginBottom: 10,
       }}
     >
@@ -456,15 +456,12 @@ const RailItem = ({
         style={{
           position: "relative", textAlign: "left", width: "100%",
           background: isActive ? "var(--ap-brand-soft)" : "var(--ap-card)",
-          border: `2px solid ${isActive ? "var(--ap-brand)" : "var(--ap-line)"}`,
+          border: `1px solid ${isActive ? "color-mix(in srgb, var(--ap-brand) 55%, var(--ap-line))" : "var(--ap-line)"}`,
           borderRadius: "var(--ap-r-md)",
           padding: "11px 12px 11px 14px",
           cursor: "pointer",
-          boxShadow: isActive
-            ? "0 3px 0 color-mix(in srgb, var(--ap-brand) 45%, transparent)"
-            : "0 3px 0 var(--ap-line)",
           display: "flex", gap: 11, alignItems: "flex-start",
-          transition: "transform .15s var(--ap-spring), box-shadow .15s var(--ap-spring)",
+          transition: "border-color .15s ease, background .15s ease",
         }}
       >
         {/* Number badge */}
@@ -1306,7 +1303,7 @@ export const QuizBuilder = () => {
                       fontWeight: 800, fontSize: 16, cursor: "pointer",
                       transition: "all .15s",
                       display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-                      boxShadow: "0 3px 0 var(--ap-line)", fontFamily: "inherit",
+                      fontFamily: "inherit",
                     }}
                   >
                     <span style={{ fontSize: 20 }}>{val === "true" ? "✓" : "✗"}</span>
@@ -1327,7 +1324,7 @@ export const QuizBuilder = () => {
             {/* Points */}
             <div>
               <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".09em", textTransform: "uppercase", color: "var(--ap-muted)", marginBottom: 8 }}>Points</div>
-              <div style={{ display: "flex", background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-md)", padding: 4, gap: 4, boxShadow: "0 3px 0 var(--ap-line)" }}>
+              <div style={{ display: "flex", background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-md)", padding: 4, gap: 4 }}>
                 {POINTS_OPTIONS.map(opt => {
                   const isOn = (q.points ?? 1000) === opt.value || (opt.value === 1000 && (q.points ?? 1000) !== 0 && (q.points ?? 1000) !== 2000);
                   return (
@@ -1349,7 +1346,7 @@ export const QuizBuilder = () => {
             {/* Time */}
             <div>
               <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".09em", textTransform: "uppercase", color: "var(--ap-muted)", marginBottom: 8 }}>Temps de réponse</div>
-              <div style={{ display: "flex", background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-md)", padding: 4, gap: 4, boxShadow: "0 3px 0 var(--ap-line)" }}>
+              <div style={{ display: "flex", background: "var(--ap-card)", border: "var(--ap-border-w) solid var(--ap-line)", borderRadius: "var(--ap-r-md)", padding: 4, gap: 4 }}>
                 {TIME_OPTIONS.map(opt => {
                   const isOn = (q.timeLimit ?? 20) === opt.value;
                   return (
@@ -1621,11 +1618,11 @@ export const QuizBuilder = () => {
           style={{
             display: "grid", placeItems: "center", width: 36, height: 36,
             borderRadius: "var(--ap-r-sm)", border: "var(--ap-border-w) solid var(--ap-line)",
-            background: "var(--ap-card)", cursor: "pointer", boxShadow: "0 3px 0 var(--ap-line)",
+            background: "var(--ap-card)", cursor: "pointer",
             flexShrink: 0,
           }}
         >
-          <Settings style={{ width: 15, height: 15, color: "var(--ap-muted)" }} />
+          <MaterialSymbol name="settings" size={18} style={{ color: "var(--ap-muted)" }} />
         </button>
 
         {/* Save as template */}
@@ -1641,10 +1638,10 @@ export const QuizBuilder = () => {
                     display: "grid", placeItems: "center", width: 36, height: 36,
                     borderRadius: "var(--ap-r-sm)", border: "var(--ap-border-w) solid var(--ap-line)",
                     background: "var(--ap-card)", cursor: quizId ? "pointer" : "not-allowed",
-                    boxShadow: "0 3px 0 var(--ap-line)", flexShrink: 0, opacity: quizId ? 1 : 0.5,
+                    flexShrink: 0, opacity: quizId ? 1 : 0.5,
                   }}
                 >
-                  <LayoutTemplate style={{ width: 15, height: 15, color: "var(--ap-muted)" }} />
+                  <MaterialSymbol name="dashboard_customize" size={18} style={{ color: "var(--ap-muted)" }} />
                 </button>
               </span>
             </TooltipTrigger>

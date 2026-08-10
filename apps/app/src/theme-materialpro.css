@@ -1972,13 +1972,89 @@
 }
 
 [data-theme="materialpro"] [data-sonner-toast] {
-  border: 0 !important;
-  border-left: 4px solid var(--mp-primary) !important;
+  border: 1px solid var(--ap-line) !important;
   border-radius: 8px !important;
   color: var(--ap-ink) !important;
   background: var(--ap-card) !important;
   box-shadow: var(--mp-float-shadow) !important;
   font-family: var(--ap-font-body) !important;
+}
+
+/* Product controls use a flat, restrained elevation language. Inline legacy
+   shadows are deliberately neutralised here so builders and secondary tools
+   stay consistent with the shared button primitives. */
+[data-theme="materialpro"] button,
+[data-theme="materialpro"] [data-ui="button"],
+[data-theme="materialpro"] .ap-btn,
+[data-theme="materialpro"] .adm-btn,
+[data-theme="materialpro"] .cv-btn {
+  box-shadow: none !important;
+}
+
+[data-theme="materialpro"] button:hover,
+[data-theme="materialpro"] [data-ui="button"]:hover,
+[data-theme="materialpro"] .ap-btn:hover,
+[data-theme="materialpro"] .adm-btn:hover,
+[data-theme="materialpro"] .cv-btn:hover {
+  box-shadow: none !important;
+}
+
+/* Exam overview follows the compact KPI vocabulary used elsewhere: no icon
+   bubble, no decorative elevation, and one stable baseline for every value. */
+[data-theme="materialpro"] .product-host-overview .product-metric-grid--compact {
+  gap: 12px;
+  padding: 16px 20px 20px;
+}
+
+[data-theme="materialpro"] .product-host-stat {
+  box-sizing: border-box;
+  height: 82px;
+  min-height: 82px;
+  gap: 11px;
+  border: 1px solid var(--ap-line);
+  border-radius: 10px;
+  padding: 14px 16px;
+  box-shadow: none;
+}
+
+[data-theme="materialpro"] .product-host-stat:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+[data-theme="materialpro"] .product-host-stat .product-metric__icon {
+  width: 24px;
+  height: 24px;
+  flex-basis: 24px;
+  border-radius: 0;
+  color: var(--ap-brand);
+  background: transparent;
+}
+
+[data-theme="materialpro"] .product-host-stat strong {
+  font-size: 22px;
+  line-height: 1.05;
+}
+
+[data-theme="materialpro"] .product-host-stat small {
+  margin-top: 5px;
+  font-size: 12px;
+}
+
+[data-theme="materialpro"] .product-profile-save {
+  display: flex;
+  grid-column: 1 / -1;
+  justify-content: flex-end;
+  padding-top: 4px;
+}
+
+[data-theme="materialpro"] .product-profile-save .ap-btn {
+  width: auto;
+  min-width: 148px;
+  min-height: 40px;
+  justify-content: center;
+  gap: 8px;
+  padding-inline: 18px;
 }
 
 /* Ticket application template. */

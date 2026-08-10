@@ -32,6 +32,7 @@ import globe from "lets-icons/icons/globe-light.svg?raw";
 import group from "lets-icons/icons/group-light.svg?raw";
 import groupShare from "lets-icons/icons/group-share-light.svg?raw";
 import hideEye from "lets-icons/icons/hide-eye-light.svg?raw";
+import eye from "lets-icons/icons/eye-light.svg?raw";
 import home from "lets-icons/icons/home-light.svg?raw";
 import hourglass from "lets-icons/icons/hourglass-light.svg?raw";
 import key from "lets-icons/icons/key-light.svg?raw";
@@ -209,6 +210,7 @@ const icons: Record<string, string> = {
   verified_user: chield,
   view_list: list,
   visibility_off: hideEye,
+  visibility: eye,
   volunteer_activism: groupShare,
   volume_off: soundMute,
   volume_up: soundMax,
