@@ -3495,9 +3495,12 @@
 /* Profile identity block: quiet premium surface with one restrained halo. */
 :root:not(.dark)[data-theme="materialpro"] .product-profile-hero {
   align-items: center;
+  min-height: 224px;
   border: 1px solid #e0e4ea;
+  padding: 34px 40px;
   color: #171a22;
-  background: #f8f9fc;
+  background:
+    linear-gradient(90deg, #f8f9fc 0%, #f8f9fc 72%, color-mix(in srgb, #ecebff 30%, #f8f9fc) 100%);
   box-shadow: none;
 }
 
@@ -3525,14 +3528,33 @@
 }
 
 :root:not(.dark)[data-theme="materialpro"] .product-profile-avatar {
+  width: 76px;
+  height: 76px;
   border: 1px solid #d9dde6;
   color: #5b5cf0;
   background: #e9e7ff;
   box-shadow: none;
+  font-size: 28px;
+}
+
+:root:not(.dark)[data-theme="materialpro"] .product-profile-hero h1 {
+  font-size: clamp(28px, 3vw, 36px);
+}
+
+:root:not(.dark)[data-theme="materialpro"] .product-profile-hero p {
+  margin-top: 6px;
+  font-size: 14px;
+}
+
+:root:not(.dark)[data-theme="materialpro"] .product-profile-hero__meta > span {
+  border-color: #e0e4ea;
+  color: #697386;
+  background: rgba(255, 255, 255, .74);
 }
 
 :root:not(.dark)[data-theme="materialpro"] .product-profile-plan {
   border: 1px solid #d9dde6;
+  padding: 10px 14px;
   color: #252936;
   background: #ffffff;
 }

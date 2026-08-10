@@ -70,27 +70,6 @@ const gripStyle: React.CSSProperties = {
   flexShrink: 0,
 };
 
-/** Drag handle overlaid opposite the type badge so neither control collides. */
-const gripOverlayStyle: React.CSSProperties = {
-  position: "absolute",
-  top: 10,
-  right: 10,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  width: 30,
-  height: 30,
-  background: "color-mix(in srgb, var(--ap-card) 88%, transparent)",
-  border: "1px solid color-mix(in srgb, var(--ap-line) 78%, transparent)",
-  color: "var(--ap-muted)",
-  cursor: "grab",
-  touchAction: "none",
-  padding: 0,
-  borderRadius: "8px",
-  boxShadow: "none",
-  zIndex: 1,
-};
-
 const menuStyle = {
   minWidth: 200,
   border: "var(--ap-border-w) solid var(--ap-line)",
@@ -278,8 +257,7 @@ export function GenericCard(props: GenericItemProps) {
           {...attributes}
           {...listeners}
           onClick={(e) => e.stopPropagation()}
-          style={gripOverlayStyle}
-          className="ap-grip"
+          className="ap-grip product-content-drag-handle"
           title="Déplacer"
           aria-label={`Déplacer ${d.title}`}
         >

@@ -151,7 +151,7 @@ const WheelTool = () => {
                 <RotateCw className="h-3.5 w-3.5" />
                 Rejouer
               </button>
-              <button type="button" className="ap-btn ap-btn--ghost ap-btn--sm" onClick={removeWinnerFromList}>
+              <button type="button" className="ap-btn ap-btn--ghost ap-btn--sm" style={{ color: "var(--ap-danger)" }} onClick={removeWinnerFromList}>
                 <Trash2 className="h-3.5 w-3.5" />
                 Retirer de la liste
               </button>

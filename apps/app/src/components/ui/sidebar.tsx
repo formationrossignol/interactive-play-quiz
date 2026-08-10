@@ -237,7 +237,11 @@ const SidebarTrigger = React.forwardRef<React.ElementRef<typeof Button>, React.C
         }}
         {...props}
       >
-        <MaterialSymbol name="menu" size={20} />
+        <span className="product-burger-icon" aria-hidden="true">
+          <span />
+          <span />
+          <span />
+        </span>
         <span className="sr-only">Toggle Sidebar</span>
       </Button>
     );

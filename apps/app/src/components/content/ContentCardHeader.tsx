@@ -23,7 +23,6 @@ export function ContentCoverArtwork({ type }: { type: ContentType }) {
         </linearGradient>
       </defs>
       <rect x="0" y="0" width="320" height="180" fill={`url(#${gradientId})`} />
-      <path d="M24 34H296M24 146H296" stroke="currentColor" strokeOpacity=".12" />
       {type === "quiz" && <>
         <rect x="74" y="36" width="172" height="110" rx="13" fill="var(--ap-card)" fillOpacity=".92" stroke="currentColor" strokeOpacity=".18" />
         <path d="M96 62H206M96 76H182" {...common} strokeOpacity=".55" />
@@ -35,10 +34,10 @@ export function ContentCoverArtwork({ type }: { type: ContentType }) {
         {[58, 104, 78].map((width, index) => <g key={width}><rect x="88" y={92 + index * 15} width="120" height="7" rx="3.5" fill="currentColor" opacity=".1" /><rect x="88" y={92 + index * 15} width={width} height="7" rx="3.5" fill="currentColor" opacity={.65 - index * .12} /></g>)}
       </>}
       {type === "flashcard" && <>
-        <rect x="92" y="47" width="144" height="88" rx="12" fill="currentColor" opacity=".12" transform="rotate(5 164 91)" />
-        <rect x="84" y="42" width="144" height="88" rx="12" fill="var(--ap-card)" fillOpacity=".96" stroke="currentColor" strokeOpacity=".28" />
-        <path d="M108 72H192M108 88H176" {...common} strokeOpacity=".55" />
-        <rect x="108" y="105" width="52" height="8" rx="4" fill="currentColor" opacity=".2" />
+        <rect x="96" y="55" width="144" height="88" rx="12" fill="currentColor" opacity=".12" transform="rotate(5 168 99)" />
+        <rect x="88" y="50" width="144" height="88" rx="12" fill="var(--ap-card)" fillOpacity=".96" stroke="currentColor" strokeOpacity=".28" />
+        <path d="M112 80H196M112 96H180" {...common} strokeOpacity=".55" />
+        <rect x="112" y="113" width="52" height="8" rx="4" fill="currentColor" opacity=".2" />
       </>}
       {type === "slide" && <>
         <rect x="61" y="35" width="198" height="112" rx="10" fill="var(--ap-card)" fillOpacity=".94" stroke="currentColor" strokeOpacity=".22" />

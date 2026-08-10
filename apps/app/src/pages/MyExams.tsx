@@ -53,13 +53,6 @@ const gripStyle: React.CSSProperties = {
   touchAction: 'none', flexShrink: 0, background: 'none', border: 'none', padding: 2,
 };
 
-/** Drag handle overlaid on the header block (top-left) so the title row keeps the full card width. */
-const gripOverlayStyle: React.CSSProperties = {
-  position: 'absolute', top: 8, left: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
-  background: 'var(--ap-card)', border: 'var(--ap-border-w) solid var(--ap-line)', color: 'var(--ap-muted)',
-  cursor: 'grab', touchAction: 'none', padding: 4, borderRadius: 6, zIndex: 1,
-};
-
 const statusBadge = (liveStatus: string) => {
   const badge = STATUS_LABEL[liveStatus];
   return (
@@ -397,12 +390,11 @@ function ExamCard({ d, ctx, navigate, onDuplicate }: ExamItemProps) {
           {...attributes}
           {...listeners}
           onClick={(e) => e.stopPropagation()}
-          style={gripOverlayStyle}
-          className="ap-grip"
+          className="ap-grip product-content-drag-handle"
           title="Déplacer"
           aria-label={`Déplacer ${exam.title}`}
         >
-          <GripVertical style={{ width: 14, height: 14 }} />
+          <MaterialSymbol name="drag_handle" size={17} />
         </button>
       </ContentCardHeader>
       <div className="flex flex-1 flex-col gap-2.5" style={{ padding: '14px 16px 12px' }}>
