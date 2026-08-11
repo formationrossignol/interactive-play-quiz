@@ -1,6 +1,7 @@
 import { getCurrentUser } from './auth';
 import { CONTENT_CAPS, getPlan, PlanLimitError } from './plans';
 import { safeSetItem } from './safeLocalStorage';
+import { supabase } from './supabase';
 
 export interface Lesson {
   id: string;
@@ -232,11 +233,26 @@ const writeAllProgress = (progress: CourseProgress[]): void => {
 export const getCourseProgress = (courseId: string, userId: string): CourseProgress | null =>
   getAllProgress().find((p) => p.courseId === courseId && p.userId === userId) ?? null;
 
+/** Fire-and-forget mirror to course_lesson_progress — the server-side
+ *  record issue_course_certificate() actually checks before certifying
+ *  (see 20260812040000_course_completion_verification.sql). Best-effort:
+ *  a failed mirror write just means the certificate check is stricter than
+ *  local progress until it's retried, never the reverse. */
+const mirrorLessonComplete = (courseId: string, lessonId: string, userId: string): void => {
+  void supabase.from('course_lesson_progress')
+    .upsert({ user_id: userId, course_id: courseId, lesson_id: lessonId }, { onConflict: 'user_id,course_id,lesson_id', ignoreDuplicates: true });
+};
+const mirrorLessonUncomplete = (courseId: string, lessonId: string, userId: string): void => {
+  void supabase.from('course_lesson_progress').delete()
+    .eq('user_id', userId).eq('course_id', courseId).eq('lesson_id', lessonId);
+};
+
 export const markLessonComplete = (
   courseId: string,
   lessonId: string,
   userId: string,
 ): CourseProgress => {
+  mirrorLessonComplete(courseId, lessonId, userId);
   const all = getAllProgress();
   const idx = all.findIndex((p) => p.courseId === courseId && p.userId === userId);
   const now = new Date().toISOString();
@@ -265,6 +281,7 @@ export const unmarkLessonComplete = (
   lessonId: string,
   userId: string,
 ): void => {
+  mirrorLessonUncomplete(courseId, lessonId, userId);
   const all = getAllProgress();
   const idx = all.findIndex((p) => p.courseId === courseId && p.userId === userId);
   if (idx === -1) return;
