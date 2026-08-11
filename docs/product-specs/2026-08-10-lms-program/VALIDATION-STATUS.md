@@ -259,12 +259,27 @@ serveur »).
 
 **Fait** : `rule_sets`/`rule_set_versions` + détection de cycle réelle
 (`would_create_cycle()`) + `automation_rules`/`automation_runs` +
-`record_automation_run()` idempotent.
+`record_automation_run()` idempotent. Depuis
+`20260811070000_release_state_engine.sql` : `release_state` réellement
+calculé — `evaluate_rule_definition()` évalue le DSL (`and`/`or` récursifs,
+feuille `activity_completed`) contre la progression réelle d'un apprenant ;
+`activity_completed_for_learner()` résout la complétion en réutilisant
+l'unification du gradebook de la passe de réconciliation précédente
+(`grade_results` gradé, source-agnostique assignment/exam/manuel) plus
+`submissions`/`exam_attempts` directement. Toute autre source de feuille
+(date/score/compétence...) échoue **fermé** (`false`, verrouillé) plutôt que
+de deviner — pas de faux déverrouillage sur une condition qu'on ne sait pas
+évaluer. Pas de scheduler : `recompute_release_state()` est déclenché par 3
+triggers événementiels (`submissions`/`exam_attempts`/`grade_results`) sur
+les écritures qui peuvent effectivement satisfaire une règle. Vérifié :
+activité B verrouillée tant que l'activité A prérequise n'est pas soumise ;
+soumission de A par l'apprenant → B passe automatiquement à `unlocked` sans
+appel manuel, uniquement via le trigger.
 
 **Reste à faire** :
-- [ ] Moteur d'évaluation événementiel réel (réévaluation à chaque changement pertinent + balayage planifié — AUT/moteur) : aucun job/cron ne tourne, seul le modèle et l'API de publication existent
+- [ ] Balayage planifié complémentaire (règles à échéance temporelle — date/score qui change sans écriture applicative) : aucun scheduler dans ce repo, seul l'événementiel est couvert
 - [ ] UI de construction en phrases « Quand [condition], alors [action] » — l'UI actuelle ne construit qu'une seule condition simple (`activity_completed`), pas le DSL complet (AND/OR, dates, scores, compétences...)
-- [ ] `release_state` — projection posée, jamais calculée (aucun writer)
+- [ ] Évaluateur pour les sources autres que `activity_completed` (date/score/compétence) — le DSL les accepte et les affiche, `evaluate_rule_definition()` les traite en échec fermé faute d'évaluateur dédié
 - [ ] Simulation « voir comme cet apprenant » / dry-run avant publication (ADP-008, AUT-004)
 - [ ] Test de positionnement / remédiation (ADP-009/010/011)
 - [ ] `follow_up_tasks` — table posée, aucun écran ni déclencheur
