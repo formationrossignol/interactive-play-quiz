@@ -23,7 +23,7 @@ commencé.
 
 | # | Spec | DB/RLS/RPC | UI | Intégrations tierces | Statut |
 |---|---|---|---|---|---|
-| 01 | Devoirs & gradebook | 🟢 | 🟡 minimal | 🔴 antiplagiat | Fondation |
+| 01 | Devoirs & gradebook | 🟢 | 🟡 gradebook consolidé fait, reste minimal ailleurs | 🔴 antiplagiat | Fondation |
 | 02 | Inscriptions & sessions | 🟢 | 🟡 minimal | — | Fondation |
 | 03 | Compétences & preuves | 🟢 | 🟡 minimal | 🔴 CASE/Open Badges | Fondation |
 | 04 | Interopérabilité & identité | 🟡 LTI Core seul | 🔴 aucune | 🟡 LTI 1.3 Core réel, reste 🔴 | Fondation partielle |
@@ -125,13 +125,46 @@ révision auditée). Côté UI : grilles de correction (`RubricManager`/
 critères et niveaux (écriture directe RLS, pas de nouveau RPC) ; dans
 `GradingPanel`, sélectionner une grille par devoir, noter chaque critère par
 niveau (`RubricGrading`), total auto-sommé pré-rempli dans le champ note,
-publié avec `p_rubric_id`/`p_rubric_ratings`.
+publié avec `p_rubric_id`/`p_rubric_ratings`. Vue gradebook consolidée
+(`/lms/gradebook`, `pages/lms/Gradebook.tsx`) — pas de nouvelle migration,
+lit directement `grade_items`/`grade_results` déjà là (staff read via RLS
+`grade_items_staff_read`, rôles `trainer`/`pedago`/`registrar`/`admin`,
+plus large que le `STAFF_ROLES` de `Assignments.tsx` qui excluait
+`registrar`). Matrice apprenant (roster = `enrollments` de la session,
+noms résolus via `usernames_by_ids`) × colonne (`grade_items` de la
+session **plus** les items sans `session_id` — seul `source_type=assignment`
+en écrit un aujourd'hui, exam/manual restent org-larges par construction,
+voir `20260811050000_lms_reconciliation.sql` ; les exclure aurait masqué de
+vraies notes plutôt que de refléter un vrai manque). GBK-002 (catégories/
+coefficients) : regroupement par `grade_items.category`, moyenne pondérée
+par `grade_items.weight` (colonne déjà là, pas de `grade_categories` dans ce
+schéma — voir §Réconciliation), case à cocher par catégorie « exclure la
+plus basse note ». GBK-003 : `status` (`graded`/`excused`/`missing`/
+`not_graded`) jamais coercé à zéro — `apps/app/src/lib/lms/
+gradebookCalculations.ts::cellFor()`. GBK-004 : chaque total affiche sa
+formule (items + coefficients + somme) en dépliant la cellule. GBK-005 :
+simulateur « si je reçois X » — ajouté côté apprenant dans `MyGrades`
+(`WhatIfSimulator`), calcul 100 % client (`simulateWhatIf()`), jamais
+persisté ; limité aux items déjà présents dans `myGradeResults()` (un item
+sans aucune ligne `grade_results` n'existe pas encore pour l'apprenant, donc
+rien à simuler dessus). GBK-006 (partiel) : export CSV/XLSX/PDF
+(`gradebookExport.ts`, réutilise le motif de `liveResultsExport.ts` —
+lazy-import `xlsx`/`jspdf`) neutralisant les formules tableur (`csvCell`,
+même garde que `buildGradeCsv` dans `grading/calculations.ts`) et respectant
+les filtres actifs (statut d'inscription, export = exactement les lignes
+affichées) — **l'import CSV/XLSX avec prévisualisation reste à faire**, pas
+tenté dans cette passe. Vérifié : `tsc --noEmit` et `eslint` propres sur les
+fichiers touchés ; page testée dans Chrome (non authentifié → état vide
+« Accès réservé au staff » correctement rendu, titre de page et route OK,
+aucune erreur console applicative) — **non vérifié avec des données réelles
+de session/gradebook** (pas de compte staff/organisation de test disponible
+en local pour cette passe).
 
 **Reste à faire** :
 - [ ] UI : remise fichier/audio/vidéo — seul le mode texte est câblé côté client (`response_mode` en DB supporte déjà file/url/audio/video)
 - [ ] UI : `assignment_targets` par groupe/apprenant individuel — seul le ciblage par session est câblé
 - [ ] UI : échéance/aménagement dérogatoire par apprenant (`due_override`) — colonne existe, aucun écran
-- [ ] UI : vue gradebook consolidée (GBK-001 à GBK-006) — colonnes, catégories, coefficients, simulation « si je reçois X », export CSV/XLSX/PDF : rien construit
+- [ ] GBK-006 : import CSV/XLSX de notes avec prévisualisation/mapping de personnes/doublons/rapport d'erreurs — l'export seul est fait
 - [ ] Job serveur de scan antivirus des fichiers (`submission_files.scan_status`) — colonne prête, aucun job
 - [ ] URLs de téléchargement signées courte durée pour les fichiers
 - [ ] Connecteur antiplagiat (interface only — non-objectif V1 explicite, mais l'interface elle-même n'existe pas)
@@ -142,12 +175,24 @@ publié avec `p_rubric_id`/`p_rubric_ratings`.
 
 **Fait** : `course_offerings`/`course_sessions`/`enrollments`/
 `waitlist_entries` + `enroll_in_session()` (capacité atomique + liste
-d'attente) + `transition_enrollment()`.
+d'attente) + `transition_enrollment()`. Depuis
+`20260811060000_waitlist_promotion.sql` (ENR-011/012) : `promote_waitlist()`
+— déclenché depuis `transition_enrollment()` dès qu'un apprenant actif quitte
+une session avec capacité limitée (pas de scheduler dans ce repo, donc
+événementiel plutôt que planifié), offre le siège libéré à l'apprenant en
+tête de liste (`waiting`→`offered`, fenêtre 48h) plutôt que de l'inscrire
+automatiquement ; balayage paresseux des offres expirées à chaque appel
+plutôt qu'un cron. `accept_waitlist_offer()`/`decline_waitlist_offer()`
+côté apprenant, ce dernier ré-enchaînant `promote_waitlist()` pour offrir
+le siège au suivant. Vérifié : A(actif)+B+C(en attente, capacité=1) →
+A se désinscrit → B (position 1) reçoit l'offre, C reste en attente → B
+accepte → B devient actif ; C ne peut pas accepter l'offre de B (rejeté,
+`Not authorized`).
 
 **Reste à faire** :
 - [ ] UI : import CSV/XLSX avec prévisualisation/mapping/doublons (ENR-014)
 - [ ] UI : actions en masse (inscrire, déplacer, annuler, prolonger — ENR-015)
-- [ ] Promotion automatique de la liste d'attente + expiration d'offre (ENR-011/012) — table `waitlist_entries` posée, aucun job
+- [ ] UI : écran participant pour voir/accepter/décliner une offre de liste d'attente — les RPC existent, aucun écran ne les appelle
 - [ ] Auto-inscription avec règles (domaine email, code, paiement, prérequis — ENR-013)
 - [ ] Vue apprenant « Mes formations » complète avec dates effectives/échéances relatives recalculées (ENR-017, la V1 actuelle liste juste par statut)
 - [ ] Calcul de complétion versionné par politique (activités obligatoires, score, présence)
@@ -247,12 +292,27 @@ serveur »).
 
 **Fait** : `rule_sets`/`rule_set_versions` + détection de cycle réelle
 (`would_create_cycle()`) + `automation_rules`/`automation_runs` +
-`record_automation_run()` idempotent.
+`record_automation_run()` idempotent. Depuis
+`20260811070000_release_state_engine.sql` : `release_state` réellement
+calculé — `evaluate_rule_definition()` évalue le DSL (`and`/`or` récursifs,
+feuille `activity_completed`) contre la progression réelle d'un apprenant ;
+`activity_completed_for_learner()` résout la complétion en réutilisant
+l'unification du gradebook de la passe de réconciliation précédente
+(`grade_results` gradé, source-agnostique assignment/exam/manuel) plus
+`submissions`/`exam_attempts` directement. Toute autre source de feuille
+(date/score/compétence...) échoue **fermé** (`false`, verrouillé) plutôt que
+de deviner — pas de faux déverrouillage sur une condition qu'on ne sait pas
+évaluer. Pas de scheduler : `recompute_release_state()` est déclenché par 3
+triggers événementiels (`submissions`/`exam_attempts`/`grade_results`) sur
+les écritures qui peuvent effectivement satisfaire une règle. Vérifié :
+activité B verrouillée tant que l'activité A prérequise n'est pas soumise ;
+soumission de A par l'apprenant → B passe automatiquement à `unlocked` sans
+appel manuel, uniquement via le trigger.
 
 **Reste à faire** :
-- [ ] Moteur d'évaluation événementiel réel (réévaluation à chaque changement pertinent + balayage planifié — AUT/moteur) : aucun job/cron ne tourne, seul le modèle et l'API de publication existent
+- [ ] Balayage planifié complémentaire (règles à échéance temporelle — date/score qui change sans écriture applicative) : aucun scheduler dans ce repo, seul l'événementiel est couvert
 - [ ] UI de construction en phrases « Quand [condition], alors [action] » — l'UI actuelle ne construit qu'une seule condition simple (`activity_completed`), pas le DSL complet (AND/OR, dates, scores, compétences...)
-- [ ] `release_state` — projection posée, jamais calculée (aucun writer)
+- [ ] Évaluateur pour les sources autres que `activity_completed` (date/score/compétence) — le DSL les accepte et les affiche, `evaluate_rule_definition()` les traite en échec fermé faute d'évaluateur dédié
 - [ ] Simulation « voir comme cet apprenant » / dry-run avant publication (ADP-008, AUT-004)
 - [ ] Test de positionnement / remédiation (ADP-009/010/011)
 - [ ] `follow_up_tasks` — table posée, aucun écran ni déclencheur
@@ -268,13 +328,48 @@ de 4 des 5 signaux de risque ANA-013 (`generate_risk_signals()` : inactivité,
 retard, échecs répétés, chute d'activité — un signal ouvert par
 apprenant+règle, sauf `overdue` qui est par apprenant+devoir) +
 `risk_signal_settings` (ANA-016 : activer/désactiver et seuiller chaque règle
-par organisation).
+par organisation). Depuis `20260811080000_blocking_prereq_signal.sql` : le
+5ᵉ signal, `blocking_prereq`, était bloqué par `release_state` (spec 06)
+« posée, jamais calculée » — maintenant que `20260811070000` le calcule
+réellement, le signal lit directement les lignes `effect='locked'` d'un
+apprenant activement inscrit, sans seuil de délai (contrairement aux autres
+règles, être bloqué n'est pas une question de temps écoulé). Vérifié :
+signal créé avec les bons facteurs, rejeu immédiat idempotent (0 insertion),
+et surtout — résoudre le signal *et* déverrouiller le `release_state` sous-
+jacent avant de rejouer ne le rouvre pas (le rejeu ne rouvre que si la
+condition est encore vraie).
+
+Depuis cette passe : dashboard staff (`/lms/analytics`, `AnalyticsDashboard`
+dans `Analytics.tsx`, data-access `analyticsDashboard.ts`) — deux graphiques
+(recharts, réutilisant le système de charts déjà en place pour le tableau de
+bord général : `components/ui/chart.tsx`, tokens `--mp-chart-*`, classes
+`product-analytics-card`/`product-analytics-grid`) : activité (apprenants
+actifs distincts + événements, agrégés par jour sur 14j depuis
+`analytics_daily_activity`) et preuves de compétence (`evidence_count` par
+jour sur 14j depuis `analytics_daily_competency`), plus 4 tuiles de totaux
+d'inscription sur 30j (`analytics_daily_enrollment`). RLS sur ces 3 tables
+n'autorise que `trainer`/`pedago`/`admin` (pas `registrar`, pas
+d'apprenant) — un seul écran sert donc ANA-006/007/008, il n'y a pas de
+donnée distincte à séparer par rôle avec ce schéma. **ANA-005 (dashboard
+apprenant) non fait** : aucune politique RLS ne permet à un apprenant de
+lire ses propres lignes sur ces 3 tables (vérifié : seule
+`..._staff_read` existe) — un vrai gap RLS, pas une UI manquante.
+Palette : la fonction `validate_palette.js` (skill dataviz) flague le
+couple `--mp-chart-secondary`/`--mp-chart-positive` sous le seuil de
+contraste 3:1 en light (WARN, atténué ici par tooltip+légende déjà
+présents) et hors bande de luminosité en dark (FAIL) — c'est la palette de
+graphiques déjà utilisée par `ActivityChart`/`ScoreChart` du tableau de
+bord général, pas quelque chose d'introduit ici ; corriger les tokens
+`--mp-chart-*` eux-mêmes serait un chantier design-system transverse, hors
+scope de cette passe. Vérifié : `tsc`/`eslint` propres ; page testée dans
+Chrome non authentifié (état vide « Accès réservé » correctement rendu) —
+**non vérifié avec des projections réelles** (pas de compte staff de test
+disponible en local).
 
 **Reste à faire** :
 - [ ] Projection journalière **item** — bloquée en amont : ANA-009/010 ont besoin d'un vrai moteur de correction lisant `item_answer_keys` (spec 08), qui n'existe pas encore ; construire la projection avant le producteur de données serait deviner un schéma
 - [ ] Projection journalière **programme** — jamais définie faute de UI/agrégat programme existant à côté de session/offering
-- [ ] Signal `blocking_prereq` — bloqué en amont par `release_state` (spec 06), « posée, jamais calculée »
-- [ ] Dashboards apprenant/formateur/responsable/admin (ANA-005 à ANA-008) — aucun écran de visualisation ; les projections existent maintenant pour les alimenter
+- [ ] Dashboard apprenant (ANA-005) — bloqué par l'absence de politique RLS lecture-apprenant sur `analytics_daily_activity`/`analytics_daily_enrollment`/`analytics_daily_competency`
 - [ ] Analyse d'items / psychométrie (difficulté, discrimination, distracteurs — ANA-009 à ANA-012)
 - [ ] Programmation de rapports (`report_schedules`/`report_runs`) — tables posées, aucun exécuteur
 - [ ] Export CSV/XLSX/PDF avec pseudonymisation
@@ -322,7 +417,7 @@ verrouiller/déverrouiller le run.
 
 **Reste à faire** :
 - [ ] Écran public projeté (résultats agrégés en temps réel) + mode présentateur/console modérateur distincts (LIVE-015) — le Q&A participant existe, il manque la vue projection/grand écran séparée
-- [ ] UI d'expulsion (`kick_participant()` câblé côté data-access, aucun bouton dans la console animateur — seul verrouiller/déverrouiller l'est)
+- [x] UI d'expulsion — bouton « Expulser » par participant actif (`ParticipantManager`, dépliable depuis le compteur de participants dans `RunControls`)
 - [ ] Répondre à un sondage/interaction (`live_interactions`/`submit_live_response()`/`get_my_live_response()` existent, mais aucune UI staff ne crée encore de `poll`/`priority`/`matrix`/etc., donc rien à répondre côté participant — construire l'écran de réponse avant l'éditeur staff serait deviner un format)
 - [ ] Vraie table/mécanisme d'allowlist pour `access_policy = 'allowlist'` (actuellement traité comme `authenticated`, donc moins permissif que prévu plutôt que trop permissif — mais toujours pas ce que LIVE-002 décrit)
 - [ ] Formats supplémentaires : priorisation, matrice 2×2, brainstorm, classement forcé (LIVE-009 à LIVE-013) — `live_interactions.kind` les accepte, aucun éditeur/lecteur
@@ -352,6 +447,6 @@ verrouiller/déverrouiller le run.
 
 1. ~~**07 (agrégats analytics)**~~ — fait : projections journalières + génération de signaux de risque (voir §07). Reste ouvert : dashboards (consommateurs des projections) et psychométrie d'item (bloquée par 08).
 2. ~~**09 (temps réel + participation anon + écran public participant)**~~ — fait : `join_live_run`/anon/Realtime + `/live/:code` + `/live/:code/room` (voir §09). Reste ouvert : l'écran projeté/grand écran séparé et la réponse aux formats sondage/priorisation/matrice (eux-mêmes bloqués par l'absence d'éditeur staff pour les créer).
-3. ~~**01 (rubriques)**~~ — fait (voir §01). Reste ouvert : vue gradebook consolidée (GBK-001 à GBK-006), la pièce la plus proche de la valeur utilisateur immédiate encore manquante pour les formateurs.
+3. ~~**01 (rubriques + gradebook consolidé)**~~ — fait (voir §01). Reste ouvert : import CSV/XLSX de notes (GBK-006), dashboards de visualisation (07).
 4. ~~**04 (LTI 1.3 Core)**~~ — fait pour le lancement (voir §04). Reste ouvert, par ordre : SSO OIDC/SAML général (étape 1 de l'ordre de livraison, sautée pour attaquer LTI Tool en premier car c'est l'intégration la plus rentable), UI admin pour enregistrer une plateforme et relier un `sub`, Deep Linking/AGS/NRPS, puis QTI 3/SCIM/OneRoster/API publique.
 5. Le reste (05 socle accessibilité transverse, 08 nouveaux types, 10 localisation) peut suivre l'ordre recommandé du README du programme.

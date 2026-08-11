@@ -1,11 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, FileBarChart, Plus } from "lucide-react";
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/ui/page-header";
 import { ExplorerEmptyState } from "@/components/content/ExplorerEmptyState";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PageSkeleton, TableSkeleton } from "@/components/ui/skeletons";
+import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
+import { MaterialSymbol } from "@/components/MaterialSymbol";
 import { useActiveOrgId } from "@/components/org/OrgSwitcher";
 import { showError } from "@/lib/errorTaxonomy";
 import { useSEO } from "@/hooks/useSEO";
@@ -18,6 +21,14 @@ import {
   type RiskSignal,
   type SavedReport,
 } from "@/lib/lms/analytics";
+import {
+  listDailyActivity,
+  listDailyCompetency,
+  listDailyEnrollment,
+  type DailyActivityRow,
+  type DailyCompetencyRow,
+  type DailyEnrollmentRow,
+} from "@/lib/lms/analyticsDashboard";
 
 const STAFF_ROLES = new Set(["trainer", "pedago", "admin"]);
 
@@ -77,6 +88,181 @@ function RiskSignals({ orgId }: { orgId: string }) {
         </ul>
       )}
     </section>
+  );
+}
+
+const formatDay = (iso: string) => {
+  const d = new Date(`${iso}T00:00:00Z`);
+  return d.toLocaleDateString("fr-FR", { day: "numeric", month: "short", timeZone: "UTC" });
+};
+
+const activityChartConfig = {
+  activeLearners: { label: "Apprenants actifs", color: "var(--mp-chart-primary)" },
+  events: { label: "Événements", color: "var(--mp-chart-secondary)" },
+} satisfies ChartConfig;
+
+const competencyChartConfig = {
+  evidenceCount: { label: "Preuves enregistrées", color: "var(--mp-chart-positive)" },
+} satisfies ChartConfig;
+
+function isoDaysAgo(days: number): string {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() - days);
+  return d.toISOString().slice(0, 10);
+}
+
+/** ANA-006/007/008: a single formateur/pédagogue/admin dashboard — the three
+ *  roles share the same org-wide read access (RLS), so there is no distinct
+ *  data behind separate screens today. ANA-005 (apprenant) is a real gap:
+ *  see analyticsDashboard.ts — no learner-scoped RLS exists on these tables. */
+function AnalyticsDashboard({ orgId }: { orgId: string }) {
+  const [activity, setActivity] = useState<DailyActivityRow[]>([]);
+  const [enrollment, setEnrollment] = useState<DailyEnrollmentRow[]>([]);
+  const [competency, setCompetency] = useState<DailyCompetencyRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    Promise.all([
+      listDailyActivity(orgId, isoDaysAgo(14)),
+      listDailyEnrollment(orgId, isoDaysAgo(30)),
+      listDailyCompetency(orgId, isoDaysAgo(14)),
+    ])
+      .then(([activityRows, enrollmentRows, competencyRows]) => {
+        if (cancelled) return;
+        setActivity(activityRows);
+        setEnrollment(enrollmentRows);
+        setCompetency(competencyRows);
+      })
+      .catch((err) => showError(err, "AnalyticsDashboard.load", "Impossible de charger les projections."))
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [orgId]);
+
+  const activityByDay = useMemo(() => {
+    const byDay = new Map<string, { date: string; activeLearners: Set<string>; events: number }>();
+    for (const row of activity) {
+      const entry = byDay.get(row.day) ?? { date: row.day, activeLearners: new Set<string>(), events: 0 };
+      entry.activeLearners.add(row.learner_id);
+      entry.events += row.events_count;
+      byDay.set(row.day, entry);
+    }
+    return [...byDay.values()]
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .map((entry) => ({ date: entry.date, activeLearners: entry.activeLearners.size, events: entry.events }));
+  }, [activity]);
+
+  const competencyByDay = useMemo(() => {
+    const byDay = new Map<string, { date: string; evidenceCount: number }>();
+    for (const row of competency) {
+      const entry = byDay.get(row.day) ?? { date: row.day, evidenceCount: 0 };
+      entry.evidenceCount += row.evidence_count;
+      byDay.set(row.day, entry);
+    }
+    return [...byDay.values()].sort((a, b) => a.date.localeCompare(b.date));
+  }, [competency]);
+
+  const enrollmentTotals = useMemo(() => enrollment.reduce(
+    (totals, row) => ({
+      started: totals.started + row.started_count,
+      completed: totals.completed + row.completed_count,
+      withdrawn: totals.withdrawn + row.withdrawn_count,
+      waitlisted: totals.waitlisted + row.waitlisted_count,
+    }),
+    { started: 0, completed: 0, withdrawn: 0, waitlisted: 0 },
+  ), [enrollment]);
+
+  if (loading) return <TableSkeleton rows={3} cols={4} />;
+
+  const hasActivity = activityByDay.some((point) => point.activeLearners > 0 || point.events > 0);
+  const hasCompetency = competencyByDay.some((point) => point.evidenceCount > 0);
+
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {[
+          { label: "Inscriptions démarrées (30j)", value: enrollmentTotals.started },
+          { label: "Terminées (30j)", value: enrollmentTotals.completed },
+          { label: "Désinscriptions (30j)", value: enrollmentTotals.withdrawn },
+          { label: "Mises en liste d'attente (30j)", value: enrollmentTotals.waitlisted },
+        ].map((stat) => (
+          <div key={stat.label} className="ap-card p-4">
+            <strong className="block text-xl">{stat.value}</strong>
+            <span className="ap-muted text-xs">{stat.label}</span>
+          </div>
+        ))}
+      </div>
+
+      <div className="product-analytics-grid">
+        <div className="product-analytics-card">
+          <div className="product-analytics-card__header">
+            <div>
+              <h3>Activité sur 14 jours</h3>
+              <p>Apprenants actifs et événements d'apprentissage, par jour.</p>
+            </div>
+          </div>
+          {hasActivity ? (
+            <ChartContainer config={activityChartConfig} className="aspect-auto h-[230px] w-full">
+              <AreaChart data={activityByDay} margin={{ left: 0, right: 8, top: 12, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="lmsActivityLearnersFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="var(--color-activeLearners)" stopOpacity={0.18} />
+                    <stop offset="100%" stopColor="var(--color-activeLearners)" stopOpacity={0.02} />
+                  </linearGradient>
+                  <linearGradient id="lmsActivityEventsFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="var(--color-events)" stopOpacity={0.14} />
+                    <stop offset="100%" stopColor="var(--color-events)" stopOpacity={0.01} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid vertical={false} strokeDasharray="5 7" />
+                <XAxis dataKey="date" tickFormatter={formatDay} tickLine={false} axisLine={false} tickMargin={8} minTickGap={24} />
+                <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={28} />
+                <ChartTooltip content={<ChartTooltipContent labelFormatter={(_, payload) => formatDay(payload[0]?.payload.date)} />} />
+                <Area type="monotone" dataKey="activeLearners" stroke="var(--color-activeLearners)" strokeWidth={3} fill="url(#lmsActivityLearnersFill)" activeDot={{ r: 4, strokeWidth: 2 }} isAnimationActive={false} />
+                <Area type="monotone" dataKey="events" stroke="var(--color-events)" strokeWidth={3} fill="url(#lmsActivityEventsFill)" activeDot={{ r: 4, strokeWidth: 2 }} isAnimationActive={false} />
+              </AreaChart>
+            </ChartContainer>
+          ) : (
+            <div className="product-empty-inline" style={{ minHeight: 220 }}>
+              <div>
+                <MaterialSymbol name="monitoring" size={25} />
+                <strong>Aucune activité récente</strong>
+                <span style={{ display: "block", fontSize: 12 }}>Alimenté par run_daily_analytics_rollup() — aucun run récent pour cette organisation.</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="product-analytics-card">
+          <div className="product-analytics-card__header">
+            <div>
+              <h3>Preuves de compétence</h3>
+              <p>Preuves enregistrées par jour, toutes compétences confondues.</p>
+            </div>
+          </div>
+          {hasCompetency ? (
+            <ChartContainer config={competencyChartConfig} className="aspect-auto h-[230px] w-full">
+              <BarChart data={competencyByDay} margin={{ left: 0, right: 8, top: 12, bottom: 0 }} barCategoryGap="38%">
+                <CartesianGrid vertical={false} strokeDasharray="0" />
+                <XAxis dataKey="date" tickFormatter={formatDay} tickLine={false} axisLine={false} tickMargin={8} minTickGap={24} />
+                <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={28} />
+                <ChartTooltip content={<ChartTooltipContent labelFormatter={(_, payload) => formatDay(payload[0]?.payload.date)} />} />
+                <Bar dataKey="evidenceCount" fill="var(--color-evidenceCount)" radius={[5, 5, 0, 0]} maxBarSize={22} isAnimationActive={false} />
+              </BarChart>
+            </ChartContainer>
+          ) : (
+            <div className="product-empty-inline" style={{ minHeight: 220 }}>
+              <div>
+                <MaterialSymbol name="target" size={25} />
+                <strong>Aucune preuve récente</strong>
+                <span style={{ display: "block", fontSize: 12 }}>Les preuves de compétence enregistrées apparaîtront ici.</span>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -174,6 +360,7 @@ export default function LmsAnalytics() {
           title="Analytics pédagogiques"
           description="Définitions partagées, signaux de risque explicables et rapports réutilisables."
         />
+        <AnalyticsDashboard orgId={activeOrgId} />
         <RiskSignals orgId={activeOrgId} />
         <SavedReports orgId={activeOrgId} />
       </div>

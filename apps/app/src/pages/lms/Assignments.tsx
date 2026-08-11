@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { ClipboardCheck, FilePlus2, ListChecks, Plus } from "lucide-react";
+import { Link } from "react-router-dom";
+import { ClipboardCheck, FilePlus2, ListChecks, Plus, TableProperties } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/ui/page-header";
 import { ExplorerEmptyState } from "@/components/content/ExplorerEmptyState";
@@ -30,12 +31,14 @@ import {
   publishSubmissionGrade,
   submitAssignment,
   type Assignment,
+  type GradeItem,
   type GradeResult,
   type Rubric,
   type RubricCriterion,
   type RubricRating,
   type Submission,
 } from "@/lib/lms/gradebook";
+import { SOURCE_LABEL, simulateWhatIf } from "@/lib/lms/gradebookCalculations";
 
 const STAFF_ROLES = new Set(["trainer", "pedago", "admin"]);
 
@@ -392,9 +395,14 @@ function StaffAssignments({ orgId }: { orgId: string }) {
     <section className="product-list-panel p-5">
       <div className="product-panel-heading -mx-5 -mt-5 mb-4">
         <div><h2>Devoirs</h2><p>Créez un devoir, corrigez les remises et publiez les résultats.</p></div>
-        <Button size="sm" onClick={() => setFormOpen((v) => !v)}>
-          <Plus /> Nouveau devoir
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" asChild>
+            <Link to="/lms/gradebook"><TableProperties /> Gradebook</Link>
+          </Button>
+          <Button size="sm" onClick={() => setFormOpen((v) => !v)}>
+            <Plus /> Nouveau devoir
+          </Button>
+        </div>
       </div>
 
       {formOpen && (
@@ -509,9 +517,87 @@ function LearnerAssignmentRow({ assignment }: { assignment: Assignment }) {
   );
 }
 
-const SOURCE_LABEL: Record<string, string> = {
-  assignment: 'Devoir', exam: 'Examen', manual: 'Évaluation', quiz: 'Quiz', scorm: 'SCORM', h5p: 'H5P',
-};
+/** Builds the pseudo grade_items the simulator/totals need from the shape
+ *  myGradeResults() actually returns (no separate grade_items fetch). */
+function itemsFromResults(results: GradeResult[]): GradeItem[] {
+  return results
+    .filter((r) => r.grade_items)
+    .map((r) => ({
+      id: r.grade_item_id,
+      org_id: '', session_id: null, source_id: '', created_at: '',
+      source_type: (r.grade_items!.source_type as GradeItem['source_type']) ?? 'manual',
+      title: r.grade_items!.title,
+      category: r.grade_items!.category ?? 'general',
+      weight: r.grade_items!.weight ?? 1,
+      max_points: r.grade_items!.max_points,
+    }));
+}
+
+/** GBK-005: client-only "what if I receive X" — never persisted, scoped to
+ *  the items already tracked in myGradeResults() (a learner can't simulate
+ *  an item that has never produced a grade_results row at all). */
+function WhatIfSimulator({ results }: { results: GradeResult[] }) {
+  const [open, setOpen] = useState(false);
+  const [overrides, setOverrides] = useState<Record<string, string>>({});
+
+  const items = useMemo(() => itemsFromResults(results), [results]);
+  const learnerId = results[0]?.learner_id ?? '';
+  const baseByItemId = useMemo(() => new Map(results.map((r) => [r.grade_item_id, r])), [results]);
+
+  const overrideMap = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const item of items) {
+      const raw = overrides[item.id];
+      if (raw === undefined || raw.trim() === '') continue;
+      const parsed = Number(raw.replace(',', '.'));
+      if (Number.isFinite(parsed)) map.set(item.id, (parsed / item.max_points) * 100);
+    }
+    return map;
+  }, [overrides, items]);
+
+  const totals = useMemo(
+    () => simulateWhatIf(items, baseByItemId, learnerId, overrideMap, new Set()),
+    [items, baseByItemId, learnerId, overrideMap],
+  );
+
+  if (items.length === 0) return null;
+
+  return (
+    <div className="mt-3 border-t pt-3">
+      <Button variant="ghost" size="sm" onClick={() => setOpen((v) => !v)}>
+        {open ? 'Fermer la simulation' : 'Simuler « si je reçois X »'}
+      </Button>
+      {open && (
+        <div className="mt-2 space-y-2">
+          <p className="text-xs text-muted-foreground">Simulation locale, jamais enregistrée — modifiez une note pour voir l'effet sur le total.</p>
+          <ul className="space-y-1">
+            {items.map((item) => (
+              <li key={item.id} className="flex items-center justify-between gap-2 text-sm">
+                <span>{item.title}</span>
+                <div className="flex items-center gap-1">
+                  <Input
+                    type="number"
+                    min={0}
+                    max={item.max_points}
+                    className="w-20"
+                    placeholder={String(baseByItemId.get(item.id)?.points ?? '')}
+                    value={overrides[item.id] ?? ''}
+                    onChange={(e) => setOverrides((prev) => ({ ...prev, [item.id]: e.target.value }))}
+                    aria-label={`Note simulée pour ${item.title}`}
+                  />
+                  <span className="text-muted-foreground">/{item.max_points}</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+          <p className="text-sm font-medium">
+            Total simulé : {totals.overall.percentage === null ? '—' : `${totals.overall.percentage.toFixed(1)}%`}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function MyGrades() {
   const [results, setResults] = useState<GradeResult[]>([]);
@@ -542,6 +628,7 @@ function MyGrades() {
           </li>
         ))}
       </ul>
+      <WhatIfSimulator results={results} />
     </section>
   );
 }

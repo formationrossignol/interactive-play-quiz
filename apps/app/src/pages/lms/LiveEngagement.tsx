@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Check, Copy, Lock, MessageCircleQuestion, Plus, Radio, Unlock, Users } from "lucide-react";
+import { Check, Copy, Lock, MessageCircleQuestion, Plus, Radio, UserX, Unlock, Users } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/ui/page-header";
 import { ExplorerEmptyState } from "@/components/content/ExplorerEmptyState";
@@ -14,6 +14,7 @@ import {
   activateLiveEvent,
   createLiveEvent,
   createLiveRun,
+  kickParticipant,
   listOrgLiveEvents,
   listLatestRun,
   listRunParticipants,
@@ -22,6 +23,7 @@ import {
   setRunLocked,
   type AudienceQuestion,
   type LiveEvent,
+  type LiveParticipantRow,
   type LiveRun,
 } from "@/lib/lms/liveEngagement";
 
@@ -78,9 +80,53 @@ function QuestionModeration({ run }: { run: LiveRun }) {
   );
 }
 
+function ParticipantManager({ runId }: { runId: string }) {
+  const [participants, setParticipants] = useState<LiveParticipantRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [kickingId, setKickingId] = useState<string | null>(null);
+
+  const reload = () => listRunParticipants(runId).then(setParticipants).catch(showError).finally(() => setLoading(false));
+
+  useEffect(() => {
+    reload();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [runId]);
+
+  const handleKick = async (participantId: string) => {
+    setKickingId(participantId);
+    try {
+      await kickParticipant(participantId);
+      setParticipants((prev) => prev.map((p) => (p.id === participantId ? { ...p, status: "kicked" } : p)));
+    } catch (err) {
+      showError(err);
+    } finally {
+      setKickingId(null);
+    }
+  };
+
+  if (loading) return <TableSkeleton rows={2} cols={2} />;
+
+  const active = participants.filter((p) => p.status === "active");
+  if (active.length === 0) return <p className="text-sm text-muted-foreground mt-2">Aucun participant actif.</p>;
+
+  return (
+    <ul className="space-y-1 mt-2" aria-label="Participants">
+      {active.map((p) => (
+        <li key={p.id} className="flex items-center justify-between text-sm rounded-md border px-3 py-1.5">
+          <span>{p.display_name || "Anonyme"}</span>
+          <Button variant="ghost" size="sm" loading={kickingId === p.id} onClick={() => handleKick(p.id)}>
+            <UserX size={14} /> Expulser
+          </Button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function RunControls({ run, onLockChange }: { run: LiveRun; onLockChange: (locked: boolean) => void }) {
   const [participantCount, setParticipantCount] = useState<number | null>(null);
   const [toggling, setToggling] = useState(false);
+  const [managingParticipants, setManagingParticipants] = useState(false);
 
   useEffect(() => {
     listRunParticipants(run.id).then((rows) => setParticipantCount(rows.filter((p) => p.status === "active").length)).catch(() => setParticipantCount(null));
@@ -99,11 +145,16 @@ function RunControls({ run, onLockChange }: { run: LiveRun; onLockChange: (locke
   };
 
   return (
-    <div className="flex items-center gap-3 text-sm text-muted-foreground flex-wrap">
-      <span className="flex items-center gap-1"><Users size={14} /> {participantCount ?? "…"}</span>
-      <Button variant="ghost" size="sm" loading={toggling} onClick={handleToggleLock}>
-        {run.locked ? <Unlock size={14} /> : <Lock size={14} />} {run.locked ? "Déverrouiller" : "Verrouiller"}
-      </Button>
+    <div>
+      <div className="flex items-center gap-3 text-sm text-muted-foreground flex-wrap">
+        <button type="button" className="flex items-center gap-1" onClick={() => setManagingParticipants((v) => !v)}>
+          <Users size={14} /> {participantCount ?? "…"}
+        </button>
+        <Button variant="ghost" size="sm" loading={toggling} onClick={handleToggleLock}>
+          {run.locked ? <Unlock size={14} /> : <Lock size={14} />} {run.locked ? "Déverrouiller" : "Verrouiller"}
+        </Button>
+      </div>
+      {managingParticipants && <ParticipantManager runId={run.id} />}
     </div>
   );
 }
