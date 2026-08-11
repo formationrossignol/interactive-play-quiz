@@ -142,12 +142,24 @@ publié avec `p_rubric_id`/`p_rubric_ratings`.
 
 **Fait** : `course_offerings`/`course_sessions`/`enrollments`/
 `waitlist_entries` + `enroll_in_session()` (capacité atomique + liste
-d'attente) + `transition_enrollment()`.
+d'attente) + `transition_enrollment()`. Depuis
+`20260811060000_waitlist_promotion.sql` (ENR-011/012) : `promote_waitlist()`
+— déclenché depuis `transition_enrollment()` dès qu'un apprenant actif quitte
+une session avec capacité limitée (pas de scheduler dans ce repo, donc
+événementiel plutôt que planifié), offre le siège libéré à l'apprenant en
+tête de liste (`waiting`→`offered`, fenêtre 48h) plutôt que de l'inscrire
+automatiquement ; balayage paresseux des offres expirées à chaque appel
+plutôt qu'un cron. `accept_waitlist_offer()`/`decline_waitlist_offer()`
+côté apprenant, ce dernier ré-enchaînant `promote_waitlist()` pour offrir
+le siège au suivant. Vérifié : A(actif)+B+C(en attente, capacité=1) →
+A se désinscrit → B (position 1) reçoit l'offre, C reste en attente → B
+accepte → B devient actif ; C ne peut pas accepter l'offre de B (rejeté,
+`Not authorized`).
 
 **Reste à faire** :
 - [ ] UI : import CSV/XLSX avec prévisualisation/mapping/doublons (ENR-014)
 - [ ] UI : actions en masse (inscrire, déplacer, annuler, prolonger — ENR-015)
-- [ ] Promotion automatique de la liste d'attente + expiration d'offre (ENR-011/012) — table `waitlist_entries` posée, aucun job
+- [ ] UI : écran participant pour voir/accepter/décliner une offre de liste d'attente — les RPC existent, aucun écran ne les appelle
 - [ ] Auto-inscription avec règles (domaine email, code, paiement, prérequis — ENR-013)
 - [ ] Vue apprenant « Mes formations » complète avec dates effectives/échéances relatives recalculées (ENR-017, la V1 actuelle liste juste par statut)
 - [ ] Calcul de complétion versionné par politique (activités obligatoires, score, présence)
