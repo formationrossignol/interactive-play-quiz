@@ -4,6 +4,18 @@ import { createCourse, duplicateCourse, getUserCourses, type Course } from '../c
 import { PlanLimitError } from '../plans';
 
 vi.mock('../auth', () => ({ getCurrentUser: vi.fn() }));
+// markLessonComplete/unmarkLessonComplete fire-and-forget mirror lesson
+// completion to course_lesson_progress — stub the chain so that fire-and-
+// forget call doesn't throw synchronously (`void` doesn't catch a
+// synchronous TypeError from calling a method on `undefined`).
+vi.mock('@/lib/supabase', () => ({
+  supabase: {
+    from: () => ({
+      upsert: () => Promise.resolve({ error: null }),
+      delete: () => ({ eq: () => ({ eq: () => Promise.resolve({ error: null }) }) }),
+    }),
+  },
+}));
 
 class MemoryStorage {
   private store = new Map<string, string>();

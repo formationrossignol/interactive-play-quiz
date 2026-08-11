@@ -13,6 +13,16 @@ import {
 } from "../learningPathStorage";
 
 vi.mock("../auth", () => ({ getCurrentUser: vi.fn() }));
+// markLessonComplete's fire-and-forget mirror to course_lesson_progress —
+// see courseStorage.test.ts for why this needs a chainable stub, not vi.fn().
+vi.mock("@/lib/supabase", () => ({
+  supabase: {
+    from: () => ({
+      upsert: () => Promise.resolve({ error: null }),
+      delete: () => ({ eq: () => ({ eq: () => Promise.resolve({ error: null }) }) }),
+    }),
+  },
+}));
 
 class MemoryStorage {
   private store = new Map<string, string>();
