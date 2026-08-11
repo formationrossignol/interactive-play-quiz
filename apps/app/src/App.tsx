@@ -91,6 +91,7 @@ const JoinExam = lazy(() => import("./pages/JoinExam"));
 const LiveEventJoin = lazy(() => import("./pages/LiveEventJoin"));
 const LtiUnlinked = lazy(() => import("./pages/LtiUnlinked"));
 const LiveEventRoom = lazy(() => import("./pages/LiveEventRoom"));
+const LivePresenterScreen = lazy(() => import("./pages/LivePresenterScreen"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const QuestionBank = lazy(() => import("./pages/QuestionBank"));
 const PollResults = lazy(() => import("./pages/PollResults"));
@@ -224,6 +225,7 @@ const App = () => (
               <Route path="/live" element={<LiveEventJoin />} />
               <Route path="/live/:code" element={<LiveEventJoin />} />
               <Route path="/live/:code/room" element={<LiveEventRoom />} />
+              <Route path="/live/:code/present" element={<LivePresenterScreen />} />
               <Route path="/lti/unlinked" element={<LtiUnlinked />} />
               <Route path="/lms/content-governance" element={<LmsContentGovernance />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
