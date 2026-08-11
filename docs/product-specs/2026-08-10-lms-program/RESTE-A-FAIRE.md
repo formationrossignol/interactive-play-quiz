@@ -60,8 +60,8 @@ pouvoir s'y référer facilement.
 
 ## 04 — Interopérabilité, identité et administration Enterprise
 
-- [ ] UI admin pour créer des `lti_registrations`/`lti_deployments` et pour relier manuellement un `sub` non reconnu à un compte (`external_mappings`) — sans ça, `/lti/unlinked` est un cul-de-sac réel pour l'instant
-- [ ] Outil de diagnostic LTI (dernier lancement, erreurs, test de connexion — LTI-006) — la table `lti_launches` est alimentée, aucun écran ne la lit
+- [x] UI admin pour créer des `lti_registrations`/`lti_deployments` et pour relier manuellement un `sub` non reconnu à un compte (`external_mappings`) — `/lms/integrations`, formulaire d'enregistrement avec les 5 champs réels (plus de guess `issuer + "/auth"`), gestion des déploiements par enregistrement, RPC `link_lti_subject()` (nouvelle migration `20260812010000_lti_admin_linking.sql`) reliant un `sub` non reconnu à un membre existant de l'org. `/lti/unlinked` a maintenant un chemin réel de résolution côté admin
+- [x] Outil de diagnostic LTI (dernier lancement, erreurs, test de connexion — LTI-006) — panneau « derniers lancements » par enregistrement (succès/rejet, raison, sub, deployment) + bouton test de connexion JWKS en direct (edge function `lti-test-connection`, non persistée)
 - [ ] Deep Linking (LTI-002), Names and Role Provisioning (LTI-003), Assignment and Grade Services (LTI-004) — LTI-001 (lancement core) seul est couvert
 - [ ] Provisioning automatique d'un compte pour un `sub` jamais vu (actuellement : jamais, par choix — voir commentaire en tête de `lti-launch/index.ts`)
 - [ ] Handshake OIDC/SAML réel pour le SSO général (INT-001 à INT-005) — étape 1 de l'ordre de livraison, toujours pas commencée ; seule la table de config existe
@@ -145,7 +145,7 @@ pouvoir s'y référer facilement.
 
 1. **08 — moteur de correction (`item_answer_keys`)** : la pièce la plus bloquante, débloque `extra_time` (05) et la psychométrie/projection item (07).
 2. ~~**UI gradebook consolidée (01)**~~ — fait pour l'essentiel (`/lms/gradebook`, voir §01). Reste ouvert : import CSV/XLSX de notes (GBK-006), dashboards visuels (07).
-3. **04 — UI admin LTI + linking** : sans elle, `/lti/unlinked` reste un cul-de-sac malgré un backend LTI Core fonctionnel.
-4. **09 — écran projeté + éditeur de formats** : complète l'usage réel en session live.
+3. ~~**04 — UI admin LTI + linking**~~ — fait (voir §04) : enregistrements/déploiements/linking/diagnostic. Reste ouvert : Deep Linking/NRPS/AGS, SSO OIDC/SAML général, QTI/SCIM/OneRoster/API publique.
+4. ~~**09 — écran projeté**~~ — fait pour le Q&A (voir §09). Reste ouvert : éditeur de formats sondage/priorisation/matrice.
 5. **Un vrai ordonnanceur** (cron/edge function planifiée) : débloquerait d'un coup plusieurs items indépendants listés en tête de ce document.
 6. Le reste (05 socle accessibilité transverse, 10 localisation, 04 SCIM/OneRoster/API) peut suivre l'ordre recommandé du README du programme.

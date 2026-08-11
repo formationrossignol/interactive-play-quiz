@@ -26,7 +26,7 @@ commencé.
 | 01 | Devoirs & gradebook | 🟢 | 🟡 gradebook consolidé fait, reste minimal ailleurs | 🔴 antiplagiat | Fondation |
 | 02 | Inscriptions & sessions | 🟢 | 🟡 minimal | — | Fondation |
 | 03 | Compétences & preuves | 🟢 | 🟡 minimal | 🔴 CASE/Open Badges | Fondation |
-| 04 | Interopérabilité & identité | 🟡 LTI Core seul | 🔴 aucune | 🟡 LTI 1.3 Core réel, reste 🔴 | Fondation partielle |
+| 04 | Interopérabilité & identité | 🟡 LTI Core + linking | 🟡 admin LTI fait | 🟡 LTI 1.3 Core réel, reste 🔴 | Fondation partielle |
 | 05 | Accessibilité & aménagements | 🟢 | 🟡 minimal | — | Fondation |
 | 06 | Parcours adaptatifs & automatisations | 🟢 | 🟡 minimal | — | Fondation |
 | 07 | Analytics & signaux de risque | 🟢 | 🟡 minimal | — | Fondation |
@@ -240,9 +240,40 @@ authentifié, pas une invention). Nécessite la variable d'environnement
 `PUBLIC_APP_URL` (nouvelle, à configurer côté projet Supabase) pour construire
 l'URL de redirection `/lti/unlinked`.
 
+Depuis cette passe (`20260812010000_lti_admin_linking.sql` +
+`/lms/integrations`) : le formulaire d'enregistrement LTI ne devine plus
+`jwks_url`/`auth_login_url`/`auth_token_url` par convention `${issuer}/...`
+(bug réel trouvé en lisant le code — cette convention ne correspond à
+aucune plateforme LTI réelle) : les 5 champs (`issuer`, `client_id`,
+`jwks_url`, `auth_login_url`, `auth_token_url`) sont maintenant saisis
+explicitement, à copier depuis la configuration LTI de la plateforme.
+Gestion des `lti_deployments` par enregistrement (le `deployment_id` doit
+correspondre exactement à la revendication envoyée par la plateforme —
+`lti-launch` rejette sinon en `unknown_deployment`, aucune UI ne le
+permettait avant). RPC `link_lti_subject(p_registration_id, p_subject,
+p_internal_user_id)` (security definer) — complète LTI-005 : jusqu'ici
+`external_mappings` n'avait qu'une policy RLS `select`, aucune écriture
+cliente possible ; le RPC vérifie l'admin de l'org du registration, exige
+que le compte cible soit déjà membre de l'organisation (pas d'accès pour un
+uuid arbitraire), et upsert `system='lti'`/`object_type='user'`/
+`external_id='<registration_id>:<sub>'` — exactement la clé que
+`lti-launch/index.ts` recherche. Panneau diagnostic (LTI-006) : lecture de
+`lti_launches` par enregistrement (RLS déjà admin-only, aucun changement
+nécessaire), succès/rejet avec raison traduite, et pour un lancement
+`success`+`user_id is null`, un sélecteur de membre de l'org (réutilise
+`list_org_members()` déjà existant) + bouton « Lier » appelant le RPC
+ci-dessus. Bouton « Tester la connexion » : nouvelle edge function
+`lti-test-connection` — fetch en direct de `jwks_url` sous l'identité de
+l'appelant (RLS `lti_registrations_admin` fait l'autorisation, pas de
+re-check de rôle dans la fonction), vérifie un JSON `{keys: [...]}` non
+vide ; rien n'est persisté, c'est un contrôle pré-activation, pas un
+lancement. Vérifié : `tsc`/`eslint`/`deno check` propres ; page testée dans
+Chrome non authentifié (état vide « Accès réservé » correctement rendu) —
+**migration et edge function pas encore déployées en prod, RPC/edge
+function non testés contre des données réelles** (pas de compte admin
+local pour créer un enregistrement/déploiement/lancement de test).
+
 **Reste à faire** :
-- [ ] UI admin pour créer des `lti_registrations`/`lti_deployments` et pour relier manuellement un `sub` non reconnu à un compte (`external_mappings`) — sans ça, `/lti/unlinked` est un cul-de-sac réel pour l'instant
-- [ ] Outil de diagnostic LTI (dernier lancement, erreurs, test de connexion — LTI-006) — la table `lti_launches` est alimentée, aucun écran ne la lit
 - [ ] Deep Linking (LTI-002), Names and Role Provisioning (LTI-003), Assignment and Grade Services (LTI-004) — LTI-001 (lancement core) seul est couvert
 - [ ] Provisioning automatique d'un compte pour un `sub` jamais vu (actuellement : jamais, par choix — voir commentaire en tête de `lti-launch/index.ts`)
 - [ ] Handshake OIDC/SAML réel pour le SSO général (INT-001 à INT-005) — étape 1 de l'ordre de livraison, toujours pas commencée ; seule la table de config existe
