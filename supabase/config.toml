@@ -415,3 +415,12 @@ enabled = true
 
 [functions.stripe-webhook]
 verify_jwt = false
+
+# Called directly by the LTI platform (Moodle, Canvas, …), never by a
+# Brivia client — there is no Supabase session to verify. Authenticity
+# instead comes from lti-launch validating the id_token's own signature
+# against the platform's JWKS (see _shared/lti.ts).
+[functions.lti-login]
+verify_jwt = false
+[functions.lti-launch]
+verify_jwt = false
