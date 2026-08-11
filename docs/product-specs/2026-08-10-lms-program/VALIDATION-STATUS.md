@@ -415,8 +415,25 @@ s'abonne en Realtime aux changements de statut ; côté animateur,
 presse-papier), le nombre de participants actifs et un bouton
 verrouiller/déverrouiller le run.
 
+Depuis cette passe : écran projeté (`/live/:code/present`,
+`LivePresenterScreen.tsx`) — lecture seule, pas de `join_live_run` (pas de
+siège consommé, pas d'action de vote), s'appuie sur la policy déjà en place
+`audience_questions_public_read` (event actif → lisible sans authentification,
+le code est la seule barrière, comme la salle participant). Classement des
+questions par votes, mis à jour via le même canal Realtime que
+`LiveEventRoom` (`postgres_changes` sur `audience_questions`), plus un
+abonnement `live_runs` pour refléter le verrouillage. Lien « Écran projeté »
+ajouté dans la console animateur (`LiveEngagement.tsx`, ouvre un nouvel
+onglet). Limité au Q&A — sondage/priorisation/matrice n'ont toujours aucun
+éditeur staff, donc rien de réel à y afficher pour ces formats (LIVE-009 à
+013 toujours ouverts). Vérifié : `tsc`/`eslint` propres ; testé dans Chrome
+avec un code inexistant → état « indisponible » correctement rendu, aucune
+erreur console — **non vérifié avec un run réel** (pas de compte staff local
+pour créer un événement/run et confirmer le classement + le Realtime en
+conditions réelles).
+
 **Reste à faire** :
-- [ ] Écran public projeté (résultats agrégés en temps réel) + mode présentateur/console modérateur distincts (LIVE-015) — le Q&A participant existe, il manque la vue projection/grand écran séparée
+- [ ] Mode présentateur/console modérateur *distincts* pour l'animateur lui-même (LIVE-015 mentionne aussi ça) — l'écran projeté existe, mais l'animateur utilise toujours la même console (`LiveEngagement.tsx`) qu'avant, pas une vue « présentateur » séparée de la modération
 - [x] UI d'expulsion — bouton « Expulser » par participant actif (`ParticipantManager`, dépliable depuis le compteur de participants dans `RunControls`)
 - [ ] Répondre à un sondage/interaction (`live_interactions`/`submit_live_response()`/`get_my_live_response()` existent, mais aucune UI staff ne crée encore de `poll`/`priority`/`matrix`/etc., donc rien à répondre côté participant — construire l'écran de réponse avant l'éditeur staff serait deviner un format)
 - [ ] Vraie table/mécanisme d'allowlist pour `access_policy = 'allowlist'` (actuellement traité comme `authenticated`, donc moins permissif que prévu plutôt que trop permissif — mais toujours pas ce que LIVE-002 décrit)

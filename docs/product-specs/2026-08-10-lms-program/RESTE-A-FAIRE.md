@@ -114,7 +114,7 @@ pouvoir s'y référer facilement.
 
 ## 09 — Sondage live, Q&A, modération et coanimation
 
-- [ ] Écran public projeté (résultats agrégés en temps réel) + mode présentateur/console modérateur distincts (LIVE-015) — le Q&A participant existe, il manque la vue projection/grand écran séparée
+- [x] Écran public projeté (LIVE-015, partiel) — `/live/:code/present` (`LivePresenterScreen.tsx`), grand écran séparé de la console modérateur, classement des questions par votes en temps réel (Realtime), aucune authentification/join requis (RLS `audience_questions_public_read`, mêmes conditions que la salle participant). Limité au Q&A : sondage/priorisation/matrice n'ont toujours aucun éditeur staff (rien de réel à projeter pour ces formats)
 - [x] UI d'expulsion (`kick_participant()` — bouton par participant actif dans la console animateur, `LiveEngagement.tsx::ParticipantManager`)
 - [ ] Répondre à un sondage/interaction (`live_interactions`/`submit_live_response()`/`get_my_live_response()` existent, mais aucune UI staff ne crée encore de `poll`/`priority`/`matrix`/etc.)
 - [ ] Vraie table/mécanisme d'allowlist pour `access_policy = 'allowlist'` (actuellement traité comme `authenticated`)

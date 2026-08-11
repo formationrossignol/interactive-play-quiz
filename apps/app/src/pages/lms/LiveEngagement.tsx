@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Check, Copy, Lock, MessageCircleQuestion, Plus, Radio, UserX, Unlock, Users } from "lucide-react";
+import { Check, Copy, Lock, MessageCircleQuestion, MonitorPlay, Plus, Radio, UserX, Unlock, Users } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/ui/page-header";
 import { ExplorerEmptyState } from "@/components/content/ExplorerEmptyState";
@@ -222,7 +222,17 @@ function EventRow({ event, onActivate }: { event: LiveEvent; onActivate: (id: st
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Radio size={14} /> Run en cours depuis {new Date(run.started_at).toLocaleTimeString("fr-FR")}
             </div>
-            <JoinLinkBadge code={event.code} />
+            <div className="flex items-center gap-2">
+              <JoinLinkBadge code={event.code} />
+              <a
+                href={`/live/${event.code}/present`}
+                target="_blank"
+                rel="noreferrer"
+                className="ap-btn ap-btn--ghost ap-btn--sm"
+              >
+                <MonitorPlay size={14} /> Écran projeté
+              </a>
+            </div>
           </div>
           <RunControls run={run} onLockChange={(locked) => setRun((prev) => (prev ? { ...prev, locked } : prev))} />
           <QuestionModeration run={run} />
