@@ -15,8 +15,31 @@ export interface LtiRegistration {
   org_id: string;
   issuer: string;
   client_id: string;
+  jwks_url: string;
+  auth_login_url: string;
+  auth_token_url: string;
   status: 'draft' | 'active' | 'disabled';
   created_at: string;
+}
+
+export interface LtiDeployment {
+  id: string;
+  registration_id: string;
+  deployment_id: string;
+  context_label: string | null;
+  created_at: string;
+}
+
+export interface LtiLaunch {
+  id: string;
+  registration_id: string;
+  deployment_id: string | null;
+  subject: string | null;
+  nonce: string | null;
+  user_id: string | null;
+  status: 'success' | 'rejected';
+  error_reason: string | null;
+  launched_at: string;
 }
 
 export interface ApiClient {
@@ -63,6 +86,61 @@ export async function createLtiRegistration(input: { orgId: string; issuer: stri
   }).select().single();
   if (error) throw error;
   return data as LtiRegistration;
+}
+
+export async function listLtiDeployments(registrationId: string): Promise<LtiDeployment[]> {
+  const { data, error } = await supabase.from('lti_deployments').select('*').eq('registration_id', registrationId).order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as LtiDeployment[];
+}
+
+/** `deploymentId` must match the platform's own LTI deployment_id claim
+ *  verbatim — lti-launch rejects any launch whose claim doesn't have a
+ *  matching row (see supabase/functions/lti-launch/index.ts). */
+export async function createLtiDeployment(registrationId: string, deploymentId: string, contextLabel: string): Promise<LtiDeployment> {
+  const { data, error } = await supabase.from('lti_deployments').insert({
+    registration_id: registrationId, deployment_id: deploymentId, context_label: contextLabel || null,
+  }).select().single();
+  if (error) throw error;
+  return data as LtiDeployment;
+}
+
+/** Diagnostic feed (LTI-006) — every launch attempt, success or rejected,
+ *  journaled by record_lti_launch(). Read-only (RLS: lti_launches_admin). */
+export async function listLtiLaunches(registrationId: string, limit = 20): Promise<LtiLaunch[]> {
+  const { data, error } = await supabase
+    .from('lti_launches').select('*')
+    .eq('registration_id', registrationId)
+    .order('launched_at', { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return (data ?? []) as LtiLaunch[];
+}
+
+/** Completes LTI-005 for a `sub` that landed on /lti/unlinked: writes the
+ *  external_mappings row lti-launch will look up on the platform's next
+ *  attempt. Server-side (link_lti_subject RPC) validates the target user is
+ *  actually a member of this org — external_mappings has no client insert
+ *  policy at all, this RPC is the only write path. */
+export async function linkLtiSubject(registrationId: string, subject: string, internalUserId: string): Promise<void> {
+  const { error } = await supabase.rpc('link_lti_subject', {
+    p_registration_id: registrationId, p_subject: subject, p_internal_user_id: internalUserId,
+  });
+  if (error) throw error;
+}
+
+export interface LtiConnectionTestResult {
+  ok: boolean;
+  reason?: string;
+  keyCount?: number;
+}
+
+/** Live reachability/shape check of the registration's jwks_url — nothing
+ *  persisted, a pre-activation sanity check (LTI-006 "test de connexion"). */
+export async function testLtiConnection(registrationId: string): Promise<LtiConnectionTestResult> {
+  const { data, error } = await supabase.functions.invoke('lti-test-connection', { body: { registrationId } });
+  if (error) throw error;
+  return data as LtiConnectionTestResult;
 }
 
 export async function listApiClients(orgId: string): Promise<ApiClient[]> {
