@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { CalendarRange, Plus, Users } from "lucide-react";
+import { CalendarRange, CheckCircle2, Plus, Users, XCircle } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/ui/page-header";
 import { ExplorerEmptyState } from "@/components/content/ExplorerEmptyState";
@@ -14,14 +14,18 @@ import { myOrgMemberships, type OrgMembership } from "@/lib/org/orgRepo";
 import { listContent } from "@/lib/content/contentRepo";
 import type { ContentRow } from "@/lib/content/types";
 import {
+  acceptWaitlistOffer,
   createCourseSession,
+  declineWaitlistOffer,
   ensureCourseOffering,
   listOrgSessions,
   myEnrollments,
+  myWaitlistEntries,
   publishSession,
   type CourseSession,
   type Enrollment,
   type EnrollmentStatus,
+  type WaitlistEntry,
 } from "@/lib/lms/enrollment";
 
 const STAFF_ROLES = new Set(["registrar", "pedago", "admin"]);
@@ -176,12 +180,88 @@ function StaffSessions({ orgId }: { orgId: string }) {
   );
 }
 
+function timeLeftLabel(expiresAt: string): string {
+  const ms = new Date(expiresAt).getTime() - Date.now();
+  if (ms <= 0) return "expire à l'instant";
+  const hours = Math.floor(ms / 3_600_000);
+  if (hours >= 1) return `${hours} h restantes`;
+  return `${Math.max(1, Math.floor(ms / 60_000))} min restantes`;
+}
+
+/** ENR-011/012's UI half — the RPC pair already atomically turns an
+ *  'offered' entry into an active enrollment (or re-chains
+ *  promote_waitlist() to the next learner on decline); this just surfaces
+ *  the offer and its 48h window. */
+function WaitlistOffers({ entries, onResolved }: { entries: WaitlistEntry[]; onResolved: () => void }) {
+  const [actingId, setActingId] = useState<string | null>(null);
+
+  const offered = entries.filter((e) => e.status === "offered" && e.expires_at && new Date(e.expires_at) > new Date());
+  if (offered.length === 0) return null;
+
+  const handleAccept = async (entry: WaitlistEntry) => {
+    setActingId(entry.id);
+    try {
+      await acceptWaitlistOffer(entry.id);
+      onResolved();
+    } catch (err) {
+      showError(err);
+    } finally {
+      setActingId(null);
+    }
+  };
+  const handleDecline = async (entry: WaitlistEntry) => {
+    setActingId(entry.id);
+    try {
+      await declineWaitlistOffer(entry.id);
+      onResolved();
+    } catch (err) {
+      showError(err);
+    } finally {
+      setActingId(null);
+    }
+  };
+
+  return (
+    <section className="product-list-panel p-5 mb-4" style={{ borderColor: "var(--ap-brand-soft, #6d5efc)" }}>
+      <div className="product-panel-heading -mx-5 -mt-5 mb-4">
+        <div><h2>Une place s'est libérée</h2><p>Répondez avant l'expiration — sinon elle est offerte au suivant sur liste d'attente.</p></div>
+      </div>
+      <ul className="space-y-2" aria-label="Offres de liste d'attente">
+        {offered.map((entry) => (
+          <li key={entry.id} className="flex items-center justify-between rounded-md border p-3">
+            <div>
+              <p className="font-medium">Session {entry.session_id.slice(0, 8)}</p>
+              <p className="text-sm text-muted-foreground">{timeLeftLabel(entry.expires_at!)}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" loading={actingId === entry.id} onClick={() => handleDecline(entry)}>
+                <XCircle size={14} /> Refuser
+              </Button>
+              <Button size="sm" loading={actingId === entry.id} onClick={() => handleAccept(entry)}>
+                <CheckCircle2 size={14} /> Accepter
+              </Button>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 function LearnerEnrollments() {
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
+  const [waitlistEntries, setWaitlistEntries] = useState<WaitlistEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const reload = () => {
+    Promise.all([myEnrollments(), myWaitlistEntries()])
+      .then(([e, w]) => { setEnrollments(e); setWaitlistEntries(w); })
+      .catch(showError)
+      .finally(() => setLoading(false));
+  };
+
   useEffect(() => {
-    myEnrollments().then(setEnrollments).catch(showError).finally(() => setLoading(false));
+    reload();
   }, []);
 
   const groups = useMemo(() => {
@@ -195,11 +275,14 @@ function LearnerEnrollments() {
 
   if (enrollments.length === 0) {
     return (
-      <ExplorerEmptyState
-        icon={<Users size={27} />}
-        title="Aucune formation en cours"
-        body="Vos inscriptions à des sessions apparaîtront ici, classées par statut."
-      />
+      <>
+        <WaitlistOffers entries={waitlistEntries} onResolved={reload} />
+        <ExplorerEmptyState
+          icon={<Users size={27} />}
+          title="Aucune formation en cours"
+          body="Vos inscriptions à des sessions apparaîtront ici, classées par statut."
+        />
+      </>
     );
   }
 
@@ -220,14 +303,17 @@ function LearnerEnrollments() {
   );
 
   return (
-    <section className="product-list-panel p-5">
-      <div className="product-panel-heading -mx-5 -mt-5 mb-4">
-        <div><h2>Mes formations</h2><p>À venir, en cours et terminées.</p></div>
-      </div>
-      {renderGroup("À venir", groups.upcoming)}
-      {renderGroup("En cours", groups.active)}
-      {renderGroup("Terminées", groups.done)}
-    </section>
+    <>
+      <WaitlistOffers entries={waitlistEntries} onResolved={reload} />
+      <section className="product-list-panel p-5">
+        <div className="product-panel-heading -mx-5 -mt-5 mb-4">
+          <div><h2>Mes formations</h2><p>À venir, en cours et terminées.</p></div>
+        </div>
+        {renderGroup("À venir", groups.upcoming)}
+        {renderGroup("En cours", groups.active)}
+        {renderGroup("Terminées", groups.done)}
+      </section>
+    </>
   );
 }
 

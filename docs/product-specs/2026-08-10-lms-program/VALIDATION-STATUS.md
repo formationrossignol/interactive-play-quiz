@@ -189,6 +189,18 @@ A se désinscrit → B (position 1) reçoit l'offre, C reste en attente → B
 accepte → B devient actif ; C ne peut pas accepter l'offre de B (rejeté,
 `Not authorized`).
 
+Depuis cette passe : UI apprenant pour l'offre elle-même
+(`Sessions.tsx::WaitlistOffers`, `enrollment.ts::myWaitlistEntries`/
+`acceptWaitlistOffer`/`declineWaitlistOffer`) — bandeau en tête de « Mes
+formations » listant les entrées `status='offered'` non expirées, compte à
+rebours (heures/minutes restantes), boutons Accepter/Refuser appelant
+directement les RPC déjà posées et testées. Pas de nouvelle migration —
+RLS `waitlist_entries_read` autorisait déjà `learner_id = auth.uid()`.
+Vérifié : `tsc`/`eslint` propres ; page testée dans Chrome non authentifié
+(état vide correctement rendu, aucune erreur console) — **non vérifié
+avec une offre réelle** (pas de compte de test local pour déclencher
+`promote_waitlist()`).
+
 **Reste à faire** :
 - [ ] UI : import CSV/XLSX avec prévisualisation/mapping/doublons (ENR-014)
 - [ ] UI : actions en masse (inscrire, déplacer, annuler, prolonger — ENR-015)
