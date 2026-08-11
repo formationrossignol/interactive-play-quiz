@@ -24,7 +24,7 @@ commencé.
 | 01 | Devoirs & gradebook | 🟢 | 🟡 minimal | 🔴 antiplagiat | Fondation |
 | 02 | Inscriptions & sessions | 🟢 | 🟡 minimal | — | Fondation |
 | 03 | Compétences & preuves | 🟢 | 🟡 minimal | 🔴 CASE/Open Badges | Fondation |
-| 04 | Interopérabilité & identité | 🟡 config only | 🟡 minimal | 🔴 SSO/LTI/SCIM/OneRoster réels | Config seule |
+| 04 | Interopérabilité & identité | 🟡 LTI Core seul | 🔴 aucune | 🟡 LTI 1.3 Core réel, reste 🔴 | Fondation partielle |
 | 05 | Accessibilité & aménagements | 🟢 | 🟡 minimal | — | Fondation |
 | 06 | Parcours adaptatifs & automatisations | 🟢 | 🟡 minimal | — | Fondation |
 | 07 | Analytics & signaux de risque | 🟢 | 🟡 minimal | — | Fondation |
@@ -142,11 +142,35 @@ d'attente) + `transition_enrollment()`.
 
 **Fait** : schéma de configuration (`identity_connections`, `lti_registrations`,
 `integration_connections`, `api_clients`, `webhook_endpoints`) + coffre à
-secrets hashés (`create_integration_secret()`, illisible côté client).
+secrets hashés (`create_integration_secret()`, illisible côté client). Depuis
+`20260811030000_lti_login_state.sql` + `supabase/functions/lti-login`/
+`lti-launch` : LTI 1.3 Core réel (LTI-001), suivant l'« ordre de livraison
+obligatoire » de la spec (SSO puis **LTI Tool** avant QTI/SCIM/OneRoster/API) —
+`lti-login` initie l'OIDC third-party login (state/nonce en base, jamais en
+cookie — la redirection cross-site du form_post rend les cookies SameSite peu
+fiables ici) ; `lti-launch` vérifie signature RS256 (JWKS distant via
+`jose`), issuer, audience, expiration, nonce, version LTI, type de message et
+`deployment_id` contre `lti_deployments` — tout est journalisé dans
+`lti_launches` via `record_lti_launch()` (succès ou rejet avec raison,
+LTI-006). La logique de vérification pure (`_shared/lti.ts`) est testée avec
+une vraie paire de clés RSA générée (`_shared/lti.test.ts`, `deno test` — 10
+cas : token valide, expiré, mauvais issuer/audience/nonce/signature/version,
+deployment manquant, mauvais message type, rejeu). LTI-005 est respecté à la
+lettre côté compte : un `sub` non reconnu n'auto-provisionne **jamais** de
+compte Brivia (aucun mécanisme testé/revu de ce type n'existe dans ce repo) —
+il atterrit sur `/lti/unlinked`, page explicative. Un `sub` déjà relié
+(`external_mappings`, `system='lti'`) obtient une vraie session via
+`admin.generateLink()` (mécanisme Supabase standard pour un utilisateur déjà
+authentifié, pas une invention). Nécessite la variable d'environnement
+`PUBLIC_APP_URL` (nouvelle, à configurer côté projet Supabase) pour construire
+l'URL de redirection `/lti/unlinked`.
 
-**Reste à faire — c'est le chantier le moins avancé, tout l'exécutable manque** :
-- [ ] Handshake OIDC/SAML réel (edge function) — seule la table de config existe
-- [ ] LTI 1.3 Core : OIDC login, validation JWT (issuer/audience/nonce/signature), Deep Linking, Names and Roles, Assignment and Grade Services — aucune fonction serveur écrite, seulement `record_lti_launch()` (log de diagnostic)
+**Reste à faire** :
+- [ ] UI admin pour créer des `lti_registrations`/`lti_deployments` et pour relier manuellement un `sub` non reconnu à un compte (`external_mappings`) — sans ça, `/lti/unlinked` est un cul-de-sac réel pour l'instant
+- [ ] Outil de diagnostic LTI (dernier lancement, erreurs, test de connexion — LTI-006) — la table `lti_launches` est alimentée, aucun écran ne la lit
+- [ ] Deep Linking (LTI-002), Names and Role Provisioning (LTI-003), Assignment and Grade Services (LTI-004) — LTI-001 (lancement core) seul est couvert
+- [ ] Provisioning automatique d'un compte pour un `sub` jamais vu (actuellement : jamais, par choix — voir commentaire en tête de `lti-launch/index.ts`)
+- [ ] Handshake OIDC/SAML réel pour le SSO général (INT-001 à INT-005) — étape 1 de l'ordre de livraison, toujours pas commencée ; seule la table de config existe
 - [ ] Import/export QTI 3
 - [ ] Sync SCIM 2.0 (provisioning/déprovisioning réel)
 - [ ] Sync OneRoster 1.2 (import CSV + REST, dry-run)
@@ -159,10 +183,30 @@ secrets hashés (`create_integration_secret()`, illisible côté client).
 
 **Fait** : `accessibility_preferences`/`accommodation_profiles`/
 `accommodation_rules`/`accommodation_overrides` + `get_effective_accommodations()`
-(fusion de priorité + lecture auditée).
+(fusion de priorité + lecture auditée). Depuis
+`20260811040000_accommodation_effective_dates.sql` : `effective_assignment_due_at()`
+applique réellement `extended_deadline` (+N jours) et `no_time_limit`
+(échéance supprimée) avec la priorité ACC-004 (dérogation activité >
+profil) et l'audit de lecture ; `submit_assignment()` (spec 01) et la règle
+`overdue` de `generate_risk_signals()` (spec 07) l'utilisent désormais tous
+les deux — sans ça, un apprenant avec échéance prolongée se faisait
+incorrectement marquer en retard/à risque par le moteur de signaux que
+j'ai écrit la session précédente. Vérifié fonctionnellement : échéance de
+base/étendue/sans-limite correctement calculées, `submit_assignment`
+respecte l'échéance étendue, `overdue` ne se déclenche plus pour un
+apprenant `no_time_limit` mais toujours pour un apprenant sans aménagement.
+**`extra_time` (temps supplémentaire sur une activité chronométrée) n'est
+volontairement pas couvert** — le seul système de tentative chronométrée du
+repo (`exams`/`exam_attempts`) est documenté Tier-1 « le client calcule tout,
+correction serveur infalsifiable explicitement différée », et la spec 08 n'a
+toujours aucun moteur de correction/tentative server-side (VALIDATION-STATUS
+§08) : il n'existe nulle part un chronomètre faisant autorité côté serveur à
+étendre. Le calculer contre un minuteur client-trusted serait du théâtre de
+sécurité, pas ce que demande le critère d'acceptation (« calculé côté
+serveur »).
 
 **Reste à faire** :
-- [ ] Application réelle des aménagements dans les activités (temps supplémentaire calculé serveur et survivant à une reconnexion — le calcul n'existe nulle part encore, seule la donnée de config existe)
+- [ ] `extra_time` réel — bloqué en amont par l'absence de tout moteur de tentative chronométrée server-side (voir ci-dessus ; se débloque avec le moteur de correction de la spec 08)
 - [ ] Vérificateur d'accessibilité de contenu (A11Y-007 à A11Y-012) — table `content_accessibility_checks` posée, aucun analyseur
 - [ ] Socle application (A11Y-001 à A11Y-006 : focus, navigation clavier, contrastes, `prefers-reduced-motion`) — hors DB, c'est un chantier design system transverse à tout le produit, non traité ici
 - [ ] Alternatives d'interaction accessibles (hotspot/drag-drop/dessin clavier — A11Y-013)
@@ -279,5 +323,5 @@ verrouiller/déverrouiller le run.
 1. ~~**07 (agrégats analytics)**~~ — fait : projections journalières + génération de signaux de risque (voir §07). Reste ouvert : dashboards (consommateurs des projections) et psychométrie d'item (bloquée par 08).
 2. ~~**09 (temps réel + participation anon + écran public participant)**~~ — fait : `join_live_run`/anon/Realtime + `/live/:code` + `/live/:code/room` (voir §09). Reste ouvert : l'écran projeté/grand écran séparé et la réponse aux formats sondage/priorisation/matrice (eux-mêmes bloqués par l'absence d'éditeur staff pour les créer).
 3. ~~**01 (rubriques)**~~ — fait (voir §01). Reste ouvert : vue gradebook consolidée (GBK-001 à GBK-006), la pièce la plus proche de la valeur utilisateur immédiate encore manquante pour les formateurs.
-4. **04 (LTI Tool)** — le plus gros morceau, mais explicitement l'intégration la plus rentable selon l'ordre de livraison obligatoire de la spec elle-même.
+4. ~~**04 (LTI 1.3 Core)**~~ — fait pour le lancement (voir §04). Reste ouvert, par ordre : SSO OIDC/SAML général (étape 1 de l'ordre de livraison, sautée pour attaquer LTI Tool en premier car c'est l'intégration la plus rentable), UI admin pour enregistrer une plateforme et relier un `sub`, Deep Linking/AGS/NRPS, puis QTI 3/SCIM/OneRoster/API publique.
 5. Le reste (05 socle accessibilité transverse, 08 nouveaux types, 10 localisation) peut suivre l'ordre recommandé du README du programme.
