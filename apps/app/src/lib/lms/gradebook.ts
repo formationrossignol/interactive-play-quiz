@@ -42,6 +42,40 @@ export interface GradeResult {
   published_at: string | null;
 }
 
+export interface Rubric {
+  id: string;
+  org_id: string;
+  owner_id: string;
+  title: string;
+  is_template: boolean;
+  created_at: string;
+}
+
+export interface RubricLevel {
+  id: string;
+  criterion_id: string;
+  label: string;
+  points: number;
+  position: number;
+}
+
+export interface RubricCriterion {
+  id: string;
+  rubric_id: string;
+  label: string;
+  description: string;
+  position: number;
+  max_points: number;
+  rubric_levels: RubricLevel[];
+}
+
+export interface RubricRating {
+  criterion_id: string;
+  level_id: string | null;
+  points: number;
+  comment?: string;
+}
+
 /** Assignments a trainer/pedago/admin owns or can grade within an org. */
 export async function listOrgAssignments(orgId: string): Promise<Assignment[]> {
   const { data, error } = await supabase
@@ -137,16 +171,64 @@ export async function submitAssignment(input: {
 /** Atomic: writes the correction, upserts the gradebook line, and audits any revision. */
 export async function publishSubmissionGrade(input: {
   submissionId: string; score: number; feedback?: string; reason?: string;
+  rubricId?: string | null; rubricRatings?: RubricRating[];
 }): Promise<void> {
   const { error } = await supabase.rpc('publish_submission_grade', {
     p_submission_id: input.submissionId,
     p_score: input.score,
     p_feedback: input.feedback ?? '',
-    p_rubric_id: null,
-    p_rubric_ratings: [],
+    p_rubric_id: input.rubricId ?? null,
+    p_rubric_ratings: input.rubricRatings ?? [],
     p_reason: input.reason ?? null,
   });
   if (error) throw error;
+}
+
+/** Rubrics are reusable org templates (owner or pedago/admin manage them),
+ *  picked at grading time — not stored on the assignment itself. */
+export async function listOrgRubrics(orgId: string): Promise<Rubric[]> {
+  const { data, error } = await supabase.from('rubrics').select('*').eq('org_id', orgId).order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as Rubric[];
+}
+
+export async function createRubric(orgId: string, ownerId: string, title: string): Promise<Rubric> {
+  const { data, error } = await supabase.from('rubrics').insert({ org_id: orgId, owner_id: ownerId, title }).select().single();
+  if (error) throw error;
+  return data as Rubric;
+}
+
+export async function getRubricCriteria(rubricId: string): Promise<RubricCriterion[]> {
+  const { data, error } = await supabase
+    .from('rubric_criteria')
+    .select('*, rubric_levels(*)')
+    .eq('rubric_id', rubricId)
+    .order('position');
+  if (error) throw error;
+  return ((data ?? []) as RubricCriterion[]).map((c) => ({
+    ...c,
+    rubric_levels: (c.rubric_levels ?? []).slice().sort((a, b) => a.position - b.position),
+  }));
+}
+
+export async function addRubricCriterion(rubricId: string, label: string, maxPoints: number, position: number): Promise<RubricCriterion> {
+  const { data, error } = await supabase
+    .from('rubric_criteria')
+    .insert({ rubric_id: rubricId, label, max_points: maxPoints, position })
+    .select('*, rubric_levels(*)')
+    .single();
+  if (error) throw error;
+  return { ...(data as RubricCriterion), rubric_levels: [] };
+}
+
+export async function addRubricLevel(criterionId: string, label: string, points: number, position: number): Promise<RubricLevel> {
+  const { data, error } = await supabase
+    .from('rubric_levels')
+    .insert({ criterion_id: criterionId, label, points, position })
+    .select()
+    .single();
+  if (error) throw error;
+  return data as RubricLevel;
 }
 
 export async function myGradeResults(): Promise<GradeResult[]> {

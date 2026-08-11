@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import { ClipboardCheck, FilePlus2, Plus } from "lucide-react";
+import { ClipboardCheck, FilePlus2, ListChecks, Plus } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/ui/page-header";
 import { ExplorerEmptyState } from "@/components/content/ExplorerEmptyState";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { PageSkeleton, TableSkeleton } from "@/components/ui/skeletons";
+import { PageSkeleton, TableSkeleton, ListSkeleton } from "@/components/ui/skeletons";
 import { useActiveOrgId } from "@/components/org/OrgSwitcher";
 import { getCurrentUser } from "@/lib/auth";
 import { showError } from "@/lib/errorTaxonomy";
@@ -14,37 +15,245 @@ import { useSEO } from "@/hooks/useSEO";
 import { myOrgMemberships, type OrgMembership } from "@/lib/org/orgRepo";
 import {
   addAssignmentTarget,
+  addRubricCriterion,
+  addRubricLevel,
   createAssignment,
+  createRubric,
+  getRubricCriteria,
   listAssignmentSubmissions,
   listOrgAssignments,
+  listOrgRubrics,
   listMyAssignments,
   mySubmission,
   publishAssignment,
   publishSubmissionGrade,
   submitAssignment,
   type Assignment,
+  type Rubric,
+  type RubricCriterion,
+  type RubricRating,
   type Submission,
 } from "@/lib/lms/gradebook";
 
 const STAFF_ROLES = new Set(["trainer", "pedago", "admin"]);
 
-function GradingPanel({ assignment }: { assignment: Assignment }) {
+function CriterionEditor({ criterion, onLevelAdded }: { criterion: RubricCriterion; onLevelAdded: (criterionId: string, level: RubricCriterion["rubric_levels"][number]) => void }) {
+  const [label, setLabel] = useState("");
+  const [points, setPoints] = useState("");
+  const [adding, setAdding] = useState(false);
+
+  const handleAddLevel = async () => {
+    if (!label.trim()) return;
+    setAdding(true);
+    try {
+      const level = await addRubricLevel(criterion.id, label.trim(), Number(points) || 0, criterion.rubric_levels.length);
+      onLevelAdded(criterion.id, level);
+      setLabel(""); setPoints("");
+    } catch (err) {
+      showError(err);
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  return (
+    <li className="rounded-md border p-3">
+      <p className="font-medium text-sm">{criterion.label} <span className="text-muted-foreground">· {criterion.max_points} pts</span></p>
+      {criterion.rubric_levels.length > 0 && (
+        <ul className="mt-2 flex flex-wrap gap-2">
+          {criterion.rubric_levels.map((lvl) => (
+            <li key={lvl.id} className="rounded-full border px-3 py-1 text-xs text-muted-foreground">{lvl.label} · {lvl.points} pts</li>
+          ))}
+        </ul>
+      )}
+      <div className="flex items-end gap-2 mt-2">
+        <Input placeholder="Niveau (ex. Excellent)" value={label} onChange={(e) => setLabel(e.target.value)} className="flex-1" />
+        <Input type="number" placeholder="Pts" value={points} onChange={(e) => setPoints(e.target.value)} className="w-20" />
+        <Button size="sm" variant="ghost" loading={adding} onClick={handleAddLevel}>Ajouter</Button>
+      </div>
+    </li>
+  );
+}
+
+function RubricBuilder({ rubric }: { rubric: Rubric }) {
+  const [criteria, setCriteria] = useState<RubricCriterion[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [label, setLabel] = useState("");
+  const [maxPoints, setMaxPoints] = useState("5");
+  const [adding, setAdding] = useState(false);
+
+  useEffect(() => {
+    getRubricCriteria(rubric.id).then(setCriteria).catch(showError).finally(() => setLoading(false));
+  }, [rubric.id]);
+
+  const handleAddCriterion = async () => {
+    if (!label.trim()) return;
+    setAdding(true);
+    try {
+      const criterion = await addRubricCriterion(rubric.id, label.trim(), Number(maxPoints) || 0, criteria.length);
+      setCriteria((prev) => [...prev, criterion]);
+      setLabel(""); setMaxPoints("5");
+    } catch (err) {
+      showError(err);
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  const handleLevelAdded: React.ComponentProps<typeof CriterionEditor>["onLevelAdded"] = (criterionId, level) => {
+    setCriteria((prev) => prev.map((c) => (c.id === criterionId ? { ...c, rubric_levels: [...c.rubric_levels, level] } : c)));
+  };
+
+  if (loading) return <ListSkeleton rows={2} withAvatar={false} />;
+
+  return (
+    <div className="mt-2 space-y-2">
+      {criteria.length > 0 && (
+        <ul className="space-y-2">
+          {criteria.map((c) => <CriterionEditor key={c.id} criterion={c} onLevelAdded={handleLevelAdded} />)}
+        </ul>
+      )}
+      <div className="flex items-end gap-2">
+        <Input placeholder="Critère (ex. Clarté)" value={label} onChange={(e) => setLabel(e.target.value)} className="flex-1" />
+        <Input type="number" placeholder="Max pts" value={maxPoints} onChange={(e) => setMaxPoints(e.target.value)} className="w-24" />
+        <Button size="sm" variant="ghost" loading={adding} onClick={handleAddCriterion}>Ajouter un critère</Button>
+      </div>
+    </div>
+  );
+}
+
+function RubricManager({ orgId }: { orgId: string }) {
+  const user = getCurrentUser();
+  const [rubrics, setRubrics] = useState<Rubric[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [title, setTitle] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [expanded, setExpanded] = useState<string | null>(null);
+
+  useEffect(() => {
+    listOrgRubrics(orgId).then(setRubrics).catch(showError).finally(() => setLoading(false));
+  }, [orgId]);
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !title.trim()) return;
+    setCreating(true);
+    try {
+      const rubric = await createRubric(orgId, user.id, title.trim());
+      setRubrics((prev) => [rubric, ...prev]);
+      setTitle("");
+      setExpanded(rubric.id);
+    } catch (err) {
+      showError(err);
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  if (loading) return <TableSkeleton rows={2} cols={2} />;
+
+  return (
+    <section className="product-list-panel p-5">
+      <div className="product-panel-heading -mx-5 -mt-5 mb-4">
+        <div><h2>Grilles de correction</h2><p>Critères et niveaux réutilisables — sélectionnables au moment de corriger un devoir.</p></div>
+      </div>
+      <form onSubmit={handleCreate} className="flex flex-wrap items-end gap-2 mb-4">
+        <div className="min-w-[220px] space-y-1">
+          <label className="text-sm font-medium" htmlFor="rubric-title">Nom de la grille</label>
+          <Input id="rubric-title" value={title} onChange={(e) => setTitle(e.target.value)} required />
+        </div>
+        <Button type="submit" size="sm" loading={creating}><Plus /> Créer</Button>
+      </form>
+      {rubrics.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Aucune grille pour l'instant.</p>
+      ) : (
+        <ul className="space-y-2" aria-label="Grilles de correction">
+          {rubrics.map((r) => (
+            <li key={r.id} className="rounded-md border p-3">
+              <div className="flex items-center justify-between">
+                <p className="font-medium">{r.title}</p>
+                <Button variant="ghost" size="sm" onClick={() => setExpanded((cur) => (cur === r.id ? null : r.id))}>
+                  {expanded === r.id ? "Fermer" : "Modifier"}
+                </Button>
+              </div>
+              {expanded === r.id && <RubricBuilder rubric={r} />}
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function RubricGrading({ criteria, ratings, onChange }: {
+  criteria: RubricCriterion[];
+  ratings: Record<string, RubricRating>;
+  onChange: (ratings: Record<string, RubricRating>) => void;
+}) {
+  const handlePick = (criterion: RubricCriterion, level: RubricCriterion["rubric_levels"][number]) => {
+    onChange({ ...ratings, [criterion.id]: { criterion_id: criterion.id, level_id: level.id, points: level.points } });
+  };
+
+  return (
+    <ul className="space-y-2">
+      {criteria.map((c) => (
+        <li key={c.id}>
+          <p className="text-xs font-medium text-muted-foreground mb-1">{c.label}</p>
+          <div className="flex flex-wrap gap-1">
+            {c.rubric_levels.map((lvl) => {
+              const selected = ratings[c.id]?.level_id === lvl.id;
+              return (
+                <button
+                  key={lvl.id}
+                  type="button"
+                  className="ap-btn ap-btn--ghost ap-btn--sm"
+                  style={selected ? { background: "var(--ap-accent, #6d5efc)", color: "white" } : undefined}
+                  onClick={() => handlePick(c, lvl)}
+                >
+                  {lvl.label} · {lvl.points}
+                </button>
+              );
+            })}
+          </div>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function GradingPanel({ assignment, rubrics }: { assignment: Assignment; rubrics: Rubric[] }) {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
   const [scores, setScores] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState<string | null>(null);
+  const [rubricId, setRubricId] = useState("");
+  const [criteria, setCriteria] = useState<RubricCriterion[]>([]);
+  const [ratingsBySubmission, setRatingsBySubmission] = useState<Record<string, Record<string, RubricRating>>>({});
+  const [expanded, setExpanded] = useState<string | null>(null);
 
   useEffect(() => {
     listAssignmentSubmissions(assignment.id).then(setSubmissions).catch(showError).finally(() => setLoading(false));
   }, [assignment.id]);
 
+  useEffect(() => {
+    if (!rubricId) { setCriteria([]); return; }
+    getRubricCriteria(rubricId).then(setCriteria).catch(showError);
+  }, [rubricId]);
+
   const handlePublish = async (submissionId: string) => {
+    const ratings = ratingsBySubmission[submissionId];
+    const ratingsList = ratings ? Object.values(ratings) : [];
+    const rubricTotal = ratingsList.reduce((sum, r) => sum + r.points, 0);
     const raw = scores[submissionId];
-    const score = Number(raw);
-    if (!raw || Number.isNaN(score)) return;
+    const score = raw ? Number(raw) : (ratingsList.length > 0 ? rubricTotal : NaN);
+    if (Number.isNaN(score)) return;
     setSaving(submissionId);
     try {
-      await publishSubmissionGrade({ submissionId, score });
+      await publishSubmissionGrade({
+        submissionId, score,
+        rubricId: ratingsList.length > 0 ? rubricId : null,
+        rubricRatings: ratingsList,
+      });
       setSubmissions((prev) => prev.map((s) => (s.id === submissionId ? { ...s, status: "graded" } : s)));
     } catch (err) {
       showError(err);
@@ -59,30 +268,64 @@ function GradingPanel({ assignment }: { assignment: Assignment }) {
   }
 
   return (
-    <ul className="space-y-2">
-      {submissions.map((s) => (
-        <li key={s.id} className="flex items-center justify-between gap-3 rounded-md border p-3">
-          <div>
-            <p className="text-sm font-medium">Apprenant {s.learner_id.slice(0, 8)}</p>
-            <p className="text-sm text-muted-foreground">{s.status}</p>
-          </div>
-          {s.status !== "graded" && (
-            <div className="flex items-center gap-2">
-              <Input
-                type="number"
-                min={0}
-                max={assignment.max_points}
-                className="w-20"
-                value={scores[s.id] ?? ""}
-                onChange={(e) => setScores((prev) => ({ ...prev, [s.id]: e.target.value }))}
-                aria-label={`Note sur ${assignment.max_points}`}
-              />
-              <Button size="sm" loading={saving === s.id} onClick={() => handlePublish(s.id)}>Publier</Button>
-            </div>
-          )}
-        </li>
-      ))}
-    </ul>
+    <div className="space-y-3">
+      {rubrics.length > 0 && (
+        <div className="flex items-center gap-2">
+          <Select value={rubricId || "none"} onValueChange={(v) => setRubricId(v === "none" ? "" : v)}>
+            <SelectTrigger className="w-[220px]" aria-label="Grille de correction"><SelectValue placeholder="Grille de correction" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">Note libre</SelectItem>
+              {rubrics.map((r) => <SelectItem key={r.id} value={r.id}>{r.title}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+      <ul className="space-y-2">
+        {submissions.map((s) => {
+          const ratings = ratingsBySubmission[s.id] ?? {};
+          const rubricTotal = Object.values(ratings).reduce((sum, r) => sum + r.points, 0);
+          return (
+            <li key={s.id} className="rounded-md border p-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium">Apprenant {s.learner_id.slice(0, 8)}</p>
+                  <p className="text-sm text-muted-foreground">{s.status}</p>
+                </div>
+                {s.status !== "graded" && (
+                  <div className="flex items-center gap-2">
+                    {rubricId && criteria.length > 0 && (
+                      <Button variant="ghost" size="sm" onClick={() => setExpanded((cur) => (cur === s.id ? null : s.id))}>
+                        <ListChecks size={14} /> Grille
+                      </Button>
+                    )}
+                    <Input
+                      type="number"
+                      min={0}
+                      max={assignment.max_points}
+                      className="w-20"
+                      placeholder={Object.keys(ratings).length > 0 ? String(rubricTotal) : undefined}
+                      value={scores[s.id] ?? ""}
+                      onChange={(e) => setScores((prev) => ({ ...prev, [s.id]: e.target.value }))}
+                      aria-label={`Note sur ${assignment.max_points}`}
+                    />
+                    <Button size="sm" loading={saving === s.id} onClick={() => handlePublish(s.id)}>Publier</Button>
+                  </div>
+                )}
+              </div>
+              {expanded === s.id && rubricId && criteria.length > 0 && (
+                <div className="mt-3 border-t pt-3">
+                  <RubricGrading
+                    criteria={criteria}
+                    ratings={ratings}
+                    onChange={(next) => setRatingsBySubmission((prev) => ({ ...prev, [s.id]: next }))}
+                  />
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }
 
@@ -96,9 +339,11 @@ function StaffAssignments({ orgId }: { orgId: string }) {
   const [maxPoints, setMaxPoints] = useState("20");
   const [creating, setCreating] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [rubrics, setRubrics] = useState<Rubric[]>([]);
 
   useEffect(() => {
     listOrgAssignments(orgId).then(setAssignments).catch(showError).finally(() => setLoading(false));
+    listOrgRubrics(orgId).then(setRubrics).catch(() => setRubrics([]));
   }, [orgId]);
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -141,6 +386,7 @@ function StaffAssignments({ orgId }: { orgId: string }) {
   if (loading) return <TableSkeleton rows={4} cols={4} />;
 
   return (
+    <div className="space-y-5">
     <section className="product-list-panel p-5">
       <div className="product-panel-heading -mx-5 -mt-5 mb-4">
         <div><h2>Devoirs</h2><p>Créez un devoir, corrigez les remises et publiez les résultats.</p></div>
@@ -199,7 +445,7 @@ function StaffAssignments({ orgId }: { orgId: string }) {
               </div>
               {expanded === a.id && (
                 <div className="mt-3 border-t pt-3">
-                  <GradingPanel assignment={a} />
+                  <GradingPanel assignment={a} rubrics={rubrics} />
                 </div>
               )}
             </li>
@@ -207,6 +453,8 @@ function StaffAssignments({ orgId }: { orgId: string }) {
         </ul>
       )}
     </section>
+    <RubricManager orgId={orgId} />
+    </div>
   );
 }
 
