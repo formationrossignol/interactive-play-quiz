@@ -23,7 +23,7 @@ commencé.
 
 | # | Spec | DB/RLS/RPC | UI | Intégrations tierces | Statut |
 |---|---|---|---|---|---|
-| 01 | Devoirs & gradebook | 🟢 | 🟡 minimal | 🔴 antiplagiat | Fondation |
+| 01 | Devoirs & gradebook | 🟢 | 🟡 gradebook consolidé fait, reste minimal ailleurs | 🔴 antiplagiat | Fondation |
 | 02 | Inscriptions & sessions | 🟢 | 🟡 minimal | — | Fondation |
 | 03 | Compétences & preuves | 🟢 | 🟡 minimal | 🔴 CASE/Open Badges | Fondation |
 | 04 | Interopérabilité & identité | 🟡 LTI Core seul | 🔴 aucune | 🟡 LTI 1.3 Core réel, reste 🔴 | Fondation partielle |
@@ -125,13 +125,46 @@ révision auditée). Côté UI : grilles de correction (`RubricManager`/
 critères et niveaux (écriture directe RLS, pas de nouveau RPC) ; dans
 `GradingPanel`, sélectionner une grille par devoir, noter chaque critère par
 niveau (`RubricGrading`), total auto-sommé pré-rempli dans le champ note,
-publié avec `p_rubric_id`/`p_rubric_ratings`.
+publié avec `p_rubric_id`/`p_rubric_ratings`. Vue gradebook consolidée
+(`/lms/gradebook`, `pages/lms/Gradebook.tsx`) — pas de nouvelle migration,
+lit directement `grade_items`/`grade_results` déjà là (staff read via RLS
+`grade_items_staff_read`, rôles `trainer`/`pedago`/`registrar`/`admin`,
+plus large que le `STAFF_ROLES` de `Assignments.tsx` qui excluait
+`registrar`). Matrice apprenant (roster = `enrollments` de la session,
+noms résolus via `usernames_by_ids`) × colonne (`grade_items` de la
+session **plus** les items sans `session_id` — seul `source_type=assignment`
+en écrit un aujourd'hui, exam/manual restent org-larges par construction,
+voir `20260811050000_lms_reconciliation.sql` ; les exclure aurait masqué de
+vraies notes plutôt que de refléter un vrai manque). GBK-002 (catégories/
+coefficients) : regroupement par `grade_items.category`, moyenne pondérée
+par `grade_items.weight` (colonne déjà là, pas de `grade_categories` dans ce
+schéma — voir §Réconciliation), case à cocher par catégorie « exclure la
+plus basse note ». GBK-003 : `status` (`graded`/`excused`/`missing`/
+`not_graded`) jamais coercé à zéro — `apps/app/src/lib/lms/
+gradebookCalculations.ts::cellFor()`. GBK-004 : chaque total affiche sa
+formule (items + coefficients + somme) en dépliant la cellule. GBK-005 :
+simulateur « si je reçois X » — ajouté côté apprenant dans `MyGrades`
+(`WhatIfSimulator`), calcul 100 % client (`simulateWhatIf()`), jamais
+persisté ; limité aux items déjà présents dans `myGradeResults()` (un item
+sans aucune ligne `grade_results` n'existe pas encore pour l'apprenant, donc
+rien à simuler dessus). GBK-006 (partiel) : export CSV/XLSX/PDF
+(`gradebookExport.ts`, réutilise le motif de `liveResultsExport.ts` —
+lazy-import `xlsx`/`jspdf`) neutralisant les formules tableur (`csvCell`,
+même garde que `buildGradeCsv` dans `grading/calculations.ts`) et respectant
+les filtres actifs (statut d'inscription, export = exactement les lignes
+affichées) — **l'import CSV/XLSX avec prévisualisation reste à faire**, pas
+tenté dans cette passe. Vérifié : `tsc --noEmit` et `eslint` propres sur les
+fichiers touchés ; page testée dans Chrome (non authentifié → état vide
+« Accès réservé au staff » correctement rendu, titre de page et route OK,
+aucune erreur console applicative) — **non vérifié avec des données réelles
+de session/gradebook** (pas de compte staff/organisation de test disponible
+en local pour cette passe).
 
 **Reste à faire** :
 - [ ] UI : remise fichier/audio/vidéo — seul le mode texte est câblé côté client (`response_mode` en DB supporte déjà file/url/audio/video)
 - [ ] UI : `assignment_targets` par groupe/apprenant individuel — seul le ciblage par session est câblé
 - [ ] UI : échéance/aménagement dérogatoire par apprenant (`due_override`) — colonne existe, aucun écran
-- [ ] UI : vue gradebook consolidée (GBK-001 à GBK-006) — colonnes, catégories, coefficients, simulation « si je reçois X », export CSV/XLSX/PDF : rien construit
+- [ ] GBK-006 : import CSV/XLSX de notes avec prévisualisation/mapping de personnes/doublons/rapport d'erreurs — l'export seul est fait
 - [ ] Job serveur de scan antivirus des fichiers (`submission_files.scan_status`) — colonne prête, aucun job
 - [ ] URLs de téléchargement signées courte durée pour les fichiers
 - [ ] Connecteur antiplagiat (interface only — non-objectif V1 explicite, mais l'interface elle-même n'existe pas)
@@ -387,6 +420,6 @@ verrouiller/déverrouiller le run.
 
 1. ~~**07 (agrégats analytics)**~~ — fait : projections journalières + génération de signaux de risque (voir §07). Reste ouvert : dashboards (consommateurs des projections) et psychométrie d'item (bloquée par 08).
 2. ~~**09 (temps réel + participation anon + écran public participant)**~~ — fait : `join_live_run`/anon/Realtime + `/live/:code` + `/live/:code/room` (voir §09). Reste ouvert : l'écran projeté/grand écran séparé et la réponse aux formats sondage/priorisation/matrice (eux-mêmes bloqués par l'absence d'éditeur staff pour les créer).
-3. ~~**01 (rubriques)**~~ — fait (voir §01). Reste ouvert : vue gradebook consolidée (GBK-001 à GBK-006), la pièce la plus proche de la valeur utilisateur immédiate encore manquante pour les formateurs.
+3. ~~**01 (rubriques + gradebook consolidé)**~~ — fait (voir §01). Reste ouvert : import CSV/XLSX de notes (GBK-006), dashboards de visualisation (07).
 4. ~~**04 (LTI 1.3 Core)**~~ — fait pour le lancement (voir §04). Reste ouvert, par ordre : SSO OIDC/SAML général (étape 1 de l'ordre de livraison, sautée pour attaquer LTI Tool en premier car c'est l'intégration la plus rentable), UI admin pour enregistrer une plateforme et relier un `sub`, Deep Linking/AGS/NRPS, puis QTI 3/SCIM/OneRoster/API publique.
 5. Le reste (05 socle accessibilité transverse, 08 nouveaux types, 10 localisation) peut suivre l'ordre recommandé du README du programme.

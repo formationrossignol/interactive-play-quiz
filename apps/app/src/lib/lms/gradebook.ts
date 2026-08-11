@@ -40,7 +40,47 @@ export interface GradeResult {
   status: 'graded' | 'excused' | 'missing' | 'not_graded';
   points: number | null;
   published_at: string | null;
-  grade_items: { title: string; max_points: number; source_type: string } | null;
+  grade_items: { title: string; max_points: number; source_type: string; category: string; weight: number } | null;
+}
+
+export type GradeItemSourceType = 'assignment' | 'quiz' | 'exam' | 'manual' | 'scorm' | 'h5p';
+
+export interface GradeItem {
+  id: string;
+  org_id: string;
+  session_id: string | null;
+  source_type: GradeItemSourceType;
+  source_id: string;
+  title: string;
+  category: string;
+  weight: number;
+  max_points: number;
+  created_at: string;
+}
+
+/** Every grade_item scoped to a session (source_type='assignment' sets
+ *  session_id), plus org-wide items (exam/manual) that carry no session_id
+ *  in this data model — see 20260811050000_lms_reconciliation.sql. Excluding
+ *  them would silently hide real grades rather than reflect a real gap. */
+export async function listSessionGradeItems(orgId: string, sessionId: string): Promise<GradeItem[]> {
+  const { data, error } = await supabase
+    .from('grade_items')
+    .select('*')
+    .eq('org_id', orgId)
+    .or(`session_id.eq.${sessionId},session_id.is.null`)
+    .order('created_at', { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as GradeItem[];
+}
+
+export async function listGradeResultsForItems(itemIds: string[]): Promise<GradeResult[]> {
+  if (itemIds.length === 0) return [];
+  const { data, error } = await supabase
+    .from('grade_results')
+    .select('*')
+    .in('grade_item_id', itemIds);
+  if (error) throw error;
+  return (data ?? []) as GradeResult[];
 }
 
 export interface Rubric {
@@ -235,7 +275,7 @@ export async function addRubricLevel(criterionId: string, label: string, points:
 export async function myGradeResults(): Promise<GradeResult[]> {
   const { data, error } = await supabase
     .from('grade_results')
-    .select('*, grade_items(title, max_points, source_type)')
+    .select('*, grade_items(title, max_points, source_type, category, weight)')
     .order('published_at', { ascending: false });
   if (error) throw error;
   return (data ?? []) as GradeResult[];

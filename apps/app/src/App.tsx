@@ -100,6 +100,7 @@ const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const Admin = lazy(() => import("./pages/admin/Admin"));
 const LmsSessions = lazy(() => import("./pages/lms/Sessions"));
 const LmsAssignments = lazy(() => import("./pages/lms/Assignments"));
+const LmsGradebook = lazy(() => import("./pages/lms/Gradebook"));
 const LmsCompetencies = lazy(() => import("./pages/lms/Competencies"));
 const LmsIntegrations = lazy(() => import("./pages/lms/Integrations"));
 const LmsAccessibility = lazy(() => import("./pages/lms/Accessibility"));
@@ -212,6 +213,7 @@ const App = () => (
               <Route path="/admin" element={<Admin />} />
               <Route path="/lms/sessions" element={<LmsSessions />} />
               <Route path="/lms/assignments" element={<LmsAssignments />} />
+              <Route path="/lms/gradebook" element={<LmsGradebook />} />
               <Route path="/lms/competencies" element={<LmsCompetencies />} />
               <Route path="/lms/integrations" element={<LmsIntegrations />} />
               <Route path="/lms/accessibility" element={<LmsAccessibility />} />
