@@ -24,11 +24,13 @@ import {
   listOrgAssignments,
   listOrgRubrics,
   listMyAssignments,
+  myGradeResults,
   mySubmission,
   publishAssignment,
   publishSubmissionGrade,
   submitAssignment,
   type Assignment,
+  type GradeResult,
   type Rubric,
   type RubricCriterion,
   type RubricRating,
@@ -507,6 +509,43 @@ function LearnerAssignmentRow({ assignment }: { assignment: Assignment }) {
   );
 }
 
+const SOURCE_LABEL: Record<string, string> = {
+  assignment: 'Devoir', exam: 'Examen', manual: 'Évaluation', quiz: 'Quiz', scorm: 'SCORM', h5p: 'H5P',
+};
+
+function MyGrades() {
+  const [results, setResults] = useState<GradeResult[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    myGradeResults().then(setResults).catch(showError).finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <ListSkeleton rows={2} withAvatar={false} />;
+  if (results.length === 0) return null;
+
+  return (
+    <section className="product-list-panel p-5">
+      <div className="product-panel-heading -mx-5 -mt-5 mb-4">
+        <div><h2>Mes notes</h2><p>Devoirs, examens et évaluations manuelles réunis au même endroit.</p></div>
+      </div>
+      <ul className="space-y-2" aria-label="Mes notes">
+        {results.map((r) => (
+          <li key={r.id} className="rounded-md border p-3 text-sm flex items-center justify-between">
+            <div>
+              <p className="font-medium">{r.grade_items?.title ?? 'Note'}</p>
+              <p className="text-muted-foreground">{SOURCE_LABEL[r.grade_items?.source_type ?? ''] ?? r.grade_items?.source_type}</p>
+            </div>
+            <span className="font-medium">
+              {r.status === 'excused' ? 'Dispensé' : r.points != null && r.grade_items ? `${r.points} / ${r.grade_items.max_points}` : '—'}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 function LearnerAssignments() {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -515,27 +554,26 @@ function LearnerAssignments() {
     listMyAssignments().then(setAssignments).catch(showError).finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <TableSkeleton rows={3} cols={2} />;
-
-  if (assignments.length === 0) {
-    return (
-      <ExplorerEmptyState
-        icon={<ClipboardCheck size={27} />}
-        title="Aucun devoir à rendre"
-        body="Les devoirs publiés pour vos sessions apparaîtront ici avec leur échéance."
-      />
-    );
-  }
-
   return (
-    <section className="product-list-panel p-5">
-      <div className="product-panel-heading -mx-5 -mt-5 mb-4">
-        <div><h2>Mes devoirs</h2><p>Consultez l'échéance et remettez votre travail.</p></div>
-      </div>
-      <ul className="space-y-2" aria-label="Devoirs à rendre">
-        {assignments.map((a) => <LearnerAssignmentRow key={a.id} assignment={a} />)}
-      </ul>
-    </section>
+    <div className="space-y-5">
+      {loading ? <TableSkeleton rows={3} cols={2} /> : assignments.length === 0 ? (
+        <ExplorerEmptyState
+          icon={<ClipboardCheck size={27} />}
+          title="Aucun devoir à rendre"
+          body="Les devoirs publiés pour vos sessions apparaîtront ici avec leur échéance."
+        />
+      ) : (
+        <section className="product-list-panel p-5">
+          <div className="product-panel-heading -mx-5 -mt-5 mb-4">
+            <div><h2>Mes devoirs</h2><p>Consultez l'échéance et remettez votre travail.</p></div>
+          </div>
+          <ul className="space-y-2" aria-label="Devoirs à rendre">
+            {assignments.map((a) => <LearnerAssignmentRow key={a.id} assignment={a} />)}
+          </ul>
+        </section>
+      )}
+      <MyGrades />
+    </div>
   );
 }
 

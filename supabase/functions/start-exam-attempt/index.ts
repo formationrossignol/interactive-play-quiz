@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders, handleCorsPreflight } from "../_shared/cors.ts";
+import { getCallerUserId } from "../_shared/auth.ts";
 
 interface Body {
   examId: string;
@@ -46,6 +47,12 @@ Deno.serve(async (req) => {
     let questionOrder = (exam.questions_public as { id: string }[] ?? []).map((q) => q.id);
     if (exam.shuffle_questions) questionOrder = shuffle(questionOrder);
 
+    // Only set when the caller has a real Supabase session (not the anon
+    // key) — an exam taken while logged in gets synced into the LMS
+    // gradebook (see sync_exam_attempt_to_gradebook()); anonymous join-code
+    // takers stay exactly as untracked as before.
+    const learnerId = getCallerUserId(req);
+
     const { data: result, error: rpcError } = await supabase.rpc("start_exam_attempt_atomic", {
       p_exam_id: body.examId,
       p_participant_id: body.participantId,
@@ -54,6 +61,7 @@ Deno.serve(async (req) => {
       p_max_attempts: exam.max_attempts,
       p_max_participants: exam.max_participants,
       p_question_order: questionOrder,
+      p_learner_id: learnerId,
     });
     if (rpcError) throw rpcError;
 
