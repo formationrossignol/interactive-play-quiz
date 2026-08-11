@@ -40,6 +40,7 @@ export interface GradeResult {
   status: 'graded' | 'excused' | 'missing' | 'not_graded';
   points: number | null;
   published_at: string | null;
+  grade_items: { title: string; max_points: number; source_type: string } | null;
 }
 
 export interface Rubric {
@@ -234,7 +235,7 @@ export async function addRubricLevel(criterionId: string, label: string, points:
 export async function myGradeResults(): Promise<GradeResult[]> {
   const { data, error } = await supabase
     .from('grade_results')
-    .select('*')
+    .select('*, grade_items(title, max_points, source_type)')
     .order('published_at', { ascending: false });
   if (error) throw error;
   return (data ?? []) as GradeResult[];

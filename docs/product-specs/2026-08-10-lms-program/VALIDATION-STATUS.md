@@ -10,7 +10,9 @@ participation live anon/temps réel de la spec 09 (migration
 `20260811020000_live_engagement_participation.sql`, non mergée), et l'UI de
 grilles de correction (rubriques) de la spec 01 (`Assignments.tsx`,
 `gradebook.ts` — pas de nouvelle migration, le RPC acceptait déjà
-`p_rubric_ratings`).
+`p_rubric_ratings`), et une passe de réconciliation LMS ↔ systèmes
+pré-existants (migration `20260811050000_lms_reconciliation.sql`, voir
+§Réconciliation ci-dessous, non mergée).
 
 Ce document trace ce qu'il reste pour que chaque spec passe de « fondation
 posée » à « conforme à ses propres critères d'acceptation ». Statut par
@@ -82,6 +84,34 @@ commencé.
   d'un `client_id` donné sans fuite vers un autre `client_id` ; les 4 tables
   concernées (`audience_questions`/`live_interactions`/`live_runs`/
   `live_responses`) sont bien dans la publication `supabase_realtime`.
+
+---
+
+## Réconciliation LMS ↔ systèmes pré-existants
+
+Chaque spec du programme a été construite depuis son propre « modèle de
+données indicatif », sans confronter ce modèle à ce que l'app avait déjà.
+Audit (deux passes Explore sur toutes les migrations + le frontend) confirmé
+concret, pas une impression : le gradebook « unifié » ne l'était que dans le
+`check` constraint, pas dans le code ; les notifications existantes n'étaient
+jamais déclenchées par le LMS ; « restaurer » une version de contenu ne
+restaurait rien de visible ; l'inscription par groupe n'avait aucun code pour
+l'activer. Migration `20260811050000_lms_reconciliation.sql`.
+
+**Fait** :
+- `sync_exam_attempt_to_gradebook()` / `sync_manual_grade_to_gradebook()` (triggers) — un examen ou une évaluation manuelle publiée alimente désormais réellement `grade_items`/`grade_results`, pas seulement les devoirs. `exam_attempts` a gagné une colonne `learner_id` nullable (jamais `participant_email`, auto-déclaré et non vérifié en Tier-1) — remplie uniquement quand l'appelant a une vraie session (`getCallerUserId()` dans `start-exam-attempt`), donc le passage d'examen anonyme par code continue de fonctionner à l'identique. Les tentatives multiples respectent `exams.score_retention_policy` (`best`/`last`, même sémantique que le calcul déjà existant côté client dans `examStorage.ts`). Les évaluations manuelles de type `validation` (« Validé »/« Non validé ») ne sont volontairement pas forcées dans un gradebook à points. Vérifié : deux tentatives d'examen à 60 puis 90 → conservé 90 en politique `best` ; 90 puis 60 → conservé 60 en politique `last` ; tentative anonyme → absente du gradebook.
+- `notify_lms_grade_publication()` (trigger sur `grade_results`) — réutilise exactement le `notify_manual_grade_publication()` déjà existant (catégorie `system`, `notification_category_enabled()`, table `notifications` déjà là). Exclut volontairement `source_type='manual'` : sans ça, publier une note manuelle déclenchait *deux* notifications pour le même événement (le trigger existant + celui-ci via la synchronisation ci-dessus) — bug trouvé par le test fonctionnel de cette migration, pas par relecture.
+- `LearnerAssignments` (`Assignments.tsx`) affiche désormais « Mes notes » via `myGradeResults()` — fonction déjà écrite dans `gradebook.ts`, jamais appelée par personne avant cette passe.
+- `publish_content_version()`/`restore_content_version()` — corrigés pour écrire réellement le snapshot dans `content.data`. C'était un vrai bug, pas un manque : « restaurer » une version ne changeait rien à ce qui était servi. Vérifié : publier v1 puis v2 puis restaurer v1 → `content.data` reflète bien v1 à chaque étape.
+- `enroll_group_in_session(p_session_id, p_group_id)` — active `enrollments.source='group'`/`enrollment_group_sources`, qui existaient sans aucun code pour les remplir. Boucle sur `share_group_members` et réutilise intégralement `enroll_in_session()` (capacité atomique, liste d'attente) par membre. Vérifié : groupe de 3 apprenants sur une session `capacity=2` → 2 actifs + 1 en liste d'attente, comme `enroll_in_session()` seul le ferait.
+
+**Explicitement laissé de côté** (gaps réels, mais qui méritent chacun leur
+propre conception plutôt qu'un rattachement rapide) :
+- Banque d'items (spec 08, `assessment_items`) sans lien vers les questions de quiz existantes (`content.data`) — projet de migration de données à part entière.
+- `certificates` (clé `course_id` texte, alimenté côté client) sans lien vers la complétion d'inscription ou la maîtrise de compétences — nécessite sa propre réconciliation de modèle.
+- Incohérence de nommage `grade_items.source_type` vs `competency_evidence.source_type` — friction cosmétique, pas un bug fonctionnel, non touchée.
+- Rappels à échéance temporelle (J-7/J-1) — nécessiteraient un vrai ordonnanceur, qui n'existe nulle part dans ce repo (constaté à plusieurs reprises cette session) ; pas simulé.
+- Contrôle d'accès par plan Stripe vs rôle d'organisation LMS — question de modèle économique, pas un bug à trancher silencieusement dans un sens ou l'autre.
 
 ---
 
