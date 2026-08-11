@@ -24,9 +24,17 @@ pouvoir s'y référer facilement.
   SCIM/OneRoster planifiées (04), la livraison de webhooks en file (04) —
   l'infrastructure existe maintenant pour les brancher, mais aucune de ces
   fonctions n'existe encore.
-- **Le moteur de correction de la spec 08 (`item_answer_keys` jamais lu)**
-  bloque : `extra_time` réel (05), la projection journalière **item** et la
-  psychométrie ANA-009/012 (07).
+- ~~**Le moteur de correction de la spec 08 (`item_answer_keys` jamais lu)**~~
+  `submit_assessment_response()` le lit désormais (`20260812060000_assessment_correction_engine.sql`,
+  voir §08). Débloque réellement la projection journalière **item** et la
+  psychométrie ANA-009/012 (07) — `assessment_responses` porte maintenant
+  `is_correct`/`points_earned` par item, la matière première existe. **Ne
+  débloque pas `extra_time` (05)** : ce moteur note `assessment_items`
+  (le système spec 08), pas `exam_attempts` (le système d'examen
+  pré-existant, Tier-1, sur lequel `extra_time` porte réellement) — ce
+  sont deux systèmes parallèles distincts, jamais réconciliés (voir
+  « Réconciliation » en bas de ce document). `assessment_attempts` n'a
+  d'ailleurs aucune notion de durée/limite de temps du tout.
 - **Aucune UI staff ne crée de sondage/priorisation/matrice** (spec 09)
   bloque : l'écran de réponse participant à ces formats — le construire
   avant l'éditeur serait deviner un format.
@@ -82,7 +90,7 @@ pouvoir s'y référer facilement.
 
 ## 05 — Accessibilité, inclusion et aménagements individuels
 
-- [ ] `extra_time` réel — bloqué en amont par l'absence de tout moteur de tentative chronométrée server-side (se débloque avec le moteur de correction de la spec 08)
+- [ ] `extra_time` réel — bloqué en amont par l'absence de tout moteur de tentative chronométrée server-side sur `exams`/`exam_attempts` ; **pas débloqué** par le moteur de correction de la spec 08 (voir dépendances en tête de document) — celui-ci note un système parallèle (`assessment_items`) sans aucune notion de durée
 - [ ] Vérificateur d'accessibilité de contenu (A11Y-007 à A11Y-012) — table `content_accessibility_checks` posée, aucun analyseur
 - [ ] Socle application (A11Y-001 à A11Y-006 : focus, navigation clavier, contrastes, `prefers-reduced-motion`) — hors DB, c'est un chantier design system transverse à tout le produit
 - [ ] Alternatives d'interaction accessibles (hotspot/drag-drop/dessin clavier — A11Y-013)
@@ -100,7 +108,7 @@ pouvoir s'y référer facilement.
 
 ## 07 — Analytics pédagogiques, psychométrie et signaux de risque
 
-- [ ] Projection journalière **item** — bloquée en amont : ANA-009/010 ont besoin d'un vrai moteur de correction lisant `item_answer_keys` (spec 08)
+- [ ] Projection journalière **item** — n'était bloquée que par l'absence de moteur de correction (spec 08, fait). `assessment_responses` porte maintenant `is_correct`/`points_earned` par `item_revision_id` : la matière première existe, la projection/l'agrégat lui-même reste à écrire
 - [ ] Projection journalière **programme** — jamais définie faute de UI/agrégat programme existant à côté de session/offering
 - [x] Dashboard formateur/pédagogue/admin (ANA-006 à ANA-008) — `/lms/analytics`, `AnalyticsDashboard` : activité (apprenants actifs/événements, 14j), preuves de compétence (14j), totaux d'inscription (30j). Lit `analytics_daily_activity`/`analytics_daily_enrollment`/`analytics_daily_competency` déjà là. **ANA-005 (dashboard apprenant) reste bloqué** : ces 3 tables n'ont de politique RLS que pour `trainer`/`pedago`/`admin` — aucune lecture apprenant de ses propres lignes n'existe, il faudrait une migration RLS avant de pouvoir construire cet écran, pas juste une UI
 - [ ] Analyse d'items / psychométrie (difficulté, discrimination, distracteurs — ANA-009 à ANA-012)
@@ -111,9 +119,9 @@ pouvoir s'y référer facilement.
 
 ## 08 — Évaluations avancées et banque d'items versionnée
 
-- [ ] Assemblage réel d'une évaluation (sections fixes/pool aléatoire, tirage figé par tentative — `assessment_pool_rules`/`assessment_item_refs` posés, aucun moteur de tirage)
-- [ ] Barèmes riches (score partiel, pénalité, tolérance, réponses équivalentes — ASM-012) et leur simulation avant publication (ASM-013)
-- [ ] Moteur de correction réel utilisant `item_answer_keys` (aucune fonction ne le lit encore — seul `create_item_revision()` écrit dedans) — **la pièce la plus bloquante du programme, débloque 05 et 07**
+- [x] Assemblage réel d'une évaluation — **sections fixes seulement** : `/lms/item-bank` (panneau Évaluations), créer une évaluation, ajouter une section fixe, y attacher des révisions d'item, publier (`publish_assessment()`, snapshot immuable dans `assessment_versions`). Tirage figé par tentative fait (`start_assessment_attempt()` pré-crée les lignes `assessment_responses` à l'ouverture). **Reste** : le tirage aléatoire (sections `pool`, `assessment_pool_rules`) — refusé explicitement (`pool_sections_not_supported`) plutôt que deviné
+- [x] Barèmes riches (ASM-012) — **pour 4 types sur 21** (`true_false`/`single_choice`/`mcq`/`short_answer`, les seuls avec UI d'auteur) : points fixes, crédit partiel + pénalité par option fausse (mcq), équivalences insensibles casse/espaces (short_answer). Tolérance numérique non couverte (aucun type numérique n'a d'UI). **Reste** : simulation avant publication (ASM-013), ranking/matching/cloze et les 8 types ASM-017-024
+- [x] Moteur de correction réel utilisant `item_answer_keys` — **la pièce la plus bloquante du programme** : `submit_assessment_response()` lit `item_answer_keys` pour la première fois dans ce repo, corrige côté serveur, jamais de fuite de la réponse correcte au client. Contrat JSON `correct_answer`/`scoring_rules` défini et documenté (`20260812060000_assessment_correction_engine.sql`). Testé fonctionnellement (11 cas : crédit partiel + plancher à 0, équivalences, casse) en transaction annulée avant commit. **Non testé en conditions réelles** (pas de compte staff/apprenant local pour dérouler un cycle complet création→passation→note) ; migration pas encore déployée en prod
 - [ ] Nouveaux types d'interaction (passage, vidéo interactive, audio/vidéo, dessin, labeling, math/graphique, fichier, code — ASM-017 à ASM-024) : le schéma accepte n'importe quel `item_type`/`prompt` JSON mais aucun éditeur/lecteur n'existe pour ces types
 - [ ] Rescore en masse avec prévisualisation d'impact (`rescore_jobs` posé, aucun exécuteur)
 - [ ] Suggestions IA (génération, distracteurs, vérifications de biais/ambiguïté) — non-objectif partiel mais mentionné comme option V1
@@ -151,7 +159,7 @@ pouvoir s'y référer facilement.
 
 ## Ordre suggéré pour la suite
 
-1. **08 — moteur de correction (`item_answer_keys`)** : la pièce la plus bloquante, débloque `extra_time` (05) et la psychométrie/projection item (07).
+1. ~~**08 — moteur de correction (`item_answer_keys`)**~~ — fait pour l'assemblage fixe + 4 types notables (voir §08). Débloque la psychométrie/projection item (07) ; ne débloque pas `extra_time` (05, système `exams` séparé). Reste ouvert : tirage aléatoire (pool), simulation de barème avant publication, 17 autres types d'interaction.
 2. ~~**UI gradebook consolidée (01)**~~ — fait pour l'essentiel (`/lms/gradebook`, voir §01). Reste ouvert : import CSV/XLSX de notes (GBK-006), dashboards visuels (07).
 3. ~~**04 — UI admin LTI + linking**~~ — fait (voir §04) : enregistrements/déploiements/linking/diagnostic. Reste ouvert : Deep Linking/NRPS/AGS, SSO OIDC/SAML général, QTI/SCIM/OneRoster/API publique.
 4. ~~**09 — écran projeté**~~ — fait pour le Q&A (voir §09). Reste ouvert : éditeur de formats sondage/priorisation/matrice.
