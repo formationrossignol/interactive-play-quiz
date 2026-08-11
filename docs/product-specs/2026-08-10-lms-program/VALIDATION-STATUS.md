@@ -339,10 +339,37 @@ et surtout — résoudre le signal *et* déverrouiller le `release_state` sous-
 jacent avant de rejouer ne le rouvre pas (le rejeu ne rouvre que si la
 condition est encore vraie).
 
+Depuis cette passe : dashboard staff (`/lms/analytics`, `AnalyticsDashboard`
+dans `Analytics.tsx`, data-access `analyticsDashboard.ts`) — deux graphiques
+(recharts, réutilisant le système de charts déjà en place pour le tableau de
+bord général : `components/ui/chart.tsx`, tokens `--mp-chart-*`, classes
+`product-analytics-card`/`product-analytics-grid`) : activité (apprenants
+actifs distincts + événements, agrégés par jour sur 14j depuis
+`analytics_daily_activity`) et preuves de compétence (`evidence_count` par
+jour sur 14j depuis `analytics_daily_competency`), plus 4 tuiles de totaux
+d'inscription sur 30j (`analytics_daily_enrollment`). RLS sur ces 3 tables
+n'autorise que `trainer`/`pedago`/`admin` (pas `registrar`, pas
+d'apprenant) — un seul écran sert donc ANA-006/007/008, il n'y a pas de
+donnée distincte à séparer par rôle avec ce schéma. **ANA-005 (dashboard
+apprenant) non fait** : aucune politique RLS ne permet à un apprenant de
+lire ses propres lignes sur ces 3 tables (vérifié : seule
+`..._staff_read` existe) — un vrai gap RLS, pas une UI manquante.
+Palette : la fonction `validate_palette.js` (skill dataviz) flague le
+couple `--mp-chart-secondary`/`--mp-chart-positive` sous le seuil de
+contraste 3:1 en light (WARN, atténué ici par tooltip+légende déjà
+présents) et hors bande de luminosité en dark (FAIL) — c'est la palette de
+graphiques déjà utilisée par `ActivityChart`/`ScoreChart` du tableau de
+bord général, pas quelque chose d'introduit ici ; corriger les tokens
+`--mp-chart-*` eux-mêmes serait un chantier design-system transverse, hors
+scope de cette passe. Vérifié : `tsc`/`eslint` propres ; page testée dans
+Chrome non authentifié (état vide « Accès réservé » correctement rendu) —
+**non vérifié avec des projections réelles** (pas de compte staff de test
+disponible en local).
+
 **Reste à faire** :
 - [ ] Projection journalière **item** — bloquée en amont : ANA-009/010 ont besoin d'un vrai moteur de correction lisant `item_answer_keys` (spec 08), qui n'existe pas encore ; construire la projection avant le producteur de données serait deviner un schéma
 - [ ] Projection journalière **programme** — jamais définie faute de UI/agrégat programme existant à côté de session/offering
-- [ ] Dashboards apprenant/formateur/responsable/admin (ANA-005 à ANA-008) — aucun écran de visualisation ; les projections existent maintenant pour les alimenter
+- [ ] Dashboard apprenant (ANA-005) — bloqué par l'absence de politique RLS lecture-apprenant sur `analytics_daily_activity`/`analytics_daily_enrollment`/`analytics_daily_competency`
 - [ ] Analyse d'items / psychométrie (difficulté, discrimination, distracteurs — ANA-009 à ANA-012)
 - [ ] Programmation de rapports (`report_schedules`/`report_runs`) — tables posées, aucun exécuteur
 - [ ] Export CSV/XLSX/PDF avec pseudonymisation
@@ -390,7 +417,7 @@ verrouiller/déverrouiller le run.
 
 **Reste à faire** :
 - [ ] Écran public projeté (résultats agrégés en temps réel) + mode présentateur/console modérateur distincts (LIVE-015) — le Q&A participant existe, il manque la vue projection/grand écran séparée
-- [ ] UI d'expulsion (`kick_participant()` câblé côté data-access, aucun bouton dans la console animateur — seul verrouiller/déverrouiller l'est)
+- [x] UI d'expulsion — bouton « Expulser » par participant actif (`ParticipantManager`, dépliable depuis le compteur de participants dans `RunControls`)
 - [ ] Répondre à un sondage/interaction (`live_interactions`/`submit_live_response()`/`get_my_live_response()` existent, mais aucune UI staff ne crée encore de `poll`/`priority`/`matrix`/etc., donc rien à répondre côté participant — construire l'écran de réponse avant l'éditeur staff serait deviner un format)
 - [ ] Vraie table/mécanisme d'allowlist pour `access_policy = 'allowlist'` (actuellement traité comme `authenticated`, donc moins permissif que prévu plutôt que trop permissif — mais toujours pas ce que LIVE-002 décrit)
 - [ ] Formats supplémentaires : priorisation, matrice 2×2, brainstorm, classement forcé (LIVE-009 à LIVE-013) — `live_interactions.kind` les accepte, aucun éditeur/lecteur

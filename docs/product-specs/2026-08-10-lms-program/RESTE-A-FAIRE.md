@@ -94,7 +94,7 @@ pouvoir s'y référer facilement.
 
 - [ ] Projection journalière **item** — bloquée en amont : ANA-009/010 ont besoin d'un vrai moteur de correction lisant `item_answer_keys` (spec 08)
 - [ ] Projection journalière **programme** — jamais définie faute de UI/agrégat programme existant à côté de session/offering
-- [ ] Dashboards apprenant/formateur/responsable/admin (ANA-005 à ANA-008) — aucun écran de visualisation ; les projections existent maintenant pour les alimenter
+- [x] Dashboard formateur/pédagogue/admin (ANA-006 à ANA-008) — `/lms/analytics`, `AnalyticsDashboard` : activité (apprenants actifs/événements, 14j), preuves de compétence (14j), totaux d'inscription (30j). Lit `analytics_daily_activity`/`analytics_daily_enrollment`/`analytics_daily_competency` déjà là. **ANA-005 (dashboard apprenant) reste bloqué** : ces 3 tables n'ont de politique RLS que pour `trainer`/`pedago`/`admin` — aucune lecture apprenant de ses propres lignes n'existe, il faudrait une migration RLS avant de pouvoir construire cet écran, pas juste une UI
 - [ ] Analyse d'items / psychométrie (difficulté, discrimination, distracteurs — ANA-009 à ANA-012)
 - [ ] Programmation de rapports (`report_schedules`/`report_runs`) — tables posées, aucun exécuteur
 - [ ] Export CSV/XLSX/PDF avec pseudonymisation
@@ -115,7 +115,7 @@ pouvoir s'y référer facilement.
 ## 09 — Sondage live, Q&A, modération et coanimation
 
 - [ ] Écran public projeté (résultats agrégés en temps réel) + mode présentateur/console modérateur distincts (LIVE-015) — le Q&A participant existe, il manque la vue projection/grand écran séparée
-- [ ] UI d'expulsion (`kick_participant()` câblé côté data-access, aucun bouton dans la console animateur — seul verrouiller/déverrouiller l'est)
+- [x] UI d'expulsion (`kick_participant()` — bouton par participant actif dans la console animateur, `LiveEngagement.tsx::ParticipantManager`)
 - [ ] Répondre à un sondage/interaction (`live_interactions`/`submit_live_response()`/`get_my_live_response()` existent, mais aucune UI staff ne crée encore de `poll`/`priority`/`matrix`/etc.)
 - [ ] Vraie table/mécanisme d'allowlist pour `access_policy = 'allowlist'` (actuellement traité comme `authenticated`)
 - [ ] Formats supplémentaires : priorisation, matrice 2×2, brainstorm, classement forcé (LIVE-009 à LIVE-013) — `live_interactions.kind` les accepte, aucun éditeur/lecteur
