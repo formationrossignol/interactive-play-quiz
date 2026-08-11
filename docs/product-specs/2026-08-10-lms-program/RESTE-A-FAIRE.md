@@ -50,7 +50,7 @@ pouvoir s'y référer facilement.
 
 - [ ] UI : import CSV/XLSX avec prévisualisation/mapping/doublons (ENR-014)
 - [ ] UI : actions en masse (inscrire, déplacer, annuler, prolonger — ENR-015)
-- [ ] UI : écran participant pour voir/accepter/décliner une offre de liste d'attente — les RPC existent, aucun écran ne les appelle
+- [x] UI : écran participant pour voir/accepter/décliner une offre de liste d'attente — bandeau « Une place s'est libérée » dans « Mes formations » (`Sessions.tsx::WaitlistOffers`), compte à rebours 48h, accepter/refuser appellent `accept_waitlist_offer()`/`decline_waitlist_offer()` directement
 - [ ] Auto-inscription avec règles (domaine email, code, paiement, prérequis — ENR-013)
 - [ ] Vue apprenant « Mes formations » complète avec dates effectives/échéances relatives recalculées (ENR-017, la V1 actuelle liste juste par statut)
 - [ ] Calcul de complétion versionné par politique (activités obligatoires, score, présence)

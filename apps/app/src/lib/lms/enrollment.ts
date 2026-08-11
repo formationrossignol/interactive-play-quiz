@@ -27,6 +27,19 @@ export interface CourseSession {
   created_at: string;
 }
 
+export type WaitlistEntryStatus = 'waiting' | 'offered' | 'expired' | 'accepted' | 'declined';
+
+export interface WaitlistEntry {
+  id: string;
+  session_id: string;
+  learner_id: string;
+  position: number;
+  status: WaitlistEntryStatus;
+  offered_at: string | null;
+  expires_at: string | null;
+  created_at: string;
+}
+
 export interface Enrollment {
   id: string;
   org_id: string;
@@ -138,4 +151,30 @@ export async function transitionEnrollment(enrollmentId: string, toStatus: Enrol
   });
   if (error) throw error;
   return data as Enrollment;
+}
+
+/** All waitlist entries belonging to the current user, any status —
+ *  callers filter to 'offered' for the accept/decline banner. */
+export async function myWaitlistEntries(): Promise<WaitlistEntry[]> {
+  const { data, error } = await supabase
+    .from('waitlist_entries')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as WaitlistEntry[];
+}
+
+/** Atomic: accepting turns this entry into an active enrollment — see
+ *  accept_waitlist_offer() migration (48h offer window, position-ordered). */
+export async function acceptWaitlistOffer(waitlistEntryId: string): Promise<Enrollment> {
+  const { data, error } = await supabase.rpc('accept_waitlist_offer', { p_waitlist_entry_id: waitlistEntryId });
+  if (error) throw error;
+  return data as Enrollment;
+}
+
+/** Declining re-chains promote_waitlist() to offer the seat to the next
+ *  learner in line. */
+export async function declineWaitlistOffer(waitlistEntryId: string): Promise<void> {
+  const { error } = await supabase.rpc('decline_waitlist_offer', { p_waitlist_entry_id: waitlistEntryId });
+  if (error) throw error;
 }
