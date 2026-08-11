@@ -397,15 +397,40 @@ Chrome non authentifié (état vide « Accès réservé » correctement rendu) �
 **non vérifié avec des projections réelles** (pas de compte staff de test
 disponible en local).
 
+Depuis cette passe (`20260812020000_scheduler.sql`) : premier vrai
+ordonnanceur du repo — extension `pg_cron` (déjà disponible sur le projet,
+jamais activée), job nocturne `lms-daily-analytics-and-risk-signals` (3h,
+`cron.schedule` avec nom → réapplication idempotente) qui boucle sur
+`organizations` et appelle `run_daily_analytics_rollup()`/
+`generate_risk_signals()` pour chacune, chaque org isolée dans son propre
+bloc `exception when others` (une org en échec n'annule pas les autres —
+`raise warning`, pas d'abandon du job). Problème réel trouvé en construisant
+ceci, pas anticipé : les deux RPC vérifient `has_org_role(p_org_id,
+['pedago','admin'])` via `auth.uid()` — correct pour un appel interactif,
+mais un job `pg_cron` n'a pas de JWT, `auth.uid()` y est `null`, donc
+l'appel direct aurait toujours levé `Not authorized` et le job aurait
+tourné pour rien chaque nuit sans jamais rien écrire. Plutôt que d'affaiblir
+ce contrôle (déjà testé fonctionnellement : « un apprenant non-staff ... ne
+peut pas exécuter les deux RPC », voir plus haut), chaque fonction a été
+scindée en wrapper public inchangé (signature/comportement identiques,
+toujours vérifié) + fonction interne non vérifiée
+(`_run_daily_analytics_rollup_internal`/`_generate_risk_signals_internal`),
+jamais accordée à `authenticated`/`anon`, que seul le scheduler appelle.
+Diff ligne à ligne du corps copié contre la définition source
+(`20260811010000`/`20260811080000`) fait avant commit — logique identique,
+seuls les commentaires diffèrent. **Non déployé/testé en prod au moment de
+ce commit** — migration prête, pas encore poussée ; comportement du cron
+lui-même (est-ce qu'il se déclenche, `cron.job_run_details`) pas vérifiable
+sans attendre une exécution réelle après déploiement.
+
 **Reste à faire** :
 - [ ] Projection journalière **item** — bloquée en amont : ANA-009/010 ont besoin d'un vrai moteur de correction lisant `item_answer_keys` (spec 08), qui n'existe pas encore ; construire la projection avant le producteur de données serait deviner un schéma
 - [ ] Projection journalière **programme** — jamais définie faute de UI/agrégat programme existant à côté de session/offering
 - [ ] Dashboard apprenant (ANA-005) — bloqué par l'absence de politique RLS lecture-apprenant sur `analytics_daily_activity`/`analytics_daily_enrollment`/`analytics_daily_competency`
 - [ ] Analyse d'items / psychométrie (difficulté, discrimination, distracteurs — ANA-009 à ANA-012)
-- [ ] Programmation de rapports (`report_schedules`/`report_runs`) — tables posées, aucun exécuteur
+- [ ] Programmation de rapports (`report_schedules`/`report_runs`) — tables posées, aucun exécuteur ; pourrait maintenant se brancher sur le même `pg_cron`
 - [ ] Export CSV/XLSX/PDF avec pseudonymisation
 - [ ] Seuil minimal anti-réidentification sur les comparaisons de cohortes (ANA-020)
-- [ ] Ordonnanceur réel pour `run_daily_analytics_rollup()`/`generate_risk_signals()` — ce sont des RPC idempotentes prêtes à être appelées par un cron/edge function, mais aucun ordonnanceur n'existe dans ce repo (vrai pour tous les jobs du programme, pas spécifique à 07)
 
 ## 08 — Évaluations avancées et banque d'items versionnée
 

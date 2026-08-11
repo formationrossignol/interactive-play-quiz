@@ -9,13 +9,21 @@ pouvoir s'y référer facilement.
 
 ## Dépendances qui bloquent plusieurs items à la fois
 
-- **Aucun ordonnanceur (cron/scheduler) n'existe dans ce repo.** Bloque : les
+- ~~**Aucun ordonnanceur (cron/scheduler) n'existe dans ce repo.**~~
+  `pg_cron` activé (`20260812020000_scheduler.sql`) : job nocturne
+  `lms-daily-analytics-and-risk-signals` (3h du matin), appelle
+  `run_daily_analytics_rollup()`/`generate_risk_signals()` pour chaque
+  organisation, isolé par org (l'échec d'une organisation n'annule pas les
+  autres). Les deux RPC contrôlaient l'admin via `auth.uid()` — sans
+  signification pour un job cron sans JWT — donc chacune a été scindée en
+  wrapper vérifié (signature/comportement inchangés) + fonction interne non
+  vérifiée, jamais accordée à `authenticated`/`anon`. Reste bloqué par
+  l'absence de logique métier (pas seulement de planification) : les
   rappels d'échéance J-7/J-1 (01), les notifications programmées (01), le
-  balayage planifié de `release_state` (06), l'exécution planifiée de
-  `run_daily_analytics_rollup()`/`generate_risk_signals()` (07), les
-  synchronisations SCIM/OneRoster planifiées (04), la livraison de webhooks
-  en file (04). Tout ce qui est marqué « RPC prête, personne ne l'appelle
-  encore » dans cette liste attend cette même pièce d'infrastructure.
+  balayage planifié de `release_state` (06), les synchronisations
+  SCIM/OneRoster planifiées (04), la livraison de webhooks en file (04) —
+  l'infrastructure existe maintenant pour les brancher, mais aucune de ces
+  fonctions n'existe encore.
 - **Le moteur de correction de la spec 08 (`item_answer_keys` jamais lu)**
   bloque : `extra_time` réel (05), la projection journalière **item** et la
   psychométrie ANA-009/012 (07).
@@ -99,7 +107,7 @@ pouvoir s'y référer facilement.
 - [ ] Programmation de rapports (`report_schedules`/`report_runs`) — tables posées, aucun exécuteur
 - [ ] Export CSV/XLSX/PDF avec pseudonymisation
 - [ ] Seuil minimal anti-réidentification sur les comparaisons de cohortes (ANA-020)
-- [ ] Ordonnanceur réel pour `run_daily_analytics_rollup()`/`generate_risk_signals()` — RPC idempotentes prêtes à être appelées par un cron/edge function
+- [x] Ordonnanceur réel pour `run_daily_analytics_rollup()`/`generate_risk_signals()` — `pg_cron`, job nocturne par organisation (voir dépendances en tête de document)
 
 ## 08 — Évaluations avancées et banque d'items versionnée
 
@@ -147,5 +155,5 @@ pouvoir s'y référer facilement.
 2. ~~**UI gradebook consolidée (01)**~~ — fait pour l'essentiel (`/lms/gradebook`, voir §01). Reste ouvert : import CSV/XLSX de notes (GBK-006), dashboards visuels (07).
 3. ~~**04 — UI admin LTI + linking**~~ — fait (voir §04) : enregistrements/déploiements/linking/diagnostic. Reste ouvert : Deep Linking/NRPS/AGS, SSO OIDC/SAML général, QTI/SCIM/OneRoster/API publique.
 4. ~~**09 — écran projeté**~~ — fait pour le Q&A (voir §09). Reste ouvert : éditeur de formats sondage/priorisation/matrice.
-5. **Un vrai ordonnanceur** (cron/edge function planifiée) : débloquerait d'un coup plusieurs items indépendants listés en tête de ce document.
+5. ~~**Un vrai ordonnanceur**~~ — fait (`pg_cron`, voir dépendances en tête de document) pour les 2 RPC qui étaient réellement prêtes. Débloque la *planification* des rappels J-7/J-1, du balayage `release_state`, de SCIM/OneRoster, des webhooks en file — mais chacun a encore besoin de sa propre logique métier avant de pouvoir être branché.
 6. Le reste (05 socle accessibilité transverse, 10 localisation, 04 SCIM/OneRoster/API) peut suivre l'ordre recommandé du README du programme.
