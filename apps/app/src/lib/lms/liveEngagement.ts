@@ -16,6 +16,8 @@ export interface LiveRun {
   event_id: string;
   status: 'open' | 'closed';
   started_at: string;
+  capacity: number | null;
+  locked: boolean;
 }
 
 export interface AudienceQuestion {
@@ -26,6 +28,14 @@ export interface AudienceQuestion {
   status: 'pending' | 'approved' | 'live' | 'answered' | 'dismissed' | 'archived';
   votes_count: number;
   created_at: string;
+}
+
+export interface LiveParticipantRow {
+  id: string;
+  run_id: string;
+  client_id: string;
+  display_name: string | null;
+  status: 'active' | 'kicked';
 }
 
 export async function listOrgLiveEvents(orgId: string): Promise<LiveEvent[]> {
@@ -83,4 +93,46 @@ export async function castVote(questionId: string, clientId: string): Promise<nu
   const { data, error } = await supabase.rpc('cast_vote', { p_question_id: questionId, p_client_id: clientId });
   if (error) throw error;
   return data as number;
+}
+
+/** Public join-by-code lookup: any active event, any org — the code is the
+ * gate (enforced by whoever has it), not org membership. */
+export async function getLiveEventByCode(code: string): Promise<LiveEvent | null> {
+  const { data, error } = await supabase.from('live_events').select('*').eq('code', code).eq('status', 'active').maybeSingle();
+  if (error) throw error;
+  return (data as LiveEvent | null) ?? null;
+}
+
+export async function getOpenRun(eventId: string): Promise<LiveRun | null> {
+  const { data, error } = await supabase
+    .from('live_runs').select('*').eq('event_id', eventId).eq('status', 'open')
+    .order('started_at', { ascending: false }).limit(1).maybeSingle();
+  if (error) throw error;
+  return (data as LiveRun | null) ?? null;
+}
+
+/** Idempotent by (run, client): a reconnect (page reload, new tab with the
+ * same sessionStorage identity) calls this again and gets the same seat
+ * back, never a duplicate participant row. Throws on capacity/lock/kick/
+ * access_policy rejection — callers switch on the error message. */
+export async function joinLiveRun(runId: string, clientId: string, displayName: string | null): Promise<LiveParticipantRow> {
+  const { data, error } = await supabase.rpc('join_live_run', { p_run_id: runId, p_client_id: clientId, p_display_name: displayName });
+  if (error) throw error;
+  return data as LiveParticipantRow;
+}
+
+export async function listRunParticipants(runId: string): Promise<LiveParticipantRow[]> {
+  const { data, error } = await supabase.from('live_participants').select('*').eq('run_id', runId).order('joined_at');
+  if (error) throw error;
+  return (data ?? []) as LiveParticipantRow[];
+}
+
+export async function setRunLocked(runId: string, locked: boolean): Promise<void> {
+  const { error } = await supabase.rpc('lock_live_run', { p_run_id: runId, p_locked: locked });
+  if (error) throw error;
+}
+
+export async function kickParticipant(participantId: string): Promise<void> {
+  const { error } = await supabase.rpc('kick_participant', { p_participant_id: participantId });
+  if (error) throw error;
 }

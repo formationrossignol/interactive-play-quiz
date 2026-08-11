@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { MessageCircleQuestion, Plus, Radio } from "lucide-react";
+import { Check, Copy, Lock, MessageCircleQuestion, Plus, Radio, Unlock, Users } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/ui/page-header";
 import { ExplorerEmptyState } from "@/components/content/ExplorerEmptyState";
@@ -16,8 +16,10 @@ import {
   createLiveRun,
   listOrgLiveEvents,
   listLatestRun,
+  listRunParticipants,
   listRunQuestions,
   moderateQuestion,
+  setRunLocked,
   type AudienceQuestion,
   type LiveEvent,
   type LiveRun,
@@ -76,12 +78,63 @@ function QuestionModeration({ run }: { run: LiveRun }) {
   );
 }
 
+function RunControls({ run, onLockChange }: { run: LiveRun; onLockChange: (locked: boolean) => void }) {
+  const [participantCount, setParticipantCount] = useState<number | null>(null);
+  const [toggling, setToggling] = useState(false);
+
+  useEffect(() => {
+    listRunParticipants(run.id).then((rows) => setParticipantCount(rows.filter((p) => p.status === "active").length)).catch(() => setParticipantCount(null));
+  }, [run.id]);
+
+  const handleToggleLock = async () => {
+    setToggling(true);
+    try {
+      await setRunLocked(run.id, !run.locked);
+      onLockChange(!run.locked);
+    } catch (err) {
+      showError(err);
+    } finally {
+      setToggling(false);
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-3 text-sm text-muted-foreground flex-wrap">
+      <span className="flex items-center gap-1"><Users size={14} /> {participantCount ?? "…"}</span>
+      <Button variant="ghost" size="sm" loading={toggling} onClick={handleToggleLock}>
+        {run.locked ? <Unlock size={14} /> : <Lock size={14} />} {run.locked ? "Déverrouiller" : "Verrouiller"}
+      </Button>
+    </div>
+  );
+}
+
+function JoinLinkBadge({ code }: { code: string }) {
+  const [copied, setCopied] = useState(false);
+  const url = `${window.location.origin}/live/${code}`;
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // Clipboard access denied — the code is already visible next to the button.
+    }
+  };
+
+  return (
+    <button className="ap-btn ap-btn--ghost ap-btn--sm" onClick={handleCopy} type="button">
+      {copied ? <Check size={14} /> : <Copy size={14} />} {copied ? "Copié" : url}
+    </button>
+  );
+}
+
 function EventRow({ event, onActivate }: { event: LiveEvent; onActivate: (id: string) => void }) {
   const [run, setRun] = useState<LiveRun | null>(null);
   const [starting, setStarting] = useState(false);
 
   useEffect(() => {
-    listLatestRun(event.id).then(setRun).catch(() => setRun(null));
+    listLatestRun(event.id).then((r) => setRun(r && r.status === "open" ? r : null)).catch(() => setRun(null));
   }, [event.id]);
 
   const handleStartRun = async () => {
@@ -113,10 +166,14 @@ function EventRow({ event, onActivate }: { event: LiveEvent; onActivate: (id: st
         </div>
       </div>
       {run && (
-        <div className="mt-2 border-t pt-2">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Radio size={14} /> Run en cours depuis {new Date(run.started_at).toLocaleTimeString("fr-FR")}
+        <div className="mt-2 border-t pt-2 space-y-2">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Radio size={14} /> Run en cours depuis {new Date(run.started_at).toLocaleTimeString("fr-FR")}
+            </div>
+            <JoinLinkBadge code={event.code} />
           </div>
+          <RunControls run={run} onLockChange={(locked) => setRun((prev) => (prev ? { ...prev, locked } : prev))} />
           <QuestionModeration run={run} />
         </div>
       )}

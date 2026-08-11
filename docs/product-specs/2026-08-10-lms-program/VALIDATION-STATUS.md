@@ -1,0 +1,283 @@
+# État de validation — Programme LMS
+
+Date : 2026-08-11
+Portée livrée : **fondations** (migrations DB + RLS + RPC clés + UI minimale)
+sur `feat/lms-program-foundations` (PR #234, mergé) + `fix/lms-share-groups-rename`
+(PR #236) + `feat/lms-sidebar-nav` (PR #235). Cette dernière branche ajoute
+aussi la couche d'agrégation de la spec 07 (migration
+`20260811010000_learning_analytics_aggregation.sql`, non mergée), la
+participation live anon/temps réel de la spec 09 (migration
+`20260811020000_live_engagement_participation.sql`, non mergée), et l'UI de
+grilles de correction (rubriques) de la spec 01 (`Assignments.tsx`,
+`gradebook.ts` — pas de nouvelle migration, le RPC acceptait déjà
+`p_rubric_ratings`).
+
+Ce document trace ce qu'il reste pour que chaque spec passe de « fondation
+posée » à « conforme à ses propres critères d'acceptation ». Statut par
+chantier : 🟢 fondation posée et vérifiée · 🟡 fondation partielle · 🔴 non
+commencé.
+
+## Vue d'ensemble
+
+| # | Spec | DB/RLS/RPC | UI | Intégrations tierces | Statut |
+|---|---|---|---|---|---|
+| 01 | Devoirs & gradebook | 🟢 | 🟡 minimal | 🔴 antiplagiat | Fondation |
+| 02 | Inscriptions & sessions | 🟢 | 🟡 minimal | — | Fondation |
+| 03 | Compétences & preuves | 🟢 | 🟡 minimal | 🔴 CASE/Open Badges | Fondation |
+| 04 | Interopérabilité & identité | 🟡 config only | 🟡 minimal | 🔴 SSO/LTI/SCIM/OneRoster réels | Config seule |
+| 05 | Accessibilité & aménagements | 🟢 | 🟡 minimal | — | Fondation |
+| 06 | Parcours adaptatifs & automatisations | 🟢 | 🟡 minimal | — | Fondation |
+| 07 | Analytics & signaux de risque | 🟢 | 🟡 minimal | — | Fondation |
+| 08 | Banque d'items & évaluations | 🟢 | 🟡 minimal | 🔴 QTI 3 | Fondation |
+| 09 | Live Q&A & coanimation | 🟢 | 🟡 minimal | 🔴 PPT/Teams/Zoom | Fondation |
+| 10 | Gouvernance de contenu | 🟡 lib content only | 🟡 minimal | 🔴 L10N, exports | Fondation |
+
+## Ce qui est déjà vérifié (ne pas re-tester)
+
+- Les 11 migrations s'appliquent proprement en base prod (`quizz`,
+  `lwwfgdebmggxjuvlazwf`) — `supabase migration list` local = remote.
+- RLS re-testée sous rôle `authenticated` réel (pas bypass superuser) :
+  réponses correctes (08) et secrets d'intégration (04) illisibles côté
+  client, registrar exclu du contenu des remises (01), question non modérée
+  invisible avant approbation (09).
+- Invariants métier testés fonctionnellement : réservation de capacité
+  atomique sous concurrence (02), retard calculé serveur + révision de note
+  auditée (01), recalcul de maîtrise idempotent (03), détection de cycle
+  réelle sur les règles de déblocage (06), rejeu d'automatisation sans
+  doublon (06), vote/réponse live idempotents (09), publication de contenu
+  avec garde de concurrence optimiste (10).
+- Deux bugs de récursion RLS trouvés et corrigés (fonction predicate
+  invoker qui re-déclenchait la policy de sa propre table) : `is_live_event_staff`
+  (09) et `assignment_visible_to_learner` (01).
+- Bug de nommage trouvé et corrigé : 2 migrations référençaient encore
+  `public.groups`/`group_members`, renommés en `share_groups`/
+  `share_group_members` par une migration antérieure (`20260730140000`).
+- Migration `20260811010000_learning_analytics_aggregation.sql` (projections
+  journalières + génération de signaux de risque, spec 07) rejouée de bout en
+  bout sur une base locale reconstituant la chaîne réelle de dépendances
+  (`organizations`, `content`, `share_groups`, `enrollments`, `assignments`,
+  `competencies`, `learning_events`, jusqu'à cette migration) — `supabase
+  start`/`db reset` ne fonctionne pas tel quel dans ce repo car deux tables
+  (`session_state`, `profiles`) préexistent à tout historique de migration et
+  ne sont recréées par aucun fichier ; contournement local uniquement, aucune
+  migration commitée n'y touche. Vérifié sur données réalistes : les 4 règles
+  (`inactivity`/`overdue`/`repeated_failure`/`progress_drop`) produisent les
+  bons signaux, `generate_risk_signals()` rejoué immédiatement n'insère
+  aucun doublon, un apprenant non-staff ne voit aucun `risk_signal` (RLS) et
+  ne peut pas exécuter les deux RPC (`Not authorized`), et un signal résolu
+  peut se rouvrir proprement si la condition est encore vraie au run
+  suivant.
+- Migration `20260811020000_live_engagement_participation.sql` (jointure de
+  lobby, accès anonyme, temps réel, spec 09) rejouée bout en bout sur la
+  même base locale reconstituée que ci-dessus. Vérifié : un run avec
+  `capacity=1` refuse un 2ᵉ participant distinct sous verrou consultatif
+  transactionnel (pas de race entre le check et l'insert) ; un même
+  `client_id` qui rejoint deux fois obtient la même ligne (reconnexion sans
+  doublon de siège) ; un rôle `anon` est bloqué (`Authentication required`)
+  sur un événement en politique `authenticated`/`allowlist` mais accepté en
+  `anonymous`/`pseudonym` ; un participant expulsé (`kick_participant`) ne
+  peut plus rejoindre ; verrouiller un run (`lock_live_run`) bloque les
+  *nouveaux* arrivants mais laisse un participant déjà présent se
+  reconnecter ; `get_my_live_response()` restitue la réponse déjà envoyée
+  d'un `client_id` donné sans fuite vers un autre `client_id` ; les 4 tables
+  concernées (`audience_questions`/`live_interactions`/`live_runs`/
+  `live_responses`) sont bien dans la publication `supabase_realtime`.
+
+---
+
+## 01 — Devoirs, remises et carnet de notes
+
+**Fait** : `assignments`/`submissions`/`submission_versions`/`rubrics`/
+`grade_items`/`grade_results` + `submit_assignment()` (brouillon/finalisation,
+retard calculé serveur) + `publish_submission_grade()` (upsert gradebook,
+révision auditée). Côté UI : grilles de correction (`RubricManager`/
+`RubricBuilder` dans `Assignments.tsx`) — créer une grille, y ajouter
+critères et niveaux (écriture directe RLS, pas de nouveau RPC) ; dans
+`GradingPanel`, sélectionner une grille par devoir, noter chaque critère par
+niveau (`RubricGrading`), total auto-sommé pré-rempli dans le champ note,
+publié avec `p_rubric_id`/`p_rubric_ratings`.
+
+**Reste à faire** :
+- [ ] UI : remise fichier/audio/vidéo — seul le mode texte est câblé côté client (`response_mode` en DB supporte déjà file/url/audio/video)
+- [ ] UI : `assignment_targets` par groupe/apprenant individuel — seul le ciblage par session est câblé
+- [ ] UI : échéance/aménagement dérogatoire par apprenant (`due_override`) — colonne existe, aucun écran
+- [ ] UI : vue gradebook consolidée (GBK-001 à GBK-006) — colonnes, catégories, coefficients, simulation « si je reçois X », export CSV/XLSX/PDF : rien construit
+- [ ] Job serveur de scan antivirus des fichiers (`submission_files.scan_status`) — colonne prête, aucun job
+- [ ] URLs de téléchargement signées courte durée pour les fichiers
+- [ ] Connecteur antiplagiat (interface only — non-objectif V1 explicite, mais l'interface elle-même n'existe pas)
+- [ ] Notifications programmées (J-7/J-1/retard) — table `notifications` existe, rien ne les déclenche pour les devoirs
+- [ ] Double correction / correction anonyme (GRD-005) — colonne `is_anonymous` posée, pas de flux de levée d'anonymat auditée
+
+## 02 — Inscriptions, sessions et gestion des apprenants
+
+**Fait** : `course_offerings`/`course_sessions`/`enrollments`/
+`waitlist_entries` + `enroll_in_session()` (capacité atomique + liste
+d'attente) + `transition_enrollment()`.
+
+**Reste à faire** :
+- [ ] UI : import CSV/XLSX avec prévisualisation/mapping/doublons (ENR-014)
+- [ ] UI : actions en masse (inscrire, déplacer, annuler, prolonger — ENR-015)
+- [ ] Promotion automatique de la liste d'attente + expiration d'offre (ENR-011/012) — table `waitlist_entries` posée, aucun job
+- [ ] Auto-inscription avec règles (domaine email, code, paiement, prérequis — ENR-013)
+- [ ] Vue apprenant « Mes formations » complète avec dates effectives/échéances relatives recalculées (ENR-017, la V1 actuelle liste juste par statut)
+- [ ] Calcul de complétion versionné par politique (activités obligatoires, score, présence)
+- [ ] `attendance_events` (présence) — dans le modèle indicatif, non créé du tout
+
+## 03 — Compétences, résultats d'apprentissage et preuves
+
+**Fait** : `competency_frameworks`/`competencies`/`mastery_scales`/
+`competency_evidence` + `record_competency_evidence()` +
+`recompute_competency_mastery()` (idempotent, historisé).
+
+**Reste à faire** :
+- [ ] UI : alignement compétence ↔ question/rubrique/activité (CMP-010) — table `competency_alignments` posée, aucun écran ne l'alimente
+- [ ] UI : vue couverture programme (enseigné/pratiqué/évalué — CMP-012, CMP-021)
+- [ ] UI : demande de revue apprenant (`competency_review_requests`) — table posée, aucun écran
+- [ ] Écran de migration des tags existants → compétences (mapping guidé, section « Migration des tags existants » de la spec)
+- [ ] Méthodes d'agrégation configurables (CMP-007) — seule « dernière preuve » est implémentée ; meilleure preuve / moyenne pondérée / N-récentes / validation manuelle sont à ajouter
+- [ ] Export CASE 1.1 / Open Badges (non-objectif V1 explicite mais listé comme préparation attendue)
+- [ ] Vue formateur groupe × compétences (CMP-020)
+
+## 04 — Interopérabilité, identité et administration Enterprise
+
+**Fait** : schéma de configuration (`identity_connections`, `lti_registrations`,
+`integration_connections`, `api_clients`, `webhook_endpoints`) + coffre à
+secrets hashés (`create_integration_secret()`, illisible côté client).
+
+**Reste à faire — c'est le chantier le moins avancé, tout l'exécutable manque** :
+- [ ] Handshake OIDC/SAML réel (edge function) — seule la table de config existe
+- [ ] LTI 1.3 Core : OIDC login, validation JWT (issuer/audience/nonce/signature), Deep Linking, Names and Roles, Assignment and Grade Services — aucune fonction serveur écrite, seulement `record_lti_launch()` (log de diagnostic)
+- [ ] Import/export QTI 3
+- [ ] Sync SCIM 2.0 (provisioning/déprovisioning réel)
+- [ ] Sync OneRoster 1.2 (import CSV + REST, dry-run)
+- [ ] API REST publique versionnée + OpenAPI + pagination curseur + idempotency-key
+- [ ] Livraison de webhooks réelle (signature, retry, rejeu) — seule la table `webhook_deliveries` existe, aucun worker
+- [ ] Rotation de certificat SSO avec fenêtre de chevauchement réelle (le modèle de données le permet, le flux non)
+- [ ] Outil de diagnostic LTI (dernier lancement, erreurs, test de connexion — LTI-006)
+
+## 05 — Accessibilité, inclusion et aménagements individuels
+
+**Fait** : `accessibility_preferences`/`accommodation_profiles`/
+`accommodation_rules`/`accommodation_overrides` + `get_effective_accommodations()`
+(fusion de priorité + lecture auditée).
+
+**Reste à faire** :
+- [ ] Application réelle des aménagements dans les activités (temps supplémentaire calculé serveur et survivant à une reconnexion — le calcul n'existe nulle part encore, seule la donnée de config existe)
+- [ ] Vérificateur d'accessibilité de contenu (A11Y-007 à A11Y-012) — table `content_accessibility_checks` posée, aucun analyseur
+- [ ] Socle application (A11Y-001 à A11Y-006 : focus, navigation clavier, contrastes, `prefers-reduced-motion`) — hors DB, c'est un chantier design system transverse à tout le produit, non traité ici
+- [ ] Alternatives d'interaction accessibles (hotspot/drag-drop/dessin clavier — A11Y-013)
+- [ ] Déclaration d'accessibilité publique (`accessibility_audits.published`) — table prête, aucun contenu réel, aucun écran public
+- [ ] Tests automatisés (axe ou équivalent) en CI
+
+## 06 — Parcours adaptatifs, conditions et automatisations
+
+**Fait** : `rule_sets`/`rule_set_versions` + détection de cycle réelle
+(`would_create_cycle()`) + `automation_rules`/`automation_runs` +
+`record_automation_run()` idempotent.
+
+**Reste à faire** :
+- [ ] Moteur d'évaluation événementiel réel (réévaluation à chaque changement pertinent + balayage planifié — AUT/moteur) : aucun job/cron ne tourne, seul le modèle et l'API de publication existent
+- [ ] UI de construction en phrases « Quand [condition], alors [action] » — l'UI actuelle ne construit qu'une seule condition simple (`activity_completed`), pas le DSL complet (AND/OR, dates, scores, compétences...)
+- [ ] `release_state` — projection posée, jamais calculée (aucun writer)
+- [ ] Simulation « voir comme cet apprenant » / dry-run avant publication (ADP-008, AUT-004)
+- [ ] Test de positionnement / remédiation (ADP-009/010/011)
+- [ ] `follow_up_tasks` — table posée, aucun écran ni déclencheur
+
+## 07 — Analytics pédagogiques, psychométrie et signaux de risque
+
+**Fait** : `learning_events` (append-only, dédupliqué) partagé par tous les
+specs + `metric_definitions`/`risk_signals`/`saved_reports` +
+`resolve_risk_signal()`. Depuis `20260811010000_learning_analytics_aggregation.sql` :
+projections journalières activité/inscription/compétence
+(`run_daily_analytics_rollup()`, idempotente/recalculable) + génération réelle
+de 4 des 5 signaux de risque ANA-013 (`generate_risk_signals()` : inactivité,
+retard, échecs répétés, chute d'activité — un signal ouvert par
+apprenant+règle, sauf `overdue` qui est par apprenant+devoir) +
+`risk_signal_settings` (ANA-016 : activer/désactiver et seuiller chaque règle
+par organisation).
+
+**Reste à faire** :
+- [ ] Projection journalière **item** — bloquée en amont : ANA-009/010 ont besoin d'un vrai moteur de correction lisant `item_answer_keys` (spec 08), qui n'existe pas encore ; construire la projection avant le producteur de données serait deviner un schéma
+- [ ] Projection journalière **programme** — jamais définie faute de UI/agrégat programme existant à côté de session/offering
+- [ ] Signal `blocking_prereq` — bloqué en amont par `release_state` (spec 06), « posée, jamais calculée »
+- [ ] Dashboards apprenant/formateur/responsable/admin (ANA-005 à ANA-008) — aucun écran de visualisation ; les projections existent maintenant pour les alimenter
+- [ ] Analyse d'items / psychométrie (difficulté, discrimination, distracteurs — ANA-009 à ANA-012)
+- [ ] Programmation de rapports (`report_schedules`/`report_runs`) — tables posées, aucun exécuteur
+- [ ] Export CSV/XLSX/PDF avec pseudonymisation
+- [ ] Seuil minimal anti-réidentification sur les comparaisons de cohortes (ANA-020)
+- [ ] Ordonnanceur réel pour `run_daily_analytics_rollup()`/`generate_risk_signals()` — ce sont des RPC idempotentes prêtes à être appelées par un cron/edge function, mais aucun ordonnanceur n'existe dans ce repo (vrai pour tous les jobs du programme, pas spécifique à 07)
+
+## 08 — Évaluations avancées et banque d'items versionnée
+
+**Fait** : `assessment_items`/`assessment_item_revisions` (immuables) +
+`item_answer_keys` (illisible client) + `create_item_revision()` +
+`submit_score_adjustment()` audité.
+
+**Reste à faire** :
+- [ ] Assemblage réel d'une évaluation (sections fixes/pool aléatoire, tirage figé par tentative — `assessment_pool_rules`/`assessment_item_refs` posés, aucun moteur de tirage)
+- [ ] Barèmes riches (score partiel, pénalité, tolérance, réponses équivalentes — ASM-012) et leur simulation avant publication (ASM-013)
+- [ ] Moteur de correction réel utilisant `item_answer_keys` (aucune fonction ne le lit encore — seul `create_item_revision()` écrit dedans)
+- [ ] Nouveaux types d'interaction (passage, vidéo interactive, audio/vidéo, dessin, labeling, math/graphique, fichier, code — ASM-017 à ASM-024) : le schéma accepte n'importe quel `item_type`/`prompt` JSON mais aucun éditeur/lecteur n'existe pour ces types
+- [ ] Rescore en masse avec prévisualisation d'impact (`rescore_jobs` posé, aucun exécuteur)
+- [ ] Suggestions IA (génération, distracteurs, vérifications de biais/ambiguïté) — non-objectif partiel mais mentionné comme option V1
+- [ ] Collections/permissions granulaires (voir/utiliser/commenter/modifier) — tables posées, UI ne gère que la création d'items
+
+## 09 — Sondage live, Q&A, modération et coanimation
+
+**Fait** : `live_events`/`live_runs`/`audience_questions` +
+`cast_vote()`/`submit_live_response()` idempotents + `moderate_question()` +
+`live_control_leases`. Depuis `20260811020000_live_engagement_participation.sql` :
+`join_live_run()` (lobby, capacité atomique via verrou consultatif,
+verrouillage, expulsion, reconnexion sans doublon — LIVE-004) +
+`kick_participant()`/`lock_live_run()` (contrôle staff) +
+`get_my_live_response()` (restaure la réponse déjà envoyée d'un
+`client_id` — la moitié « reconnexion » de l'acceptance de LIVE-007) +
+accès `anon` réellement câblé et vérifié contre `access_policy`
+(`live_run_requires_auth()` appelée par `join_live_run`/
+`submit_audience_question`/`cast_vote`/`submit_live_response` — LIVE-002,
+sauf `allowlist` traité comme `authenticated` faute de table de liste
+d'accès dans le modèle indicatif) + les 4 tables audience
+(`audience_questions`/`live_interactions`/`live_runs`/`live_responses`)
+poussées via `supabase_realtime`. Côté UI : écran public participant
+(`/live`, `/live/:code`, `/live/:code/room` — `LiveEventJoin.tsx`/
+`LiveEventRoom.tsx`) qui rejoint par code, pose/vote des questions et
+s'abonne en Realtime aux changements de statut ; côté animateur,
+`LiveEngagement.tsx` affiche désormais le lien de partage (copie
+presse-papier), le nombre de participants actifs et un bouton
+verrouiller/déverrouiller le run.
+
+**Reste à faire** :
+- [ ] Écran public projeté (résultats agrégés en temps réel) + mode présentateur/console modérateur distincts (LIVE-015) — le Q&A participant existe, il manque la vue projection/grand écran séparée
+- [ ] UI d'expulsion (`kick_participant()` câblé côté data-access, aucun bouton dans la console animateur — seul verrouiller/déverrouiller l'est)
+- [ ] Répondre à un sondage/interaction (`live_interactions`/`submit_live_response()`/`get_my_live_response()` existent, mais aucune UI staff ne crée encore de `poll`/`priority`/`matrix`/etc., donc rien à répondre côté participant — construire l'écran de réponse avant l'éditeur staff serait deviner un format)
+- [ ] Vraie table/mécanisme d'allowlist pour `access_policy = 'allowlist'` (actuellement traité comme `authenticated`, donc moins permissif que prévu plutôt que trop permissif — mais toujours pas ce que LIVE-002 décrit)
+- [ ] Formats supplémentaires : priorisation, matrice 2×2, brainstorm, classement forcé (LIVE-009 à LIVE-013) — `live_interactions.kind` les accepte, aucun éditeur/lecteur
+- [ ] Intégrations PowerPoint/Teams/Zoom (LIVE-017/018/019)
+- [ ] Rapports post-session (participation, chronologie, export — LIVE-020 à LIVE-023)
+- [ ] Rate limiting et filtre de termes assistant (modération)
+
+## 10 — Gouvernance, versionnement, localisation et diffusion du contenu
+
+**Fait** : `content_versions` (immuable, hash) + `publish_content_version()`
+(garde de concurrence optimiste) + `restore_content_version()` +
+`content_comments`/`review_requests`.
+
+**Reste à faire** :
+- [ ] Workflow de revue complet (état `in_review`/`changes_requested`/`approved`, invalidation d'approbation après modification — CNT-006/009) — les tables existent, le RPC de publication ne passe pas encore par ce workflow
+- [ ] `content_deployments` réels (pinned vs follow-approved-updates, diff avant adoption — CNT-011/012) : table posée, jamais lue par les sessions/parcours qui consomment du contenu
+- [ ] Modèles et blocs réutilisables (`content_templates`, `reusable_blocks`) — pas dans le modèle de données livré du tout
+- [ ] Brand kits (CNT-019) — absents
+- [ ] Gestion des assets (remplacement versionné, recherche d'usages avant suppression) — `media_assets`/`asset_usages` posés, aucun écran, aucun blocage de suppression implémenté
+- [ ] Localisation complète (L10N-001 à L10N-006 : extraction de segments, glossaires, diff source, traduction IA) — non traitée du tout, explicitement hors scope de cette fondation
+- [ ] Export SCORM/xAPI/cmi5/QTI (PUB-002/003) et liens de preview expirables (PUB-004)
+- [ ] Comparaison structurelle entre versions (diff ajouts/suppressions/déplacements — CNT-003)
+
+---
+
+## Prochaines étapes suggérées (ordre proposé)
+
+1. ~~**07 (agrégats analytics)**~~ — fait : projections journalières + génération de signaux de risque (voir §07). Reste ouvert : dashboards (consommateurs des projections) et psychométrie d'item (bloquée par 08).
+2. ~~**09 (temps réel + participation anon + écran public participant)**~~ — fait : `join_live_run`/anon/Realtime + `/live/:code` + `/live/:code/room` (voir §09). Reste ouvert : l'écran projeté/grand écran séparé et la réponse aux formats sondage/priorisation/matrice (eux-mêmes bloqués par l'absence d'éditeur staff pour les créer).
+3. ~~**01 (rubriques)**~~ — fait (voir §01). Reste ouvert : vue gradebook consolidée (GBK-001 à GBK-006), la pièce la plus proche de la valeur utilisateur immédiate encore manquante pour les formateurs.
+4. **04 (LTI Tool)** — le plus gros morceau, mais explicitement l'intégration la plus rentable selon l'ordre de livraison obligatoire de la spec elle-même.
+5. Le reste (05 socle accessibilité transverse, 08 nouveaux types, 10 localisation) peut suivre l'ordre recommandé du README du programme.
