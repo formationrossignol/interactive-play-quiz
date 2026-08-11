@@ -295,12 +295,20 @@ de 4 des 5 signaux de risque ANA-013 (`generate_risk_signals()` : inactivité,
 retard, échecs répétés, chute d'activité — un signal ouvert par
 apprenant+règle, sauf `overdue` qui est par apprenant+devoir) +
 `risk_signal_settings` (ANA-016 : activer/désactiver et seuiller chaque règle
-par organisation).
+par organisation). Depuis `20260811080000_blocking_prereq_signal.sql` : le
+5ᵉ signal, `blocking_prereq`, était bloqué par `release_state` (spec 06)
+« posée, jamais calculée » — maintenant que `20260811070000` le calcule
+réellement, le signal lit directement les lignes `effect='locked'` d'un
+apprenant activement inscrit, sans seuil de délai (contrairement aux autres
+règles, être bloqué n'est pas une question de temps écoulé). Vérifié :
+signal créé avec les bons facteurs, rejeu immédiat idempotent (0 insertion),
+et surtout — résoudre le signal *et* déverrouiller le `release_state` sous-
+jacent avant de rejouer ne le rouvre pas (le rejeu ne rouvre que si la
+condition est encore vraie).
 
 **Reste à faire** :
 - [ ] Projection journalière **item** — bloquée en amont : ANA-009/010 ont besoin d'un vrai moteur de correction lisant `item_answer_keys` (spec 08), qui n'existe pas encore ; construire la projection avant le producteur de données serait deviner un schéma
 - [ ] Projection journalière **programme** — jamais définie faute de UI/agrégat programme existant à côté de session/offering
-- [ ] Signal `blocking_prereq` — bloqué en amont par `release_state` (spec 06), « posée, jamais calculée »
 - [ ] Dashboards apprenant/formateur/responsable/admin (ANA-005 à ANA-008) — aucun écran de visualisation ; les projections existent maintenant pour les alimenter
 - [ ] Analyse d'items / psychométrie (difficulté, discrimination, distracteurs — ANA-009 à ANA-012)
 - [ ] Programmation de rapports (`report_schedules`/`report_runs`) — tables posées, aucun exécuteur
