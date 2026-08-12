@@ -295,12 +295,83 @@ complète (335 tests) verte — **non vérifié avec des inscriptions réelles**
 `competency_evidence` + `record_competency_evidence()` +
 `recompute_competency_mastery()` (idempotent, historisé).
 
+Depuis cette passe : UI d'alignement (CMP-010/011, partiel) —
+`AlignmentManager` dans `Competencies.tsx`, bouton « Aligner » par
+compétence dans un référentiel. `competency_alignments.target_id` est
+polymorphe sans FK (par design, cf. commentaire de la migration) ; deux
+`target_type` seulement ont un vrai sélecteur ici — `assignment` (réutilise
+`listOrgAssignments()` de `gradebook.ts`, déjà org-scopé) et
+`rubric_criterion` (réutilise `listOrgRubrics()`/`getRubricCriteria()`,
+sélection grille puis critère). Coefficient, rôle de preuve
+(`teaching`/`practice`/`assessment`), obligatoire. Pas de nouvelle
+migration : `competency_alignments_manage` (`for all`, pedago/admin) permet
+déjà l'insert/delete direct côté client — même posture que les critères de
+rubrique. **Les 7 autres `target_type`** (course/module/lesson/question/
+exam/scorm_activity/h5p_activity/path_step) n'ont pas de sélecteur : aucun
+n'a de fonction de liste org-scopée cohérente dans ce codebase aujourd'hui
+— `exam` par exemple est scopé par `host_id`, pas par organisation (système
+Tier-1 pré-existant), et course/module/lesson/path_step n'ont pas
+d'équivalent table clair à côté de `content`. Deviner un sélecteur pour ces
+types aurait été un choix arbitraire, pas une lecture du modèle existant.
+Vérifié : `tsc`/`eslint` propres (avertissements a11y corrigés — labels
+associés à leurs champs) ; suite complète (335 tests) verte — pas de
+nouveaux tests unitaires (fonctions CRUD directes sur RLS déjà exercées par
+les tests d'intégration Supabase existants ailleurs, rien de nouveau à
+isoler ici) ; **non vérifié avec des données réelles** (même limite que le
+reste du programme).
+
+Depuis cette passe (`20260812120000_competency_aggregation_methods.sql`) :
+méthodes d'agrégation configurables (CMP-007), les 5 nommées par la spec.
+`competency_evidence_position()` (nouvelle fonction partagée) résout une
+preuve en position sur l'échelle, qu'elle porte un `level_code` explicite
+ou un `raw_score` lu à travers les seuils — le même calcul à deux voies que
+faisait déjà « dernière preuve », maintenant réutilisé par les quatre
+autres. Meilleure preuve : position max parmi les preuves non annulées.
+Moyenne pondérée : moyenne des positions pondérée par
+`competency_alignments.weight` (poids 1 si la preuve n'a pas d'alignement —
+saisie manuelle/import), arrondie à la position définie la plus proche.
+N preuves récentes : moyenne non pondérée des N dernières preuves
+(`mastery_scales.recent_n`, nouvelle colonne). Validation manuelle :
+`recompute_competency_mastery()` devient un no-op délibéré (la preuve est
+quand même journalisée, seul le niveau n'est pas recalculé) —
+`set_manual_mastery_level()` (nouveau, staff, motif obligatoire, audité
+dans `competency_mastery_history` comme toute autre transition) est le seul
+écrivain tant que la méthode reste `manual`, et refuse si l'échelle n'est
+pas réellement en ce mode. Une preuve avec ni `level_code` résolvable ni
+`raw_score` dans les seuils ne contribue à rien pour meilleure/moyenne/N-
+récentes (exclue, jamais traitée comme zéro).
+
+Gap réel trouvé en construisant ceci, pas anticipé : `mastery_scales`/
+`mastery_scale_levels` (CMP-006) avaient une RLS `for all` (pedago/admin)
+depuis la migration d'origine mais **aucune UI n'y avait jamais écrit** —
+sans échelle par défaut, `recompute_competency_mastery()` retombait déjà
+silencieusement sur `not_assessed`, ce qui aurait rendu toute méthode
+configurée invisible/inatteignable. CRUD minimal ajouté dans le même passage
+(`MasteryScaleManager` dans `Competencies.tsx`, écriture directe côté
+client — pas de nouvelle RPC, RLS déjà ouverte) : créer l'échelle par
+défaut, ajouter des niveaux (code/libellé/position/seuil), choisir la
+méthode (+ N pour « N preuves récentes »). `SetMasteryLevelPanel` (dans
+`FrameworkCompetencies`, ne s'affiche que si l'échelle par défaut est en
+mode `manual`) : recherche d'apprenant (`PersonPicker`, réutilisé tel
+quel — le champ « inviter par email » reste présent mais rejette
+explicitement, fixer un niveau exige un compte existant), sélection du
+niveau, motif obligatoire. Vérifié : migration appliquée contre un schéma
+stub (Postgres jetable) — les 5 méthodes testées sur le même jeu de 3
+preuves (débutant/maîtrisé/en acquisition dans cet ordre chronologique)
+donnent chacune le résultat attendu (dernière→en acquisition,
+meilleure→maîtrisé, moyenne pondérée non pondérée→en acquisition, N=2
+récentes→maîtrisé), passage en mode manuel confirmé sans effet sur
+`recompute`, `set_manual_mastery_level()` change bien le niveau et
+l'historise avec le vrai motif, rejet confirmé si l'échelle n'est pas en
+mode manuel ; `tsc`/`eslint` propres ; suite complète (335 tests) verte —
+**non vérifié avec des données réelles** (même limite que le reste du
+programme).
+
 **Reste à faire** :
-- [ ] UI : alignement compétence ↔ question/rubrique/activité (CMP-010) — table `competency_alignments` posée, aucun écran ne l'alimente
+- [ ] UI : alignement sur les 7 autres `target_type` (course/module/lesson/question/exam/scorm_activity/h5p_activity/path_step) — pas de sélecteur org-scopé cohérent pour ces types
 - [ ] UI : vue couverture programme (enseigné/pratiqué/évalué — CMP-012, CMP-021)
 - [ ] UI : demande de revue apprenant (`competency_review_requests`) — table posée, aucun écran
 - [ ] Écran de migration des tags existants → compétences (mapping guidé, section « Migration des tags existants » de la spec)
-- [ ] Méthodes d'agrégation configurables (CMP-007) — seule « dernière preuve » est implémentée ; meilleure preuve / moyenne pondérée / N-récentes / validation manuelle sont à ajouter
 - [ ] Export CASE 1.1 / Open Badges (non-objectif V1 explicite mais listé comme préparation attendue)
 - [ ] Vue formateur groupe × compétences (CMP-020)
 
