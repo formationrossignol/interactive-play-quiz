@@ -762,6 +762,42 @@ lecture de plus sur cette table. **Non vérifié avec des données réelles**
 (même limite que le reste de cette passe : pas de compte staff/apprenant
 local pour dérouler un cycle création→passation→note→rollup complet).
 
+Depuis cette passe (`20260812170000_analytics_privacy_threshold.sql`) :
+seuil minimal anti-réidentification (ANA-020). Constat en creusant la spec :
+ce n'était pas seulement une fonctionnalité de comparaison de cohortes
+jamais construite — `analytics_daily_enrollment`/`analytics_daily_competency`/
+`analytics_daily_item` avaient une policy `..._staff_read` sans aucun
+plancher de cardinalité, et le client (`analyticsDashboard.ts`) sélectionnait
+toutes les lignes (par session/compétence/item_revision, par jour) avant de
+sommer côté client dans `Analytics.tsx` — les lignes brutes à petit N (ex. une
+session à 2 apprenants) étaient donc déjà accessibles sur le fil par le même
+appel PostgREST que n'importe quel staff peut inspecter, exactement le
+vecteur « combinaison rare » que la section confidentialité de la spec vise.
+`analytics_daily_activity` non touchée : par construction par-apprenant,
+déjà un accès pédagogique individuel légitime, pas une comparaison de
+cohorte. Fix : les 3 policies `..._staff_read` supprimées (plus de lecture
+directe des lignes brutes) remplacées par 3 fonctions `security definer`
+(`get_org_enrollment_totals`/`get_daily_competency_totals`/`get_daily_item_totals`)
+qui n'agrègent qu'à org+jour — aucun `session_id`/`competency_id`/
+`item_revision_id` ne sort plus de la base — et suppriment la période
+entière (au lieu d'afficher un petit nombre) quand la population sous-
+jacente passe sous un seuil configurable par org (`analytics_privacy_settings`,
+même forme que `risk_signal_settings` : lecture staff, gestion
+`pedago`/`admin` via `set_min_cohort_size()`, défaut 5). UI : bandeau
+« masquées » sur les tuiles d'inscription si `suppressed=true`, jours
+manquants dans le graphique compétence (déjà « sparse par design », un jour
+manquant se comportait déjà comme une absence de rollup). Panneau
+« Confidentialité » ajouté à `/lms/analytics`, visible `pedago`/`admin`
+seulement, pour lire/modifier le seuil. `get_daily_item_totals` corrigé en
+même temps bien qu'aucun écran ne le consomme encore (ANA-010/011/012 pas
+construits) — la table était déjà en prod et exposée en clair par la même
+faille, pas laissée pour la prochaine personne à découvrir. **Non testé en
+conditions réelles** (même limite que le reste de ce spec : pas de compte
+staff local pour vérifier qu'une organisation sous le seuil voit
+effectivement le bandeau masqué) — vérifié uniquement par relecture du SQL
+et par l'application propre de la migration (`supabase db push`,
+`supabase migration list` confirmé synchronisé).
+
 **Reste à faire** :
 - [ ] Projection journalière **programme** — jamais définie faute de UI/agrégat programme existant à côté de session/offering
 - [ ] Dashboard apprenant (ANA-005) — bloqué par l'absence de politique RLS lecture-apprenant sur `analytics_daily_activity`/`analytics_daily_enrollment`/`analytics_daily_competency`/`analytics_daily_item`
@@ -769,7 +805,6 @@ local pour dérouler un cycle création→passation→note→rollup complet).
 - [ ] Temps médian de réponse par item (ANA-009) — bloqué par l'absence de toute colonne de durée sur `assessment_responses`
 - [ ] Programmation de rapports (`report_schedules`/`report_runs`) — tables posées, aucun exécuteur ; pourrait maintenant se brancher sur le même `pg_cron`
 - [ ] Export CSV/XLSX/PDF avec pseudonymisation
-- [ ] Seuil minimal anti-réidentification sur les comparaisons de cohortes (ANA-020)
 
 ## 08 — Évaluations avancées et banque d'items versionnée
 

@@ -116,7 +116,7 @@ pouvoir s'y référer facilement.
 - [ ] Temps médian de réponse par item (ANA-009) — bloqué par l'absence de colonne de durée sur `assessment_responses`
 - [ ] Programmation de rapports (`report_schedules`/`report_runs`) — tables posées, aucun exécuteur
 - [ ] Export CSV/XLSX/PDF avec pseudonymisation
-- [ ] Seuil minimal anti-réidentification sur les comparaisons de cohortes (ANA-020)
+- [x] Seuil minimal anti-réidentification sur les comparaisons de cohortes (ANA-020) — `20260812170000_analytics_privacy_threshold.sql` : la vraie faille trouvée n'était pas juste « pas de comparaison de cohortes » mais que `analytics_daily_enrollment`/`competency`/`item` étaient déjà lisibles ligne à ligne (par session/compétence/item, petit N) par tout staff via PostgREST, le client ne faisant que sommer après coup. Policies de lecture directe supprimées, remplacées par 3 RPC `security definer` agrégées à org+jour, qui suppriment la période entière sous un seuil configurable par org (`analytics_privacy_settings`, défaut 5, géré par `pedago`/`admin` via un panneau « Confidentialité » sur `/lms/analytics`). Ne construit pas les écrans de comparaison de cohortes eux-mêmes (ANA-007, toujours inexistants) — ferme la fuite réelle et pose le mécanisme de seuil que ces écrans (et ANA-011) réutiliseront
 - [x] Ordonnanceur réel pour `run_daily_analytics_rollup()`/`generate_risk_signals()` — `pg_cron`, job nocturne par organisation (voir dépendances en tête de document)
 
 ## 08 — Évaluations avancées et banque d'items versionnée
@@ -173,7 +173,6 @@ pouvoir s'y référer facilement.
 l'état réel post-déploiement (toutes les migrations listées `[x]` sont en
 prod, `supabase migration list` vérifié à chaque fois). Candidats bien
 scopés pour la suite, par ordre de valeur/risque croissant :
-- 07 : seuil anti-réidentification cohortes (ANA-020) — petit, sécurité/vie privée
 - 01 : échéance dérogatoire par apprenant (`due_override`) — UI seule, colonne déjà là
 - 02 : `attendance_events` — table à créer + UI, autonome
 - 08 : simulation de barème avant publication (ASM-013) — autonome, pas de dépendance externe

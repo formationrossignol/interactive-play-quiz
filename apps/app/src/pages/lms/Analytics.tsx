@@ -22,12 +22,14 @@ import {
   type SavedReport,
 } from "@/lib/lms/analytics";
 import {
+  getEnrollmentTotals,
+  getMinCohortSize,
   listDailyActivity,
   listDailyCompetency,
-  listDailyEnrollment,
+  setMinCohortSize,
   type DailyActivityRow,
   type DailyCompetencyRow,
-  type DailyEnrollmentRow,
+  type EnrollmentTotals,
 } from "@/lib/lms/analyticsDashboard";
 
 const STAFF_ROLES = new Set(["trainer", "pedago", "admin"]);
@@ -117,7 +119,7 @@ function isoDaysAgo(days: number): string {
  *  see analyticsDashboard.ts — no learner-scoped RLS exists on these tables. */
 function AnalyticsDashboard({ orgId }: { orgId: string }) {
   const [activity, setActivity] = useState<DailyActivityRow[]>([]);
-  const [enrollment, setEnrollment] = useState<DailyEnrollmentRow[]>([]);
+  const [enrollmentTotals, setEnrollmentTotals] = useState<EnrollmentTotals | null>(null);
   const [competency, setCompetency] = useState<DailyCompetencyRow[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -126,13 +128,13 @@ function AnalyticsDashboard({ orgId }: { orgId: string }) {
     setLoading(true);
     Promise.all([
       listDailyActivity(orgId, isoDaysAgo(14)),
-      listDailyEnrollment(orgId, isoDaysAgo(30)),
+      getEnrollmentTotals(orgId, isoDaysAgo(30)),
       listDailyCompetency(orgId, isoDaysAgo(14)),
     ])
-      .then(([activityRows, enrollmentRows, competencyRows]) => {
+      .then(([activityRows, enrollment, competencyRows]) => {
         if (cancelled) return;
         setActivity(activityRows);
-        setEnrollment(enrollmentRows);
+        setEnrollmentTotals(enrollment);
         setCompetency(competencyRows);
       })
       .catch((err) => showError(err, "AnalyticsDashboard.load", "Impossible de charger les projections."))
@@ -153,25 +155,10 @@ function AnalyticsDashboard({ orgId }: { orgId: string }) {
       .map((entry) => ({ date: entry.date, activeLearners: entry.activeLearners.size, events: entry.events }));
   }, [activity]);
 
-  const competencyByDay = useMemo(() => {
-    const byDay = new Map<string, { date: string; evidenceCount: number }>();
-    for (const row of competency) {
-      const entry = byDay.get(row.day) ?? { date: row.day, evidenceCount: 0 };
-      entry.evidenceCount += row.evidence_count;
-      byDay.set(row.day, entry);
-    }
-    return [...byDay.values()].sort((a, b) => a.date.localeCompare(b.date));
-  }, [competency]);
-
-  const enrollmentTotals = useMemo(() => enrollment.reduce(
-    (totals, row) => ({
-      started: totals.started + row.started_count,
-      completed: totals.completed + row.completed_count,
-      withdrawn: totals.withdrawn + row.withdrawn_count,
-      waitlisted: totals.waitlisted + row.waitlisted_count,
-    }),
-    { started: 0, completed: 0, withdrawn: 0, waitlisted: 0 },
-  ), [enrollment]);
+  const competencyByDay = useMemo(
+    () => competency.map((row) => ({ date: row.day, evidenceCount: row.evidence_count })),
+    [competency],
+  );
 
   if (loading) return <TableSkeleton rows={3} cols={4} />;
 
@@ -180,19 +167,28 @@ function AnalyticsDashboard({ orgId }: { orgId: string }) {
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {[
-          { label: "Inscriptions démarrées (30j)", value: enrollmentTotals.started },
-          { label: "Terminées (30j)", value: enrollmentTotals.completed },
-          { label: "Désinscriptions (30j)", value: enrollmentTotals.withdrawn },
-          { label: "Mises en liste d'attente (30j)", value: enrollmentTotals.waitlisted },
-        ].map((stat) => (
-          <div key={stat.label} className="ap-card p-4">
-            <strong className="block text-xl">{stat.value}</strong>
-            <span className="ap-muted text-xs">{stat.label}</span>
-          </div>
-        ))}
-      </div>
+      {enrollmentTotals?.suppressed ? (
+        <div className="ap-card p-4 text-sm">
+          <strong className="block">Inscriptions (30j) — masquées</strong>
+          <span className="ap-muted text-xs">
+            Population sous le seuil de confidentialité configuré pour cette organisation — affichage suspendu pour éviter toute ré-identification indirecte.
+          </span>
+        </div>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {[
+            { label: "Inscriptions démarrées (30j)", value: enrollmentTotals?.started_count ?? 0 },
+            { label: "Terminées (30j)", value: enrollmentTotals?.completed_count ?? 0 },
+            { label: "Désinscriptions (30j)", value: enrollmentTotals?.withdrawn_count ?? 0 },
+            { label: "Mises en liste d'attente (30j)", value: enrollmentTotals?.waitlisted_count ?? 0 },
+          ].map((stat) => (
+            <div key={stat.label} className="ap-card p-4">
+              <strong className="block text-xl">{stat.value}</strong>
+              <span className="ap-muted text-xs">{stat.label}</span>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="product-analytics-grid">
         <div className="product-analytics-card">
@@ -321,6 +317,54 @@ function SavedReports({ orgId }: { orgId: string }) {
   );
 }
 
+/** ANA-020: min_cohort_size gates every cohort-level aggregate below it
+ *  (get_org_enrollment_totals/get_daily_competency_totals/get_daily_item_totals,
+ *  20260812170000_analytics_privacy_threshold.sql) — pedago/admin only,
+ *  mirrors risk_signal_settings' per-org configurability. */
+function PrivacySettings({ orgId }: { orgId: string }) {
+  const [minCohortSize, setMinCohortSizeState] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [draft, setDraft] = useState("");
+
+  useEffect(() => {
+    getMinCohortSize(orgId).then((n) => { setMinCohortSizeState(n); setDraft(String(n)); }).catch(showError).finally(() => setLoading(false));
+  }, [orgId]);
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const n = Number(draft);
+    if (!Number.isInteger(n) || n < 1) return;
+    setSaving(true);
+    try {
+      await setMinCohortSize(orgId, n);
+      setMinCohortSizeState(n);
+    } catch (err) {
+      showError(err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) return <TableSkeleton rows={1} cols={2} />;
+
+  return (
+    <section className="product-list-panel p-5 mt-4">
+      <div className="product-panel-heading -mx-5 -mt-5 mb-4">
+        <div><h2>Confidentialité</h2><p>Taille minimale de cohorte avant affichage d'un agrégat (ANA-020) — sous ce seuil, la période est masquée plutôt qu'affichée avec un petit nombre.</p></div>
+      </div>
+      <form onSubmit={handleSave} className="flex flex-wrap items-end gap-2">
+        <div className="min-w-[160px] space-y-1">
+          <label className="text-sm font-medium" htmlFor="min-cohort-size">Taille minimale</label>
+          <Input id="min-cohort-size" type="number" min={1} value={draft} onChange={(e) => setDraft(e.target.value)} required />
+        </div>
+        <Button type="submit" size="sm" loading={saving}>Enregistrer</Button>
+        {minCohortSize !== null && <span className="ap-muted text-xs">Actuel : {minCohortSize}</span>}
+      </form>
+    </section>
+  );
+}
+
 export default function LmsAnalytics() {
   const [memberships, setMemberships] = useState<OrgMembership[]>([]);
   const [loading, setLoading] = useState(true);
@@ -332,6 +376,7 @@ export default function LmsAnalytics() {
   }, []);
 
   const isStaff = memberships.some((m) => m.org_id === activeOrgId && STAFF_ROLES.has(m.role));
+  const isManager = memberships.some((m) => m.org_id === activeOrgId && (m.role === "pedago" || m.role === "admin"));
 
   if (loading) {
     return (
@@ -363,6 +408,7 @@ export default function LmsAnalytics() {
         <AnalyticsDashboard orgId={activeOrgId} />
         <RiskSignals orgId={activeOrgId} />
         <SavedReports orgId={activeOrgId} />
+        {isManager && <PrivacySettings orgId={activeOrgId} />}
       </div>
     </AppLayout>
   );
