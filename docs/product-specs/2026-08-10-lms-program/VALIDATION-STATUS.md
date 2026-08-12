@@ -946,9 +946,32 @@ staff/apprenant local pour dérouler un cycle complet création d'item →
 assemblage → publication → tentative → note ; **migration pas encore
 déployée en prod**.
 
+Depuis cette passe (`20260812200000_assessment_scoring_simulation.sql`) :
+simulation de barème avant publication (ASM-013). La spec tient en une
+phrase (« le barème est simulable sur des réponses exemples avant
+publication »), aucun critère d'acceptation dédié. Contrainte trouvée en
+creusant : `item_answer_keys` n'a **aucune policy select pour
+`authenticated`**, pas même staff (« correct answers are server-only ») —
+un simulateur ne peut donc pas lire la clé côté client, il doit passer par
+une RPC serveur. Plutôt que de réécrire l'algorithme de notation (risque de
+divergence avec la vraie correction), `simulate_item_scoring()` appelle
+`public._score_assessment_response()` telle quelle — le même comparateur
+pur que `submit_assessment_response()` utilise déjà, `immutable`, sans
+I/O — et ne renvoie que le résultat (`is_correct`/`points_earned`/
+`max_points`), jamais `correct_answer`, conforme au texte de permissions
+de la spec. N'écrit jamais dans `assessment_responses`/
+`assessment_attempts` (pas de pollution des vraies tentatives/analytics).
+UI : `ItemBank.tsx::SimulateForm`, bouton « Simuler » par révision dans
+`ItemRevisions` — formulaire de réponse hypothétique construit à partir de
+`revision.prompt` (jamais secret, seule `correct_answer` l'est), adapté aux
+4 types notables (vrai/faux, choix unique/multiple, réponse courte).
+**Non testé en conditions réelles** (même limite que le reste de cette
+passe : pas de compte staff local) — vérifié par lecture du SQL,
+`tsc`/`eslint` propres, migration appliquée sans erreur (`supabase db
+push`, `migration list` confirmé synchronisé).
+
 **Reste à faire** :
 - [ ] Assemblage réel d'une évaluation — tirage aléatoire (sections `pool`, `assessment_pool_rules`) : refusé explicitement, aucun exécuteur
-- [ ] Simulation du barème sur des réponses exemples avant publication (ASM-013)
 - [ ] Barèmes riches pour les 17 autres `item_type` (ranking « ordre partiel », matching, cloze, et les 8 types ASM-017-024) — aucun contrat de données, aucune UI d'auteur
 - [ ] Nouveaux types d'interaction (passage, vidéo interactive, audio/vidéo, dessin, labeling, math/graphique, fichier, code — ASM-017 à ASM-024) : le schéma accepte n'importe quel `item_type`/`prompt` JSON mais aucun éditeur/lecteur n'existe pour ces types
 - [ ] Rescore en masse avec prévisualisation d'impact (`rescore_jobs` posé, aucun exécuteur)

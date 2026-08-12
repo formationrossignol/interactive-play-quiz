@@ -80,6 +80,24 @@ export async function createItemRevision(input: {
   return data as ItemRevision;
 }
 
+export interface SimulationResult {
+  is_correct: boolean;
+  points_earned: number;
+  max_points: number;
+}
+
+/** ASM-013: scores a hypothetical response server-side against
+ *  item_answer_keys (never readable by the client directly) using the same
+ *  comparator submit_assessment_response() uses — never diverges from real
+ *  scoring. Never writes assessment_responses/assessment_attempts. */
+export async function simulateItemScoring(itemRevisionId: string, response: unknown): Promise<SimulationResult> {
+  const { data, error } = await supabase
+    .rpc('simulate_item_scoring', { p_item_revision_id: itemRevisionId, p_response: response })
+    .single();
+  if (error) throw error;
+  return data as SimulationResult;
+}
+
 export interface Assessment {
   id: string;
   org_id: string;

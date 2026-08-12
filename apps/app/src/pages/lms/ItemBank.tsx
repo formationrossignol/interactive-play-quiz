@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ClipboardList, Layers, Plus, X } from "lucide-react";
+import { ClipboardList, FlaskConical, Layers, Plus, X } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/ui/page-header";
 import { ExplorerEmptyState } from "@/components/content/ExplorerEmptyState";
@@ -23,12 +23,14 @@ import {
   listOrgItems,
   listSectionItemRefs,
   publishAssessment,
+  simulateItemScoring,
   type Assessment,
   type AssessmentItem,
   type AssessmentItemRef,
   type AssessmentSection,
   type ItemOption,
   type ItemRevision,
+  type SimulationResult,
 } from "@/lib/lms/itemBank";
 
 const STAFF_ROLES = new Set(["trainer", "pedago", "admin"]);
@@ -80,6 +82,79 @@ function OptionsEditor({ options, onChange, mode, correctIds, onCorrectChange }:
   );
 }
 
+/** ASM-013: item_answer_keys is never readable client-side (RLS: no policy
+ *  at all for `authenticated`, not even staff) — so testing a hypothetical
+ *  answer has to round-trip through simulate_item_scoring(), which reuses
+ *  the exact same comparator submit_assessment_response() uses. The
+ *  options rendered here come from revision.prompt (never secret); only
+ *  correct_answer stays server-side. */
+function SimulateForm({ item, revision }: { item: AssessmentItem; revision: ItemRevision }) {
+  const itemType = item.item_type as ScorableType;
+  const options = revision.prompt.options ?? [];
+  const [tfAnswer, setTfAnswer] = useState<"true" | "false">("true");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [text, setText] = useState("");
+  const [testing, setTesting] = useState(false);
+  const [result, setResult] = useState<SimulationResult | null>(null);
+
+  const toggleOption = (id: string) => {
+    setResult(null);
+    if (itemType === "single_choice") setSelectedIds([id]);
+    else setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  };
+
+  const canTest = itemType === "true_false" || (itemType === "short_answer" ? text.trim().length > 0 : selectedIds.length > 0);
+
+  const handleTest = async () => {
+    setTesting(true);
+    try {
+      let response: unknown;
+      if (itemType === "true_false") response = tfAnswer === "true";
+      else if (itemType === "single_choice") response = { optionId: selectedIds[0] };
+      else if (itemType === "mcq") response = { optionIds: selectedIds };
+      else response = { text: text.trim() };
+      setResult(await simulateItemScoring(revision.id, response));
+    } catch (err) {
+      showError(err);
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  return (
+    <div className="mt-2 rounded-md border p-3 space-y-2" style={{ background: "var(--ap-paper-2)" }}>
+      <p className="text-xs font-medium text-muted-foreground">Réponse hypothétique — jamais enregistrée, ne révèle pas la clé</p>
+      {itemType === "true_false" && (
+        <div className="flex items-center gap-4 text-sm">
+          <label className="flex items-center gap-1.5"><input type="radio" checked={tfAnswer === "true"} onChange={() => { setTfAnswer("true"); setResult(null); }} /> Vrai</label>
+          <label className="flex items-center gap-1.5"><input type="radio" checked={tfAnswer === "false"} onChange={() => { setTfAnswer("false"); setResult(null); }} /> Faux</label>
+        </div>
+      )}
+      {(itemType === "single_choice" || itemType === "mcq") && (
+        <div className="space-y-1 text-sm">
+          {options.map((o) => (
+            <label key={o.id} className="flex items-center gap-1.5">
+              <input type={itemType === "single_choice" ? "radio" : "checkbox"} checked={selectedIds.includes(o.id)} onChange={() => toggleOption(o.id)} />
+              {o.label}
+            </label>
+          ))}
+        </div>
+      )}
+      {itemType === "short_answer" && (
+        <Input value={text} onChange={(e) => { setText(e.target.value); setResult(null); }} placeholder="Réponse hypothétique" />
+      )}
+      <div className="flex items-center gap-3">
+        <Button type="button" size="sm" loading={testing} disabled={!canTest} onClick={handleTest}>Tester</Button>
+        {result && (
+          <span className="text-sm font-medium" style={{ color: result.is_correct ? "var(--ap-pres)" : "var(--ap-danger)" }}>
+            {result.is_correct ? "Correct" : "Incorrect"} · {result.points_earned}/{result.max_points} pts
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function ItemRevisions({ item }: { item: AssessmentItem }) {
   const itemType = item.item_type as ScorableType;
   const [revisions, setRevisions] = useState<ItemRevision[]>([]);
@@ -95,6 +170,7 @@ function ItemRevisions({ item }: { item: AssessmentItem }) {
   const [caseSensitive, setCaseSensitive] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [simulatingId, setSimulatingId] = useState<string | null>(null);
 
   useEffect(() => {
     listItemRevisions(item.id).then(setRevisions).catch(showError).finally(() => setLoading(false));
@@ -251,9 +327,17 @@ function ItemRevisions({ item }: { item: AssessmentItem }) {
       ) : (
         <ul className="space-y-1">
           {revisions.map((r) => (
-            <li key={r.id} className="text-sm rounded border px-3 py-1.5 flex items-center justify-between">
-              <span>v{r.version} · {r.prompt.text}{r.prompt.options ? ` (${r.prompt.options.length} options)` : ""}</span>
-              <span className="text-muted-foreground">{new Date(r.created_at).toLocaleDateString("fr-FR")}</span>
+            <li key={r.id} className="text-sm rounded border px-3 py-1.5">
+              <div className="flex items-center justify-between">
+                <span>v{r.version} · {r.prompt.text}{r.prompt.options ? ` (${r.prompt.options.length} options)` : ""}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-muted-foreground">{new Date(r.created_at).toLocaleDateString("fr-FR")}</span>
+                  <Button type="button" variant="ghost" size="sm" onClick={() => setSimulatingId((cur) => (cur === r.id ? null : r.id))}>
+                    <FlaskConical size={14} /> Simuler
+                  </Button>
+                </div>
+              </div>
+              {simulatingId === r.id && <SimulateForm item={item} revision={r} />}
             </li>
           ))}
         </ul>
