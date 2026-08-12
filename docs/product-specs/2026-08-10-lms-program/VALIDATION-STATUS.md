@@ -380,12 +380,38 @@ porte bien l'ancien → nouveau créneau ; `tsc`/`eslint` propres ; suite
 complète (335 tests) verte — **non vérifié avec des inscriptions réelles**
 (même limite que le reste de cette passe).
 
+Depuis cette passe (`20260812190000_attendance_events.sql`) :
+`attendance_events`. Le modèle indicatif de la spec (une ligne : « présence
+déclarée/importée, facultatif V1 ») ne donne ni colonnes ni RPC ni écran —
+tout restait à concevoir. Constat en creusant : `course_sessions` n'a
+qu'une seule fenêtre `starts_at`/`ends_at`, aucune notion de séance/
+occurrence individuelle (`planning_events`, 20260812030000, est un
+calendrier personnel sans rapport). Plutôt que d'inventer une table
+d'occurrences — projet à part entière que rien ne demande — l'unité
+retenue est (session, apprenant, jour calendaire) : `record_attendance()`
+fait un upsert sur cette clé, une re-saisie du même jour corrige la ligne
+au lieu d'empiler un historique (pas de table d'audit séparée non plus —
+cohérent avec le « facultatif V1 » de la spec). Écriture jamais directe :
+même posture que `enroll_in_session()`/`extend_enrollment_due_date()` —
+`record_attendance()` vérifie `registrar`/`pedago`/`admin` OU formateur de
+cette session précise (`session_trainers`), correspondant au texte de la
+spec (le formateur « voit ses sessions et les apprenants actifs »).
+Émet aussi `attendance.recorded` via `emit_learning_event()` (même
+convention que `enrollment.started`/`grade.published`) pour alimenter les
+analytics spec 07 plus tard, sans que ce soit un objectif de cette passe.
+UI : nouveau composant `SessionAttendancePanel.tsx`, bouton « Présence »
+à côté de « Effectif » dans `Sessions.tsx::StaffSessions` — sélecteur de
+date, table apprenant × 4 boutons de statut (présent/retard/excusé/absent),
+action « Tout marquer présent ». **Non testé en conditions réelles** (même
+limite que le reste de cette passe : pas de compte staff/apprenant local)
+— vérifié par lecture du SQL, `tsc`/`eslint` propres, migration appliquée
+sans erreur (`supabase db push`, `migration list` confirmé synchronisé).
+
 **Reste à faire** :
 - [ ] UI : « affecter un formateur » en masse et « envoyer une relance » (ENR-015, reste de la liste)
 - [ ] Auto-inscription avec règles (domaine email, code, paiement, prérequis — ENR-013)
 - [ ] Vue apprenant « Mes formations » complète avec dates effectives/échéances relatives recalculées (ENR-017, la V1 actuelle liste juste par statut)
-- [ ] Calcul de complétion versionné par politique (activités obligatoires, score, présence)
-- [ ] `attendance_events` (présence) — dans le modèle indicatif, non créé du tout
+- [ ] Calcul de complétion versionné par politique (activités obligatoires, score, présence — `attendance_events` fournit maintenant la matière première présence, le calcul lui-même reste à écrire)
 
 ## 03 — Compétences, résultats d'apprentissage et preuves
 

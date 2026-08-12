@@ -64,7 +64,7 @@ pouvoir s'y référer facilement.
 - [ ] Auto-inscription avec règles (domaine email, code, paiement, prérequis — ENR-013)
 - [ ] Vue apprenant « Mes formations » complète avec dates effectives/échéances relatives recalculées (ENR-017, la V1 actuelle liste juste par statut)
 - [ ] Calcul de complétion versionné par politique (activités obligatoires, score, présence)
-- [ ] `attendance_events` (présence) — dans le modèle indicatif, non créé du tout
+- [x] `attendance_events` (présence) — `20260812190000_attendance_events.sql`. Aucun modèle de séance/occurrence n'existait sur `course_sessions` (une seule fenêtre `starts_at`/`ends_at`) ; unité retenue : (session, apprenant, jour), upsert via `record_attendance()` (registrar/pedago/admin ou formateur de la session — pas d'écriture directe, même posture que `enroll_in_session()`), pas de table d'historique séparée (spec explicitement « facultatif V1 »). Émet `attendance.recorded` (`emit_learning_event`). UI : `SessionAttendancePanel.tsx`, bouton « Présence » dans `Sessions.tsx`. Ne couvre pas le calcul de complétion versionné (qui consommera cette matière première, reste à écrire)
 
 ## 03 — Compétences, résultats d'apprentissage et preuves
 
@@ -173,7 +173,6 @@ pouvoir s'y référer facilement.
 l'état réel post-déploiement (toutes les migrations listées `[x]` sont en
 prod, `supabase migration list` vérifié à chaque fois). Candidats bien
 scopés pour la suite, par ordre de valeur/risque croissant :
-- 02 : `attendance_events` — table à créer + UI, autonome
 - 08 : simulation de barème avant publication (ASM-013) — autonome, pas de dépendance externe
 - 06 : évaluateur `score`/`compétence` (pendant du `date` déjà fait) — même mécanique, resolution à définir
 - Au-delà : 04 (SSO/SCIM/OneRoster/API), 08 (11 types d'interaction restants), 10 (gouvernance/localisation) sont les gros blocs non entamés, chacun un projet en soi.
