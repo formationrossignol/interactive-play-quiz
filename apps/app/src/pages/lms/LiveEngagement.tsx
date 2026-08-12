@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { BarChart3, Check, Copy, Lock, MessageCircleQuestion, MonitorPlay, Plus, Radio, Square, Trash2, UserX, Unlock, Users } from "lucide-react";
+import { BarChart3, Check, Copy, Lock, Mail, MessageCircleQuestion, MonitorPlay, Plus, Radio, Square, Trash2, UserX, Unlock, Users } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/ui/page-header";
 import { ExplorerEmptyState } from "@/components/content/ExplorerEmptyState";
@@ -13,11 +13,13 @@ import { supabase } from "@/lib/supabase";
 import { myOrgMemberships, type OrgMembership } from "@/lib/org/orgRepo";
 import {
   activateLiveEvent,
+  addAllowlistEmail,
   closeLiveInteraction,
   createLiveEvent,
   createLiveRun,
   createPollInteraction,
   kickParticipant,
+  listEventAllowlist,
   listInteractionResponses,
   listOrgLiveEvents,
   listLatestRun,
@@ -26,7 +28,9 @@ import {
   listRunQuestions,
   moderateQuestion,
   openLiveInteraction,
+  removeAllowlistEmail,
   setRunLocked,
+  type AllowlistEntry,
   type AudienceQuestion,
   type LiveEvent,
   type LiveInteraction,
@@ -387,6 +391,75 @@ function JoinLinkBadge({ code }: { code: string }) {
   );
 }
 
+/** Only rendered when event.access_policy = 'allowlist' — live_run_allowlist_ok()
+ *  (20260812140000) is the actual server-side gate, this is just the CRUD
+ *  for the list it reads. */
+function AllowlistManager({ eventId }: { eventId: string }) {
+  const [entries, setEntries] = useState<AllowlistEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [email, setEmail] = useState("");
+  const [adding, setAdding] = useState(false);
+  const [removingId, setRemovingId] = useState<string | null>(null);
+
+  const reload = () => listEventAllowlist(eventId).then(setEntries).catch(showError).finally(() => setLoading(false));
+
+  useEffect(() => {
+    reload();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [eventId]);
+
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) return;
+    setAdding(true);
+    try {
+      const entry = await addAllowlistEmail(eventId, email.trim());
+      setEntries((prev) => [entry, ...prev]);
+      setEmail("");
+    } catch (err) {
+      showError(err);
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  const handleRemove = async (id: string) => {
+    setRemovingId(id);
+    try {
+      await removeAllowlistEmail(id);
+      setEntries((prev) => prev.filter((entry) => entry.id !== id));
+    } catch (err) {
+      showError(err);
+    } finally {
+      setRemovingId(null);
+    }
+  };
+
+  if (loading) return <TableSkeleton rows={1} cols={1} />;
+
+  return (
+    <div className="mt-2 border-t pt-2 space-y-2">
+      <p className="text-sm font-medium flex items-center gap-1.5"><Mail size={14} /> Liste autorisée ({entries.length})</p>
+      <form onSubmit={handleAdd} className="flex items-center gap-2">
+        <Input type="email" placeholder="email@exemple.com" value={email} onChange={(e) => setEmail(e.target.value)} className="max-w-xs" />
+        <Button variant="ghost" size="sm" type="submit" loading={adding}><Plus size={14} /> Ajouter</Button>
+      </form>
+      {entries.length > 0 && (
+        <ul className="space-y-1">
+          {entries.map((entry) => (
+            <li key={entry.id} className="flex items-center justify-between text-sm rounded-md border px-3 py-1.5">
+              <span>{entry.email}</span>
+              <Button variant="ghost" size="sm" loading={removingId === entry.id} onClick={() => void handleRemove(entry.id)}>
+                <Trash2 size={14} />
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 function EventRow({ event, onActivate }: { event: LiveEvent; onActivate: (id: string) => void }) {
   const [run, setRun] = useState<LiveRun | null>(null);
   const [starting, setStarting] = useState(false);
@@ -423,6 +496,7 @@ function EventRow({ event, onActivate }: { event: LiveEvent; onActivate: (id: st
           )}
         </div>
       </div>
+      {event.access_policy === "allowlist" && <AllowlistManager eventId={event.id} />}
       {run && (
         <div className="mt-2 border-t pt-2 space-y-2">
           <div className="flex items-center justify-between flex-wrap gap-2">
@@ -457,6 +531,7 @@ export default function LmsLiveEngagement() {
   const [eventsLoading, setEventsLoading] = useState(true);
   const [activeOrgId] = useActiveOrgId(memberships);
   const [title, setTitle] = useState("");
+  const [accessPolicy, setAccessPolicy] = useState<LiveEvent["access_policy"]>("anonymous");
   const [creating, setCreating] = useState(false);
   useSEO({ title: "Sondage live & Q&A", description: "Animation, modération et coanimation en direct." });
 
@@ -476,7 +551,7 @@ export default function LmsLiveEngagement() {
     if (!activeOrgId || !title.trim()) return;
     setCreating(true);
     try {
-      const event = await createLiveEvent(activeOrgId, title.trim());
+      const event = await createLiveEvent(activeOrgId, title.trim(), accessPolicy);
       setEvents((prev) => [event, ...prev]);
       setTitle("");
     } catch (err) {
@@ -530,6 +605,20 @@ export default function LmsLiveEngagement() {
             <div className="min-w-[220px] space-y-1">
               <label className="text-sm font-medium" htmlFor="event-title">Titre</label>
               <Input id="event-title" value={title} onChange={(e) => setTitle(e.target.value)} required />
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium" htmlFor="event-access-policy">Accès (LIVE-002)</label>
+              <select
+                id="event-access-policy"
+                className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+                value={accessPolicy}
+                onChange={(e) => setAccessPolicy(e.target.value as LiveEvent["access_policy"])}
+              >
+                <option value="anonymous">Anonyme</option>
+                <option value="pseudonym">Pseudonyme</option>
+                <option value="authenticated">Authentifié</option>
+                <option value="allowlist">Sur liste</option>
+              </select>
             </div>
             <Button type="submit" size="sm" loading={creating}><Plus /> Créer</Button>
           </form>

@@ -179,12 +179,80 @@ barème) — **non vérifié avec des données réelles de session/gradebook**
 (pas de compte staff/organisation de test disponible en local, même limite
 que le reste de cette passe).
 
+Depuis cette passe (`20260812150000_submission_file_uploads.sql`) : remise
+fichier/audio/vidéo + URLs signées courte durée — deux items du reste-à-
+faire qui n'en formaient qu'un : construire l'upload sans les URLs signées
+aurait laissé un bucket privé sans moyen de le lire ; construire les URLs
+signées sans upload n'aurait rien eu à signer. `submission_files` avait des
+politiques `SELECT` (owner/staff) depuis la migration d'origine mais
+**aucun écrivain** — ni RPC, ni policy `INSERT`. Nouveau bucket
+`assignment-submissions`, **privé** (tous les autres buckets de ce repo
+sont publics — `presentation-media`, `avatars` — celui-ci ne pouvait pas
+l'être, une remise peut être confidentielle). RLS `storage.objects` :
+convention de chemin `<learner_id>/<assignment_id>/<fichier>`, apprenant
+(insert/select sur son propre premier segment de dossier, motif déjà
+utilisé par le bucket `avatars`) et staff (select, second segment résolu
+vers `assignments.org_id`) — c'est ce verrou-là, indépendant de
+`submission_files`, qui protège réellement les octets : même un appel
+`submit_assignment()` avec un chemin que l'appelant ne possède pas ne peut
+jamais produire d'URL signée fonctionnelle pour le fichier de quelqu'un
+d'autre. `submit_assignment()` gagne `p_files` (upload direct vers le
+storage d'abord — les octets doivent exister avant l'appel —, puis
+attaché atomiquement à la version créée ; re-vérifie que chaque chemin
+appartient à l'appelant, échec net plutôt qu'une référence orpheline
+silencieuse). Signature Postgres changée (5→6 paramètres) : l'ancien
+overload à 5 paramètres est explicitement `drop`pé plutôt que laissé en
+doublon — sans danger pour `gradebook.ts::submitAssignment()` qui appelle
+déjà via des paramètres nommés (PostgREST résout par nom, `p_files`
+omis utilise son défaut `null`). Téléchargement : `createSignedUrl()`
+côté client (5 min), pas de nouvelle surface DB. UI apprenant
+(`Assignments.tsx::LearnerAssignmentRow`, sélecteur de fichier remplace le
+texte pour `response_mode` file/audio/video, `accept` filtré pour
+audio/vidéo) et staff (`GradingPanel::SubmissionFilesList`, liens de
+téléchargement par remise). Vérifié : migration appliquée contre un schéma
+stub reproduisant les vraies tables **et** un schéma `storage` minimal
+(Postgres jetable) — testé avec le rôle `authenticated` réel (pas
+`postgres` superuser, qui contourne RLS) : upload dans son propre dossier
+accepté, upload dans le dossier d'un autre apprenant rejeté par la vraie
+RLS (`row-level security policy`, pas juste la logique applicative),
+`submit_assignment()` avec fichiers attache bien les métadonnées à la
+bonne version, chemin non possédé rejeté (`file_path_ownership_mismatch`),
+appel historique sans `p_files` (paramètres nommés) toujours fonctionnel ;
+`tsc`/`eslint` propres ; suite complète (335 tests) verte — **non vérifié
+avec de vrais comptes/fichiers réels** (même limite que le reste du
+programme). Non couvert : mode `combo`, l'enregistrement audio/vidéo dans
+le navigateur (le champ fichier accepte un enregistrement déjà exporté,
+pas un enregistreur intégré — hors scope, pas demandé par le modèle de
+données).
+
+**Régression trouvée et corrigée dans la foulée**
+(`20260812160000_fix_submit_assignment_accommodation_regression.sql`) :
+la réécriture de `submit_assignment()` ci-dessus s'était basée sur la
+version *originale* (`20260810160000`) plutôt que sur la version
+réellement en vigueur en prod (`20260811040000_accommodation_effective_dates.sql`,
+spec 05), qui rendait le calcul de retard sensible aux aménagements
+(`effective_assignment_due_at()` — `extended_deadline`/`no_time_limit`) et
+émettait `submission.submitted` via `emit_learning_event()` à la
+finalisation. Les deux ont été silencieusement écrasés par la migration
+`...150000` — un apprenant avec aménagement aurait de nouveau été marqué
+en retard à tort, et les finalisations auraient cessé d'émettre
+l'événement dont dépendent `generate_risk_signals()` (règle `overdue`) et
+les projections analytics. Repéré en relisant l'historique des migrations
+*après* le déploiement de `...150000`, pas avant — corrigé par une
+migration additive plutôt qu'une réécriture de `...150000` (déjà appliquée
+en prod à ce moment-là), restaurant le corps correct avec `p_files` posé
+par-dessus, rien d'autre changé. Vérifié : apprenant avec aménagement
+`no_time_limit` actif, devoir échu depuis 2 jours, soumission avec fichier
+→ `submitted` (pas `late`), fichier bien attaché, événement
+`submission.submitted` émis avec `late:false`, ligne d'audit de lecture du
+profil d'aménagement toujours écrite — les quatre comportements vérifiés
+simultanément contre un schéma stub reproduisant les vraies tables
+d'aménagement (Postgres jetable).
+
 **Reste à faire** :
-- [ ] UI : remise fichier/audio/vidéo — seul le mode texte est câblé côté client (`response_mode` en DB supporte déjà file/url/audio/video)
 - [ ] UI : `assignment_targets` par groupe/apprenant individuel — seul le ciblage par session est câblé
 - [ ] UI : échéance/aménagement dérogatoire par apprenant (`due_override`) — colonne existe, aucun écran
-- [ ] Job serveur de scan antivirus des fichiers (`submission_files.scan_status`) — colonne prête, aucun job
-- [ ] URLs de téléchargement signées courte durée pour les fichiers
+- [ ] Job serveur de scan antivirus des fichiers (`submission_files.scan_status`) — colonne prête, aucun job ; les fichiers uploadés restent `pending` indéfiniment
 - [ ] Connecteur antiplagiat (interface only — non-objectif V1 explicite, mais l'interface elle-même n'existe pas)
 - [ ] Notifications programmées (J-7/J-1/retard) — table `notifications` existe, rien ne les déclenche pour les devoirs
 - [ ] Double correction / correction anonyme (GRD-005) — colonne `is_anonymous` posée, pas de flux de levée d'anonymat auditée
@@ -871,11 +939,39 @@ seul, n'affiche pas les sondages) ; **non vérifié avec un run réel** (même
 limite que le reste du programme, pas de compte staff/participant local
 pour dérouler un cycle complet).
 
+Depuis cette passe (`20260812140000_live_event_allowlist.sql`) : vraie
+allowlist (LIVE-002). `live_run_requires_auth()` traitait déjà
+`allowlist` comme `authenticated` (authentification exigée) — cette moitié
+restait correcte et n'a pas changé ; ce qui manquait, c'est que rien ne
+vérifiait ensuite l'email de l'appelant contre une vraie liste. Nouvelle
+table `live_event_allowlist` (unicité `(event_id, lower(email))` —
+« Foo@x.com » et « foo@x.com » sont la même entrée, pas deux quasi-doublons
+à repérer manuellement), nouvelle fonction `live_run_allowlist_ok()` (no-op
+pour toute `access_policy` autre que `allowlist`, échec fermé si pas
+d'`auth.uid()` ou pas de ligne correspondante) ajoutée comme second
+contrôle **indépendant** sur les 4 points d'entrée participant déjà gatés
+par `live_run_requires_auth()` (`join_live_run`/`submit_audience_question`/
+`cast_vote`/`submit_live_response`) — additif, jamais un remplacement.
+Gap réel trouvé en construisant ceci : rien ne permettait même de *choisir*
+`access_policy` à la création d'un événement (`createLiveEvent()` codait
+`anonymous` en dur) — la politique `allowlist` était inatteignable depuis
+l'UI ; sélecteur ajouté au formulaire de création. `AllowlistManager`
+(nouveau, par événement, visible seulement si `access_policy =
+'allowlist'`) : ajouter/retirer des emails. Vérifié : migration appliquée
+contre un schéma stub (Postgres jetable) avec un `auth.uid()` simulé par
+variable de session pour incarner différents appelants — appelant anonyme
+toujours rejeté (comportement `authenticated` inchangé), appelant
+authentifié mais absent de la liste rejeté avec le nouveau message,
+correspondance email insensible à la casse acceptée, un événement
+`anonymous` non affecté (no-op confirmé) ; `tsc`/`eslint` propres ; suite
+complète (335 tests) verte — **non vérifié avec un run réel** (même
+limite que le reste du programme).
+
 **Reste à faire** :
 - [ ] Mode présentateur/console modérateur *distincts* pour l'animateur lui-même (LIVE-015 mentionne aussi ça) — l'écran projeté existe, mais l'animateur utilise toujours la même console (`LiveEngagement.tsx`) qu'avant, pas une vue « présentateur » séparée de la modération
 - [x] UI d'expulsion — bouton « Expulser » par participant actif (`ParticipantManager`, dépliable depuis le compteur de participants dans `RunControls`)
 - [x] Répondre à un sondage (`poll`) — voir ci-dessus. **Reste** : `priority`/`matrix`/`brainstorm`/`ranking` n'ont toujours ni éditeur ni écran de réponse
-- [ ] Vraie table/mécanisme d'allowlist pour `access_policy = 'allowlist'` (actuellement traité comme `authenticated`, donc moins permissif que prévu plutôt que trop permissif — mais toujours pas ce que LIVE-002 décrit)
+- [x] Vraie table/mécanisme d'allowlist pour `access_policy = 'allowlist'` — voir ci-dessus
 - [ ] Formats supplémentaires : priorisation, matrice 2×2, brainstorm, classement forcé (LIVE-009 à LIVE-013) — `live_interactions.kind` les accepte, aucun éditeur/lecteur pour ces quatre-là
 - [ ] Sondages sur l'écran projeté (`LivePresenterScreen.tsx`) — l'éditeur/résultats staff et le widget participant existent, l'écran public n'en affiche toujours aucun
 - [ ] Intégrations PowerPoint/Teams/Zoom (LIVE-017/018/019)
