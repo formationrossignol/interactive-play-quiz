@@ -17,10 +17,11 @@ pouvoir s'y référer facilement.
   autres). Les deux RPC contrôlaient l'admin via `auth.uid()` — sans
   signification pour un job cron sans JWT — donc chacune a été scindée en
   wrapper vérifié (signature/comportement inchangés) + fonction interne non
-  vérifiée, jamais accordée à `authenticated`/`anon`. Reste bloqué par
-  l'absence de logique métier (pas seulement de planification) : les
-  rappels d'échéance J-7/J-1 (01), les notifications programmées (01), le
-  balayage planifié de `release_state` (06), les synchronisations
+  vérifiée, jamais accordée à `authenticated`/`anon`. ~~Balayage planifié de
+  `release_state` (06)~~ branché depuis (`20260812130000_release_state_date_and_sweep.sql`,
+  voir §06) comme 3ᵉ étape du même job. Reste bloqué par l'absence de
+  logique métier (pas seulement de planification) : les rappels d'échéance
+  J-7/J-1 (01), les notifications programmées (01), les synchronisations
   SCIM/OneRoster planifiées (04), la livraison de webhooks en file (04) —
   l'infrastructure existe maintenant pour les brancher, mais aucune de ces
   fonctions n'existe encore.
@@ -101,9 +102,8 @@ pouvoir s'y référer facilement.
 
 ## 06 — Parcours adaptatifs, conditions et automatisations
 
-- [ ] Balayage planifié complémentaire (règles à échéance temporelle — date/score qui change sans écriture applicative) — bloqué par : pas d'ordonnanceur
-- [ ] UI de construction en phrases « Quand [condition], alors [action] » — l'UI actuelle ne construit qu'une seule condition simple (`activity_completed`), pas le DSL complet (AND/OR, dates, scores, compétences...)
-- [ ] Évaluateur pour les sources autres que `activity_completed` (date/score/compétence) — le DSL les accepte et les affiche, `evaluate_rule_definition()` les traite en échec fermé faute d'évaluateur dédié
+- [x] Balayage planifié (règles à échéance temporelle) + évaluateur `date` — `20260812130000_release_state_date_and_sweep.sql`. Ordonnanceur débloqué (`pg_cron` existe depuis 07) : `_sweep_release_state_internal()` rejoue `recompute_release_state()` pour chaque apprenant actif d'une org, branché comme 3ᵉ étape isolée dans `run_scheduled_lms_analytics_jobs()` (déjà nocturne). `evaluate_rule_definition()` gère désormais `{source:"date", operator:"after"|"before", value}` — sans ce balayage, un évaluateur de date seul n'aurait jamais été réévalué (recompute ne tournait que sur événement devoir/examen/note, jamais sur le temps qui passe). UI : `Automation.tsx::RuleSets` construit soit une condition activité-terminée soit une condition date (sélecteur + date/heure). **Reste** : `score`/`compétence` toujours en échec fermé (résolution propre à chacun, pas devinée), toujours une seule condition par règle (pas de AND/OR)
+- [ ] UI de construction en phrases « Quand [condition], alors [action] » — l'UI actuelle construit une seule condition à la fois (`activity_completed` ou `date`), pas le DSL complet (AND/OR, groupes, scores, compétences...)
 - [ ] Simulation « voir comme cet apprenant » / dry-run avant publication (ADP-008, AUT-004)
 - [ ] Test de positionnement / remédiation (ADP-009/010/011)
 - [ ] `follow_up_tasks` — table posée, aucun écran ni déclencheur
@@ -166,5 +166,5 @@ pouvoir s'y référer facilement.
 2. ~~**UI gradebook consolidée (01)**~~ — fait, y compris l'import CSV/XLSX (GBK-006, voir §01). Reste ouvert : dashboards visuels (07).
 3. ~~**04 — UI admin LTI + linking**~~ — fait (voir §04) : enregistrements/déploiements/linking/diagnostic. Reste ouvert : Deep Linking/NRPS/AGS, SSO OIDC/SAML général, QTI/SCIM/OneRoster/API publique.
 4. ~~**09 — écran projeté**~~ — fait pour le Q&A (voir §09). ~~Éditeur de formats sondage~~ — fait aussi (voir §09, sondage seulement). Reste ouvert : priorisation/matrice/brainstorm/classement forcé, et le sondage sur l'écran projeté lui-même (le présentateur `/live/:code/present` n'affiche toujours que le Q&A).
-5. ~~**Un vrai ordonnanceur**~~ — fait (`pg_cron`, voir dépendances en tête de document) pour les 2 RPC qui étaient réellement prêtes. Débloque la *planification* des rappels J-7/J-1, du balayage `release_state`, de SCIM/OneRoster, des webhooks en file — mais chacun a encore besoin de sa propre logique métier avant de pouvoir être branché.
+5. ~~**Un vrai ordonnanceur**~~ — fait (`pg_cron`, voir dépendances en tête de document). ~~Débloque la planification du balayage `release_state`~~ — branché (voir §06, avec l'évaluateur `date`). Débloque encore la *planification* des rappels J-7/J-1, de SCIM/OneRoster, des webhooks en file — mais chacun a encore besoin de sa propre logique métier avant de pouvoir être branché.
 6. Le reste (05 socle accessibilité transverse, 10 localisation, 04 SCIM/OneRoster/API) peut suivre l'ordre recommandé du README du programme.

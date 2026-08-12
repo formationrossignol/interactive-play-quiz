@@ -32,12 +32,25 @@ const triggerLabel: Record<string, string> = {
   mastery_expired: "Maîtrise expirée",
 };
 
+type ConditionKind = "activity_completed" | "date";
+type DateOperator = "after" | "before";
+
+interface ConditionDraft {
+  kind: ConditionKind;
+  prereqId: string;
+  dateOperator: DateOperator;
+  dateValue: string;
+}
+
+const EMPTY_DRAFT: ConditionDraft = { kind: "activity_completed", prereqId: "", dateOperator: "after", dateValue: "" };
+
 function RuleSets({ orgId }: { orgId: string }) {
   const [ruleSets, setRuleSets] = useState<RuleSet[]>([]);
   const [loading, setLoading] = useState(true);
   const [targetId, setTargetId] = useState("");
-  const [prereqId, setPrereqId] = useState<Record<string, string>>({});
+  const [drafts, setDrafts] = useState<Record<string, ConditionDraft>>({});
   const [creating, setCreating] = useState(false);
+  const [publishing, setPublishing] = useState<string | null>(null);
 
   useEffect(() => {
     listOrgRuleSets(orgId).then(setRuleSets).catch(showError).finally(() => setLoading(false));
@@ -58,14 +71,28 @@ function RuleSets({ orgId }: { orgId: string }) {
     }
   };
 
+  const updateDraft = (ruleSetId: string, patch: Partial<ConditionDraft>) => {
+    setDrafts((prev) => ({ ...prev, [ruleSetId]: { ...(prev[ruleSetId] ?? EMPTY_DRAFT), ...patch } }));
+  };
+
   const handlePublish = async (ruleSet: RuleSet) => {
-    const dep = prereqId[ruleSet.id];
-    if (!dep) return;
+    const draft = drafts[ruleSet.id] ?? EMPTY_DRAFT;
+    let definition: Record<string, unknown>;
+    if (draft.kind === "activity_completed") {
+      if (!draft.prereqId.trim()) return;
+      definition = { source: "activity_completed", target_id: draft.prereqId.trim() };
+    } else {
+      if (!draft.dateValue) return;
+      definition = { source: "date", operator: draft.dateOperator, value: new Date(draft.dateValue).toISOString() };
+    }
+    setPublishing(ruleSet.id);
     try {
-      await publishRuleSetVersion(ruleSet.id, { source: "activity_completed", target_id: dep });
+      await publishRuleSetVersion(ruleSet.id, definition);
       setRuleSets((prev) => prev.map((r) => (r.id === ruleSet.id ? { ...r, status: "published", published_version: r.published_version + 1 } : r)));
     } catch (err) {
       showError(err);
+    } finally {
+      setPublishing(null);
     }
   };
 
@@ -74,7 +101,7 @@ function RuleSets({ orgId }: { orgId: string }) {
   return (
     <section className="product-list-panel p-5">
       <div className="product-panel-heading -mx-5 -mt-5 mb-4">
-        <div><h2>Conditions de déblocage</h2><p>« Quand [activité terminée], alors débloquer [cette activité] ». Les règles cycliques sont refusées à la publication.</p></div>
+        <div><h2>Conditions de déblocage</h2><p>« Quand [activité terminée] ou [date atteinte], alors débloquer [cette activité] ». Une seule condition par règle pour l'instant ; les règles cycliques sont refusées à la publication.</p></div>
       </div>
       <form onSubmit={handleCreate} className="flex flex-wrap items-end gap-2 mb-4">
         <div className="min-w-[280px] space-y-1">
@@ -87,22 +114,52 @@ function RuleSets({ orgId }: { orgId: string }) {
         <p className="text-sm text-muted-foreground">Aucune règle créée.</p>
       ) : (
         <ul className="space-y-2">
-          {ruleSets.map((rs) => (
-            <li key={rs.id} className="rounded-md border p-3 space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span>Activité {rs.target_id.slice(0, 8)} · {rs.status}</span>
-                <span className="text-muted-foreground">v{rs.published_version}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Input
-                  placeholder="UUID de l'activité prérequise"
-                  value={prereqId[rs.id] ?? ""}
-                  onChange={(e) => setPrereqId((prev) => ({ ...prev, [rs.id]: e.target.value }))}
-                />
-                <Button variant="ghost" size="sm" onClick={() => handlePublish(rs)}>Publier</Button>
-              </div>
-            </li>
-          ))}
+          {ruleSets.map((rs) => {
+            const draft = drafts[rs.id] ?? EMPTY_DRAFT;
+            return (
+              <li key={rs.id} className="rounded-md border p-3 space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span>Activité {rs.target_id.slice(0, 8)} · {rs.status}</span>
+                  <span className="text-muted-foreground">v{rs.published_version}</span>
+                </div>
+                <div className="flex flex-wrap items-end gap-2">
+                  <select
+                    className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+                    value={draft.kind}
+                    onChange={(e) => updateDraft(rs.id, { kind: e.target.value as ConditionKind })}
+                  >
+                    <option value="activity_completed">Quand une activité est terminée</option>
+                    <option value="date">Quand une date est atteinte</option>
+                  </select>
+                  {draft.kind === "activity_completed" ? (
+                    <Input
+                      placeholder="UUID de l'activité prérequise"
+                      value={draft.prereqId}
+                      onChange={(e) => updateDraft(rs.id, { prereqId: e.target.value })}
+                    />
+                  ) : (
+                    <>
+                      <select
+                        className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+                        value={draft.dateOperator}
+                        onChange={(e) => updateDraft(rs.id, { dateOperator: e.target.value as DateOperator })}
+                      >
+                        <option value="after">À partir du</option>
+                        <option value="before">Jusqu'au</option>
+                      </select>
+                      <input
+                        type="datetime-local"
+                        className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+                        value={draft.dateValue}
+                        onChange={(e) => updateDraft(rs.id, { dateValue: e.target.value })}
+                      />
+                    </>
+                  )}
+                  <Button variant="ghost" size="sm" loading={publishing === rs.id} onClick={() => void handlePublish(rs)}>Publier</Button>
+                </div>
+              </li>
+            );
+          })}
         </ul>
       )}
     </section>

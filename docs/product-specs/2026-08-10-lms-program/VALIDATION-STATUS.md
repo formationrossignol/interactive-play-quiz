@@ -547,10 +547,45 @@ activité B verrouillée tant que l'activité A prérequise n'est pas soumise ;
 soumission de A par l'apprenant → B passe automatiquement à `unlocked` sans
 appel manuel, uniquement via le trigger.
 
+Depuis cette passe (`20260812130000_release_state_date_and_sweep.sql`) :
+évaluateur `date` + balayage planifié — deux items du reste-à-faire qui
+n'en formaient qu'un dans les faits. Construire l'évaluateur `date` seul
+sans balayage aurait été inutile : `recompute_release_state()` ne tourne
+que sur les 3 triggers événementiels existants (devoir/examen/note), jamais
+sur le simple écoulement du temps — une règle faite uniquement d'une
+condition de date serait donc restée figée à son dernier calcul jusqu'à un
+événement d'apprentissage sans rapport. `pg_cron` existant déjà (07),
+`_sweep_release_state_internal(org_id)` (nouveau, jamais accordé à
+`authenticated`/`anon`, seul le scheduler l'appelle) rejoue
+`recompute_release_state()` pour chaque apprenant activement inscrit d'une
+org ; branché comme 3ᵉ étape isolée (son propre bloc `exception when
+others`) dans `run_scheduled_lms_analytics_jobs()`, qui tournait déjà
+chaque nuit pour les deux étapes analytics/risque — introduit aucune
+nouvelle surface de privilège : `recompute_release_state()` reste appelé
+exactement comme le font déjà les 3 triggers existants, sans contrôle
+`auth.uid()` ajouté (en ajouter un aurait cassé le recompute déclenché par
+la propre soumission d'un apprenant, qui s'exécute avec son identité, pas
+celle d'un administrateur). `evaluate_rule_definition()` gère
+`{source:"date", operator:"after"|"before", value}` — `score`/`compétence`
+restent en échec fermé, chacun a besoin de sa propre résolution (quel
+score ? quelle échelle de compétence ?), pas devinée ici. UI :
+`Automation.tsx::RuleSets` — sélecteur de type de condition (activité
+terminée / date), champ date-heure natif pour la seconde. Toujours une
+seule condition par règle, pas de AND/OR (reste ouvert). Vérifié :
+migration appliquée contre un schéma stub (Postgres jetable) — date passée
+→ `unlocked`, date future → `locked`/`prerequisite_not_met`, opérateur
+`before` correct, source inconnue (`score`) toujours en échec fermé,
+`run_scheduled_lms_analytics_jobs()` isole bien l'échec des deux autres
+étapes (fonctions absentes dans le stub) sans empêcher le balayage de
+s'exécuter, rejeu idempotent (upsert, pas de doublon) ; `tsc`/`eslint`
+propres ; suite complète (335 tests) verte — **non déployé/testé en prod
+au moment de ce commit**, et non vérifiable en conditions réelles sans
+attendre une exécution nocturne après déploiement (même limite que le
+reste du programme pour tout ce qui dépend du cron).
+
 **Reste à faire** :
-- [ ] Balayage planifié complémentaire (règles à échéance temporelle — date/score qui change sans écriture applicative) : aucun scheduler dans ce repo, seul l'événementiel est couvert
-- [ ] UI de construction en phrases « Quand [condition], alors [action] » — l'UI actuelle ne construit qu'une seule condition simple (`activity_completed`), pas le DSL complet (AND/OR, dates, scores, compétences...)
-- [ ] Évaluateur pour les sources autres que `activity_completed` (date/score/compétence) — le DSL les accepte et les affiche, `evaluate_rule_definition()` les traite en échec fermé faute d'évaluateur dédié
+- [ ] UI de construction en phrases « Quand [condition], alors [action] » — l'UI actuelle construit une seule condition à la fois (`activity_completed` ou `date`), pas le DSL complet (AND/OR, groupes, scores, compétences...)
+- [ ] Évaluateur pour les sources `score`/`compétence` — le DSL les accepte et les affiche, `evaluate_rule_definition()` les traite toujours en échec fermé
 - [ ] Simulation « voir comme cet apprenant » / dry-run avant publication (ADP-008, AUT-004)
 - [ ] Test de positionnement / remédiation (ADP-009/010/011)
 - [ ] `follow_up_tasks` — table posée, aucun écran ni déclencheur
