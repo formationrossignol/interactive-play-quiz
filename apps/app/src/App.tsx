@@ -108,6 +108,7 @@ const LmsAccessibility = lazy(() => import("./pages/lms/Accessibility"));
 const LmsAutomation = lazy(() => import("./pages/lms/Automation"));
 const LmsAnalytics = lazy(() => import("./pages/lms/Analytics"));
 const LmsItemBank = lazy(() => import("./pages/lms/ItemBank"));
+const LmsTakeAssessment = lazy(() => import("./pages/lms/TakeAssessment"));
 const LmsLiveEngagement = lazy(() => import("./pages/lms/LiveEngagement"));
 const LmsContentGovernance = lazy(() => import("./pages/lms/ContentGovernance"));
 const PresentationEditorPage = lazy(() => import("./pages/PresentationEditorPage"));
@@ -221,6 +222,7 @@ const App = () => (
               <Route path="/lms/automation" element={<LmsAutomation />} />
               <Route path="/lms/analytics" element={<LmsAnalytics />} />
               <Route path="/lms/item-bank" element={<LmsItemBank />} />
+              <Route path="/lms/assessments" element={<LmsTakeAssessment />} />
               <Route path="/lms/live" element={<LmsLiveEngagement />} />
               <Route path="/live" element={<LiveEventJoin />} />
               <Route path="/live/:code" element={<LiveEventJoin />} />

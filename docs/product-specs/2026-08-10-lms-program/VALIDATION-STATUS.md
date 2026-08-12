@@ -450,10 +450,88 @@ sans attendre une exécution réelle après déploiement.
 `item_answer_keys` (illisible client) + `create_item_revision()` +
 `submit_score_adjustment()` audité.
 
+Depuis cette passe (`20260812060000_assessment_correction_engine.sql`) —
+**le moteur de correction**, la pièce que tout le reste du programme
+attendait :
+
+- **Contrat de données** : `item_answer_keys.correct_answer`/`scoring_rules`
+  étaient un jsonb totalement non typé, jamais peuplé que par un
+  placeholder texte côté `ItemBank.tsx`. Défini et documenté en tête de
+  migration pour 4 `item_type` sur les 21 permis : `true_false`
+  (`correct_answer: boolean`), `single_choice` (`{optionId}`), `mcq`
+  (`{optionIds}` + `partialCredit`/`penaltyPerWrong`), `short_answer`
+  (`{equivalents}` + `caseSensitive`/`trim`). Choix des 4 : les seuls que
+  `ItemBank.tsx` laissait déjà créer — construire un contrat pour un type
+  sans UI d'auteur aurait été deviner un format, comme pour tout le reste
+  de ce programme.
+- **`assessment_attempts`/`assessment_responses`** (nouvelles tables) — le
+  modèle indicatif de la spec nommait `assessment_attempt_forms`/
+  `responses`, jamais créées par la migration d'origine ; c'était un vrai
+  manque, pas juste « pas d'exécuteur ». `assessment_responses` est
+  pré-créée intégralement à l'ouverture de la tentative (`start_assessment_attempt()`)
+  — c'est le tirage figé (ASM-010/011) pour le mode `fixed` ; les sections
+  `pool` sont refusées explicitement (`pool_sections_not_supported`), le
+  tirage aléatoire n'a toujours pas d'exécuteur.
+- **`submit_assessment_response()`** — la première fonction de tout ce
+  repo à lire `item_answer_keys`. Sépare le comparateur pur
+  (`_score_assessment_response()`, aucune I/O, testable en isolation) de
+  l'autorisation/l'écriture. Barèmes riches (ASM-012) pour ce que ces 4
+  types permettent : points fixes (les 4), crédit partiel + pénalité par
+  option fausse (`mcq`), équivalences insensibles casse/espaces
+  (`short_answer`). Tolérance numérique non couverte — aucun type
+  numérique (`slider`, `math_graph`) n'a d'UI d'auteur non plus.
+  `start_assessment_attempt()` refuse de démarrer une tentative sur une
+  évaluation contenant un type non noté ou un item sans clé de réponse
+  (`unsupported_item_type_in_assessment`/`item_missing_answer_key`) —
+  échec net à l'ouverture plutôt qu'une notation partielle silencieuse en
+  cours de route.
+- **`publish_assessment()`** — snapshot immuable de la structure (sections
+  fixes + refs d'items) dans `assessment_versions`, refuse de publier une
+  évaluation sans section ou une section sans item.
+- **UI** : `ItemBank.tsx` — formulaire de révision devenu conscient du
+  type (liste d'options avec radio/checkbox pour marquer la bonne réponse
+  sur `single_choice`/`mcq`, bascule Vrai/Faux, liste de réponses
+  équivalentes pour `short_answer`) + panneau Évaluations (créer, ajouter
+  une section fixe, attacher des révisions d'item, publier).
+  `TakeAssessment.tsx` (`/lms/assessments`) — liste les évaluations
+  publiées, démarre/reprend une tentative (idempotent — index unique
+  partiel `(assessment_id, learner_id) where status='in_progress'`),
+  affiche une entrée par type d'item, soumet chaque réponse
+  individuellement (retour immédiat correct/incorrect + points, jamais la
+  bonne réponse elle-même), termine la tentative et affiche le score final.
+- **Ne débloque pas `extra_time` (05)** malgré ce que le document de
+  dépendances disait avant cette passe — ce moteur note
+  `assessment_items`, pas `exams`/`exam_attempts` (le système Tier-1 sur
+  lequel `extra_time` porte réellement), deux systèmes parallèles jamais
+  réconciliés ; `assessment_attempts` n'a d'ailleurs aucune notion de
+  durée. Débloque en revanche la matière première de la projection
+  journalière item et de la psychométrie ANA-009/012 (07) —
+  `assessment_responses` porte `is_correct`/`points_earned` par item,
+  l'agrégat lui-même reste à écrire.
+
+Vérifié : `_score_assessment_response()` testé fonctionnellement (11 cas,
+transaction ouverte puis annulée avant tout commit — rien laissé en base) :
+vrai/faux correct/incorrect, choix unique correct/incorrect, QCM
+tout-ou-rien avec ensembles dans un ordre différent (toujours correct),
+QCM crédit partiel (2 correctes + 1 fausse, pénalité 1, barème 6 →
+2.0000 pts, calcul vérifié à la main), QCM crédit partiel plafonné à 0
+(aucune correcte, 3 fausses → jamais négatif), réponse courte avec
+équivalence insensible casse/espaces, réponse courte sensible à la casse.
+Migration entière rejouée en transaction annulée (`begin; ...; rollback;`)
+pour valider la syntaxe/les références avant tout commit réel — une
+première erreur trouvée ainsi (`position` comme nom de colonne casse la
+grammaire `returns table(...)`, renommé `item_position`). `tsc`/`eslint`/
+323 tests unitaires propres ; les deux nouvelles pages testées dans Chrome
+non authentifié (états vides/accès réservé correctement rendus, aucune
+erreur console). **Non testé en conditions réelles** : pas de compte
+staff/apprenant local pour dérouler un cycle complet création d'item →
+assemblage → publication → tentative → note ; **migration pas encore
+déployée en prod**.
+
 **Reste à faire** :
-- [ ] Assemblage réel d'une évaluation (sections fixes/pool aléatoire, tirage figé par tentative — `assessment_pool_rules`/`assessment_item_refs` posés, aucun moteur de tirage)
-- [ ] Barèmes riches (score partiel, pénalité, tolérance, réponses équivalentes — ASM-012) et leur simulation avant publication (ASM-013)
-- [ ] Moteur de correction réel utilisant `item_answer_keys` (aucune fonction ne le lit encore — seul `create_item_revision()` écrit dedans)
+- [ ] Assemblage réel d'une évaluation — tirage aléatoire (sections `pool`, `assessment_pool_rules`) : refusé explicitement, aucun exécuteur
+- [ ] Simulation du barème sur des réponses exemples avant publication (ASM-013)
+- [ ] Barèmes riches pour les 17 autres `item_type` (ranking « ordre partiel », matching, cloze, et les 8 types ASM-017-024) — aucun contrat de données, aucune UI d'auteur
 - [ ] Nouveaux types d'interaction (passage, vidéo interactive, audio/vidéo, dessin, labeling, math/graphique, fichier, code — ASM-017 à ASM-024) : le schéma accepte n'importe quel `item_type`/`prompt` JSON mais aucun éditeur/lecteur n'existe pour ces types
 - [ ] Rescore en masse avec prévisualisation d'impact (`rescore_jobs` posé, aucun exécuteur)
 - [ ] Suggestions IA (génération, distracteurs, vérifications de biais/ambiguïté) — non-objectif partiel mais mentionné comme option V1
