@@ -36,9 +36,11 @@ pouvoir s'y référer facilement.
   sont deux systèmes parallèles distincts, jamais réconciliés (voir
   « Réconciliation » en bas de ce document). `assessment_attempts` n'a
   d'ailleurs aucune notion de durée/limite de temps du tout.
-- **Aucune UI staff ne crée de sondage/priorisation/matrice** (spec 09)
-  bloque : l'écran de réponse participant à ces formats — le construire
-  avant l'éditeur serait deviner un format.
+- ~~**Aucune UI staff ne crée de sondage/priorisation/matrice** (spec 09)~~
+  fait pour **sondage** (`20260812090000_live_poll_interactions.sql`, voir
+  §09) — l'écran de réponse participant qui en dépendait est fait avec.
+  Reste bloqué pour priorisation/matrice/brainstorm/classement forcé : leur
+  éditeur (et donc leur écran de réponse) n'existe toujours pas.
 - **`/lti/unlinked` est un cul-de-sac réel** tant qu'aucune UI admin ne
   permet de créer une `lti_registrations`/`lti_deployments` et de relier un
   `sub` non reconnu à un compte (04).
@@ -134,7 +136,7 @@ pouvoir s'y référer facilement.
 
 - [x] Écran public projeté (LIVE-015, partiel) — `/live/:code/present` (`LivePresenterScreen.tsx`), grand écran séparé de la console modérateur, classement des questions par votes en temps réel (Realtime), aucune authentification/join requis (RLS `audience_questions_public_read`, mêmes conditions que la salle participant). Limité au Q&A : sondage/priorisation/matrice n'ont toujours aucun éditeur staff (rien de réel à projeter pour ces formats)
 - [x] UI d'expulsion (`kick_participant()` — bouton par participant actif dans la console animateur, `LiveEngagement.tsx::ParticipantManager`)
-- [ ] Répondre à un sondage/interaction (`live_interactions`/`submit_live_response()`/`get_my_live_response()` existent, mais aucune UI staff ne crée encore de `poll`/`priority`/`matrix`/etc.)
+- [x] Répondre à un sondage (`poll`) — `open_live_interaction()`/`close_live_interaction()` (`20260812090000_live_poll_interactions.sql`) ajoutent l'invariant « un seul live par run à la fois » (auto-ferme les autres à l'ouverture) par-dessus le `submit_live_response()`/`get_my_live_response()` déjà là. Staff : création (question + options + choix simple/multiple) et tableau de résultats en direct (Realtime sur `live_responses`) dans `LiveEngagement.tsx::InteractionManager`. Participant : widget dans `LiveEventRoom.tsx` — apparaît/disparaît via Realtime sur `live_interactions`, réponse restaurée à la reconnexion, modifiable tant que le sondage reste ouvert. **Reste** : `priority`/`matrix`/`brainstorm`/`ranking` n'ont toujours ni éditeur ni lecteur (contrat config/payload différent pour chacun, pas deviné ici)
 - [ ] Vraie table/mécanisme d'allowlist pour `access_policy = 'allowlist'` (actuellement traité comme `authenticated`)
 - [ ] Formats supplémentaires : priorisation, matrice 2×2, brainstorm, classement forcé (LIVE-009 à LIVE-013) — `live_interactions.kind` les accepte, aucun éditeur/lecteur
 - [ ] Intégrations PowerPoint/Teams/Zoom (LIVE-017/018/019)
@@ -164,6 +166,6 @@ pouvoir s'y référer facilement.
 1. ~~**08 — moteur de correction (`item_answer_keys`)**~~ — fait pour l'assemblage fixe + 4 types notables (voir §08). ~~Débloque la projection journalière item (07)~~ — faite aussi (voir §07) ; reste ouvert la psychométrie ANA-010/011/012 (agrégat plus riche) et, côté 08 : tirage aléatoire (pool), simulation de barème avant publication, 17 autres types d'interaction. Ne débloque pas `extra_time` (05, système `exams` séparé).
 2. ~~**UI gradebook consolidée (01)**~~ — fait, y compris l'import CSV/XLSX (GBK-006, voir §01). Reste ouvert : dashboards visuels (07).
 3. ~~**04 — UI admin LTI + linking**~~ — fait (voir §04) : enregistrements/déploiements/linking/diagnostic. Reste ouvert : Deep Linking/NRPS/AGS, SSO OIDC/SAML général, QTI/SCIM/OneRoster/API publique.
-4. ~~**09 — écran projeté**~~ — fait pour le Q&A (voir §09). Reste ouvert : éditeur de formats sondage/priorisation/matrice.
+4. ~~**09 — écran projeté**~~ — fait pour le Q&A (voir §09). ~~Éditeur de formats sondage~~ — fait aussi (voir §09, sondage seulement). Reste ouvert : priorisation/matrice/brainstorm/classement forcé, et le sondage sur l'écran projeté lui-même (le présentateur `/live/:code/present` n'affiche toujours que le Q&A).
 5. ~~**Un vrai ordonnanceur**~~ — fait (`pg_cron`, voir dépendances en tête de document) pour les 2 RPC qui étaient réellement prêtes. Débloque la *planification* des rappels J-7/J-1, du balayage `release_state`, de SCIM/OneRoster, des webhooks en file — mais chacun a encore besoin de sa propre logique métier avant de pouvoir être branché.
 6. Le reste (05 socle accessibilité transverse, 10 localisation, 04 SCIM/OneRoster/API) peut suivre l'ordre recommandé du README du programme.

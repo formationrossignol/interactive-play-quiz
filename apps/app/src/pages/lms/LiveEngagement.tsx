@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Check, Copy, Lock, MessageCircleQuestion, MonitorPlay, Plus, Radio, UserX, Unlock, Users } from "lucide-react";
+import { BarChart3, Check, Copy, Lock, MessageCircleQuestion, MonitorPlay, Plus, Radio, Square, Trash2, UserX, Unlock, Users } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/ui/page-header";
 import { ExplorerEmptyState } from "@/components/content/ExplorerEmptyState";
@@ -9,22 +9,30 @@ import { PageSkeleton, TableSkeleton } from "@/components/ui/skeletons";
 import { useActiveOrgId } from "@/components/org/OrgSwitcher";
 import { showError } from "@/lib/errorTaxonomy";
 import { useSEO } from "@/hooks/useSEO";
+import { supabase } from "@/lib/supabase";
 import { myOrgMemberships, type OrgMembership } from "@/lib/org/orgRepo";
 import {
   activateLiveEvent,
+  closeLiveInteraction,
   createLiveEvent,
   createLiveRun,
+  createPollInteraction,
   kickParticipant,
+  listInteractionResponses,
   listOrgLiveEvents,
   listLatestRun,
+  listRunInteractions,
   listRunParticipants,
   listRunQuestions,
   moderateQuestion,
+  openLiveInteraction,
   setRunLocked,
   type AudienceQuestion,
   type LiveEvent,
+  type LiveInteraction,
   type LiveParticipantRow,
   type LiveRun,
+  type PollConfig,
 } from "@/lib/lms/liveEngagement";
 
 const STAFF_ROLES = new Set(["trainer", "pedago", "admin"]);
@@ -77,6 +85,205 @@ function QuestionModeration({ run }: { run: LiveRun }) {
         </li>
       ))}
     </ul>
+  );
+}
+
+function PollResults({ interaction }: { interaction: LiveInteraction }) {
+  const config = interaction.config as PollConfig;
+  const [counts, setCounts] = useState<Record<string, number>>({});
+  const [respondents, setRespondents] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  const reload = () => {
+    listInteractionResponses(interaction.id)
+      .then((rows) => {
+        const next: Record<string, number> = {};
+        for (const option of config.options) next[option.id] = 0;
+        for (const row of rows) {
+          for (const optionId of row.payload.optionIds ?? []) {
+            next[optionId] = (next[optionId] ?? 0) + 1;
+          }
+        }
+        setCounts(next);
+        setRespondents(rows.length);
+      })
+      .catch(showError)
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    reload();
+    if (interaction.status !== "live") return;
+    const channel = supabase
+      .channel(`lms-live-interaction-${interaction.id}-responses`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "live_responses", filter: `interaction_id=eq.${interaction.id}` }, reload)
+      .subscribe();
+    return () => { void supabase.removeChannel(channel); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [interaction.id, interaction.status]);
+
+  if (loading) return <TableSkeleton rows={2} cols={1} />;
+
+  const total = Math.max(1, Object.values(counts).reduce((sum, n) => sum + n, 0));
+
+  return (
+    <div className="mt-2 space-y-1.5">
+      <p className="text-xs text-muted-foreground">{respondents} réponse{respondents !== 1 ? "s" : ""}</p>
+      {config.options.map((option) => {
+        const count = counts[option.id] ?? 0;
+        const pct = Math.round((count / total) * 100);
+        return (
+          <div key={option.id} className="text-sm">
+            <div className="flex items-center justify-between"><span>{option.label}</span><span className="text-muted-foreground">{count} ({pct}%)</span></div>
+            <div className="h-1.5 rounded-full bg-muted mt-0.5 overflow-hidden">
+              <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function CreatePollForm({ runId, onCreated }: { runId: string; onCreated: () => void }) {
+  const [question, setQuestion] = useState("");
+  const [options, setOptions] = useState(["", ""]);
+  const [allowMultiple, setAllowMultiple] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [open, setOpen] = useState(false);
+
+  const updateOption = (index: number, value: string) => setOptions((prev) => prev.map((o, i) => (i === index ? value : o)));
+  const addOption = () => setOptions((prev) => [...prev, ""]);
+  const removeOption = (index: number) => setOptions((prev) => (prev.length > 2 ? prev.filter((_, i) => i !== index) : prev));
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanOptions = options.map((o) => o.trim()).filter(Boolean);
+    if (!question.trim() || cleanOptions.length < 2) return;
+    setCreating(true);
+    try {
+      const config: PollConfig = {
+        question: question.trim(),
+        options: cleanOptions.map((label, i) => ({ id: `opt-${i}-${Date.now()}`, label })),
+        allowMultiple,
+      };
+      await createPollInteraction(runId, config);
+      setQuestion(""); setOptions(["", ""]); setAllowMultiple(false); setOpen(false);
+      onCreated();
+    } catch (err) {
+      showError(err);
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  if (!open) {
+    return <Button variant="ghost" size="sm" onClick={() => setOpen(true)}><Plus size={14} /> Créer un sondage</Button>;
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="rounded-md border p-3 space-y-2">
+      <Input value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="Question" required />
+      {options.map((value, i) => (
+        <div key={i} className="flex items-center gap-2">
+          <Input value={value} onChange={(e) => updateOption(i, e.target.value)} placeholder={`Option ${i + 1}`} />
+          {options.length > 2 && (
+            <button type="button" className="ap-btn ap-btn--ghost ap-btn--sm ap-icon-btn" aria-label="Retirer" onClick={() => removeOption(i)}>
+              <Trash2 size={14} />
+            </button>
+          )}
+        </div>
+      ))}
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <Button type="button" variant="ghost" size="sm" onClick={addOption}><Plus size={14} /> Option</Button>
+        <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <input type="checkbox" checked={allowMultiple} onChange={(e) => setAllowMultiple(e.target.checked)} /> Plusieurs réponses autorisées
+        </label>
+      </div>
+      <div className="flex justify-end gap-2">
+        <Button type="button" variant="ghost" size="sm" onClick={() => setOpen(false)}>Annuler</Button>
+        <Button type="submit" size="sm" loading={creating}>Créer</Button>
+      </div>
+    </form>
+  );
+}
+
+function InteractionManager({ run }: { run: LiveRun }) {
+  const [interactions, setInteractions] = useState<LiveInteraction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [actingId, setActingId] = useState<string | null>(null);
+
+  const reload = () => listRunInteractions(run.id).then(setInteractions).catch(showError).finally(() => setLoading(false));
+
+  useEffect(() => {
+    reload();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [run.id]);
+
+  const handleOpen = async (id: string) => {
+    setActingId(id);
+    try {
+      await openLiveInteraction(id);
+      await reload();
+      setExpandedId(id);
+    } catch (err) {
+      showError(err);
+    } finally {
+      setActingId(null);
+    }
+  };
+
+  const handleClose = async (id: string) => {
+    setActingId(id);
+    try {
+      await closeLiveInteraction(id);
+      await reload();
+    } catch (err) {
+      showError(err);
+    } finally {
+      setActingId(null);
+    }
+  };
+
+  const polls = interactions.filter((i) => i.kind === "poll");
+
+  return (
+    <div className="mt-3 border-t pt-3">
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-sm font-medium flex items-center gap-1.5"><BarChart3 size={14} /> Sondages</p>
+      </div>
+      {loading ? <TableSkeleton rows={1} cols={1} /> : (
+        <div className="space-y-2">
+          {polls.map((interaction) => {
+            const config = interaction.config as PollConfig;
+            return (
+              <div key={interaction.id} className="rounded-md border p-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <button type="button" className="text-left text-sm flex-1" onClick={() => setExpandedId((cur) => (cur === interaction.id ? null : interaction.id))}>
+                    {config.question} <span className="text-muted-foreground">· {interaction.status}</span>
+                  </button>
+                  <div className="flex items-center gap-1 shrink-0">
+                    {interaction.status !== "live" && (
+                      <Button variant="ghost" size="sm" loading={actingId === interaction.id} onClick={() => void handleOpen(interaction.id)}>
+                        <Radio size={14} /> Ouvrir
+                      </Button>
+                    )}
+                    {interaction.status === "live" && (
+                      <Button variant="ghost" size="sm" loading={actingId === interaction.id} onClick={() => void handleClose(interaction.id)}>
+                        <Square size={14} /> Fermer
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                {expandedId === interaction.id && <PollResults interaction={interaction} />}
+              </div>
+            );
+          })}
+          <CreatePollForm runId={run.id} onCreated={reload} />
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -236,6 +443,7 @@ function EventRow({ event, onActivate }: { event: LiveEvent; onActivate: (id: st
           </div>
           <RunControls run={run} onLockChange={(locked) => setRun((prev) => (prev ? { ...prev, locked } : prev))} />
           <QuestionModeration run={run} />
+          <InteractionManager run={run} />
         </div>
       )}
     </li>

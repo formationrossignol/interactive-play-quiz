@@ -625,12 +625,47 @@ erreur console — **non vérifié avec un run réel** (pas de compte staff loca
 pour créer un événement/run et confirmer le classement + le Realtime en
 conditions réelles).
 
+Depuis cette passe (`20260812090000_live_poll_interactions.sql`) : éditeur
+staff et écran de réponse participant pour `poll` — le premier des formats
+listés dans `live_interactions.kind` à en avoir un. `live_interactions`
+n'avait aucun `created_at` (les brouillons n'ont ni `opened_at` ni
+`closed_at`, donc aucun moyen d'ordonner la liste d'un run) : colonne
+ajoutée. `open_live_interaction()`/`close_live_interaction()` : la policy
+RLS `live_interactions_staff` (`for all`) permettait déjà l'insert/update
+direct côté client, donc pas de RPC pour la création — mais l'invariant « un
+seul live par run à la fois » (ferme automatiquement tout autre `live` du
+même run à l'ouverture, même principe que l'autorité de navigation unique
+de `live_control_leases`/LIVE-007) ne pouvait pas s'exprimer sans race côté
+client, d'où ces deux RPC pour les seules transitions d'état. Contrat
+`config`/`payload` pour `poll` (jusqu'ici jsonb totalement libre) :
+`config = {question, options: [{id, label}], allowMultiple}`,
+`payload = {optionIds: string[]}` (toujours un tableau, même en choix
+simple). Staff (`LiveEngagement.tsx::InteractionManager`) : formulaire de
+création (question + options dynamiques + choix simple/multiple), liste des
+sondages du run avec Ouvrir/Fermer, résultats en direct par option
+(pourcentages + barres, Realtime sur `live_responses` tant que le sondage
+est `live`). Participant (`LiveEventRoom.tsx::LivePollWidget`) : apparaît/
+disparaît via Realtime sur `live_interactions`, réponse restaurée à la
+reconnexion via `get_my_live_response()`, modifiable tant que `live`
+(upsert idempotent déjà garanti par `submit_live_response()`). Vérifié :
+migration appliquée contre un schéma stub reproduisant les vraies tables
+(Postgres jetable) — ouvrir un 2ᵉ sondage ferme bien le 1ᵉʳ automatiquement
+avec `closed_at` renseigné, fermer un sondage déjà fermé est rejeté
+(`interaction_not_live`) ; `tsc`/`eslint` propres sur les fichiers touchés ;
+suite de tests complète (328 tests) toujours verte. **Non couvert** :
+`priority`/`matrix`/`brainstorm`/`ranking` (contrat différent pour chacun,
+pas deviné ici) et l'écran projeté (`LivePresenterScreen.tsx` reste Q&A
+seul, n'affiche pas les sondages) ; **non vérifié avec un run réel** (même
+limite que le reste du programme, pas de compte staff/participant local
+pour dérouler un cycle complet).
+
 **Reste à faire** :
 - [ ] Mode présentateur/console modérateur *distincts* pour l'animateur lui-même (LIVE-015 mentionne aussi ça) — l'écran projeté existe, mais l'animateur utilise toujours la même console (`LiveEngagement.tsx`) qu'avant, pas une vue « présentateur » séparée de la modération
 - [x] UI d'expulsion — bouton « Expulser » par participant actif (`ParticipantManager`, dépliable depuis le compteur de participants dans `RunControls`)
-- [ ] Répondre à un sondage/interaction (`live_interactions`/`submit_live_response()`/`get_my_live_response()` existent, mais aucune UI staff ne crée encore de `poll`/`priority`/`matrix`/etc., donc rien à répondre côté participant — construire l'écran de réponse avant l'éditeur staff serait deviner un format)
+- [x] Répondre à un sondage (`poll`) — voir ci-dessus. **Reste** : `priority`/`matrix`/`brainstorm`/`ranking` n'ont toujours ni éditeur ni écran de réponse
 - [ ] Vraie table/mécanisme d'allowlist pour `access_policy = 'allowlist'` (actuellement traité comme `authenticated`, donc moins permissif que prévu plutôt que trop permissif — mais toujours pas ce que LIVE-002 décrit)
-- [ ] Formats supplémentaires : priorisation, matrice 2×2, brainstorm, classement forcé (LIVE-009 à LIVE-013) — `live_interactions.kind` les accepte, aucun éditeur/lecteur
+- [ ] Formats supplémentaires : priorisation, matrice 2×2, brainstorm, classement forcé (LIVE-009 à LIVE-013) — `live_interactions.kind` les accepte, aucun éditeur/lecteur pour ces quatre-là
+- [ ] Sondages sur l'écran projeté (`LivePresenterScreen.tsx`) — l'éditeur/résultats staff et le widget participant existent, l'écran public n'en affiche toujours aucun
 - [ ] Intégrations PowerPoint/Teams/Zoom (LIVE-017/018/019)
 - [ ] Rapports post-session (participation, chronologie, export — LIVE-020 à LIVE-023)
 - [ ] Rate limiting et filtre de termes assistant (modération)
