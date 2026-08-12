@@ -1,8 +1,9 @@
 import { supabase } from '@/lib/supabase';
 
-/** ANA-005 to ANA-008 read the sparse daily projections written by
- *  run_daily_analytics_rollup() (20260811010000_learning_analytics_aggregation.sql).
- *  RLS on all three tables grants select only to trainer/pedago/admin — there
+/** ANA-005 to ANA-009 read the sparse daily projections written by
+ *  _run_daily_analytics_rollup_internal() (20260811010000_learning_analytics_aggregation.sql,
+ *  item projection added by 20260812070000_analytics_daily_item.sql).
+ *  RLS on all four tables grants select only to trainer/pedago/admin — there
  *  is no learner-scoped read policy, so a learner-facing dashboard (ANA-005)
  *  isn't buildable yet without a new migration; not attempted here. */
 
@@ -59,4 +60,26 @@ export async function listDailyCompetency(orgId: string, sinceIsoDate: string): 
     .order('day', { ascending: true });
   if (error) throw error;
   return (data ?? []) as DailyCompetencyRow[];
+}
+
+/** ANA-009 (partial — see analyticsDashboard.ts header and the migration
+ *  comment: no median time, no distractor/difficulty analysis). */
+export interface DailyItemRow {
+  item_revision_id: string;
+  day: string;
+  responses_count: number;
+  correct_count: number;
+  omitted_count: number;
+  avg_score_ratio: number | null;
+}
+
+export async function listDailyItem(orgId: string, sinceIsoDate: string): Promise<DailyItemRow[]> {
+  const { data, error } = await supabase
+    .from('analytics_daily_item')
+    .select('item_revision_id, day, responses_count, correct_count, omitted_count, avg_score_ratio')
+    .eq('org_id', orgId)
+    .gte('day', sinceIsoDate)
+    .order('day', { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as DailyItemRow[];
 }

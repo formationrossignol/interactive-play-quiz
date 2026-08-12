@@ -26,10 +26,11 @@ pouvoir s'y référer facilement.
   fonctions n'existe encore.
 - ~~**Le moteur de correction de la spec 08 (`item_answer_keys` jamais lu)**~~
   `submit_assessment_response()` le lit désormais (`20260812060000_assessment_correction_engine.sql`,
-  voir §08). Débloque réellement la projection journalière **item** et la
-  psychométrie ANA-009/012 (07) — `assessment_responses` porte maintenant
-  `is_correct`/`points_earned` par item, la matière première existe. **Ne
-  débloque pas `extra_time` (05)** : ce moteur note `assessment_items`
+  voir §08). Débloque réellement la projection journalière **item**, faite
+  depuis (`20260812070000_analytics_daily_item.sql`, voir §07) — la
+  psychométrie ANA-010/011/012 reste ouverte, elle a besoin d'un agrégat
+  plus riche (répartition par option, quartiles de score) que ce que cette
+  projection écrit. **Ne débloque pas `extra_time` (05)** : ce moteur note `assessment_items`
   (le système spec 08), pas `exam_attempts` (le système d'examen
   pré-existant, Tier-1, sur lequel `extra_time` porte réellement) — ce
   sont deux systèmes parallèles distincts, jamais réconciliés (voir
@@ -108,10 +109,11 @@ pouvoir s'y référer facilement.
 
 ## 07 — Analytics pédagogiques, psychométrie et signaux de risque
 
-- [ ] Projection journalière **item** — n'était bloquée que par l'absence de moteur de correction (spec 08, fait). `assessment_responses` porte maintenant `is_correct`/`points_earned` par `item_revision_id` : la matière première existe, la projection/l'agrégat lui-même reste à écrire
+- [x] Projection journalière **item** — `analytics_daily_item` (`20260812070000_analytics_daily_item.sql`), alimentée par `_run_daily_analytics_rollup_internal()` (déjà sur le cron nocturne). Couvre le compte de réponses, taux de bonne réponse, taux d'omission, moyenne des ratios de score. **Ne couvre pas** le temps médian (aucune colonne de durée sur `assessment_responses`) ni ANA-010/011/012 (distracteurs/difficulté/discrimination — répartition par option et quartiles de score, pas construits)
 - [ ] Projection journalière **programme** — jamais définie faute de UI/agrégat programme existant à côté de session/offering
 - [x] Dashboard formateur/pédagogue/admin (ANA-006 à ANA-008) — `/lms/analytics`, `AnalyticsDashboard` : activité (apprenants actifs/événements, 14j), preuves de compétence (14j), totaux d'inscription (30j). Lit `analytics_daily_activity`/`analytics_daily_enrollment`/`analytics_daily_competency` déjà là. **ANA-005 (dashboard apprenant) reste bloqué** : ces 3 tables n'ont de politique RLS que pour `trainer`/`pedago`/`admin` — aucune lecture apprenant de ses propres lignes n'existe, il faudrait une migration RLS avant de pouvoir construire cet écran, pas juste une UI
-- [ ] Analyse d'items / psychométrie (difficulté, discrimination, distracteurs — ANA-009 à ANA-012)
+- [ ] Analyse d'items / psychométrie (ANA-010 distracteurs par groupe de performance, ANA-011 difficulté/discrimination, ANA-012 avertissements) — `analytics_daily_item` fournit le compte/taux de base, pas la répartition par option ni les quartiles de score nécessaires à ces trois-là
+- [ ] Temps médian de réponse par item (ANA-009) — bloqué par l'absence de colonne de durée sur `assessment_responses`
 - [ ] Programmation de rapports (`report_schedules`/`report_runs`) — tables posées, aucun exécuteur
 - [ ] Export CSV/XLSX/PDF avec pseudonymisation
 - [ ] Seuil minimal anti-réidentification sur les comparaisons de cohortes (ANA-020)
@@ -159,7 +161,7 @@ pouvoir s'y référer facilement.
 
 ## Ordre suggéré pour la suite
 
-1. ~~**08 — moteur de correction (`item_answer_keys`)**~~ — fait pour l'assemblage fixe + 4 types notables (voir §08). Débloque la psychométrie/projection item (07) ; ne débloque pas `extra_time` (05, système `exams` séparé). Reste ouvert : tirage aléatoire (pool), simulation de barème avant publication, 17 autres types d'interaction.
+1. ~~**08 — moteur de correction (`item_answer_keys`)**~~ — fait pour l'assemblage fixe + 4 types notables (voir §08). ~~Débloque la projection journalière item (07)~~ — faite aussi (voir §07) ; reste ouvert la psychométrie ANA-010/011/012 (agrégat plus riche) et, côté 08 : tirage aléatoire (pool), simulation de barème avant publication, 17 autres types d'interaction. Ne débloque pas `extra_time` (05, système `exams` séparé).
 2. ~~**UI gradebook consolidée (01)**~~ — fait pour l'essentiel (`/lms/gradebook`, voir §01). Reste ouvert : import CSV/XLSX de notes (GBK-006), dashboards visuels (07).
 3. ~~**04 — UI admin LTI + linking**~~ — fait (voir §04) : enregistrements/déploiements/linking/diagnostic. Reste ouvert : Deep Linking/NRPS/AGS, SSO OIDC/SAML général, QTI/SCIM/OneRoster/API publique.
 4. ~~**09 — écran projeté**~~ — fait pour le Q&A (voir §09). Reste ouvert : éditeur de formats sondage/priorisation/matrice.
