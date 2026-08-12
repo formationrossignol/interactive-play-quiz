@@ -1,5 +1,3 @@
-import { assertSafeImportFile } from "@/lib/fileValidation";
-
 /** GBK-006: "Import CSV/XLSX avec prévisualisation, correspondance des
  *  personnes, validation et rapport d'erreurs." Person-matching and the
  *  preview happen entirely client-side against the session roster the
@@ -8,6 +6,8 @@ import { assertSafeImportFile } from "@/lib/fileValidation";
  *  re-validates enrollment/points server-side regardless; this module's job
  *  is turning a messy uploaded file into a reviewable, per-row report before
  *  a single byte reaches the network. */
+
+export { parseSpreadsheetRows } from "@/lib/importSpreadsheet";
 
 export interface RosterMatchEntry {
   learnerId: string;
@@ -24,20 +24,6 @@ export interface ImportPreviewRow {
   matchedLabel: string | null;
   points: number | null;
   status: ImportRowStatus;
-}
-
-/** Reads the first sheet of a CSV or XLSX file as raw string rows (row 0 = headers). */
-export async function parseSpreadsheetRows(file: File): Promise<string[][]> {
-  assertSafeImportFile(file);
-  const XLSX = await import("xlsx");
-  const buffer = await file.arrayBuffer();
-  const workbook = XLSX.read(buffer, { type: "array" });
-  const sheet = workbook.Sheets[workbook.SheetNames[0]];
-  if (!sheet) return [];
-  const rows = XLSX.utils.sheet_to_json<string[]>(sheet, { header: 1, raw: false, defval: "" });
-  return rows
-    .map((row) => row.map((cell) => String(cell ?? "").trim()))
-    .filter((row) => row.some((cell) => cell !== ""));
 }
 
 function normalizeIdentifier(value: string): string {

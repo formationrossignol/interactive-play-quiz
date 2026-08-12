@@ -143,6 +143,24 @@ export async function enrollInSession(sessionId: string, learnerId?: string, sou
   return data as Enrollment;
 }
 
+export interface ResolvedOrgMember {
+  identifier: string;
+  learner_id: string;
+  username: string | null;
+}
+
+/** ENR-014: matches only against existing members of `orgId` (join through
+ *  `user_org_roles`) — never invents an account for an unmatched identifier,
+ *  see 20260812100000_enrollment_csv_import.sql. */
+export async function resolveOrgMembersByIdentifier(orgId: string, kind: "email" | "username", identifiers: string[]): Promise<ResolvedOrgMember[]> {
+  if (identifiers.length === 0) return [];
+  const { data, error } = await supabase.rpc("resolve_org_members_by_identifier", {
+    p_org_id: orgId, p_kind: kind, p_identifiers: identifiers,
+  });
+  if (error) throw error;
+  return (data ?? []) as ResolvedOrgMember[];
+}
+
 export async function transitionEnrollment(enrollmentId: string, toStatus: EnrollmentStatus, reason?: string): Promise<Enrollment> {
   const { data, error } = await supabase.rpc('transition_enrollment', {
     p_enrollment_id: enrollmentId,

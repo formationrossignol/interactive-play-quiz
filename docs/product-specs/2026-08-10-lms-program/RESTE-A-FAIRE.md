@@ -41,9 +41,8 @@ pouvoir s'y référer facilement.
   §09) — l'écran de réponse participant qui en dépendait est fait avec.
   Reste bloqué pour priorisation/matrice/brainstorm/classement forcé : leur
   éditeur (et donc leur écran de réponse) n'existe toujours pas.
-- **`/lti/unlinked` est un cul-de-sac réel** tant qu'aucune UI admin ne
-  permet de créer une `lti_registrations`/`lti_deployments` et de relier un
-  `sub` non reconnu à un compte (04).
+- ~~**`/lti/unlinked` est un cul-de-sac réel**~~ résolu par l'UI admin LTI
+  (voir §04) : enregistrement, déploiements et `link_lti_subject()`.
 
 ## 01 — Devoirs, remises et carnet de notes
 
@@ -59,7 +58,7 @@ pouvoir s'y référer facilement.
 
 ## 02 — Inscriptions, sessions et gestion des apprenants
 
-- [ ] UI : import CSV/XLSX avec prévisualisation/mapping/doublons (ENR-014)
+- [x] UI : import CSV/XLSX avec prévisualisation/mapping/doublons (ENR-014) — `resolve_org_members_by_identifier()` (`20260812100000_enrollment_csv_import.sql`, email ou nom d'utilisateur, scopé aux membres réels de l'org via `user_org_roles` — ne devine jamais un compte pour un identifiant inconnu), boucle client sur `enroll_in_session()` déjà idempotent/atomique (pas de nouvelle RPC bulk). Prévisualisation avec statut par ligne (OK/introuvable/doublon/déjà inscrit) et rapport CSV téléchargeable (`EnrollmentImportDialog.tsx`, bouton « Importer » par session dans `Sessions.tsx`)
 - [ ] UI : actions en masse (inscrire, déplacer, annuler, prolonger — ENR-015)
 - [x] UI : écran participant pour voir/accepter/décliner une offre de liste d'attente — bandeau « Une place s'est libérée » dans « Mes formations » (`Sessions.tsx::WaitlistOffers`), compte à rebours 48h, accepter/refuser appellent `accept_waitlist_offer()`/`decline_waitlist_offer()` directement
 - [ ] Auto-inscription avec règles (domaine email, code, paiement, prérequis — ENR-013)

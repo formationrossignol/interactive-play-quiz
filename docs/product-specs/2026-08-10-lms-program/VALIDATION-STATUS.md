@@ -219,10 +219,42 @@ Vérifié : `tsc`/`eslint` propres ; page testée dans Chrome non authentifié
 avec une offre réelle** (pas de compte de test local pour déclencher
 `promote_waitlist()`).
 
+Depuis cette passe (`20260812100000_enrollment_csv_import.sql`) : import
+CSV/XLSX de roster (ENR-014). `enroll_in_session()` gérait déjà l'inscription
+d'un tiers par le staff, l'idempotence (une inscription active existante est
+retournée telle quelle, jamais dupliquée) et la capacité/liste d'attente
+atomiques — importer N lignes, c'est donc N appels côté client à cette RPC
+déjà là, pas une nouvelle fonction bulk. Ce qui manquait réellement : un
+moyen de transformer « une colonne d'emails ou de noms d'utilisateur » en
+`learner_id`. Nouvelle RPC `resolve_org_members_by_identifier(org_id, kind,
+identifiers[])` — ne résout un identifiant que s'il appartient à un membre
+*déjà* réel de l'organisation (jointure `user_org_roles`) ; `enrollments.
+learner_id` référence `auth.users` sans colonne « pending » (contrairement à
+`share_group_members.pending_email`), donc inventer un compte pour un
+identifiant inconnu aurait été le terrain d'ENR-013 (auto-inscription/
+provisioning), pas celui-ci — un identifiant non résolu reste une ligne
+d'erreur, jamais une invention silencieuse. Extraction de
+`parseSpreadsheetRows()` (auparavant dans `gradebookImport.ts`) vers
+`lib/importSpreadsheet.ts`, réutilisé tel quel plutôt que dupliqué.
+Prévisualisation (`buildEnrollmentPreview()` dans `enrollmentImport.ts`) :
+statut par ligne OK/introuvable/doublon (garde la première occurrence)/déjà
+inscrit (détecté avant l'import plutôt que découvert silencieusement après
+un no-op de `enroll_in_session()`). UI : bouton « Importer » par session
+(`Sessions.tsx::StaffSessions`), dialogue avec choix de la colonne
+identifiant + type (email/nom d'utilisateur), tableau de prévisualisation,
+rapport CSV téléchargeable (identifiant, apprenant résolu, statut, résultat
+d'import — `EnrollmentImportDialog.tsx`). Vérifié : migration appliquée
+contre un schéma stub reproduisant les vraies tables (Postgres jetable) —
+un utilisateur réel d'une autre organisation ne résout jamais (jointure
+`user_org_roles` scopée à l'org cible), un identifiant inconnu ne résout
+pas, correspondance email/nom d'utilisateur insensible à la casse et au
+`@` vérifiée, type invalide rejeté ; 7 tests unitaires sur
+`buildEnrollmentPreview`/`importableEnrollmentRows` ; `tsc`/`eslint`
+propres ; suite complète (335 tests) verte — **non vérifié avec des
+comptes/organisation réels** (même limite que le reste de cette passe).
+
 **Reste à faire** :
-- [ ] UI : import CSV/XLSX avec prévisualisation/mapping/doublons (ENR-014)
 - [ ] UI : actions en masse (inscrire, déplacer, annuler, prolonger — ENR-015)
-- [ ] UI : écran participant pour voir/accepter/décliner une offre de liste d'attente — les RPC existent, aucun écran ne les appelle
 - [ ] Auto-inscription avec règles (domaine email, code, paiement, prérequis — ENR-013)
 - [ ] Vue apprenant « Mes formations » complète avec dates effectives/échéances relatives recalculées (ENR-017, la V1 actuelle liste juste par statut)
 - [ ] Calcul de complétion versionné par politique (activités obligatoires, score, présence)
