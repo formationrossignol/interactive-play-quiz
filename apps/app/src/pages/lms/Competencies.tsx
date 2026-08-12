@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Award, Link2, ListChecks, Plus, Target, Trash2, UserCog } from "lucide-react";
+import { Award, CheckCircle2, Link2, ListChecks, MessageSquareWarning, Plus, Target, Trash2, UserCog, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/ui/page-header";
@@ -24,9 +24,13 @@ import {
   listFrameworkCompetencies,
   listOrgFrameworks,
   listOrgMasteryScales,
+  listOrgReviewRequests,
   listScaleLevels,
   myMastery,
+  myReviewRequests,
   publishFramework,
+  requestCompetencyReview,
+  resolveReviewRequest,
   setManualMasteryLevel,
   updateMasteryScaleMethod,
   type AggregationMethod,
@@ -35,6 +39,7 @@ import {
   type CompetencyAlignment,
   type CompetencyFramework,
   type CompetencyMastery,
+  type CompetencyReviewRequest,
   type MasteryScale,
   type MasteryScaleLevel,
 } from "@/lib/lms/competencies";
@@ -604,13 +609,46 @@ function StaffFrameworks({ orgId }: { orgId: string }) {
   );
 }
 
+const REVIEW_STATUS_LABEL: Record<CompetencyReviewRequest["status"], string> = {
+  open: "En attente", resolved: "Résolue", dismissed: "Rejetée",
+};
+
 function LearnerMastery() {
   const [mastery, setMastery] = useState<CompetencyMastery[]>([]);
+  const [requests, setRequests] = useState<CompetencyReviewRequest[]>([]);
   const [loading, setLoading] = useState(true);
+  const [requestingId, setRequestingId] = useState<string | null>(null);
+  const [message, setMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    myMastery().then(setMastery).catch(showError).finally(() => setLoading(false));
+    Promise.all([myMastery(), myReviewRequests()])
+      .then(([m, r]) => { setMastery(m); setRequests(r); })
+      .catch(showError)
+      .finally(() => setLoading(false));
   }, []);
+
+  const requestsByCompetency = useMemo(() => {
+    const map = new Map<string, CompetencyReviewRequest[]>();
+    for (const r of requests) map.set(r.competency_id, [...(map.get(r.competency_id) ?? []), r]);
+    return map;
+  }, [requests]);
+
+  const handleRequest = async (m: CompetencyMastery) => {
+    if (!message.trim()) return;
+    setSubmitting(true);
+    try {
+      const request = await requestCompetencyReview(m.org_id, m.competency_id, m.learner_id, message.trim());
+      setRequests((prev) => [request, ...prev]);
+      setMessage("");
+      setRequestingId(null);
+      toast.success("Demande de revue envoyée");
+    } catch (err) {
+      showError(err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   if (loading) return <TableSkeleton rows={3} cols={2} />;
 
@@ -627,16 +665,105 @@ function LearnerMastery() {
   return (
     <section className="product-list-panel p-5">
       <div className="product-panel-heading -mx-5 -mt-5 mb-4">
-        <div><h2>Mes compétences</h2><p>Niveau actuel et dernière mise à jour.</p></div>
+        <div><h2>Mes compétences</h2><p>Niveau actuel et dernière mise à jour. Vous pouvez demander une revue, jamais la modifier vous-même.</p></div>
       </div>
       <ul className="space-y-2" aria-label="Mes compétences">
-        {mastery.map((m) => (
-          <li key={m.id} className="flex items-center justify-between rounded-md border p-3">
-            <span className="text-sm text-muted-foreground">Compétence {m.competency_id.slice(0, 8)}</span>
-            <span className="text-sm font-medium">{levelLabel[m.level_code] ?? m.level_code}</span>
-          </li>
-        ))}
+        {mastery.map((m) => {
+          const compRequests = requestsByCompetency.get(m.competency_id) ?? [];
+          const hasOpenRequest = compRequests.some((r) => r.status === "open");
+          return (
+            <li key={m.id} className="rounded-md border p-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Compétence {m.competency_id.slice(0, 8)}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium">{levelLabel[m.level_code] ?? m.level_code}</span>
+                  <Button
+                    variant="ghost" size="sm" disabled={hasOpenRequest}
+                    onClick={() => setRequestingId((cur) => (cur === m.id ? null : m.id))}
+                  >
+                    <MessageSquareWarning size={14} /> {hasOpenRequest ? "Revue en attente" : "Demander une revue"}
+                  </Button>
+                </div>
+              </div>
+              {compRequests.length > 0 && (
+                <ul className="mt-2 space-y-1">
+                  {compRequests.map((r) => (
+                    <li key={r.id} className="text-xs text-muted-foreground">
+                      {REVIEW_STATUS_LABEL[r.status]} — {r.message}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {requestingId === m.id && (
+                <form onSubmit={(e) => { e.preventDefault(); void handleRequest(m); }} className="mt-2 flex flex-wrap items-end gap-2">
+                  <div className="min-w-[220px] flex-1 space-y-1">
+                    <label className="text-xs font-medium" htmlFor={`review-msg-${m.id}`}>Message</label>
+                    <Input id={`review-msg-${m.id}`} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Pourquoi demandez-vous une revue ?" required />
+                  </div>
+                  <Button size="sm" type="submit" loading={submitting}>Envoyer</Button>
+                </form>
+              )}
+            </li>
+          );
+        })}
       </ul>
+    </section>
+  );
+}
+
+function ReviewRequestsPanel({ orgId }: { orgId: string }) {
+  const [requests, setRequests] = useState<CompetencyReviewRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [actingId, setActingId] = useState<string | null>(null);
+
+  const load = () => {
+    setLoading(true);
+    listOrgReviewRequests(orgId).then(setRequests).catch(showError).finally(() => setLoading(false));
+  };
+
+  useEffect(() => { load(); }, [orgId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleResolve = async (id: string, status: "resolved" | "dismissed") => {
+    setActingId(id);
+    try {
+      await resolveReviewRequest(id, status);
+      setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status, resolved_at: new Date().toISOString() } : r)));
+    } catch (err) {
+      showError(err);
+    } finally {
+      setActingId(null);
+    }
+  };
+
+  if (loading) return <TableSkeleton rows={2} cols={2} />;
+
+  const open = requests.filter((r) => r.status === "open");
+
+  return (
+    <section className="product-list-panel p-5">
+      <div className="product-panel-heading -mx-5 -mt-5 mb-4">
+        <div><h2>Demandes de revue</h2><p>CMP-018 : l'apprenant peut demander une revue, jamais modifier lui-même son niveau.</p></div>
+      </div>
+      {open.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Aucune demande en attente.</p>
+      ) : (
+        <ul className="space-y-2" aria-label="Demandes de revue en attente">
+          {open.map((r) => (
+            <li key={r.id} className="rounded-md border p-3">
+              <p className="text-sm">Compétence {r.competency_id.slice(0, 8)} · apprenant {r.learner_id.slice(0, 8)}</p>
+              <p className="text-sm text-muted-foreground mt-1">{r.message}</p>
+              <div className="flex gap-2 mt-2">
+                <Button variant="ghost" size="sm" loading={actingId === r.id} onClick={() => void handleResolve(r.id, "resolved")}>
+                  <CheckCircle2 size={14} /> Marquer résolue
+                </Button>
+                <Button variant="ghost" size="sm" loading={actingId === r.id} onClick={() => void handleResolve(r.id, "dismissed")}>
+                  <XCircle size={14} /> Rejeter
+                </Button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   );
 }
@@ -675,6 +802,7 @@ export default function LmsCompetencies() {
           <div className="space-y-4">
             <MasteryScaleManager orgId={activeOrgId} />
             <StaffFrameworks orgId={activeOrgId} />
+            <ReviewRequestsPanel orgId={activeOrgId} />
           </div>
         ) : <LearnerMastery />}
       </div>

@@ -367,10 +367,31 @@ mode manuel ; `tsc`/`eslint` propres ; suite complète (335 tests) verte —
 **non vérifié avec des données réelles** (même limite que le reste du
 programme).
 
+Depuis cette passe : UI de demande de revue (CMP-018). RLS était déjà
+ouverte des deux côtés (`competency_review_requests_learner_insert` :
+`learner_id = auth.uid()` — un apprenant ne peut jamais créer une demande
+au nom d'un autre ; `competency_review_requests_staff` : `for all`,
+pedago/admin) depuis la migration d'origine, donc pas de nouvelle
+migration. Apprenant (`LearnerMastery`) : bouton « Demander une revue » par
+ligne de maîtrise, désactivé s'il existe déjà une demande `open` pour cette
+compétence (évite le spam d'une même demande), message obligatoire,
+liste des demandes déjà envoyées avec leur statut sous chaque compétence —
+jamais de bouton pour modifier le niveau soi-même (CMP-018 à la lettre :
+« il ne peut pas la modifier »). Staff (`ReviewRequestsPanel`, nouveau
+panneau dans la vue staff) : liste des demandes `open` de l'organisation,
+résoudre/rejeter (met à jour `status`/`resolved_at` directement, RLS déjà
+suffisante). Scopé aux demandes de niveau **maîtrise** — `evidence_id`
+reste toujours nul : `myMastery()` ne renvoie que le niveau calculé, jamais
+les lignes `competency_evidence` individuelles, donc l'UI apprenant n'a
+rien de plus précis à désigner pour l'instant. Vérifié : `tsc`/`eslint`
+propres ; suite complète (335 tests) verte — pas de nouveaux tests
+unitaires (CRUD direct sur RLS déjà correcte, rien à isoler côté logique
+pure) ; **non vérifié avec des données réelles** (même limite que le reste
+du programme).
+
 **Reste à faire** :
 - [ ] UI : alignement sur les 7 autres `target_type` (course/module/lesson/question/exam/scorm_activity/h5p_activity/path_step) — pas de sélecteur org-scopé cohérent pour ces types
 - [ ] UI : vue couverture programme (enseigné/pratiqué/évalué — CMP-012, CMP-021)
-- [ ] UI : demande de revue apprenant (`competency_review_requests`) — table posée, aucun écran
 - [ ] Écran de migration des tags existants → compétences (mapping guidé, section « Migration des tags existants » de la spec)
 - [ ] Export CASE 1.1 / Open Badges (non-objectif V1 explicite mais listé comme préparation attendue)
 - [ ] Vue formateur groupe × compétences (CMP-020)
