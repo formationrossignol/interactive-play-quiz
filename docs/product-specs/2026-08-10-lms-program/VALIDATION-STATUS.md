@@ -389,6 +389,30 @@ unitaires (CRUD direct sur RLS déjà correcte, rien à isoler côté logique
 pure) ; **non vérifié avec des données réelles** (même limite que le reste
 du programme).
 
+Depuis cette passe : vue formateur groupe × compétences (CMP-020),
+`TrainerGroupMatrix`. Jusqu'ici la page `/lms/competencies` ne distinguait
+que staff (`pedago`/`admin`) et apprenant — le rôle `trainer` tombait dans
+la vue apprenant, ce qui n'avait pas de sens pour cette vue spécifique ;
+nouvel ensemble `TRAINER_ROLES` (`trainer`/`pedago`/`admin`) contrôle
+l'affichage de la matrice, les panneaux d'administration (référentiels,
+échelle de maîtrise, demandes de revue) restant réservés à `pedago`/
+`admin`. « Groupe » = les `share_groups` du formateur lui-même — le même
+modèle personnel déjà utilisé pour le ciblage de devoirs/partage de
+contenu ailleurs dans ce codebase, pas un regroupement au niveau de
+l'organisation (aucun n'existe dans le modèle de données pour ça).
+Sélection groupe + référentiel publié → matrice apprenant × compétence,
+seuil de maîtrise attendu configurable (depuis les niveaux de l'échelle par
+défaut) colorant les cellules en dessous du seuil comme écart. Clic sur une
+cellule → `listCompetencyEvidence()`, les preuves individuelles de cet
+apprenant pour cette compétence (« accès aux preuves autorisées » —
+`competency_evidence_staff_read` couvrait déjà `trainer`, aucune nouvelle
+politique). Pas de nouvelle migration : `competency_mastery_staff_read`
+couvrait déjà `trainer`/`pedago`/`registrar`/`admin`, `listMasteryForLearners()`
+est un simple `select ... in()` scopé aux compétences/apprenants affichés.
+Vérifié : `tsc`/`eslint` propres ; suite complète (335 tests) verte —
+**non vérifié avec des données réelles** (même limite que le reste du
+programme).
+
 **Reste à faire** :
 - [ ] UI : alignement sur les 7 autres `target_type` (course/module/lesson/question/exam/scorm_activity/h5p_activity/path_step) — pas de sélecteur org-scopé cohérent pour ces types
 - [ ] UI : vue couverture programme (enseigné/pratiqué/évalué — CMP-012, CMP-021)

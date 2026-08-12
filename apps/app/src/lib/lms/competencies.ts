@@ -279,3 +279,44 @@ export async function resolveReviewRequest(requestId: string, status: 'resolved'
   const { error } = await supabase.from('competency_review_requests').update({ status, resolved_at: new Date().toISOString() }).eq('id', requestId);
   if (error) throw error;
 }
+
+/** CMP-020 "vue formateur : groupe × compétences". `competency_mastery_staff_read`
+ *  already covers trainer/pedago/registrar/admin — no RPC, a plain
+ *  multi-`in()` select scoped to exactly the competencies/learners the
+ *  caller is about to render. */
+export async function listMasteryForLearners(competencyIds: string[], learnerIds: string[]): Promise<CompetencyMastery[]> {
+  if (competencyIds.length === 0 || learnerIds.length === 0) return [];
+  const { data, error } = await supabase
+    .from('competency_mastery')
+    .select('*')
+    .in('competency_id', competencyIds)
+    .in('learner_id', learnerIds);
+  if (error) throw error;
+  return (data ?? []) as CompetencyMastery[];
+}
+
+/** "Accès aux preuves autorisées" (CMP-020) — `competency_evidence_staff_read`
+ *  covers trainer/pedago/admin already; a void'd row is still returned
+ *  (with `voided_at` set) rather than hidden, so the trainer sees the full
+ *  audited history, not a silently-edited one. */
+export interface CompetencyEvidenceRow {
+  id: string;
+  source_type: string;
+  source_id: string | null;
+  raw_score: number | null;
+  level_code: string | null;
+  occurred_at: string;
+  comment: string | null;
+  voided_at: string | null;
+}
+
+export async function listCompetencyEvidence(competencyId: string, learnerId: string): Promise<CompetencyEvidenceRow[]> {
+  const { data, error } = await supabase
+    .from('competency_evidence')
+    .select('*')
+    .eq('competency_id', competencyId)
+    .eq('learner_id', learnerId)
+    .order('occurred_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as CompetencyEvidenceRow[];
+}

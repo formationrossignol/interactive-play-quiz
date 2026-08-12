@@ -8,11 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PageSkeleton, TableSkeleton } from "@/components/ui/skeletons";
 import { useActiveOrgId } from "@/components/org/OrgSwitcher";
+import { getCurrentUser } from "@/lib/auth";
 import { showError } from "@/lib/errorTaxonomy";
 import { useSEO } from "@/hooks/useSEO";
 import { myOrgMemberships, type OrgMembership } from "@/lib/org/orgRepo";
 import { PersonPicker } from "@/components/sharing/PersonPicker";
-import type { UsernameMatch } from "@/lib/sharing/sharingRepo";
+import { listGroupMembers, listGroups, usernamesByIds, type Group, type GroupMember, type UsernameMatch } from "@/lib/sharing/sharingRepo";
 import {
   addCompetency,
   addScaleLevel,
@@ -21,7 +22,9 @@ import {
   createMasteryScale,
   deleteCompetencyAlignment,
   listCompetencyAlignments,
+  listCompetencyEvidence,
   listFrameworkCompetencies,
+  listMasteryForLearners,
   listOrgFrameworks,
   listOrgMasteryScales,
   listOrgReviewRequests,
@@ -37,6 +40,7 @@ import {
   type AlignmentTargetType,
   type Competency,
   type CompetencyAlignment,
+  type CompetencyEvidenceRow,
   type CompetencyFramework,
   type CompetencyMastery,
   type CompetencyReviewRequest,
@@ -442,6 +446,7 @@ function SetMasteryLevelPanel({ orgId, competency }: { orgId: string; competency
 }
 
 const STAFF_ROLES = new Set(["pedago", "admin"]);
+const TRAINER_ROLES = new Set(["trainer", "pedago", "admin"]);
 
 const levelLabel: Record<string, string> = {
   not_assessed: "Non évalué",
@@ -768,6 +773,192 @@ function ReviewRequestsPanel({ orgId }: { orgId: string }) {
   );
 }
 
+/** CMP-020 "vue formateur : groupe × compétences, filtres, écarts et accès
+ *  aux preuves autorisées." Group = the trainer's own share_groups (same
+ *  personal-group model already used for assignment/content targeting
+ *  elsewhere in this codebase — not an org-wide roster grouping). All
+ *  reads (`competency_mastery`/`competency_evidence` staff policies
+ *  already cover trainer) — no migration. */
+function TrainerGroupMatrix({ orgId }: { orgId: string }) {
+  const user = getCurrentUser();
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [frameworks, setFrameworks] = useState<CompetencyFramework[]>([]);
+  const [levels, setLevels] = useState<MasteryScaleLevel[]>([]);
+  const [groupId, setGroupId] = useState("");
+  const [frameworkId, setFrameworkId] = useState("");
+  const [targetLevel, setTargetLevel] = useState("");
+  const [members, setMembers] = useState<GroupMember[]>([]);
+  const [names, setNames] = useState<Map<string, string>>(new Map());
+  const [competencies, setCompetencies] = useState<Competency[]>([]);
+  const [mastery, setMastery] = useState<CompetencyMastery[]>([]);
+  const [loadingLists, setLoadingLists] = useState(true);
+  const [loadingMatrix, setLoadingMatrix] = useState(false);
+  const [evidenceCell, setEvidenceCell] = useState<{ learnerId: string; competencyId: string } | null>(null);
+  const [evidence, setEvidence] = useState<CompetencyEvidenceRow[]>([]);
+  const [evidenceLoading, setEvidenceLoading] = useState(false);
+
+  useEffect(() => {
+    if (!user) { setLoadingLists(false); return; }
+    Promise.all([listGroups(user.id), listOrgFrameworks(orgId), listOrgMasteryScales(orgId)])
+      .then(async ([g, f, scales]) => {
+        setGroups(g);
+        setFrameworks(f.filter((fw) => fw.status === "published"));
+        const active = scales.find((s) => s.is_default) ?? scales[0] ?? null;
+        if (active) setLevels(await listScaleLevels(active.id));
+      })
+      .catch(showError)
+      .finally(() => setLoadingLists(false));
+  }, [orgId, user]);
+
+  useEffect(() => {
+    if (!groupId || !frameworkId) { setMembers([]); setCompetencies([]); setMastery([]); return; }
+    setLoadingMatrix(true);
+    setEvidenceCell(null);
+    Promise.all([listGroupMembers(groupId), listFrameworkCompetencies(frameworkId)])
+      .then(async ([m, comps]) => {
+        const realMembers = m.filter((x): x is GroupMember & { user_id: string } => x.user_id !== null);
+        setMembers(realMembers);
+        setCompetencies(comps);
+        const [resolvedNames, masteryRows] = await Promise.all([
+          usernamesByIds(realMembers.map((x) => x.user_id)),
+          listMasteryForLearners(comps.map((c) => c.id), realMembers.map((x) => x.user_id)),
+        ]);
+        setNames(new Map(resolvedNames.map((n) => [n.id, n.username])));
+        setMastery(masteryRows);
+      })
+      .catch(showError)
+      .finally(() => setLoadingMatrix(false));
+  }, [groupId, frameworkId]);
+
+  const masteryByPair = useMemo(() => {
+    const map = new Map<string, CompetencyMastery>();
+    for (const m of mastery) map.set(`${m.learner_id}:${m.competency_id}`, m);
+    return map;
+  }, [mastery]);
+  const positionByCode = useMemo(() => new Map(levels.map((l) => [l.code, l.position])), [levels]);
+  const targetPosition = targetLevel ? positionByCode.get(targetLevel) : undefined;
+
+  const openEvidence = async (learnerId: string, competencyId: string) => {
+    setEvidenceCell({ learnerId, competencyId });
+    setEvidenceLoading(true);
+    try {
+      setEvidence(await listCompetencyEvidence(competencyId, learnerId));
+    } catch (err) {
+      showError(err);
+    } finally {
+      setEvidenceLoading(false);
+    }
+  };
+
+  if (loadingLists) return <TableSkeleton rows={2} cols={2} />;
+
+  return (
+    <section className="product-list-panel p-5">
+      <div className="product-panel-heading -mx-5 -mt-5 mb-4">
+        <div><h2>Vue formateur — groupe × compétences</h2><p>Écarts par rapport à un seuil attendu, accès aux preuves d'un apprenant.</p></div>
+      </div>
+
+      <div className="flex flex-wrap items-end gap-3 mb-4">
+        <div className="min-w-[180px] space-y-1">
+          <label className="text-xs font-medium" htmlFor="matrix-group">Groupe</label>
+          <select id="matrix-group" className={inputClass} style={inputStyle} value={groupId} onChange={(e) => setGroupId(e.target.value)}>
+            <option value="">Choisir…</option>
+            {groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+          </select>
+        </div>
+        <div className="min-w-[180px] space-y-1">
+          <label className="text-xs font-medium" htmlFor="matrix-framework">Référentiel publié</label>
+          <select id="matrix-framework" className={inputClass} style={inputStyle} value={frameworkId} onChange={(e) => setFrameworkId(e.target.value)}>
+            <option value="">Choisir…</option>
+            {frameworks.map((f) => <option key={f.id} value={f.id}>{f.title}</option>)}
+          </select>
+        </div>
+        {levels.length > 0 && (
+          <div className="min-w-[160px] space-y-1">
+            <label className="text-xs font-medium" htmlFor="matrix-target">Seuil attendu (écarts)</label>
+            <select id="matrix-target" className={inputClass} style={inputStyle} value={targetLevel} onChange={(e) => setTargetLevel(e.target.value)}>
+              <option value="">Aucun</option>
+              {levels.map((l) => <option key={l.id} value={l.code}>{l.label}</option>)}
+            </select>
+          </div>
+        )}
+      </div>
+
+      {groups.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Aucun groupe. Créez-en un depuis le partage de contenu pour l'utiliser ici.</p>
+      ) : !groupId || !frameworkId ? (
+        <p className="text-sm text-muted-foreground">Choisissez un groupe et un référentiel publié.</p>
+      ) : loadingMatrix ? (
+        <TableSkeleton rows={3} cols={3} />
+      ) : members.length === 0 || competencies.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Groupe vide ou référentiel sans compétence.</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr style={{ background: "var(--ap-paper-2)" }}>
+                <th className="border-b px-2 py-1.5 text-left text-xs font-bold" style={{ borderColor: "var(--ap-line)" }}>Apprenant</th>
+                {competencies.map((c) => (
+                  <th key={c.id} className="border-b px-2 py-1.5 text-left text-xs font-bold font-mono" style={{ borderColor: "var(--ap-line)" }}>{c.code}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {members.map((m) => (
+                <tr key={m.id} style={{ borderBottom: "var(--ap-border-w) solid var(--ap-line)" }}>
+                  <td className="px-2 py-1.5">@{names.get(m.user_id) ?? "apprenant"}</td>
+                  {competencies.map((c) => {
+                    const cell = masteryByPair.get(`${m.user_id}:${c.id}`);
+                    const level = cell?.level_code ?? "not_assessed";
+                    const pos = positionByCode.get(level);
+                    const isGap = targetPosition !== undefined && (pos === undefined || pos < targetPosition);
+                    return (
+                      <td key={c.id} className="px-2 py-1.5">
+                        <button
+                          type="button"
+                          className="text-left underline-offset-2 hover:underline"
+                          style={{ color: isGap ? "var(--ap-danger)" : undefined }}
+                          onClick={() => void openEvidence(m.user_id, c.id)}
+                        >
+                          {levelLabel[level] ?? level}
+                        </button>
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {evidenceCell && (
+        <div className="mt-4 rounded-md border p-3">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm font-medium">Preuves — @{names.get(evidenceCell.learnerId) ?? "apprenant"}</p>
+            <button type="button" className="ap-btn ap-btn--ghost ap-btn--sm" onClick={() => setEvidenceCell(null)}>Fermer</button>
+          </div>
+          {evidenceLoading ? <TableSkeleton rows={2} cols={2} /> : evidence.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Aucune preuve.</p>
+          ) : (
+            <ul className="space-y-1">
+              {evidence.map((e) => (
+                <li key={e.id} className="text-xs rounded border px-2 py-1.5">
+                  {new Date(e.occurred_at).toLocaleDateString("fr-FR")} · {e.source_type}
+                  {e.level_code ? ` · ${levelLabel[e.level_code] ?? e.level_code}` : ""}
+                  {e.raw_score !== null ? ` · ${e.raw_score}` : ""}
+                  {e.voided_at ? " · annulée" : ""}
+                  {e.comment && <span className="block text-muted-foreground mt-0.5">{e.comment}</span>}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
 export default function LmsCompetencies() {
   const [memberships, setMemberships] = useState<OrgMembership[]>([]);
   const [loading, setLoading] = useState(true);
@@ -780,6 +971,10 @@ export default function LmsCompetencies() {
 
   const isStaff = useMemo(
     () => memberships.some((m) => m.org_id === activeOrgId && STAFF_ROLES.has(m.role)),
+    [memberships, activeOrgId],
+  );
+  const isTrainer = useMemo(
+    () => memberships.some((m) => m.org_id === activeOrgId && TRAINER_ROLES.has(m.role)),
     [memberships, activeOrgId],
   );
 
@@ -798,11 +993,12 @@ export default function LmsCompetencies() {
           title="Compétences et résultats d'apprentissage"
           description="Référentiels gouvernés, preuves traçables et maîtrise explicable."
         />
-        {isStaff && activeOrgId ? (
+        {isTrainer && activeOrgId ? (
           <div className="space-y-4">
-            <MasteryScaleManager orgId={activeOrgId} />
-            <StaffFrameworks orgId={activeOrgId} />
-            <ReviewRequestsPanel orgId={activeOrgId} />
+            {isStaff && <MasteryScaleManager orgId={activeOrgId} />}
+            {isStaff && <StaffFrameworks orgId={activeOrgId} />}
+            <TrainerGroupMatrix orgId={activeOrgId} />
+            {isStaff && <ReviewRequestsPanel orgId={activeOrgId} />}
           </div>
         ) : <LearnerMastery />}
       </div>
