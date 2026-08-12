@@ -224,6 +224,25 @@ export async function setLearnerDueOverride(assignmentId: string, learnerId: str
   return data as AssignmentTarget;
 }
 
+/** All target rows (session/group/learner), unfiltered — DueOverridesPanel's
+ *  listLearnerDueOverrides() only returns learner-type rows carrying an
+ *  override; this is the general-purpose read used by AssignmentTargetsPanel
+ *  to show the full targeting state of an assignment. Covered by the
+ *  existing assignment_targets_staff_read RLS policy, no new grant needed. */
+export async function listAssignmentTargets(assignmentId: string): Promise<AssignmentTarget[]> {
+  const { data, error } = await supabase
+    .from('assignment_targets')
+    .select('*')
+    .eq('assignment_id', assignmentId);
+  if (error) throw error;
+  return (data ?? []) as AssignmentTarget[];
+}
+
+export async function removeAssignmentTarget(targetId: string): Promise<void> {
+  const { error } = await supabase.from('assignment_targets').delete().eq('id', targetId);
+  if (error) throw error;
+}
+
 export async function clearLearnerDueOverride(assignmentId: string, learnerId: string): Promise<void> {
   const { error } = await supabase
     .from('assignment_targets')

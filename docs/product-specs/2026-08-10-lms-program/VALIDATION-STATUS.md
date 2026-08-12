@@ -301,8 +301,30 @@ compte staff local) — vérifié par lecture du SQL, `tsc`/`eslint` propres,
 migration appliquée sans erreur (`supabase db push`, `migration list`
 confirmé synchronisé).
 
+Depuis cette passe (pas de nouvelle migration — `assignment_targets_manage`
+permettait déjà l'écriture directe) : `assignment_targets` par groupe/
+apprenant individuel. Jusqu'ici seul le ciblage par session était câblé
+(bouton « Publier à la session », qui ne s'affiche même jamais en pratique
+puisque `createAssignment()` ne renseigne jamais `assignments.session_id`
+— gap distinct, non traité ici). `Assignments.tsx::AssignmentTargetsPanel` :
+groupe — `listGroups()` du formateur (groupes personnels, même modèle que
+`Groups.tsx`/`CreateManualEvaluationDialog.tsx`, pas un rôle org) ;
+apprenant individuel — `PersonPicker`/`searchUsernames`, recherche
+plateforme entière, pas scopée à l'org (même limite déjà acceptée partout
+où `PersonPicker` sert déjà à inviter dans un groupe ; `assignment_targets_manage`
+ne vérifie que la propriété du devoir, pas l'appartenance à l'org de la
+cible). Invitation par e-mail explicitement non supportée : contrairement
+à `share_group_members.pending_email`, `assignment_targets.target_id` est
+un uuid non-nul — seuls les comptes existants peuvent être ciblés, message
+d'erreur explicite plutôt qu'un échec silencieux. Nouvelle lecture générale
+`listAssignmentTargets()` (l'existante `listLearnerDueOverrides()` ne
+filtrait que les lignes `learner` avec dérogation, omettait `group`/
+`session` et les lignes `learner` sans dérogation) et
+`removeAssignmentTarget()`. **Non testé en conditions réelles** (même
+limite que le reste de cette passe) — vérifié par lecture du code,
+`tsc`/`eslint` propres.
+
 **Reste à faire** :
-- [ ] UI : `assignment_targets` par groupe/apprenant individuel — seul le ciblage par session est câblé
 - [ ] Job serveur de scan antivirus des fichiers (`submission_files.scan_status`) — colonne prête, aucun job ; les fichiers uploadés restent `pending` indéfiniment ; vendor à choisir (voir discussion 2026-08-12 — aucune option marketplace, service externe direct requis)
 - [ ] Notifications programmées (J-7/J-1/retard) — table `notifications` existe, rien ne les déclenche pour les devoirs
 - [ ] Double correction / correction anonyme (GRD-005) — colonne `is_anonymous` posée, pas de flux de levée d'anonymat auditée

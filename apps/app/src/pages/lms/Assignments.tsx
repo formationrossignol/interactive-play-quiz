@@ -14,6 +14,8 @@ import { getCurrentUser } from "@/lib/auth";
 import { showError } from "@/lib/errorTaxonomy";
 import { useSEO } from "@/hooks/useSEO";
 import { myOrgMemberships, type OrgMembership } from "@/lib/org/orgRepo";
+import { PersonPicker } from "@/components/sharing/PersonPicker";
+import { listGroups, usernamesByIds, type Group, type UsernameMatch } from "@/lib/sharing/sharingRepo";
 import {
   addAssignmentTarget,
   addRubricCriterion,
@@ -25,6 +27,7 @@ import {
   getSubmissionFileSignedUrl,
   listAssignmentSubmissions,
   listActiveSubmissionFiles,
+  listAssignmentTargets,
   listLearnerDueOverrides,
   listOrgAssignments,
   listOrgRubrics,
@@ -33,6 +36,7 @@ import {
   mySubmission,
   publishAssignment,
   publishSubmissionGrade,
+  removeAssignmentTarget,
   setLearnerDueOverride,
   setPlagiarismCheck,
   submitAssignment,
@@ -266,6 +270,127 @@ function SubmissionFilesList({ submission }: { submission: Submission }) {
         </li>
       ))}
     </ul>
+  );
+}
+
+/** RESTE-A-FAIRE §01: "assignment_targets par groupe/apprenant individuel —
+ *  seul le ciblage par session est câblé." Groups are the trainer's own
+ *  (share_groups, owner-scoped — same model CreateManualEvaluationDialog/
+ *  Groups.tsx already use, not an org-wide roster). Individual learners go
+ *  through PersonPicker/searchUsernames — platform-wide, not org-scoped
+ *  (same gap already accepted everywhere else PersonPicker is used for
+ *  group invites; assignment_targets_manage RLS only checks assignment
+ *  ownership, not the target's org membership). No pending-email support:
+ *  assignment_targets.target_id is a non-null uuid, unlike
+ *  share_group_members.pending_email — only existing platform accounts can
+ *  be targeted here. */
+function AssignmentTargetsPanel({ assignment }: { assignment: Assignment }) {
+  const user = getCurrentUser();
+  const [targets, setTargets] = useState<AssignmentTarget[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [names, setNames] = useState<Map<string, string>>(new Map());
+  const [loading, setLoading] = useState(true);
+  const [selectedGroupId, setSelectedGroupId] = useState("");
+  const [addingGroup, setAddingGroup] = useState(false);
+  const [removing, setRemoving] = useState<string | null>(null);
+
+  const reload = () => {
+    setLoading(true);
+    listAssignmentTargets(assignment.id)
+      .then(async (rows) => {
+        setTargets(rows);
+        const learnerIds = rows.filter((r) => r.target_type === "learner").map((r) => r.target_id);
+        const resolved = await usernamesByIds(learnerIds);
+        setNames(new Map(resolved.map((n) => [n.id, n.username])));
+      })
+      .catch(showError)
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    reload();
+    if (user) listGroups(user.id).then(setGroups).catch(() => setGroups([]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [assignment.id]);
+
+  const groupName = (id: string) => groups.find((g) => g.id === id)?.name ?? id.slice(0, 8);
+
+  const handleAddGroup = async () => {
+    if (!selectedGroupId) return;
+    setAddingGroup(true);
+    try {
+      await addAssignmentTarget(assignment.id, "group", selectedGroupId);
+      setSelectedGroupId("");
+      reload();
+    } catch (err) {
+      showError(err);
+    } finally {
+      setAddingGroup(false);
+    }
+  };
+
+  const handlePickLearner = async (match: UsernameMatch) => {
+    try {
+      await addAssignmentTarget(assignment.id, "learner", match.id);
+      reload();
+    } catch (err) {
+      showError(err);
+    }
+  };
+
+  const handleInviteEmail = () => {
+    showError(new Error("Ciblage par e-mail non supporté — seuls les comptes existants (recherche par nom d'utilisateur) peuvent être ciblés."));
+  };
+
+  const handleRemove = async (targetId: string) => {
+    setRemoving(targetId);
+    try {
+      await removeAssignmentTarget(targetId);
+      setTargets((prev) => prev.filter((t) => t.id !== targetId));
+    } catch (err) {
+      showError(err);
+    } finally {
+      setRemoving(null);
+    }
+  };
+
+  if (loading) return <ListSkeleton rows={2} />;
+
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-muted-foreground">Cible ce devoir vers un groupe existant ou un apprenant individuel — s'ajoute au ciblage par session s'il existe.</p>
+      <div className="flex flex-wrap items-end gap-2">
+        <select
+          className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+          value={selectedGroupId}
+          onChange={(e) => setSelectedGroupId(e.target.value)}
+          aria-label="Groupe à cibler"
+        >
+          <option value="">Choisir un groupe…</option>
+          {groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+        </select>
+        <Button type="button" size="sm" variant="outline" loading={addingGroup} disabled={!selectedGroupId} onClick={handleAddGroup}>Cibler ce groupe</Button>
+      </div>
+      <div className="max-w-sm">
+        <PersonPicker onPickUsername={handlePickLearner} onInviteEmail={handleInviteEmail} />
+      </div>
+      {targets.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Aucun ciblage pour ce devoir.</p>
+      ) : (
+        <ul className="space-y-1">
+          {targets.map((t) => (
+            <li key={t.id} className="flex items-center justify-between gap-3 rounded-md border p-2 text-sm">
+              <span>
+                {t.target_type === "session" && `Session ${t.target_id.slice(0, 8)}`}
+                {t.target_type === "group" && `Groupe ${groupName(t.target_id)}`}
+                {t.target_type === "learner" && `Apprenant @${names.get(t.target_id) ?? t.target_id.slice(0, 8)}`}
+              </span>
+              <Button variant="ghost" size="sm" loading={removing === t.id} onClick={() => handleRemove(t.id)}>Retirer</Button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
 
@@ -629,6 +754,10 @@ function StaffAssignments({ orgId }: { orgId: string }) {
               {expanded === a.id && (
                 <div className="mt-3 border-t pt-3 space-y-4">
                   <GradingPanel assignment={a} rubrics={rubrics} />
+                  <div className="border-t pt-3">
+                    <h3 className="text-sm font-medium mb-2">Ciblage (groupe / apprenant individuel)</h3>
+                    <AssignmentTargetsPanel assignment={a} />
+                  </div>
                   <div className="border-t pt-3">
                     <h3 className="text-sm font-medium mb-2">Échéances dérogatoires</h3>
                     <DueOverridesPanel assignment={a} />
