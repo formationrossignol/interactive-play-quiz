@@ -17,10 +17,11 @@ pouvoir s'y référer facilement.
   autres). Les deux RPC contrôlaient l'admin via `auth.uid()` — sans
   signification pour un job cron sans JWT — donc chacune a été scindée en
   wrapper vérifié (signature/comportement inchangés) + fonction interne non
-  vérifiée, jamais accordée à `authenticated`/`anon`. Reste bloqué par
-  l'absence de logique métier (pas seulement de planification) : les
-  rappels d'échéance J-7/J-1 (01), les notifications programmées (01), le
-  balayage planifié de `release_state` (06), les synchronisations
+  vérifiée, jamais accordée à `authenticated`/`anon`. ~~Balayage planifié de
+  `release_state` (06)~~ branché depuis (`20260812130000_release_state_date_and_sweep.sql`,
+  voir §06) comme 3ᵉ étape du même job. Reste bloqué par l'absence de
+  logique métier (pas seulement de planification) : les rappels d'échéance
+  J-7/J-1 (01), les notifications programmées (01), les synchronisations
   SCIM/OneRoster planifiées (04), la livraison de webhooks en file (04) —
   l'infrastructure existe maintenant pour les brancher, mais aucune de ces
   fonctions n'existe encore.
@@ -70,11 +71,11 @@ pouvoir s'y référer facilement.
 
 - [x] UI : alignement compétence ↔ devoir/critère de rubrique (CMP-010/011 partiel) — `AlignmentManager` dans `Competencies.tsx` (bouton « Aligner » par compétence), coefficient/rôle de preuve (teaching/practice/assessment)/obligatoire. Pas de nouvelle migration : RLS `competency_alignments_manage` (`for all`) autorisait déjà l'écriture directe pedago/admin. **Reste** : cours/module/leçon/question/examen/SCORM/H5P/étape de parcours (7 des 9 `target_type` restants) — aucun sélecteur org-scopé cohérent pour ces types dans le codebase actuel
 - [ ] UI : vue couverture programme (enseigné/pratiqué/évalué — CMP-012, CMP-021)
-- [ ] UI : demande de revue apprenant (`competency_review_requests`) — table posée, aucun écran
+- [x] UI : demande de revue apprenant (CMP-018) — RLS déjà ouverte (`competency_review_requests_learner_insert` : `learner_id = auth.uid()` ; `competency_review_requests_staff` : `for all`), pas de nouvelle migration. Apprenant (`LearnerMastery`) : bouton par compétence, désactivé si une demande est déjà ouverte, message obligatoire. Staff (`ReviewRequestsPanel`) : liste des demandes ouvertes, résoudre/rejeter. Scopé aux demandes de niveau maîtrise (`evidence_id` laissé nul) — l'UI apprenant n'expose aucune preuve individuelle à revoir, seulement le niveau calculé
 - [ ] Écran de migration des tags existants → compétences (mapping guidé, section « Migration des tags existants » de la spec)
 - [x] Méthodes d'agrégation configurables (CMP-007) — les 5 méthodes (`20260812120000_competency_aggregation_methods.sql`) : dernière preuve (inchangé), meilleure preuve (position max), moyenne pondérée (positions pondérées par `competency_alignments.weight`, sinon 1), N preuves récentes (moyenne non pondérée des N dernières), validation manuelle (`recompute_competency_mastery()` devient un no-op délibéré, seul `set_manual_mastery_level()` change le niveau). Gap réel trouvé en construisant ceci : `mastery_scales`/`mastery_scale_levels` (CMP-006) n'avaient **aucune UI d'écriture** malgré une RLS `for all` déjà ouverte — sans échelle, la méthode configurée n'avait rien à agréger. CRUD minimal ajouté (`MasteryScaleManager` dans `Competencies.tsx`) : créer l'échelle par défaut, ajouter des niveaux, choisir la méthode
 - [ ] Export CASE 1.1 / Open Badges (non-objectif V1 explicite mais listé comme préparation attendue)
-- [ ] Vue formateur groupe × compétences (CMP-020)
+- [x] Vue formateur groupe × compétences (CMP-020) — `TrainerGroupMatrix` dans `Competencies.tsx`, visible aux `trainer`/`pedago`/`admin` (nouveau rôle `trainer` ajouté à la vue, qui n'existait qu'en pedago/admin jusqu'ici). Groupe = `share_groups` du formateur (même modèle personnel que le ciblage de devoirs ailleurs dans ce codebase, pas un regroupement d'org). Matrice apprenant × compétence, seuil attendu configurable colorant les écarts, clic sur une cellule → preuves de l'apprenant pour cette compétence (`competency_evidence_staff_read` couvrait déjà `trainer`). Pas de nouvelle migration — lectures seules sur RLS déjà ouverte
 
 ## 04 — Interopérabilité, identité et administration Enterprise
 
@@ -101,9 +102,8 @@ pouvoir s'y référer facilement.
 
 ## 06 — Parcours adaptatifs, conditions et automatisations
 
-- [ ] Balayage planifié complémentaire (règles à échéance temporelle — date/score qui change sans écriture applicative) — bloqué par : pas d'ordonnanceur
-- [ ] UI de construction en phrases « Quand [condition], alors [action] » — l'UI actuelle ne construit qu'une seule condition simple (`activity_completed`), pas le DSL complet (AND/OR, dates, scores, compétences...)
-- [ ] Évaluateur pour les sources autres que `activity_completed` (date/score/compétence) — le DSL les accepte et les affiche, `evaluate_rule_definition()` les traite en échec fermé faute d'évaluateur dédié
+- [x] Balayage planifié (règles à échéance temporelle) + évaluateur `date` — `20260812130000_release_state_date_and_sweep.sql`. Ordonnanceur débloqué (`pg_cron` existe depuis 07) : `_sweep_release_state_internal()` rejoue `recompute_release_state()` pour chaque apprenant actif d'une org, branché comme 3ᵉ étape isolée dans `run_scheduled_lms_analytics_jobs()` (déjà nocturne). `evaluate_rule_definition()` gère désormais `{source:"date", operator:"after"|"before", value}` — sans ce balayage, un évaluateur de date seul n'aurait jamais été réévalué (recompute ne tournait que sur événement devoir/examen/note, jamais sur le temps qui passe). UI : `Automation.tsx::RuleSets` construit soit une condition activité-terminée soit une condition date (sélecteur + date/heure). **Reste** : `score`/`compétence` toujours en échec fermé (résolution propre à chacun, pas devinée), toujours une seule condition par règle (pas de AND/OR)
+- [ ] UI de construction en phrases « Quand [condition], alors [action] » — l'UI actuelle construit une seule condition à la fois (`activity_completed` ou `date`), pas le DSL complet (AND/OR, groupes, scores, compétences...)
 - [ ] Simulation « voir comme cet apprenant » / dry-run avant publication (ADP-008, AUT-004)
 - [ ] Test de positionnement / remédiation (ADP-009/010/011)
 - [ ] `follow_up_tasks` — table posée, aucun écran ni déclencheur
@@ -166,5 +166,5 @@ pouvoir s'y référer facilement.
 2. ~~**UI gradebook consolidée (01)**~~ — fait, y compris l'import CSV/XLSX (GBK-006, voir §01). Reste ouvert : dashboards visuels (07).
 3. ~~**04 — UI admin LTI + linking**~~ — fait (voir §04) : enregistrements/déploiements/linking/diagnostic. Reste ouvert : Deep Linking/NRPS/AGS, SSO OIDC/SAML général, QTI/SCIM/OneRoster/API publique.
 4. ~~**09 — écran projeté**~~ — fait pour le Q&A (voir §09). ~~Éditeur de formats sondage~~ — fait aussi (voir §09, sondage seulement). Reste ouvert : priorisation/matrice/brainstorm/classement forcé, et le sondage sur l'écran projeté lui-même (le présentateur `/live/:code/present` n'affiche toujours que le Q&A).
-5. ~~**Un vrai ordonnanceur**~~ — fait (`pg_cron`, voir dépendances en tête de document) pour les 2 RPC qui étaient réellement prêtes. Débloque la *planification* des rappels J-7/J-1, du balayage `release_state`, de SCIM/OneRoster, des webhooks en file — mais chacun a encore besoin de sa propre logique métier avant de pouvoir être branché.
+5. ~~**Un vrai ordonnanceur**~~ — fait (`pg_cron`, voir dépendances en tête de document). ~~Débloque la planification du balayage `release_state`~~ — branché (voir §06, avec l'évaluateur `date`). Débloque encore la *planification* des rappels J-7/J-1, de SCIM/OneRoster, des webhooks en file — mais chacun a encore besoin de sa propre logique métier avant de pouvoir être branché.
 6. Le reste (05 socle accessibilité transverse, 10 localisation, 04 SCIM/OneRoster/API) peut suivre l'ordre recommandé du README du programme.

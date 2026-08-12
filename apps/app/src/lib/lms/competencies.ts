@@ -19,6 +19,7 @@ export interface Competency {
 
 export interface CompetencyMastery {
   id: string;
+  org_id: string;
   competency_id: string;
   learner_id: string;
   level_code: string;
@@ -231,4 +232,91 @@ export async function recordCompetencyEvidence(input: {
     p_comment: input.comment ?? null,
   });
   if (error) throw error;
+}
+
+/** CMP-018: "L'apprenant peut demander une revue d'une preuve ou maîtrise ;
+ *  il ne peut pas la modifier." RLS already covers both directions directly
+ *  (`competency_review_requests_learner_insert`: learner_id = auth.uid();
+ *  `competency_review_requests_staff`: `for all`, pedago/admin) — no RPC.
+ *  Scoped to mastery-level requests (evidence_id left null): the learner
+ *  UI (myMastery()) never surfaces individual competency_evidence rows to
+ *  request a review *of*, only the computed level. */
+export interface CompetencyReviewRequest {
+  id: string;
+  org_id: string;
+  competency_id: string;
+  learner_id: string;
+  evidence_id: string | null;
+  message: string;
+  status: 'open' | 'resolved' | 'dismissed';
+  created_at: string;
+  resolved_at: string | null;
+}
+
+export async function myReviewRequests(): Promise<CompetencyReviewRequest[]> {
+  const { data, error } = await supabase.from('competency_review_requests').select('*').order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as CompetencyReviewRequest[];
+}
+
+export async function requestCompetencyReview(orgId: string, competencyId: string, learnerId: string, message: string): Promise<CompetencyReviewRequest> {
+  const { data, error } = await supabase
+    .from('competency_review_requests')
+    .insert({ org_id: orgId, competency_id: competencyId, learner_id: learnerId, message })
+    .select()
+    .single();
+  if (error) throw error;
+  return data as CompetencyReviewRequest;
+}
+
+export async function listOrgReviewRequests(orgId: string): Promise<CompetencyReviewRequest[]> {
+  const { data, error } = await supabase.from('competency_review_requests').select('*').eq('org_id', orgId).order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as CompetencyReviewRequest[];
+}
+
+export async function resolveReviewRequest(requestId: string, status: 'resolved' | 'dismissed'): Promise<void> {
+  const { error } = await supabase.from('competency_review_requests').update({ status, resolved_at: new Date().toISOString() }).eq('id', requestId);
+  if (error) throw error;
+}
+
+/** CMP-020 "vue formateur : groupe × compétences". `competency_mastery_staff_read`
+ *  already covers trainer/pedago/registrar/admin — no RPC, a plain
+ *  multi-`in()` select scoped to exactly the competencies/learners the
+ *  caller is about to render. */
+export async function listMasteryForLearners(competencyIds: string[], learnerIds: string[]): Promise<CompetencyMastery[]> {
+  if (competencyIds.length === 0 || learnerIds.length === 0) return [];
+  const { data, error } = await supabase
+    .from('competency_mastery')
+    .select('*')
+    .in('competency_id', competencyIds)
+    .in('learner_id', learnerIds);
+  if (error) throw error;
+  return (data ?? []) as CompetencyMastery[];
+}
+
+/** "Accès aux preuves autorisées" (CMP-020) — `competency_evidence_staff_read`
+ *  covers trainer/pedago/admin already; a void'd row is still returned
+ *  (with `voided_at` set) rather than hidden, so the trainer sees the full
+ *  audited history, not a silently-edited one. */
+export interface CompetencyEvidenceRow {
+  id: string;
+  source_type: string;
+  source_id: string | null;
+  raw_score: number | null;
+  level_code: string | null;
+  occurred_at: string;
+  comment: string | null;
+  voided_at: string | null;
+}
+
+export async function listCompetencyEvidence(competencyId: string, learnerId: string): Promise<CompetencyEvidenceRow[]> {
+  const { data, error } = await supabase
+    .from('competency_evidence')
+    .select('*')
+    .eq('competency_id', competencyId)
+    .eq('learner_id', learnerId)
+    .order('occurred_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as CompetencyEvidenceRow[];
 }

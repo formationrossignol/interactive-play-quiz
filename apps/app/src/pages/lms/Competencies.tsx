@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Award, Link2, ListChecks, Plus, Target, Trash2, UserCog } from "lucide-react";
+import { Award, CheckCircle2, Link2, ListChecks, MessageSquareWarning, Plus, Target, Trash2, UserCog, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/ui/page-header";
@@ -8,11 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PageSkeleton, TableSkeleton } from "@/components/ui/skeletons";
 import { useActiveOrgId } from "@/components/org/OrgSwitcher";
+import { getCurrentUser } from "@/lib/auth";
 import { showError } from "@/lib/errorTaxonomy";
 import { useSEO } from "@/hooks/useSEO";
 import { myOrgMemberships, type OrgMembership } from "@/lib/org/orgRepo";
 import { PersonPicker } from "@/components/sharing/PersonPicker";
-import type { UsernameMatch } from "@/lib/sharing/sharingRepo";
+import { listGroupMembers, listGroups, usernamesByIds, type Group, type GroupMember, type UsernameMatch } from "@/lib/sharing/sharingRepo";
 import {
   addCompetency,
   addScaleLevel,
@@ -21,20 +22,28 @@ import {
   createMasteryScale,
   deleteCompetencyAlignment,
   listCompetencyAlignments,
+  listCompetencyEvidence,
   listFrameworkCompetencies,
+  listMasteryForLearners,
   listOrgFrameworks,
   listOrgMasteryScales,
+  listOrgReviewRequests,
   listScaleLevels,
   myMastery,
+  myReviewRequests,
   publishFramework,
+  requestCompetencyReview,
+  resolveReviewRequest,
   setManualMasteryLevel,
   updateMasteryScaleMethod,
   type AggregationMethod,
   type AlignmentTargetType,
   type Competency,
   type CompetencyAlignment,
+  type CompetencyEvidenceRow,
   type CompetencyFramework,
   type CompetencyMastery,
+  type CompetencyReviewRequest,
   type MasteryScale,
   type MasteryScaleLevel,
 } from "@/lib/lms/competencies";
@@ -437,6 +446,7 @@ function SetMasteryLevelPanel({ orgId, competency }: { orgId: string; competency
 }
 
 const STAFF_ROLES = new Set(["pedago", "admin"]);
+const TRAINER_ROLES = new Set(["trainer", "pedago", "admin"]);
 
 const levelLabel: Record<string, string> = {
   not_assessed: "Non évalué",
@@ -604,13 +614,46 @@ function StaffFrameworks({ orgId }: { orgId: string }) {
   );
 }
 
+const REVIEW_STATUS_LABEL: Record<CompetencyReviewRequest["status"], string> = {
+  open: "En attente", resolved: "Résolue", dismissed: "Rejetée",
+};
+
 function LearnerMastery() {
   const [mastery, setMastery] = useState<CompetencyMastery[]>([]);
+  const [requests, setRequests] = useState<CompetencyReviewRequest[]>([]);
   const [loading, setLoading] = useState(true);
+  const [requestingId, setRequestingId] = useState<string | null>(null);
+  const [message, setMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    myMastery().then(setMastery).catch(showError).finally(() => setLoading(false));
+    Promise.all([myMastery(), myReviewRequests()])
+      .then(([m, r]) => { setMastery(m); setRequests(r); })
+      .catch(showError)
+      .finally(() => setLoading(false));
   }, []);
+
+  const requestsByCompetency = useMemo(() => {
+    const map = new Map<string, CompetencyReviewRequest[]>();
+    for (const r of requests) map.set(r.competency_id, [...(map.get(r.competency_id) ?? []), r]);
+    return map;
+  }, [requests]);
+
+  const handleRequest = async (m: CompetencyMastery) => {
+    if (!message.trim()) return;
+    setSubmitting(true);
+    try {
+      const request = await requestCompetencyReview(m.org_id, m.competency_id, m.learner_id, message.trim());
+      setRequests((prev) => [request, ...prev]);
+      setMessage("");
+      setRequestingId(null);
+      toast.success("Demande de revue envoyée");
+    } catch (err) {
+      showError(err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   if (loading) return <TableSkeleton rows={3} cols={2} />;
 
@@ -627,16 +670,291 @@ function LearnerMastery() {
   return (
     <section className="product-list-panel p-5">
       <div className="product-panel-heading -mx-5 -mt-5 mb-4">
-        <div><h2>Mes compétences</h2><p>Niveau actuel et dernière mise à jour.</p></div>
+        <div><h2>Mes compétences</h2><p>Niveau actuel et dernière mise à jour. Vous pouvez demander une revue, jamais la modifier vous-même.</p></div>
       </div>
       <ul className="space-y-2" aria-label="Mes compétences">
-        {mastery.map((m) => (
-          <li key={m.id} className="flex items-center justify-between rounded-md border p-3">
-            <span className="text-sm text-muted-foreground">Compétence {m.competency_id.slice(0, 8)}</span>
-            <span className="text-sm font-medium">{levelLabel[m.level_code] ?? m.level_code}</span>
-          </li>
-        ))}
+        {mastery.map((m) => {
+          const compRequests = requestsByCompetency.get(m.competency_id) ?? [];
+          const hasOpenRequest = compRequests.some((r) => r.status === "open");
+          return (
+            <li key={m.id} className="rounded-md border p-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Compétence {m.competency_id.slice(0, 8)}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium">{levelLabel[m.level_code] ?? m.level_code}</span>
+                  <Button
+                    variant="ghost" size="sm" disabled={hasOpenRequest}
+                    onClick={() => setRequestingId((cur) => (cur === m.id ? null : m.id))}
+                  >
+                    <MessageSquareWarning size={14} /> {hasOpenRequest ? "Revue en attente" : "Demander une revue"}
+                  </Button>
+                </div>
+              </div>
+              {compRequests.length > 0 && (
+                <ul className="mt-2 space-y-1">
+                  {compRequests.map((r) => (
+                    <li key={r.id} className="text-xs text-muted-foreground">
+                      {REVIEW_STATUS_LABEL[r.status]} — {r.message}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {requestingId === m.id && (
+                <form onSubmit={(e) => { e.preventDefault(); void handleRequest(m); }} className="mt-2 flex flex-wrap items-end gap-2">
+                  <div className="min-w-[220px] flex-1 space-y-1">
+                    <label className="text-xs font-medium" htmlFor={`review-msg-${m.id}`}>Message</label>
+                    <Input id={`review-msg-${m.id}`} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Pourquoi demandez-vous une revue ?" required />
+                  </div>
+                  <Button size="sm" type="submit" loading={submitting}>Envoyer</Button>
+                </form>
+              )}
+            </li>
+          );
+        })}
       </ul>
+    </section>
+  );
+}
+
+function ReviewRequestsPanel({ orgId }: { orgId: string }) {
+  const [requests, setRequests] = useState<CompetencyReviewRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [actingId, setActingId] = useState<string | null>(null);
+
+  const load = () => {
+    setLoading(true);
+    listOrgReviewRequests(orgId).then(setRequests).catch(showError).finally(() => setLoading(false));
+  };
+
+  useEffect(() => { load(); }, [orgId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleResolve = async (id: string, status: "resolved" | "dismissed") => {
+    setActingId(id);
+    try {
+      await resolveReviewRequest(id, status);
+      setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status, resolved_at: new Date().toISOString() } : r)));
+    } catch (err) {
+      showError(err);
+    } finally {
+      setActingId(null);
+    }
+  };
+
+  if (loading) return <TableSkeleton rows={2} cols={2} />;
+
+  const open = requests.filter((r) => r.status === "open");
+
+  return (
+    <section className="product-list-panel p-5">
+      <div className="product-panel-heading -mx-5 -mt-5 mb-4">
+        <div><h2>Demandes de revue</h2><p>CMP-018 : l'apprenant peut demander une revue, jamais modifier lui-même son niveau.</p></div>
+      </div>
+      {open.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Aucune demande en attente.</p>
+      ) : (
+        <ul className="space-y-2" aria-label="Demandes de revue en attente">
+          {open.map((r) => (
+            <li key={r.id} className="rounded-md border p-3">
+              <p className="text-sm">Compétence {r.competency_id.slice(0, 8)} · apprenant {r.learner_id.slice(0, 8)}</p>
+              <p className="text-sm text-muted-foreground mt-1">{r.message}</p>
+              <div className="flex gap-2 mt-2">
+                <Button variant="ghost" size="sm" loading={actingId === r.id} onClick={() => void handleResolve(r.id, "resolved")}>
+                  <CheckCircle2 size={14} /> Marquer résolue
+                </Button>
+                <Button variant="ghost" size="sm" loading={actingId === r.id} onClick={() => void handleResolve(r.id, "dismissed")}>
+                  <XCircle size={14} /> Rejeter
+                </Button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+/** CMP-020 "vue formateur : groupe × compétences, filtres, écarts et accès
+ *  aux preuves autorisées." Group = the trainer's own share_groups (same
+ *  personal-group model already used for assignment/content targeting
+ *  elsewhere in this codebase — not an org-wide roster grouping). All
+ *  reads (`competency_mastery`/`competency_evidence` staff policies
+ *  already cover trainer) — no migration. */
+function TrainerGroupMatrix({ orgId }: { orgId: string }) {
+  const user = getCurrentUser();
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [frameworks, setFrameworks] = useState<CompetencyFramework[]>([]);
+  const [levels, setLevels] = useState<MasteryScaleLevel[]>([]);
+  const [groupId, setGroupId] = useState("");
+  const [frameworkId, setFrameworkId] = useState("");
+  const [targetLevel, setTargetLevel] = useState("");
+  const [members, setMembers] = useState<GroupMember[]>([]);
+  const [names, setNames] = useState<Map<string, string>>(new Map());
+  const [competencies, setCompetencies] = useState<Competency[]>([]);
+  const [mastery, setMastery] = useState<CompetencyMastery[]>([]);
+  const [loadingLists, setLoadingLists] = useState(true);
+  const [loadingMatrix, setLoadingMatrix] = useState(false);
+  const [evidenceCell, setEvidenceCell] = useState<{ learnerId: string; competencyId: string } | null>(null);
+  const [evidence, setEvidence] = useState<CompetencyEvidenceRow[]>([]);
+  const [evidenceLoading, setEvidenceLoading] = useState(false);
+
+  useEffect(() => {
+    if (!user) { setLoadingLists(false); return; }
+    Promise.all([listGroups(user.id), listOrgFrameworks(orgId), listOrgMasteryScales(orgId)])
+      .then(async ([g, f, scales]) => {
+        setGroups(g);
+        setFrameworks(f.filter((fw) => fw.status === "published"));
+        const active = scales.find((s) => s.is_default) ?? scales[0] ?? null;
+        if (active) setLevels(await listScaleLevels(active.id));
+      })
+      .catch(showError)
+      .finally(() => setLoadingLists(false));
+  }, [orgId, user]);
+
+  useEffect(() => {
+    if (!groupId || !frameworkId) { setMembers([]); setCompetencies([]); setMastery([]); return; }
+    setLoadingMatrix(true);
+    setEvidenceCell(null);
+    Promise.all([listGroupMembers(groupId), listFrameworkCompetencies(frameworkId)])
+      .then(async ([m, comps]) => {
+        const realMembers = m.filter((x): x is GroupMember & { user_id: string } => x.user_id !== null);
+        setMembers(realMembers);
+        setCompetencies(comps);
+        const [resolvedNames, masteryRows] = await Promise.all([
+          usernamesByIds(realMembers.map((x) => x.user_id)),
+          listMasteryForLearners(comps.map((c) => c.id), realMembers.map((x) => x.user_id)),
+        ]);
+        setNames(new Map(resolvedNames.map((n) => [n.id, n.username])));
+        setMastery(masteryRows);
+      })
+      .catch(showError)
+      .finally(() => setLoadingMatrix(false));
+  }, [groupId, frameworkId]);
+
+  const masteryByPair = useMemo(() => {
+    const map = new Map<string, CompetencyMastery>();
+    for (const m of mastery) map.set(`${m.learner_id}:${m.competency_id}`, m);
+    return map;
+  }, [mastery]);
+  const positionByCode = useMemo(() => new Map(levels.map((l) => [l.code, l.position])), [levels]);
+  const targetPosition = targetLevel ? positionByCode.get(targetLevel) : undefined;
+
+  const openEvidence = async (learnerId: string, competencyId: string) => {
+    setEvidenceCell({ learnerId, competencyId });
+    setEvidenceLoading(true);
+    try {
+      setEvidence(await listCompetencyEvidence(competencyId, learnerId));
+    } catch (err) {
+      showError(err);
+    } finally {
+      setEvidenceLoading(false);
+    }
+  };
+
+  if (loadingLists) return <TableSkeleton rows={2} cols={2} />;
+
+  return (
+    <section className="product-list-panel p-5">
+      <div className="product-panel-heading -mx-5 -mt-5 mb-4">
+        <div><h2>Vue formateur — groupe × compétences</h2><p>Écarts par rapport à un seuil attendu, accès aux preuves d'un apprenant.</p></div>
+      </div>
+
+      <div className="flex flex-wrap items-end gap-3 mb-4">
+        <div className="min-w-[180px] space-y-1">
+          <label className="text-xs font-medium" htmlFor="matrix-group">Groupe</label>
+          <select id="matrix-group" className={inputClass} style={inputStyle} value={groupId} onChange={(e) => setGroupId(e.target.value)}>
+            <option value="">Choisir…</option>
+            {groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+          </select>
+        </div>
+        <div className="min-w-[180px] space-y-1">
+          <label className="text-xs font-medium" htmlFor="matrix-framework">Référentiel publié</label>
+          <select id="matrix-framework" className={inputClass} style={inputStyle} value={frameworkId} onChange={(e) => setFrameworkId(e.target.value)}>
+            <option value="">Choisir…</option>
+            {frameworks.map((f) => <option key={f.id} value={f.id}>{f.title}</option>)}
+          </select>
+        </div>
+        {levels.length > 0 && (
+          <div className="min-w-[160px] space-y-1">
+            <label className="text-xs font-medium" htmlFor="matrix-target">Seuil attendu (écarts)</label>
+            <select id="matrix-target" className={inputClass} style={inputStyle} value={targetLevel} onChange={(e) => setTargetLevel(e.target.value)}>
+              <option value="">Aucun</option>
+              {levels.map((l) => <option key={l.id} value={l.code}>{l.label}</option>)}
+            </select>
+          </div>
+        )}
+      </div>
+
+      {groups.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Aucun groupe. Créez-en un depuis le partage de contenu pour l'utiliser ici.</p>
+      ) : !groupId || !frameworkId ? (
+        <p className="text-sm text-muted-foreground">Choisissez un groupe et un référentiel publié.</p>
+      ) : loadingMatrix ? (
+        <TableSkeleton rows={3} cols={3} />
+      ) : members.length === 0 || competencies.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Groupe vide ou référentiel sans compétence.</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr style={{ background: "var(--ap-paper-2)" }}>
+                <th className="border-b px-2 py-1.5 text-left text-xs font-bold" style={{ borderColor: "var(--ap-line)" }}>Apprenant</th>
+                {competencies.map((c) => (
+                  <th key={c.id} className="border-b px-2 py-1.5 text-left text-xs font-bold font-mono" style={{ borderColor: "var(--ap-line)" }}>{c.code}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {members.map((m) => (
+                <tr key={m.id} style={{ borderBottom: "var(--ap-border-w) solid var(--ap-line)" }}>
+                  <td className="px-2 py-1.5">@{names.get(m.user_id) ?? "apprenant"}</td>
+                  {competencies.map((c) => {
+                    const cell = masteryByPair.get(`${m.user_id}:${c.id}`);
+                    const level = cell?.level_code ?? "not_assessed";
+                    const pos = positionByCode.get(level);
+                    const isGap = targetPosition !== undefined && (pos === undefined || pos < targetPosition);
+                    return (
+                      <td key={c.id} className="px-2 py-1.5">
+                        <button
+                          type="button"
+                          className="text-left underline-offset-2 hover:underline"
+                          style={{ color: isGap ? "var(--ap-danger)" : undefined }}
+                          onClick={() => void openEvidence(m.user_id, c.id)}
+                        >
+                          {levelLabel[level] ?? level}
+                        </button>
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {evidenceCell && (
+        <div className="mt-4 rounded-md border p-3">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm font-medium">Preuves — @{names.get(evidenceCell.learnerId) ?? "apprenant"}</p>
+            <button type="button" className="ap-btn ap-btn--ghost ap-btn--sm" onClick={() => setEvidenceCell(null)}>Fermer</button>
+          </div>
+          {evidenceLoading ? <TableSkeleton rows={2} cols={2} /> : evidence.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Aucune preuve.</p>
+          ) : (
+            <ul className="space-y-1">
+              {evidence.map((e) => (
+                <li key={e.id} className="text-xs rounded border px-2 py-1.5">
+                  {new Date(e.occurred_at).toLocaleDateString("fr-FR")} · {e.source_type}
+                  {e.level_code ? ` · ${levelLabel[e.level_code] ?? e.level_code}` : ""}
+                  {e.raw_score !== null ? ` · ${e.raw_score}` : ""}
+                  {e.voided_at ? " · annulée" : ""}
+                  {e.comment && <span className="block text-muted-foreground mt-0.5">{e.comment}</span>}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
     </section>
   );
 }
@@ -655,6 +973,10 @@ export default function LmsCompetencies() {
     () => memberships.some((m) => m.org_id === activeOrgId && STAFF_ROLES.has(m.role)),
     [memberships, activeOrgId],
   );
+  const isTrainer = useMemo(
+    () => memberships.some((m) => m.org_id === activeOrgId && TRAINER_ROLES.has(m.role)),
+    [memberships, activeOrgId],
+  );
 
   if (loading) {
     return (
@@ -671,10 +993,12 @@ export default function LmsCompetencies() {
           title="Compétences et résultats d'apprentissage"
           description="Référentiels gouvernés, preuves traçables et maîtrise explicable."
         />
-        {isStaff && activeOrgId ? (
+        {isTrainer && activeOrgId ? (
           <div className="space-y-4">
-            <MasteryScaleManager orgId={activeOrgId} />
-            <StaffFrameworks orgId={activeOrgId} />
+            {isStaff && <MasteryScaleManager orgId={activeOrgId} />}
+            {isStaff && <StaffFrameworks orgId={activeOrgId} />}
+            <TrainerGroupMatrix orgId={activeOrgId} />
+            {isStaff && <ReviewRequestsPanel orgId={activeOrgId} />}
           </div>
         ) : <LearnerMastery />}
       </div>
