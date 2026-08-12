@@ -225,6 +225,30 @@ le navigateur (le champ fichier accepte un enregistrement déjà exporté,
 pas un enregistreur intégré — hors scope, pas demandé par le modèle de
 données).
 
+**Régression trouvée et corrigée dans la foulée**
+(`20260812160000_fix_submit_assignment_accommodation_regression.sql`) :
+la réécriture de `submit_assignment()` ci-dessus s'était basée sur la
+version *originale* (`20260810160000`) plutôt que sur la version
+réellement en vigueur en prod (`20260811040000_accommodation_effective_dates.sql`,
+spec 05), qui rendait le calcul de retard sensible aux aménagements
+(`effective_assignment_due_at()` — `extended_deadline`/`no_time_limit`) et
+émettait `submission.submitted` via `emit_learning_event()` à la
+finalisation. Les deux ont été silencieusement écrasés par la migration
+`...150000` — un apprenant avec aménagement aurait de nouveau été marqué
+en retard à tort, et les finalisations auraient cessé d'émettre
+l'événement dont dépendent `generate_risk_signals()` (règle `overdue`) et
+les projections analytics. Repéré en relisant l'historique des migrations
+*après* le déploiement de `...150000`, pas avant — corrigé par une
+migration additive plutôt qu'une réécriture de `...150000` (déjà appliquée
+en prod à ce moment-là), restaurant le corps correct avec `p_files` posé
+par-dessus, rien d'autre changé. Vérifié : apprenant avec aménagement
+`no_time_limit` actif, devoir échu depuis 2 jours, soumission avec fichier
+→ `submitted` (pas `late`), fichier bien attaché, événement
+`submission.submitted` émis avec `late:false`, ligne d'audit de lecture du
+profil d'aménagement toujours écrite — les quatre comportements vérifiés
+simultanément contre un schéma stub reproduisant les vraies tables
+d'aménagement (Postgres jetable).
+
 **Reste à faire** :
 - [ ] UI : `assignment_targets` par groupe/apprenant individuel — seul le ciblage par session est câblé
 - [ ] UI : échéance/aménagement dérogatoire par apprenant (`due_override`) — colonne existe, aucun écran
