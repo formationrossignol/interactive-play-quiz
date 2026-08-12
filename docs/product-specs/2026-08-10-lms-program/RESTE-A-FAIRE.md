@@ -72,7 +72,7 @@ pouvoir s'y référer facilement.
 - [ ] UI : vue couverture programme (enseigné/pratiqué/évalué — CMP-012, CMP-021)
 - [ ] UI : demande de revue apprenant (`competency_review_requests`) — table posée, aucun écran
 - [ ] Écran de migration des tags existants → compétences (mapping guidé, section « Migration des tags existants » de la spec)
-- [ ] Méthodes d'agrégation configurables (CMP-007) — seule « dernière preuve » est implémentée ; meilleure preuve / moyenne pondérée / N-récentes / validation manuelle sont à ajouter
+- [x] Méthodes d'agrégation configurables (CMP-007) — les 5 méthodes (`20260812120000_competency_aggregation_methods.sql`) : dernière preuve (inchangé), meilleure preuve (position max), moyenne pondérée (positions pondérées par `competency_alignments.weight`, sinon 1), N preuves récentes (moyenne non pondérée des N dernières), validation manuelle (`recompute_competency_mastery()` devient un no-op délibéré, seul `set_manual_mastery_level()` change le niveau). Gap réel trouvé en construisant ceci : `mastery_scales`/`mastery_scale_levels` (CMP-006) n'avaient **aucune UI d'écriture** malgré une RLS `for all` déjà ouverte — sans échelle, la méthode configurée n'avait rien à agréger. CRUD minimal ajouté (`MasteryScaleManager` dans `Competencies.tsx`) : créer l'échelle par défaut, ajouter des niveaux, choisir la méthode
 - [ ] Export CASE 1.1 / Open Badges (non-objectif V1 explicite mais listé comme préparation attendue)
 - [ ] Vue formateur groupe × compétences (CMP-020)
 

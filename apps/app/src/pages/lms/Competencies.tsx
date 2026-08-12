@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Award, Link2, Plus, Target, Trash2 } from "lucide-react";
+import { Award, Link2, ListChecks, Plus, Target, Trash2, UserCog } from "lucide-react";
+import { toast } from "sonner";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/ui/page-header";
 import { ExplorerEmptyState } from "@/components/content/ExplorerEmptyState";
@@ -10,23 +11,39 @@ import { useActiveOrgId } from "@/components/org/OrgSwitcher";
 import { showError } from "@/lib/errorTaxonomy";
 import { useSEO } from "@/hooks/useSEO";
 import { myOrgMemberships, type OrgMembership } from "@/lib/org/orgRepo";
+import { PersonPicker } from "@/components/sharing/PersonPicker";
+import type { UsernameMatch } from "@/lib/sharing/sharingRepo";
 import {
   addCompetency,
+  addScaleLevel,
   createFramework,
   createCompetencyAlignment,
+  createMasteryScale,
   deleteCompetencyAlignment,
   listCompetencyAlignments,
   listFrameworkCompetencies,
   listOrgFrameworks,
+  listOrgMasteryScales,
+  listScaleLevels,
   myMastery,
   publishFramework,
+  setManualMasteryLevel,
+  updateMasteryScaleMethod,
+  type AggregationMethod,
   type AlignmentTargetType,
   type Competency,
   type CompetencyAlignment,
   type CompetencyFramework,
   type CompetencyMastery,
+  type MasteryScale,
+  type MasteryScaleLevel,
 } from "@/lib/lms/competencies";
 import { getRubricCriteria, listOrgAssignments, listOrgRubrics, type Assignment, type Rubric, type RubricCriterion } from "@/lib/lms/gradebook";
+
+const AGGREGATION_METHOD_LABEL: Record<AggregationMethod, string> = {
+  latest: "Dernière preuve", best: "Meilleure preuve", weighted_average: "Moyenne pondérée",
+  recent_n: "N preuves récentes", manual: "Validation manuelle",
+};
 
 const inputClass = "h-9 w-full rounded-md border bg-transparent px-2 text-sm";
 const inputStyle = { borderColor: "var(--ap-line)", color: "var(--ap-ink)" };
@@ -189,6 +206,236 @@ function AlignmentManager({ orgId, competency }: { orgId: string; competency: Co
   );
 }
 
+/** CMP-006/007. One scale per org (the default one) drives
+ *  recompute_competency_mastery() for every competency in that org — there
+ *  is no per-competency scale selection yet (recompute always reads the
+ *  org's is_default=true row), so this manages that single scale rather
+ *  than pretending a per-framework or per-competency picker exists. */
+function MasteryScaleManager({ orgId }: { orgId: string }) {
+  const [scale, setScale] = useState<MasteryScale | null>(null);
+  const [levels, setLevels] = useState<MasteryScaleLevel[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [creatingTitle, setCreatingTitle] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [method, setMethod] = useState<AggregationMethod>("latest");
+  const [recentN, setRecentN] = useState("3");
+  const [savingMethod, setSavingMethod] = useState(false);
+  const [levelCode, setLevelCode] = useState("");
+  const [levelLabelInput, setLevelLabelInput] = useState("");
+  const [levelPosition, setLevelPosition] = useState("0");
+  const [levelMinScore, setLevelMinScore] = useState("0");
+  const [addingLevel, setAddingLevel] = useState(false);
+
+  const load = () => {
+    setLoading(true);
+    listOrgMasteryScales(orgId)
+      .then(async (scales) => {
+        const active = scales.find((s) => s.is_default) ?? scales[0] ?? null;
+        setScale(active);
+        if (active) {
+          setMethod(active.aggregation_method);
+          setRecentN(String(active.recent_n));
+          setLevels(await listScaleLevels(active.id));
+        }
+      })
+      .catch(showError)
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => { load(); }, [orgId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!creatingTitle.trim()) return;
+    setCreating(true);
+    try {
+      await createMasteryScale(orgId, creatingTitle.trim(), true);
+      setCreatingTitle("");
+      load();
+    } catch (err) {
+      showError(err);
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleSaveMethod = async () => {
+    if (!scale) return;
+    setSavingMethod(true);
+    try {
+      await updateMasteryScaleMethod(scale.id, method, Number(recentN) || 3);
+      toast.success("Méthode d'agrégation mise à jour");
+      load();
+    } catch (err) {
+      showError(err);
+    } finally {
+      setSavingMethod(false);
+    }
+  };
+
+  const handleAddLevel = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!scale || !levelCode.trim() || !levelLabelInput.trim()) return;
+    setAddingLevel(true);
+    try {
+      const level = await addScaleLevel({
+        scaleId: scale.id, code: levelCode.trim(), label: levelLabelInput.trim(),
+        position: Number(levelPosition) || 0, minScore: Number(levelMinScore) || 0,
+      });
+      setLevels((prev) => [...prev, level].sort((a, b) => a.position - b.position));
+      setLevelCode(""); setLevelLabelInput(""); setLevelPosition(""); setLevelMinScore("");
+    } catch (err) {
+      showError(err);
+    } finally {
+      setAddingLevel(false);
+    }
+  };
+
+  if (loading) return <TableSkeleton rows={2} cols={2} />;
+
+  return (
+    <section className="product-list-panel p-5">
+      <div className="product-panel-heading -mx-5 -mt-5 mb-4">
+        <div><h2>Échelle de maîtrise</h2><p>Niveaux et méthode d'agrégation appliqués à toutes les compétences de l'organisation.</p></div>
+      </div>
+
+      {!scale ? (
+        <form onSubmit={handleCreate} className="flex flex-wrap items-end gap-3">
+          <div className="min-w-[220px] space-y-1">
+            <label className="text-sm font-medium" htmlFor="scale-title">Titre de l'échelle par défaut</label>
+            <Input id="scale-title" value={creatingTitle} onChange={(e) => setCreatingTitle(e.target.value)} placeholder="Ex. Échelle standard" required />
+          </div>
+          <Button type="submit" loading={creating}><Plus /> Créer</Button>
+        </form>
+      ) : (
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="min-w-[200px] space-y-1">
+              <label className="text-xs font-medium" htmlFor="agg-method">Méthode d'agrégation</label>
+              <select id="agg-method" className={inputClass} style={inputStyle} value={method} onChange={(e) => setMethod(e.target.value as AggregationMethod)}>
+                {Object.entries(AGGREGATION_METHOD_LABEL).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+              </select>
+            </div>
+            {method === "recent_n" && (
+              <div className="w-24 space-y-1">
+                <label className="text-xs font-medium" htmlFor="agg-recent-n">N</label>
+                <input id="agg-recent-n" className={inputClass} style={inputStyle} inputMode="numeric" value={recentN} onChange={(e) => setRecentN(e.target.value)} />
+              </div>
+            )}
+            <Button size="sm" loading={savingMethod} onClick={() => void handleSaveMethod()}><ListChecks size={14} /> Enregistrer</Button>
+          </div>
+
+          {levels.length > 0 && (
+            <ul className="space-y-1">
+              {levels.map((l) => (
+                <li key={l.id} className="text-sm rounded border px-3 py-1.5 flex items-center justify-between">
+                  <span className="font-mono text-muted-foreground mr-2">{l.code}</span>
+                  <span>{l.label} <span className="text-muted-foreground">· position {l.position} · seuil {l.min_score}</span></span>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <form onSubmit={handleAddLevel} className="flex flex-wrap items-end gap-2">
+            <div className="w-28 space-y-1">
+              <label className="text-xs font-medium" htmlFor="level-code">Code</label>
+              <Input id="level-code" value={levelCode} onChange={(e) => setLevelCode(e.target.value)} placeholder="mastered" required />
+            </div>
+            <div className="min-w-[160px] space-y-1">
+              <label className="text-xs font-medium" htmlFor="level-label">Libellé</label>
+              <Input id="level-label" value={levelLabelInput} onChange={(e) => setLevelLabelInput(e.target.value)} placeholder="Maîtrisé" required />
+            </div>
+            <div className="w-24 space-y-1">
+              <label className="text-xs font-medium" htmlFor="level-position">Position</label>
+              <Input id="level-position" inputMode="numeric" value={levelPosition} onChange={(e) => setLevelPosition(e.target.value)} required />
+            </div>
+            <div className="w-24 space-y-1">
+              <label className="text-xs font-medium" htmlFor="level-min-score">Seuil</label>
+              <Input id="level-min-score" inputMode="decimal" value={levelMinScore} onChange={(e) => setLevelMinScore(e.target.value)} required />
+            </div>
+            <Button size="sm" type="submit" loading={addingLevel}><Plus size={14} /> Ajouter un niveau</Button>
+          </form>
+        </div>
+      )}
+    </section>
+  );
+}
+
+/** Only meaningful while the org's default scale is in 'manual' mode —
+ *  the RPC re-checks this server-side regardless (fail closed). */
+function SetMasteryLevelPanel({ orgId, competency }: { orgId: string; competency: Competency }) {
+  const [scale, setScale] = useState<MasteryScale | null>(null);
+  const [levels, setLevels] = useState<MasteryScaleLevel[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [learner, setLearner] = useState<UsernameMatch | null>(null);
+  const [levelCode, setLevelCode] = useState("");
+  const [reason, setReason] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    listOrgMasteryScales(orgId)
+      .then(async (scales) => {
+        const active = scales.find((s) => s.is_default) ?? scales[0] ?? null;
+        setScale(active);
+        if (active) setLevels(await listScaleLevels(active.id));
+      })
+      .catch(showError)
+      .finally(() => setLoading(false));
+  }, [orgId]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!learner || !levelCode || !reason.trim()) return;
+    setSaving(true);
+    try {
+      await setManualMasteryLevel(competency.id, learner.id, levelCode, reason.trim());
+      toast.success(`Niveau fixé pour @${learner.username}`);
+      setLearner(null); setLevelCode(""); setReason("");
+    } catch (err) {
+      showError(err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) return null;
+  if (!scale || scale.aggregation_method !== "manual") return null;
+
+  return (
+    <div className="mt-3 border-t pt-3 space-y-2">
+      <p className="text-xs text-muted-foreground">Échelle « {scale.title} » en validation manuelle — fixer un niveau pour un apprenant.</p>
+      <form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-2">
+        <div className="min-w-[200px] space-y-1">
+          <span className="text-xs font-medium block">Apprenant</span>
+          {learner ? (
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">@{learner.username}</span>
+              <button type="button" className="ap-btn ap-btn--ghost ap-btn--sm" onClick={() => setLearner(null)}>Changer</button>
+            </div>
+          ) : (
+            <PersonPicker
+              onPickUsername={(match) => setLearner(match)}
+              onInviteEmail={() => toast.error("Fixer un niveau exige un compte existant sur la plateforme.")}
+            />
+          )}
+        </div>
+        <div className="min-w-[160px] space-y-1">
+          <label className="text-xs font-medium" htmlFor={`manual-level-${competency.id}`}>Niveau</label>
+          <select id={`manual-level-${competency.id}`} className={inputClass} style={inputStyle} value={levelCode} onChange={(e) => setLevelCode(e.target.value)} required>
+            <option value="" disabled>Choisir…</option>
+            {levels.map((l) => <option key={l.id} value={l.code}>{l.label}</option>)}
+          </select>
+        </div>
+        <div className="min-w-[200px] flex-1 space-y-1">
+          <label className="text-xs font-medium" htmlFor={`manual-reason-${competency.id}`}>Motif</label>
+          <Input id={`manual-reason-${competency.id}`} value={reason} onChange={(e) => setReason(e.target.value)} required />
+        </div>
+        <Button size="sm" type="submit" loading={saving} disabled={!learner}><UserCog size={14} /> Fixer le niveau</Button>
+      </form>
+    </div>
+  );
+}
+
 const STAFF_ROLES = new Set(["pedago", "admin"]);
 
 const levelLabel: Record<string, string> = {
@@ -253,7 +500,12 @@ function FrameworkCompetencies({ orgId, framework }: { orgId: string; framework:
                   <Link2 size={14} /> {aligningId === c.id ? "Fermer" : "Aligner"}
                 </Button>
               </div>
-              {aligningId === c.id && <AlignmentManager orgId={orgId} competency={c} />}
+              {aligningId === c.id && (
+                <>
+                  <AlignmentManager orgId={orgId} competency={c} />
+                  <SetMasteryLevelPanel orgId={orgId} competency={c} />
+                </>
+              )}
             </li>
           ))}
         </ul>
@@ -419,7 +671,12 @@ export default function LmsCompetencies() {
           title="Compétences et résultats d'apprentissage"
           description="Référentiels gouvernés, preuves traçables et maîtrise explicable."
         />
-        {isStaff && activeOrgId ? <StaffFrameworks orgId={activeOrgId} /> : <LearnerMastery />}
+        {isStaff && activeOrgId ? (
+          <div className="space-y-4">
+            <MasteryScaleManager orgId={activeOrgId} />
+            <StaffFrameworks orgId={activeOrgId} />
+          </div>
+        ) : <LearnerMastery />}
       </div>
     </AppLayout>
   );
