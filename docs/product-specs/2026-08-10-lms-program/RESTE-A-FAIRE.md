@@ -1,6 +1,6 @@
 # Reste à faire — Programme LMS
 
-Date : 2026-08-11
+Date : 2026-08-12
 
 Backlog consolidé, pur — pas de « fait », pas de récit. Pour le détail de ce
 qui est déjà fait/vérifié et pourquoi, voir `VALIDATION-STATUS.md`. Chaque
@@ -123,7 +123,7 @@ pouvoir s'y référer facilement.
 
 - [x] Assemblage réel d'une évaluation — **sections fixes seulement** : `/lms/item-bank` (panneau Évaluations), créer une évaluation, ajouter une section fixe, y attacher des révisions d'item, publier (`publish_assessment()`, snapshot immuable dans `assessment_versions`). Tirage figé par tentative fait (`start_assessment_attempt()` pré-crée les lignes `assessment_responses` à l'ouverture). **Reste** : le tirage aléatoire (sections `pool`, `assessment_pool_rules`) — refusé explicitement (`pool_sections_not_supported`) plutôt que deviné
 - [x] Barèmes riches (ASM-012) — **pour 4 types sur 21** (`true_false`/`single_choice`/`mcq`/`short_answer`, les seuls avec UI d'auteur) : points fixes, crédit partiel + pénalité par option fausse (mcq), équivalences insensibles casse/espaces (short_answer). Tolérance numérique non couverte (aucun type numérique n'a d'UI). **Reste** : simulation avant publication (ASM-013), ranking/matching/cloze et les 8 types ASM-017-024
-- [x] Moteur de correction réel utilisant `item_answer_keys` — **la pièce la plus bloquante du programme** : `submit_assessment_response()` lit `item_answer_keys` pour la première fois dans ce repo, corrige côté serveur, jamais de fuite de la réponse correcte au client. Contrat JSON `correct_answer`/`scoring_rules` défini et documenté (`20260812060000_assessment_correction_engine.sql`). Testé fonctionnellement (11 cas : crédit partiel + plancher à 0, équivalences, casse) en transaction annulée avant commit. **Non testé en conditions réelles** (pas de compte staff/apprenant local pour dérouler un cycle complet création→passation→note) ; migration pas encore déployée en prod
+- [x] Moteur de correction réel utilisant `item_answer_keys` — **la pièce la plus bloquante du programme** : `submit_assessment_response()` lit `item_answer_keys` pour la première fois dans ce repo, corrige côté serveur, jamais de fuite de la réponse correcte au client. Contrat JSON `correct_answer`/`scoring_rules` défini et documenté (`20260812060000_assessment_correction_engine.sql`). Testé fonctionnellement (11 cas : crédit partiel + plancher à 0, équivalences, casse) en transaction annulée avant commit, puis déployé en prod. **Non testé en conditions réelles** (pas de compte staff/apprenant local pour dérouler un cycle complet création→passation→note)
 - [ ] Nouveaux types d'interaction (passage, vidéo interactive, audio/vidéo, dessin, labeling, math/graphique, fichier, code — ASM-017 à ASM-024) : le schéma accepte n'importe quel `item_type`/`prompt` JSON mais aucun éditeur/lecteur n'existe pour ces types
 - [ ] Rescore en masse avec prévisualisation d'impact (`rescore_jobs` posé, aucun exécuteur)
 - [ ] Suggestions IA (génération, distracteurs, vérifications de biais/ambiguïté) — non-objectif partiel mais mentionné comme option V1
@@ -167,3 +167,15 @@ pouvoir s'y référer facilement.
 4. ~~**09 — écran projeté**~~ — fait pour le Q&A (voir §09). ~~Éditeur de formats sondage~~ — fait aussi (voir §09, sondage seulement). Reste ouvert : priorisation/matrice/brainstorm/classement forcé, et le sondage sur l'écran projeté lui-même (le présentateur `/live/:code/present` n'affiche toujours que le Q&A).
 5. ~~**Un vrai ordonnanceur**~~ — fait (`pg_cron`, voir dépendances en tête de document). ~~Débloque la planification du balayage `release_state`~~ — branché (voir §06, avec l'évaluateur `date`). Débloque encore la *planification* des rappels J-7/J-1, de SCIM/OneRoster, des webhooks en file — mais chacun a encore besoin de sa propre logique métier avant de pouvoir être branché.
 6. Le reste (05 socle accessibilité transverse, 10 localisation, 04 SCIM/OneRoster/API) peut suivre l'ordre recommandé du README du programme.
+7. ~~**01 — remise fichier/audio/vidéo + URLs signées**~~ — fait (voir §01, `20260812150000`/`20260812160000` — la seconde corrige une régression introduite par la première sur le calcul de retard accommodation-aware, trouvée avant tout dégât réel puisque déployées ensemble). Reste ouvert dans 01 : ciblage devoir par groupe/apprenant individuel, échéance dérogatoire, scan antivirus, antiplagiat, notifications programmées, double correction.
+
+**Point d'arrêt 2026-08-12** — tout ce qui précède dans ce document reflète
+l'état réel post-déploiement (toutes les migrations listées `[x]` sont en
+prod, `supabase migration list` vérifié à chaque fois). Candidats bien
+scopés pour la suite, par ordre de valeur/risque croissant :
+- 07 : seuil anti-réidentification cohortes (ANA-020) — petit, sécurité/vie privée
+- 01 : échéance dérogatoire par apprenant (`due_override`) — UI seule, colonne déjà là
+- 02 : `attendance_events` — table à créer + UI, autonome
+- 08 : simulation de barème avant publication (ASM-013) — autonome, pas de dépendance externe
+- 06 : évaluateur `score`/`compétence` (pendant du `date` déjà fait) — même mécanique, resolution à définir
+- Au-delà : 04 (SSO/SCIM/OneRoster/API), 08 (11 types d'interaction restants), 10 (gouvernance/localisation) sont les gros blocs non entamés, chacun un projet en soi.
