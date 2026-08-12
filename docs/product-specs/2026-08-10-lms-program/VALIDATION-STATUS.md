@@ -152,19 +152,37 @@ rien à simuler dessus). GBK-006 (partiel) : export CSV/XLSX/PDF
 lazy-import `xlsx`/`jspdf`) neutralisant les formules tableur (`csvCell`,
 même garde que `buildGradeCsv` dans `grading/calculations.ts`) et respectant
 les filtres actifs (statut d'inscription, export = exactement les lignes
-affichées) — **l'import CSV/XLSX avec prévisualisation reste à faire**, pas
-tenté dans cette passe. Vérifié : `tsc --noEmit` et `eslint` propres sur les
-fichiers touchés ; page testée dans Chrome (non authentifié → état vide
-« Accès réservé au staff » correctement rendu, titre de page et route OK,
-aucune erreur console applicative) — **non vérifié avec des données réelles
-de session/gradebook** (pas de compte staff/organisation de test disponible
-en local pour cette passe).
+affichées) et import (`GradebookImportDialog.tsx` + `gradebookImport.ts` +
+`import_gradebook_csv()`, `20260812080000_gradebook_csv_import.sql`) :
+première écriture directe, staff-initiée, dans `grade_items`/`grade_results`
+(jusqu'ici seuls des triggers y écrivaient). Fichier CSV/XLSX parsé
+côté client (`xlsx`, même lib que l'export, déjà lazy-importée ;
+`assertSafeImportFile` réutilisé — risque ReDoS/prototype-pollution connu de
+`xlsx` déjà accepté ailleurs, voir `fileValidation.ts`), mapping de colonnes
+(identifiant/note) choisi par le staff, correspondance des personnes par nom
+d'utilisateur contre l'effectif de session déjà chargé côté client (RLS,
+pas de nouvel endpoint de résolution d'identité), prévisualisation ligne à
+ligne avec statut (OK / apprenant introuvable / doublon — seule la première
+occurrence est retenue / note hors barème). Seules les lignes `OK` sont
+envoyées au RPC, qui revalide quand même chaque ligne côté serveur
+(inscription réelle à la session, note dans `[0, max_points]`) et crée la
+colonne + toutes les notes en tout-ou-rien — une ligne invalide annule tout
+l'import plutôt que de laisser une colonne à moitié peuplée. Vérifié : les
+deux migrations (07 + celle-ci) appliquées contre un schéma stub reproduisant
+les vraies tables (Postgres jetable, `docker run postgres:15`), pas juste
+relues — cas heureux (deux notes valides), apprenant non inscrit rejeté,
+note hors barème rejetée, et dans chaque cas de rejet **rien** n'est resté en
+base (transaction annulée dans son ensemble) ; `tsc --noEmit`/`eslint`
+propres ; 5 tests unitaires sur `buildImportPreview`/`validImportRows`
+(matching insensible à la casse et au `@`, doublon, note illisible/hors
+barème) — **non vérifié avec des données réelles de session/gradebook**
+(pas de compte staff/organisation de test disponible en local, même limite
+que le reste de cette passe).
 
 **Reste à faire** :
 - [ ] UI : remise fichier/audio/vidéo — seul le mode texte est câblé côté client (`response_mode` en DB supporte déjà file/url/audio/video)
 - [ ] UI : `assignment_targets` par groupe/apprenant individuel — seul le ciblage par session est câblé
 - [ ] UI : échéance/aménagement dérogatoire par apprenant (`due_override`) — colonne existe, aucun écran
-- [ ] GBK-006 : import CSV/XLSX de notes avec prévisualisation/mapping de personnes/doublons/rapport d'erreurs — l'export seul est fait
 - [ ] Job serveur de scan antivirus des fichiers (`submission_files.scan_status`) — colonne prête, aucun job
 - [ ] URLs de téléchargement signées courte durée pour les fichiers
 - [ ] Connecteur antiplagiat (interface only — non-objectif V1 explicite, mais l'interface elle-même n'existe pas)
@@ -639,6 +657,6 @@ conditions réelles).
 
 1. ~~**07 (agrégats analytics)**~~ — fait : projections journalières + génération de signaux de risque (voir §07). Reste ouvert : dashboards (consommateurs des projections) et psychométrie d'item (bloquée par 08).
 2. ~~**09 (temps réel + participation anon + écran public participant)**~~ — fait : `join_live_run`/anon/Realtime + `/live/:code` + `/live/:code/room` (voir §09). Reste ouvert : l'écran projeté/grand écran séparé et la réponse aux formats sondage/priorisation/matrice (eux-mêmes bloqués par l'absence d'éditeur staff pour les créer).
-3. ~~**01 (rubriques + gradebook consolidé)**~~ — fait (voir §01). Reste ouvert : import CSV/XLSX de notes (GBK-006), dashboards de visualisation (07).
+3. ~~**01 (rubriques + gradebook consolidé)**~~ — fait, y compris l'import CSV/XLSX (GBK-006, voir §01). Reste ouvert : dashboards de visualisation (07).
 4. ~~**04 (LTI 1.3 Core)**~~ — fait pour le lancement (voir §04). Reste ouvert, par ordre : SSO OIDC/SAML général (étape 1 de l'ordre de livraison, sautée pour attaquer LTI Tool en premier car c'est l'intégration la plus rentable), UI admin pour enregistrer une plateforme et relier un `sub`, Deep Linking/AGS/NRPS, puis QTI 3/SCIM/OneRoster/API publique.
 5. Le reste (05 socle accessibilité transverse, 08 nouveaux types, 10 localisation) peut suivre l'ordre recommandé du README du programme.

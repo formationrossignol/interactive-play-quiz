@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Download, TableProperties } from "lucide-react";
+import { Download, TableProperties, Upload } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/ui/page-header";
 import { ExplorerEmptyState } from "@/components/content/ExplorerEmptyState";
@@ -10,6 +10,7 @@ import { showError } from "@/lib/errorTaxonomy";
 import { useSEO } from "@/hooks/useSEO";
 import { myOrgMemberships, type OrgMembership } from "@/lib/org/orgRepo";
 import { usernamesByIds } from "@/lib/sharing/sharingRepo";
+import { GradebookImportDialog } from "@/components/lms/GradebookImportDialog";
 import {
   listGradeResultsForItems,
   listSessionGradeItems,
@@ -41,6 +42,7 @@ function cellDisplay(cell: GradeCell, maxPoints: number): string {
 interface LearnerRow {
   learnerId: string;
   name: string;
+  username: string | null;
   enrollmentStatus: EnrollmentStatus;
 }
 
@@ -53,6 +55,8 @@ function SessionGradebook({ orgId, session }: { orgId: string; session: CourseSe
   const [statusFilter, setStatusFilter] = useState<EnrollmentStatus | "all">("all");
   const [expandedTotal, setExpandedTotal] = useState<string | null>(null);
   const [exporting, setExporting] = useState<GradebookExportFormat | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -75,6 +79,7 @@ function SessionGradebook({ orgId, session }: { orgId: string; session: CourseSe
         setRoster(relevant.map((e) => ({
           learnerId: e.learner_id,
           name: nameById.get(e.learner_id) ? `@${nameById.get(e.learner_id)}` : "Apprenant",
+          username: nameById.get(e.learner_id) ?? null,
           enrollmentStatus: e.status,
         })).sort((a, b) => a.name.localeCompare(b.name, "fr")));
       } catch (err) {
@@ -84,7 +89,7 @@ function SessionGradebook({ orgId, session }: { orgId: string; session: CourseSe
       }
     })();
     return () => { cancelled = true; };
-  }, [orgId, session.id]);
+  }, [orgId, session.id, reloadKey]);
 
   const resultsByLearnerAndItem = useMemo(() => {
     const map = new Map<string, Map<string, GradeResult>>();
@@ -156,11 +161,22 @@ function SessionGradebook({ orgId, session }: { orgId: string; session: CourseSe
 
   if (items.length === 0) {
     return (
-      <ExplorerEmptyState
-        icon={<TableProperties size={27} />}
-        title="Aucune note à consolider pour cette session"
-        body="Publiez des notes de devoir, d'examen ou d'évaluation manuelle pour cette session — elles apparaîtront ici automatiquement."
-      />
+      <div className="space-y-4">
+        <ExplorerEmptyState
+          icon={<TableProperties size={27} />}
+          title="Aucune note à consolider pour cette session"
+          body="Publiez des notes de devoir, d'examen ou d'évaluation manuelle pour cette session — elles apparaîtront ici automatiquement. Vous pouvez aussi importer une première colonne de notes."
+          action={<Button variant="outline" size="sm" onClick={() => setImportOpen(true)}><Upload /> Importer un CSV/XLSX</Button>}
+        />
+        <GradebookImportDialog
+          open={importOpen}
+          onOpenChange={setImportOpen}
+          orgId={orgId}
+          sessionId={session.id}
+          roster={roster.map((r) => ({ learnerId: r.learnerId, username: r.username }))}
+          onImported={() => setReloadKey((k) => k + 1)}
+        />
+      </div>
     );
   }
 
@@ -190,6 +206,9 @@ function SessionGradebook({ orgId, session }: { orgId: string; session: CourseSe
           </label>
         ))}
         <div className="ml-auto flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
+            <Upload /> Importer
+          </Button>
           <Button variant="outline" size="sm" loading={exporting === "CSV"} onClick={() => void handleExport("CSV")}>
             <Download /> CSV
           </Button>
@@ -201,6 +220,15 @@ function SessionGradebook({ orgId, session }: { orgId: string; session: CourseSe
           </Button>
         </div>
       </div>
+
+      <GradebookImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        orgId={orgId}
+        sessionId={session.id}
+        roster={roster.map((r) => ({ learnerId: r.learnerId, username: r.username }))}
+        onImported={() => setReloadKey((k) => k + 1)}
+      />
 
       <div className="ap-card overflow-hidden p-0">
         <div className="overflow-x-auto">
