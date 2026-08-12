@@ -324,9 +324,43 @@ filtrait que les lignes `learner` avec dérogation, omettait `group`/
 limite que le reste de cette passe) — vérifié par lecture du code,
 `tsc`/`eslint` propres.
 
+Depuis cette passe (`20260813010000_assignment_due_reminders.sql`) :
+notifications programmées (J-7/J-1/retard). `notifications`/
+`notification_preferences` et toute la surface d'affichage
+(`NotificationCenter.tsx`, `/notifications`, realtime) existaient déjà et
+fonctionnaient de bout en bout (utilisés depuis
+`20260811050000_lms_reconciliation.sql` pour les notifications de note
+publiée) — rien à construire côté UI, seulement le générateur.
+`_generate_assignment_due_reminders_internal()`, branché comme 4ᵉ étape
+isolée de `run_scheduled_lms_analytics_jobs()` (déjà nocturne depuis
+`20260812020000`). Résolution : `effective_assignment_due_at()` par
+apprenant (spec 05), pas `assignments.due_at` brut — même précédent que la
+règle `overdue` de `generate_risk_signals()`, respecte donc les
+aménagements (`extended_deadline` décale le rappel, `no_time_limit`
+l'annule entièrement, retour `null`). Expansion cible (qui reçoit
+l'échéance) : même CTE d'union session/groupe/apprenant que cette même
+règle `overdue` utilise déjà pour `assignment_targets` — pas
+`assignment_visible_to_learner()`, qui ne répond que pour une paire à la
+fois, pas pour énumérer tout le monde. Exclut qui a déjà remis (même
+prédicat `left join submissions ... where s.id is null or s.status =
+'draft'`). Dédup : `notifications` n'a ni contrainte unique ni colonne de
+statut à exploiter (contrairement au cycle ouvert/résolu de
+`risk_signals`) — un rappel par (apprenant, devoir, type) tiré une seule
+fois, jamais rejoué, via `metadata->>'assignment_id'` +
+`metadata->>'reminder_kind'`, même logique de dédup que
+`generate_risk_signals()` applique déjà par devoir sur `factors->>'assignment_id'`.
+Catégorie `system` réutilisée (déjà celle des notifications de note
+publiée, toujours activée — pas de nouveau bouton de préférence à
+construire) plutôt qu'une nouvelle valeur de contrainte + icône dans
+`NotificationItem.tsx` pour un seul générateur. **Non testé en conditions
+réelles** (même limite que le reste de cette passe : pas de compte
+staff/apprenant local, et comportement du cron lui-même pas vérifiable
+sans attendre une exécution nocturne réelle) — vérifié par lecture du SQL,
+migration appliquée sans erreur (`supabase db push`, `migration list`
+confirmé synchronisé).
+
 **Reste à faire** :
 - [ ] Job serveur de scan antivirus des fichiers (`submission_files.scan_status`) — colonne prête, aucun job ; les fichiers uploadés restent `pending` indéfiniment ; vendor à choisir (voir discussion 2026-08-12 — aucune option marketplace, service externe direct requis)
-- [ ] Notifications programmées (J-7/J-1/retard) — table `notifications` existe, rien ne les déclenche pour les devoirs
 - [ ] Double correction / correction anonyme (GRD-005) — colonne `is_anonymous` posée, pas de flux de levée d'anonymat auditée
 
 ## 02 — Inscriptions, sessions et gestion des apprenants

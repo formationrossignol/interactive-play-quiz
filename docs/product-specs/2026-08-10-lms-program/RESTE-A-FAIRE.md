@@ -19,12 +19,12 @@ pouvoir s'y référer facilement.
   wrapper vérifié (signature/comportement inchangés) + fonction interne non
   vérifiée, jamais accordée à `authenticated`/`anon`. ~~Balayage planifié de
   `release_state` (06)~~ branché depuis (`20260812130000_release_state_date_and_sweep.sql`,
-  voir §06) comme 3ᵉ étape du même job. Reste bloqué par l'absence de
-  logique métier (pas seulement de planification) : les rappels d'échéance
-  J-7/J-1 (01), les notifications programmées (01), les synchronisations
-  SCIM/OneRoster planifiées (04), la livraison de webhooks en file (04) —
-  l'infrastructure existe maintenant pour les brancher, mais aucune de ces
-  fonctions n'existe encore.
+  voir §06) comme 3ᵉ étape du même job. ~~Rappels d'échéance J-7/J-1/retard
+  (01)~~ branchés comme 4ᵉ étape (`20260813010000_assignment_due_reminders.sql`,
+  voir §01). Reste bloqué par l'absence de logique métier (pas seulement de
+  planification) : les synchronisations SCIM/OneRoster planifiées (04), la
+  livraison de webhooks en file (04) — l'infrastructure existe maintenant
+  pour les brancher, mais aucune de ces fonctions n'existe encore.
 - ~~**Le moteur de correction de la spec 08 (`item_answer_keys` jamais lu)**~~
   `submit_assessment_response()` le lit désormais (`20260812060000_assessment_correction_engine.sql`,
   voir §08). Débloque réellement la projection journalière **item**, faite
@@ -53,7 +53,7 @@ pouvoir s'y référer facilement.
 - [x] UI : vue gradebook consolidée (GBK-001 à GBK-006) — `/lms/gradebook` : matrice apprenant × grade_item par session, sous-totaux par catégorie avec coefficient (`grade_items.weight`) et exclusion de la plus basse note togglable, formule exposée par total (GBK-004), export CSV/XLSX/PDF neutralisant les formules et import CSV/XLSX (GBK-006 — `import_gradebook_csv()`, `20260812080000_gradebook_csv_import.sql` : nouvelle colonne `grade_items` source_type='manual' + `grade_results`, correspondance des personnes par nom d'utilisateur côté client contre l'effectif de la session déjà chargé, prévisualisation avec statut par ligne — OK/introuvable/doublon/note hors barème —, tout-ou-rien server-side), simulation apprenant « si je reçois X » client-only dans « Mes notes » (GBK-005). **Reste** : dashboards visuels (07)
 - [ ] Job serveur de scan antivirus des fichiers (`submission_files.scan_status`) — colonne prête, aucun job (les fichiers uploadés restent `pending` indéfiniment tant que ce job n'existe pas)
 - [x] Connecteur antiplagiat (interface only — non-objectif V1 explicite) — `20260812220000_plagiarism_check_interface.sql` : pas de vendor (hors scope V1 assumé), colonnes `plagiarism_check_status`/`note`/`checked_by`/`checked_at` sur `submissions` + RPC `set_plagiarism_check()` (staff seulement, aucune policy d'écriture directe n'existait sur `submissions`). UI `Assignments.tsx::PlagiarismCheckControl` dans `GradingPanel` — statut + note/lien externe, saisi manuellement par le staff après vérification hors système
-- [ ] Notifications programmées (J-7/J-1/retard) — table `notifications` existe, rien ne les déclenche pour les devoirs (bloqué par : pas d'ordonnanceur)
+- [x] Notifications programmées (J-7/J-1/retard) — `20260813010000_assignment_due_reminders.sql`. `_generate_assignment_due_reminders_internal()`, 4ᵉ étape isolée de `run_scheduled_lms_analytics_jobs()` (déjà nocturne). Résout `effective_assignment_due_at()` par apprenant (pas `due_at` brut — respecte les aménagements, `no_time_limit` désactive le rappel), expansion cible session/groupe/apprenant (même CTE que la règle `overdue` de `generate_risk_signals()`), exclut qui a déjà remis. Dédup via `metadata->>'assignment_id'`+`reminder_kind` (pas de colonne dédiée sur `notifications`, contrairement à `risk_signals.status`) — un rappel par (apprenant, devoir, type) une seule fois, jamais rejoué. Catégorie `system` réutilisée (déjà celle des notifications de note publiée) — aucune UI nouvelle, `NotificationCenter`/`/notifications` existaient déjà et fonctionnent tels quels
 - [ ] Double correction / correction anonyme (GRD-005) — colonne `is_anonymous` posée, pas de flux de levée d'anonymat auditée
 
 ## 02 — Inscriptions, sessions et gestion des apprenants
