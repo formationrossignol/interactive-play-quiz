@@ -707,9 +707,46 @@ au moment de ce commit**, et non vérifiable en conditions réelles sans
 attendre une exécution nocturne après déploiement (même limite que le
 reste du programme pour tout ce qui dépend du cron).
 
+Depuis cette passe (`20260812210000_score_competency_rule_evaluators.sql`) :
+évaluateurs `score`/`compétence`. Résolution (pas devinée avant, cf.
+ci-dessus) : deux systèmes de note parallèles existent
+(`grade_results`/`grade_items`, spec 01 — déjà ce que
+`activity_completed_for_learner()` résout, déjà branché sur le trigger
+`grade_results` existant ; et `assessment_attempts.percentage`, spec 08 —
+aucun trigger de recompute nulle part). `score` résout contre
+`grade_results`/`grade_items`, même convention `target_id =
+grade_items.source_id` qu'`activity_completed` utilise déjà (même
+ambiguïté inter-`source_type` déjà acceptée par ce précédent, pas
+introduite ici) : zéro nouvelle plomberie événementielle. Base de
+comparaison : pourcentage `points/max_points` (comme déjà affiché au
+staff dans le gradebook), deux opérateurs `gte`/`lte` (miroir du couple
+`after`/`before` de `date`, couvre le « supérieur/inférieur » d'ADP-002
+sans inventer « dans une plage » que `date` n'a pas non plus). `compétence`
+résout contre `mastery_scale_levels.position` (seul ordinal comparable
+entre échelles — même concept que l'agrégation `20260812120000`), la
+valeur cible étant un `level_code` résolu sur l'échelle propre à
+l'apprenant plutôt qu'une comparaison de chaîne. Recompute événementiel :
+`grade_results` avait déjà son trigger (rien à faire) ; `competency_mastery`
+n'en avait aucun — plutôt que d'en greffer un sur la table (deux writers à
+formes différentes), `recompute_release_state()` est appelé directement
+depuis `recompute_competency_mastery()` et `set_manual_mastery_level()`
+(`20260812120000`), au point exact où chacune détecte déjà un changement de
+niveau (juste à côté de leur `emit_learning_event()` existant) — satisfait
+le critère d'acceptation ADP-004 (« un score modifié et republié recalcule
+les accès dépendants ») pour les deux sources sans dépendre uniquement du
+balayage nocturne (qui les couvre quand même, comme il couvre déjà `date`).
+`rule_definition_targets()` (graphe de cycles) non touché — `score`/
+`compétence` n'y participent pas, même posture que `date`. UI :
+`Automation.tsx::RuleSets`, sélecteur étendu à 4 types de condition, champs
+UUID+opérateur+seuil (score) ou UUID+opérateur+code de niveau (compétence),
+même convention UUID brut que le reste de cet écran. **Non testé en
+conditions réelles** (même limite que le reste de cette passe : pas de
+compte staff local) — vérifié par lecture du SQL, `tsc`/`eslint` propres,
+migration appliquée sans erreur (`supabase db push`, `migration list`
+confirmé synchronisé).
+
 **Reste à faire** :
-- [ ] UI de construction en phrases « Quand [condition], alors [action] » — l'UI actuelle construit une seule condition à la fois (`activity_completed` ou `date`), pas le DSL complet (AND/OR, groupes, scores, compétences...)
-- [ ] Évaluateur pour les sources `score`/`compétence` — le DSL les accepte et les affiche, `evaluate_rule_definition()` les traite toujours en échec fermé
+- [ ] UI de construction en phrases « Quand [condition], alors [action] » — l'UI actuelle construit une seule condition à la fois par règle, pas le DSL complet (AND/OR, groupes)
 - [ ] Simulation « voir comme cet apprenant » / dry-run avant publication (ADP-008, AUT-004)
 - [ ] Test de positionnement / remédiation (ADP-009/010/011)
 - [ ] `follow_up_tasks` — table posée, aucun écran ni déclencheur
@@ -946,9 +983,32 @@ staff/apprenant local pour dérouler un cycle complet création d'item →
 assemblage → publication → tentative → note ; **migration pas encore
 déployée en prod**.
 
+Depuis cette passe (`20260812200000_assessment_scoring_simulation.sql`) :
+simulation de barème avant publication (ASM-013). La spec tient en une
+phrase (« le barème est simulable sur des réponses exemples avant
+publication »), aucun critère d'acceptation dédié. Contrainte trouvée en
+creusant : `item_answer_keys` n'a **aucune policy select pour
+`authenticated`**, pas même staff (« correct answers are server-only ») —
+un simulateur ne peut donc pas lire la clé côté client, il doit passer par
+une RPC serveur. Plutôt que de réécrire l'algorithme de notation (risque de
+divergence avec la vraie correction), `simulate_item_scoring()` appelle
+`public._score_assessment_response()` telle quelle — le même comparateur
+pur que `submit_assessment_response()` utilise déjà, `immutable`, sans
+I/O — et ne renvoie que le résultat (`is_correct`/`points_earned`/
+`max_points`), jamais `correct_answer`, conforme au texte de permissions
+de la spec. N'écrit jamais dans `assessment_responses`/
+`assessment_attempts` (pas de pollution des vraies tentatives/analytics).
+UI : `ItemBank.tsx::SimulateForm`, bouton « Simuler » par révision dans
+`ItemRevisions` — formulaire de réponse hypothétique construit à partir de
+`revision.prompt` (jamais secret, seule `correct_answer` l'est), adapté aux
+4 types notables (vrai/faux, choix unique/multiple, réponse courte).
+**Non testé en conditions réelles** (même limite que le reste de cette
+passe : pas de compte staff local) — vérifié par lecture du SQL,
+`tsc`/`eslint` propres, migration appliquée sans erreur (`supabase db
+push`, `migration list` confirmé synchronisé).
+
 **Reste à faire** :
 - [ ] Assemblage réel d'une évaluation — tirage aléatoire (sections `pool`, `assessment_pool_rules`) : refusé explicitement, aucun exécuteur
-- [ ] Simulation du barème sur des réponses exemples avant publication (ASM-013)
 - [ ] Barèmes riches pour les 17 autres `item_type` (ranking « ordre partiel », matching, cloze, et les 8 types ASM-017-024) — aucun contrat de données, aucune UI d'auteur
 - [ ] Nouveaux types d'interaction (passage, vidéo interactive, audio/vidéo, dessin, labeling, math/graphique, fichier, code — ASM-017 à ASM-024) : le schéma accepte n'importe quel `item_type`/`prompt` JSON mais aucun éditeur/lecteur n'existe pour ces types
 - [ ] Rescore en masse avec prévisualisation d'impact (`rescore_jobs` posé, aucun exécuteur)

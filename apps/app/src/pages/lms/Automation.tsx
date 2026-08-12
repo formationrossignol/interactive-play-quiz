@@ -32,17 +32,31 @@ const triggerLabel: Record<string, string> = {
   mastery_expired: "Maîtrise expirée",
 };
 
-type ConditionKind = "activity_completed" | "date";
+type ConditionKind = "activity_completed" | "date" | "score" | "competency";
 type DateOperator = "after" | "before";
+/** Mirrors date's after/before pair — covers ADP-002's "supérieur/inférieur"
+ *  without inventing "dans une plage" nobody asked the date evaluator for
+ *  either (see 20260812210000_score_competency_rule_evaluators.sql). */
+type ThresholdOperator = "gte" | "lte";
 
 interface ConditionDraft {
   kind: ConditionKind;
   prereqId: string;
   dateOperator: DateOperator;
   dateValue: string;
+  scoreTargetId: string;
+  scoreOperator: ThresholdOperator;
+  scoreValue: string;
+  competencyTargetId: string;
+  competencyOperator: ThresholdOperator;
+  competencyLevelCode: string;
 }
 
-const EMPTY_DRAFT: ConditionDraft = { kind: "activity_completed", prereqId: "", dateOperator: "after", dateValue: "" };
+const EMPTY_DRAFT: ConditionDraft = {
+  kind: "activity_completed", prereqId: "", dateOperator: "after", dateValue: "",
+  scoreTargetId: "", scoreOperator: "gte", scoreValue: "",
+  competencyTargetId: "", competencyOperator: "gte", competencyLevelCode: "",
+};
 
 function RuleSets({ orgId }: { orgId: string }) {
   const [ruleSets, setRuleSets] = useState<RuleSet[]>([]);
@@ -81,9 +95,15 @@ function RuleSets({ orgId }: { orgId: string }) {
     if (draft.kind === "activity_completed") {
       if (!draft.prereqId.trim()) return;
       definition = { source: "activity_completed", target_id: draft.prereqId.trim() };
-    } else {
+    } else if (draft.kind === "date") {
       if (!draft.dateValue) return;
       definition = { source: "date", operator: draft.dateOperator, value: new Date(draft.dateValue).toISOString() };
+    } else if (draft.kind === "score") {
+      if (!draft.scoreTargetId.trim() || !draft.scoreValue) return;
+      definition = { source: "score", target_id: draft.scoreTargetId.trim(), operator: draft.scoreOperator, value: Number(draft.scoreValue) };
+    } else {
+      if (!draft.competencyTargetId.trim() || !draft.competencyLevelCode.trim()) return;
+      definition = { source: "competency", target_id: draft.competencyTargetId.trim(), operator: draft.competencyOperator, value: draft.competencyLevelCode.trim() };
     }
     setPublishing(ruleSet.id);
     try {
@@ -101,7 +121,7 @@ function RuleSets({ orgId }: { orgId: string }) {
   return (
     <section className="product-list-panel p-5">
       <div className="product-panel-heading -mx-5 -mt-5 mb-4">
-        <div><h2>Conditions de déblocage</h2><p>« Quand [activité terminée] ou [date atteinte], alors débloquer [cette activité] ». Une seule condition par règle pour l'instant ; les règles cycliques sont refusées à la publication.</p></div>
+        <div><h2>Conditions de déblocage</h2><p>« Quand [activité terminée], [date atteinte], [note], ou [compétence], alors débloquer [cette activité] ». Une seule condition par règle pour l'instant ; les règles cycliques sont refusées à la publication.</p></div>
       </div>
       <form onSubmit={handleCreate} className="flex flex-wrap items-end gap-2 mb-4">
         <div className="min-w-[280px] space-y-1">
@@ -130,14 +150,17 @@ function RuleSets({ orgId }: { orgId: string }) {
                   >
                     <option value="activity_completed">Quand une activité est terminée</option>
                     <option value="date">Quand une date est atteinte</option>
+                    <option value="score">Quand une note atteint un seuil</option>
+                    <option value="competency">Quand une compétence atteint un niveau</option>
                   </select>
-                  {draft.kind === "activity_completed" ? (
+                  {draft.kind === "activity_completed" && (
                     <Input
                       placeholder="UUID de l'activité prérequise"
                       value={draft.prereqId}
                       onChange={(e) => updateDraft(rs.id, { prereqId: e.target.value })}
                     />
-                  ) : (
+                  )}
+                  {draft.kind === "date" && (
                     <>
                       <select
                         className="h-10 rounded-md border border-input bg-background px-3 text-sm"
@@ -152,6 +175,55 @@ function RuleSets({ orgId }: { orgId: string }) {
                         className="h-10 rounded-md border border-input bg-background px-3 text-sm"
                         value={draft.dateValue}
                         onChange={(e) => updateDraft(rs.id, { dateValue: e.target.value })}
+                      />
+                    </>
+                  )}
+                  {draft.kind === "score" && (
+                    <>
+                      <Input
+                        placeholder="UUID de l'activité notée (devoir/examen)"
+                        value={draft.scoreTargetId}
+                        onChange={(e) => updateDraft(rs.id, { scoreTargetId: e.target.value })}
+                        className="min-w-[220px]"
+                      />
+                      <select
+                        className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+                        value={draft.scoreOperator}
+                        onChange={(e) => updateDraft(rs.id, { scoreOperator: e.target.value as ThresholdOperator })}
+                      >
+                        <option value="gte">Au moins</option>
+                        <option value="lte">Au plus</option>
+                      </select>
+                      <Input
+                        type="number" min={0} max={100} step="0.1"
+                        placeholder="% de la note"
+                        value={draft.scoreValue}
+                        onChange={(e) => updateDraft(rs.id, { scoreValue: e.target.value })}
+                        className="w-28"
+                      />
+                    </>
+                  )}
+                  {draft.kind === "competency" && (
+                    <>
+                      <Input
+                        placeholder="UUID de la compétence"
+                        value={draft.competencyTargetId}
+                        onChange={(e) => updateDraft(rs.id, { competencyTargetId: e.target.value })}
+                        className="min-w-[220px]"
+                      />
+                      <select
+                        className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+                        value={draft.competencyOperator}
+                        onChange={(e) => updateDraft(rs.id, { competencyOperator: e.target.value as ThresholdOperator })}
+                      >
+                        <option value="gte">Au moins le niveau</option>
+                        <option value="lte">Au plus le niveau</option>
+                      </select>
+                      <Input
+                        placeholder="Code du niveau (ex. expert)"
+                        value={draft.competencyLevelCode}
+                        onChange={(e) => updateDraft(rs.id, { competencyLevelCode: e.target.value })}
+                        className="w-40"
                       />
                     </>
                   )}
