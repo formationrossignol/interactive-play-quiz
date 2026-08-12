@@ -871,11 +871,39 @@ seul, n'affiche pas les sondages) ; **non vérifié avec un run réel** (même
 limite que le reste du programme, pas de compte staff/participant local
 pour dérouler un cycle complet).
 
+Depuis cette passe (`20260812140000_live_event_allowlist.sql`) : vraie
+allowlist (LIVE-002). `live_run_requires_auth()` traitait déjà
+`allowlist` comme `authenticated` (authentification exigée) — cette moitié
+restait correcte et n'a pas changé ; ce qui manquait, c'est que rien ne
+vérifiait ensuite l'email de l'appelant contre une vraie liste. Nouvelle
+table `live_event_allowlist` (unicité `(event_id, lower(email))` —
+« Foo@x.com » et « foo@x.com » sont la même entrée, pas deux quasi-doublons
+à repérer manuellement), nouvelle fonction `live_run_allowlist_ok()` (no-op
+pour toute `access_policy` autre que `allowlist`, échec fermé si pas
+d'`auth.uid()` ou pas de ligne correspondante) ajoutée comme second
+contrôle **indépendant** sur les 4 points d'entrée participant déjà gatés
+par `live_run_requires_auth()` (`join_live_run`/`submit_audience_question`/
+`cast_vote`/`submit_live_response`) — additif, jamais un remplacement.
+Gap réel trouvé en construisant ceci : rien ne permettait même de *choisir*
+`access_policy` à la création d'un événement (`createLiveEvent()` codait
+`anonymous` en dur) — la politique `allowlist` était inatteignable depuis
+l'UI ; sélecteur ajouté au formulaire de création. `AllowlistManager`
+(nouveau, par événement, visible seulement si `access_policy =
+'allowlist'`) : ajouter/retirer des emails. Vérifié : migration appliquée
+contre un schéma stub (Postgres jetable) avec un `auth.uid()` simulé par
+variable de session pour incarner différents appelants — appelant anonyme
+toujours rejeté (comportement `authenticated` inchangé), appelant
+authentifié mais absent de la liste rejeté avec le nouveau message,
+correspondance email insensible à la casse acceptée, un événement
+`anonymous` non affecté (no-op confirmé) ; `tsc`/`eslint` propres ; suite
+complète (335 tests) verte — **non vérifié avec un run réel** (même
+limite que le reste du programme).
+
 **Reste à faire** :
 - [ ] Mode présentateur/console modérateur *distincts* pour l'animateur lui-même (LIVE-015 mentionne aussi ça) — l'écran projeté existe, mais l'animateur utilise toujours la même console (`LiveEngagement.tsx`) qu'avant, pas une vue « présentateur » séparée de la modération
 - [x] UI d'expulsion — bouton « Expulser » par participant actif (`ParticipantManager`, dépliable depuis le compteur de participants dans `RunControls`)
 - [x] Répondre à un sondage (`poll`) — voir ci-dessus. **Reste** : `priority`/`matrix`/`brainstorm`/`ranking` n'ont toujours ni éditeur ni écran de réponse
-- [ ] Vraie table/mécanisme d'allowlist pour `access_policy = 'allowlist'` (actuellement traité comme `authenticated`, donc moins permissif que prévu plutôt que trop permissif — mais toujours pas ce que LIVE-002 décrit)
+- [x] Vraie table/mécanisme d'allowlist pour `access_policy = 'allowlist'` — voir ci-dessus
 - [ ] Formats supplémentaires : priorisation, matrice 2×2, brainstorm, classement forcé (LIVE-009 à LIVE-013) — `live_interactions.kind` les accepte, aucun éditeur/lecteur pour ces quatre-là
 - [ ] Sondages sur l'écran projeté (`LivePresenterScreen.tsx`) — l'éditeur/résultats staff et le widget participant existent, l'écran public n'en affiche toujours aucun
 - [ ] Intégrations PowerPoint/Teams/Zoom (LIVE-017/018/019)

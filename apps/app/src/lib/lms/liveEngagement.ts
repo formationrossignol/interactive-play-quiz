@@ -74,11 +74,41 @@ export async function listOrgLiveEvents(orgId: string): Promise<LiveEvent[]> {
   return (data ?? []) as LiveEvent[];
 }
 
-export async function createLiveEvent(orgId: string, title: string): Promise<LiveEvent> {
+/** LIVE-002 "politique fixée avant ouverture": access_policy is set here,
+ *  at creation (while the event is still 'draft', before activateLiveEvent),
+ *  not editable afterward — no audited-change mechanism exists for it. */
+export async function createLiveEvent(orgId: string, title: string, accessPolicy: LiveEvent['access_policy'] = 'anonymous'): Promise<LiveEvent> {
   const code = Math.random().toString(36).slice(2, 8).toUpperCase();
-  const { data, error } = await supabase.from('live_events').insert({ org_id: orgId, title, code }).select().single();
+  const { data, error } = await supabase.from('live_events').insert({ org_id: orgId, title, code, access_policy: accessPolicy }).select().single();
   if (error) throw error;
   return data as LiveEvent;
+}
+
+/** Only meaningful when the event's access_policy = 'allowlist' —
+ *  live_run_allowlist_ok() (20260812140000) is the actual server-side gate;
+ *  this is just the staff CRUD for the list it reads. */
+export interface AllowlistEntry {
+  id: string;
+  event_id: string;
+  email: string;
+  created_at: string;
+}
+
+export async function listEventAllowlist(eventId: string): Promise<AllowlistEntry[]> {
+  const { data, error } = await supabase.from('live_event_allowlist').select('*').eq('event_id', eventId).order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as AllowlistEntry[];
+}
+
+export async function addAllowlistEmail(eventId: string, email: string): Promise<AllowlistEntry> {
+  const { data, error } = await supabase.from('live_event_allowlist').insert({ event_id: eventId, email }).select().single();
+  if (error) throw error;
+  return data as AllowlistEntry;
+}
+
+export async function removeAllowlistEmail(entryId: string): Promise<void> {
+  const { error } = await supabase.from('live_event_allowlist').delete().eq('id', entryId);
+  if (error) throw error;
 }
 
 export async function activateLiveEvent(eventId: string): Promise<void> {
