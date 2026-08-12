@@ -48,7 +48,7 @@ pouvoir s'y référer facilement.
 - [ ] UI : remise fichier/audio/vidéo — seul le mode texte est câblé côté client (`response_mode` en DB supporte déjà file/url/audio/video)
 - [ ] UI : `assignment_targets` par groupe/apprenant individuel — seul le ciblage par session est câblé
 - [ ] UI : échéance/aménagement dérogatoire par apprenant (`due_override`) — colonne existe, aucun écran
-- [x] UI : vue gradebook consolidée (GBK-001 à GBK-005 pour l'essentiel) — `/lms/gradebook` : matrice apprenant × grade_item par session, sous-totaux par catégorie avec coefficient (`grade_items.weight`) et exclusion de la plus basse note togglable, formule exposée par total (GBK-004), export CSV/XLSX/PDF neutralisant les formules (GBK-006, export seul — pas l'import), simulation apprenant « si je reçois X » client-only dans « Mes notes » (GBK-005). **Reste** : GBK-006 import CSV/XLSX avec prévisualisation/mapping/doublons, dashboards visuels (07)
+- [x] UI : vue gradebook consolidée (GBK-001 à GBK-006) — `/lms/gradebook` : matrice apprenant × grade_item par session, sous-totaux par catégorie avec coefficient (`grade_items.weight`) et exclusion de la plus basse note togglable, formule exposée par total (GBK-004), export CSV/XLSX/PDF neutralisant les formules et import CSV/XLSX (GBK-006 — `import_gradebook_csv()`, `20260812080000_gradebook_csv_import.sql` : nouvelle colonne `grade_items` source_type='manual' + `grade_results`, correspondance des personnes par nom d'utilisateur côté client contre l'effectif de la session déjà chargé, prévisualisation avec statut par ligne — OK/introuvable/doublon/note hors barème —, tout-ou-rien server-side), simulation apprenant « si je reçois X » client-only dans « Mes notes » (GBK-005). **Reste** : dashboards visuels (07)
 - [ ] Job serveur de scan antivirus des fichiers (`submission_files.scan_status`) — colonne prête, aucun job
 - [ ] URLs de téléchargement signées courte durée pour les fichiers
 - [ ] Connecteur antiplagiat (interface only — non-objectif V1 explicite, mais l'interface elle-même n'existe pas)
@@ -162,7 +162,7 @@ pouvoir s'y référer facilement.
 ## Ordre suggéré pour la suite
 
 1. ~~**08 — moteur de correction (`item_answer_keys`)**~~ — fait pour l'assemblage fixe + 4 types notables (voir §08). ~~Débloque la projection journalière item (07)~~ — faite aussi (voir §07) ; reste ouvert la psychométrie ANA-010/011/012 (agrégat plus riche) et, côté 08 : tirage aléatoire (pool), simulation de barème avant publication, 17 autres types d'interaction. Ne débloque pas `extra_time` (05, système `exams` séparé).
-2. ~~**UI gradebook consolidée (01)**~~ — fait pour l'essentiel (`/lms/gradebook`, voir §01). Reste ouvert : import CSV/XLSX de notes (GBK-006), dashboards visuels (07).
+2. ~~**UI gradebook consolidée (01)**~~ — fait, y compris l'import CSV/XLSX (GBK-006, voir §01). Reste ouvert : dashboards visuels (07).
 3. ~~**04 — UI admin LTI + linking**~~ — fait (voir §04) : enregistrements/déploiements/linking/diagnostic. Reste ouvert : Deep Linking/NRPS/AGS, SSO OIDC/SAML général, QTI/SCIM/OneRoster/API publique.
 4. ~~**09 — écran projeté**~~ — fait pour le Q&A (voir §09). Reste ouvert : éditeur de formats sondage/priorisation/matrice.
 5. ~~**Un vrai ordonnanceur**~~ — fait (`pg_cron`, voir dépendances en tête de document) pour les 2 RPC qui étaient réellement prêtes. Débloque la *planification* des rappels J-7/J-1, du balayage `release_state`, de SCIM/OneRoster, des webhooks en file — mais chacun a encore besoin de sa propre logique métier avant de pouvoir être branché.

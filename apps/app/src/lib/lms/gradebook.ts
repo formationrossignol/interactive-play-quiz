@@ -272,6 +272,28 @@ export async function addRubricLevel(criterionId: string, label: string, points:
   return data as RubricLevel;
 }
 
+/** GBK-006: creates a new source_type='manual' grade_item plus one
+ *  grade_result per row, all-or-nothing (import_gradebook_csv() migration
+ *  20260812080000). Caller is expected to have already resolved/filtered
+ *  rows via gradebookImport.ts's preview — the RPC re-validates enrollment
+ *  and points range regardless and aborts the whole import on any bad row. */
+export async function importGradebookCsv(input: {
+  orgId: string; sessionId: string; title: string; category: string; weight: number; maxPoints: number;
+  rows: Array<{ learnerId: string; points: number }>;
+}): Promise<GradeItem> {
+  const { data, error } = await supabase.rpc('import_gradebook_csv', {
+    p_org_id: input.orgId,
+    p_session_id: input.sessionId,
+    p_title: input.title,
+    p_category: input.category,
+    p_weight: input.weight,
+    p_max_points: input.maxPoints,
+    p_rows: input.rows.map((r) => ({ learner_id: r.learnerId, points: r.points })),
+  });
+  if (error) throw error;
+  return data as GradeItem;
+}
+
 export async function myGradeResults(): Promise<GradeResult[]> {
   const { data, error } = await supabase
     .from('grade_results')
