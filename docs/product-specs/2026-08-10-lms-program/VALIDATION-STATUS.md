@@ -253,8 +253,37 @@ pas, correspondance email/nom d'utilisateur insensible à la casse et au
 propres ; suite complète (335 tests) verte — **non vérifié avec des
 comptes/organisation réels** (même limite que le reste de cette passe).
 
+Depuis cette passe (`20260812110000_enrollment_bulk_actions.sql`) : actions
+en masse (ENR-015, partiel). `transition_enrollment()`/`enroll_in_session()`
+géraient déjà l'autorisation staff, l'audit et l'idempotence individuellement
+— annuler et déplacer les réutilisent tels quels côté client sur une
+sélection multiple plutôt que d'ajouter une nouvelle primitive bulk ;
+déplacer est un retrait puis une réinscription (deux appels existants), pas
+une transaction atomique : si le deuxième appel échoue après le premier,
+l'apprenant se retrouve inscrit nulle part plutôt que dupliqué, et cette
+ligne remonte « échec » dans le rapport plutôt que d'être masquée. Seul
+« prolonger » avait besoin d'un nouvel écrivain : `effective_due_at` n'était
+touché par rien après la création de l'inscription.
+`extend_enrollment_due_date()` l'écrit et journalise l'ancien/nouveau via
+`enrollment_history` (`from_status`/`to_status` inchangés puisqu'il ne
+s'agit pas d'une transition de statut ; l'ancien/nouveau créneau vit dans
+`reason` — un seul journal d'audit par inscription plutôt que d'en ajouter
+un second). UI : panneau « Effectif » dépliable par session
+(`SessionRosterPanel.tsx`, `Sessions.tsx::StaffSessions`), sélection
+multiple, motif partagé optionnel, rapport OK/échec par ligne après
+exécution. **Non repris** : « inscrire » (ENR-014 le couvre déjà),
+« affecter un formateur » (`session_trainers` est déjà en écriture directe
+via RLS `for all`, mais c'est une action de session, pas une action sur
+l'effectif sélectionné), « envoyer une relance » (contenu/déclenchement pas
+défini — recoupe le blocage « notifications programmées » de 01/07 en tête
+de RESTE-A-FAIRE.md). Vérifié : migration appliquée contre un schéma stub
+(Postgres jetable) — `effective_due_at` mis à jour, `enrollment_history`
+porte bien l'ancien → nouveau créneau ; `tsc`/`eslint` propres ; suite
+complète (335 tests) verte — **non vérifié avec des inscriptions réelles**
+(même limite que le reste de cette passe).
+
 **Reste à faire** :
-- [ ] UI : actions en masse (inscrire, déplacer, annuler, prolonger — ENR-015)
+- [ ] UI : « affecter un formateur » en masse et « envoyer une relance » (ENR-015, reste de la liste)
 - [ ] Auto-inscription avec règles (domaine email, code, paiement, prérequis — ENR-013)
 - [ ] Vue apprenant « Mes formations » complète avec dates effectives/échéances relatives recalculées (ENR-017, la V1 actuelle liste juste par statut)
 - [ ] Calcul de complétion versionné par politique (activités obligatoires, score, présence)

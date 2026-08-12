@@ -14,6 +14,7 @@ import { myOrgMemberships, type OrgMembership } from "@/lib/org/orgRepo";
 import { listContent } from "@/lib/content/contentRepo";
 import type { ContentRow } from "@/lib/content/types";
 import { EnrollmentImportDialog } from "@/components/lms/EnrollmentImportDialog";
+import { SessionRosterPanel } from "@/components/lms/SessionRosterPanel";
 import {
   acceptWaitlistOffer,
   createCourseSession,
@@ -63,6 +64,7 @@ function StaffSessions({ orgId }: { orgId: string }) {
   const [capacity, setCapacity] = useState("");
   const [courseId, setCourseId] = useState("");
   const [importingSessionId, setImportingSessionId] = useState<string | null>(null);
+  const [rosterSessionId, setRosterSessionId] = useState<string | null>(null);
 
   const reload = () => {
     listOrgSessions(orgId).then(setSessions).catch(showError).finally(() => setLoading(false));
@@ -164,21 +166,29 @@ function StaffSessions({ orgId }: { orgId: string }) {
       ) : (
         <ul className="space-y-2" aria-label="Sessions de l'organisation">
           {sessions.map((s) => (
-            <li key={s.id} className="flex items-center justify-between rounded-md border p-3">
-              <div>
-                <p className="font-medium">{s.label} <span className="text-muted-foreground text-sm">({s.code})</span></p>
-                <p className="text-sm text-muted-foreground">
-                  {sessionStatusLabel[s.status]} · {s.capacity ? `${s.capacity} places` : "capacité illimitée"}
-                </p>
+            <li key={s.id} className="rounded-md border p-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">{s.label} <span className="text-muted-foreground text-sm">({s.code})</span></p>
+                  <p className="text-sm text-muted-foreground">
+                    {sessionStatusLabel[s.status]} · {s.capacity ? `${s.capacity} places` : "capacité illimitée"}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button variant="ghost" size="sm" onClick={() => setRosterSessionId((cur) => (cur === s.id ? null : s.id))}>
+                    <Users size={14} /> Effectif
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => setImportingSessionId(s.id)}>
+                    <Upload size={14} /> Importer
+                  </Button>
+                  {s.status === "draft" && (
+                    <Button variant="ghost" size="sm" onClick={() => handlePublish(s.id)}>Publier</Button>
+                  )}
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" size="sm" onClick={() => setImportingSessionId(s.id)}>
-                  <Upload size={14} /> Importer
-                </Button>
-                {s.status === "draft" && (
-                  <Button variant="ghost" size="sm" onClick={() => handlePublish(s.id)}>Publier</Button>
-                )}
-              </div>
+              {rosterSessionId === s.id && (
+                <SessionRosterPanel session={s} otherSessions={sessions.filter((other) => other.id !== s.id)} />
+              )}
             </li>
           ))}
         </ul>

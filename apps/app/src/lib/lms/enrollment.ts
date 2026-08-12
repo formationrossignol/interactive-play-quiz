@@ -171,6 +171,18 @@ export async function transitionEnrollment(enrollmentId: string, toStatus: Enrol
   return data as Enrollment;
 }
 
+/** ENR-015 "prolonger": first writer of effective_due_at after creation —
+ *  audited through enrollment_history like every other enrollment change. */
+export async function extendEnrollmentDueDate(enrollmentId: string, newDueAt: string, reason?: string): Promise<Enrollment> {
+  const { data, error } = await supabase.rpc('extend_enrollment_due_date', {
+    p_enrollment_id: enrollmentId,
+    p_new_due_at: newDueAt,
+    p_reason: reason ?? null,
+  });
+  if (error) throw error;
+  return data as Enrollment;
+}
+
 /** All waitlist entries belonging to the current user, any status —
  *  callers filter to 'offered' for the accept/decline banner. */
 export async function myWaitlistEntries(): Promise<WaitlistEntry[]> {
