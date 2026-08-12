@@ -23,6 +23,8 @@ export interface Assignment {
   created_at: string;
 }
 
+export type PlagiarismCheckStatus = 'not_requested' | 'pending' | 'reviewed';
+
 export interface Submission {
   id: string;
   assignment_id: string;
@@ -31,6 +33,10 @@ export interface Submission {
   active_version: number;
   created_at: string;
   updated_at: string;
+  plagiarism_check_status: PlagiarismCheckStatus;
+  plagiarism_check_note: string | null;
+  plagiarism_checked_by: string | null;
+  plagiarism_checked_at: string | null;
 }
 
 export interface GradeResult {
@@ -236,6 +242,18 @@ export async function listAssignmentSubmissions(assignmentId: string): Promise<S
     .order('updated_at', { ascending: false });
   if (error) throw error;
   return (data ?? []) as Submission[];
+}
+
+/** Interface only (RESTE-A-FAIRE §01): no vendor connector, staff record
+ *  the outcome of a check run outside this system (Turnitin/Compilatio/…),
+ *  same posture as a manual grade override. No direct staff write policy
+ *  exists on submissions — this RPC is the only writer. */
+export async function setPlagiarismCheck(submissionId: string, status: PlagiarismCheckStatus, note?: string): Promise<Submission> {
+  const { data, error } = await supabase.rpc('set_plagiarism_check', {
+    p_submission_id: submissionId, p_status: status, p_note: note ?? null,
+  });
+  if (error) throw error;
+  return data as Submission;
 }
 
 export async function mySubmission(assignmentId: string): Promise<Submission | null> {

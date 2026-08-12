@@ -34,12 +34,14 @@ import {
   publishAssignment,
   publishSubmissionGrade,
   setLearnerDueOverride,
+  setPlagiarismCheck,
   submitAssignment,
   uploadSubmissionFiles,
   type Assignment,
   type AssignmentTarget,
   type GradeItem,
   type GradeResult,
+  type PlagiarismCheckStatus,
   type Rubric,
   type RubricCriterion,
   type RubricRating,
@@ -344,6 +346,54 @@ function DueOverridesPanel({ assignment }: { assignment: Assignment }) {
   );
 }
 
+/** RESTE-A-FAIRE §01: "Connecteur antiplagiat (interface only —
+ *  non-objectif V1 explicite, mais l'interface elle-même n'existe pas)."
+ *  No vendor connector — staff record the outcome of a check run outside
+ *  this system (Turnitin/Compilatio/…), same posture as a manual grade
+ *  override. */
+const PLAGIARISM_LABEL: Record<PlagiarismCheckStatus, string> = {
+  not_requested: "Non demandé", pending: "En cours", reviewed: "Vérifié",
+};
+
+function PlagiarismCheckControl({ submission, onChange }: { submission: Submission; onChange: (s: Submission) => void }) {
+  const [status, setStatus] = useState<PlagiarismCheckStatus>(submission.plagiarism_check_status);
+  const [note, setNote] = useState(submission.plagiarism_check_note ?? "");
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      onChange(await setPlagiarismCheck(submission.id, status, note.trim() || undefined));
+    } catch (err) {
+      showError(err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-wrap items-center gap-2 mt-1">
+      <select
+        className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+        value={status}
+        onChange={(e) => setStatus(e.target.value as PlagiarismCheckStatus)}
+        aria-label="Statut antiplagiat"
+      >
+        {(Object.keys(PLAGIARISM_LABEL) as PlagiarismCheckStatus[]).map((s) => (
+          <option key={s} value={s}>{PLAGIARISM_LABEL[s]}</option>
+        ))}
+      </select>
+      <Input
+        placeholder="Note / lien du rapport externe"
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        className="h-8 text-xs w-56"
+      />
+      <Button variant="ghost" size="sm" loading={saving} onClick={handleSave}>Enregistrer</Button>
+    </div>
+  );
+}
+
 function GradingPanel({ assignment, rubrics }: { assignment: Assignment; rubrics: Rubric[] }) {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
@@ -414,6 +464,10 @@ function GradingPanel({ assignment, rubrics }: { assignment: Assignment; rubrics
                   <p className="text-sm font-medium">Apprenant {s.learner_id.slice(0, 8)}</p>
                   <p className="text-sm text-muted-foreground">{s.status}</p>
                   <SubmissionFilesList submission={s} />
+                  <PlagiarismCheckControl
+                    submission={s}
+                    onChange={(updated) => setSubmissions((prev) => prev.map((x) => (x.id === updated.id ? updated : x)))}
+                  />
                 </div>
                 {s.status !== "graded" && (
                   <div className="flex items-center gap-2">
