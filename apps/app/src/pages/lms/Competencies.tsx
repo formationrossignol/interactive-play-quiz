@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Award, Plus, Target } from "lucide-react";
+import { Award, Link2, Plus, Target, Trash2 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/ui/page-header";
 import { ExplorerEmptyState } from "@/components/content/ExplorerEmptyState";
@@ -13,14 +13,181 @@ import { myOrgMemberships, type OrgMembership } from "@/lib/org/orgRepo";
 import {
   addCompetency,
   createFramework,
+  createCompetencyAlignment,
+  deleteCompetencyAlignment,
+  listCompetencyAlignments,
   listFrameworkCompetencies,
   listOrgFrameworks,
   myMastery,
   publishFramework,
+  type AlignmentTargetType,
   type Competency,
+  type CompetencyAlignment,
   type CompetencyFramework,
   type CompetencyMastery,
 } from "@/lib/lms/competencies";
+import { getRubricCriteria, listOrgAssignments, listOrgRubrics, type Assignment, type Rubric, type RubricCriterion } from "@/lib/lms/gradebook";
+
+const inputClass = "h-9 w-full rounded-md border bg-transparent px-2 text-sm";
+const inputStyle = { borderColor: "var(--ap-line)", color: "var(--ap-ink)" };
+
+const EVIDENCE_ROLE_LABEL: Record<CompetencyAlignment["evidence_role"], string> = {
+  teaching: "Enseignement", practice: "Pratique", assessment: "Évaluation",
+};
+
+function AlignmentManager({ orgId, competency }: { orgId: string; competency: Competency }) {
+  const [alignments, setAlignments] = useState<CompetencyAlignment[]>([]);
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [rubrics, setRubrics] = useState<Rubric[]>([]);
+  const [criteriaByRubric, setCriteriaByRubric] = useState<Map<string, RubricCriterion[]>>(new Map());
+  const [loading, setLoading] = useState(true);
+  const [targetType, setTargetType] = useState<AlignmentTargetType>("assignment");
+  const [assignmentId, setAssignmentId] = useState("");
+  const [rubricId, setRubricId] = useState("");
+  const [criterionId, setCriterionId] = useState("");
+  const [weight, setWeight] = useState("1");
+  const [evidenceRole, setEvidenceRole] = useState<CompetencyAlignment["evidence_role"]>("assessment");
+  const [isRequired, setIsRequired] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setLoading(true);
+    Promise.all([
+      listCompetencyAlignments(competency.id),
+      listOrgAssignments(orgId),
+      listOrgRubrics(orgId),
+    ])
+      .then(([a, as, r]) => { setAlignments(a); setAssignments(as); setRubrics(r); })
+      .catch(showError)
+      .finally(() => setLoading(false));
+  }, [competency.id, orgId]);
+
+  useEffect(() => {
+    if (!rubricId || criteriaByRubric.has(rubricId)) return;
+    getRubricCriteria(rubricId).then((criteria) => {
+      setCriteriaByRubric((prev) => new Map(prev).set(rubricId, criteria));
+    }).catch(showError);
+  }, [rubricId, criteriaByRubric]);
+
+  const assignmentById = useMemo(() => new Map(assignments.map((a) => [a.id, a.title])), [assignments]);
+  const criterionLabel = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const criteria of criteriaByRubric.values()) {
+      for (const c of criteria) map.set(c.id, c.label);
+    }
+    return map;
+  }, [criteriaByRubric]);
+
+  const targetLabel = (alignment: CompetencyAlignment): string => {
+    if (alignment.target_type === "assignment") return assignmentById.get(alignment.target_id) ?? "Devoir";
+    if (alignment.target_type === "rubric_criterion") return criterionLabel.get(alignment.target_id) ?? "Critère";
+    return alignment.target_type;
+  };
+
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const targetId = targetType === "assignment" ? assignmentId : criterionId;
+    if (!targetId) return;
+    setSaving(true);
+    try {
+      const alignment = await createCompetencyAlignment({
+        competencyId: competency.id, targetType, targetId,
+        weight: Number(weight.replace(",", ".")) || 1,
+        evidenceRole, isRequired,
+      });
+      setAlignments((prev) => [alignment, ...prev]);
+      setAssignmentId(""); setRubricId(""); setCriterionId(""); setWeight("1"); setIsRequired(false);
+    } catch (err) {
+      showError(err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteCompetencyAlignment(id);
+      setAlignments((prev) => prev.filter((a) => a.id !== id));
+    } catch (err) {
+      showError(err);
+    }
+  };
+
+  if (loading) return <TableSkeleton rows={2} cols={2} />;
+
+  return (
+    <div className="mt-3 border-t pt-3 space-y-3">
+      <p className="text-xs text-muted-foreground">
+        Alignements sur devoir ou critère de rubrique. Cours/module/leçon/question/examen/SCORM/H5P/étape de parcours : pas encore de sélecteur ici.
+      </p>
+
+      {alignments.length > 0 && (
+        <ul className="space-y-1">
+          {alignments.map((a) => (
+            <li key={a.id} className="flex items-center justify-between rounded-md border px-3 py-1.5 text-sm">
+              <span>
+                {targetLabel(a)} <span className="text-muted-foreground">· {EVIDENCE_ROLE_LABEL[a.evidence_role]} · coef. {a.weight}{a.is_required ? " · obligatoire" : ""}</span>
+              </span>
+              <button type="button" className="ap-btn ap-btn--ghost ap-btn--sm ap-icon-btn" aria-label="Retirer l'alignement" onClick={() => void handleDelete(a.id)}>
+                <Trash2 size={14} />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <form onSubmit={handleAdd} className="flex flex-wrap items-end gap-2">
+        <div className="space-y-1">
+          <label className="text-xs font-medium" htmlFor={`target-type-${competency.id}`}>Cible</label>
+          <select id={`target-type-${competency.id}`} className={inputClass} style={inputStyle} value={targetType} onChange={(e) => setTargetType(e.target.value as AlignmentTargetType)}>
+            <option value="assignment">Devoir</option>
+            <option value="rubric_criterion">Critère de rubrique</option>
+          </select>
+        </div>
+        {targetType === "assignment" ? (
+          <div className="min-w-[200px] space-y-1">
+            <label className="text-xs font-medium" htmlFor={`assignment-${competency.id}`}>Devoir</label>
+            <select id={`assignment-${competency.id}`} className={inputClass} style={inputStyle} value={assignmentId} onChange={(e) => setAssignmentId(e.target.value)} required>
+              <option value="" disabled>Choisir…</option>
+              {assignments.map((a) => <option key={a.id} value={a.id}>{a.title}</option>)}
+            </select>
+          </div>
+        ) : (
+          <>
+            <div className="min-w-[160px] space-y-1">
+              <label className="text-xs font-medium" htmlFor={`rubric-${competency.id}`}>Grille</label>
+              <select id={`rubric-${competency.id}`} className={inputClass} style={inputStyle} value={rubricId} onChange={(e) => { setRubricId(e.target.value); setCriterionId(""); }} required>
+                <option value="" disabled>Choisir…</option>
+                {rubrics.map((r) => <option key={r.id} value={r.id}>{r.title}</option>)}
+              </select>
+            </div>
+            <div className="min-w-[160px] space-y-1">
+              <label className="text-xs font-medium" htmlFor={`criterion-${competency.id}`}>Critère</label>
+              <select id={`criterion-${competency.id}`} className={inputClass} style={inputStyle} value={criterionId} onChange={(e) => setCriterionId(e.target.value)} required disabled={!rubricId}>
+                <option value="" disabled>Choisir…</option>
+                {(criteriaByRubric.get(rubricId) ?? []).map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
+              </select>
+            </div>
+          </>
+        )}
+        <div className="w-20 space-y-1">
+          <label className="text-xs font-medium" htmlFor={`weight-${competency.id}`}>Coef.</label>
+          <input id={`weight-${competency.id}`} className={inputClass} style={inputStyle} inputMode="decimal" value={weight} onChange={(e) => setWeight(e.target.value)} />
+        </div>
+        <div className="min-w-[140px] space-y-1">
+          <label className="text-xs font-medium" htmlFor={`role-${competency.id}`}>Rôle</label>
+          <select id={`role-${competency.id}`} className={inputClass} style={inputStyle} value={evidenceRole} onChange={(e) => setEvidenceRole(e.target.value as CompetencyAlignment["evidence_role"])}>
+            {Object.entries(EVIDENCE_ROLE_LABEL).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+          </select>
+        </div>
+        <label className="flex items-center gap-1.5 text-xs pb-2">
+          <input type="checkbox" checked={isRequired} onChange={(e) => setIsRequired(e.target.checked)} /> Obligatoire
+        </label>
+        <Button size="sm" type="submit" loading={saving}><Link2 size={14} /> Aligner</Button>
+      </form>
+    </div>
+  );
+}
 
 const STAFF_ROLES = new Set(["pedago", "admin"]);
 
@@ -32,12 +199,13 @@ const levelLabel: Record<string, string> = {
   expert: "Expert",
 };
 
-function FrameworkCompetencies({ framework }: { framework: CompetencyFramework }) {
+function FrameworkCompetencies({ orgId, framework }: { orgId: string; framework: CompetencyFramework }) {
   const [competencies, setCompetencies] = useState<Competency[]>([]);
   const [loading, setLoading] = useState(true);
   const [code, setCode] = useState("");
   const [title, setTitle] = useState("");
   const [adding, setAdding] = useState(false);
+  const [aligningId, setAligningId] = useState<string | null>(null);
 
   useEffect(() => {
     listFrameworkCompetencies(framework.id).then(setCompetencies).catch(showError).finally(() => setLoading(false));
@@ -79,7 +247,13 @@ function FrameworkCompetencies({ framework }: { framework: CompetencyFramework }
         <ul className="space-y-1">
           {competencies.map((c) => (
             <li key={c.id} className="text-sm rounded border px-3 py-1.5">
-              <span className="font-mono text-muted-foreground mr-2">{c.code}</span>
+              <div className="flex items-center justify-between">
+                <span className="font-mono text-muted-foreground mr-2">{c.code}</span>
+                <Button variant="ghost" size="sm" onClick={() => setAligningId((cur) => (cur === c.id ? null : c.id))}>
+                  <Link2 size={14} /> {aligningId === c.id ? "Fermer" : "Aligner"}
+                </Button>
+              </div>
+              {aligningId === c.id && <AlignmentManager orgId={orgId} competency={c} />}
             </li>
           ))}
         </ul>
@@ -169,7 +343,7 @@ function StaffFrameworks({ orgId }: { orgId: string }) {
                   </Button>
                 </div>
               </div>
-              {expanded === f.id && <FrameworkCompetencies framework={f} />}
+              {expanded === f.id && <FrameworkCompetencies orgId={orgId} framework={f} />}
             </li>
           ))}
         </ul>

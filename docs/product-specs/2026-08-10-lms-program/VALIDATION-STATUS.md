@@ -295,8 +295,33 @@ complète (335 tests) verte — **non vérifié avec des inscriptions réelles**
 `competency_evidence` + `record_competency_evidence()` +
 `recompute_competency_mastery()` (idempotent, historisé).
 
+Depuis cette passe : UI d'alignement (CMP-010/011, partiel) —
+`AlignmentManager` dans `Competencies.tsx`, bouton « Aligner » par
+compétence dans un référentiel. `competency_alignments.target_id` est
+polymorphe sans FK (par design, cf. commentaire de la migration) ; deux
+`target_type` seulement ont un vrai sélecteur ici — `assignment` (réutilise
+`listOrgAssignments()` de `gradebook.ts`, déjà org-scopé) et
+`rubric_criterion` (réutilise `listOrgRubrics()`/`getRubricCriteria()`,
+sélection grille puis critère). Coefficient, rôle de preuve
+(`teaching`/`practice`/`assessment`), obligatoire. Pas de nouvelle
+migration : `competency_alignments_manage` (`for all`, pedago/admin) permet
+déjà l'insert/delete direct côté client — même posture que les critères de
+rubrique. **Les 7 autres `target_type`** (course/module/lesson/question/
+exam/scorm_activity/h5p_activity/path_step) n'ont pas de sélecteur : aucun
+n'a de fonction de liste org-scopée cohérente dans ce codebase aujourd'hui
+— `exam` par exemple est scopé par `host_id`, pas par organisation (système
+Tier-1 pré-existant), et course/module/lesson/path_step n'ont pas
+d'équivalent table clair à côté de `content`. Deviner un sélecteur pour ces
+types aurait été un choix arbitraire, pas une lecture du modèle existant.
+Vérifié : `tsc`/`eslint` propres (avertissements a11y corrigés — labels
+associés à leurs champs) ; suite complète (335 tests) verte — pas de
+nouveaux tests unitaires (fonctions CRUD directes sur RLS déjà exercées par
+les tests d'intégration Supabase existants ailleurs, rien de nouveau à
+isoler ici) ; **non vérifié avec des données réelles** (même limite que le
+reste du programme).
+
 **Reste à faire** :
-- [ ] UI : alignement compétence ↔ question/rubrique/activité (CMP-010) — table `competency_alignments` posée, aucun écran ne l'alimente
+- [ ] UI : alignement sur les 7 autres `target_type` (course/module/lesson/question/exam/scorm_activity/h5p_activity/path_step) — pas de sélecteur org-scopé cohérent pour ces types
 - [ ] UI : vue couverture programme (enseigné/pratiqué/évalué — CMP-012, CMP-021)
 - [ ] UI : demande de revue apprenant (`competency_review_requests`) — table posée, aucun écran
 - [ ] Écran de migration des tags existants → compétences (mapping guidé, section « Migration des tags existants » de la spec)

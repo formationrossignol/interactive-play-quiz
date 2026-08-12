@@ -68,7 +68,7 @@ pouvoir s'y référer facilement.
 
 ## 03 — Compétences, résultats d'apprentissage et preuves
 
-- [ ] UI : alignement compétence ↔ question/rubrique/activité (CMP-010) — table `competency_alignments` posée, aucun écran ne l'alimente
+- [x] UI : alignement compétence ↔ devoir/critère de rubrique (CMP-010/011 partiel) — `AlignmentManager` dans `Competencies.tsx` (bouton « Aligner » par compétence), coefficient/rôle de preuve (teaching/practice/assessment)/obligatoire. Pas de nouvelle migration : RLS `competency_alignments_manage` (`for all`) autorisait déjà l'écriture directe pedago/admin. **Reste** : cours/module/leçon/question/examen/SCORM/H5P/étape de parcours (7 des 9 `target_type` restants) — aucun sélecteur org-scopé cohérent pour ces types dans le codebase actuel
 - [ ] UI : vue couverture programme (enseigné/pratiqué/évalué — CMP-012, CMP-021)
 - [ ] UI : demande de revue apprenant (`competency_review_requests`) — table posée, aucun écran
 - [ ] Écran de migration des tags existants → compétences (mapping guidé, section « Migration des tags existants » de la spec)

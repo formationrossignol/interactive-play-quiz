@@ -25,6 +25,29 @@ export interface CompetencyMastery {
   computed_at: string;
 }
 
+/** CMP-010/011. target_id is polymorphic (no FK — see the migration
+ *  comment); this app only builds pickers for 'assignment' and
+ *  'rubric_criterion' so far (both cleanly org-scoped via existing
+ *  gradebook.ts list functions). The other 8 target_types the DB accepts
+ *  (course/module/lesson/question/exam/scorm_activity/h5p_activity/
+ *  path_step) have no coherent org-scoped listing in this codebase yet —
+ *  not guessed here. */
+export type AlignmentTargetType =
+  | 'course' | 'module' | 'lesson' | 'question' | 'assignment'
+  | 'rubric_criterion' | 'exam' | 'scorm_activity' | 'h5p_activity' | 'path_step';
+
+export interface CompetencyAlignment {
+  id: string;
+  competency_id: string;
+  target_type: AlignmentTargetType;
+  target_id: string;
+  weight: number;
+  level_target: string | null;
+  evidence_role: 'teaching' | 'practice' | 'assessment';
+  is_required: boolean;
+  created_at: string;
+}
+
 export async function listOrgFrameworks(orgId: string): Promise<CompetencyFramework[]> {
   const { data, error } = await supabase
     .from('competency_frameworks')
@@ -82,6 +105,45 @@ export async function myMastery(): Promise<CompetencyMastery[]> {
     .order('computed_at', { ascending: false });
   if (error) throw error;
   return (data ?? []) as CompetencyMastery[];
+}
+
+/** RLS (`competency_alignments_manage`, `for all`) already lets pedago/admin
+ *  insert/delete directly — no RPC needed, same posture as rubric criteria. */
+export async function listCompetencyAlignments(competencyId: string): Promise<CompetencyAlignment[]> {
+  const { data, error } = await supabase
+    .from('competency_alignments')
+    .select('*')
+    .eq('competency_id', competencyId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as CompetencyAlignment[];
+}
+
+export async function createCompetencyAlignment(input: {
+  competencyId: string; targetType: AlignmentTargetType; targetId: string;
+  weight?: number; levelTarget?: string | null;
+  evidenceRole?: CompetencyAlignment['evidence_role']; isRequired?: boolean;
+}): Promise<CompetencyAlignment> {
+  const { data, error } = await supabase
+    .from('competency_alignments')
+    .insert({
+      competency_id: input.competencyId,
+      target_type: input.targetType,
+      target_id: input.targetId,
+      weight: input.weight ?? 1,
+      level_target: input.levelTarget ?? null,
+      evidence_role: input.evidenceRole ?? 'assessment',
+      is_required: input.isRequired ?? false,
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  return data as CompetencyAlignment;
+}
+
+export async function deleteCompetencyAlignment(alignmentId: string): Promise<void> {
+  const { error } = await supabase.from('competency_alignments').delete().eq('id', alignmentId);
+  if (error) throw error;
 }
 
 /** Atomic: writes the evidence fact and idempotently recomputes mastery. */
