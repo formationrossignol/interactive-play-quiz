@@ -183,6 +183,51 @@ export async function extendEnrollmentDueDate(enrollmentId: string, newDueAt: st
   return data as Enrollment;
 }
 
+export type AttendanceStatus = 'present' | 'absent' | 'late' | 'excused';
+
+export interface AttendanceEvent {
+  id: string;
+  org_id: string;
+  session_id: string;
+  learner_id: string;
+  occurred_on: string;
+  status: AttendanceStatus;
+  source: 'manual' | 'import';
+  note: string | null;
+  recorded_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+/** One row per (session, learner, day) — course_sessions has no
+ *  meeting/occurrence sub-table to attach to (RESTE-A-FAIRE §02), so a
+ *  calendar day is the unit. */
+export async function listSessionAttendance(sessionId: string, occurredOnIsoDate: string): Promise<AttendanceEvent[]> {
+  const { data, error } = await supabase
+    .from('attendance_events')
+    .select('*')
+    .eq('session_id', sessionId)
+    .eq('occurred_on', occurredOnIsoDate);
+  if (error) throw error;
+  return (data ?? []) as AttendanceEvent[];
+}
+
+/** Upserts on (session_id, learner_id, occurred_on) — re-marking the same
+ *  day corrects the existing row rather than accumulating history (see
+ *  20260812190000_attendance_events.sql: no history table, spec calls this
+ *  "facultatif V1"). Trainer of the session, or registrar/pedago/admin. */
+export async function recordAttendance(sessionId: string, learnerId: string, occurredOnIsoDate: string, status: AttendanceStatus, note?: string): Promise<AttendanceEvent> {
+  const { data, error } = await supabase.rpc('record_attendance', {
+    p_session_id: sessionId,
+    p_learner_id: learnerId,
+    p_occurred_on: occurredOnIsoDate,
+    p_status: status,
+    p_note: note ?? null,
+  });
+  if (error) throw error;
+  return data as AttendanceEvent;
+}
+
 /** All waitlist entries belonging to the current user, any status —
  *  callers filter to 'offered' for the accept/decline banner. */
 export async function myWaitlistEntries(): Promise<WaitlistEntry[]> {

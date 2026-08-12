@@ -249,9 +249,39 @@ profil d'aménagement toujours écrite — les quatre comportements vérifiés
 simultanément contre un schéma stub reproduisant les vraies tables
 d'aménagement (Postgres jetable).
 
+Depuis cette passe (`20260812180000_assignment_due_override.sql`) : UI
+échéance dérogatoire par apprenant (`due_override`). La colonne et son seul
+lecteur (`effective_assignment_due_at()`, spec 05) existaient déjà depuis
+le travail d'aménagements — se compose déjà correctement avec
+`extended_deadline`/`no_time_limit` et alimente `submit_assignment()` +
+la règle `overdue` de `generate_risk_signals()`. Seul l'écran manquait.
+Fait en creusant : `assignment_targets` n'avait **aucune contrainte
+d'unicité** sur `(assignment_id, target_type, target_id)` — un écran qui
+réécrit la même cible en boucle (rouvrir/soumettre) aurait dupliqué la
+ligne au lieu de la mettre à jour ; dédupliqué puis contrainte unique
+ajoutée avant tout. Pas de nouvelle RPC : `assignment_targets_manage`
+(RLS, `20260810160000`) autorise déjà l'écriture directe propriétaire/
+pedago/admin, comme `addAssignmentTarget()` le fait déjà pour le ciblage
+par session — l'écran fait un upsert sur la nouvelle contrainte
+(`setLearnerDueOverride()`) et un delete pour effacer
+(`clearLearnerDueOverride()`, `gradebook.ts`). UI : panneau « Échéances
+dérogatoires » dans `Assignments.tsx::DueOverridesPanel`, sous la section
+correction de chaque devoir déplié — apprenant saisi par UUID (même
+convention que `StaffAccommodations` dans `Accessibility.tsx` : aucun
+sélecteur de liste n'existe dans ce fichier pour en construire un, le
+ciblage par session lui-même n'étant pas câblé jusqu'au bout côté UI, voir
+item suivant). Note documentée dans le code : effacer une dérogation
+*supprime* la ligne de ciblage (pas juste le champ date) — retire aussi la
+visibilité que cette ligne accordait à l'apprenant si rien d'autre ne le
+cible, cohérent avec `assignment_visible_to_learner()` qui fait un OR sur
+toutes les lignes de ciblage. **Non testé en conditions réelles** (même
+limite que le reste de ce spec récemment : pas de compte staff/apprenant
+local) — vérifié par lecture du SQL, `tsc`/`eslint` propres, migration
+appliquée sans erreur (`supabase db push`, `migration list` confirmé
+synchronisé).
+
 **Reste à faire** :
 - [ ] UI : `assignment_targets` par groupe/apprenant individuel — seul le ciblage par session est câblé
-- [ ] UI : échéance/aménagement dérogatoire par apprenant (`due_override`) — colonne existe, aucun écran
 - [ ] Job serveur de scan antivirus des fichiers (`submission_files.scan_status`) — colonne prête, aucun job ; les fichiers uploadés restent `pending` indéfiniment
 - [ ] Connecteur antiplagiat (interface only — non-objectif V1 explicite, mais l'interface elle-même n'existe pas)
 - [ ] Notifications programmées (J-7/J-1/retard) — table `notifications` existe, rien ne les déclenche pour les devoirs
@@ -350,12 +380,38 @@ porte bien l'ancien → nouveau créneau ; `tsc`/`eslint` propres ; suite
 complète (335 tests) verte — **non vérifié avec des inscriptions réelles**
 (même limite que le reste de cette passe).
 
+Depuis cette passe (`20260812190000_attendance_events.sql`) :
+`attendance_events`. Le modèle indicatif de la spec (une ligne : « présence
+déclarée/importée, facultatif V1 ») ne donne ni colonnes ni RPC ni écran —
+tout restait à concevoir. Constat en creusant : `course_sessions` n'a
+qu'une seule fenêtre `starts_at`/`ends_at`, aucune notion de séance/
+occurrence individuelle (`planning_events`, 20260812030000, est un
+calendrier personnel sans rapport). Plutôt que d'inventer une table
+d'occurrences — projet à part entière que rien ne demande — l'unité
+retenue est (session, apprenant, jour calendaire) : `record_attendance()`
+fait un upsert sur cette clé, une re-saisie du même jour corrige la ligne
+au lieu d'empiler un historique (pas de table d'audit séparée non plus —
+cohérent avec le « facultatif V1 » de la spec). Écriture jamais directe :
+même posture que `enroll_in_session()`/`extend_enrollment_due_date()` —
+`record_attendance()` vérifie `registrar`/`pedago`/`admin` OU formateur de
+cette session précise (`session_trainers`), correspondant au texte de la
+spec (le formateur « voit ses sessions et les apprenants actifs »).
+Émet aussi `attendance.recorded` via `emit_learning_event()` (même
+convention que `enrollment.started`/`grade.published`) pour alimenter les
+analytics spec 07 plus tard, sans que ce soit un objectif de cette passe.
+UI : nouveau composant `SessionAttendancePanel.tsx`, bouton « Présence »
+à côté de « Effectif » dans `Sessions.tsx::StaffSessions` — sélecteur de
+date, table apprenant × 4 boutons de statut (présent/retard/excusé/absent),
+action « Tout marquer présent ». **Non testé en conditions réelles** (même
+limite que le reste de cette passe : pas de compte staff/apprenant local)
+— vérifié par lecture du SQL, `tsc`/`eslint` propres, migration appliquée
+sans erreur (`supabase db push`, `migration list` confirmé synchronisé).
+
 **Reste à faire** :
 - [ ] UI : « affecter un formateur » en masse et « envoyer une relance » (ENR-015, reste de la liste)
 - [ ] Auto-inscription avec règles (domaine email, code, paiement, prérequis — ENR-013)
 - [ ] Vue apprenant « Mes formations » complète avec dates effectives/échéances relatives recalculées (ENR-017, la V1 actuelle liste juste par statut)
-- [ ] Calcul de complétion versionné par politique (activités obligatoires, score, présence)
-- [ ] `attendance_events` (présence) — dans le modèle indicatif, non créé du tout
+- [ ] Calcul de complétion versionné par politique (activités obligatoires, score, présence — `attendance_events` fournit maintenant la matière première présence, le calcul lui-même reste à écrire)
 
 ## 03 — Compétences, résultats d'apprentissage et preuves
 
@@ -762,6 +818,42 @@ lecture de plus sur cette table. **Non vérifié avec des données réelles**
 (même limite que le reste de cette passe : pas de compte staff/apprenant
 local pour dérouler un cycle création→passation→note→rollup complet).
 
+Depuis cette passe (`20260812170000_analytics_privacy_threshold.sql`) :
+seuil minimal anti-réidentification (ANA-020). Constat en creusant la spec :
+ce n'était pas seulement une fonctionnalité de comparaison de cohortes
+jamais construite — `analytics_daily_enrollment`/`analytics_daily_competency`/
+`analytics_daily_item` avaient une policy `..._staff_read` sans aucun
+plancher de cardinalité, et le client (`analyticsDashboard.ts`) sélectionnait
+toutes les lignes (par session/compétence/item_revision, par jour) avant de
+sommer côté client dans `Analytics.tsx` — les lignes brutes à petit N (ex. une
+session à 2 apprenants) étaient donc déjà accessibles sur le fil par le même
+appel PostgREST que n'importe quel staff peut inspecter, exactement le
+vecteur « combinaison rare » que la section confidentialité de la spec vise.
+`analytics_daily_activity` non touchée : par construction par-apprenant,
+déjà un accès pédagogique individuel légitime, pas une comparaison de
+cohorte. Fix : les 3 policies `..._staff_read` supprimées (plus de lecture
+directe des lignes brutes) remplacées par 3 fonctions `security definer`
+(`get_org_enrollment_totals`/`get_daily_competency_totals`/`get_daily_item_totals`)
+qui n'agrègent qu'à org+jour — aucun `session_id`/`competency_id`/
+`item_revision_id` ne sort plus de la base — et suppriment la période
+entière (au lieu d'afficher un petit nombre) quand la population sous-
+jacente passe sous un seuil configurable par org (`analytics_privacy_settings`,
+même forme que `risk_signal_settings` : lecture staff, gestion
+`pedago`/`admin` via `set_min_cohort_size()`, défaut 5). UI : bandeau
+« masquées » sur les tuiles d'inscription si `suppressed=true`, jours
+manquants dans le graphique compétence (déjà « sparse par design », un jour
+manquant se comportait déjà comme une absence de rollup). Panneau
+« Confidentialité » ajouté à `/lms/analytics`, visible `pedago`/`admin`
+seulement, pour lire/modifier le seuil. `get_daily_item_totals` corrigé en
+même temps bien qu'aucun écran ne le consomme encore (ANA-010/011/012 pas
+construits) — la table était déjà en prod et exposée en clair par la même
+faille, pas laissée pour la prochaine personne à découvrir. **Non testé en
+conditions réelles** (même limite que le reste de ce spec : pas de compte
+staff local pour vérifier qu'une organisation sous le seuil voit
+effectivement le bandeau masqué) — vérifié uniquement par relecture du SQL
+et par l'application propre de la migration (`supabase db push`,
+`supabase migration list` confirmé synchronisé).
+
 **Reste à faire** :
 - [ ] Projection journalière **programme** — jamais définie faute de UI/agrégat programme existant à côté de session/offering
 - [ ] Dashboard apprenant (ANA-005) — bloqué par l'absence de politique RLS lecture-apprenant sur `analytics_daily_activity`/`analytics_daily_enrollment`/`analytics_daily_competency`/`analytics_daily_item`
@@ -769,7 +861,6 @@ local pour dérouler un cycle création→passation→note→rollup complet).
 - [ ] Temps médian de réponse par item (ANA-009) — bloqué par l'absence de toute colonne de durée sur `assessment_responses`
 - [ ] Programmation de rapports (`report_schedules`/`report_runs`) — tables posées, aucun exécuteur ; pourrait maintenant se brancher sur le même `pg_cron`
 - [ ] Export CSV/XLSX/PDF avec pseudonymisation
-- [ ] Seuil minimal anti-réidentification sur les comparaisons de cohortes (ANA-020)
 
 ## 08 — Évaluations avancées et banque d'items versionnée
 

@@ -49,7 +49,7 @@ pouvoir s'y référer facilement.
 
 - [x] UI : remise fichier/audio/vidéo + URLs signées courte durée — `20260812150000_submission_file_uploads.sql` : bucket privé `assignment-submissions` (les autres buckets du repo sont publics, celui-ci ne pouvait pas l'être), RLS `storage.objects` en double lecture indépendante (dossier `<learner_id>/...` pour l'apprenant, jointure vers `assignments.org_id` pour le staff) — le vrai verrou sur les octets, indépendant de ce que dit `submission_files`. `submit_assignment()` accepte désormais `p_files` (upload d'abord côté storage, puis attaché atomiquement à la version créée ; vérifie que le chemin appartient bien à l'appelant). Téléchargement : `createSignedUrl()` côté client, 5 min. UI apprenant (`Assignments.tsx::LearnerAssignmentRow`, sélecteur de fichier selon `response_mode`) et staff (`GradingPanel::SubmissionFilesList`)
 - [ ] UI : `assignment_targets` par groupe/apprenant individuel — seul le ciblage par session est câblé
-- [ ] UI : échéance/aménagement dérogatoire par apprenant (`due_override`) — colonne existe, aucun écran
+- [x] UI : échéance/aménagement dérogatoire par apprenant (`due_override`) — `20260812180000_assignment_due_override.sql`. Colonne et lecteur (`effective_assignment_due_at()`, spec 05) existaient déjà, composaient déjà avec les aménagements. Contrainte d'unicité `(assignment_id, target_type, target_id)` ajoutée (dédup préalable) pour rendre un upsert sûr — pas de nouvelle RPC, écriture directe déjà permise par `assignment_targets_manage`. UI `Assignments.tsx::DueOverridesPanel` (apprenant saisi par UUID, même convention que `StaffAccommodations`) : appliquer/effacer une dérogation par devoir déplié
 - [x] UI : vue gradebook consolidée (GBK-001 à GBK-006) — `/lms/gradebook` : matrice apprenant × grade_item par session, sous-totaux par catégorie avec coefficient (`grade_items.weight`) et exclusion de la plus basse note togglable, formule exposée par total (GBK-004), export CSV/XLSX/PDF neutralisant les formules et import CSV/XLSX (GBK-006 — `import_gradebook_csv()`, `20260812080000_gradebook_csv_import.sql` : nouvelle colonne `grade_items` source_type='manual' + `grade_results`, correspondance des personnes par nom d'utilisateur côté client contre l'effectif de la session déjà chargé, prévisualisation avec statut par ligne — OK/introuvable/doublon/note hors barème —, tout-ou-rien server-side), simulation apprenant « si je reçois X » client-only dans « Mes notes » (GBK-005). **Reste** : dashboards visuels (07)
 - [ ] Job serveur de scan antivirus des fichiers (`submission_files.scan_status`) — colonne prête, aucun job (les fichiers uploadés restent `pending` indéfiniment tant que ce job n'existe pas)
 - [ ] Connecteur antiplagiat (interface only — non-objectif V1 explicite, mais l'interface elle-même n'existe pas)
@@ -64,7 +64,7 @@ pouvoir s'y référer facilement.
 - [ ] Auto-inscription avec règles (domaine email, code, paiement, prérequis — ENR-013)
 - [ ] Vue apprenant « Mes formations » complète avec dates effectives/échéances relatives recalculées (ENR-017, la V1 actuelle liste juste par statut)
 - [ ] Calcul de complétion versionné par politique (activités obligatoires, score, présence)
-- [ ] `attendance_events` (présence) — dans le modèle indicatif, non créé du tout
+- [x] `attendance_events` (présence) — `20260812190000_attendance_events.sql`. Aucun modèle de séance/occurrence n'existait sur `course_sessions` (une seule fenêtre `starts_at`/`ends_at`) ; unité retenue : (session, apprenant, jour), upsert via `record_attendance()` (registrar/pedago/admin ou formateur de la session — pas d'écriture directe, même posture que `enroll_in_session()`), pas de table d'historique séparée (spec explicitement « facultatif V1 »). Émet `attendance.recorded` (`emit_learning_event`). UI : `SessionAttendancePanel.tsx`, bouton « Présence » dans `Sessions.tsx`. Ne couvre pas le calcul de complétion versionné (qui consommera cette matière première, reste à écrire)
 
 ## 03 — Compétences, résultats d'apprentissage et preuves
 
@@ -116,7 +116,7 @@ pouvoir s'y référer facilement.
 - [ ] Temps médian de réponse par item (ANA-009) — bloqué par l'absence de colonne de durée sur `assessment_responses`
 - [ ] Programmation de rapports (`report_schedules`/`report_runs`) — tables posées, aucun exécuteur
 - [ ] Export CSV/XLSX/PDF avec pseudonymisation
-- [ ] Seuil minimal anti-réidentification sur les comparaisons de cohortes (ANA-020)
+- [x] Seuil minimal anti-réidentification sur les comparaisons de cohortes (ANA-020) — `20260812170000_analytics_privacy_threshold.sql` : la vraie faille trouvée n'était pas juste « pas de comparaison de cohortes » mais que `analytics_daily_enrollment`/`competency`/`item` étaient déjà lisibles ligne à ligne (par session/compétence/item, petit N) par tout staff via PostgREST, le client ne faisant que sommer après coup. Policies de lecture directe supprimées, remplacées par 3 RPC `security definer` agrégées à org+jour, qui suppriment la période entière sous un seuil configurable par org (`analytics_privacy_settings`, défaut 5, géré par `pedago`/`admin` via un panneau « Confidentialité » sur `/lms/analytics`). Ne construit pas les écrans de comparaison de cohortes eux-mêmes (ANA-007, toujours inexistants) — ferme la fuite réelle et pose le mécanisme de seuil que ces écrans (et ANA-011) réutiliseront
 - [x] Ordonnanceur réel pour `run_daily_analytics_rollup()`/`generate_risk_signals()` — `pg_cron`, job nocturne par organisation (voir dépendances en tête de document)
 
 ## 08 — Évaluations avancées et banque d'items versionnée
@@ -167,15 +167,12 @@ pouvoir s'y référer facilement.
 4. ~~**09 — écran projeté**~~ — fait pour le Q&A (voir §09). ~~Éditeur de formats sondage~~ — fait aussi (voir §09, sondage seulement). Reste ouvert : priorisation/matrice/brainstorm/classement forcé, et le sondage sur l'écran projeté lui-même (le présentateur `/live/:code/present` n'affiche toujours que le Q&A).
 5. ~~**Un vrai ordonnanceur**~~ — fait (`pg_cron`, voir dépendances en tête de document). ~~Débloque la planification du balayage `release_state`~~ — branché (voir §06, avec l'évaluateur `date`). Débloque encore la *planification* des rappels J-7/J-1, de SCIM/OneRoster, des webhooks en file — mais chacun a encore besoin de sa propre logique métier avant de pouvoir être branché.
 6. Le reste (05 socle accessibilité transverse, 10 localisation, 04 SCIM/OneRoster/API) peut suivre l'ordre recommandé du README du programme.
-7. ~~**01 — remise fichier/audio/vidéo + URLs signées**~~ — fait (voir §01, `20260812150000`/`20260812160000` — la seconde corrige une régression introduite par la première sur le calcul de retard accommodation-aware, trouvée avant tout dégât réel puisque déployées ensemble). Reste ouvert dans 01 : ciblage devoir par groupe/apprenant individuel, échéance dérogatoire, scan antivirus, antiplagiat, notifications programmées, double correction.
+7. ~~**01 — remise fichier/audio/vidéo + URLs signées**~~ — fait (voir §01, `20260812150000`/`20260812160000` — la seconde corrige une régression introduite par la première sur le calcul de retard accommodation-aware, trouvée avant tout dégât réel puisque déployées ensemble). ~~Échéance dérogatoire par apprenant~~ — fait aussi (`20260812180000`, voir §01). Reste ouvert dans 01 : ciblage devoir par groupe/apprenant individuel, scan antivirus, antiplagiat, notifications programmées, double correction.
 
 **Point d'arrêt 2026-08-12** — tout ce qui précède dans ce document reflète
 l'état réel post-déploiement (toutes les migrations listées `[x]` sont en
 prod, `supabase migration list` vérifié à chaque fois). Candidats bien
 scopés pour la suite, par ordre de valeur/risque croissant :
-- 07 : seuil anti-réidentification cohortes (ANA-020) — petit, sécurité/vie privée
-- 01 : échéance dérogatoire par apprenant (`due_override`) — UI seule, colonne déjà là
-- 02 : `attendance_events` — table à créer + UI, autonome
 - 08 : simulation de barème avant publication (ASM-013) — autonome, pas de dépendance externe
 - 06 : évaluateur `score`/`compétence` (pendant du `date` déjà fait) — même mécanique, resolution à définir
 - Au-delà : 04 (SSO/SCIM/OneRoster/API), 08 (11 types d'interaction restants), 10 (gouvernance/localisation) sont les gros blocs non entamés, chacun un projet en soi.

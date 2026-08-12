@@ -174,6 +174,60 @@ export async function addAssignmentTarget(assignmentId: string, targetType: 'ses
   if (error) throw error;
 }
 
+export interface AssignmentTarget {
+  id: string;
+  assignment_id: string;
+  target_type: 'session' | 'group' | 'learner';
+  target_id: string;
+  due_override: string | null;
+}
+
+/** Per-learner deadline/accommodation override (RESTE-A-FAIRE §01,
+ *  due_override column). effective_assignment_due_at() already reads this
+ *  for target_type='learner' rows (20260811040000_accommodation_effective_dates.sql)
+ *  — this only lists the ones actually carrying an override. */
+export async function listLearnerDueOverrides(assignmentId: string): Promise<AssignmentTarget[]> {
+  const { data, error } = await supabase
+    .from('assignment_targets')
+    .select('*')
+    .eq('assignment_id', assignmentId)
+    .eq('target_type', 'learner')
+    .not('due_override', 'is', null)
+    .order('due_override', { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as AssignmentTarget[];
+}
+
+/** Upserts on the (assignment_id, target_type, target_id) uniqueness added
+ *  by 20260812180000 — safe to call again for the same learner (updates
+ *  the date rather than duplicating the target row). Also makes the
+ *  assignment visible to this learner (assignment_visible_to_learner() ORs
+ *  across target rows) — the intended effect for a personalised deadline,
+ *  but means clearLearnerDueOverride() below removes that visibility grant
+ *  too if nothing else already targets this learner. */
+export async function setLearnerDueOverride(assignmentId: string, learnerId: string, dueOverrideIso: string): Promise<AssignmentTarget> {
+  const { data, error } = await supabase
+    .from('assignment_targets')
+    .upsert(
+      { assignment_id: assignmentId, target_type: 'learner', target_id: learnerId, due_override: dueOverrideIso },
+      { onConflict: 'assignment_id,target_type,target_id' },
+    )
+    .select()
+    .single();
+  if (error) throw error;
+  return data as AssignmentTarget;
+}
+
+export async function clearLearnerDueOverride(assignmentId: string, learnerId: string): Promise<void> {
+  const { error } = await supabase
+    .from('assignment_targets')
+    .delete()
+    .eq('assignment_id', assignmentId)
+    .eq('target_type', 'learner')
+    .eq('target_id', learnerId);
+  if (error) throw error;
+}
+
 export async function listAssignmentSubmissions(assignmentId: string): Promise<Submission[]> {
   const { data, error } = await supabase
     .from('submissions')

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { CalendarRange, CheckCircle2, Plus, Upload, Users, XCircle } from "lucide-react";
+import { CalendarCheck, CalendarRange, CheckCircle2, Plus, Upload, Users, XCircle } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/ui/page-header";
 import { ExplorerEmptyState } from "@/components/content/ExplorerEmptyState";
@@ -15,6 +15,7 @@ import { listContent } from "@/lib/content/contentRepo";
 import type { ContentRow } from "@/lib/content/types";
 import { EnrollmentImportDialog } from "@/components/lms/EnrollmentImportDialog";
 import { SessionRosterPanel } from "@/components/lms/SessionRosterPanel";
+import { SessionAttendancePanel } from "@/components/lms/SessionAttendancePanel";
 import {
   acceptWaitlistOffer,
   createCourseSession,
@@ -65,6 +66,7 @@ function StaffSessions({ orgId }: { orgId: string }) {
   const [courseId, setCourseId] = useState("");
   const [importingSessionId, setImportingSessionId] = useState<string | null>(null);
   const [rosterSessionId, setRosterSessionId] = useState<string | null>(null);
+  const [attendanceSessionId, setAttendanceSessionId] = useState<string | null>(null);
 
   const reload = () => {
     listOrgSessions(orgId).then(setSessions).catch(showError).finally(() => setLoading(false));
@@ -178,6 +180,9 @@ function StaffSessions({ orgId }: { orgId: string }) {
                   <Button variant="ghost" size="sm" onClick={() => setRosterSessionId((cur) => (cur === s.id ? null : s.id))}>
                     <Users size={14} /> Effectif
                   </Button>
+                  <Button variant="ghost" size="sm" onClick={() => setAttendanceSessionId((cur) => (cur === s.id ? null : s.id))}>
+                    <CalendarCheck size={14} /> Présence
+                  </Button>
                   <Button variant="ghost" size="sm" onClick={() => setImportingSessionId(s.id)}>
                     <Upload size={14} /> Importer
                   </Button>
@@ -189,6 +194,7 @@ function StaffSessions({ orgId }: { orgId: string }) {
               {rosterSessionId === s.id && (
                 <SessionRosterPanel session={s} otherSessions={sessions.filter((other) => other.id !== s.id)} />
               )}
+              {attendanceSessionId === s.id && <SessionAttendancePanel session={s} />}
             </li>
           ))}
         </ul>
