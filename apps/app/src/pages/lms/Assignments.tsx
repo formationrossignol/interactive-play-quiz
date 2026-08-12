@@ -18,12 +18,14 @@ import {
   addAssignmentTarget,
   addRubricCriterion,
   addRubricLevel,
+  clearLearnerDueOverride,
   createAssignment,
   createRubric,
   getRubricCriteria,
   getSubmissionFileSignedUrl,
   listAssignmentSubmissions,
   listActiveSubmissionFiles,
+  listLearnerDueOverrides,
   listOrgAssignments,
   listOrgRubrics,
   listMyAssignments,
@@ -31,9 +33,11 @@ import {
   mySubmission,
   publishAssignment,
   publishSubmissionGrade,
+  setLearnerDueOverride,
   submitAssignment,
   uploadSubmissionFiles,
   type Assignment,
+  type AssignmentTarget,
   type GradeItem,
   type GradeResult,
   type Rubric,
@@ -260,6 +264,83 @@ function SubmissionFilesList({ submission }: { submission: Submission }) {
         </li>
       ))}
     </ul>
+  );
+}
+
+/** RESTE-A-FAIRE §01: due_override existed since accommodation work
+ *  (effective_assignment_due_at() already composes it with accommodations
+ *  and feeds submit_assignment()'s lateness check + generate_risk_signals()'s
+ *  overdue rule) — only this screen was missing. Same learner-ID-typed
+ *  pattern as StaffAccommodations (Accessibility.tsx): no roster picker
+ *  exists here to pick from, so staff enters the learner's UUID directly. */
+function DueOverridesPanel({ assignment }: { assignment: Assignment }) {
+  const [overrides, setOverrides] = useState<AssignmentTarget[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [learnerId, setLearnerId] = useState("");
+  const [dueAt, setDueAt] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [clearing, setClearing] = useState<string | null>(null);
+
+  useEffect(() => {
+    listLearnerDueOverrides(assignment.id).then(setOverrides).catch(showError).finally(() => setLoading(false));
+  }, [assignment.id]);
+
+  const handleSet = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!learnerId.trim() || !dueAt) return;
+    setSaving(true);
+    try {
+      const row = await setLearnerDueOverride(assignment.id, learnerId.trim(), new Date(dueAt).toISOString());
+      setOverrides((prev) => [...prev.filter((o) => o.target_id !== row.target_id), row].sort((a, b) => (a.due_override ?? "").localeCompare(b.due_override ?? "")));
+      setLearnerId(""); setDueAt("");
+    } catch (err) {
+      showError(err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleClear = async (learnerIdToClear: string) => {
+    setClearing(learnerIdToClear);
+    try {
+      await clearLearnerDueOverride(assignment.id, learnerIdToClear);
+      setOverrides((prev) => prev.filter((o) => o.target_id !== learnerIdToClear));
+    } catch (err) {
+      showError(err);
+    } finally {
+      setClearing(null);
+    }
+  };
+
+  if (loading) return <ListSkeleton rows={2} />;
+
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-muted-foreground">Échéance dérogatoire par apprenant — se compose avec les aménagements d'accessibilité (extension additive, ou levée totale si « sans limite de temps »).</p>
+      <form onSubmit={handleSet} className="flex flex-wrap items-end gap-2">
+        <div className="min-w-[240px] space-y-1">
+          <label className="text-sm font-medium" htmlFor={`override-learner-${assignment.id}`}>Identifiant apprenant (UUID)</label>
+          <Input id={`override-learner-${assignment.id}`} value={learnerId} onChange={(e) => setLearnerId(e.target.value)} required />
+        </div>
+        <div className="space-y-1">
+          <label className="text-sm font-medium" htmlFor={`override-due-${assignment.id}`}>Nouvelle échéance</label>
+          <Input id={`override-due-${assignment.id}`} type="datetime-local" value={dueAt} onChange={(e) => setDueAt(e.target.value)} required />
+        </div>
+        <Button type="submit" size="sm" loading={saving}>Appliquer</Button>
+      </form>
+      {overrides.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Aucune dérogation pour ce devoir.</p>
+      ) : (
+        <ul className="space-y-2">
+          {overrides.map((o) => (
+            <li key={o.id} className="flex items-center justify-between gap-3 rounded-md border p-3 text-sm">
+              <span>Apprenant {o.target_id.slice(0, 8)} · {o.due_override ? new Date(o.due_override).toLocaleString("fr-FR") : ""}</span>
+              <Button variant="ghost" size="sm" loading={clearing === o.target_id} onClick={() => handleClear(o.target_id)}>Effacer</Button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
 
@@ -492,8 +573,12 @@ function StaffAssignments({ orgId }: { orgId: string }) {
                 </div>
               </div>
               {expanded === a.id && (
-                <div className="mt-3 border-t pt-3">
+                <div className="mt-3 border-t pt-3 space-y-4">
                   <GradingPanel assignment={a} rubrics={rubrics} />
+                  <div className="border-t pt-3">
+                    <h3 className="text-sm font-medium mb-2">Échéances dérogatoires</h3>
+                    <DueOverridesPanel assignment={a} />
+                  </div>
                 </div>
               )}
             </li>

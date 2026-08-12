@@ -249,9 +249,39 @@ profil d'aménagement toujours écrite — les quatre comportements vérifiés
 simultanément contre un schéma stub reproduisant les vraies tables
 d'aménagement (Postgres jetable).
 
+Depuis cette passe (`20260812180000_assignment_due_override.sql`) : UI
+échéance dérogatoire par apprenant (`due_override`). La colonne et son seul
+lecteur (`effective_assignment_due_at()`, spec 05) existaient déjà depuis
+le travail d'aménagements — se compose déjà correctement avec
+`extended_deadline`/`no_time_limit` et alimente `submit_assignment()` +
+la règle `overdue` de `generate_risk_signals()`. Seul l'écran manquait.
+Fait en creusant : `assignment_targets` n'avait **aucune contrainte
+d'unicité** sur `(assignment_id, target_type, target_id)` — un écran qui
+réécrit la même cible en boucle (rouvrir/soumettre) aurait dupliqué la
+ligne au lieu de la mettre à jour ; dédupliqué puis contrainte unique
+ajoutée avant tout. Pas de nouvelle RPC : `assignment_targets_manage`
+(RLS, `20260810160000`) autorise déjà l'écriture directe propriétaire/
+pedago/admin, comme `addAssignmentTarget()` le fait déjà pour le ciblage
+par session — l'écran fait un upsert sur la nouvelle contrainte
+(`setLearnerDueOverride()`) et un delete pour effacer
+(`clearLearnerDueOverride()`, `gradebook.ts`). UI : panneau « Échéances
+dérogatoires » dans `Assignments.tsx::DueOverridesPanel`, sous la section
+correction de chaque devoir déplié — apprenant saisi par UUID (même
+convention que `StaffAccommodations` dans `Accessibility.tsx` : aucun
+sélecteur de liste n'existe dans ce fichier pour en construire un, le
+ciblage par session lui-même n'étant pas câblé jusqu'au bout côté UI, voir
+item suivant). Note documentée dans le code : effacer une dérogation
+*supprime* la ligne de ciblage (pas juste le champ date) — retire aussi la
+visibilité que cette ligne accordait à l'apprenant si rien d'autre ne le
+cible, cohérent avec `assignment_visible_to_learner()` qui fait un OR sur
+toutes les lignes de ciblage. **Non testé en conditions réelles** (même
+limite que le reste de ce spec récemment : pas de compte staff/apprenant
+local) — vérifié par lecture du SQL, `tsc`/`eslint` propres, migration
+appliquée sans erreur (`supabase db push`, `migration list` confirmé
+synchronisé).
+
 **Reste à faire** :
 - [ ] UI : `assignment_targets` par groupe/apprenant individuel — seul le ciblage par session est câblé
-- [ ] UI : échéance/aménagement dérogatoire par apprenant (`due_override`) — colonne existe, aucun écran
 - [ ] Job serveur de scan antivirus des fichiers (`submission_files.scan_status`) — colonne prête, aucun job ; les fichiers uploadés restent `pending` indéfiniment
 - [ ] Connecteur antiplagiat (interface only — non-objectif V1 explicite, mais l'interface elle-même n'existe pas)
 - [ ] Notifications programmées (J-7/J-1/retard) — table `notifications` existe, rien ne les déclenche pour les devoirs
