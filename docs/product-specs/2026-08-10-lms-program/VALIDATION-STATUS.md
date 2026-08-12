@@ -219,10 +219,71 @@ Vérifié : `tsc`/`eslint` propres ; page testée dans Chrome non authentifié
 avec une offre réelle** (pas de compte de test local pour déclencher
 `promote_waitlist()`).
 
+Depuis cette passe (`20260812100000_enrollment_csv_import.sql`) : import
+CSV/XLSX de roster (ENR-014). `enroll_in_session()` gérait déjà l'inscription
+d'un tiers par le staff, l'idempotence (une inscription active existante est
+retournée telle quelle, jamais dupliquée) et la capacité/liste d'attente
+atomiques — importer N lignes, c'est donc N appels côté client à cette RPC
+déjà là, pas une nouvelle fonction bulk. Ce qui manquait réellement : un
+moyen de transformer « une colonne d'emails ou de noms d'utilisateur » en
+`learner_id`. Nouvelle RPC `resolve_org_members_by_identifier(org_id, kind,
+identifiers[])` — ne résout un identifiant que s'il appartient à un membre
+*déjà* réel de l'organisation (jointure `user_org_roles`) ; `enrollments.
+learner_id` référence `auth.users` sans colonne « pending » (contrairement à
+`share_group_members.pending_email`), donc inventer un compte pour un
+identifiant inconnu aurait été le terrain d'ENR-013 (auto-inscription/
+provisioning), pas celui-ci — un identifiant non résolu reste une ligne
+d'erreur, jamais une invention silencieuse. Extraction de
+`parseSpreadsheetRows()` (auparavant dans `gradebookImport.ts`) vers
+`lib/importSpreadsheet.ts`, réutilisé tel quel plutôt que dupliqué.
+Prévisualisation (`buildEnrollmentPreview()` dans `enrollmentImport.ts`) :
+statut par ligne OK/introuvable/doublon (garde la première occurrence)/déjà
+inscrit (détecté avant l'import plutôt que découvert silencieusement après
+un no-op de `enroll_in_session()`). UI : bouton « Importer » par session
+(`Sessions.tsx::StaffSessions`), dialogue avec choix de la colonne
+identifiant + type (email/nom d'utilisateur), tableau de prévisualisation,
+rapport CSV téléchargeable (identifiant, apprenant résolu, statut, résultat
+d'import — `EnrollmentImportDialog.tsx`). Vérifié : migration appliquée
+contre un schéma stub reproduisant les vraies tables (Postgres jetable) —
+un utilisateur réel d'une autre organisation ne résout jamais (jointure
+`user_org_roles` scopée à l'org cible), un identifiant inconnu ne résout
+pas, correspondance email/nom d'utilisateur insensible à la casse et au
+`@` vérifiée, type invalide rejeté ; 7 tests unitaires sur
+`buildEnrollmentPreview`/`importableEnrollmentRows` ; `tsc`/`eslint`
+propres ; suite complète (335 tests) verte — **non vérifié avec des
+comptes/organisation réels** (même limite que le reste de cette passe).
+
+Depuis cette passe (`20260812110000_enrollment_bulk_actions.sql`) : actions
+en masse (ENR-015, partiel). `transition_enrollment()`/`enroll_in_session()`
+géraient déjà l'autorisation staff, l'audit et l'idempotence individuellement
+— annuler et déplacer les réutilisent tels quels côté client sur une
+sélection multiple plutôt que d'ajouter une nouvelle primitive bulk ;
+déplacer est un retrait puis une réinscription (deux appels existants), pas
+une transaction atomique : si le deuxième appel échoue après le premier,
+l'apprenant se retrouve inscrit nulle part plutôt que dupliqué, et cette
+ligne remonte « échec » dans le rapport plutôt que d'être masquée. Seul
+« prolonger » avait besoin d'un nouvel écrivain : `effective_due_at` n'était
+touché par rien après la création de l'inscription.
+`extend_enrollment_due_date()` l'écrit et journalise l'ancien/nouveau via
+`enrollment_history` (`from_status`/`to_status` inchangés puisqu'il ne
+s'agit pas d'une transition de statut ; l'ancien/nouveau créneau vit dans
+`reason` — un seul journal d'audit par inscription plutôt que d'en ajouter
+un second). UI : panneau « Effectif » dépliable par session
+(`SessionRosterPanel.tsx`, `Sessions.tsx::StaffSessions`), sélection
+multiple, motif partagé optionnel, rapport OK/échec par ligne après
+exécution. **Non repris** : « inscrire » (ENR-014 le couvre déjà),
+« affecter un formateur » (`session_trainers` est déjà en écriture directe
+via RLS `for all`, mais c'est une action de session, pas une action sur
+l'effectif sélectionné), « envoyer une relance » (contenu/déclenchement pas
+défini — recoupe le blocage « notifications programmées » de 01/07 en tête
+de RESTE-A-FAIRE.md). Vérifié : migration appliquée contre un schéma stub
+(Postgres jetable) — `effective_due_at` mis à jour, `enrollment_history`
+porte bien l'ancien → nouveau créneau ; `tsc`/`eslint` propres ; suite
+complète (335 tests) verte — **non vérifié avec des inscriptions réelles**
+(même limite que le reste de cette passe).
+
 **Reste à faire** :
-- [ ] UI : import CSV/XLSX avec prévisualisation/mapping/doublons (ENR-014)
-- [ ] UI : actions en masse (inscrire, déplacer, annuler, prolonger — ENR-015)
-- [ ] UI : écran participant pour voir/accepter/décliner une offre de liste d'attente — les RPC existent, aucun écran ne les appelle
+- [ ] UI : « affecter un formateur » en masse et « envoyer une relance » (ENR-015, reste de la liste)
 - [ ] Auto-inscription avec règles (domaine email, code, paiement, prérequis — ENR-013)
 - [ ] Vue apprenant « Mes formations » complète avec dates effectives/échéances relatives recalculées (ENR-017, la V1 actuelle liste juste par statut)
 - [ ] Calcul de complétion versionné par politique (activités obligatoires, score, présence)
@@ -625,12 +686,47 @@ erreur console — **non vérifié avec un run réel** (pas de compte staff loca
 pour créer un événement/run et confirmer le classement + le Realtime en
 conditions réelles).
 
+Depuis cette passe (`20260812090000_live_poll_interactions.sql`) : éditeur
+staff et écran de réponse participant pour `poll` — le premier des formats
+listés dans `live_interactions.kind` à en avoir un. `live_interactions`
+n'avait aucun `created_at` (les brouillons n'ont ni `opened_at` ni
+`closed_at`, donc aucun moyen d'ordonner la liste d'un run) : colonne
+ajoutée. `open_live_interaction()`/`close_live_interaction()` : la policy
+RLS `live_interactions_staff` (`for all`) permettait déjà l'insert/update
+direct côté client, donc pas de RPC pour la création — mais l'invariant « un
+seul live par run à la fois » (ferme automatiquement tout autre `live` du
+même run à l'ouverture, même principe que l'autorité de navigation unique
+de `live_control_leases`/LIVE-007) ne pouvait pas s'exprimer sans race côté
+client, d'où ces deux RPC pour les seules transitions d'état. Contrat
+`config`/`payload` pour `poll` (jusqu'ici jsonb totalement libre) :
+`config = {question, options: [{id, label}], allowMultiple}`,
+`payload = {optionIds: string[]}` (toujours un tableau, même en choix
+simple). Staff (`LiveEngagement.tsx::InteractionManager`) : formulaire de
+création (question + options dynamiques + choix simple/multiple), liste des
+sondages du run avec Ouvrir/Fermer, résultats en direct par option
+(pourcentages + barres, Realtime sur `live_responses` tant que le sondage
+est `live`). Participant (`LiveEventRoom.tsx::LivePollWidget`) : apparaît/
+disparaît via Realtime sur `live_interactions`, réponse restaurée à la
+reconnexion via `get_my_live_response()`, modifiable tant que `live`
+(upsert idempotent déjà garanti par `submit_live_response()`). Vérifié :
+migration appliquée contre un schéma stub reproduisant les vraies tables
+(Postgres jetable) — ouvrir un 2ᵉ sondage ferme bien le 1ᵉʳ automatiquement
+avec `closed_at` renseigné, fermer un sondage déjà fermé est rejeté
+(`interaction_not_live`) ; `tsc`/`eslint` propres sur les fichiers touchés ;
+suite de tests complète (328 tests) toujours verte. **Non couvert** :
+`priority`/`matrix`/`brainstorm`/`ranking` (contrat différent pour chacun,
+pas deviné ici) et l'écran projeté (`LivePresenterScreen.tsx` reste Q&A
+seul, n'affiche pas les sondages) ; **non vérifié avec un run réel** (même
+limite que le reste du programme, pas de compte staff/participant local
+pour dérouler un cycle complet).
+
 **Reste à faire** :
 - [ ] Mode présentateur/console modérateur *distincts* pour l'animateur lui-même (LIVE-015 mentionne aussi ça) — l'écran projeté existe, mais l'animateur utilise toujours la même console (`LiveEngagement.tsx`) qu'avant, pas une vue « présentateur » séparée de la modération
 - [x] UI d'expulsion — bouton « Expulser » par participant actif (`ParticipantManager`, dépliable depuis le compteur de participants dans `RunControls`)
-- [ ] Répondre à un sondage/interaction (`live_interactions`/`submit_live_response()`/`get_my_live_response()` existent, mais aucune UI staff ne crée encore de `poll`/`priority`/`matrix`/etc., donc rien à répondre côté participant — construire l'écran de réponse avant l'éditeur staff serait deviner un format)
+- [x] Répondre à un sondage (`poll`) — voir ci-dessus. **Reste** : `priority`/`matrix`/`brainstorm`/`ranking` n'ont toujours ni éditeur ni écran de réponse
 - [ ] Vraie table/mécanisme d'allowlist pour `access_policy = 'allowlist'` (actuellement traité comme `authenticated`, donc moins permissif que prévu plutôt que trop permissif — mais toujours pas ce que LIVE-002 décrit)
-- [ ] Formats supplémentaires : priorisation, matrice 2×2, brainstorm, classement forcé (LIVE-009 à LIVE-013) — `live_interactions.kind` les accepte, aucun éditeur/lecteur
+- [ ] Formats supplémentaires : priorisation, matrice 2×2, brainstorm, classement forcé (LIVE-009 à LIVE-013) — `live_interactions.kind` les accepte, aucun éditeur/lecteur pour ces quatre-là
+- [ ] Sondages sur l'écran projeté (`LivePresenterScreen.tsx`) — l'éditeur/résultats staff et le widget participant existent, l'écran public n'en affiche toujours aucun
 - [ ] Intégrations PowerPoint/Teams/Zoom (LIVE-017/018/019)
 - [ ] Rapports post-session (participation, chronologie, export — LIVE-020 à LIVE-023)
 - [ ] Rate limiting et filtre de termes assistant (modération)

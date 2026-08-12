@@ -1,19 +1,24 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { AlertTriangle, MessageCircleQuestion, Send, ThumbsUp, UserX } from 'lucide-react';
+import { AlertTriangle, BarChart3, CheckCircle2, MessageCircleQuestion, Send, ThumbsUp, UserX } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ListSkeleton } from '@/components/ui/skeletons';
 import {
   castVote,
   getLiveEventByCode,
+  getMyLiveResponse,
   getOpenRun,
   joinLiveRun,
+  listRunInteractions,
   listRunQuestions,
   submitAudienceQuestion,
+  submitLiveResponse,
   type AudienceQuestion,
   type LiveEvent,
+  type LiveInteraction,
   type LiveRun,
+  type PollConfig,
 } from '@/lib/lms/liveEngagement';
 import { genLiveClientId, getLiveParticipantIdentity, getVotedQuestionIds, markQuestionVoted, setLiveParticipantIdentity } from '@/lib/lms/liveParticipant';
 
@@ -33,6 +38,80 @@ function RoomSkeleton() {
   );
 }
 
+function LivePollWidget({ interaction }: { interaction: LiveInteraction }) {
+  const config = interaction.config as PollConfig;
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    setSelected(new Set());
+    setSubmitted(false);
+    const identity = getLiveParticipantIdentity();
+    if (!identity) return;
+    let cancelled = false;
+    getMyLiveResponse(interaction.id, identity.clientId)
+      .then((payload) => {
+        if (cancelled || !payload) return;
+        setSelected(new Set(payload.optionIds));
+        setSubmitted(true);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [interaction.id]);
+
+  const toggleOption = (optionId: string) => {
+    setSelected((prev) => {
+      const next = new Set(config.allowMultiple ? prev : []);
+      if (prev.has(optionId) && config.allowMultiple) next.delete(optionId);
+      else next.add(optionId);
+      return next;
+    });
+  };
+
+  const handleSubmit = async () => {
+    const identity = getLiveParticipantIdentity();
+    if (!identity || selected.size === 0) return;
+    setSubmitting(true);
+    try {
+      await submitLiveResponse(interaction.id, identity.clientId, { optionIds: [...selected] });
+      setSubmitted(true);
+    } catch {
+      // Best-effort, same posture as vote/question submission in this room.
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="rounded-md border p-3 mb-4 space-y-2">
+      <p className="text-sm font-medium flex items-center gap-1.5"><BarChart3 size={15} /> {config.question}</p>
+      <div className="space-y-1.5">
+        {config.options.map((option) => (
+          <label key={option.id} className="flex items-center gap-2 text-sm rounded-md border px-3 py-1.5 cursor-pointer">
+            <input
+              type={config.allowMultiple ? 'checkbox' : 'radio'}
+              name={`poll-${interaction.id}`}
+              checked={selected.has(option.id)}
+              onChange={() => toggleOption(option.id)}
+            />
+            {option.label}
+          </label>
+        ))}
+      </div>
+      <button
+        type="button"
+        className="ap-btn ap-btn--pill"
+        style={{ width: '100%' }}
+        disabled={selected.size === 0 || submitting}
+        onClick={() => void handleSubmit()}
+      >
+        {submitted ? <><CheckCircle2 size={14} /> Réponse enregistrée — modifier</> : 'Répondre'}
+      </button>
+    </div>
+  );
+}
+
 export default function LiveEventRoom() {
   const navigate = useNavigate();
   const { code } = useParams<{ code: string }>();
@@ -44,6 +123,7 @@ export default function LiveEventRoom() {
   const [votedIds, setVotedIds] = useState<Set<string>>(new Set());
   const [questionBody, setQuestionBody] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [livePoll, setLivePoll] = useState<LiveInteraction | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -61,12 +141,16 @@ export default function LiveEventRoom() {
 
         await joinLiveRun(foundRun.id, identity.clientId, identity.displayName || null);
 
-        const initialQuestions = await listRunQuestions(foundRun.id);
+        const [initialQuestions, interactions] = await Promise.all([
+          listRunQuestions(foundRun.id),
+          listRunInteractions(foundRun.id),
+        ]);
         if (cancelled) return;
         setEvent(foundEvent);
         setRun(foundRun);
         setQuestions(initialQuestions.filter((q) => VISIBLE_STATUSES.has(q.status)));
         setVotedIds(getVotedQuestionIds(foundRun.id));
+        setLivePoll(interactions.find((i) => i.kind === 'poll' && i.status === 'live') ?? null);
         setPhase('live');
       } catch (err) {
         if (cancelled) return;
@@ -95,6 +179,27 @@ export default function LiveEventRoom() {
             if (!VISIBLE_STATUSES.has(row.status)) return prev.filter((q) => q.id !== row.id);
             const withoutRow = prev.filter((q) => q.id !== row.id);
             return [...withoutRow, row].sort((a, b) => b.votes_count - a.votes_count);
+          });
+        })
+      .subscribe();
+    return () => { void supabase.removeChannel(channel); };
+  }, [phase, run]);
+
+  // A staff member opening/closing a poll shows/hides it here immediately —
+  // open_live_interaction() auto-closes any other interaction on the run, so
+  // at most one 'live' row ever exists at a time.
+  useEffect(() => {
+    if (phase !== 'live' || !run) return;
+    const channel = supabase
+      .channel(`lms-live-run-${run.id}-interactions`)
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'live_interactions', filter: `run_id=eq.${run.id}` },
+        (payload) => {
+          const row = payload.new as LiveInteraction | undefined;
+          if (!row || row.kind !== 'poll') return;
+          setLivePoll((prev) => {
+            if (row.status === 'live') return row;
+            return prev?.id === row.id ? null : prev;
           });
         })
       .subscribe();
@@ -168,6 +273,8 @@ export default function LiveEventRoom() {
           <h1>{event?.title ?? 'Session live'}</h1>
           <p>Posez une question ou votez pour celles déjà posées.</p>
         </div>
+
+        {livePoll && <LivePollWidget interaction={livePoll} />}
 
         <form onSubmit={handleSubmitQuestion} className="flex gap-2 mb-4">
           <input
