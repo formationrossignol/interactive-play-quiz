@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ClipboardCheck, FilePlus2, ListChecks, Plus, TableProperties } from "lucide-react";
+import { ClipboardCheck, Download, FilePlus2, ListChecks, Paperclip, Plus, TableProperties } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/ui/page-header";
 import { ExplorerEmptyState } from "@/components/content/ExplorerEmptyState";
@@ -21,7 +21,9 @@ import {
   createAssignment,
   createRubric,
   getRubricCriteria,
+  getSubmissionFileSignedUrl,
   listAssignmentSubmissions,
+  listActiveSubmissionFiles,
   listOrgAssignments,
   listOrgRubrics,
   listMyAssignments,
@@ -30,6 +32,7 @@ import {
   publishAssignment,
   publishSubmissionGrade,
   submitAssignment,
+  uploadSubmissionFiles,
   type Assignment,
   type GradeItem,
   type GradeResult,
@@ -37,6 +40,7 @@ import {
   type RubricCriterion,
   type RubricRating,
   type Submission,
+  type SubmissionFile,
 } from "@/lib/lms/gradebook";
 import { SOURCE_LABEL, simulateWhatIf } from "@/lib/lms/gradebookCalculations";
 
@@ -226,6 +230,39 @@ function RubricGrading({ criteria, ratings, onChange }: {
   );
 }
 
+function SubmissionFilesList({ submission }: { submission: Submission }) {
+  const [files, setFiles] = useState<SubmissionFile[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (submission.active_version <= 0) { setLoading(false); return; }
+    listActiveSubmissionFiles(submission.id, submission.active_version).then(setFiles).catch(() => setFiles([])).finally(() => setLoading(false));
+  }, [submission.id, submission.active_version]);
+
+  const handleDownload = async (file: SubmissionFile) => {
+    try {
+      const url = await getSubmissionFileSignedUrl(file.storage_path);
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch (err) {
+      showError(err);
+    }
+  };
+
+  if (loading || files.length === 0) return null;
+
+  return (
+    <ul className="mt-2 space-y-1">
+      {files.map((f) => (
+        <li key={f.id} className="text-sm flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={() => void handleDownload(f)}>
+            <Download size={14} /> {f.file_name}
+          </Button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function GradingPanel({ assignment, rubrics }: { assignment: Assignment; rubrics: Rubric[] }) {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
@@ -295,6 +332,7 @@ function GradingPanel({ assignment, rubrics }: { assignment: Assignment; rubrics
                 <div>
                   <p className="text-sm font-medium">Apprenant {s.learner_id.slice(0, 8)}</p>
                   <p className="text-sm text-muted-foreground">{s.status}</p>
+                  <SubmissionFilesList submission={s} />
                 </div>
                 {s.status !== "graded" && (
                   <div className="flex items-center gap-2">
@@ -468,26 +506,60 @@ function StaffAssignments({ orgId }: { orgId: string }) {
   );
 }
 
+const FILE_MODE_ACCEPT: Partial<Record<Assignment["response_mode"], string>> = {
+  audio: "audio/*",
+  video: "video/*",
+};
+
 function LearnerAssignmentRow({ assignment }: { assignment: Assignment }) {
+  const user = getCurrentUser();
   const [submission, setSubmission] = useState<Submission | null>(null);
   const [text, setText] = useState("");
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [myFiles, setMyFiles] = useState<SubmissionFile[]>([]);
 
   useEffect(() => {
     mySubmission(assignment.id).then(setSubmission).catch(() => setSubmission(null)).finally(() => setLoading(false));
   }, [assignment.id]);
 
+  useEffect(() => {
+    if (submission && submission.status !== "draft" && submission.active_version > 0) {
+      listActiveSubmissionFiles(submission.id, submission.active_version).then(setMyFiles).catch(() => setMyFiles([]));
+    }
+  }, [submission]);
+
+  const isFileMode = assignment.response_mode === "file" || assignment.response_mode === "audio" || assignment.response_mode === "video";
+
   const handleSubmit = async () => {
-    if (!text.trim()) return;
+    if (!user) return;
     setSubmitting(true);
     try {
-      const result = await submitAssignment({ assignmentId: assignment.id, kind: "text", textContent: text.trim(), finalize: true });
-      setSubmission(result);
+      if (isFileMode) {
+        if (selectedFiles.length === 0) return;
+        const uploaded = await uploadSubmissionFiles(user.id, assignment.id, selectedFiles);
+        const result = await submitAssignment({ assignmentId: assignment.id, kind: assignment.response_mode, finalize: true, files: uploaded });
+        setSubmission(result);
+        setSelectedFiles([]);
+      } else {
+        if (!text.trim()) return;
+        const result = await submitAssignment({ assignmentId: assignment.id, kind: "text", textContent: text.trim(), finalize: true });
+        setSubmission(result);
+      }
     } catch (err) {
       showError(err);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleDownload = async (file: SubmissionFile) => {
+    try {
+      const url = await getSubmissionFileSignedUrl(file.storage_path);
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch (err) {
+      showError(err);
     }
   };
 
@@ -504,14 +576,37 @@ function LearnerAssignmentRow({ assignment }: { assignment: Assignment }) {
       </div>
       {!loading && !alreadySubmitted && (
         <div className="flex flex-wrap items-end gap-2">
-          <Textarea
-            className="min-w-[260px] flex-1"
-            placeholder="Votre réponse…"
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-          />
+          {isFileMode ? (
+            <input
+              type="file"
+              multiple
+              accept={FILE_MODE_ACCEPT[assignment.response_mode]}
+              onChange={(e) => setSelectedFiles(Array.from(e.target.files ?? []))}
+              aria-label="Fichier à remettre"
+              className="text-sm"
+            />
+          ) : (
+            <Textarea
+              className="min-w-[260px] flex-1"
+              placeholder="Votre réponse…"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+            />
+          )}
           <Button size="sm" loading={submitting} onClick={handleSubmit}>Remettre</Button>
         </div>
+      )}
+      {alreadySubmitted && myFiles.length > 0 && (
+        <ul className="space-y-1">
+          {myFiles.map((f) => (
+            <li key={f.id} className="text-sm flex items-center gap-2">
+              <Paperclip size={14} />
+              <button type="button" className="underline underline-offset-2" onClick={() => void handleDownload(f)}>
+                {f.file_name}
+              </button>
+            </li>
+          ))}
+        </ul>
       )}
     </li>
   );

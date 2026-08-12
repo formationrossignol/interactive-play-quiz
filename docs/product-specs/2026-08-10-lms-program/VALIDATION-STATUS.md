@@ -179,12 +179,56 @@ barème) — **non vérifié avec des données réelles de session/gradebook**
 (pas de compte staff/organisation de test disponible en local, même limite
 que le reste de cette passe).
 
+Depuis cette passe (`20260812150000_submission_file_uploads.sql`) : remise
+fichier/audio/vidéo + URLs signées courte durée — deux items du reste-à-
+faire qui n'en formaient qu'un : construire l'upload sans les URLs signées
+aurait laissé un bucket privé sans moyen de le lire ; construire les URLs
+signées sans upload n'aurait rien eu à signer. `submission_files` avait des
+politiques `SELECT` (owner/staff) depuis la migration d'origine mais
+**aucun écrivain** — ni RPC, ni policy `INSERT`. Nouveau bucket
+`assignment-submissions`, **privé** (tous les autres buckets de ce repo
+sont publics — `presentation-media`, `avatars` — celui-ci ne pouvait pas
+l'être, une remise peut être confidentielle). RLS `storage.objects` :
+convention de chemin `<learner_id>/<assignment_id>/<fichier>`, apprenant
+(insert/select sur son propre premier segment de dossier, motif déjà
+utilisé par le bucket `avatars`) et staff (select, second segment résolu
+vers `assignments.org_id`) — c'est ce verrou-là, indépendant de
+`submission_files`, qui protège réellement les octets : même un appel
+`submit_assignment()` avec un chemin que l'appelant ne possède pas ne peut
+jamais produire d'URL signée fonctionnelle pour le fichier de quelqu'un
+d'autre. `submit_assignment()` gagne `p_files` (upload direct vers le
+storage d'abord — les octets doivent exister avant l'appel —, puis
+attaché atomiquement à la version créée ; re-vérifie que chaque chemin
+appartient à l'appelant, échec net plutôt qu'une référence orpheline
+silencieuse). Signature Postgres changée (5→6 paramètres) : l'ancien
+overload à 5 paramètres est explicitement `drop`pé plutôt que laissé en
+doublon — sans danger pour `gradebook.ts::submitAssignment()` qui appelle
+déjà via des paramètres nommés (PostgREST résout par nom, `p_files`
+omis utilise son défaut `null`). Téléchargement : `createSignedUrl()`
+côté client (5 min), pas de nouvelle surface DB. UI apprenant
+(`Assignments.tsx::LearnerAssignmentRow`, sélecteur de fichier remplace le
+texte pour `response_mode` file/audio/video, `accept` filtré pour
+audio/vidéo) et staff (`GradingPanel::SubmissionFilesList`, liens de
+téléchargement par remise). Vérifié : migration appliquée contre un schéma
+stub reproduisant les vraies tables **et** un schéma `storage` minimal
+(Postgres jetable) — testé avec le rôle `authenticated` réel (pas
+`postgres` superuser, qui contourne RLS) : upload dans son propre dossier
+accepté, upload dans le dossier d'un autre apprenant rejeté par la vraie
+RLS (`row-level security policy`, pas juste la logique applicative),
+`submit_assignment()` avec fichiers attache bien les métadonnées à la
+bonne version, chemin non possédé rejeté (`file_path_ownership_mismatch`),
+appel historique sans `p_files` (paramètres nommés) toujours fonctionnel ;
+`tsc`/`eslint` propres ; suite complète (335 tests) verte — **non vérifié
+avec de vrais comptes/fichiers réels** (même limite que le reste du
+programme). Non couvert : mode `combo`, l'enregistrement audio/vidéo dans
+le navigateur (le champ fichier accepte un enregistrement déjà exporté,
+pas un enregistreur intégré — hors scope, pas demandé par le modèle de
+données).
+
 **Reste à faire** :
-- [ ] UI : remise fichier/audio/vidéo — seul le mode texte est câblé côté client (`response_mode` en DB supporte déjà file/url/audio/video)
 - [ ] UI : `assignment_targets` par groupe/apprenant individuel — seul le ciblage par session est câblé
 - [ ] UI : échéance/aménagement dérogatoire par apprenant (`due_override`) — colonne existe, aucun écran
-- [ ] Job serveur de scan antivirus des fichiers (`submission_files.scan_status`) — colonne prête, aucun job
-- [ ] URLs de téléchargement signées courte durée pour les fichiers
+- [ ] Job serveur de scan antivirus des fichiers (`submission_files.scan_status`) — colonne prête, aucun job ; les fichiers uploadés restent `pending` indéfiniment
 - [ ] Connecteur antiplagiat (interface only — non-objectif V1 explicite, mais l'interface elle-même n'existe pas)
 - [ ] Notifications programmées (J-7/J-1/retard) — table `notifications` existe, rien ne les déclenche pour les devoirs
 - [ ] Double correction / correction anonyme (GRD-005) — colonne `is_anonymous` posée, pas de flux de levée d'anonymat auditée

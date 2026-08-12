@@ -194,9 +194,66 @@ export async function mySubmission(assignmentId: string): Promise<Submission | n
   return (data as Submission | null) ?? null;
 }
 
-/** Atomic: server computes lateness from the effective due date — see submit_assignment() migration. */
+/** ASG file/audio/video submissions (20260812150000). Bucket is private —
+ *  storage RLS (owner folder or staff-by-assignment-org) is the real gate;
+ *  createSignedUrl() below is checked against it independently of whatever
+ *  submission_files says. Path: <learnerId>/<assignmentId>/<random>-<name>,
+ *  matched by submit_assignment()'s own ownership check on p_files. */
+export interface SubmissionFile {
+  id: string;
+  submission_version_id: string;
+  storage_path: string;
+  file_name: string;
+  mime_type: string | null;
+  size_bytes: number | null;
+  scan_status: 'pending' | 'clean' | 'rejected';
+}
+
+const MAX_SUBMISSION_FILE_BYTES = 25 * 1024 * 1024;
+
+export async function uploadSubmissionFiles(
+  learnerId: string, assignmentId: string, files: File[],
+): Promise<Array<{ storage_path: string; file_name: string; mime_type: string; size_bytes: number }>> {
+  const uploaded: Array<{ storage_path: string; file_name: string; mime_type: string; size_bytes: number }> = [];
+  for (const file of files) {
+    if (file.size > MAX_SUBMISSION_FILE_BYTES) {
+      throw new Error(`« ${file.name} » dépasse la taille maximale (25 Mo).`);
+    }
+    const path = `${learnerId}/${assignmentId}/${crypto.randomUUID()}-${file.name}`;
+    const { error } = await supabase.storage.from('assignment-submissions').upload(path, file, { contentType: file.type });
+    if (error) throw error;
+    uploaded.push({ storage_path: path, file_name: file.name, mime_type: file.type, size_bytes: file.size });
+  }
+  return uploaded;
+}
+
+/** Short-lived (5 min) — a fresh one is requested each time a download is opened. */
+export async function getSubmissionFileSignedUrl(storagePath: string): Promise<string> {
+  const { data, error } = await supabase.storage.from('assignment-submissions').createSignedUrl(storagePath, 300);
+  if (error) throw error;
+  return data.signedUrl;
+}
+
+export async function listActiveSubmissionFiles(submissionId: string, activeVersion: number): Promise<SubmissionFile[]> {
+  if (activeVersion <= 0) return [];
+  const { data: version, error: versionError } = await supabase
+    .from('submission_versions')
+    .select('id')
+    .eq('submission_id', submissionId)
+    .eq('version', activeVersion)
+    .maybeSingle();
+  if (versionError) throw versionError;
+  if (!version) return [];
+  const { data, error } = await supabase.from('submission_files').select('*').eq('submission_version_id', version.id);
+  if (error) throw error;
+  return (data ?? []) as SubmissionFile[];
+}
+
+/** Atomic: server computes lateness from the effective due date — see submit_assignment() migration.
+ *  `files` must already be uploaded (uploadSubmissionFiles()) — this only attaches their metadata. */
 export async function submitAssignment(input: {
   assignmentId: string; kind: ResponseMode; textContent?: string; url?: string; finalize?: boolean;
+  files?: Array<{ storage_path: string; file_name: string; mime_type: string; size_bytes: number }>;
 }): Promise<Submission> {
   const { data, error } = await supabase.rpc('submit_assignment', {
     p_assignment_id: input.assignmentId,
@@ -204,6 +261,7 @@ export async function submitAssignment(input: {
     p_text_content: input.textContent ?? null,
     p_url: input.url ?? null,
     p_finalize: input.finalize ?? true,
+    p_files: input.files ?? null,
   });
   if (error) throw error;
   return data as Submission;

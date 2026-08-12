@@ -47,12 +47,11 @@ pouvoir s'y référer facilement.
 
 ## 01 — Devoirs, remises et carnet de notes
 
-- [ ] UI : remise fichier/audio/vidéo — seul le mode texte est câblé côté client (`response_mode` en DB supporte déjà file/url/audio/video)
+- [x] UI : remise fichier/audio/vidéo + URLs signées courte durée — `20260812150000_submission_file_uploads.sql` : bucket privé `assignment-submissions` (les autres buckets du repo sont publics, celui-ci ne pouvait pas l'être), RLS `storage.objects` en double lecture indépendante (dossier `<learner_id>/...` pour l'apprenant, jointure vers `assignments.org_id` pour le staff) — le vrai verrou sur les octets, indépendant de ce que dit `submission_files`. `submit_assignment()` accepte désormais `p_files` (upload d'abord côté storage, puis attaché atomiquement à la version créée ; vérifie que le chemin appartient bien à l'appelant). Téléchargement : `createSignedUrl()` côté client, 5 min. UI apprenant (`Assignments.tsx::LearnerAssignmentRow`, sélecteur de fichier selon `response_mode`) et staff (`GradingPanel::SubmissionFilesList`)
 - [ ] UI : `assignment_targets` par groupe/apprenant individuel — seul le ciblage par session est câblé
 - [ ] UI : échéance/aménagement dérogatoire par apprenant (`due_override`) — colonne existe, aucun écran
 - [x] UI : vue gradebook consolidée (GBK-001 à GBK-006) — `/lms/gradebook` : matrice apprenant × grade_item par session, sous-totaux par catégorie avec coefficient (`grade_items.weight`) et exclusion de la plus basse note togglable, formule exposée par total (GBK-004), export CSV/XLSX/PDF neutralisant les formules et import CSV/XLSX (GBK-006 — `import_gradebook_csv()`, `20260812080000_gradebook_csv_import.sql` : nouvelle colonne `grade_items` source_type='manual' + `grade_results`, correspondance des personnes par nom d'utilisateur côté client contre l'effectif de la session déjà chargé, prévisualisation avec statut par ligne — OK/introuvable/doublon/note hors barème —, tout-ou-rien server-side), simulation apprenant « si je reçois X » client-only dans « Mes notes » (GBK-005). **Reste** : dashboards visuels (07)
-- [ ] Job serveur de scan antivirus des fichiers (`submission_files.scan_status`) — colonne prête, aucun job
-- [ ] URLs de téléchargement signées courte durée pour les fichiers
+- [ ] Job serveur de scan antivirus des fichiers (`submission_files.scan_status`) — colonne prête, aucun job (les fichiers uploadés restent `pending` indéfiniment tant que ce job n'existe pas)
 - [ ] Connecteur antiplagiat (interface only — non-objectif V1 explicite, mais l'interface elle-même n'existe pas)
 - [ ] Notifications programmées (J-7/J-1/retard) — table `notifications` existe, rien ne les déclenche pour les devoirs (bloqué par : pas d'ordonnanceur)
 - [ ] Double correction / correction anonyme (GRD-005) — colonne `is_anonymous` posée, pas de flux de levée d'anonymat auditée
