@@ -435,11 +435,40 @@ ce commit** — migration prête, pas encore poussée ; comportement du cron
 lui-même (est-ce qu'il se déclenche, `cron.job_run_details`) pas vérifiable
 sans attendre une exécution réelle après déploiement.
 
+Depuis cette passe (`20260812070000_analytics_daily_item.sql`) : projection
+journalière **item** — table `analytics_daily_item` (org_id,
+item_revision_id, day, responses_count, correct_count, omitted_count,
+avg_score_ratio), alimentée par un nouveau bloc ajouté à
+`_run_daily_analytics_rollup_internal()` (donc déjà branchée sur le job
+`pg_cron` nocturne, aucun câblage supplémentaire nécessaire). Une réponse
+compte le jour où elle a été répondue (`answered_at`), ou — si jamais
+répondue — le jour où la tentative qui la laisse vide a été finalisée
+(`submitted_at`) ; une réponse d'une tentative encore `in_progress` ne
+compte nulle part tant que l'un des deux n'est pas arrivé. Couvre la partie
+d'ANA-009 que la matière première permet réellement : nombre de réponses,
+taux de bonne réponse, taux d'omission, plus une moyenne des ratios de score
+(utile pour le crédit partiel mcq déjà supporté par le moteur de
+correction). **Ne couvre pas** le temps médian d'ANA-009 :
+`assessment_responses` n'a aucune colonne de durée par item (seulement
+`answered_at`, un instant, pas une durée) — en ajouter une pour ce seul
+usage aurait été deviner un mécanisme de capture (déclaratif client ?
+requête à requête serveur ?) que la spec 08 n'a jamais défini. RLS identique
+aux 3 autres tables journalières (`trainer`/`pedago`/`admin` seulement,
+même gap ANA-005 apprenant). Helper `listDailyItem()` ajouté à
+`analyticsDashboard.ts` sur le même modèle que les 3 existants ; pas de
+nouveau panneau dans `AnalyticsDashboard`/`Analytics.tsx` — ANA-010/011/012
+(distracteurs par groupe de performance, difficulté/discrimination,
+avertissements) restent un agrégat sensiblement plus gros (répartition par
+option, découpage en quartiles de score par tentative), pas juste une
+lecture de plus sur cette table. **Non vérifié avec des données réelles**
+(même limite que le reste de cette passe : pas de compte staff/apprenant
+local pour dérouler un cycle création→passation→note→rollup complet).
+
 **Reste à faire** :
-- [ ] Projection journalière **item** — bloquée en amont : ANA-009/010 ont besoin d'un vrai moteur de correction lisant `item_answer_keys` (spec 08), qui n'existe pas encore ; construire la projection avant le producteur de données serait deviner un schéma
 - [ ] Projection journalière **programme** — jamais définie faute de UI/agrégat programme existant à côté de session/offering
-- [ ] Dashboard apprenant (ANA-005) — bloqué par l'absence de politique RLS lecture-apprenant sur `analytics_daily_activity`/`analytics_daily_enrollment`/`analytics_daily_competency`
-- [ ] Analyse d'items / psychométrie (difficulté, discrimination, distracteurs — ANA-009 à ANA-012)
+- [ ] Dashboard apprenant (ANA-005) — bloqué par l'absence de politique RLS lecture-apprenant sur `analytics_daily_activity`/`analytics_daily_enrollment`/`analytics_daily_competency`/`analytics_daily_item`
+- [ ] Analyse d'items / psychométrie (ANA-010 distracteurs par groupe de performance, ANA-011 difficulté/discrimination, ANA-012 avertissements) — `analytics_daily_item` fournit le compte/taux de base, pas la répartition par option ni le découpage en quartiles nécessaires à ces trois-là
+- [ ] Temps médian de réponse par item (ANA-009) — bloqué par l'absence de toute colonne de durée sur `assessment_responses`
 - [ ] Programmation de rapports (`report_schedules`/`report_runs`) — tables posées, aucun exécuteur ; pourrait maintenant se brancher sur le même `pg_cron`
 - [ ] Export CSV/XLSX/PDF avec pseudonymisation
 - [ ] Seuil minimal anti-réidentification sur les comparaisons de cohortes (ANA-020)
