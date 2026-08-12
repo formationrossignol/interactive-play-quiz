@@ -280,10 +280,30 @@ local) — vérifié par lecture du SQL, `tsc`/`eslint` propres, migration
 appliquée sans erreur (`supabase db push`, `migration list` confirmé
 synchronisé).
 
+Depuis cette passe (`20260812220000_plagiarism_check_interface.sql`) :
+connecteur antiplagiat. La spec exclut explicitement un vrai connecteur
+vendor pour V1 — seule l'interface manquait, donc aucun service externe
+appelé (pas de clé API, pas de scan automatique) : le staff enregistre
+le résultat d'une vérification faite hors système (Turnitin/Compilatio/…),
+même posture qu'une note manuelle. `submissions` gagne
+`plagiarism_check_status` (`not_requested`/`pending`/`reviewed`),
+`plagiarism_check_note`, `plagiarism_checked_by`, `plagiarism_checked_at`.
+Écrit uniquement via `set_plagiarism_check()` (staff seulement) — `submissions`
+n'avait *aucune* policy d'écriture directe pour personne (seulement
+`submissions_owner`/`submissions_staff_read` en select ; chaque mutation
+passe déjà par une RPC dédiée : `submit_assignment()`,
+`publish_submission_grade()`), donc cette RPC suit la même convention plutôt
+que d'ouvrir une policy d'écriture directe nouvelle. UI :
+`Assignments.tsx::PlagiarismCheckControl`, sous la liste de fichiers dans
+`GradingPanel` — sélecteur de statut + champ note/lien. **Non testé en
+conditions réelles** (même limite que le reste de cette passe : pas de
+compte staff local) — vérifié par lecture du SQL, `tsc`/`eslint` propres,
+migration appliquée sans erreur (`supabase db push`, `migration list`
+confirmé synchronisé).
+
 **Reste à faire** :
 - [ ] UI : `assignment_targets` par groupe/apprenant individuel — seul le ciblage par session est câblé
-- [ ] Job serveur de scan antivirus des fichiers (`submission_files.scan_status`) — colonne prête, aucun job ; les fichiers uploadés restent `pending` indéfiniment
-- [ ] Connecteur antiplagiat (interface only — non-objectif V1 explicite, mais l'interface elle-même n'existe pas)
+- [ ] Job serveur de scan antivirus des fichiers (`submission_files.scan_status`) — colonne prête, aucun job ; les fichiers uploadés restent `pending` indéfiniment ; vendor à choisir (voir discussion 2026-08-12 — aucune option marketplace, service externe direct requis)
 - [ ] Notifications programmées (J-7/J-1/retard) — table `notifications` existe, rien ne les déclenche pour les devoirs
 - [ ] Double correction / correction anonyme (GRD-005) — colonne `is_anonymous` posée, pas de flux de levée d'anonymat auditée
 
