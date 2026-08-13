@@ -301,11 +301,101 @@ compte staff local) — vérifié par lecture du SQL, `tsc`/`eslint` propres,
 migration appliquée sans erreur (`supabase db push`, `migration list`
 confirmé synchronisé).
 
+Depuis cette passe (pas de nouvelle migration — `assignment_targets_manage`
+permettait déjà l'écriture directe) : `assignment_targets` par groupe/
+apprenant individuel. Jusqu'ici seul le ciblage par session était câblé
+(bouton « Publier à la session », qui ne s'affiche même jamais en pratique
+puisque `createAssignment()` ne renseigne jamais `assignments.session_id`
+— gap distinct, non traité ici). `Assignments.tsx::AssignmentTargetsPanel` :
+groupe — `listGroups()` du formateur (groupes personnels, même modèle que
+`Groups.tsx`/`CreateManualEvaluationDialog.tsx`, pas un rôle org) ;
+apprenant individuel — `PersonPicker`/`searchUsernames`, recherche
+plateforme entière, pas scopée à l'org (même limite déjà acceptée partout
+où `PersonPicker` sert déjà à inviter dans un groupe ; `assignment_targets_manage`
+ne vérifie que la propriété du devoir, pas l'appartenance à l'org de la
+cible). Invitation par e-mail explicitement non supportée : contrairement
+à `share_group_members.pending_email`, `assignment_targets.target_id` est
+un uuid non-nul — seuls les comptes existants peuvent être ciblés, message
+d'erreur explicite plutôt qu'un échec silencieux. Nouvelle lecture générale
+`listAssignmentTargets()` (l'existante `listLearnerDueOverrides()` ne
+filtrait que les lignes `learner` avec dérogation, omettait `group`/
+`session` et les lignes `learner` sans dérogation) et
+`removeAssignmentTarget()`. **Non testé en conditions réelles** (même
+limite que le reste de cette passe) — vérifié par lecture du code,
+`tsc`/`eslint` propres.
+
+Depuis cette passe (`20260813010000_assignment_due_reminders.sql`) :
+notifications programmées (J-7/J-1/retard). `notifications`/
+`notification_preferences` et toute la surface d'affichage
+(`NotificationCenter.tsx`, `/notifications`, realtime) existaient déjà et
+fonctionnaient de bout en bout (utilisés depuis
+`20260811050000_lms_reconciliation.sql` pour les notifications de note
+publiée) — rien à construire côté UI, seulement le générateur.
+`_generate_assignment_due_reminders_internal()`, branché comme 4ᵉ étape
+isolée de `run_scheduled_lms_analytics_jobs()` (déjà nocturne depuis
+`20260812020000`). Résolution : `effective_assignment_due_at()` par
+apprenant (spec 05), pas `assignments.due_at` brut — même précédent que la
+règle `overdue` de `generate_risk_signals()`, respecte donc les
+aménagements (`extended_deadline` décale le rappel, `no_time_limit`
+l'annule entièrement, retour `null`). Expansion cible (qui reçoit
+l'échéance) : même CTE d'union session/groupe/apprenant que cette même
+règle `overdue` utilise déjà pour `assignment_targets` — pas
+`assignment_visible_to_learner()`, qui ne répond que pour une paire à la
+fois, pas pour énumérer tout le monde. Exclut qui a déjà remis (même
+prédicat `left join submissions ... where s.id is null or s.status =
+'draft'`). Dédup : `notifications` n'a ni contrainte unique ni colonne de
+statut à exploiter (contrairement au cycle ouvert/résolu de
+`risk_signals`) — un rappel par (apprenant, devoir, type) tiré une seule
+fois, jamais rejoué, via `metadata->>'assignment_id'` +
+`metadata->>'reminder_kind'`, même logique de dédup que
+`generate_risk_signals()` applique déjà par devoir sur `factors->>'assignment_id'`.
+Catégorie `system` réutilisée (déjà celle des notifications de note
+publiée, toujours activée — pas de nouveau bouton de préférence à
+construire) plutôt qu'une nouvelle valeur de contrainte + icône dans
+`NotificationItem.tsx` pour un seul générateur. **Non testé en conditions
+réelles** (même limite que le reste de cette passe : pas de compte
+staff/apprenant local, et comportement du cron lui-même pas vérifiable
+sans attendre une exécution nocturne réelle) — vérifié par lecture du SQL,
+migration appliquée sans erreur (`supabase db push`, `migration list`
+confirmé synchronisé).
+
+Depuis cette passe (`20260813020000_anonymous_grading.sql`,
+`20260813030000_list_submissions_for_grading_order.sql`) : correction
+anonyme (moitié de GRD-005 — « colonne posée, pas de flux » décrivait
+précisément et uniquement cette moitié ; l'autre moitié, double
+correction, n'a **aucun** schéma nulle part — pas de colonne second
+correcteur, pas de table de réconciliation, rien non plus dans le modèle
+de données indicatif de la spec — chantier distinct laissé ouvert plutôt
+que deviné). `submission_assessments.is_anonymous` existait depuis
+`20260810160000`, toujours `false`, jamais lu ni écrit nulle part
+(vérifié par grep avant de commencer). Option de devoir portée par
+`assignments.policy` (jsonb, déjà là, toujours `{}` jusqu'ici) —
+`{"anonymous_grading": true}`, pas une nouvelle colonne. RLS sur
+`submissions` expose `learner_id` sans condition à tout `trainer`/
+`pedago`/`admin` de l'org (`submissions_staff_read`) — un masquage par
+policy est donc impossible sans table de lookup à joindre, qui est
+justement le journal d'audit ; `list_submissions_for_grading()` remplace
+la lecture directe (`listAssignmentSubmissions()`) et renvoie
+`learner_id = null` + `anonymized = true` tant que l'acteur courant n'a pas
+levé l'anonymat pour cette remise précise — persiste après rechargement
+(vérifié par `exists()`, pas un état de session). `lift_submission_anonymity()`
+— seule façon de révéler l'identité, journalise avant de retourner
+(`submission_anonymity_lifts`, même forme que le seul précédent
+« lecture auditée » du dépôt, `accommodation_access_log` : pas de colonne
+motif, le rôle staff + la trace suffisent, même raisonnement que ce
+précédent). `publish_submission_grade()` renseigne enfin `is_anonymous`
+depuis la politique de l'devoir au moment de la notation — trace
+historique permanente, indépendante d'un futur changement de politique.
+UI : case « Correction anonyme » à la création dans `Assignments.tsx`,
+`GradingPanel` affiche « Apprenant anonymisé » + bouton « Lever
+l'anonymat » au lieu de l'identifiant. **Non testé en conditions réelles**
+(même limite que le reste de cette passe) — vérifié par lecture du SQL,
+`tsc`/`eslint` propres, migrations appliquées sans erreur (`supabase db
+push`, `migration list` confirmé synchronisé).
+
 **Reste à faire** :
-- [ ] UI : `assignment_targets` par groupe/apprenant individuel — seul le ciblage par session est câblé
 - [ ] Job serveur de scan antivirus des fichiers (`submission_files.scan_status`) — colonne prête, aucun job ; les fichiers uploadés restent `pending` indéfiniment ; vendor à choisir (voir discussion 2026-08-12 — aucune option marketplace, service externe direct requis)
-- [ ] Notifications programmées (J-7/J-1/retard) — table `notifications` existe, rien ne les déclenche pour les devoirs
-- [ ] Double correction / correction anonyme (GRD-005) — colonne `is_anonymous` posée, pas de flux de levée d'anonymat auditée
+- [ ] Double correction (GRD-005, deuxième moitié) — aucun schéma : pas de second correcteur, pas de réconciliation, rien dans le modèle indicatif de la spec
 
 ## 02 — Inscriptions, sessions et gestion des apprenants
 

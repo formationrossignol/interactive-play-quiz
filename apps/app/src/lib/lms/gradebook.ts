@@ -19,6 +19,7 @@ export interface Assignment {
   max_points: number;
   weight: number;
   allowed_attempts: number;
+  policy: Record<string, unknown>;
   status: 'draft' | 'published';
   created_at: string;
 }
@@ -28,7 +29,9 @@ export type PlagiarismCheckStatus = 'not_requested' | 'pending' | 'reviewed';
 export interface Submission {
   id: string;
   assignment_id: string;
-  learner_id: string;
+  /** null when the assignment has anonymous_grading on and the caller
+   *  hasn't lifted this submission's anonymity yet — see `anonymized`. */
+  learner_id: string | null;
   status: SubmissionStatus;
   active_version: number;
   created_at: string;
@@ -37,6 +40,7 @@ export interface Submission {
   plagiarism_check_note: string | null;
   plagiarism_checked_by: string | null;
   plagiarism_checked_at: string | null;
+  anonymized: boolean;
 }
 
 export interface GradeResult {
@@ -148,6 +152,7 @@ export async function listMyAssignments(): Promise<Assignment[]> {
 export async function createAssignment(input: {
   orgId: string; ownerId: string; sessionId?: string | null; title: string;
   instructions?: string; responseMode: ResponseMode; dueAt?: string | null; maxPoints?: number;
+  anonymousGrading?: boolean;
 }): Promise<Assignment> {
   const { data, error } = await supabase
     .from('assignments')
@@ -160,6 +165,7 @@ export async function createAssignment(input: {
       response_mode: input.responseMode,
       due_at: input.dueAt ?? null,
       max_points: input.maxPoints ?? 20,
+      policy: input.anonymousGrading ? { anonymous_grading: true } : {},
       status: 'draft',
     })
     .select()
@@ -224,6 +230,25 @@ export async function setLearnerDueOverride(assignmentId: string, learnerId: str
   return data as AssignmentTarget;
 }
 
+/** All target rows (session/group/learner), unfiltered — DueOverridesPanel's
+ *  listLearnerDueOverrides() only returns learner-type rows carrying an
+ *  override; this is the general-purpose read used by AssignmentTargetsPanel
+ *  to show the full targeting state of an assignment. Covered by the
+ *  existing assignment_targets_staff_read RLS policy, no new grant needed. */
+export async function listAssignmentTargets(assignmentId: string): Promise<AssignmentTarget[]> {
+  const { data, error } = await supabase
+    .from('assignment_targets')
+    .select('*')
+    .eq('assignment_id', assignmentId);
+  if (error) throw error;
+  return (data ?? []) as AssignmentTarget[];
+}
+
+export async function removeAssignmentTarget(targetId: string): Promise<void> {
+  const { error } = await supabase.from('assignment_targets').delete().eq('id', targetId);
+  if (error) throw error;
+}
+
 export async function clearLearnerDueOverride(assignmentId: string, learnerId: string): Promise<void> {
   const { error } = await supabase
     .from('assignment_targets')
@@ -234,14 +259,26 @@ export async function clearLearnerDueOverride(assignmentId: string, learnerId: s
   if (error) throw error;
 }
 
+/** GRD-005: goes through list_submissions_for_grading() rather than a
+ *  direct table select — submissions_staff_read (RLS) exposes learner_id
+ *  unconditionally, column-blind, so masking for anonymous_grading
+ *  assignments has to happen in a function, not a policy. Behaves
+ *  identically to a plain select for non-anonymous assignments
+ *  (anonymized: false, learner_id populated). */
 export async function listAssignmentSubmissions(assignmentId: string): Promise<Submission[]> {
-  const { data, error } = await supabase
-    .from('submissions')
-    .select('*')
-    .eq('assignment_id', assignmentId)
-    .order('updated_at', { ascending: false });
+  const { data, error } = await supabase.rpc('list_submissions_for_grading', { p_assignment_id: assignmentId });
   if (error) throw error;
   return (data ?? []) as Submission[];
+}
+
+/** The only way a submission's learner_id is ever revealed under an
+ *  anonymous_grading assignment — logs the reveal (submission_anonymity_lifts)
+ *  before returning it. Persists across reloads: once this actor lifts a
+ *  submission, list_submissions_for_grading() stops masking it for them. */
+export async function liftSubmissionAnonymity(submissionId: string): Promise<string> {
+  const { data, error } = await supabase.rpc('lift_submission_anonymity', { p_submission_id: submissionId });
+  if (error) throw error;
+  return data as string;
 }
 
 /** Interface only (RESTE-A-FAIRE §01): no vendor connector, staff record
