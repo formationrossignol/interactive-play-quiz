@@ -1261,6 +1261,12 @@ et les formats riches sans comparateur automatique sont capturés puis dirigés
 vers la revue humaine au lieu d'être notés implicitement. L'éditeur ItemBank
 expose les types et le runner accepte ces réponses. Aucune IA n'est utilisée.
 
+Depuis `20260813200000_assessment_rescore_correctness.sql` : le rescore en
+masse est exécutable après prévisualisation, avec recalcul des tentatives et
+audit avant/après même lorsque seul le booléen de correction change. Le
+panneau Collections de `/lms/item-bank` gère désormais les droits granulaires
+et la RLS les applique également aux lectures hors UI.
+
 **Fait** : `assessment_items`/`assessment_item_revisions` (immuables) +
 `item_answer_keys` (illisible client) + `create_item_revision()` +
 `submit_score_adjustment()` audité.
@@ -1371,9 +1377,9 @@ push`, `migration list` confirmé synchronisé).
 - [ ] Assemblage réel d'une évaluation — tirage aléatoire (sections `pool`, `assessment_pool_rules`) : refusé explicitement, aucun exécuteur
 - [ ] Barèmes riches pour les 17 autres `item_type` (ranking « ordre partiel », matching, cloze, et les 8 types ASM-017-024) — aucun contrat de données, aucune UI d'auteur
 - [ ] Nouveaux types d'interaction (passage, vidéo interactive, audio/vidéo, dessin, labeling, math/graphique, fichier, code — ASM-017 à ASM-024) : le schéma accepte n'importe quel `item_type`/`prompt` JSON mais aucun éditeur/lecteur n'existe pour ces types
-- [ ] Rescore en masse avec prévisualisation d'impact (`rescore_jobs` posé, aucun exécuteur)
+- [x] Rescore en masse avec prévisualisation d'impact — aperçu des personnes impactées, exécution auditée et recalcul des tentatives
 - [ ] Suggestions IA (génération, distracteurs, vérifications de biais/ambiguïté) — non-objectif partiel mais mentionné comme option V1
-- [ ] Collections/permissions granulaires (voir/utiliser/commenter/modifier) — tables posées, UI ne gère que la création d'items
+- [x] Collections/permissions granulaires — UI de partage et révocation + RLS par niveau de permission
 
 ## 09 — Sondage live, Q&A, modération et coanimation
 

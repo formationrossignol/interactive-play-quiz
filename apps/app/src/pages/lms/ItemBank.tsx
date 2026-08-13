@@ -38,6 +38,17 @@ import {
   type PlacementThreshold,
   type SimulationResult,
 } from "@/lib/lms/itemBank";
+import {
+  createItemCollection,
+  executeRescore,
+  grantItemPermission,
+  listItemCollections,
+  listItemPermissions,
+  previewRescore,
+  revokeItemPermission,
+  type ItemCollection,
+  type ItemPermission,
+} from "@/lib/lms/itemCollections";
 
 const STAFF_ROLES = new Set(["trainer", "pedago", "admin"]);
 /** All formats supported by the assessment runner. Rich formats are stored
@@ -177,6 +188,10 @@ function ItemRevisions({ item }: { item: AssessmentItem }) {
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [simulatingId, setSimulatingId] = useState<string | null>(null);
+  const [rescoringId, setRescoringId] = useState<string | null>(null);
+  const [impact, setImpact] = useState<Record<string, number>>({});
+  const [rescoreReason, setRescoreReason] = useState("");
+  const [executingRescore, setExecutingRescore] = useState(false);
 
   useEffect(() => {
     listItemRevisions(item.id).then(setRevisions).catch(showError).finally(() => setLoading(false));
@@ -187,6 +202,22 @@ function ItemRevisions({ item }: { item: AssessmentItem }) {
     setOptions([{ id: crypto.randomUUID(), label: "" }, { id: crypto.randomUUID(), label: "" }]);
     setCorrectIds([]); setPartialCredit(false); setPenaltyPerWrong("1");
     setTfCorrect("true"); setEquivalents([""]); setCaseSensitive(false);
+  };
+
+  const inspectRescore = async (revisionId: string) => {
+    setRescoringId(revisionId);
+    try {
+      const rows = await previewRescore(revisionId);
+      setImpact((prev) => ({ ...prev, [revisionId]: rows.length }));
+    } catch (err) { showError(err); }
+  };
+
+  const runRescore = async (revisionId: string) => {
+    if (!rescoreReason.trim()) return;
+    setExecutingRescore(true);
+    try { await executeRescore(revisionId, rescoreReason.trim()); setRescoreReason(""); await inspectRescore(revisionId); }
+    catch (err) { showError(err); }
+    finally { setExecutingRescore(false); }
   };
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -349,9 +380,11 @@ function ItemRevisions({ item }: { item: AssessmentItem }) {
                   <Button type="button" variant="ghost" size="sm" onClick={() => setSimulatingId((cur) => (cur === r.id ? null : r.id))}>
                     <FlaskConical size={14} /> Simuler
                   </Button>
+                  <Button type="button" variant="ghost" size="sm" onClick={() => void inspectRescore(r.id)}>Prévisualiser le rescore</Button>
                 </div>
               </div>
               {simulatingId === r.id && <SimulateForm item={item} revision={r} />}
+              {impact[r.id] !== undefined && <div className="mt-2 rounded-md border border-dashed p-3 text-sm"><strong>{impact[r.id]} tentative(s) impactée(s)</strong><div className="mt-2 flex flex-wrap items-end gap-2"><div className="min-w-[260px] flex-1 space-y-1"><label className="text-xs" htmlFor={`rescore-reason-${r.id}`}>Motif audité</label><Input id={`rescore-reason-${r.id}`} value={rescoreReason} onChange={(e) => setRescoreReason(e.target.value)} placeholder="Ex. correction de la réponse correcte" /></div><Button size="sm" loading={executingRescore} disabled={!rescoreReason.trim()} onClick={() => void runRescore(r.id)}>Exécuter le rescore</Button></div></div>}
             </li>
           ))}
         </ul>
@@ -674,6 +707,31 @@ function AssessmentsPanel({ orgId, items }: { orgId: string; items: AssessmentIt
   );
 }
 
+function CollectionsPanel({ orgId }: { orgId: string }) {
+  const [collections, setCollections] = useState<ItemCollection[]>([]);
+  const [selected, setSelected] = useState<ItemCollection | null>(null);
+  const [permissions, setPermissions] = useState<ItemPermission[]>([]);
+  const [title, setTitle] = useState("");
+  const [visibility, setVisibility] = useState<ItemCollection['visibility']>("private");
+  const [userId, setUserId] = useState("");
+  const [permission, setPermission] = useState<ItemPermission['permission']>("view");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const reload = () => listItemCollections(orgId).then(setCollections).catch(showError).finally(() => setLoading(false));
+  useEffect(() => { reload(); }, [orgId]);
+  useEffect(() => { if (selected) listItemPermissions(selected.id).then(setPermissions).catch(showError); }, [selected]);
+  const create = async () => {
+    if (!title.trim()) return;
+    setSaving(true); try { const collection = await createItemCollection(orgId, title.trim(), visibility); setCollections((prev) => [collection, ...prev]); setTitle(""); setSelected(collection); } catch (err) { showError(err); } finally { setSaving(false); }
+  };
+  const grant = async () => {
+    if (!selected || !userId.trim()) return;
+    setSaving(true); try { const row = await grantItemPermission(selected.id, userId.trim(), permission); setPermissions((prev) => [...prev.filter((p) => p.id !== row.id), row]); setUserId(""); } catch (err) { showError(err); } finally { setSaving(false); }
+  };
+  if (loading) return <TableSkeleton rows={2} cols={2} />;
+  return <section className="product-list-panel p-5 mt-4"><div className="product-panel-heading -mx-5 -mt-5 mb-4"><div><h2>Collections et permissions</h2><p>Partagez une banque d'items avec des droits explicites : voir, utiliser, commenter ou modifier.</p></div></div><div className="flex flex-wrap items-end gap-2"><Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Nom de la collection" className="min-w-[220px]" /><select value={visibility} onChange={(e) => setVisibility(e.target.value as ItemCollection['visibility'])} className="h-10 rounded-md border border-input bg-background px-2 text-sm"><option value="private">Privée</option><option value="shared">Partagée</option><option value="org">Organisation</option></select><Button size="sm" loading={saving} onClick={() => void create()}><Plus size={14} /> Créer</Button></div>{collections.length > 0 && <div className="mt-4 flex flex-wrap gap-2">{collections.map((collection) => <Button key={collection.id} size="sm" variant={selected?.id === collection.id ? "default" : "outline"} onClick={() => setSelected(collection)}>{collection.title} · {collection.visibility}</Button>)}</div>}{selected && <div className="mt-4 rounded-md border p-3"><p className="mb-2 text-sm font-medium">Droits de « {selected.title} »</p><div className="flex flex-wrap items-end gap-2"><Input value={userId} onChange={(e) => setUserId(e.target.value)} placeholder="UUID utilisateur" className="min-w-[240px]" /><select value={permission} onChange={(e) => setPermission(e.target.value as ItemPermission['permission'])} className="h-10 rounded-md border border-input bg-background px-2 text-sm"><option value="view">Voir</option><option value="use">Utiliser</option><option value="comment">Commenter</option><option value="edit">Modifier</option></select><Button size="sm" variant="outline" loading={saving} onClick={() => void grant()}>Accorder</Button></div><ul className="mt-3 space-y-1 text-sm">{permissions.map((row) => <li className="flex items-center justify-between border-t py-2" key={row.id}><span>{row.user_id.slice(0, 8)} · {row.permission}</span><Button size="sm" variant="ghost" onClick={() => void revokeItemPermission(row.id).then(() => setPermissions((prev) => prev.filter((p) => p.id !== row.id))).catch(showError)}>Révoquer</Button></li>)}</ul></div>}</section>;
+}
+
 export default function LmsItemBank() {
   const [memberships, setMemberships] = useState<OrgMembership[]>([]);
   const [items, setItems] = useState<AssessmentItem[]>([]);
@@ -797,6 +855,7 @@ export default function LmsItemBank() {
             </ul>
           )}
         </section>
+        <CollectionsPanel orgId={activeOrgId} />
         <AssessmentsPanel orgId={activeOrgId} items={items} />
       </div>
     </AppLayout>
