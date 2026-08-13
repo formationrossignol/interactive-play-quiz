@@ -1249,13 +1249,7 @@ effectivement le bandeau masqué) — vérifié uniquement par relecture du SQL
 et par l'application propre de la migration (`supabase db push`,
 `supabase migration list` confirmé synchronisé).
 
-**Reste à faire** :
-- [ ] Projection journalière **programme** — jamais définie faute de UI/agrégat programme existant à côté de session/offering
-- [ ] Dashboard apprenant (ANA-005) — bloqué par l'absence de politique RLS lecture-apprenant sur `analytics_daily_activity`/`analytics_daily_enrollment`/`analytics_daily_competency`/`analytics_daily_item`
-- [ ] Analyse d'items / psychométrie (ANA-010 distracteurs par groupe de performance, ANA-011 difficulté/discrimination, ANA-012 avertissements) — `analytics_daily_item` fournit le compte/taux de base, pas la répartition par option ni le découpage en quartiles nécessaires à ces trois-là
-- [ ] Temps médian de réponse par item (ANA-009) — bloqué par l'absence de toute colonne de durée sur `assessment_responses`
-- [ ] Programmation de rapports (`report_schedules`/`report_runs`) — tables posées, aucun exécuteur ; pourrait maintenant se brancher sur le même `pg_cron`
-- [ ] Export CSV/XLSX/PDF avec pseudonymisation
+**Depuis la migration `20260813170000_spec07_analytics_completion.sql`** : projection programme au grain offering, dashboard apprenant via RPC propriétaire, psychométrie (distracteurs/quartiles/difficulté/discrimination/alertes), durée médiane, exécuteur de rapports planifiés et exports CSV/XLSX/PDF pseudonymisés sont implémentés. Les valeurs sous le seuil de cohorte restent supprimées.
 
 ## 08 — Évaluations avancées et banque d'items versionnée
 
