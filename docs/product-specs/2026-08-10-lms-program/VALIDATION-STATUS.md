@@ -359,9 +359,43 @@ sans attendre une exécution nocturne réelle) — vérifié par lecture du SQL,
 migration appliquée sans erreur (`supabase db push`, `migration list`
 confirmé synchronisé).
 
+Depuis cette passe (`20260813020000_anonymous_grading.sql`,
+`20260813030000_list_submissions_for_grading_order.sql`) : correction
+anonyme (moitié de GRD-005 — « colonne posée, pas de flux » décrivait
+précisément et uniquement cette moitié ; l'autre moitié, double
+correction, n'a **aucun** schéma nulle part — pas de colonne second
+correcteur, pas de table de réconciliation, rien non plus dans le modèle
+de données indicatif de la spec — chantier distinct laissé ouvert plutôt
+que deviné). `submission_assessments.is_anonymous` existait depuis
+`20260810160000`, toujours `false`, jamais lu ni écrit nulle part
+(vérifié par grep avant de commencer). Option de devoir portée par
+`assignments.policy` (jsonb, déjà là, toujours `{}` jusqu'ici) —
+`{"anonymous_grading": true}`, pas une nouvelle colonne. RLS sur
+`submissions` expose `learner_id` sans condition à tout `trainer`/
+`pedago`/`admin` de l'org (`submissions_staff_read`) — un masquage par
+policy est donc impossible sans table de lookup à joindre, qui est
+justement le journal d'audit ; `list_submissions_for_grading()` remplace
+la lecture directe (`listAssignmentSubmissions()`) et renvoie
+`learner_id = null` + `anonymized = true` tant que l'acteur courant n'a pas
+levé l'anonymat pour cette remise précise — persiste après rechargement
+(vérifié par `exists()`, pas un état de session). `lift_submission_anonymity()`
+— seule façon de révéler l'identité, journalise avant de retourner
+(`submission_anonymity_lifts`, même forme que le seul précédent
+« lecture auditée » du dépôt, `accommodation_access_log` : pas de colonne
+motif, le rôle staff + la trace suffisent, même raisonnement que ce
+précédent). `publish_submission_grade()` renseigne enfin `is_anonymous`
+depuis la politique de l'devoir au moment de la notation — trace
+historique permanente, indépendante d'un futur changement de politique.
+UI : case « Correction anonyme » à la création dans `Assignments.tsx`,
+`GradingPanel` affiche « Apprenant anonymisé » + bouton « Lever
+l'anonymat » au lieu de l'identifiant. **Non testé en conditions réelles**
+(même limite que le reste de cette passe) — vérifié par lecture du SQL,
+`tsc`/`eslint` propres, migrations appliquées sans erreur (`supabase db
+push`, `migration list` confirmé synchronisé).
+
 **Reste à faire** :
 - [ ] Job serveur de scan antivirus des fichiers (`submission_files.scan_status`) — colonne prête, aucun job ; les fichiers uploadés restent `pending` indéfiniment ; vendor à choisir (voir discussion 2026-08-12 — aucune option marketplace, service externe direct requis)
-- [ ] Double correction / correction anonyme (GRD-005) — colonne `is_anonymous` posée, pas de flux de levée d'anonymat auditée
+- [ ] Double correction (GRD-005, deuxième moitié) — aucun schéma : pas de second correcteur, pas de réconciliation, rien dans le modèle indicatif de la spec
 
 ## 02 — Inscriptions, sessions et gestion des apprenants
 

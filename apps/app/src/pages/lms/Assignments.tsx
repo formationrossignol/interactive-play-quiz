@@ -27,6 +27,7 @@ import {
   getSubmissionFileSignedUrl,
   listAssignmentSubmissions,
   listActiveSubmissionFiles,
+  liftSubmissionAnonymity,
   listAssignmentTargets,
   listLearnerDueOverrides,
   listOrgAssignments,
@@ -528,10 +529,23 @@ function GradingPanel({ assignment, rubrics }: { assignment: Assignment; rubrics
   const [criteria, setCriteria] = useState<RubricCriterion[]>([]);
   const [ratingsBySubmission, setRatingsBySubmission] = useState<Record<string, Record<string, RubricRating>>>({});
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [lifting, setLifting] = useState<string | null>(null);
 
   useEffect(() => {
     listAssignmentSubmissions(assignment.id).then(setSubmissions).catch(showError).finally(() => setLoading(false));
   }, [assignment.id]);
+
+  const handleLiftAnonymity = async (submissionId: string) => {
+    setLifting(submissionId);
+    try {
+      const learnerId = await liftSubmissionAnonymity(submissionId);
+      setSubmissions((prev) => prev.map((s) => (s.id === submissionId ? { ...s, learner_id: learnerId, anonymized: false } : s)));
+    } catch (err) {
+      showError(err);
+    } finally {
+      setLifting(null);
+    }
+  };
 
   useEffect(() => {
     if (!rubricId) { setCriteria([]); return; }
@@ -586,7 +600,14 @@ function GradingPanel({ assignment, rubrics }: { assignment: Assignment; rubrics
             <li key={s.id} className="rounded-md border p-3">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm font-medium">Apprenant {s.learner_id.slice(0, 8)}</p>
+                  {s.anonymized ? (
+                    <p className="text-sm font-medium flex items-center gap-2">
+                      Apprenant anonymisé
+                      <Button variant="ghost" size="sm" loading={lifting === s.id} onClick={() => handleLiftAnonymity(s.id)}>Lever l'anonymat</Button>
+                    </p>
+                  ) : (
+                    <p className="text-sm font-medium">Apprenant {s.learner_id?.slice(0, 8)}</p>
+                  )}
                   <p className="text-sm text-muted-foreground">{s.status}</p>
                   <SubmissionFilesList submission={s} />
                   <PlagiarismCheckControl
@@ -640,6 +661,7 @@ function StaffAssignments({ orgId }: { orgId: string }) {
   const [title, setTitle] = useState("");
   const [dueAt, setDueAt] = useState("");
   const [maxPoints, setMaxPoints] = useState("20");
+  const [anonymousGrading, setAnonymousGrading] = useState(false);
   const [creating, setCreating] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [rubrics, setRubrics] = useState<Rubric[]>([]);
@@ -661,6 +683,7 @@ function StaffAssignments({ orgId }: { orgId: string }) {
         responseMode: "text",
         dueAt: dueAt ? new Date(dueAt).toISOString() : null,
         maxPoints: Number(maxPoints) || 20,
+        anonymousGrading,
       });
       // Fondations scope: target the whole org's org-role "learner" pool is
       // out of reach without a session — target every active session in one
@@ -668,7 +691,7 @@ function StaffAssignments({ orgId }: { orgId: string }) {
       // (e.g. by session) once created, matching ASG-004's per-target model.
       setAssignments((prev) => [assignment, ...prev]);
       setFormOpen(false);
-      setTitle(""); setDueAt(""); setMaxPoints("20");
+      setTitle(""); setDueAt(""); setMaxPoints("20"); setAnonymousGrading(false);
     } catch (err) {
       showError(err);
     } finally {
@@ -717,6 +740,9 @@ function StaffAssignments({ orgId }: { orgId: string }) {
             <label className="text-sm font-medium" htmlFor="assignment-points">Barème</label>
             <Input id="assignment-points" type="number" min={1} value={maxPoints} onChange={(e) => setMaxPoints(e.target.value)} />
           </div>
+          <label className="flex items-center gap-1.5 text-sm pb-2">
+            <input type="checkbox" checked={anonymousGrading} onChange={(e) => setAnonymousGrading(e.target.checked)} /> Correction anonyme (GRD-005)
+          </label>
           <Button type="submit" loading={creating}>Créer le brouillon</Button>
         </form>
       )}
