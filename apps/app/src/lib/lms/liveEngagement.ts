@@ -242,6 +242,21 @@ export async function createPollInteraction(runId: string, config: PollConfig): 
   return data as LiveInteraction;
 }
 
+export interface PublicInteractionResult {
+  option_id: string;
+  votes_count: number;
+  respondents: number;
+}
+
+/** Aggregate only — live_responses itself is staff-only
+ *  (live_responses_staff_read), a public presenter screen never sees who
+ *  answered what. See 20260813090000_live_presenter_poll_results.sql. */
+export async function getPublicLiveInteractionResults(interactionId: string): Promise<PublicInteractionResult[]> {
+  const { data, error } = await supabase.rpc('get_public_live_interaction_results', { p_interaction_id: interactionId });
+  if (error) throw error;
+  return (data ?? []) as PublicInteractionResult[];
+}
+
 export async function listRunInteractions(runId: string): Promise<LiveInteraction[]> {
   const { data, error } = await supabase
     .from('live_interactions')

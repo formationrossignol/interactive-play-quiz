@@ -7,18 +7,75 @@ import { ListSkeleton } from '@/components/ui/skeletons';
 import {
   getLiveEventByCode,
   getOpenRun,
+  getPublicLiveInteractionResults,
+  listRunInteractions,
   listRunQuestions,
   type AudienceQuestion,
   type LiveEvent,
+  type LiveInteraction,
   type LiveRun,
+  type PollConfig,
+  type PublicInteractionResult,
 } from '@/lib/lms/liveEngagement';
 
 /** LIVE-015: a separate big-screen view, read-only — no join_live_run, no
- *  vote/submit actions. Only Q&A results are shown: poll/priority/matrix
- *  formats have no staff editor yet (RESTE-A-FAIRE §09), so there is
- *  nothing else real to project. RLS (`audience_questions_public_read`)
- *  allows this without authentication as long as the event is active —
- *  same gate LiveEventRoom relies on for anonymous participants. */
+ *  vote/submit actions. RLS (`audience_questions_public_read`) allows this
+ *  without authentication as long as the event is active — same gate
+ *  LiveEventRoom relies on for anonymous participants.
+ *
+ *  Poll results (RESTE-A-FAIRE §09 "sondages sur l'écran projeté"):
+ *  live_interactions is already publicly readable when live/closed
+ *  (live_interactions_public_read), but live_responses itself is
+ *  staff-only by design (a public screen shouldn't reveal who answered
+ *  what) — results here go through get_public_live_interaction_results(),
+ *  an aggregate-only RPC, not the raw table the staff console reads.
+ *  priority/matrix/brainstorm/ranking still have no editor/reader
+ *  anywhere (RESTE-A-FAIRE §09) — nothing real to project for those yet. */
+function ProjectedPollResults({ interaction }: { interaction: LiveInteraction }) {
+  const config = interaction.config as PollConfig;
+  const [results, setResults] = useState<PublicInteractionResult[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const reload = () => getPublicLiveInteractionResults(interaction.id).then((r) => { if (!cancelled) setResults(r); }).catch(() => {});
+    reload();
+    const channel = supabase
+      .channel(`lms-present-interaction-${interaction.id}-responses`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'live_responses', filter: `interaction_id=eq.${interaction.id}` }, reload)
+      .subscribe();
+    return () => { cancelled = true; void supabase.removeChannel(channel); };
+  }, [interaction.id]);
+
+  const byOption = new Map(results.map((r) => [r.option_id, r.votes_count]));
+  const respondents = results[0]?.respondents ?? 0;
+  const total = Math.max(1, results.reduce((sum, r) => sum + r.votes_count, 0));
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+      <header>
+        <h1 style={{ fontSize: '2.5rem', fontWeight: 800, margin: 0 }}>{config.question}</h1>
+        <p style={{ fontSize: '1.1rem', opacity: 0.7, margin: '0.25rem 0 0' }}>{respondents} réponse{respondents !== 1 ? 's' : ''}</p>
+      </header>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        {config.options.map((option) => {
+          const count = byOption.get(option.id) ?? 0;
+          const pct = Math.round((count / total) * 100);
+          return (
+            <div key={option.id} style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.3rem', fontWeight: 600 }}>
+                <span>{option.label}</span>
+                <span>{count} · {pct}%</span>
+              </div>
+              <div style={{ height: 20, borderRadius: 10, background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: `${pct}%`, background: 'var(--ap-accent, #6366f1)', transition: 'width 0.3s' }} />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 type Phase = 'loading' | 'not-found' | 'not-open' | 'live';
 
@@ -39,6 +96,7 @@ export default function LivePresenterScreen() {
   const [event, setEvent] = useState<LiveEvent | null>(null);
   const [run, setRun] = useState<LiveRun | null>(null);
   const [questions, setQuestions] = useState<AudienceQuestion[]>([]);
+  const [activePoll, setActivePoll] = useState<LiveInteraction | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -49,11 +107,15 @@ export default function LivePresenterScreen() {
         if (!foundEvent) { if (!cancelled) setPhase('not-found'); return; }
         const foundRun = await getOpenRun(foundEvent.id);
         if (!foundRun) { if (!cancelled) { setEvent(foundEvent); setPhase('not-open'); } return; }
-        const initialQuestions = await listRunQuestions(foundRun.id);
+        const [initialQuestions, interactions] = await Promise.all([
+          listRunQuestions(foundRun.id),
+          listRunInteractions(foundRun.id),
+        ]);
         if (cancelled) return;
         setEvent(foundEvent);
         setRun(foundRun);
         setQuestions(initialQuestions.filter((q) => VISIBLE_STATUSES.has(q.status)));
+        setActivePoll(interactions.find((i) => i.kind === 'poll' && i.status === 'live') ?? null);
         setPhase('live');
       } catch {
         if (!cancelled) setPhase('not-found');
@@ -62,6 +124,25 @@ export default function LivePresenterScreen() {
     void setup();
     return () => { cancelled = true; };
   }, [code]);
+
+  useEffect(() => {
+    if (phase !== 'live' || !run) return;
+    const channel = supabase
+      .channel(`lms-present-run-${run.id}-interactions`)
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'live_interactions', filter: `run_id=eq.${run.id}` },
+        (payload) => {
+          const row = payload.new as LiveInteraction | undefined;
+          if (!row) return;
+          setActivePoll((prev) => {
+            if (row.kind === 'poll' && row.status === 'live') return row;
+            if (prev && prev.id === row.id) return null;
+            return prev;
+          });
+        })
+      .subscribe();
+    return () => { void supabase.removeChannel(channel); };
+  }, [phase, run]);
 
   useEffect(() => {
     if (phase !== 'live' || !run) return;
@@ -111,7 +192,7 @@ export default function LivePresenterScreen() {
       <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '2rem' }}>
         <div>
           <h1 style={{ fontSize: '2.5rem', fontWeight: 800, margin: 0 }}>{event?.title ?? 'Session live'}</h1>
-          <p style={{ fontSize: '1.1rem', opacity: 0.7, margin: '0.25rem 0 0' }}>Questions les plus votées, mises à jour en direct.</p>
+          <p style={{ fontSize: '1.1rem', opacity: 0.7, margin: '0.25rem 0 0' }}>{activePoll ? 'Sondage en cours.' : 'Questions les plus votées, mises à jour en direct.'}</p>
         </div>
         <div style={{ textAlign: 'right', flexShrink: 0 }}>
           <p style={{ fontSize: '0.9rem', opacity: 0.7, margin: 0 }}>Rejoindre</p>
@@ -125,7 +206,9 @@ export default function LivePresenterScreen() {
         </div>
       </header>
 
-      {top.length === 0 ? (
+      {activePoll ? (
+        <ProjectedPollResults interaction={activePoll} />
+      ) : top.length === 0 ? (
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12, opacity: 0.6 }}>
           <MessageCircleQuestion size={48} />
           <p style={{ fontSize: '1.25rem' }}>En attente des premières questions…</p>

@@ -538,9 +538,21 @@ function ModerationSettingsPanel({ eventId }: { eventId: string }) {
   );
 }
 
+/** LIVE-015: "mode présentateur, écran public, appareil participant et
+ *  console modérateur sont des vues distinctes" — the public screen
+ *  (LivePresenterScreen.tsx) and participant device (LiveEventRoom.tsx)
+ *  were already separate pages; only the two staff-facing roles
+ *  (présentateur: drive the active interaction; modérateur: triage Q&A)
+ *  were still merged into one console showing both at once. Split into a
+ *  tab toggle here rather than two routes — same page, same run state
+ *  already loaded, genuinely distinct views the animateur switches
+ *  between rather than a permanently-merged panel. */
+type ConsoleTab = "present" | "moderate";
+
 function EventRow({ event, onActivate }: { event: LiveEvent; onActivate: (id: string) => void }) {
   const [run, setRun] = useState<LiveRun | null>(null);
   const [starting, setStarting] = useState(false);
+  const [consoleTab, setConsoleTab] = useState<ConsoleTab>("present");
 
   useEffect(() => {
     listLatestRun(event.id).then((r) => setRun(r && r.status === "open" ? r : null)).catch(() => setRun(null));
@@ -595,8 +607,25 @@ function EventRow({ event, onActivate }: { event: LiveEvent; onActivate: (id: st
             </div>
           </div>
           <RunControls run={run} onLockChange={(locked) => setRun((prev) => (prev ? { ...prev, locked } : prev))} />
-          <QuestionModeration run={run} />
-          <InteractionManager run={run} />
+          <div className="flex items-center gap-1 border-b">
+            <button
+              type="button"
+              className="ap-btn ap-btn--ghost ap-btn--sm"
+              style={consoleTab === "present" ? { fontWeight: 700, borderBottom: "2px solid var(--ap-ink)" } : undefined}
+              onClick={() => setConsoleTab("present")}
+            >
+              Présentateur
+            </button>
+            <button
+              type="button"
+              className="ap-btn ap-btn--ghost ap-btn--sm"
+              style={consoleTab === "moderate" ? { fontWeight: 700, borderBottom: "2px solid var(--ap-ink)" } : undefined}
+              onClick={() => setConsoleTab("moderate")}
+            >
+              Modération
+            </button>
+          </div>
+          {consoleTab === "present" ? <InteractionManager run={run} /> : <QuestionModeration run={run} />}
         </div>
       )}
     </li>

@@ -1395,13 +1395,42 @@ correspondance email insensible à la casse acceptée, un événement
 complète (335 tests) verte — **non vérifié avec un run réel** (même
 limite que le reste du programme).
 
+Depuis cette passe (pas de nouvelle migration) : mode présentateur et
+sondages sur l'écran projeté, les deux dernières briques de LIVE-015
+(« mode présentateur, écran public, appareil participant et console
+modérateur sont des vues distinctes »). L'écran public
+(`LivePresenterScreen.tsx`) et l'appareil participant (`LiveEventRoom.tsx`)
+étaient déjà des pages séparées ; seuls les deux rôles côté staff
+(présentateur : piloter l'interaction active ; modérateur : trier le
+Q&A) restaient fusionnés dans une seule console affichant les deux à la
+fois. Scindé en onglets (`EventRow`, `LiveEngagement.tsx`) plutôt qu'en
+deux routes — même page, même état de run déjà chargé, mais des vues
+réellement distinctes que l'animateur bascule, pas un panneau fusionné en
+permanence. Sondages sur l'écran projeté
+(`20260813090000_live_presenter_poll_results.sql`) : `live_interactions`
+était déjà lisible publiquement quand `live`/`closed` et l'événement
+actif (`live_interactions_public_read`, depuis la toute première
+migration du spec) — `listRunInteractions()` fonctionnait déjà sans
+changement pour savoir quel sondage est en cours. Ce qui manquait :
+`live_responses` est volontairement réservé au staff
+(`live_responses_staff_read`) — un écran public ne doit pas révéler qui a
+répondu quoi — donc nouvelle RPC `get_public_live_interaction_results()`,
+agrégats seulement (comptes par option, jamais `client_id` ni `payload`
+individuel), même posture que `get_my_live_response()` qui n'expose déjà
+pas la table brute directement. `ProjectedPollResults` dans
+`LivePresenterScreen.tsx` : realtime sur `live_responses` filtré par
+interaction (même abonnement que `PollResults` côté console staff), bascule
+automatique sondage↔classement Q&A selon ce qui est réellement `live`.
+**Non testé en conditions réelles** (même limite que le reste de cette
+passe) — vérifié par lecture du code, `tsc`/`eslint` propres, migration
+appliquée sans erreur (`supabase db push`, `migration list` confirmé
+synchronisé), suite complète (335 tests) verte.
+
 **Reste à faire** :
-- [ ] Mode présentateur/console modérateur *distincts* pour l'animateur lui-même (LIVE-015 mentionne aussi ça) — l'écran projeté existe, mais l'animateur utilise toujours la même console (`LiveEngagement.tsx`) qu'avant, pas une vue « présentateur » séparée de la modération
 - [x] UI d'expulsion — bouton « Expulser » par participant actif (`ParticipantManager`, dépliable depuis le compteur de participants dans `RunControls`)
 - [x] Répondre à un sondage (`poll`) — voir ci-dessus. **Reste** : `priority`/`matrix`/`brainstorm`/`ranking` n'ont toujours ni éditeur ni écran de réponse
 - [x] Vraie table/mécanisme d'allowlist pour `access_policy = 'allowlist'` — voir ci-dessus
 - [ ] Formats supplémentaires : priorisation, matrice 2×2, brainstorm, classement forcé (LIVE-009 à LIVE-013) — `live_interactions.kind` les accepte, aucun éditeur/lecteur pour ces quatre-là
-- [ ] Sondages sur l'écran projeté (`LivePresenterScreen.tsx`) — l'éditeur/résultats staff et le widget participant existent, l'écran public n'en affiche toujours aucun
 - [ ] Intégrations PowerPoint/Teams/Zoom (LIVE-017/018/019)
 - [ ] Rapports post-session (participation, chronologie, export — LIVE-020 à LIVE-023)
 
