@@ -17,12 +17,14 @@ import {
   createAssessment,
   createItem,
   createItemRevision,
+  getPlacementThresholds,
   listAssessmentSections,
   listItemRevisions,
   listOrgAssessments,
   listOrgItems,
   listSectionItemRefs,
   publishAssessment,
+  publishPlacementThresholds,
   simulateItemScoring,
   type Assessment,
   type AssessmentItem,
@@ -30,6 +32,7 @@ import {
   type AssessmentSection,
   type ItemOption,
   type ItemRevision,
+  type PlacementThreshold,
   type SimulationResult,
 } from "@/lib/lms/itemBank";
 
@@ -423,6 +426,97 @@ function AssessmentSectionRow({ section, items }: { section: AssessmentSection; 
   );
 }
 
+const EMPTY_THRESHOLD: PlacementThreshold = { min_percentage: 0, max_percentage: 100, outcome: "recommend" };
+
+/** ADP-009/010/011: score-range outcomes for this assessment used as a
+ *  placement test — recommend/impose assign a remediation devoir
+ *  (assignment_targets, already built), exempt sets a new 'exempted'
+ *  release_state effect with an audited proof row
+ *  (release_state_exemptions). Evaluated automatically on attempt submit,
+ *  nothing to trigger from here — this panel only edits the thresholds. */
+function PlacementThresholdsPanel({ assessment }: { assessment: Assessment }) {
+  const [thresholds, setThresholds] = useState<PlacementThreshold[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    getPlacementThresholds(assessment.id).then((t) => setThresholds(t.length > 0 ? t : [EMPTY_THRESHOLD])).catch(showError).finally(() => setLoading(false));
+  }, [assessment.id]);
+
+  const updateRow = (index: number, patch: Partial<PlacementThreshold>) => {
+    setThresholds((prev) => prev.map((t, i) => (i === index ? { ...t, ...patch } : t)));
+  };
+  const removeRow = (index: number) => setThresholds((prev) => prev.filter((_, i) => i !== index));
+  const addRow = () => setThresholds((prev) => [...prev, EMPTY_THRESHOLD]);
+
+  const handlePublish = async () => {
+    setSaving(true);
+    try {
+      await publishPlacementThresholds(assessment.id, thresholds);
+    } catch (err) {
+      showError(err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) return <ListSkeleton rows={1} withAvatar={false} />;
+
+  return (
+    <div className="space-y-2">
+      <p className="text-xs text-muted-foreground">Résultat de tentative → recommander/imposer une remédiation (devoir) ou dispenser une étape (exemption auditée). Évalué automatiquement à la soumission.</p>
+      {thresholds.map((t, i) => (
+        <div key={i} className="flex flex-wrap items-end gap-2 rounded-md border p-2">
+          <div className="space-y-1">
+            <label className="text-xs" htmlFor={`th-min-${assessment.id}-${i}`}>Min %</label>
+            <Input id={`th-min-${assessment.id}-${i}`} type="number" min={0} max={100} value={t.min_percentage} onChange={(e) => updateRow(i, { min_percentage: Number(e.target.value) })} className="w-20" />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs" htmlFor={`th-max-${assessment.id}-${i}`}>Max %</label>
+            <Input id={`th-max-${assessment.id}-${i}`} type="number" min={0} max={100} value={t.max_percentage} onChange={(e) => updateRow(i, { max_percentage: Number(e.target.value) })} className="w-20" />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs" htmlFor={`th-outcome-${assessment.id}-${i}`}>Résultat</label>
+            <select
+              id={`th-outcome-${assessment.id}-${i}`}
+              className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+              value={t.outcome}
+              onChange={(e) => updateRow(i, { outcome: e.target.value as PlacementThreshold["outcome"] })}
+            >
+              <option value="recommend">Recommander</option>
+              <option value="impose">Imposer</option>
+              <option value="exempt">Dispenser (exemption)</option>
+            </select>
+          </div>
+          {(t.outcome === "recommend" || t.outcome === "impose") && (
+            <div className="space-y-1">
+              <label className="text-xs" htmlFor={`th-remediation-${assessment.id}-${i}`}>UUID devoir de remédiation</label>
+              <Input id={`th-remediation-${assessment.id}-${i}`} value={t.remediation_assignment_id ?? ""} onChange={(e) => updateRow(i, { remediation_assignment_id: e.target.value })} className="min-w-[220px]" />
+            </div>
+          )}
+          {t.outcome === "exempt" && (
+            <>
+              <div className="space-y-1">
+                <label className="text-xs" htmlFor={`th-target-type-${assessment.id}-${i}`}>Type de cible</label>
+                <Input id={`th-target-type-${assessment.id}-${i}`} placeholder="ex. assignment" value={t.exempt_target_type ?? ""} onChange={(e) => updateRow(i, { exempt_target_type: e.target.value })} className="w-32" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs" htmlFor={`th-target-id-${assessment.id}-${i}`}>UUID cible</label>
+                <Input id={`th-target-id-${assessment.id}-${i}`} value={t.exempt_target_id ?? ""} onChange={(e) => updateRow(i, { exempt_target_id: e.target.value })} className="min-w-[220px]" />
+              </div>
+            </>
+          )}
+          <Button type="button" variant="ghost" size="sm" onClick={() => removeRow(i)}>Retirer</Button>
+        </div>
+      ))}
+      <div className="flex items-center gap-2">
+        <Button type="button" variant="outline" size="sm" onClick={addRow}><Plus size={14} /> Ajouter un seuil</Button>
+        <Button size="sm" loading={saving} onClick={handlePublish}>Publier les seuils</Button>
+      </div>
+    </div>
+  );
+}
+
 function AssessmentRow({ assessment, items }: { assessment: Assessment; items: AssessmentItem[] }) {
   const [expanded, setExpanded] = useState(false);
   const [sections, setSections] = useState<AssessmentSection[]>([]);
@@ -493,6 +587,10 @@ function AssessmentRow({ assessment, items }: { assessment: Assessment; items: A
           <div className="flex items-end gap-2">
             <Input value={sectionTitle} onChange={(e) => setSectionTitle(e.target.value)} className="w-48" aria-label="Titre de la nouvelle section" />
             <Button size="sm" variant="outline" loading={addingSection} onClick={handleAddSection}><Plus size={14} /> Ajouter une section fixe</Button>
+          </div>
+          <div className="border-t pt-3">
+            <h4 className="text-sm font-medium mb-2">Test de positionnement — seuils de remédiation/exemption</h4>
+            <PlacementThresholdsPanel assessment={assessment} />
           </div>
         </div>
       )}

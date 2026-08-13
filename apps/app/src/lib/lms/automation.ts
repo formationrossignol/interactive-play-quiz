@@ -56,6 +56,21 @@ export async function createAutomationRule(orgId: string, triggerType: string): 
   return data as AutomationRule;
 }
 
+export type AutomationActionType = 'notification' | 'email' | 'assign_content' | 'extend_due_date' | 'add_to_group' | 'remove_from_group' | 'follow_up_task';
+
+/** AUT-002's six V1 action types (see 20260813070000_automation_execution_engine.sql
+ *  for exactly what each does and why). Published as {action_type, params}
+ *  — publish_automation_rule_version() validates action_type, not params;
+ *  a malformed/missing param just makes _execute_automation_action() skip
+ *  that learner (logged 'skipped' in automation_actions), never a hard
+ *  failure that blocks the whole rule. */
+export async function publishAutomationRuleVersion(ruleId: string, actionType: AutomationActionType, params: Record<string, unknown>): Promise<void> {
+  const { error } = await supabase.rpc('publish_automation_rule_version', {
+    p_rule_id: ruleId, p_config: { action_type: actionType, params },
+  });
+  if (error) throw error;
+}
+
 export interface FollowUpTask {
   id: string;
   org_id: string;
@@ -67,10 +82,11 @@ export interface FollowUpTask {
   created_at: string;
 }
 
-/** RESTE-A-FAIRE §06: manual creation path (AUT-002's automation-fired
- *  path needs automation_rule_versions/an execution engine that doesn't
- *  exist yet — see 20260813050000_follow_up_tasks.sql). Staff turning a
- *  flagged learner (risk_signals) into an actionable task for someone. */
+/** Manual creation path (20260813050000_follow_up_tasks.sql) — staff
+ *  turning a flagged learner (risk_signals) into an actionable task for
+ *  someone. The automated sibling is the 'follow_up_task' action type
+ *  (20260813070000_automation_execution_engine.sql), fired by a
+ *  published automation_rule instead of a moderator click. */
 export async function createFollowUpTask(orgId: string, learnerId: string, assigneeId: string, title: string): Promise<FollowUpTask> {
   const { data, error } = await supabase.rpc('create_follow_up_task', {
     p_org_id: orgId, p_learner_id: learnerId, p_assignee_id: assigneeId, p_title: title,

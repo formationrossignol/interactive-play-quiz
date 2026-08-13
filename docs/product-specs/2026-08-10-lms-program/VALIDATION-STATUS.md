@@ -926,9 +926,107 @@ conditions réelles** (même limite que le reste de cette passe) — vérifié
 par lecture du SQL, `tsc`/`eslint` propres, migration appliquée sans
 erreur (`supabase db push`, `migration list` confirmé synchronisé).
 
-**Reste à faire** :
-- [ ] Test de positionnement / remédiation (ADP-009/010/011)
-- [ ] `follow_up_tasks` — déclenchement automatique depuis une règle d'automatisation (nécessite le moteur d'exécution déclencheur→action, `automation_rule_versions`/`record_automation_run()` jamais câblés — chantier séparé, plus gros)
+Depuis cette passe (`20260813070000_automation_execution_engine.sql`) :
+le moteur d'exécution déclencheur→action lui-même, plus gros chantier
+identifié dans la passe précédente. `automation_rules`/
+`automation_rule_versions`/`automation_runs`/`automation_actions`
+existaient depuis la toute première migration de ce spec
+(`20260810200000`) mais rien n'exécutait jamais une règle —
+`automation_rule_versions` sans writer, `record_automation_run()` sans
+appelant. `publish_automation_rule_version()` : nouveau writer, valide
+`action_type` contre les 6 valeurs AUT-002 (params non validés — un champ
+manquant fait échouer silencieusement (`skipped`) l'exécution pour cet
+apprenant, jamais toute la règle). `_execute_automation_action()`, une
+action/un apprenant :
+- `notification` → `notifications` (catégorie `system`, comme tout le
+  reste de cette session).
+- `email` → **pas greffé directement** : ce dépôt a déjà un vrai vendor
+  email câblé (Resend, `send-welcome-email`/`send-org-invitation`,
+  `RESEND_API_KEY` — pas un nouveau choix de vendor), mais aucune
+  migration/fonction Postgres de ce dépôt n'a jamais appelé une edge
+  function depuis l'intérieur d'une transaction (`pg_net` absent partout,
+  vérifié par grep) — inventer ce câblage à l'aveugle, sans pouvoir le
+  tester contre le projet réel, aurait risqué de casser silencieusement
+  un chemin d'envoi en production. À la place : mise en file
+  `automation_email_outbox` (durable, visible staff), vidée par la
+  nouvelle edge function `dispatch-automation-emails` (même appel Resend
+  que `send-welcome-email`). Déclencher cette fonction sur un calendrier
+  reste une étape opérateur unique (Cron Job du dashboard Supabase pointé
+  sur l'URL, en-tête `x-cron-secret`) — même catégorie que configurer
+  `RESEND_API_KEY` lui-même, pas quelque chose qu'une migration peut faire
+  sans supervision.
+- `assign_content`/`extend_due_date` → `assignment_targets` (spec 01,
+  déjà là).
+- `add_to_group`/`remove_from_group` → `share_group_members`.
+- `follow_up_task` → le pendant automatique de la création manuelle
+  ci-dessus.
+
+Détection des 8 `trigger_type` (`_automation_trigger_candidates()`) :
+réutilise des signaux déjà calculés ailleurs plutôt que d'en capturer de
+nouveaux — `enrollment` via `learning_events` (`enrollment.started`),
+`due_soon`/`overdue` via la même expansion de cible
+(session/groupe/apprenant) et `effective_assignment_due_at()` que le job
+de rappels J-7/J-1 (`20260813010000`), évalués contre « maintenant », pas
+contre le jour rétrospectif des autres déclencheurs, `inactivity`/`failure`
+via `risk_signals` nouvellement ouverts ce jour (`rule_code`
+`inactivity`/`repeated_failure`), `completion` via `grade_results` publiés
+ce jour, `mastery_gained`/`mastery_expired` via `competency_mastery_history`
+— simplifié à une comparaison texte `to_level`/`from_level` (acquise :
+`to_level` change et n'est pas `not_assessed` ; expirée : tombe à
+`not_assessed`) plutôt qu'un lookup de position sur l'échelle — le
+lookup complet apporterait peu par rapport aux valeurs texte déjà
+porteuses de sens que cette table d'historique stocke. Idempotent via
+`automation_runs.idempotency_key` (`rule:version:apprenant:instance`) —
+`due_soon`/`overdue` se déclenchent une seule fois pour toujours par
+(règle, apprenant, devoir), même sémantique que le job de rappels, pas
+rejoué chaque nuit tant que la condition reste vraie. Branché comme 5ᵉ
+étape isolée de `run_scheduled_lms_analytics_jobs()`. UI :
+`Automation.tsx::AutomationRules` — sélecteur de type d'action, champs
+par type, bouton Publier.
+
+Depuis cette passe (`20260813080000_placement_thresholds.sql`) : test de
+positionnement / remédiation (ADP-009/010/011), le dernier item de la
+spec 06. Non-objectif V1 explicite (« algorithme adaptatif auto-apprenant
+sans règle humaine ») combiné au propre libellé d'ADP-009 (« seuils
+versionnés ») confirme la lecture : pas de branchement adaptatif mi-test
+à inventer — un test de positionnement est un `assessment` ordinaire
+(spec 08, déjà construit avec une vraie correction serveur), seul le
+résultat de fin de tentative (recommander/imposer/dispenser) manquait.
+Rien dans le modèle de données indicatif de la spec ne nomme de table
+pour ça — entièrement greenfield, versionné comme `rule_sets`/
+`rule_set_versions` (`placement_threshold_sets`/`_set_versions`, version
+immuable, pas de statut mutable ligne par ligne). Livraison réutilise
+l'existant plutôt que d'inventer : recommander/imposer → `assignment_targets`
+(spec 01, déjà là) ; « imposer » un vrai verrou (pas juste une affectation
+qui apparaît) se compose avec le DSL AND/OR déjà construit — une
+condition `activity_completed` sur le devoir de remédiation bloque
+n'importe quelle étape en aval, déjà pleinement fonctionnel, rien de
+nouveau à construire pour ça. Dispenser (exempt) → nouvel effet
+`release_state.effect = 'exempted'` + `release_state_exemptions`, ligne
+d'audit append-only (tentative, score, version des seuils) — ADP-011
+« conserve la preuve », même posture que `accommodation_access_log`,
+le seul précédent « lecture/action auditée » de ce dépôt.
+`recompute_release_state()` corrigé (`on conflict ... where
+release_state.effect is distinct from 'exempted'`) pour ne jamais
+écraser une exemption au balayage nocturne ou sur événement — une
+exemption est une dérogation délibérée au moteur de règles normal, pas
+un état qu'il doit reconquérir. Évalué automatiquement dans
+`submit_assessment_attempt()` via `_apply_placement_outcome()` — aucune
+action séparée à déclencher côté UI. UI :
+`ItemBank.tsx::PlacementThresholdsPanel`, par évaluation, dans la section
+dépliée d'une évaluation. **Reste** : la distinction « pas équivalente à
+une complétion normale » dans les tableaux de bord analytics (ADP-011)
+est réelle au niveau donnée (`release_state_exemptions` est une table
+d'audit séparée, `effect='exempted'` distinct de `'unlocked'`) mais aucune
+visualisation ne la fait ressortir encore — territoire spec 07, pas
+tenté ici. **Non testé en conditions réelles** (même limite que le reste
+de cette passe : pas de compte staff/apprenant local) — vérifié par
+lecture du SQL, `tsc`/`eslint` propres, 335 tests unitaires verts,
+migrations appliquées sans erreur (`supabase db push`, `migration list`
+confirmé synchronisé à chaque fois).
+
+Spec 06 est désormais entièrement fermée — tous les items du « Reste à
+faire » listés au fil de cette section sont faits.
 
 ## 07 — Analytics pédagogiques, psychométrie et signaux de risque
 

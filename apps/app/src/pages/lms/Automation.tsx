@@ -14,8 +14,10 @@ import {
   createRuleSet,
   listOrgAutomationRules,
   listOrgRuleSets,
+  publishAutomationRuleVersion,
   publishRuleSetVersion,
   simulateRuleDefinition,
+  type AutomationActionType,
   type AutomationRule,
   type RuleSet,
 } from "@/lib/lms/automation";
@@ -340,11 +342,43 @@ function RuleSets({ orgId }: { orgId: string }) {
   );
 }
 
+const actionLabel: Record<AutomationActionType, string> = {
+  notification: "Notification in-app",
+  email: "E-mail",
+  assign_content: "Affecter un devoir",
+  extend_due_date: "Prolonger l'échéance",
+  add_to_group: "Ajouter au groupe",
+  remove_from_group: "Retirer du groupe",
+  follow_up_task: "Créer une tâche de suivi",
+};
+
+interface ActionDraft {
+  actionType: AutomationActionType;
+  title: string;
+  body: string;
+  subject: string;
+  assignmentId: string;
+  extraDays: string;
+  groupId: string;
+  assigneeId: string;
+}
+
+const EMPTY_ACTION_DRAFT: ActionDraft = {
+  actionType: "notification", title: "", body: "", subject: "",
+  assignmentId: "", extraDays: "7", groupId: "", assigneeId: "",
+};
+
+/** AUT-002's action config, published as {action_type, params} — see
+ *  20260813070000_automation_execution_engine.sql for exactly what each
+ *  action does and reuses (assignment_targets, share_group_members,
+ *  follow_up_tasks — all already built this session, not new mechanics). */
 function AutomationRules({ orgId }: { orgId: string }) {
   const [rules, setRules] = useState<AutomationRule[]>([]);
   const [loading, setLoading] = useState(true);
   const [trigger, setTrigger] = useState("overdue");
   const [creating, setCreating] = useState(false);
+  const [drafts, setDrafts] = useState<Record<string, ActionDraft>>({});
+  const [publishing, setPublishing] = useState<string | null>(null);
 
   useEffect(() => {
     listOrgAutomationRules(orgId).then(setRules).catch(showError).finally(() => setLoading(false));
@@ -360,6 +394,43 @@ function AutomationRules({ orgId }: { orgId: string }) {
       showError(err);
     } finally {
       setCreating(false);
+    }
+  };
+
+  const updateDraft = (ruleId: string, patch: Partial<ActionDraft>) => {
+    setDrafts((prev) => ({ ...prev, [ruleId]: { ...(prev[ruleId] ?? EMPTY_ACTION_DRAFT), ...patch } }));
+  };
+
+  const handlePublish = async (rule: AutomationRule) => {
+    const draft = drafts[rule.id] ?? EMPTY_ACTION_DRAFT;
+    let params: Record<string, unknown>;
+    if (draft.actionType === "notification") {
+      if (!draft.title.trim()) return;
+      params = { title: draft.title.trim(), body: draft.body.trim() };
+    } else if (draft.actionType === "email") {
+      if (!draft.subject.trim()) return;
+      params = { subject: draft.subject.trim(), body: draft.body.trim() };
+    } else if (draft.actionType === "assign_content") {
+      if (!draft.assignmentId.trim()) return;
+      params = { assignment_id: draft.assignmentId.trim() };
+    } else if (draft.actionType === "extend_due_date") {
+      if (!draft.assignmentId.trim() || !draft.extraDays) return;
+      params = { assignment_id: draft.assignmentId.trim(), extra_days: Number(draft.extraDays) };
+    } else if (draft.actionType === "add_to_group" || draft.actionType === "remove_from_group") {
+      if (!draft.groupId.trim()) return;
+      params = { group_id: draft.groupId.trim() };
+    } else {
+      if (!draft.assigneeId.trim()) return;
+      params = { assignee_id: draft.assigneeId.trim(), title: draft.title.trim() || `Suivi automatique — ${triggerLabel[rule.trigger_type] ?? rule.trigger_type}` };
+    }
+    setPublishing(rule.id);
+    try {
+      await publishAutomationRuleVersion(rule.id, draft.actionType, params);
+      setRules((prev) => prev.map((r) => (r.id === rule.id ? { ...r, status: "published", published_version: r.published_version + 1 } : r)));
+    } catch (err) {
+      showError(err);
+    } finally {
+      setPublishing(null);
     }
   };
 
@@ -383,12 +454,57 @@ function AutomationRules({ orgId }: { orgId: string }) {
         <p className="text-sm text-muted-foreground">Aucune automatisation créée.</p>
       ) : (
         <ul className="space-y-2">
-          {rules.map((r) => (
-            <li key={r.id} className="flex items-center justify-between rounded-md border p-3 text-sm">
-              <span>{triggerLabel[r.trigger_type] ?? r.trigger_type}</span>
-              <span className="text-muted-foreground">{r.status}</span>
-            </li>
-          ))}
+          {rules.map((r) => {
+            const draft = drafts[r.id] ?? EMPTY_ACTION_DRAFT;
+            return (
+              <li key={r.id} className="rounded-md border p-3 text-sm space-y-2">
+                <div className="flex items-center justify-between">
+                  <span>{triggerLabel[r.trigger_type] ?? r.trigger_type}</span>
+                  <span className="text-muted-foreground">{r.status} · v{r.published_version}</span>
+                </div>
+                <div className="flex flex-wrap items-end gap-2">
+                  <select
+                    className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+                    value={draft.actionType}
+                    onChange={(e) => updateDraft(r.id, { actionType: e.target.value as AutomationActionType })}
+                  >
+                    {(Object.keys(actionLabel) as AutomationActionType[]).map((t) => <option key={t} value={t}>{actionLabel[t]}</option>)}
+                  </select>
+                  {draft.actionType === "notification" && (
+                    <>
+                      <Input placeholder="Titre" value={draft.title} onChange={(e) => updateDraft(r.id, { title: e.target.value })} className="min-w-[160px]" />
+                      <Input placeholder="Message" value={draft.body} onChange={(e) => updateDraft(r.id, { body: e.target.value })} className="min-w-[200px]" />
+                    </>
+                  )}
+                  {draft.actionType === "email" && (
+                    <>
+                      <Input placeholder="Objet" value={draft.subject} onChange={(e) => updateDraft(r.id, { subject: e.target.value })} className="min-w-[160px]" />
+                      <Input placeholder="Message" value={draft.body} onChange={(e) => updateDraft(r.id, { body: e.target.value })} className="min-w-[200px]" />
+                    </>
+                  )}
+                  {draft.actionType === "assign_content" && (
+                    <Input placeholder="UUID du devoir" value={draft.assignmentId} onChange={(e) => updateDraft(r.id, { assignmentId: e.target.value })} className="min-w-[220px]" />
+                  )}
+                  {draft.actionType === "extend_due_date" && (
+                    <>
+                      <Input placeholder="UUID du devoir" value={draft.assignmentId} onChange={(e) => updateDraft(r.id, { assignmentId: e.target.value })} className="min-w-[220px]" />
+                      <Input type="number" min={1} placeholder="Jours" value={draft.extraDays} onChange={(e) => updateDraft(r.id, { extraDays: e.target.value })} className="w-20" />
+                    </>
+                  )}
+                  {(draft.actionType === "add_to_group" || draft.actionType === "remove_from_group") && (
+                    <Input placeholder="UUID du groupe" value={draft.groupId} onChange={(e) => updateDraft(r.id, { groupId: e.target.value })} className="min-w-[220px]" />
+                  )}
+                  {draft.actionType === "follow_up_task" && (
+                    <>
+                      <Input placeholder="UUID de l'assigné" value={draft.assigneeId} onChange={(e) => updateDraft(r.id, { assigneeId: e.target.value })} className="min-w-[200px]" />
+                      <Input placeholder="Titre (optionnel)" value={draft.title} onChange={(e) => updateDraft(r.id, { title: e.target.value })} className="min-w-[200px]" />
+                    </>
+                  )}
+                  <Button variant="ghost" size="sm" loading={publishing === r.id} onClick={() => void handlePublish(r)}>Publier</Button>
+                </div>
+              </li>
+            );
+          })}
         </ul>
       )}
     </section>
