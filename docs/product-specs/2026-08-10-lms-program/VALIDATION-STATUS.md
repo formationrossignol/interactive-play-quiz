@@ -898,9 +898,37 @@ si le brouillon ou l'apprenant change. **Non testé en conditions réelles**
 `tsc`/`eslint` propres, migration appliquée sans erreur (`supabase db
 push`, `migration list` confirmé synchronisé).
 
+Depuis cette passe (`20260813050000_follow_up_tasks.sql`) :
+`follow_up_tasks`, moitié « création manuelle » — AUT-002 en fait une des
+six actions V1 d'une règle d'automatisation, mais creusé avant de
+commencer : `automation_rule_versions` (où vivrait la config d'une action)
+n'a **aucun writer nulle part** dans le code, et `record_automation_run()`
+**aucun appelant** (grep confirmé) — le moteur d'exécution
+déclencheur→action de la spec 06 est lui-même dormant, pas seulement cette
+action-là. Câbler `follow_up_tasks` à un vrai déclenchement automatisé
+aurait donc été un chantier bien plus gros que cet item seul, pas tenté
+ici. Ce qui était réellement scopé : la table n'avait **aucune** policy
+d'insertion (`follow_up_tasks_manage` est update-only) et zéro référence
+côté client, nulle part. `create_follow_up_task()` : staff `trainer`/
+`pedago`/`admin`, vérifie que l'assigné appartient bien à l'org avant
+d'insérer. UI : dans `Analytics.tsx::RiskSignals`, bouton « Créer une
+tâche de suivi » par signal (ferme la boucle que `resolve_risk_signal()`
+laisse explicitement ouverte — son propre commentaire dit « human-in-the-loop,
+aucune action automatique ne suit une résolution ») ; nouveau
+`FollowUpTasksPanel` — file des tâches ouvertes, RLS scope déjà
+naturellement qui voit quoi (`follow_up_tasks_assignee` : un formateur ne
+voit que les tâches qui lui sont assignées, pedago/admin voient toute la
+file ouverte de l'org, sans filtre côté client à écrire). Transition de
+statut (fait/rejeté) sans nouvelle RPC : `follow_up_tasks_manage`
+permettait déjà l'écriture directe (assigné ou staff), même posture que le
+flux de résolution de `competency_review_requests`. **Non testé en
+conditions réelles** (même limite que le reste de cette passe) — vérifié
+par lecture du SQL, `tsc`/`eslint` propres, migration appliquée sans
+erreur (`supabase db push`, `migration list` confirmé synchronisé).
+
 **Reste à faire** :
 - [ ] Test de positionnement / remédiation (ADP-009/010/011)
-- [ ] `follow_up_tasks` — table posée, aucun écran ni déclencheur
+- [ ] `follow_up_tasks` — déclenchement automatique depuis une règle d'automatisation (nécessite le moteur d'exécution déclencheur→action, `automation_rule_versions`/`record_automation_run()` jamais câblés — chantier séparé, plus gros)
 
 ## 07 — Analytics pédagogiques, psychométrie et signaux de risque
 

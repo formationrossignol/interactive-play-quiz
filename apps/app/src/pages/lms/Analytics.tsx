@@ -22,6 +22,12 @@ import {
   type SavedReport,
 } from "@/lib/lms/analytics";
 import {
+  createFollowUpTask,
+  listOpenFollowUpTasks,
+  updateFollowUpTaskStatus,
+  type FollowUpTask,
+} from "@/lib/lms/automation";
+import {
   getEnrollmentTotals,
   getMinCohortSize,
   listDailyActivity,
@@ -46,6 +52,10 @@ function RiskSignals({ orgId }: { orgId: string }) {
   const [signals, setSignals] = useState<RiskSignal[]>([]);
   const [loading, setLoading] = useState(true);
   const [resolving, setResolving] = useState<string | null>(null);
+  const [taskFormFor, setTaskFormFor] = useState<string | null>(null);
+  const [taskAssignee, setTaskAssignee] = useState("");
+  const [taskTitle, setTaskTitle] = useState("");
+  const [creatingTask, setCreatingTask] = useState(false);
 
   useEffect(() => {
     listOrgRiskSignals(orgId).then(setSignals).catch(showError).finally(() => setLoading(false));
@@ -60,6 +70,25 @@ function RiskSignals({ orgId }: { orgId: string }) {
       showError(err);
     } finally {
       setResolving(null);
+    }
+  };
+
+  const openTaskForm = (s: RiskSignal) => {
+    setTaskFormFor(s.id);
+    setTaskAssignee("");
+    setTaskTitle(`${ruleLabel[s.rule_code] ?? s.rule_code} — apprenant ${s.learner_id.slice(0, 8)}`);
+  };
+
+  const handleCreateTask = async (s: RiskSignal) => {
+    if (!taskAssignee.trim() || !taskTitle.trim()) return;
+    setCreatingTask(true);
+    try {
+      await createFollowUpTask(orgId, s.learner_id, taskAssignee.trim(), taskTitle.trim());
+      setTaskFormFor(null);
+    } catch (err) {
+      showError(err);
+    } finally {
+      setCreatingTask(false);
     }
   };
 
@@ -79,12 +108,86 @@ function RiskSignals({ orgId }: { orgId: string }) {
       ) : (
         <ul className="space-y-2" aria-label="Signaux de risque">
           {signals.map((s) => (
-            <li key={s.id} className="flex items-center justify-between rounded-md border p-3 text-sm">
-              <div>
-                <p className="font-medium">{ruleLabel[s.rule_code] ?? s.rule_code}</p>
-                <p className="text-muted-foreground">Apprenant {s.learner_id.slice(0, 8)} · {s.window_start} → {s.window_end}</p>
+            <li key={s.id} className="rounded-md border p-3 text-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">{ruleLabel[s.rule_code] ?? s.rule_code}</p>
+                  <p className="text-muted-foreground">Apprenant {s.learner_id.slice(0, 8)} · {s.window_start} → {s.window_end}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button variant="ghost" size="sm" onClick={() => (taskFormFor === s.id ? setTaskFormFor(null) : openTaskForm(s))}>Créer une tâche de suivi</Button>
+                  <Button variant="ghost" size="sm" loading={resolving === s.id} onClick={() => handleResolve(s.id)}>Marquer traité</Button>
+                </div>
               </div>
-              <Button variant="ghost" size="sm" loading={resolving === s.id} onClick={() => handleResolve(s.id)}>Marquer traité</Button>
+              {taskFormFor === s.id && (
+                <div className="mt-2 flex flex-wrap items-end gap-2 border-t pt-2">
+                  <div className="min-w-[200px] space-y-1">
+                    <label className="text-xs font-medium" htmlFor={`task-assignee-${s.id}`}>Assigné à (UUID)</label>
+                    <Input id={`task-assignee-${s.id}`} value={taskAssignee} onChange={(e) => setTaskAssignee(e.target.value)} />
+                  </div>
+                  <div className="min-w-[240px] flex-1 space-y-1">
+                    <label className="text-xs font-medium" htmlFor={`task-title-${s.id}`}>Titre</label>
+                    <Input id={`task-title-${s.id}`} value={taskTitle} onChange={(e) => setTaskTitle(e.target.value)} />
+                  </div>
+                  <Button size="sm" loading={creatingTask} onClick={() => handleCreateTask(s)}>Créer</Button>
+                </div>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+/** RESTE-A-FAIRE §06: follow_up_tasks — no automation-fired path yet (the
+ *  execution engine itself is dormant, see 20260813050000_follow_up_tasks.sql),
+ *  only the manual queue: tasks created above from a risk signal, or by
+ *  another staff member. RLS scopes the list automatically (trainer sees
+ *  only tasks assigned to them, pedago/admin see the whole org's open
+ *  queue) — no client-side assignee filter. */
+function FollowUpTasksPanel({ orgId }: { orgId: string }) {
+  const [tasks, setTasks] = useState<FollowUpTask[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState<string | null>(null);
+
+  useEffect(() => {
+    listOpenFollowUpTasks(orgId).then(setTasks).catch(showError).finally(() => setLoading(false));
+  }, [orgId]);
+
+  const handleUpdate = async (id: string, status: "done" | "dismissed") => {
+    setUpdating(id);
+    try {
+      await updateFollowUpTaskStatus(id, status);
+      setTasks((prev) => prev.filter((t) => t.id !== id));
+    } catch (err) {
+      showError(err);
+    } finally {
+      setUpdating(null);
+    }
+  };
+
+  if (loading) return <TableSkeleton rows={2} cols={2} />;
+
+  return (
+    <section className="product-list-panel p-5 mt-4">
+      <div className="product-panel-heading -mx-5 -mt-5 mb-4">
+        <div><h2>Tâches de suivi</h2><p>Actions humaines assignées suite à un signal de risque ou créées manuellement.</p></div>
+      </div>
+      {tasks.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Aucune tâche ouverte.</p>
+      ) : (
+        <ul className="space-y-2" aria-label="Tâches de suivi">
+          {tasks.map((t) => (
+            <li key={t.id} className="flex items-center justify-between rounded-md border p-3 text-sm">
+              <div>
+                <p className="font-medium">{t.title}</p>
+                <p className="text-muted-foreground">Apprenant {t.learner_id.slice(0, 8)} · assigné à {t.assignee_id.slice(0, 8)}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="sm" loading={updating === t.id} onClick={() => handleUpdate(t.id, "dismissed")}>Rejeter</Button>
+                <Button variant="ghost" size="sm" loading={updating === t.id} onClick={() => handleUpdate(t.id, "done")}>Marquer fait</Button>
+              </div>
             </li>
           ))}
         </ul>
@@ -407,6 +510,7 @@ export default function LmsAnalytics() {
         />
         <AnalyticsDashboard orgId={activeOrgId} />
         <RiskSignals orgId={activeOrgId} />
+        <FollowUpTasksPanel orgId={activeOrgId} />
         <SavedReports orgId={activeOrgId} />
         {isManager && <PrivacySettings orgId={activeOrgId} />}
       </div>

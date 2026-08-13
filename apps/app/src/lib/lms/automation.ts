@@ -56,6 +56,51 @@ export async function createAutomationRule(orgId: string, triggerType: string): 
   return data as AutomationRule;
 }
 
+export interface FollowUpTask {
+  id: string;
+  org_id: string;
+  automation_rule_id: string | null;
+  assignee_id: string;
+  learner_id: string;
+  title: string;
+  status: 'open' | 'done' | 'dismissed';
+  created_at: string;
+}
+
+/** RESTE-A-FAIRE §06: manual creation path (AUT-002's automation-fired
+ *  path needs automation_rule_versions/an execution engine that doesn't
+ *  exist yet — see 20260813050000_follow_up_tasks.sql). Staff turning a
+ *  flagged learner (risk_signals) into an actionable task for someone. */
+export async function createFollowUpTask(orgId: string, learnerId: string, assigneeId: string, title: string): Promise<FollowUpTask> {
+  const { data, error } = await supabase.rpc('create_follow_up_task', {
+    p_org_id: orgId, p_learner_id: learnerId, p_assignee_id: assigneeId, p_title: title,
+  });
+  if (error) throw error;
+  return data as FollowUpTask;
+}
+
+/** RLS (follow_up_tasks_assignee) scopes this automatically: a trainer
+ *  sees only tasks assigned to them, pedago/admin see every open task in
+ *  the org regardless of assignee — no client-side assignee filter needed. */
+export async function listOpenFollowUpTasks(orgId: string): Promise<FollowUpTask[]> {
+  const { data, error } = await supabase
+    .from('follow_up_tasks')
+    .select('*')
+    .eq('org_id', orgId)
+    .eq('status', 'open')
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as FollowUpTask[];
+}
+
+/** Direct update: follow_up_tasks_manage (RLS) already lets the assignee
+ *  or org staff transition status — no RPC needed, same posture as
+ *  competency_review_requests' resolve flow. */
+export async function updateFollowUpTaskStatus(taskId: string, status: 'done' | 'dismissed'): Promise<void> {
+  const { error } = await supabase.from('follow_up_tasks').update({ status }).eq('id', taskId);
+  if (error) throw error;
+}
+
 /** The reason a specific activity is locked/unlocked for the current learner, if any. */
 export async function myReleaseState(targetType: string, targetId: string): Promise<{ effect: string; reason: string | null } | null> {
   const { data, error } = await supabase
