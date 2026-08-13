@@ -1249,7 +1249,7 @@ effectivement le bandeau masqué) — vérifié uniquement par relecture du SQL
 et par l'application propre de la migration (`supabase db push`,
 `supabase migration list` confirmé synchronisé).
 
-**Depuis la migration `20260813170000_spec07_analytics_completion.sql`** : projection programme au grain offering, dashboard apprenant via RPC propriétaire, psychométrie (distracteurs/quartiles/difficulté/discrimination/alertes), durée médiane, exécuteur de rapports planifiés et exports CSV/XLSX/PDF pseudonymisés sont implémentés. Les valeurs sous le seuil de cohorte restent supprimées.
+**Depuis les migrations `20260813170000_spec07_analytics_completion.sql` et `20260813180000_spec07_hardening.sql`** : projection programme au grain offering, dashboard apprenant via RPC propriétaire, psychométrie (distracteurs/quartiles/difficulté/discrimination/alertes), durée médiane, exécuteur de rapports planifiés, exports CSV/XLSX/PDF pseudonymisés, lineage/fraîcheur des métriques, programmation de rapports autorisée et relance humaine des signaux sont implémentés. Aucune brique IA n'est incluse. Les valeurs sous le seuil de cohorte restent supprimées.
 
 ## 08 — Évaluations avancées et banque d'items versionnée
 
