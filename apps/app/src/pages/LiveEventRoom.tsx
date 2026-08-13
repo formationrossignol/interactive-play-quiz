@@ -6,6 +6,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ListSkeleton } from '@/components/ui/skeletons';
 import {
   castVote,
+  getLiveBrainstormIdeas,
   getLiveEventByCode,
   getMyLiveResponse,
   getOpenRun,
@@ -15,10 +16,21 @@ import {
   submitAudienceQuestion,
   submitLiveResponse,
   type AudienceQuestion,
+  type BrainstormConfig,
+  type BrainstormIdea,
+  type BrainstormPayload,
+  type LiveBrainstormIdeaResult,
   type LiveEvent,
   type LiveInteraction,
   type LiveRun,
+  type MatrixConfig,
+  type MatrixPayload,
   type PollConfig,
+  type PollResponsePayload,
+  type PriorityConfig,
+  type PriorityPayload,
+  type RankingConfig,
+  type RankingPayload,
 } from '@/lib/lms/liveEngagement';
 import { genLiveClientId, getLiveParticipantIdentity, getVotedQuestionIds, markQuestionVoted, setLiveParticipantIdentity } from '@/lib/lms/liveParticipant';
 
@@ -53,7 +65,7 @@ function LivePollWidget({ interaction }: { interaction: LiveInteraction }) {
     getMyLiveResponse(interaction.id, identity.clientId)
       .then((payload) => {
         if (cancelled || !payload) return;
-        setSelected(new Set(payload.optionIds));
+        setSelected(new Set((payload as PollResponsePayload).optionIds));
         setSubmitted(true);
       })
       .catch(() => {});
@@ -112,6 +124,323 @@ function LivePollWidget({ interaction }: { interaction: LiveInteraction }) {
   );
 }
 
+/** LIVE-009: allocate a fixed points budget across options. */
+function LivePriorityWidget({ interaction }: { interaction: LiveInteraction }) {
+  const config = interaction.config as PriorityConfig;
+  const [allocations, setAllocations] = useState<Record<string, number>>({});
+  const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    setAllocations({});
+    setSubmitted(false);
+    const identity = getLiveParticipantIdentity();
+    if (!identity) return;
+    let cancelled = false;
+    getMyLiveResponse(interaction.id, identity.clientId)
+      .then((payload) => {
+        if (cancelled || !payload) return;
+        setAllocations((payload as PriorityPayload).allocations ?? {});
+        setSubmitted(true);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [interaction.id]);
+
+  const spent = Object.values(allocations).reduce((sum, n) => sum + (n || 0), 0);
+  const remaining = config.budget - spent;
+
+  const handleSubmit = async () => {
+    const identity = getLiveParticipantIdentity();
+    if (!identity || remaining < 0) return;
+    setSubmitting(true);
+    try {
+      await submitLiveResponse(interaction.id, identity.clientId, { allocations });
+      setSubmitted(true);
+    } catch {
+      // Best-effort, same posture as vote/question submission in this room.
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="rounded-md border p-3 mb-4 space-y-2">
+      <p className="text-sm font-medium flex items-center gap-1.5"><BarChart3 size={15} /> {config.question}</p>
+      <p className="text-xs" style={{ color: remaining < 0 ? 'var(--ap-danger)' : undefined }}>Restant : {remaining} / {config.budget} pts</p>
+      <div className="space-y-1.5">
+        {config.options.map((option) => (
+          <div key={option.id} className="flex items-center justify-between gap-2 text-sm rounded-md border px-3 py-1.5">
+            <span>{option.label}</span>
+            <input
+              type="number"
+              min={0}
+              max={config.budget}
+              value={allocations[option.id] ?? 0}
+              onChange={(e) => setAllocations((prev) => ({ ...prev, [option.id]: Number(e.target.value) || 0 }))}
+              className="w-16 text-right"
+              aria-label={`Points pour ${option.label}`}
+            />
+          </div>
+        ))}
+      </div>
+      <button
+        type="button"
+        className="ap-btn ap-btn--pill"
+        style={{ width: '100%' }}
+        disabled={remaining < 0 || submitting}
+        onClick={() => void handleSubmit()}
+      >
+        {submitted ? <><CheckCircle2 size={14} /> Réponse enregistrée — modifier</> : 'Répondre'}
+      </button>
+    </div>
+  );
+}
+
+/** LIVE-010: numeric x/y placement per option — sliders with visible axis
+ *  labels rather than a drag-and-drop canvas, so the format stays
+ *  keyboard/screen-reader operable ("placement accessible" per spec). */
+function LiveMatrixWidget({ interaction }: { interaction: LiveInteraction }) {
+  const config = interaction.config as MatrixConfig;
+  const [placements, setPlacements] = useState<Record<string, { x: number; y: number }>>({});
+  const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    setPlacements({});
+    setSubmitted(false);
+    const identity = getLiveParticipantIdentity();
+    if (!identity) return;
+    let cancelled = false;
+    getMyLiveResponse(interaction.id, identity.clientId)
+      .then((payload) => {
+        if (cancelled || !payload) return;
+        setPlacements((payload as MatrixPayload).placements ?? {});
+        setSubmitted(true);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [interaction.id]);
+
+  const setAxis = (optionId: string, axis: 'x' | 'y', value: number) => {
+    setPlacements((prev) => ({ ...prev, [optionId]: { x: 0, y: 0, ...prev[optionId], [axis]: value } }));
+  };
+
+  const handleSubmit = async () => {
+    const identity = getLiveParticipantIdentity();
+    if (!identity) return;
+    setSubmitting(true);
+    try {
+      await submitLiveResponse(interaction.id, identity.clientId, { placements });
+      setSubmitted(true);
+    } catch {
+      // Best-effort, same posture as vote/question submission in this room.
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="rounded-md border p-3 mb-4 space-y-2">
+      <p className="text-sm font-medium flex items-center gap-1.5"><BarChart3 size={15} /> {config.question}</p>
+      <div className="space-y-3">
+        {config.options.map((option) => {
+          const point = placements[option.id] ?? { x: 0, y: 0 };
+          return (
+            <div key={option.id} className="rounded-md border p-2 space-y-1.5">
+              <p className="text-sm font-medium">{option.label}</p>
+              <label className="text-xs flex items-center gap-2">
+                {config.xAxisLabel}
+                <input type="range" min={-100} max={100} value={point.x} onChange={(e) => setAxis(option.id, 'x', Number(e.target.value))} className="flex-1" />
+                <span className="w-8 text-right">{point.x}</span>
+              </label>
+              <label className="text-xs flex items-center gap-2">
+                {config.yAxisLabel}
+                <input type="range" min={-100} max={100} value={point.y} onChange={(e) => setAxis(option.id, 'y', Number(e.target.value))} className="flex-1" />
+                <span className="w-8 text-right">{point.y}</span>
+              </label>
+            </div>
+          );
+        })}
+      </div>
+      <button type="button" className="ap-btn ap-btn--pill" style={{ width: '100%' }} disabled={submitting} onClick={() => void handleSubmit()}>
+        {submitted ? <><CheckCircle2 size={14} /> Réponse enregistrée — modifier</> : 'Répondre'}
+      </button>
+    </div>
+  );
+}
+
+/** LIVE-011/LIVE-013: free-text ideas (this participant's own, kept in
+ *  their one response row) plus voting on the shared pool (read via
+ *  get_live_brainstorm_ideas() — live_responses itself isn't participant-
+ *  readable, same reason poll results go through an aggregate RPC too). */
+function LiveBrainstormWidget({ interaction }: { interaction: LiveInteraction }) {
+  const config = interaction.config as BrainstormConfig;
+  const [myIdeas, setMyIdeas] = useState<BrainstormIdea[]>([]);
+  const [myVotes, setMyVotes] = useState<Set<string>>(new Set());
+  const [draft, setDraft] = useState('');
+  const [pool, setPool] = useState<LiveBrainstormIdeaResult[]>([]);
+  const [submitting, setSubmitting] = useState(false);
+
+  const reloadPool = () => getLiveBrainstormIdeas(interaction.id).then(setPool).catch(() => {});
+
+  useEffect(() => {
+    setMyIdeas([]);
+    setMyVotes(new Set());
+    reloadPool();
+    const identity = getLiveParticipantIdentity();
+    if (!identity) return;
+    let cancelled = false;
+    getMyLiveResponse(interaction.id, identity.clientId)
+      .then((payload) => {
+        if (cancelled || !payload) return;
+        const p = payload as BrainstormPayload;
+        setMyIdeas(p.ideas ?? []);
+        setMyVotes(new Set(p.votes ?? []));
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [interaction.id]);
+
+  const persist = async (ideas: BrainstormIdea[], votes: Set<string>) => {
+    const identity = getLiveParticipantIdentity();
+    if (!identity) return;
+    setSubmitting(true);
+    try {
+      await submitLiveResponse(interaction.id, identity.clientId, { ideas, votes: [...votes] });
+      await reloadPool();
+    } catch {
+      // Best-effort, same posture as vote/question submission in this room.
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleAddIdea = async () => {
+    const text = draft.trim();
+    if (!text) return;
+    const nextIdeas = [...myIdeas, { id: crypto.randomUUID(), text }];
+    setMyIdeas(nextIdeas);
+    setDraft('');
+    await persist(nextIdeas, myVotes);
+  };
+
+  const toggleVote = async (ideaId: string) => {
+    const nextVotes = new Set(myVotes);
+    if (nextVotes.has(ideaId)) nextVotes.delete(ideaId);
+    else nextVotes.add(ideaId);
+    setMyVotes(nextVotes);
+    await persist(myIdeas, nextVotes);
+  };
+
+  return (
+    <div className="rounded-md border p-3 mb-4 space-y-2">
+      <p className="text-sm font-medium flex items-center gap-1.5"><BarChart3 size={15} /> {config.question}</p>
+      <div className="flex items-center gap-2">
+        <input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void handleAddIdea(); } }}
+          placeholder="Proposer une idée…"
+          className="flex-1 rounded-md border px-2 py-1.5 text-sm"
+        />
+        <button type="button" className="ap-btn ap-btn--sm" disabled={!draft.trim() || submitting} onClick={() => void handleAddIdea()}>Ajouter</button>
+      </div>
+      {pool.length > 0 && (
+        <ul className="space-y-1">
+          {pool.map((idea) => (
+            <li key={idea.idea_id} className="flex items-center justify-between gap-2 text-sm rounded-md border px-2 py-1.5">
+              <span>{idea.idea_text}</span>
+              <button
+                type="button"
+                className="ap-btn ap-btn--ghost ap-btn--sm"
+                disabled={submitting}
+                onClick={() => void toggleVote(idea.idea_id)}
+              >
+                <ThumbsUp size={14} /> {idea.votes_count}{myVotes.has(idea.idea_id) ? ' ✓' : ''}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/** LIVE-012: drag order via up/down buttons rather than a drag-and-drop
+ *  list — same accessibility reasoning as the matrix widget. */
+function LiveRankingWidget({ interaction }: { interaction: LiveInteraction }) {
+  const config = interaction.config as RankingConfig;
+  const [order, setOrder] = useState<string[]>(config.options.map((o) => o.id));
+  const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    setOrder(config.options.map((o) => o.id));
+    setSubmitted(false);
+    const identity = getLiveParticipantIdentity();
+    if (!identity) return;
+    let cancelled = false;
+    getMyLiveResponse(interaction.id, identity.clientId)
+      .then((payload) => {
+        if (cancelled || !payload) return;
+        const p = payload as RankingPayload;
+        if (p.order?.length === config.options.length) setOrder(p.order);
+        setSubmitted(true);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [interaction.id]);
+
+  const move = (index: number, delta: number) => {
+    setOrder((prev) => {
+      const next = [...prev];
+      const target = index + delta;
+      if (target < 0 || target >= next.length) return prev;
+      [next[index], next[target]] = [next[target], next[index]];
+      return next;
+    });
+  };
+
+  const handleSubmit = async () => {
+    const identity = getLiveParticipantIdentity();
+    if (!identity) return;
+    setSubmitting(true);
+    try {
+      await submitLiveResponse(interaction.id, identity.clientId, { order });
+      setSubmitted(true);
+    } catch {
+      // Best-effort, same posture as vote/question submission in this room.
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const labelById = new Map(config.options.map((o) => [o.id, o.label]));
+
+  return (
+    <div className="rounded-md border p-3 mb-4 space-y-2">
+      <p className="text-sm font-medium flex items-center gap-1.5"><BarChart3 size={15} /> {config.question}</p>
+      <ol className="space-y-1.5">
+        {order.map((optionId, i) => (
+          <li key={optionId} className="flex items-center justify-between gap-2 text-sm rounded-md border px-3 py-1.5">
+            <span>{i + 1}. {labelById.get(optionId) ?? optionId}</span>
+            <div className="flex items-center gap-1">
+              <button type="button" className="ap-btn ap-btn--ghost ap-btn--sm ap-icon-btn" aria-label="Monter" disabled={i === 0} onClick={() => move(i, -1)}>↑</button>
+              <button type="button" className="ap-btn ap-btn--ghost ap-btn--sm ap-icon-btn" aria-label="Descendre" disabled={i === order.length - 1} onClick={() => move(i, 1)}>↓</button>
+            </div>
+          </li>
+        ))}
+      </ol>
+      <button type="button" className="ap-btn ap-btn--pill" style={{ width: '100%' }} disabled={submitting} onClick={() => void handleSubmit()}>
+        {submitted ? <><CheckCircle2 size={14} /> Réponse enregistrée — modifier</> : 'Répondre'}
+      </button>
+    </div>
+  );
+}
+
 export default function LiveEventRoom() {
   const navigate = useNavigate();
   const { code } = useParams<{ code: string }>();
@@ -123,7 +452,7 @@ export default function LiveEventRoom() {
   const [votedIds, setVotedIds] = useState<Set<string>>(new Set());
   const [questionBody, setQuestionBody] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [livePoll, setLivePoll] = useState<LiveInteraction | null>(null);
+  const [activeInteraction, setActiveInteraction] = useState<LiveInteraction | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -150,7 +479,7 @@ export default function LiveEventRoom() {
         setRun(foundRun);
         setQuestions(initialQuestions.filter((q) => VISIBLE_STATUSES.has(q.status)));
         setVotedIds(getVotedQuestionIds(foundRun.id));
-        setLivePoll(interactions.find((i) => i.kind === 'poll' && i.status === 'live') ?? null);
+        setActiveInteraction(interactions.find((i) => i.status === 'live') ?? null);
         setPhase('live');
       } catch (err) {
         if (cancelled) return;
@@ -185,9 +514,9 @@ export default function LiveEventRoom() {
     return () => { void supabase.removeChannel(channel); };
   }, [phase, run]);
 
-  // A staff member opening/closing a poll shows/hides it here immediately —
-  // open_live_interaction() auto-closes any other interaction on the run, so
-  // at most one 'live' row ever exists at a time.
+  // A staff member opening/closing an interaction shows/hides it here
+  // immediately — open_live_interaction() auto-closes any other
+  // interaction on the run, so at most one 'live' row ever exists at a time.
   useEffect(() => {
     if (phase !== 'live' || !run) return;
     const channel = supabase
@@ -196,8 +525,8 @@ export default function LiveEventRoom() {
         { event: '*', schema: 'public', table: 'live_interactions', filter: `run_id=eq.${run.id}` },
         (payload) => {
           const row = payload.new as LiveInteraction | undefined;
-          if (!row || row.kind !== 'poll') return;
-          setLivePoll((prev) => {
+          if (!row) return;
+          setActiveInteraction((prev) => {
             if (row.status === 'live') return row;
             return prev?.id === row.id ? null : prev;
           });
@@ -274,7 +603,11 @@ export default function LiveEventRoom() {
           <p>Posez une question ou votez pour celles déjà posées.</p>
         </div>
 
-        {livePoll && <LivePollWidget interaction={livePoll} />}
+        {activeInteraction?.kind === 'poll' && <LivePollWidget interaction={activeInteraction} />}
+        {activeInteraction?.kind === 'priority' && <LivePriorityWidget interaction={activeInteraction} />}
+        {activeInteraction?.kind === 'matrix' && <LiveMatrixWidget interaction={activeInteraction} />}
+        {activeInteraction?.kind === 'brainstorm' && <LiveBrainstormWidget interaction={activeInteraction} />}
+        {activeInteraction?.kind === 'ranking' && <LiveRankingWidget interaction={activeInteraction} />}
 
         <form onSubmit={handleSubmitQuestion} className="flex gap-2 mb-4">
           <input

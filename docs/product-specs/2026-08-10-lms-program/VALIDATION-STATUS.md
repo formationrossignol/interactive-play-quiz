@@ -1428,9 +1428,8 @@ synchronisé), suite complète (335 tests) verte.
 
 **Reste à faire** :
 - [x] UI d'expulsion — bouton « Expulser » par participant actif (`ParticipantManager`, dépliable depuis le compteur de participants dans `RunControls`)
-- [x] Répondre à un sondage (`poll`) — voir ci-dessus. **Reste** : `priority`/`matrix`/`brainstorm`/`ranking` n'ont toujours ni éditeur ni écran de réponse
+- [x] Répondre à un sondage (`poll`) — voir ci-dessus. **Reste** : voir ci-dessous, `priority`/`matrix`/`brainstorm`/`ranking` sont faits dans une passe ultérieure
 - [x] Vraie table/mécanisme d'allowlist pour `access_policy = 'allowlist'` — voir ci-dessus
-- [ ] Formats supplémentaires : priorisation, matrice 2×2, brainstorm, classement forcé (LIVE-009 à LIVE-013) — `live_interactions.kind` les accepte, aucun éditeur/lecteur pour ces quatre-là
 - [ ] Intégrations PowerPoint/Teams/Zoom (LIVE-017/018/019)
 
 Depuis cette passe (pas de nouvelle migration) : rapports post-session
@@ -1506,6 +1505,84 @@ limite que le reste de cette passe : pas de compte staff/participant
 local) — vérifié par lecture du SQL, `tsc`/`eslint` propres, migration
 appliquée sans erreur (`supabase db push`, `migration list` confirmé
 synchronisé).
+
+Depuis cette passe (`20260813100000_live_brainstorm_ideas.sql`, seule
+migration nécessaire) : les 4 formats restants (LIVE-009 à LIVE-013 —
+priorisation, matrice 2×2, brainstorm/texte libre, classement forcé).
+Constat de départ, avant d'écrire quoi que ce soit : `live_interactions`/
+`live_responses` et les 4 RPC participant
+(`open_live_interaction`/`close_live_interaction`/`submit_live_response`/
+`get_my_live_response`) sont déjà agnostiques au `kind` — elles
+stockent/retournent `config`/`payload` jsonb sans jamais l'inspecter, et
+`live_interactions_staff` (RLS, `for all`) permettait déjà n'importe quel
+`kind` accepté par la contrainte check. Zéro changement backend requis
+pour créer/répondre/fermer ces 4 formats — seuls le contrat config/payload
+par format (jamais défini nulle part avant, explicitement noté comme « pas
+deviné ici » dans une passe précédente) et l'éditeur/écran de réponse/vue
+résultats manquaient. Par format :
+- **Priorisation** (LIVE-009) : budget de points fixe, alloué par input
+  numérique par option, résultat = moyenne de points/participant.
+- **Matrice 2×2** (LIVE-010) : x/y numériques par option via curseurs
+  (`&lt;input type="range"&gt;`), pas un canvas glisser-déposer — « placement
+  accessible » de la spec favorise un contrôle clavier/lecteur d'écran
+  plutôt qu'une interaction souris-only qui la contredirait. Résultat :
+  moyenne (x,y) par option, projetée sur une grille simple (divs
+  positionnés, pas de lib de graphiques).
+- **Brainstorm + texte libre** (LIVE-011/LIVE-013 — le texte libre n'a pas
+  de `kind` dédié dans la contrainte check, c'est déjà les idées libres du
+  brainstorm) : idées et votes vivent dans la même ligne de réponse
+  (contrainte d'unicité (interaction, client) inchangée — un participant
+  ne peut avoir qu'une ligne, donc ses idées *et* ses votes y voyagent
+  ensemble). Catégories (LIVE-011 « groupes ») stockées dans le `config`
+  de l'interaction elle-même (déjà en écriture staff directe via
+  `live_interactions_staff`) plutôt qu'une nouvelle table. Seule vraie
+  addition backend de cette passe : `get_live_brainstorm_ideas()` — un
+  participant ne peut pas lire `live_responses` directement (aucune
+  policy participant, `client_id` n'est pas une identité que RLS peut
+  vérifier) donc ne peut pas voir les idées des autres pour voter dessus
+  sans un agrégat dédié ; même raisonnement exact que
+  `get_public_live_interaction_results()` (passe précédente) pour les
+  résultats de sondage sur l'écran projeté. Export CSV simple intégré à la
+  vue résultats staff.
+- **Classement forcé** (LIVE-012) : ordre par boutons monter/descendre
+  (même raisonnement d'accessibilité que la matrice). Comparaison
+  avant/après : aucun nouveau mécanisme — `live_responses` upserte sur
+  (interaction, client), donc une deuxième soumission écrase la première,
+  impossible de garder « avant » et « après » dans une seule ligne. Réutilise
+  la convention déjà établie « deux interactions » : le staff crée deux
+  classements avec la même question et `phase:'before'`/`'after'`,
+  `RankingResults` les rapproche automatiquement par correspondance de
+  question quand les deux existent sur le run.
+
+UI staff : `LiveEngagement.tsx::CreateInteractionForm` (sélecteur de type
++ champs par type), `PriorityResults`/`MatrixResults`/`BrainstormResults`/
+`RankingResults`. UI participant : `LiveEventRoom.tsx::LivePriorityWidget`/
+`LiveMatrixWidget`/`LiveBrainstormWidget`/`LiveRankingWidget`, sélection
+générique par `activeInteraction.kind` (auparavant `livePoll`, filtré sur
+`kind==='poll'` uniquement — généralisé).
+
+**Découverte importante en cours de route, corrigée avant de committer** :
+la commande `npx tsc --noEmit` utilisée pour « vérifier » le typecheck sur
+tout le reste de cette session ne vérifiait en réalité **aucun fichier** —
+`apps/app/tsconfig.json` est une config composite racine avec `"files": []`
+et des `references` vers `tsconfig.app.json`/`tsconfig.node.json`, que
+`tsc` sans `--build` n'exécute jamais automatiquement. La vraie commande
+est `npm run typecheck` (`tsc --noEmit -p tsconfig.app.json`), trouvée dans
+`package.json`. Tout le code de cette passe corrigé avec la bonne commande
+(imports de types manquants, `LiveParticipantRow.joined_at`/`last_seen_at`
+absents du type, deux chaînes avec un caractère BOM littéral au lieu de
+l'échappement `\ufeff` — introduits par un artefact de l'outil d'écriture,
+pas une erreur de logique). **Le reste du code déjà écrit cette session,
+re-vérifié après coup avec la bonne commande sur l'ensemble du projet :
+0 erreur réelle** — rien n'avait été cassé silencieusement, seule la
+méthode de vérification employée jusqu'ici était creuse. `eslint` n'avait
+pas ce problème (sa propre configuration de projet, vérifié correct tout
+du long). Build de production (`npm run build`) et suite complète (335
+tests) vérifiés après coup, tous deux verts. **Non testé en conditions
+réelles** (même limite que le reste de cette passe) — vérifié par lecture
+du code, `npm run typecheck`/`eslint` propres (commande correcte cette
+fois), migration appliquée sans erreur (`supabase db push`, `migration
+list` confirmé synchronisé).
 
 ## 10 — Gouvernance, versionnement, localisation et diffusion du contenu
 

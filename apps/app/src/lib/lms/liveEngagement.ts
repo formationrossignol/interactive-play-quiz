@@ -49,12 +49,20 @@ export interface LiveParticipantRow {
   client_id: string;
   display_name: string | null;
   status: 'active' | 'kicked';
+  joined_at: string;
+  last_seen_at: string;
 }
 
 /** Only 'poll' has a defined config/payload contract so far (see
- *  20260812090000_live_poll_interactions.sql) — 'priority'/'matrix'/
- *  'brainstorm'/'ranking' are accepted by the DB check constraint but have
- *  no editor/reader UI yet. */
+ *  20260812090000_live_poll_interactions.sql). live_interactions/
+ *  live_responses/open_live_interaction()/close_live_interaction()/
+ *  submit_live_response()/get_my_live_response() are all kind-agnostic —
+ *  they store/return `config`/`payload` jsonb without inspecting it, and
+ *  live_interactions_staff (RLS, `for all`) already permits any `kind`
+ *  the DB check constraint accepts. So priority/matrix/brainstorm/ranking
+ *  (RESTE-A-FAIRE §09 "formats supplémentaires") needed zero backend
+ *  change — only the config/payload contract per kind (never defined
+ *  before) and the editor/respond/results UI. */
 export interface PollOption {
   id: string;
   label: string;
@@ -66,19 +74,89 @@ export interface PollConfig {
   allowMultiple: boolean;
 }
 
+export interface PollResponsePayload {
+  optionIds: string[];
+}
+
+/** LIVE-009 "priorisation : allocation d'un budget de points entre
+ *  options". */
+export interface PriorityConfig {
+  question: string;
+  options: PollOption[];
+  budget: number;
+}
+export interface PriorityPayload {
+  allocations: Record<string, number>;
+}
+
+/** LIVE-010 "matrice 2×2 : deux axes configurables et placement
+ *  accessible" — numeric x/y inputs per option rather than a drag-and-drop
+ *  canvas: sliders/number fields with clear axis labels are inherently
+ *  keyboard/screen-reader operable, a canvas would fight "accessible"
+ *  rather than satisfy it. Coordinates in [-100, 100] on each axis. */
+export interface MatrixConfig {
+  question: string;
+  xAxisLabel: string;
+  yAxisLabel: string;
+  options: PollOption[];
+}
+export interface MatrixPayload {
+  placements: Record<string, { x: number; y: number }>;
+}
+
+/** LIVE-011 "brainstorm : idées, groupes/catégories, vote et export" +
+ *  LIVE-013 "texte libre : regroupement manuel" — texte libre has no
+ *  distinct `kind` in the DB check constraint, brainstorm's free-text
+ *  ideas already are that texte libre. One live_responses row per
+ *  (interaction, client) (existing unique constraint, unchanged) holds an
+ *  array of that participant's own ideas *and* which idea ids they
+ *  upvoted — a participant can't submit two separate response rows, so
+ *  both live in the one row they get. Categories (LIVE-011 "groupes")
+ *  live in the interaction's own `config` (staff-writable via
+ *  live_interactions_staff, already `for all`) rather than a new table —
+ *  ideaId → category label, set by staff post-hoc from the results view. */
+export interface BrainstormIdea {
+  id: string;
+  text: string;
+}
+export interface BrainstormConfig {
+  question: string;
+  categories?: Record<string, string>;
+}
+export interface BrainstormPayload {
+  ideas: BrainstormIdea[];
+  votes: string[];
+}
+
+/** LIVE-012 "classement forcé et comparaison avant/après". The before/after
+ *  comparison can't live inside one interaction: live_responses upserts
+ *  on (interaction_id, client_id), so a second submission overwrites the
+ *  first — there's no way to keep both states in one row. Reuses the
+ *  existing two-interactions convention instead: staff creates two
+ *  ranking interactions with the same question and `phase: 'before'`/
+ *  `'after'`, opened/closed in turn — RankingResults groups by matching
+ *  question text and shows both side by side when both exist. No schema
+ *  change for this either. */
+export interface RankingConfig {
+  question: string;
+  options: PollOption[];
+  phase?: 'before' | 'after';
+}
+export interface RankingPayload {
+  order: string[];
+}
+
+export type LiveInteractionConfig = PollConfig | PriorityConfig | MatrixConfig | BrainstormConfig | RankingConfig;
+
 export interface LiveInteraction {
   id: string;
   run_id: string;
   kind: 'poll' | 'priority' | 'matrix' | 'brainstorm' | 'ranking';
-  config: PollConfig | Record<string, unknown>;
+  config: LiveInteractionConfig;
   status: 'draft' | 'live' | 'closed';
   opened_at: string | null;
   closed_at: string | null;
   created_at: string;
-}
-
-export interface PollResponsePayload {
-  optionIds: string[];
 }
 
 export async function listOrgLiveEvents(orgId: string): Promise<LiveEvent[]> {
@@ -376,6 +454,40 @@ export async function createPollInteraction(runId: string, config: PollConfig): 
   return data as LiveInteraction;
 }
 
+export async function createPriorityInteraction(runId: string, config: PriorityConfig): Promise<LiveInteraction> {
+  const { data, error } = await supabase.from('live_interactions').insert({ run_id: runId, kind: 'priority', config }).select().single();
+  if (error) throw error;
+  return data as LiveInteraction;
+}
+
+export async function createMatrixInteraction(runId: string, config: MatrixConfig): Promise<LiveInteraction> {
+  const { data, error } = await supabase.from('live_interactions').insert({ run_id: runId, kind: 'matrix', config }).select().single();
+  if (error) throw error;
+  return data as LiveInteraction;
+}
+
+export async function createBrainstormInteraction(runId: string, config: BrainstormConfig): Promise<LiveInteraction> {
+  const { data, error } = await supabase.from('live_interactions').insert({ run_id: runId, kind: 'brainstorm', config }).select().single();
+  if (error) throw error;
+  return data as LiveInteraction;
+}
+
+export async function createRankingInteraction(runId: string, config: RankingConfig): Promise<LiveInteraction> {
+  const { data, error } = await supabase.from('live_interactions').insert({ run_id: runId, kind: 'ranking', config }).select().single();
+  if (error) throw error;
+  return data as LiveInteraction;
+}
+
+/** Staff assigns an idea to a category post-hoc (LIVE-011 "groupes/
+ *  catégories") — direct update of the interaction's own config, same
+ *  live_interactions_staff `for all` policy every other staff write here
+ *  already relies on. Caller passes the full merged config (it already
+ *  holds the current one in state), not a partial patch. */
+export async function updateInteractionConfig(interactionId: string, config: LiveInteractionConfig): Promise<void> {
+  const { error } = await supabase.from('live_interactions').update({ config }).eq('id', interactionId);
+  if (error) throw error;
+}
+
 export interface PublicInteractionResult {
   option_id: string;
   votes_count: number;
@@ -389,6 +501,23 @@ export async function getPublicLiveInteractionResults(interactionId: string): Pr
   const { data, error } = await supabase.rpc('get_public_live_interaction_results', { p_interaction_id: interactionId });
   if (error) throw error;
   return (data ?? []) as PublicInteractionResult[];
+}
+
+export interface LiveBrainstormIdeaResult {
+  idea_id: string;
+  idea_text: string;
+  votes_count: number;
+}
+
+/** Participant-facing: the shared idea pool to vote on, aggregated —
+ *  live_responses has no participant read policy at all (client_id isn't
+ *  an auth identity RLS keys on), same reasoning as
+ *  getPublicLiveInteractionResults(). See
+ *  20260813100000_live_brainstorm_ideas.sql. */
+export async function getLiveBrainstormIdeas(interactionId: string): Promise<LiveBrainstormIdeaResult[]> {
+  const { data, error } = await supabase.rpc('get_live_brainstorm_ideas', { p_interaction_id: interactionId });
+  if (error) throw error;
+  return (data ?? []) as LiveBrainstormIdeaResult[];
 }
 
 export async function listRunInteractions(runId: string): Promise<LiveInteraction[]> {
@@ -415,18 +544,21 @@ export async function closeLiveInteraction(interactionId: string): Promise<LiveI
   return data as LiveInteraction;
 }
 
-/** Staff-only read (`live_responses_staff_read`) — used for live tallies. */
-export async function listInteractionResponses(interactionId: string): Promise<Array<{ client_id: string; payload: PollResponsePayload }>> {
+/** Staff-only read (`live_responses_staff_read`) — used for live tallies.
+ *  `payload` shape depends on the interaction's `kind` (PollResponsePayload/
+ *  PriorityPayload/MatrixPayload/BrainstormPayload/RankingPayload) —
+ *  callers cast per kind, same posture as `config` on LiveInteraction. */
+export async function listInteractionResponses(interactionId: string): Promise<Array<{ client_id: string; payload: unknown }>> {
   const { data, error } = await supabase
     .from('live_responses')
     .select('client_id, payload')
     .eq('interaction_id', interactionId);
   if (error) throw error;
-  return (data ?? []) as Array<{ client_id: string; payload: PollResponsePayload }>;
+  return (data ?? []) as Array<{ client_id: string; payload: unknown }>;
 }
 
 /** Participant-facing: anon-capable, idempotent upsert by (interaction, client). */
-export async function submitLiveResponse(interactionId: string, clientId: string, payload: PollResponsePayload): Promise<void> {
+export async function submitLiveResponse(interactionId: string, clientId: string, payload: PollResponsePayload | PriorityPayload | MatrixPayload | BrainstormPayload | RankingPayload): Promise<void> {
   const { error } = await supabase.rpc('submit_live_response', { p_interaction_id: interactionId, p_client_id: clientId, p_payload: payload });
   if (error) throw error;
 }
@@ -434,8 +566,8 @@ export async function submitLiveResponse(interactionId: string, clientId: string
 /** Restores the participant's own answer on reconnect — `live_responses` has
  *  no participant SELECT policy (client_id isn't an auth identity RLS can
  *  key on), so this RPC is the only read path for "what did I already answer". */
-export async function getMyLiveResponse(interactionId: string, clientId: string): Promise<PollResponsePayload | null> {
+export async function getMyLiveResponse(interactionId: string, clientId: string): Promise<unknown | null> {
   const { data, error } = await supabase.rpc('get_my_live_response', { p_interaction_id: interactionId, p_client_id: clientId });
   if (error) throw error;
-  return (data as PollResponsePayload | null) ?? null;
+  return data ?? null;
 }
