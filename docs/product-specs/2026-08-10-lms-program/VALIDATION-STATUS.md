@@ -855,8 +855,28 @@ compte staff local) — vérifié par lecture du SQL, `tsc`/`eslint` propres,
 migration appliquée sans erreur (`supabase db push`, `migration list`
 confirmé synchronisé).
 
+Depuis cette passe (pas de nouvelle migration) : UI de construction en
+phrases « Quand [condition], alors [action] », AND/OR et groupes
+imbriqués (ADP-003). Constat clé en creusant : ce n'était **pas** un gap
+backend — `evaluate_rule_definition()` gérait déjà la récursion `{op:
+'and'|'or', children:[...]}` et `publish_rule_set_version()` validait déjà
+la profondeur (max 6, `rule_definition_depth()`) et les cycles
+(`rule_definition_targets()`/`would_create_cycle()`) depuis
+`20260810200000_adaptive_automation.sql`, la toute première migration de
+ce spec — seule l'UI n'avait jamais émis autre chose qu'une feuille
+unique. `Automation.tsx::ConditionNodeEditor` : composant récursif, la
+racine d'une règle est toujours un groupe (`op` ET/OU + `children[]`) —
+même une condition unique sérialise en `{op:'and',children:[…]}`, pas de
+cas particulier « convertir une feuille en groupe » à construire à part ;
+chaque groupe a « + Condition »/« + Sous-groupe », profondeur UI limitée à
+5 (le serveur refuse de toute façon au-delà de 6) ; retrait par nœud, sauf
+le dernier enfant d'un groupe (jamais de groupe vide). `serializeCondition()`
+retourne `null` sur une feuille incomplète à n'importe quelle profondeur,
+`handlePublish()` bloque plutôt que d'envoyer une définition partielle.
+**Non testé en conditions réelles** (même limite que le reste de cette
+passe) — vérifié par lecture du code, `tsc`/`eslint` propres.
+
 **Reste à faire** :
-- [ ] UI de construction en phrases « Quand [condition], alors [action] » — l'UI actuelle construit une seule condition à la fois par règle, pas le DSL complet (AND/OR, groupes)
 - [ ] Simulation « voir comme cet apprenant » / dry-run avant publication (ADP-008, AUT-004)
 - [ ] Test de positionnement / remédiation (ADP-009/010/011)
 - [ ] `follow_up_tasks` — table posée, aucun écran ni déclencheur
