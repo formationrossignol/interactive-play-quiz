@@ -21,20 +21,27 @@ import {
   createCompetencyAlignment,
   createMasteryScale,
   deleteCompetencyAlignment,
+  listAlignmentsForCompetencies,
+  listCompetenciesByIds,
   listCompetencyAlignments,
   listCompetencyEvidence,
+  listCompetencyTitles,
   listFrameworkCompetencies,
   listMasteryForLearners,
+  listMyContentSkillTags,
+  listOrgCompetencies,
   listOrgFrameworks,
   listOrgMasteryScales,
   listOrgReviewRequests,
   listScaleLevels,
+  listTagMappings,
   myMastery,
   myReviewRequests,
   publishFramework,
   requestCompetencyReview,
   resolveReviewRequest,
   setManualMasteryLevel,
+  setTagMapping,
   updateMasteryScaleMethod,
   type AggregationMethod,
   type AlignmentTargetType,
@@ -44,10 +51,13 @@ import {
   type CompetencyFramework,
   type CompetencyMastery,
   type CompetencyReviewRequest,
+  type CompetencyTagMapping,
   type MasteryScale,
   type MasteryScaleLevel,
+  type TagUsage,
 } from "@/lib/lms/competencies";
 import { getRubricCriteria, listOrgAssignments, listOrgRubrics, type Assignment, type Rubric, type RubricCriterion } from "@/lib/lms/gradebook";
+import { exportCompetencyAchievement, exportMasteryAssertion } from "@/lib/lms/openBadgesExport";
 
 const AGGREGATION_METHOD_LABEL: Record<AggregationMethod, string> = {
   latest: "Dernière preuve", best: "Meilleure preuve", weighted_average: "Moyenne pondérée",
@@ -456,17 +466,113 @@ const levelLabel: Record<string, string> = {
   expert: "Expert",
 };
 
-function FrameworkCompetencies({ orgId, framework }: { orgId: string; framework: CompetencyFramework }) {
+/** CMP-012/021: "couverture de cours"/"couverture des programmes" —
+ *  neither a course nor a program is a real, org-scoped, queryable entity
+ *  in this codebase (courses are localStorage-only, `program` only exists
+ *  as a free-text enum tag on `metric_definitions.scope`). The only
+ *  genuinely org-scoped, browsable grouping of competencies today is the
+ *  `competency_framework` itself — this view approximates "programme" at
+ *  framework granularity rather than inventing a course/program table.
+ *  "Enseigné/pratiqué/évalué" (acceptance criterion) is literally
+ *  `competency_alignments.evidence_role` (teaching/practice/assessment),
+ *  already built for CMP-010/011. "Surreprésentée" (CMP-012) has no
+ *  spec-defined threshold — flagged here when a competency's alignment
+ *  count is more than 2× the framework's median (only computed once at
+ *  least 3 competencies have any alignments, so a couple of well-aligned
+ *  competencies among many empty ones don't trivially "outnumber" a
+ *  near-zero median). */
+function ProgramCoveragePanel({ competencies }: { competencies: Competency[] }) {
+  const [alignments, setAlignments] = useState<CompetencyAlignment[]>([]);
+  const [titles, setTitles] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const ids = competencies.map((c) => c.id);
+    Promise.all([listAlignmentsForCompetencies(ids), listCompetencyTitles(ids)])
+      .then(([a, t]) => { setAlignments(a); setTitles(t); })
+      .catch(showError)
+      .finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [competencies]);
+
+  if (loading) return <TableSkeleton rows={2} cols={2} />;
+
+  const byCompetency = new Map<string, CompetencyAlignment[]>();
+  for (const c of competencies) byCompetency.set(c.id, []);
+  for (const a of alignments) byCompetency.get(a.competency_id)?.push(a);
+
+  const totals = competencies.map((c) => (byCompetency.get(c.id) ?? []).length).filter((n) => n > 0).sort((a, b) => a - b);
+  const median = totals.length > 0 ? totals[Math.floor(totals.length / 2)] : 0;
+
+  return (
+    <div className="rounded-md border overflow-hidden mt-2">
+      <table className="w-full border-collapse text-sm">
+        <thead>
+          <tr style={{ background: "var(--ap-paper-2)" }}>
+            <th className="px-2 py-1.5 text-left text-xs font-bold">Compétence</th>
+            <th className="px-2 py-1.5 text-left text-xs font-bold">Enseigné</th>
+            <th className="px-2 py-1.5 text-left text-xs font-bold">Pratiqué</th>
+            <th className="px-2 py-1.5 text-left text-xs font-bold">Évalué</th>
+            <th className="px-2 py-1.5 text-left text-xs font-bold">Statut</th>
+          </tr>
+        </thead>
+        <tbody>
+          {competencies.map((c) => {
+            const rows = byCompetency.get(c.id) ?? [];
+            const taught = rows.some((r) => r.evidence_role === "teaching");
+            const practiced = rows.some((r) => r.evidence_role === "practice");
+            const assessed = rows.some((r) => r.evidence_role === "assessment");
+            const total = rows.length;
+            const overrepresented = totals.length >= 3 && total > median * 2;
+            return (
+              <tr key={c.id} style={{ borderTop: "var(--ap-border-w) solid var(--ap-line)" }}>
+                <td className="px-2 py-1.5">{titles[c.id] ?? c.code}</td>
+                <td className="px-2 py-1.5">{taught ? "✓" : "—"}</td>
+                <td className="px-2 py-1.5">{practiced ? "✓" : "—"}</td>
+                <td className="px-2 py-1.5">{assessed ? "✓" : "—"}</td>
+                <td className="px-2 py-1.5">
+                  {total === 0 ? (
+                    <span style={{ color: "var(--ap-danger)" }}>Non couverte</span>
+                  ) : overrepresented ? (
+                    <span style={{ color: "var(--ap-warning, #b45309)" }}>Surreprésentée ({total})</span>
+                  ) : (
+                    <span className="text-muted-foreground">{total} alignement{total !== 1 ? "s" : ""}</span>
+                  )}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function FrameworkCompetencies({ orgId, orgName, framework }: { orgId: string; orgName: string; framework: CompetencyFramework }) {
   const [competencies, setCompetencies] = useState<Competency[]>([]);
   const [loading, setLoading] = useState(true);
   const [code, setCode] = useState("");
   const [title, setTitle] = useState("");
   const [adding, setAdding] = useState(false);
   const [aligningId, setAligningId] = useState<string | null>(null);
+  const [showCoverage, setShowCoverage] = useState(false);
+  const [exportingId, setExportingId] = useState<string | null>(null);
 
   useEffect(() => {
     listFrameworkCompetencies(framework.id).then(setCompetencies).catch(showError).finally(() => setLoading(false));
   }, [framework.id]);
+
+  const handleExportBadge = async (competency: Competency) => {
+    setExportingId(competency.id);
+    try {
+      const titles = await listCompetencyTitles([competency.id]);
+      await exportCompetencyAchievement(competency, titles[competency.id] ?? competency.code, { orgId, name: orgName, url: window.location.origin });
+    } catch (err) {
+      showError(err);
+    } finally {
+      setExportingId(null);
+    }
+  };
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -497,7 +603,13 @@ function FrameworkCompetencies({ orgId, framework }: { orgId: string; framework:
           <Input id={`title-${framework.id}`} value={title} onChange={(e) => setTitle(e.target.value)} required />
         </div>
         <Button size="sm" type="submit" loading={adding}><Plus /> Ajouter</Button>
+        {competencies.length > 0 && (
+          <Button type="button" variant="outline" size="sm" onClick={() => setShowCoverage((v) => !v)}>
+            <Target size={14} /> {showCoverage ? "Masquer la couverture" : "Couverture"}
+          </Button>
+        )}
       </form>
+      {showCoverage && competencies.length > 0 && <ProgramCoveragePanel competencies={competencies} />}
       {competencies.length === 0 ? (
         <p className="text-sm text-muted-foreground">Aucune compétence dans ce référentiel.</p>
       ) : (
@@ -506,9 +618,14 @@ function FrameworkCompetencies({ orgId, framework }: { orgId: string; framework:
             <li key={c.id} className="text-sm rounded border px-3 py-1.5">
               <div className="flex items-center justify-between">
                 <span className="font-mono text-muted-foreground mr-2">{c.code}</span>
-                <Button variant="ghost" size="sm" onClick={() => setAligningId((cur) => (cur === c.id ? null : c.id))}>
-                  <Link2 size={14} /> {aligningId === c.id ? "Fermer" : "Aligner"}
-                </Button>
+                <div className="flex items-center gap-1">
+                  <Button variant="ghost" size="sm" loading={exportingId === c.id} onClick={() => void handleExportBadge(c)}>
+                    <Award size={14} /> Badge
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => setAligningId((cur) => (cur === c.id ? null : c.id))}>
+                    <Link2 size={14} /> {aligningId === c.id ? "Fermer" : "Aligner"}
+                  </Button>
+                </div>
               </div>
               {aligningId === c.id && (
                 <>
@@ -524,13 +641,171 @@ function FrameworkCompetencies({ orgId, framework }: { orgId: string; framework:
   );
 }
 
-function StaffFrameworks({ orgId }: { orgId: string }) {
+/** "Écran de migration des tags existants" — spec text: "Inventaire des
+ *  libellés normalisés par organisation. Proposition de regroupements,
+ *  sans création automatique définitive. Écran de mapping : tag →
+ *  compétence existante, nouvelle compétence ou ignoré." Discovery
+ *  (listMyContentSkillTags) is necessarily scoped to the calling staff
+ *  member's own authored content (see the migration's header comment for
+ *  why); the mapping decision itself is genuinely org-wide via
+ *  competency_tag_mappings. Deliberately does NOT backfill
+ *  competency_evidence from historical attempts — confirming a mapping
+ *  here only records governance, per the same migration comment. */
+function TagMigrationPanel({ orgId }: { orgId: string }) {
+  const user = getCurrentUser();
+  const [tags, setTags] = useState<TagUsage[]>([]);
+  const [mappings, setMappings] = useState<CompetencyTagMapping[]>([]);
+  const [competencies, setCompetencies] = useState<Competency[]>([]);
+  const [titles, setTitles] = useState<Record<string, string>>({});
+  const [frameworks, setFrameworks] = useState<CompetencyFramework[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [pickedCompetency, setPickedCompetency] = useState<Record<string, string>>({});
+  const [newCompetencyOpen, setNewCompetencyOpen] = useState<string | null>(null);
+  const [newFrameworkId, setNewFrameworkId] = useState("");
+  const [newTitle, setNewTitle] = useState("");
+  const [savingTag, setSavingTag] = useState<string | null>(null);
+
+  const load = () => {
+    if (!user) { setLoading(false); return; }
+    setLoading(true);
+    Promise.all([
+      listMyContentSkillTags(user.id),
+      listTagMappings(orgId),
+      listOrgCompetencies(orgId),
+      listOrgFrameworks(orgId),
+    ])
+      .then(async ([t, m, c, f]) => {
+        setTags(t); setMappings(m); setCompetencies(c); setFrameworks(f);
+        setTitles(await listCompetencyTitles(c.map((x) => x.id)));
+      })
+      .catch(showError)
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => { load(); }, [orgId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const mappingByTag = useMemo(() => new Map(mappings.map((m) => [m.tag, m])), [mappings]);
+
+  const handleMap = async (tag: string, competencyId: string) => {
+    if (!competencyId) return;
+    setSavingTag(tag);
+    try {
+      const mapping = await setTagMapping(orgId, tag, "mapped", competencyId);
+      setMappings((prev) => [...prev.filter((m) => m.tag !== tag), mapping]);
+    } catch (err) {
+      showError(err);
+    } finally {
+      setSavingTag(null);
+    }
+  };
+
+  const handleIgnore = async (tag: string) => {
+    setSavingTag(tag);
+    try {
+      const mapping = await setTagMapping(orgId, tag, "ignored", null);
+      setMappings((prev) => [...prev.filter((m) => m.tag !== tag), mapping]);
+    } catch (err) {
+      showError(err);
+    } finally {
+      setSavingTag(null);
+    }
+  };
+
+  const handleCreateAndMap = async (tag: string, e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newFrameworkId || !newTitle.trim()) return;
+    setSavingTag(tag);
+    try {
+      const competency = await addCompetency(newFrameworkId, tag, newTitle.trim());
+      setCompetencies((prev) => [...prev, competency]);
+      setTitles((prev) => ({ ...prev, [competency.id]: newTitle.trim() }));
+      const mapping = await setTagMapping(orgId, tag, "mapped", competency.id);
+      setMappings((prev) => [...prev.filter((m) => m.tag !== tag), mapping]);
+      setNewCompetencyOpen(null); setNewTitle(""); setNewFrameworkId("");
+    } catch (err) {
+      showError(err);
+    } finally {
+      setSavingTag(null);
+    }
+  };
+
+  if (loading) return <TableSkeleton rows={2} cols={2} />;
+
+  if (tags.length === 0) {
+    return <p className="text-sm text-muted-foreground mt-3 border-t pt-3">Aucun tag de compétence trouvé dans vos quiz ou examens.</p>;
+  }
+
+  return (
+    <div className="mt-3 border-t pt-3 space-y-2">
+      <p className="text-xs text-muted-foreground">
+        Tags libres relevés dans vos quiz et examens (portée : votre propre contenu). Décision de mapping conservée pour toute l'organisation.
+      </p>
+      <ul className="space-y-1">
+        {tags.map(({ tag, count }) => {
+          const mapping = mappingByTag.get(tag);
+          const decision = mapping?.decision ?? "pending";
+          return (
+            <li key={tag} className="rounded-md border px-3 py-2 text-sm space-y-2">
+              <div className="flex items-center justify-between">
+                <span>
+                  <span className="font-mono">{tag}</span>{" "}
+                  <span className="text-muted-foreground">· {count} usage{count !== 1 ? "s" : ""}</span>
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {decision === "mapped" ? `Mappé → ${titles[mapping?.competency_id ?? ""] ?? mapping?.competency_id}` : decision === "ignored" ? "Ignoré" : "En attente"}
+                </span>
+              </div>
+              <div className="flex flex-wrap items-end gap-2">
+                <select
+                  className={inputClass} style={inputStyle}
+                  value={pickedCompetency[tag] ?? ""}
+                  onChange={(e) => setPickedCompetency((prev) => ({ ...prev, [tag]: e.target.value }))}
+                >
+                  <option value="" disabled>Compétence existante…</option>
+                  {competencies.map((c) => <option key={c.id} value={c.id}>{titles[c.id] ?? c.code}</option>)}
+                </select>
+                <Button size="sm" variant="outline" loading={savingTag === tag} disabled={!pickedCompetency[tag]} onClick={() => void handleMap(tag, pickedCompetency[tag])}>
+                  Mapper
+                </Button>
+                <Button size="sm" variant="ghost" loading={savingTag === tag} onClick={() => setNewCompetencyOpen((cur) => (cur === tag ? null : tag))}>
+                  Nouvelle compétence
+                </Button>
+                <Button size="sm" variant="ghost" loading={savingTag === tag} onClick={() => void handleIgnore(tag)}>
+                  Ignorer
+                </Button>
+              </div>
+              {newCompetencyOpen === tag && (
+                <form onSubmit={(e) => void handleCreateAndMap(tag, e)} className="flex flex-wrap items-end gap-2 border-t pt-2">
+                  <div className="min-w-[160px] space-y-1">
+                    <label className="text-xs font-medium" htmlFor={`tag-fw-${tag}`}>Référentiel</label>
+                    <select id={`tag-fw-${tag}`} className={inputClass} style={inputStyle} value={newFrameworkId} onChange={(e) => setNewFrameworkId(e.target.value)} required>
+                      <option value="" disabled>Choisir…</option>
+                      {frameworks.map((f) => <option key={f.id} value={f.id}>{f.title}</option>)}
+                    </select>
+                  </div>
+                  <div className="min-w-[180px] flex-1 space-y-1">
+                    <label className="text-xs font-medium" htmlFor={`tag-title-${tag}`}>Titre de la compétence</label>
+                    <Input id={`tag-title-${tag}`} value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder={tag} required />
+                  </div>
+                  <Button size="sm" type="submit" loading={savingTag === tag}><Plus size={14} /> Créer et mapper</Button>
+                </form>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+function StaffFrameworks({ orgId, orgName }: { orgId: string; orgName: string }) {
   const [frameworks, setFrameworks] = useState<CompetencyFramework[]>([]);
   const [loading, setLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [creating, setCreating] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [showTagMigration, setShowTagMigration] = useState(false);
 
   useEffect(() => {
     listOrgFrameworks(orgId).then(setFrameworks).catch(showError).finally(() => setLoading(false));
@@ -567,8 +842,15 @@ function StaffFrameworks({ orgId }: { orgId: string }) {
     <section className="product-list-panel p-5">
       <div className="product-panel-heading -mx-5 -mt-5 mb-4">
         <div><h2>Référentiels de compétences</h2><p>Définissez la structure, publiez et alignez vos contenus.</p></div>
-        <Button size="sm" onClick={() => setFormOpen((v) => !v)}><Plus /> Nouveau référentiel</Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setShowTagMigration((v) => !v)}>
+            <ListChecks size={14} /> {showTagMigration ? "Masquer la migration des tags" : "Migration des tags"}
+          </Button>
+          <Button size="sm" onClick={() => setFormOpen((v) => !v)}><Plus /> Nouveau référentiel</Button>
+        </div>
       </div>
+
+      {showTagMigration && <TagMigrationPanel orgId={orgId} />}
 
       {formOpen && (
         <form onSubmit={handleCreate} className="flex flex-wrap items-end gap-3 mb-5">
@@ -605,7 +887,7 @@ function StaffFrameworks({ orgId }: { orgId: string }) {
                   </Button>
                 </div>
               </div>
-              {expanded === f.id && <FrameworkCompetencies orgId={orgId} framework={f} />}
+              {expanded === f.id && <FrameworkCompetencies orgId={orgId} orgName={orgName} framework={f} />}
             </li>
           ))}
         </ul>
@@ -618,20 +900,49 @@ const REVIEW_STATUS_LABEL: Record<CompetencyReviewRequest["status"], string> = {
   open: "En attente", resolved: "Résolue", dismissed: "Rejetée",
 };
 
-function LearnerMastery() {
+function LearnerMastery({ memberships }: { memberships: OrgMembership[] }) {
+  const user = getCurrentUser();
   const [mastery, setMastery] = useState<CompetencyMastery[]>([]);
   const [requests, setRequests] = useState<CompetencyReviewRequest[]>([]);
+  const [competencies, setCompetencies] = useState<Record<string, Competency>>({});
+  const [titles, setTitles] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [requestingId, setRequestingId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [exportingId, setExportingId] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([myMastery(), myReviewRequests()])
-      .then(([m, r]) => { setMastery(m); setRequests(r); })
+      .then(async ([m, r]) => {
+        setMastery(m); setRequests(r);
+        const ids = m.map((row) => row.competency_id);
+        const [comps, t] = await Promise.all([listCompetenciesByIds(ids), listCompetencyTitles(ids)]);
+        setCompetencies(Object.fromEntries(comps.map((c) => [c.id, c])));
+        setTitles(t);
+      })
       .catch(showError)
       .finally(() => setLoading(false));
   }, []);
+
+  const orgNameById = useMemo(() => new Map(memberships.map((m) => [m.org_id, m.organizations.name])), [memberships]);
+
+  const handleExportBadge = async (m: CompetencyMastery) => {
+    if (!user?.email) return;
+    const competency = competencies[m.competency_id];
+    if (!competency) return;
+    setExportingId(m.id);
+    try {
+      await exportMasteryAssertion(
+        m, competency, titles[m.competency_id] ?? competency.code, user.email,
+        { orgId: m.org_id, name: orgNameById.get(m.org_id) ?? "Organisation", url: window.location.origin },
+      );
+    } catch (err) {
+      showError(err);
+    } finally {
+      setExportingId(null);
+    }
+  };
 
   const requestsByCompetency = useMemo(() => {
     const map = new Map<string, CompetencyReviewRequest[]>();
@@ -679,9 +990,14 @@ function LearnerMastery() {
           return (
             <li key={m.id} className="rounded-md border p-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Compétence {m.competency_id.slice(0, 8)}</span>
+                <span className="text-sm text-muted-foreground">{titles[m.competency_id] ?? `Compétence ${m.competency_id.slice(0, 8)}`}</span>
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium">{levelLabel[m.level_code] ?? m.level_code}</span>
+                  {m.level_code === "mastered" || m.level_code === "expert" ? (
+                    <Button variant="ghost" size="sm" loading={exportingId === m.id} onClick={() => void handleExportBadge(m)}>
+                      <Award size={14} /> Badge
+                    </Button>
+                  ) : null}
                   <Button
                     variant="ghost" size="sm" disabled={hasOpenRequest}
                     onClick={() => setRequestingId((cur) => (cur === m.id ? null : m.id))}
@@ -977,6 +1293,10 @@ export default function LmsCompetencies() {
     () => memberships.some((m) => m.org_id === activeOrgId && TRAINER_ROLES.has(m.role)),
     [memberships, activeOrgId],
   );
+  const activeOrgName = useMemo(
+    () => memberships.find((m) => m.org_id === activeOrgId)?.organizations.name ?? "Organisation",
+    [memberships, activeOrgId],
+  );
 
   if (loading) {
     return (
@@ -996,11 +1316,11 @@ export default function LmsCompetencies() {
         {isTrainer && activeOrgId ? (
           <div className="space-y-4">
             {isStaff && <MasteryScaleManager orgId={activeOrgId} />}
-            {isStaff && <StaffFrameworks orgId={activeOrgId} />}
+            {isStaff && <StaffFrameworks orgId={activeOrgId} orgName={activeOrgName} />}
             <TrainerGroupMatrix orgId={activeOrgId} />
             {isStaff && <ReviewRequestsPanel orgId={activeOrgId} />}
           </div>
-        ) : <LearnerMastery />}
+        ) : <LearnerMastery memberships={memberships} />}
       </div>
     </AppLayout>
   );

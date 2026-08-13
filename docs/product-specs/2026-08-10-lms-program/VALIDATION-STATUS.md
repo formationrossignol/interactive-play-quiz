@@ -25,7 +25,7 @@ commencé.
 |---|---|---|---|---|---|
 | 01 | Devoirs & gradebook | 🟢 | 🟡 gradebook consolidé fait, reste minimal ailleurs | 🔴 antiplagiat | Fondation |
 | 02 | Inscriptions & sessions | 🟢 | 🟡 minimal | — | Fondation |
-| 03 | Compétences & preuves | 🟢 | 🟡 minimal | 🔴 CASE/Open Badges | Fondation |
+| 03 | Compétences & preuves | 🟢 | 🟢 | 🟢 Open Badges 2.0 | Fondation |
 | 04 | Interopérabilité & identité | 🟡 LTI Core + linking | 🟡 admin LTI fait | 🟡 LTI 1.3 Core réel, reste 🔴 | Fondation partielle |
 | 05 | Accessibilité & aménagements | 🟢 | 🟡 minimal | — | Fondation |
 | 06 | Parcours adaptatifs & automatisations | 🟢 | 🟡 minimal | — | Fondation |
@@ -647,12 +647,93 @@ Vérifié : `tsc`/`eslint` propres ; suite complète (335 tests) verte —
 **non vérifié avec des données réelles** (même limite que le reste du
 programme).
 
+Depuis cette passe : vue couverture programme (CMP-012, CMP-021),
+`ProgramCoveragePanel` (bouton « Couverture » dans `FrameworkCompetencies`).
+Ni « cours » ni « programme » n'existe comme entité org-scopée interrogeable
+dans ce codebase (cours = localStorage uniquement, `program` n'existe que
+comme tag texte libre sur `metric_definitions.scope`) — la vue approxime
+« programme » au grain `competency_framework`, seule structure réellement
+org-scopée et déjà navigable, plutôt que d'inventer une table cours/
+programme. Enseigné/pratiqué/évalué = `competency_alignments.evidence_role`
+(teaching/practice/assessment), déjà posé pour CMP-010/011 —
+`listAlignmentsForCompetencies()` (nouveau, `.in()` sur les compétences du
+référentiel affiché) et `listCompetencyTitles()` (nouveau — les titres
+vivent dans `competency_revisions`, jamais relus nulle part avant, la liste
+de compétences n'affichait que le `code`). « Surreprésentée » (CMP-012) n'a
+pas de seuil défini par la spec : heuristique retenue — plus de 2× la
+médiane des alignements du référentiel, calculée seulement à partir de 3
+compétences ayant au moins un alignement (évite qu'une poignée de
+compétences bien alignées parmi beaucoup de vides « surreprésente »
+trivialement une médiane quasi nulle). Pas de nouvelle migration — lecture
+sur RLS déjà ouverte (`competency_alignments_read`). Vérifié : `tsc`/`eslint`
+propres ; suite complète (335 tests) verte — **non vérifié avec des données
+réelles** (même limite que le reste du programme).
+
+Depuis cette passe (`20260813110000_competency_tag_mappings.sql`) : écran
+de migration des tags existants, `TagMigrationPanel` (bouton « Migration
+des tags » dans `StaffFrameworks`). Deux contraintes réelles trouvées avant
+d'écrire quoi que ce soit. (1) « Inventaire par organisation » ne tient pas
+structurellement — les tags libres vivent dans
+`content.data.questions[].skills` (quiz) et `exams.questions_public[].skills`
+(examens), ni `content` ni `exams` n'a de colonne `org_id`, seulement
+`user_id`/`host_id`, et la RLS sur `content` est owner-scopée
+(`content_owner`) : un pedago/admin ne peut pas lire le contenu privé d'un
+autre membre de l'org pour en scanner les tags. L'**inventaire**
+(`listMyContentSkillTags()`, nouveau) est donc nécessairement limité au
+propre contenu du membre staff appelant — cette migration ne touche pas
+cette frontière RLS. Ce qui est réellement org-scopé, c'est la **décision**
+que la nouvelle table `competency_tag_mappings` (`unique(org_id, tag)`,
+`decision` `pending`/`mapped`/`ignored`) persiste : une fois un tag mappé ou
+ignoré par un pedago/admin, tout le staff de l'org voit la même décision
+(lecture org-scopée), même si la découverte du tag reste par propriétaire.
+(2) « Les anciennes tentatives produisent des preuves » impliquerait un
+backfill de `competency_evidence` depuis les tentatives historiques — exige
+une formule de scoring que la spec ne définit jamais (qu'est-ce qui compte
+comme « maîtrisé » à partir d'un ratio correct/incorrect brut ? quel
+`raw_score` ?), et recoupe exactement le chantier « Réconciliation » déjà
+signalé séparément dans ce document comme projet de migration de données à
+part entière — **non fait ici** : l'écran ne fait que la décision de
+mapping/gouvernance (« nouvelle compétence » crée réellement une compétence
+via `addCompetency()` existant puis mappe dessus ; « ignoré » retire
+seulement le tag de la liste « en attente »), aucune ligne
+`competency_evidence` n'est jamais écrite par ce panneau. Vérifié :
+`tsc`/`eslint` propres ; suite complète (335 tests) verte — **non vérifié
+avec des données réelles**.
+
+Depuis cette passe (`openBadgesExport.ts`, aucune migration) : export
+CASE 1.1 / Open Badges. La spec référence cet export sans jamais nommer
+d'artefact concret ni de point de déclenchement — décision prise de
+construire un vrai export plutôt que de documenter uniquement que des
+identifiants stables existent déjà. Open Badges 2.0 (JSON-LD) choisi plutôt
+que CASE 1.1 : CASE modélise un référentiel de curriculum comme un arbre de
+documents, sans notion d'assertion apprenant — impossible d'y représenter
+« cet apprenant a maîtrisé cette compétence » ; Open Badges a directement le
+split Achievement (≈ `Competency`) / Assertion (≈ `competency_mastery`) qui
+correspond au modèle de données déjà en place. Bouton « Badge » par
+compétence côté staff (`FrameworkCompetencies` → export Achievement seul,
+aucune identité apprenant) et par ligne de maîtrise côté apprenant
+(`LearnerMastery` → export Assertion, visible seulement à partir du niveau
+`mastered`/`expert` — exporter un badge « non évalué » n'aurait aucun sens).
+Aucun endpoint public d'hébergement de badge n'existe dans ce codebase (en
+construire un sortirait largement du périmètre d'un export) : les `id`
+Achievement/Assertion utilisent `urn:uuid:<id>` — identifiant stable mais
+délibérément non résolvable, plutôt qu'une fausse URL `https://` qui
+404rait silencieusement. Identité du destinataire de l'Assertion = hash
+SHA-256 salé de l'email (`recipient.hashed: true`, spec OB 2.0 —
+`crypto.subtle.digest`, salt aléatoire par export via
+`crypto.randomUUID()`) : l'email en clair ne quitte jamais le JSON
+téléchargé. Tout se calcule et se télécharge côté client (`Blob` +
+`URL.createObjectURL`, même pattern que `gradebookExport.ts`) à partir de
+données déjà chargées — aucun service tiers, aucune nouvelle table. Vérifié :
+`tsc`/`eslint` propres ; suite complète (335 tests) verte — **non vérifié
+avec des données réelles**, et le JSON produit n'a pas été validé contre un
+vérificateur Open Badges externe (aucun accès outillage tiers dans cet
+environnement).
+
 **Reste à faire** :
 - [ ] UI : alignement sur les 7 autres `target_type` (course/module/lesson/question/exam/scorm_activity/h5p_activity/path_step) — pas de sélecteur org-scopé cohérent pour ces types
-- [ ] UI : vue couverture programme (enseigné/pratiqué/évalué — CMP-012, CMP-021)
-- [ ] Écran de migration des tags existants → compétences (mapping guidé, section « Migration des tags existants » de la spec)
-- [ ] Export CASE 1.1 / Open Badges (non-objectif V1 explicite mais listé comme préparation attendue)
-- [ ] Vue formateur groupe × compétences (CMP-020)
+- [ ] Backfill `competency_evidence` depuis les tentatives d'examen/quiz historiques (« import historique ») — même formule de scoring non définie que le reste-à-faire de la Réconciliation, volontairement pas deviné en construisant la migration des tags
+- [ ] Validation du JSON Open Badges produit contre un vérificateur externe (badgecheck.io ou équivalent) — jamais testé dans cet environnement, aucun accès outillage tiers
 
 ## 04 — Interopérabilité, identité et administration Enterprise
 
