@@ -110,7 +110,8 @@ begin
     update public.assessment_responses set response = p_response, grading_status = 'pending_review', answered_at = now(), is_correct = null, points_earned = null where id = v.id returning * into result;
     return result;
   end if;
-  return query select * from public.submit_assessment_response_auto(p_response_id, p_response);
+  select * into result from public.submit_assessment_response_auto(p_response_id, p_response);
+  return result;
 end;
 $$;
 -- Internal alias preserves the previously deployed comparator implementation.
