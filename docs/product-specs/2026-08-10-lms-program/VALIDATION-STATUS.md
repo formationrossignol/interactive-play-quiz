@@ -1249,9 +1249,23 @@ effectivement le bandeau masqué) — vérifié uniquement par relecture du SQL
 et par l'application propre de la migration (`supabase db push`,
 `supabase migration list` confirmé synchronisé).
 
-**Depuis la migration `20260813170000_spec07_analytics_completion.sql`** : projection programme au grain offering, dashboard apprenant via RPC propriétaire, psychométrie (distracteurs/quartiles/difficulté/discrimination/alertes), durée médiane, exécuteur de rapports planifiés et exports CSV/XLSX/PDF pseudonymisés sont implémentés. Les valeurs sous le seuil de cohorte restent supprimées.
+**Depuis les migrations `20260813170000_spec07_analytics_completion.sql` et `20260813180000_spec07_hardening.sql`** : projection programme au grain offering, dashboard apprenant via RPC propriétaire, psychométrie (distracteurs/quartiles/difficulté/discrimination/alertes), durée médiane, exécuteur de rapports planifiés, exports CSV/XLSX/PDF pseudonymisés, lineage/fraîcheur des métriques, programmation de rapports autorisée et relance humaine des signaux sont implémentés. Aucune brique IA n'est incluse. Les valeurs sous le seuil de cohorte restent supprimées.
 
 ## 08 — Évaluations avancées et banque d'items versionnée
+
+Depuis `20260813190000_assessment_pools_and_legacy_links.sql` : les sections
+`pool` sont publiables et tirées aléatoirement depuis `item_collections`, le
+tirage est figé dans `assessment_responses`, l'import des anciens
+`content(type=quiz)` crée des révisions liées par `assessment_legacy_question_links`,
+et les formats riches sans comparateur automatique sont capturés puis dirigés
+vers la revue humaine au lieu d'être notés implicitement. L'éditeur ItemBank
+expose les types et le runner accepte ces réponses. Aucune IA n'est utilisée.
+
+Depuis `20260813200000_assessment_rescore_correctness.sql` : le rescore en
+masse est exécutable après prévisualisation, avec recalcul des tentatives et
+audit avant/après même lorsque seul le booléen de correction change. Le
+panneau Collections de `/lms/item-bank` gère désormais les droits granulaires
+et la RLS les applique également aux lectures hors UI.
 
 **Fait** : `assessment_items`/`assessment_item_revisions` (immuables) +
 `item_answer_keys` (illisible client) + `create_item_revision()` +
@@ -1363,9 +1377,9 @@ push`, `migration list` confirmé synchronisé).
 - [ ] Assemblage réel d'une évaluation — tirage aléatoire (sections `pool`, `assessment_pool_rules`) : refusé explicitement, aucun exécuteur
 - [ ] Barèmes riches pour les 17 autres `item_type` (ranking « ordre partiel », matching, cloze, et les 8 types ASM-017-024) — aucun contrat de données, aucune UI d'auteur
 - [ ] Nouveaux types d'interaction (passage, vidéo interactive, audio/vidéo, dessin, labeling, math/graphique, fichier, code — ASM-017 à ASM-024) : le schéma accepte n'importe quel `item_type`/`prompt` JSON mais aucun éditeur/lecteur n'existe pour ces types
-- [ ] Rescore en masse avec prévisualisation d'impact (`rescore_jobs` posé, aucun exécuteur)
+- [x] Rescore en masse avec prévisualisation d'impact — aperçu des personnes impactées, exécution auditée et recalcul des tentatives
 - [ ] Suggestions IA (génération, distracteurs, vérifications de biais/ambiguïté) — non-objectif partiel mais mentionné comme option V1
-- [ ] Collections/permissions granulaires (voir/utiliser/commenter/modifier) — tables posées, UI ne gère que la création d'items
+- [x] Collections/permissions granulaires — UI de partage et révocation + RLS par niveau de permission
 
 ## 09 — Sondage live, Q&A, modération et coanimation
 

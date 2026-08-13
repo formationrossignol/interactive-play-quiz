@@ -129,3 +129,16 @@ export async function listItemPsychometrics(orgId: string, sinceIsoDate: string)
   if (error) throw error;
   return (data ?? []) as ItemPsychometricRow[];
 }
+
+export interface LearnerAnalyticsRow {
+  day: string;
+  events_count: number;
+  attempts_count: number;
+  average_percentage: number | null;
+}
+
+export async function getMyLearningAnalytics(sinceIsoDate: string): Promise<LearnerAnalyticsRow[]> {
+  const { data, error } = await supabase.rpc('get_my_learning_analytics', { p_since: sinceIsoDate });
+  if (error) throw error;
+  return (data ?? []) as LearnerAnalyticsRow[];
+}

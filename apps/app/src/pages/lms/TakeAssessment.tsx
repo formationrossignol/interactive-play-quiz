@@ -22,7 +22,7 @@ import {
 
 /** Response shape per item_type — mirrors item_answer_keys.correct_answer's
  *  contract (see 20260812060000_assessment_correction_engine.sql). */
-type ResponseValue = boolean | { optionId: string } | { optionIds: string[] } | { text: string };
+type ResponseValue = boolean | { optionId: string } | { optionIds: string[] } | { text: string } | { value: unknown };
 
 function ItemAnswer({ item, savedResponse, onAnswered }: {
   item: AttemptItem;
@@ -34,6 +34,11 @@ function ItemAnswer({ item, savedResponse, onAnswered }: {
   const [textValue, setTextValue] = useState(
     item.item_type === "short_answer" && savedResponse && typeof savedResponse === "object"
       ? String((savedResponse as { text?: string }).text ?? "")
+      : "",
+  );
+  const [richValue, setRichValue] = useState(
+    savedResponse && typeof savedResponse === "object" && "value" in savedResponse
+      ? JSON.stringify((savedResponse as { value: unknown }).value)
       : "",
   );
   const options = item.prompt.options ?? [];
@@ -118,6 +123,22 @@ function ItemAnswer({ item, savedResponse, onAnswered }: {
             placeholder="Votre réponse…"
             className="max-w-sm"
           />
+        </div>
+      )}
+
+      {!(["true_false", "single_choice", "mcq", "short_answer", "audio_video", "file"] as string[]).includes(item.item_type) && (
+        <div className="space-y-2">
+          <label className="text-sm text-muted-foreground" htmlFor={`rich-${item.response_id}`}>Votre réponse</label>
+          <textarea
+            id={`rich-${item.response_id}`}
+            value={richValue}
+            disabled={saving}
+            onChange={(e) => setRichValue(e.target.value)}
+            onBlur={() => { if (richValue.trim()) void submit({ value: richValue.trim() }); }}
+            className="min-h-24 w-full rounded-md border bg-background p-2 text-sm"
+            placeholder="Décrivez votre réponse…"
+          />
+          <p className="text-xs text-muted-foreground">Cette interaction sera revue par un formateur.</p>
         </div>
       )}
 

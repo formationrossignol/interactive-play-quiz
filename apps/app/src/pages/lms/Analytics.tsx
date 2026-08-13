@@ -29,6 +29,7 @@ import {
 } from "@/lib/lms/automation";
 import {
   getEnrollmentTotals,
+  getMyLearningAnalytics,
   getMinCohortSize,
   listDailyActivity,
   listDailyCompetency,
@@ -503,6 +504,34 @@ function PrivacySettings({ orgId }: { orgId: string }) {
   );
 }
 
+function LearnerAnalytics() {
+  const [rows, setRows] = useState<Awaited<ReturnType<typeof getMyLearningAnalytics>>>([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    getMyLearningAnalytics(isoDaysAgo(14)).then(setRows).catch(showError).finally(() => setLoading(false));
+  }, []);
+  if (loading) return <PageSkeleton />;
+  const attempts = rows.reduce((sum, row) => sum + row.attempts_count, 0);
+  const events = rows.reduce((sum, row) => sum + row.events_count, 0);
+  const scored = rows.filter((row) => row.average_percentage != null);
+  const average = scored.length ? scored.reduce((sum, row) => sum + Number(row.average_percentage), 0) / scored.length : null;
+  return (
+    <AppLayout subtitle="Ma progression">
+      <div className="product-page product-page--medium">
+        <PageHeader title="Ma progression" description="Votre activité récente et vos résultats, sans comparaison publique avec d'autres apprenants." />
+        <div className="grid gap-3 sm:grid-cols-3">
+          {[['Activité récente', events], ['Tentatives', attempts], ['Score moyen', average == null ? '—' : `${Math.round(average)} %`]].map(([label, value]) => (
+            <div className="ap-card p-4" key={String(label)}><strong className="block text-xl">{value}</strong><span className="ap-muted text-xs">{label}</span></div>
+          ))}
+        </div>
+        <section className="product-list-panel mt-4 p-5"><div className="product-panel-heading -mx-5 -mt-5 mb-4"><div><h2>Activité sur 14 jours</h2><p>Les données sont limitées à votre propre compte.</p></div></div>
+          {rows.length === 0 ? <p className="text-sm text-muted-foreground">Aucune activité récente.</p> : <div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr className="text-left text-muted-foreground"><th className="p-2">Jour</th><th className="p-2">Événements</th><th className="p-2">Tentatives</th><th className="p-2">Score moyen</th></tr></thead><tbody>{rows.map((row) => <tr className="border-t" key={row.day}><td className="p-2">{formatDay(row.day)}</td><td className="p-2">{row.events_count}</td><td className="p-2">{row.attempts_count}</td><td className="p-2">{row.average_percentage == null ? '—' : `${Math.round(row.average_percentage)} %`}</td></tr>)}</tbody></table></div>}
+        </section>
+      </div>
+    </AppLayout>
+  );
+}
+
 export default function LmsAnalytics() {
   const [memberships, setMemberships] = useState<OrgMembership[]>([]);
   const [loading, setLoading] = useState(true);
@@ -522,6 +551,10 @@ export default function LmsAnalytics() {
         <PageSkeleton />
       </AppLayout>
     );
+  }
+
+  if (!isStaff && activeOrgId) {
+    return <LearnerAnalytics />;
   }
 
   if (!isStaff || !activeOrgId) {

@@ -128,7 +128,9 @@ begin
     where resp.item_revision_id = p_item_revision_id and att.status = 'submitted' and resp.response is not null
   loop
     select * into v_scored from public._score_assessment_response(v_item_type, v_row.response, v_key.correct_answer, v_key.scoring_rules);
-    if v_row.previous_points is distinct from v_scored.points_earned then
+    if v_row.previous_points is distinct from v_scored.points_earned
+       or (select is_correct from public.assessment_responses where id = v_row.response_id)
+          is distinct from v_scored.is_correct then
       update public.assessment_responses
       set is_correct = v_scored.is_correct, points_earned = v_scored.points_earned, max_points = v_scored.max_points
       where id = v_row.response_id;
