@@ -855,11 +855,178 @@ compte staff local) — vérifié par lecture du SQL, `tsc`/`eslint` propres,
 migration appliquée sans erreur (`supabase db push`, `migration list`
 confirmé synchronisé).
 
-**Reste à faire** :
-- [ ] UI de construction en phrases « Quand [condition], alors [action] » — l'UI actuelle construit une seule condition à la fois par règle, pas le DSL complet (AND/OR, groupes)
-- [ ] Simulation « voir comme cet apprenant » / dry-run avant publication (ADP-008, AUT-004)
-- [ ] Test de positionnement / remédiation (ADP-009/010/011)
-- [ ] `follow_up_tasks` — table posée, aucun écran ni déclencheur
+Depuis cette passe (pas de nouvelle migration) : UI de construction en
+phrases « Quand [condition], alors [action] », AND/OR et groupes
+imbriqués (ADP-003). Constat clé en creusant : ce n'était **pas** un gap
+backend — `evaluate_rule_definition()` gérait déjà la récursion `{op:
+'and'|'or', children:[...]}` et `publish_rule_set_version()` validait déjà
+la profondeur (max 6, `rule_definition_depth()`) et les cycles
+(`rule_definition_targets()`/`would_create_cycle()`) depuis
+`20260810200000_adaptive_automation.sql`, la toute première migration de
+ce spec — seule l'UI n'avait jamais émis autre chose qu'une feuille
+unique. `Automation.tsx::ConditionNodeEditor` : composant récursif, la
+racine d'une règle est toujours un groupe (`op` ET/OU + `children[]`) —
+même une condition unique sérialise en `{op:'and',children:[…]}`, pas de
+cas particulier « convertir une feuille en groupe » à construire à part ;
+chaque groupe a « + Condition »/« + Sous-groupe », profondeur UI limitée à
+5 (le serveur refuse de toute façon au-delà de 6) ; retrait par nœud, sauf
+le dernier enfant d'un groupe (jamais de groupe vide). `serializeCondition()`
+retourne `null` sur une feuille incomplète à n'importe quelle profondeur,
+`handlePublish()` bloque plutôt que d'envoyer une définition partielle.
+**Non testé en conditions réelles** (même limite que le reste de cette
+passe) — vérifié par lecture du code, `tsc`/`eslint` propres.
+
+Depuis cette passe (`20260813040000_rule_definition_simulation.sql`) :
+simulation dry-run avant publication (ADP-008/AUT-004).
+`evaluate_rule_definition()` prenait déjà exactement `(definition,
+learner_id)` — le moteur n'a jamais manqué, seulement un point d'entrée
+appelable côté client : elle n'était accordée qu'en interne (jamais
+`grant ... to authenticated`), et l'exposer telle quelle aurait laissé
+n'importe quel appelant sonder les notes/compétences d'un apprenant
+arbitraire via une feuille `score`/`compétence` fabriquée, aucun contrôle
+d'org dans la fonction elle-même. `simulate_rule_definition()` l'enveloppe :
+vérifie `pedago`/`admin` (même `STAFF_ROLES` que `Automation.tsx`) et que
+l'apprenant cible appartient bien à l'org avant d'évaluer quoi que ce
+soit contre lui. Prend la définition en paramètre plutôt que de lire la
+version publiée d'un `rule_set` — c'est précisément le sens de « dry-run
+avant publication » : le brouillon en cours d'édition dans
+`ConditionNodeEditor` (jamais encore envoyé à `publish_rule_set_version()`)
+peut être testé directement. UI : champ UUID apprenant + bouton « Simuler
+pour cet apprenant » par règle, badge Débloqué/Verrouillé, réinitialisé
+si le brouillon ou l'apprenant change. **Non testé en conditions réelles**
+(même limite que le reste de cette passe) — vérifié par lecture du SQL,
+`tsc`/`eslint` propres, migration appliquée sans erreur (`supabase db
+push`, `migration list` confirmé synchronisé).
+
+Depuis cette passe (`20260813050000_follow_up_tasks.sql`) :
+`follow_up_tasks`, moitié « création manuelle » — AUT-002 en fait une des
+six actions V1 d'une règle d'automatisation, mais creusé avant de
+commencer : `automation_rule_versions` (où vivrait la config d'une action)
+n'a **aucun writer nulle part** dans le code, et `record_automation_run()`
+**aucun appelant** (grep confirmé) — le moteur d'exécution
+déclencheur→action de la spec 06 est lui-même dormant, pas seulement cette
+action-là. Câbler `follow_up_tasks` à un vrai déclenchement automatisé
+aurait donc été un chantier bien plus gros que cet item seul, pas tenté
+ici. Ce qui était réellement scopé : la table n'avait **aucune** policy
+d'insertion (`follow_up_tasks_manage` est update-only) et zéro référence
+côté client, nulle part. `create_follow_up_task()` : staff `trainer`/
+`pedago`/`admin`, vérifie que l'assigné appartient bien à l'org avant
+d'insérer. UI : dans `Analytics.tsx::RiskSignals`, bouton « Créer une
+tâche de suivi » par signal (ferme la boucle que `resolve_risk_signal()`
+laisse explicitement ouverte — son propre commentaire dit « human-in-the-loop,
+aucune action automatique ne suit une résolution ») ; nouveau
+`FollowUpTasksPanel` — file des tâches ouvertes, RLS scope déjà
+naturellement qui voit quoi (`follow_up_tasks_assignee` : un formateur ne
+voit que les tâches qui lui sont assignées, pedago/admin voient toute la
+file ouverte de l'org, sans filtre côté client à écrire). Transition de
+statut (fait/rejeté) sans nouvelle RPC : `follow_up_tasks_manage`
+permettait déjà l'écriture directe (assigné ou staff), même posture que le
+flux de résolution de `competency_review_requests`. **Non testé en
+conditions réelles** (même limite que le reste de cette passe) — vérifié
+par lecture du SQL, `tsc`/`eslint` propres, migration appliquée sans
+erreur (`supabase db push`, `migration list` confirmé synchronisé).
+
+Depuis cette passe (`20260813070000_automation_execution_engine.sql`) :
+le moteur d'exécution déclencheur→action lui-même, plus gros chantier
+identifié dans la passe précédente. `automation_rules`/
+`automation_rule_versions`/`automation_runs`/`automation_actions`
+existaient depuis la toute première migration de ce spec
+(`20260810200000`) mais rien n'exécutait jamais une règle —
+`automation_rule_versions` sans writer, `record_automation_run()` sans
+appelant. `publish_automation_rule_version()` : nouveau writer, valide
+`action_type` contre les 6 valeurs AUT-002 (params non validés — un champ
+manquant fait échouer silencieusement (`skipped`) l'exécution pour cet
+apprenant, jamais toute la règle). `_execute_automation_action()`, une
+action/un apprenant :
+- `notification` → `notifications` (catégorie `system`, comme tout le
+  reste de cette session).
+- `email` → **pas greffé directement** : ce dépôt a déjà un vrai vendor
+  email câblé (Resend, `send-welcome-email`/`send-org-invitation`,
+  `RESEND_API_KEY` — pas un nouveau choix de vendor), mais aucune
+  migration/fonction Postgres de ce dépôt n'a jamais appelé une edge
+  function depuis l'intérieur d'une transaction (`pg_net` absent partout,
+  vérifié par grep) — inventer ce câblage à l'aveugle, sans pouvoir le
+  tester contre le projet réel, aurait risqué de casser silencieusement
+  un chemin d'envoi en production. À la place : mise en file
+  `automation_email_outbox` (durable, visible staff), vidée par la
+  nouvelle edge function `dispatch-automation-emails` (même appel Resend
+  que `send-welcome-email`). Déclencher cette fonction sur un calendrier
+  reste une étape opérateur unique (Cron Job du dashboard Supabase pointé
+  sur l'URL, en-tête `x-cron-secret`) — même catégorie que configurer
+  `RESEND_API_KEY` lui-même, pas quelque chose qu'une migration peut faire
+  sans supervision.
+- `assign_content`/`extend_due_date` → `assignment_targets` (spec 01,
+  déjà là).
+- `add_to_group`/`remove_from_group` → `share_group_members`.
+- `follow_up_task` → le pendant automatique de la création manuelle
+  ci-dessus.
+
+Détection des 8 `trigger_type` (`_automation_trigger_candidates()`) :
+réutilise des signaux déjà calculés ailleurs plutôt que d'en capturer de
+nouveaux — `enrollment` via `learning_events` (`enrollment.started`),
+`due_soon`/`overdue` via la même expansion de cible
+(session/groupe/apprenant) et `effective_assignment_due_at()` que le job
+de rappels J-7/J-1 (`20260813010000`), évalués contre « maintenant », pas
+contre le jour rétrospectif des autres déclencheurs, `inactivity`/`failure`
+via `risk_signals` nouvellement ouverts ce jour (`rule_code`
+`inactivity`/`repeated_failure`), `completion` via `grade_results` publiés
+ce jour, `mastery_gained`/`mastery_expired` via `competency_mastery_history`
+— simplifié à une comparaison texte `to_level`/`from_level` (acquise :
+`to_level` change et n'est pas `not_assessed` ; expirée : tombe à
+`not_assessed`) plutôt qu'un lookup de position sur l'échelle — le
+lookup complet apporterait peu par rapport aux valeurs texte déjà
+porteuses de sens que cette table d'historique stocke. Idempotent via
+`automation_runs.idempotency_key` (`rule:version:apprenant:instance`) —
+`due_soon`/`overdue` se déclenchent une seule fois pour toujours par
+(règle, apprenant, devoir), même sémantique que le job de rappels, pas
+rejoué chaque nuit tant que la condition reste vraie. Branché comme 5ᵉ
+étape isolée de `run_scheduled_lms_analytics_jobs()`. UI :
+`Automation.tsx::AutomationRules` — sélecteur de type d'action, champs
+par type, bouton Publier.
+
+Depuis cette passe (`20260813080000_placement_thresholds.sql`) : test de
+positionnement / remédiation (ADP-009/010/011), le dernier item de la
+spec 06. Non-objectif V1 explicite (« algorithme adaptatif auto-apprenant
+sans règle humaine ») combiné au propre libellé d'ADP-009 (« seuils
+versionnés ») confirme la lecture : pas de branchement adaptatif mi-test
+à inventer — un test de positionnement est un `assessment` ordinaire
+(spec 08, déjà construit avec une vraie correction serveur), seul le
+résultat de fin de tentative (recommander/imposer/dispenser) manquait.
+Rien dans le modèle de données indicatif de la spec ne nomme de table
+pour ça — entièrement greenfield, versionné comme `rule_sets`/
+`rule_set_versions` (`placement_threshold_sets`/`_set_versions`, version
+immuable, pas de statut mutable ligne par ligne). Livraison réutilise
+l'existant plutôt que d'inventer : recommander/imposer → `assignment_targets`
+(spec 01, déjà là) ; « imposer » un vrai verrou (pas juste une affectation
+qui apparaît) se compose avec le DSL AND/OR déjà construit — une
+condition `activity_completed` sur le devoir de remédiation bloque
+n'importe quelle étape en aval, déjà pleinement fonctionnel, rien de
+nouveau à construire pour ça. Dispenser (exempt) → nouvel effet
+`release_state.effect = 'exempted'` + `release_state_exemptions`, ligne
+d'audit append-only (tentative, score, version des seuils) — ADP-011
+« conserve la preuve », même posture que `accommodation_access_log`,
+le seul précédent « lecture/action auditée » de ce dépôt.
+`recompute_release_state()` corrigé (`on conflict ... where
+release_state.effect is distinct from 'exempted'`) pour ne jamais
+écraser une exemption au balayage nocturne ou sur événement — une
+exemption est une dérogation délibérée au moteur de règles normal, pas
+un état qu'il doit reconquérir. Évalué automatiquement dans
+`submit_assessment_attempt()` via `_apply_placement_outcome()` — aucune
+action séparée à déclencher côté UI. UI :
+`ItemBank.tsx::PlacementThresholdsPanel`, par évaluation, dans la section
+dépliée d'une évaluation. **Reste** : la distinction « pas équivalente à
+une complétion normale » dans les tableaux de bord analytics (ADP-011)
+est réelle au niveau donnée (`release_state_exemptions` est une table
+d'audit séparée, `effect='exempted'` distinct de `'unlocked'`) mais aucune
+visualisation ne la fait ressortir encore — territoire spec 07, pas
+tenté ici. **Non testé en conditions réelles** (même limite que le reste
+de cette passe : pas de compte staff/apprenant local) — vérifié par
+lecture du SQL, `tsc`/`eslint` propres, 335 tests unitaires verts,
+migrations appliquées sans erreur (`supabase db push`, `migration list`
+confirmé synchronisé à chaque fois).
+
+Spec 06 est désormais entièrement fermée — tous les items du « Reste à
+faire » listés au fil de cette section sont faits.
 
 ## 07 — Analytics pédagogiques, psychométrie et signaux de risque
 
@@ -1228,16 +1395,194 @@ correspondance email insensible à la casse acceptée, un événement
 complète (335 tests) verte — **non vérifié avec un run réel** (même
 limite que le reste du programme).
 
+Depuis cette passe (pas de nouvelle migration) : mode présentateur et
+sondages sur l'écran projeté, les deux dernières briques de LIVE-015
+(« mode présentateur, écran public, appareil participant et console
+modérateur sont des vues distinctes »). L'écran public
+(`LivePresenterScreen.tsx`) et l'appareil participant (`LiveEventRoom.tsx`)
+étaient déjà des pages séparées ; seuls les deux rôles côté staff
+(présentateur : piloter l'interaction active ; modérateur : trier le
+Q&A) restaient fusionnés dans une seule console affichant les deux à la
+fois. Scindé en onglets (`EventRow`, `LiveEngagement.tsx`) plutôt qu'en
+deux routes — même page, même état de run déjà chargé, mais des vues
+réellement distinctes que l'animateur bascule, pas un panneau fusionné en
+permanence. Sondages sur l'écran projeté
+(`20260813090000_live_presenter_poll_results.sql`) : `live_interactions`
+était déjà lisible publiquement quand `live`/`closed` et l'événement
+actif (`live_interactions_public_read`, depuis la toute première
+migration du spec) — `listRunInteractions()` fonctionnait déjà sans
+changement pour savoir quel sondage est en cours. Ce qui manquait :
+`live_responses` est volontairement réservé au staff
+(`live_responses_staff_read`) — un écran public ne doit pas révéler qui a
+répondu quoi — donc nouvelle RPC `get_public_live_interaction_results()`,
+agrégats seulement (comptes par option, jamais `client_id` ni `payload`
+individuel), même posture que `get_my_live_response()` qui n'expose déjà
+pas la table brute directement. `ProjectedPollResults` dans
+`LivePresenterScreen.tsx` : realtime sur `live_responses` filtré par
+interaction (même abonnement que `PollResults` côté console staff), bascule
+automatique sondage↔classement Q&A selon ce qui est réellement `live`.
+**Non testé en conditions réelles** (même limite que le reste de cette
+passe) — vérifié par lecture du code, `tsc`/`eslint` propres, migration
+appliquée sans erreur (`supabase db push`, `migration list` confirmé
+synchronisé), suite complète (335 tests) verte.
+
 **Reste à faire** :
-- [ ] Mode présentateur/console modérateur *distincts* pour l'animateur lui-même (LIVE-015 mentionne aussi ça) — l'écran projeté existe, mais l'animateur utilise toujours la même console (`LiveEngagement.tsx`) qu'avant, pas une vue « présentateur » séparée de la modération
 - [x] UI d'expulsion — bouton « Expulser » par participant actif (`ParticipantManager`, dépliable depuis le compteur de participants dans `RunControls`)
-- [x] Répondre à un sondage (`poll`) — voir ci-dessus. **Reste** : `priority`/`matrix`/`brainstorm`/`ranking` n'ont toujours ni éditeur ni écran de réponse
+- [x] Répondre à un sondage (`poll`) — voir ci-dessus. **Reste** : voir ci-dessous, `priority`/`matrix`/`brainstorm`/`ranking` sont faits dans une passe ultérieure
 - [x] Vraie table/mécanisme d'allowlist pour `access_policy = 'allowlist'` — voir ci-dessus
-- [ ] Formats supplémentaires : priorisation, matrice 2×2, brainstorm, classement forcé (LIVE-009 à LIVE-013) — `live_interactions.kind` les accepte, aucun éditeur/lecteur pour ces quatre-là
-- [ ] Sondages sur l'écran projeté (`LivePresenterScreen.tsx`) — l'éditeur/résultats staff et le widget participant existent, l'écran public n'en affiche toujours aucun
 - [ ] Intégrations PowerPoint/Teams/Zoom (LIVE-017/018/019)
-- [ ] Rapports post-session (participation, chronologie, export — LIVE-020 à LIVE-023)
-- [ ] Rate limiting et filtre de termes assistant (modération)
+
+Depuis cette passe (pas de nouvelle migration) : rapports post-session
+(LIVE-020 à LIVE-023). Toutes les tables lues (`live_participants`,
+`audience_questions`, `live_interactions`, `live_responses`) ont déjà une
+policy de lecture staff (`is_live_event_staff()`) — composé entièrement
+côté client (`getSessionReport()`, `liveEngagement.ts`), aucune RPC
+nouvelle. LIVE-023 (« distingue absence de réponse, perte de connexion et
+interaction non présentée »), par paire (participant, interaction) :
+`not_presented` si l'interaction n'est jamais sortie de `draft` (personne
+n'aurait pu répondre, quel que soit qui était présent) ; `answered` si une
+ligne `live_responses` existe ; `connection_lost` si pas de réponse et que
+le `last_seen_at` du participant est antérieur à l'ouverture de
+l'interaction — le signal le plus honnête que permet ce schéma, qui n'a
+aucun heartbeat continu (`last_seen_at` n'est rafraîchi qu'au (re)join,
+confirmé par grep) ; `no_response` sinon (présent au moment de
+l'ouverture, n'a simplement pas répondu). LIVE-021 (« comparaison entre
+sessions d'un même événement ») : `listEventRunSummaries()`, une ligne de
+synthèse par run, plutôt qu'un mécanisme de comparaison plus élaboré que
+rien dans la spec ne détaille. LIVE-022 (export anonymisé « selon la
+politique de collecte ») : aucune configuration de « politique de
+collecte » n'existe nulle part dans ce schéma pour s'y raccrocher — bascule
+au moment de l'export à la place (« Anonymiser les participants »),
+remplace les noms par des pseudonymes stables. Export CSV/Excel/PDF
+(`liveSessionReportExport.ts`) : même structure que `gradebookExport.ts`
+(neutralisation de formules identique), mêmes librairies déjà en
+dépendance (`xlsx`, `jspdf`/`jspdf-autotable`) — aucune nouvelle
+dépendance. UI : 3ᵉ onglet « Rapport » dans `LiveEngagement.tsx::EventRow`,
+à côté des onglets Présentateur/Modération ajoutés dans la passe
+précédente. **Non testé en conditions réelles** (même limite que le reste
+de cette passe) — vérifié par lecture du code, `tsc`/`eslint` propres,
+suite complète (335 tests) verte.
+
+Depuis cette passe (`20260813060000_live_moderation_rate_limit_term_filter.sql`) :
+rate limiting et filtre de termes. La spec (« Modération et sécurité »)
+tient en 6 lignes, aucun seuil numérique nulle part — seulement deux
+contraintes fermes : « filtre de termes configurable comme assistance,
+jamais suppression invisible » et « rate limits par participant, appareil
+et événement ». Constat en creusant : aucune infra d'empreinte appareil
+n'existe dans tout le système (aucune RPC ne prend d'id device) —
+`client_id` est déjà le seul identifiant par-navigateur que ce système
+utilise partout (join, vote, réponse) ; participant et appareil
+fusionnent donc sur ce même identifiant plutôt que d'inventer un
+fingerprint séparé que rien d'autre ne supporte. « événement » obtient son
+propre plafond, plus large, indépendant du nombre de `client_id`
+distincts impliqués — la défense qu'un plafond par-client seul ne peut pas
+fournir contre de nombreux faux clients synthétiques. Table
+`live_event_moderation_settings`, une ligne par événement (RLS
+`is_live_event_staff(event_id)`, même précédent que
+`live_event_allowlist`), défauts raisonnables (5/60s, 60/événement)
+appliqués par `coalesce()` si absente — même posture que
+`analytics_privacy_settings`. Trois RPC instrumentées, celles qui
+écrivaient du contenu répété sans aucune limite jusqu'ici (vérifié en
+lisant leurs corps avant de commencer) : `submit_audience_question`,
+`cast_vote`, `submit_live_response`. `join_live_run` volontairement
+exclu — contrôle d'admission avec son propre verrou de capacité
+(`pg_advisory_xact_lock`), pas un flux de contenu répété, un problème
+différent de celui visé ici. Filtre de termes scopé à
+`audience_questions.body` uniquement : seul contenu libre avec une porte
+de modération déjà existante (`pending`→`moderate_question()`) à laquelle
+accrocher un flag ; `live_responses.payload` n'a aucune porte de
+modération et aucun format à texte libre n'est construit du tout
+(priorisation/matrice/brainstorm/classement toujours sans éditeur/lecteur)
+— filtrer un contenu qui n'existe pas encore aurait supposé une porte de
+modération à inventer, pas tenté ici. Le flag (`audience_questions.flagged_terms`)
+ne bloque jamais l'insertion ni l'affichage staff — la question reste
+`pending` normalement, le modérateur voit juste un badge « ⚠ Termes
+signalés » dans `QuestionModeration` et approuve/refuse comme avant,
+conforme au « jamais suppression invisible » de la spec. UI :
+`ModerationSettingsPanel` par événement (formulaire débit + liste de
+termes séparés par virgules). **Non testé en conditions réelles** (même
+limite que le reste de cette passe : pas de compte staff/participant
+local) — vérifié par lecture du SQL, `tsc`/`eslint` propres, migration
+appliquée sans erreur (`supabase db push`, `migration list` confirmé
+synchronisé).
+
+Depuis cette passe (`20260813100000_live_brainstorm_ideas.sql`, seule
+migration nécessaire) : les 4 formats restants (LIVE-009 à LIVE-013 —
+priorisation, matrice 2×2, brainstorm/texte libre, classement forcé).
+Constat de départ, avant d'écrire quoi que ce soit : `live_interactions`/
+`live_responses` et les 4 RPC participant
+(`open_live_interaction`/`close_live_interaction`/`submit_live_response`/
+`get_my_live_response`) sont déjà agnostiques au `kind` — elles
+stockent/retournent `config`/`payload` jsonb sans jamais l'inspecter, et
+`live_interactions_staff` (RLS, `for all`) permettait déjà n'importe quel
+`kind` accepté par la contrainte check. Zéro changement backend requis
+pour créer/répondre/fermer ces 4 formats — seuls le contrat config/payload
+par format (jamais défini nulle part avant, explicitement noté comme « pas
+deviné ici » dans une passe précédente) et l'éditeur/écran de réponse/vue
+résultats manquaient. Par format :
+- **Priorisation** (LIVE-009) : budget de points fixe, alloué par input
+  numérique par option, résultat = moyenne de points/participant.
+- **Matrice 2×2** (LIVE-010) : x/y numériques par option via curseurs
+  (`&lt;input type="range"&gt;`), pas un canvas glisser-déposer — « placement
+  accessible » de la spec favorise un contrôle clavier/lecteur d'écran
+  plutôt qu'une interaction souris-only qui la contredirait. Résultat :
+  moyenne (x,y) par option, projetée sur une grille simple (divs
+  positionnés, pas de lib de graphiques).
+- **Brainstorm + texte libre** (LIVE-011/LIVE-013 — le texte libre n'a pas
+  de `kind` dédié dans la contrainte check, c'est déjà les idées libres du
+  brainstorm) : idées et votes vivent dans la même ligne de réponse
+  (contrainte d'unicité (interaction, client) inchangée — un participant
+  ne peut avoir qu'une ligne, donc ses idées *et* ses votes y voyagent
+  ensemble). Catégories (LIVE-011 « groupes ») stockées dans le `config`
+  de l'interaction elle-même (déjà en écriture staff directe via
+  `live_interactions_staff`) plutôt qu'une nouvelle table. Seule vraie
+  addition backend de cette passe : `get_live_brainstorm_ideas()` — un
+  participant ne peut pas lire `live_responses` directement (aucune
+  policy participant, `client_id` n'est pas une identité que RLS peut
+  vérifier) donc ne peut pas voir les idées des autres pour voter dessus
+  sans un agrégat dédié ; même raisonnement exact que
+  `get_public_live_interaction_results()` (passe précédente) pour les
+  résultats de sondage sur l'écran projeté. Export CSV simple intégré à la
+  vue résultats staff.
+- **Classement forcé** (LIVE-012) : ordre par boutons monter/descendre
+  (même raisonnement d'accessibilité que la matrice). Comparaison
+  avant/après : aucun nouveau mécanisme — `live_responses` upserte sur
+  (interaction, client), donc une deuxième soumission écrase la première,
+  impossible de garder « avant » et « après » dans une seule ligne. Réutilise
+  la convention déjà établie « deux interactions » : le staff crée deux
+  classements avec la même question et `phase:'before'`/`'after'`,
+  `RankingResults` les rapproche automatiquement par correspondance de
+  question quand les deux existent sur le run.
+
+UI staff : `LiveEngagement.tsx::CreateInteractionForm` (sélecteur de type
++ champs par type), `PriorityResults`/`MatrixResults`/`BrainstormResults`/
+`RankingResults`. UI participant : `LiveEventRoom.tsx::LivePriorityWidget`/
+`LiveMatrixWidget`/`LiveBrainstormWidget`/`LiveRankingWidget`, sélection
+générique par `activeInteraction.kind` (auparavant `livePoll`, filtré sur
+`kind==='poll'` uniquement — généralisé).
+
+**Découverte importante en cours de route, corrigée avant de committer** :
+la commande `npx tsc --noEmit` utilisée pour « vérifier » le typecheck sur
+tout le reste de cette session ne vérifiait en réalité **aucun fichier** —
+`apps/app/tsconfig.json` est une config composite racine avec `"files": []`
+et des `references` vers `tsconfig.app.json`/`tsconfig.node.json`, que
+`tsc` sans `--build` n'exécute jamais automatiquement. La vraie commande
+est `npm run typecheck` (`tsc --noEmit -p tsconfig.app.json`), trouvée dans
+`package.json`. Tout le code de cette passe corrigé avec la bonne commande
+(imports de types manquants, `LiveParticipantRow.joined_at`/`last_seen_at`
+absents du type, deux chaînes avec un caractère BOM littéral au lieu de
+l'échappement `\ufeff` — introduits par un artefact de l'outil d'écriture,
+pas une erreur de logique). **Le reste du code déjà écrit cette session,
+re-vérifié après coup avec la bonne commande sur l'ensemble du projet :
+0 erreur réelle** — rien n'avait été cassé silencieusement, seule la
+méthode de vérification employée jusqu'ici était creuse. `eslint` n'avait
+pas ce problème (sa propre configuration de projet, vérifié correct tout
+du long). Build de production (`npm run build`) et suite complète (335
+tests) vérifiés après coup, tous deux verts. **Non testé en conditions
+réelles** (même limite que le reste de cette passe) — vérifié par lecture
+du code, `npm run typecheck`/`eslint` propres (commande correcte cette
+fois), migration appliquée sans erreur (`supabase db push`, `migration
+list` confirmé synchronisé).
 
 ## 10 — Gouvernance, versionnement, localisation et diffusion du contenu
 

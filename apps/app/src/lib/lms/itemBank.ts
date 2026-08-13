@@ -169,6 +169,51 @@ export async function publishAssessment(assessmentId: string): Promise<Assessmen
   return data as Assessment;
 }
 
+/** ADP-009/010/011: a placement test's score-range outcomes, versioned
+ *  (see 20260813080000_placement_thresholds.sql). Evaluated automatically
+ *  when the learner submits an attempt for this assessment
+ *  (_apply_placement_outcome(), called from submit_assessment_attempt()) —
+ *  no separate "run placement" action to trigger from the UI. */
+export interface PlacementThreshold {
+  min_percentage: number;
+  max_percentage: number;
+  outcome: 'recommend' | 'impose' | 'exempt';
+  remediation_assignment_id?: string;
+  exempt_target_type?: string;
+  exempt_target_id?: string;
+}
+
+export async function publishPlacementThresholds(assessmentId: string, thresholds: PlacementThreshold[]): Promise<void> {
+  const { error } = await supabase.rpc('publish_placement_thresholds', { p_assessment_id: assessmentId, p_thresholds: thresholds });
+  if (error) throw error;
+}
+
+export interface PlacementThresholdSet {
+  id: string;
+  assessment_id: string;
+  status: 'draft' | 'published';
+  published_version: number;
+}
+
+export async function getPlacementThresholds(assessmentId: string): Promise<PlacementThreshold[]> {
+  const { data: set, error: setError } = await supabase
+    .from('placement_threshold_sets')
+    .select('*')
+    .eq('assessment_id', assessmentId)
+    .eq('status', 'published')
+    .maybeSingle();
+  if (setError) throw setError;
+  if (!set) return [];
+  const { data, error } = await supabase
+    .from('placement_threshold_set_versions')
+    .select('thresholds')
+    .eq('set_id', (set as PlacementThresholdSet).id)
+    .eq('version', (set as PlacementThresholdSet).published_version)
+    .maybeSingle();
+  if (error) throw error;
+  return (data?.thresholds as PlacementThreshold[]) ?? [];
+}
+
 export interface AttemptItem {
   attempt_id: string;
   response_id: string;

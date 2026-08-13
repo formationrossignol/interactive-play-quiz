@@ -35,6 +35,15 @@ export async function publishRuleSetVersion(ruleSetId: string, definition: Recor
   if (error) throw error;
 }
 
+/** ADP-008/AUT-004: evaluates a definition (not necessarily published yet)
+ *  against a specific learner — pedago/admin only, learner must belong to
+ *  the org (see 20260813040000_rule_definition_simulation.sql). */
+export async function simulateRuleDefinition(orgId: string, definition: Record<string, unknown>, learnerId: string): Promise<boolean> {
+  const { data, error } = await supabase.rpc('simulate_rule_definition', { p_org_id: orgId, p_definition: definition, p_learner_id: learnerId });
+  if (error) throw error;
+  return data as boolean;
+}
+
 export async function listOrgAutomationRules(orgId: string): Promise<AutomationRule[]> {
   const { data, error } = await supabase.from('automation_rules').select('*').eq('org_id', orgId).order('created_at', { ascending: false });
   if (error) throw error;
@@ -45,6 +54,67 @@ export async function createAutomationRule(orgId: string, triggerType: string): 
   const { data, error } = await supabase.from('automation_rules').insert({ org_id: orgId, trigger_type: triggerType }).select().single();
   if (error) throw error;
   return data as AutomationRule;
+}
+
+export type AutomationActionType = 'notification' | 'email' | 'assign_content' | 'extend_due_date' | 'add_to_group' | 'remove_from_group' | 'follow_up_task';
+
+/** AUT-002's six V1 action types (see 20260813070000_automation_execution_engine.sql
+ *  for exactly what each does and why). Published as {action_type, params}
+ *  — publish_automation_rule_version() validates action_type, not params;
+ *  a malformed/missing param just makes _execute_automation_action() skip
+ *  that learner (logged 'skipped' in automation_actions), never a hard
+ *  failure that blocks the whole rule. */
+export async function publishAutomationRuleVersion(ruleId: string, actionType: AutomationActionType, params: Record<string, unknown>): Promise<void> {
+  const { error } = await supabase.rpc('publish_automation_rule_version', {
+    p_rule_id: ruleId, p_config: { action_type: actionType, params },
+  });
+  if (error) throw error;
+}
+
+export interface FollowUpTask {
+  id: string;
+  org_id: string;
+  automation_rule_id: string | null;
+  assignee_id: string;
+  learner_id: string;
+  title: string;
+  status: 'open' | 'done' | 'dismissed';
+  created_at: string;
+}
+
+/** Manual creation path (20260813050000_follow_up_tasks.sql) — staff
+ *  turning a flagged learner (risk_signals) into an actionable task for
+ *  someone. The automated sibling is the 'follow_up_task' action type
+ *  (20260813070000_automation_execution_engine.sql), fired by a
+ *  published automation_rule instead of a moderator click. */
+export async function createFollowUpTask(orgId: string, learnerId: string, assigneeId: string, title: string): Promise<FollowUpTask> {
+  const { data, error } = await supabase.rpc('create_follow_up_task', {
+    p_org_id: orgId, p_learner_id: learnerId, p_assignee_id: assigneeId, p_title: title,
+  });
+  if (error) throw error;
+  return data as FollowUpTask;
+}
+
+/** RLS (follow_up_tasks_assignee) scopes this automatically: a trainer
+ *  sees only tasks assigned to them, pedago/admin see every open task in
+ *  the org regardless of assignee — no client-side assignee filter needed. */
+export async function listOpenFollowUpTasks(orgId: string): Promise<FollowUpTask[]> {
+  const { data, error } = await supabase
+    .from('follow_up_tasks')
+    .select('*')
+    .eq('org_id', orgId)
+    .eq('status', 'open')
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as FollowUpTask[];
+}
+
+/** Direct update: follow_up_tasks_manage (RLS) already lets the assignee
+ *  or org staff transition status — no RPC needed, same posture as
+ *  competency_review_requests' resolve flow. */
+export async function updateFollowUpTaskStatus(taskId: string, status: 'done' | 'dismissed'): Promise<void> {
+  const { error } = await supabase.from('follow_up_tasks').update({ status }).eq('id', taskId);
+  if (error) throw error;
 }
 
 /** The reason a specific activity is locked/unlocked for the current learner, if any. */

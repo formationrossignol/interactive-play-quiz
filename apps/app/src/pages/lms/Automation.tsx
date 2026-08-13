@@ -14,7 +14,10 @@ import {
   createRuleSet,
   listOrgAutomationRules,
   listOrgRuleSets,
+  publishAutomationRuleVersion,
   publishRuleSetVersion,
+  simulateRuleDefinition,
+  type AutomationActionType,
   type AutomationRule,
   type RuleSet,
 } from "@/lib/lms/automation";
@@ -32,15 +35,18 @@ const triggerLabel: Record<string, string> = {
   mastery_expired: "Maîtrise expirée",
 };
 
-type ConditionKind = "activity_completed" | "date" | "score" | "competency";
+type LeafKind = "activity_completed" | "date" | "score" | "competency";
+type NodeOp = "and" | "or";
 type DateOperator = "after" | "before";
 /** Mirrors date's after/before pair — covers ADP-002's "supérieur/inférieur"
  *  without inventing "dans une plage" nobody asked the date evaluator for
  *  either (see 20260812210000_score_competency_rule_evaluators.sql). */
 type ThresholdOperator = "gte" | "lte";
 
-interface ConditionDraft {
-  kind: ConditionKind;
+interface LeafDraft {
+  kind: "leaf";
+  id: string;
+  leafKind: LeafKind;
   prereqId: string;
   dateOperator: DateOperator;
   dateValue: string;
@@ -52,11 +58,160 @@ interface ConditionDraft {
   competencyLevelCode: string;
 }
 
-const EMPTY_DRAFT: ConditionDraft = {
-  kind: "activity_completed", prereqId: "", dateOperator: "after", dateValue: "",
-  scoreTargetId: "", scoreOperator: "gte", scoreValue: "",
-  competencyTargetId: "", competencyOperator: "gte", competencyLevelCode: "",
-};
+interface GroupDraft {
+  kind: "group";
+  id: string;
+  op: NodeOp;
+  children: ConditionDraft[];
+}
+
+type ConditionDraft = LeafDraft | GroupDraft;
+
+function makeLeaf(): LeafDraft {
+  return {
+    kind: "leaf", id: crypto.randomUUID(), leafKind: "activity_completed", prereqId: "",
+    dateOperator: "after", dateValue: "",
+    scoreTargetId: "", scoreOperator: "gte", scoreValue: "",
+    competencyTargetId: "", competencyOperator: "gte", competencyLevelCode: "",
+  };
+}
+
+function makeRootDraft(): GroupDraft {
+  return { kind: "group", id: crypto.randomUUID(), op: "and", children: [makeLeaf()] };
+}
+
+/** ADP-003: evaluate_rule_definition() already recurses on {op:'and'|'or',
+ *  children:[...]} (20260811070000_release_state_engine.sql) and
+ *  publish_rule_set_version() already enforces depth ≤6 + cycle detection
+ *  (20260810200000_adaptive_automation.sql) — the DSL itself was never the
+ *  gap, only this builder only ever emitting a single leaf. Root is always
+ *  a group (even a single condition serializes as {op:'and',children:[…]})
+ *  so there's no special-cased "convert a leaf to a group" affordance to
+ *  build separately from "add another condition to this group". Returns
+ *  null on an incomplete leaf so handlePublish can bail without guessing
+ *  a default. */
+function serializeCondition(node: ConditionDraft): Record<string, unknown> | null {
+  if (node.kind === "group") {
+    if (node.children.length === 0) return null;
+    const children = node.children.map(serializeCondition);
+    if (children.some((c) => c === null)) return null;
+    return { op: node.op, children };
+  }
+  switch (node.leafKind) {
+    case "activity_completed":
+      if (!node.prereqId.trim()) return null;
+      return { source: "activity_completed", target_id: node.prereqId.trim() };
+    case "date":
+      if (!node.dateValue) return null;
+      return { source: "date", operator: node.dateOperator, value: new Date(node.dateValue).toISOString() };
+    case "score":
+      if (!node.scoreTargetId.trim() || !node.scoreValue) return null;
+      return { source: "score", target_id: node.scoreTargetId.trim(), operator: node.scoreOperator, value: Number(node.scoreValue) };
+    case "competency":
+      if (!node.competencyTargetId.trim() || !node.competencyLevelCode.trim()) return null;
+      return { source: "competency", target_id: node.competencyTargetId.trim(), operator: node.competencyOperator, value: node.competencyLevelCode.trim() };
+  }
+}
+
+function ConditionNodeEditor({ node, onChange, onRemove, depth }: {
+  node: ConditionDraft;
+  onChange: (next: ConditionDraft) => void;
+  onRemove?: () => void;
+  depth: number;
+}) {
+  if (node.kind === "group") {
+    const updateChild = (index: number, next: ConditionDraft) => {
+      const children = [...node.children];
+      children[index] = next;
+      onChange({ ...node, children });
+    };
+    const removeChild = (index: number) => onChange({ ...node, children: node.children.filter((_, i) => i !== index) });
+
+    return (
+      <div className="rounded-md border p-2 space-y-2" style={{ borderStyle: "dashed" }}>
+        <div className="flex items-center gap-2">
+          <select
+            className="h-8 rounded-md border border-input bg-background px-2 text-xs font-medium"
+            value={node.op}
+            onChange={(e) => onChange({ ...node, op: e.target.value as NodeOp })}
+            aria-label="Opérateur du groupe"
+          >
+            <option value="and">ET (toutes vraies)</option>
+            <option value="or">OU (au moins une vraie)</option>
+          </select>
+          {onRemove && <Button type="button" variant="ghost" size="sm" onClick={onRemove}>Retirer ce groupe</Button>}
+        </div>
+        <div className="space-y-2 pl-3" style={{ borderLeft: "2px solid var(--ap-line)" }}>
+          {node.children.map((child, i) => (
+            <ConditionNodeEditor
+              key={child.id}
+              node={child}
+              onChange={(next) => updateChild(i, next)}
+              onRemove={node.children.length > 1 ? () => removeChild(i) : undefined}
+              depth={depth + 1}
+            />
+          ))}
+        </div>
+        {depth < 5 && (
+          <div className="flex items-center gap-2">
+            <Button type="button" variant="outline" size="sm" onClick={() => onChange({ ...node, children: [...node.children, makeLeaf()] })}>+ Condition</Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => onChange({ ...node, children: [...node.children, makeRootDraft()] })}>+ Sous-groupe</Button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  const update = (patch: Partial<LeafDraft>) => onChange({ ...node, ...patch });
+  return (
+    <div className="flex flex-wrap items-end gap-2">
+      <select
+        className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+        value={node.leafKind}
+        onChange={(e) => update({ leafKind: e.target.value as LeafKind })}
+        aria-label="Type de condition"
+      >
+        <option value="activity_completed">Activité terminée</option>
+        <option value="date">Date atteinte</option>
+        <option value="score">Note à un seuil</option>
+        <option value="competency">Compétence à un niveau</option>
+      </select>
+      {node.leafKind === "activity_completed" && (
+        <Input placeholder="UUID de l'activité prérequise" value={node.prereqId} onChange={(e) => update({ prereqId: e.target.value })} className="min-w-[200px]" />
+      )}
+      {node.leafKind === "date" && (
+        <>
+          <select className="h-9 rounded-md border border-input bg-background px-2 text-sm" value={node.dateOperator} onChange={(e) => update({ dateOperator: e.target.value as DateOperator })}>
+            <option value="after">À partir du</option>
+            <option value="before">Jusqu'au</option>
+          </select>
+          <input type="datetime-local" className="h-9 rounded-md border border-input bg-background px-2 text-sm" value={node.dateValue} onChange={(e) => update({ dateValue: e.target.value })} />
+        </>
+      )}
+      {node.leafKind === "score" && (
+        <>
+          <Input placeholder="UUID de l'activité notée" value={node.scoreTargetId} onChange={(e) => update({ scoreTargetId: e.target.value })} className="min-w-[180px]" />
+          <select className="h-9 rounded-md border border-input bg-background px-2 text-sm" value={node.scoreOperator} onChange={(e) => update({ scoreOperator: e.target.value as ThresholdOperator })}>
+            <option value="gte">Au moins</option>
+            <option value="lte">Au plus</option>
+          </select>
+          <Input type="number" min={0} max={100} step="0.1" placeholder="%" value={node.scoreValue} onChange={(e) => update({ scoreValue: e.target.value })} className="w-24" />
+        </>
+      )}
+      {node.leafKind === "competency" && (
+        <>
+          <Input placeholder="UUID de la compétence" value={node.competencyTargetId} onChange={(e) => update({ competencyTargetId: e.target.value })} className="min-w-[180px]" />
+          <select className="h-9 rounded-md border border-input bg-background px-2 text-sm" value={node.competencyOperator} onChange={(e) => update({ competencyOperator: e.target.value as ThresholdOperator })}>
+            <option value="gte">Au moins le niveau</option>
+            <option value="lte">Au plus le niveau</option>
+          </select>
+          <Input placeholder="Code du niveau" value={node.competencyLevelCode} onChange={(e) => update({ competencyLevelCode: e.target.value })} className="w-36" />
+        </>
+      )}
+      {onRemove && <Button type="button" variant="ghost" size="sm" onClick={onRemove}>Retirer</Button>}
+    </div>
+  );
+}
 
 function RuleSets({ orgId }: { orgId: string }) {
   const [ruleSets, setRuleSets] = useState<RuleSet[]>([]);
@@ -65,6 +220,10 @@ function RuleSets({ orgId }: { orgId: string }) {
   const [drafts, setDrafts] = useState<Record<string, ConditionDraft>>({});
   const [creating, setCreating] = useState(false);
   const [publishing, setPublishing] = useState<string | null>(null);
+  const [publishError, setPublishError] = useState<string | null>(null);
+  const [simLearnerId, setSimLearnerId] = useState<Record<string, string>>({});
+  const [simResults, setSimResults] = useState<Record<string, boolean | null>>({});
+  const [simulating, setSimulating] = useState<string | null>(null);
 
   useEffect(() => {
     listOrgRuleSets(orgId).then(setRuleSets).catch(showError).finally(() => setLoading(false));
@@ -85,26 +244,14 @@ function RuleSets({ orgId }: { orgId: string }) {
     }
   };
 
-  const updateDraft = (ruleSetId: string, patch: Partial<ConditionDraft>) => {
-    setDrafts((prev) => ({ ...prev, [ruleSetId]: { ...(prev[ruleSetId] ?? EMPTY_DRAFT), ...patch } }));
-  };
-
   const handlePublish = async (ruleSet: RuleSet) => {
-    const draft = drafts[ruleSet.id] ?? EMPTY_DRAFT;
-    let definition: Record<string, unknown>;
-    if (draft.kind === "activity_completed") {
-      if (!draft.prereqId.trim()) return;
-      definition = { source: "activity_completed", target_id: draft.prereqId.trim() };
-    } else if (draft.kind === "date") {
-      if (!draft.dateValue) return;
-      definition = { source: "date", operator: draft.dateOperator, value: new Date(draft.dateValue).toISOString() };
-    } else if (draft.kind === "score") {
-      if (!draft.scoreTargetId.trim() || !draft.scoreValue) return;
-      definition = { source: "score", target_id: draft.scoreTargetId.trim(), operator: draft.scoreOperator, value: Number(draft.scoreValue) };
-    } else {
-      if (!draft.competencyTargetId.trim() || !draft.competencyLevelCode.trim()) return;
-      definition = { source: "competency", target_id: draft.competencyTargetId.trim(), operator: draft.competencyOperator, value: draft.competencyLevelCode.trim() };
+    const draft = drafts[ruleSet.id] ?? makeRootDraft();
+    const definition = serializeCondition(draft);
+    if (!definition) {
+      setPublishError(ruleSet.id);
+      return;
     }
+    setPublishError(null);
     setPublishing(ruleSet.id);
     try {
       await publishRuleSetVersion(ruleSet.id, definition);
@@ -116,12 +263,33 @@ function RuleSets({ orgId }: { orgId: string }) {
     }
   };
 
+  /** ADP-008/AUT-004: tests the current (possibly unpublished) draft
+   *  against a real learner before publish_rule_set_version() is ever
+   *  called — reuses evaluate_rule_definition() via simulate_rule_definition(). */
+  const handleSimulate = async (ruleSet: RuleSet) => {
+    const draft = drafts[ruleSet.id] ?? makeRootDraft();
+    const definition = serializeCondition(draft);
+    const learnerId = simLearnerId[ruleSet.id]?.trim();
+    if (!definition) { setPublishError(ruleSet.id); return; }
+    if (!learnerId) return;
+    setPublishError(null);
+    setSimulating(ruleSet.id);
+    try {
+      const result = await simulateRuleDefinition(orgId, definition, learnerId);
+      setSimResults((prev) => ({ ...prev, [ruleSet.id]: result }));
+    } catch (err) {
+      showError(err);
+    } finally {
+      setSimulating(null);
+    }
+  };
+
   if (loading) return <TableSkeleton rows={3} cols={2} />;
 
   return (
     <section className="product-list-panel p-5">
       <div className="product-panel-heading -mx-5 -mt-5 mb-4">
-        <div><h2>Conditions de déblocage</h2><p>« Quand [activité terminée], [date atteinte], [note], ou [compétence], alors débloquer [cette activité] ». Une seule condition par règle pour l'instant ; les règles cycliques sont refusées à la publication.</p></div>
+        <div><h2>Conditions de déblocage</h2><p>« Quand [conditions combinées en ET/OU], alors débloquer [cette activité] ». Groupes imbriqués jusqu'à profondeur 6 ; les règles cycliques sont refusées à la publication (ADP-003).</p></div>
       </div>
       <form onSubmit={handleCreate} className="flex flex-wrap items-end gap-2 mb-4">
         <div className="min-w-[280px] space-y-1">
@@ -135,99 +303,35 @@ function RuleSets({ orgId }: { orgId: string }) {
       ) : (
         <ul className="space-y-2">
           {ruleSets.map((rs) => {
-            const draft = drafts[rs.id] ?? EMPTY_DRAFT;
+            const draft = drafts[rs.id] ?? makeRootDraft();
             return (
               <li key={rs.id} className="rounded-md border p-3 space-y-2">
                 <div className="flex items-center justify-between text-sm">
                   <span>Activité {rs.target_id.slice(0, 8)} · {rs.status}</span>
                   <span className="text-muted-foreground">v{rs.published_version}</span>
                 </div>
-                <div className="flex flex-wrap items-end gap-2">
-                  <select
-                    className="h-10 rounded-md border border-input bg-background px-3 text-sm"
-                    value={draft.kind}
-                    onChange={(e) => updateDraft(rs.id, { kind: e.target.value as ConditionKind })}
-                  >
-                    <option value="activity_completed">Quand une activité est terminée</option>
-                    <option value="date">Quand une date est atteinte</option>
-                    <option value="score">Quand une note atteint un seuil</option>
-                    <option value="competency">Quand une compétence atteint un niveau</option>
-                  </select>
-                  {draft.kind === "activity_completed" && (
-                    <Input
-                      placeholder="UUID de l'activité prérequise"
-                      value={draft.prereqId}
-                      onChange={(e) => updateDraft(rs.id, { prereqId: e.target.value })}
-                    />
-                  )}
-                  {draft.kind === "date" && (
-                    <>
-                      <select
-                        className="h-10 rounded-md border border-input bg-background px-3 text-sm"
-                        value={draft.dateOperator}
-                        onChange={(e) => updateDraft(rs.id, { dateOperator: e.target.value as DateOperator })}
-                      >
-                        <option value="after">À partir du</option>
-                        <option value="before">Jusqu'au</option>
-                      </select>
-                      <input
-                        type="datetime-local"
-                        className="h-10 rounded-md border border-input bg-background px-3 text-sm"
-                        value={draft.dateValue}
-                        onChange={(e) => updateDraft(rs.id, { dateValue: e.target.value })}
-                      />
-                    </>
-                  )}
-                  {draft.kind === "score" && (
-                    <>
-                      <Input
-                        placeholder="UUID de l'activité notée (devoir/examen)"
-                        value={draft.scoreTargetId}
-                        onChange={(e) => updateDraft(rs.id, { scoreTargetId: e.target.value })}
-                        className="min-w-[220px]"
-                      />
-                      <select
-                        className="h-10 rounded-md border border-input bg-background px-3 text-sm"
-                        value={draft.scoreOperator}
-                        onChange={(e) => updateDraft(rs.id, { scoreOperator: e.target.value as ThresholdOperator })}
-                      >
-                        <option value="gte">Au moins</option>
-                        <option value="lte">Au plus</option>
-                      </select>
-                      <Input
-                        type="number" min={0} max={100} step="0.1"
-                        placeholder="% de la note"
-                        value={draft.scoreValue}
-                        onChange={(e) => updateDraft(rs.id, { scoreValue: e.target.value })}
-                        className="w-28"
-                      />
-                    </>
-                  )}
-                  {draft.kind === "competency" && (
-                    <>
-                      <Input
-                        placeholder="UUID de la compétence"
-                        value={draft.competencyTargetId}
-                        onChange={(e) => updateDraft(rs.id, { competencyTargetId: e.target.value })}
-                        className="min-w-[220px]"
-                      />
-                      <select
-                        className="h-10 rounded-md border border-input bg-background px-3 text-sm"
-                        value={draft.competencyOperator}
-                        onChange={(e) => updateDraft(rs.id, { competencyOperator: e.target.value as ThresholdOperator })}
-                      >
-                        <option value="gte">Au moins le niveau</option>
-                        <option value="lte">Au plus le niveau</option>
-                      </select>
-                      <Input
-                        placeholder="Code du niveau (ex. expert)"
-                        value={draft.competencyLevelCode}
-                        onChange={(e) => updateDraft(rs.id, { competencyLevelCode: e.target.value })}
-                        className="w-40"
-                      />
-                    </>
-                  )}
+                <ConditionNodeEditor
+                  node={draft}
+                  onChange={(next) => setDrafts((prev) => ({ ...prev, [rs.id]: next }))}
+                  depth={1}
+                />
+                {publishError === rs.id && <p className="text-sm" style={{ color: "var(--ap-danger)" }}>Complétez toutes les conditions (aucune ne peut rester vide) avant de publier.</p>}
+                <div className="flex flex-wrap items-center gap-2">
                   <Button variant="ghost" size="sm" loading={publishing === rs.id} onClick={() => void handlePublish(rs)}>Publier</Button>
+                  <Input
+                    placeholder="UUID apprenant à simuler"
+                    value={simLearnerId[rs.id] ?? ""}
+                    onChange={(e) => { setSimLearnerId((prev) => ({ ...prev, [rs.id]: e.target.value })); setSimResults((prev) => ({ ...prev, [rs.id]: null })); }}
+                    className="w-52"
+                  />
+                  <Button variant="outline" size="sm" loading={simulating === rs.id} disabled={!simLearnerId[rs.id]?.trim()} onClick={() => void handleSimulate(rs)}>
+                    Simuler pour cet apprenant
+                  </Button>
+                  {simResults[rs.id] !== undefined && simResults[rs.id] !== null && (
+                    <span className="text-sm font-medium" style={{ color: simResults[rs.id] ? "var(--ap-pres)" : "var(--ap-danger)" }}>
+                      {simResults[rs.id] ? "Débloqué" : "Verrouillé"}
+                    </span>
+                  )}
                 </div>
               </li>
             );
@@ -238,11 +342,43 @@ function RuleSets({ orgId }: { orgId: string }) {
   );
 }
 
+const actionLabel: Record<AutomationActionType, string> = {
+  notification: "Notification in-app",
+  email: "E-mail",
+  assign_content: "Affecter un devoir",
+  extend_due_date: "Prolonger l'échéance",
+  add_to_group: "Ajouter au groupe",
+  remove_from_group: "Retirer du groupe",
+  follow_up_task: "Créer une tâche de suivi",
+};
+
+interface ActionDraft {
+  actionType: AutomationActionType;
+  title: string;
+  body: string;
+  subject: string;
+  assignmentId: string;
+  extraDays: string;
+  groupId: string;
+  assigneeId: string;
+}
+
+const EMPTY_ACTION_DRAFT: ActionDraft = {
+  actionType: "notification", title: "", body: "", subject: "",
+  assignmentId: "", extraDays: "7", groupId: "", assigneeId: "",
+};
+
+/** AUT-002's action config, published as {action_type, params} — see
+ *  20260813070000_automation_execution_engine.sql for exactly what each
+ *  action does and reuses (assignment_targets, share_group_members,
+ *  follow_up_tasks — all already built this session, not new mechanics). */
 function AutomationRules({ orgId }: { orgId: string }) {
   const [rules, setRules] = useState<AutomationRule[]>([]);
   const [loading, setLoading] = useState(true);
   const [trigger, setTrigger] = useState("overdue");
   const [creating, setCreating] = useState(false);
+  const [drafts, setDrafts] = useState<Record<string, ActionDraft>>({});
+  const [publishing, setPublishing] = useState<string | null>(null);
 
   useEffect(() => {
     listOrgAutomationRules(orgId).then(setRules).catch(showError).finally(() => setLoading(false));
@@ -258,6 +394,43 @@ function AutomationRules({ orgId }: { orgId: string }) {
       showError(err);
     } finally {
       setCreating(false);
+    }
+  };
+
+  const updateDraft = (ruleId: string, patch: Partial<ActionDraft>) => {
+    setDrafts((prev) => ({ ...prev, [ruleId]: { ...(prev[ruleId] ?? EMPTY_ACTION_DRAFT), ...patch } }));
+  };
+
+  const handlePublish = async (rule: AutomationRule) => {
+    const draft = drafts[rule.id] ?? EMPTY_ACTION_DRAFT;
+    let params: Record<string, unknown>;
+    if (draft.actionType === "notification") {
+      if (!draft.title.trim()) return;
+      params = { title: draft.title.trim(), body: draft.body.trim() };
+    } else if (draft.actionType === "email") {
+      if (!draft.subject.trim()) return;
+      params = { subject: draft.subject.trim(), body: draft.body.trim() };
+    } else if (draft.actionType === "assign_content") {
+      if (!draft.assignmentId.trim()) return;
+      params = { assignment_id: draft.assignmentId.trim() };
+    } else if (draft.actionType === "extend_due_date") {
+      if (!draft.assignmentId.trim() || !draft.extraDays) return;
+      params = { assignment_id: draft.assignmentId.trim(), extra_days: Number(draft.extraDays) };
+    } else if (draft.actionType === "add_to_group" || draft.actionType === "remove_from_group") {
+      if (!draft.groupId.trim()) return;
+      params = { group_id: draft.groupId.trim() };
+    } else {
+      if (!draft.assigneeId.trim()) return;
+      params = { assignee_id: draft.assigneeId.trim(), title: draft.title.trim() || `Suivi automatique — ${triggerLabel[rule.trigger_type] ?? rule.trigger_type}` };
+    }
+    setPublishing(rule.id);
+    try {
+      await publishAutomationRuleVersion(rule.id, draft.actionType, params);
+      setRules((prev) => prev.map((r) => (r.id === rule.id ? { ...r, status: "published", published_version: r.published_version + 1 } : r)));
+    } catch (err) {
+      showError(err);
+    } finally {
+      setPublishing(null);
     }
   };
 
@@ -281,12 +454,57 @@ function AutomationRules({ orgId }: { orgId: string }) {
         <p className="text-sm text-muted-foreground">Aucune automatisation créée.</p>
       ) : (
         <ul className="space-y-2">
-          {rules.map((r) => (
-            <li key={r.id} className="flex items-center justify-between rounded-md border p-3 text-sm">
-              <span>{triggerLabel[r.trigger_type] ?? r.trigger_type}</span>
-              <span className="text-muted-foreground">{r.status}</span>
-            </li>
-          ))}
+          {rules.map((r) => {
+            const draft = drafts[r.id] ?? EMPTY_ACTION_DRAFT;
+            return (
+              <li key={r.id} className="rounded-md border p-3 text-sm space-y-2">
+                <div className="flex items-center justify-between">
+                  <span>{triggerLabel[r.trigger_type] ?? r.trigger_type}</span>
+                  <span className="text-muted-foreground">{r.status} · v{r.published_version}</span>
+                </div>
+                <div className="flex flex-wrap items-end gap-2">
+                  <select
+                    className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+                    value={draft.actionType}
+                    onChange={(e) => updateDraft(r.id, { actionType: e.target.value as AutomationActionType })}
+                  >
+                    {(Object.keys(actionLabel) as AutomationActionType[]).map((t) => <option key={t} value={t}>{actionLabel[t]}</option>)}
+                  </select>
+                  {draft.actionType === "notification" && (
+                    <>
+                      <Input placeholder="Titre" value={draft.title} onChange={(e) => updateDraft(r.id, { title: e.target.value })} className="min-w-[160px]" />
+                      <Input placeholder="Message" value={draft.body} onChange={(e) => updateDraft(r.id, { body: e.target.value })} className="min-w-[200px]" />
+                    </>
+                  )}
+                  {draft.actionType === "email" && (
+                    <>
+                      <Input placeholder="Objet" value={draft.subject} onChange={(e) => updateDraft(r.id, { subject: e.target.value })} className="min-w-[160px]" />
+                      <Input placeholder="Message" value={draft.body} onChange={(e) => updateDraft(r.id, { body: e.target.value })} className="min-w-[200px]" />
+                    </>
+                  )}
+                  {draft.actionType === "assign_content" && (
+                    <Input placeholder="UUID du devoir" value={draft.assignmentId} onChange={(e) => updateDraft(r.id, { assignmentId: e.target.value })} className="min-w-[220px]" />
+                  )}
+                  {draft.actionType === "extend_due_date" && (
+                    <>
+                      <Input placeholder="UUID du devoir" value={draft.assignmentId} onChange={(e) => updateDraft(r.id, { assignmentId: e.target.value })} className="min-w-[220px]" />
+                      <Input type="number" min={1} placeholder="Jours" value={draft.extraDays} onChange={(e) => updateDraft(r.id, { extraDays: e.target.value })} className="w-20" />
+                    </>
+                  )}
+                  {(draft.actionType === "add_to_group" || draft.actionType === "remove_from_group") && (
+                    <Input placeholder="UUID du groupe" value={draft.groupId} onChange={(e) => updateDraft(r.id, { groupId: e.target.value })} className="min-w-[220px]" />
+                  )}
+                  {draft.actionType === "follow_up_task" && (
+                    <>
+                      <Input placeholder="UUID de l'assigné" value={draft.assigneeId} onChange={(e) => updateDraft(r.id, { assigneeId: e.target.value })} className="min-w-[200px]" />
+                      <Input placeholder="Titre (optionnel)" value={draft.title} onChange={(e) => updateDraft(r.id, { title: e.target.value })} className="min-w-[200px]" />
+                    </>
+                  )}
+                  <Button variant="ghost" size="sm" loading={publishing === r.id} onClick={() => void handlePublish(r)}>Publier</Button>
+                </div>
+              </li>
+            );
+          })}
         </ul>
       )}
     </section>
