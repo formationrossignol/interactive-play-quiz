@@ -1,11 +1,16 @@
 # Reste à faire — Programme LMS
 
-Date : 2026-08-12
+Date : 2026-08-13
 
 Backlog consolidé, pur — pas de « fait », pas de récit. Pour le détail de ce
 qui est déjà fait/vérifié et pourquoi, voir `VALIDATION-STATUS.md`. Chaque
 item ici reste formulé exactement comme dans ce document source, pour
 pouvoir s'y référer facilement.
+
+**Progression globale : 44/86 items (51%).** Fermés : §03 Compétences (7/7),
+§06 Parcours adaptatifs (7/7). Quasi fermés : §09 Live Q&A (9/10), §01
+Devoirs/gradebook (7/8). Quasi vierges : §04 Interopérabilité Enterprise
+(2/11), §05 Accessibilité (0/6), §10 Gouvernance de contenu (0/12).
 
 ## Dépendances qui bloquent plusieurs items à la fois
 
