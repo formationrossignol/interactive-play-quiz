@@ -177,6 +177,47 @@ export async function myMastery(): Promise<CompetencyMastery[]> {
   return (data ?? []) as CompetencyMastery[];
 }
 
+/** CMP-012/021 coverage view: alignments for every competency in a
+ *  framework at once, rather than one competency at a time
+ *  (listCompetencyAlignments below) — same `competency_alignments_read`
+ *  RLS, just an `.in()` instead of `.eq()`. */
+export async function listAlignmentsForCompetencies(competencyIds: string[]): Promise<CompetencyAlignment[]> {
+  if (competencyIds.length === 0) return [];
+  const { data, error } = await supabase.from('competency_alignments').select('*').in('competency_id', competencyIds);
+  if (error) throw error;
+  return (data ?? []) as CompetencyAlignment[];
+}
+
+/** Open Badges export needs the full Competency row (code, framework_id),
+ *  not just the title listCompetencyTitles returns — e.g. LearnerMastery
+ *  only holds competency_id per mastery row. */
+export async function listCompetenciesByIds(competencyIds: string[]): Promise<Competency[]> {
+  if (competencyIds.length === 0) return [];
+  const { data, error } = await supabase.from('competencies').select('*').in('id', competencyIds);
+  if (error) throw error;
+  return (data ?? []) as Competency[];
+}
+
+/** Competency titles live in competency_revisions (versioned content —
+ *  competencies.id/code are the stable identity, see addCompetency() above),
+ *  never read back anywhere in this file until now — FrameworkCompetencies'
+ *  list only ever displayed `code`. Returns the highest-version title per
+ *  competency id. */
+export async function listCompetencyTitles(competencyIds: string[]): Promise<Record<string, string>> {
+  if (competencyIds.length === 0) return {};
+  const { data, error } = await supabase
+    .from('competency_revisions')
+    .select('competency_id, title, version')
+    .in('competency_id', competencyIds)
+    .order('version', { ascending: false });
+  if (error) throw error;
+  const result: Record<string, string> = {};
+  for (const row of (data ?? []) as Array<{ competency_id: string; title: string; version: number }>) {
+    if (!(row.competency_id in result)) result[row.competency_id] = row.title;
+  }
+  return result;
+}
+
 /** RLS (`competency_alignments_manage`, `for all`) already lets pedago/admin
  *  insert/delete directly — no RPC needed, same posture as rubric criteria. */
 export async function listCompetencyAlignments(competencyId: string): Promise<CompetencyAlignment[]> {
@@ -319,4 +360,96 @@ export async function listCompetencyEvidence(competencyId: string, learnerId: st
     .order('occurred_at', { ascending: false });
   if (error) throw error;
   return (data ?? []) as CompetencyEvidenceRow[];
+}
+
+/** Flat, org-wide competency list across every framework — needed for the
+ *  tag-migration "map to existing competency" picker, which must not be
+ *  scoped to a single framework the way listFrameworkCompetencies is. */
+export async function listOrgCompetencies(orgId: string): Promise<Competency[]> {
+  const { data, error } = await supabase
+    .from('competencies')
+    .select('*, competency_frameworks!inner(org_id)')
+    .eq('competency_frameworks.org_id', orgId)
+    .order('code', { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as Competency[];
+}
+
+/** "Migration des tags existants" — inventory step. Free-text skill tags
+ *  live in content.data.questions[].skills (quizzes) and
+ *  exams.questions_public[].skills (the older, parallel exam system) —
+ *  neither table has an org_id, only user_id/host_id, and RLS is
+ *  owner-scoped (content_owner) — so this can only inventory the calling
+ *  staff member's *own* authored content, not the whole org's. See
+ *  20260813110000_competency_tag_mappings.sql for why the persisted
+ *  mapping decision is still org-scoped even though discovery isn't. */
+export interface TagUsage {
+  tag: string;
+  count: number;
+}
+
+export async function listMyContentSkillTags(userId: string): Promise<TagUsage[]> {
+  const counts = new Map<string, number>();
+  const bump = (raw: unknown) => {
+    if (!Array.isArray(raw)) return;
+    for (const skill of raw) {
+      const tag = typeof skill === 'string' ? skill.trim() : '';
+      if (tag) counts.set(tag, (counts.get(tag) ?? 0) + 1);
+    }
+  };
+
+  const [{ data: contentRows, error: contentError }, { data: examRows, error: examError }] = await Promise.all([
+    supabase.from('content').select('data').eq('user_id', userId).eq('type', 'quiz'),
+    supabase.from('exams').select('questions_public').eq('host_id', userId),
+  ]);
+  if (contentError) throw contentError;
+  if (examError) throw examError;
+
+  for (const row of contentRows ?? []) {
+    const questions = (row.data as { questions?: unknown[] } | null)?.questions;
+    if (Array.isArray(questions)) for (const q of questions) bump((q as { skills?: unknown[] })?.skills);
+  }
+  for (const row of examRows ?? []) {
+    const questions = row.questions_public as Array<{ skills?: unknown[] }> | null;
+    if (Array.isArray(questions)) for (const q of questions) bump(q.skills);
+  }
+
+  return [...counts.entries()].map(([tag, count]) => ({ tag, count })).sort((a, b) => b.count - a.count);
+}
+
+export interface CompetencyTagMapping {
+  id: string;
+  org_id: string;
+  tag: string;
+  decision: 'pending' | 'mapped' | 'ignored';
+  competency_id: string | null;
+  decided_by: string | null;
+  decided_at: string | null;
+  created_at: string;
+}
+
+export async function listTagMappings(orgId: string): Promise<CompetencyTagMapping[]> {
+  const { data, error } = await supabase.from('competency_tag_mappings').select('*').eq('org_id', orgId);
+  if (error) throw error;
+  return (data ?? []) as CompetencyTagMapping[];
+}
+
+/** "Sans création automatique définitive" — a decision only ever changes
+ *  on an explicit staff action from this screen (map to an existing
+ *  competency, create+map a new one, or ignore), never inferred. Historical
+ *  evidence backfill from past attempts is explicitly not part of this
+ *  (see the migration's header comment) — confirming a mapping here only
+ *  records the governance decision, it does not write competency_evidence. */
+export async function setTagMapping(orgId: string, tag: string, decision: CompetencyTagMapping['decision'], competencyId: string | null): Promise<CompetencyTagMapping> {
+  const { data: userData } = await supabase.auth.getUser();
+  const { data, error } = await supabase
+    .from('competency_tag_mappings')
+    .upsert(
+      { org_id: orgId, tag, decision, competency_id: competencyId, decided_by: userData.user?.id ?? null, decided_at: new Date().toISOString() },
+      { onConflict: 'org_id,tag' },
+    )
+    .select()
+    .single();
+  if (error) throw error;
+  return data as CompetencyTagMapping;
 }
