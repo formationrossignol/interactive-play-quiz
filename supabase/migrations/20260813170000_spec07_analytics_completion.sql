@@ -160,17 +160,17 @@ begin
     waitlisted_count = excluded.waitlisted_count, computed_at = excluded.computed_at;
 
   with base as (
-    select a.org_id, r.item_revision_id, p_day day, r.answered_at, r.duration_ms,
+    select a.org_id, r.item_revision_id, p_day as response_day, r.answered_at, r.duration_ms,
            r.is_correct, r.response, r.points_earned, r.max_points,
            att.percentage,
-           ntile(4) over (partition by a.org_id, p_day order by coalesce(att.percentage, 0)) quartile
+           ntile(4) over (partition by a.org_id, p_day order by coalesce(att.percentage, 0)) as quartile
     from public.assessment_responses r
     join public.assessment_attempts att on att.id = r.attempt_id and att.status = 'submitted'
     join public.assessments a on a.id = att.assessment_id
     where a.org_id = p_org_id
       and coalesce(r.answered_at, att.submitted_at)::date = p_day
   ), metrics as (
-    select org_id, item_revision_id, day,
+    select org_id, item_revision_id, response_day as day,
            count(*) filter (where answered_at is not null) response_count,
            count(*) filter (where answered_at is null) omitted_count,
            avg(case when answered_at is not null and is_correct then 1.0 when answered_at is not null then 0.0 end) correct_rate,
@@ -178,12 +178,12 @@ begin
            avg(case when quartile = 4 and is_correct then 1.0 when quartile = 4 then 0.0 end) -
              avg(case when quartile = 1 and is_correct then 1.0 when quartile = 1 then 0.0 end) discrimination
     from base
-    group by org_id, item_revision_id, day
+    group by org_id, item_revision_id, response_day
   ), selected_options as (
-    select b.org_id, b.item_revision_id, b.day, jsonb_array_elements_text(coalesce(b.response->'optionIds', '[]'::jsonb)) option_id
+    select b.org_id, b.item_revision_id, b.response_day as day, jsonb_array_elements_text(coalesce(b.response->'optionIds', '[]'::jsonb)) option_id
     from base b
     union all
-    select b.org_id, b.item_revision_id, b.day, b.response->>'optionId' option_id
+    select b.org_id, b.item_revision_id, b.response_day as day, b.response->>'optionId' option_id
     from base b where b.response->>'optionId' is not null
   ), option_counts as (
     select org_id, item_revision_id, day, option_id, count(*) option_count
