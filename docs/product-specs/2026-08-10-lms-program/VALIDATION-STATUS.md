@@ -1306,7 +1306,49 @@ limite que le reste du programme).
 - [ ] Sondages sur l'écran projeté (`LivePresenterScreen.tsx`) — l'éditeur/résultats staff et le widget participant existent, l'écran public n'en affiche toujours aucun
 - [ ] Intégrations PowerPoint/Teams/Zoom (LIVE-017/018/019)
 - [ ] Rapports post-session (participation, chronologie, export — LIVE-020 à LIVE-023)
-- [ ] Rate limiting et filtre de termes assistant (modération)
+
+Depuis cette passe (`20260813060000_live_moderation_rate_limit_term_filter.sql`) :
+rate limiting et filtre de termes. La spec (« Modération et sécurité »)
+tient en 6 lignes, aucun seuil numérique nulle part — seulement deux
+contraintes fermes : « filtre de termes configurable comme assistance,
+jamais suppression invisible » et « rate limits par participant, appareil
+et événement ». Constat en creusant : aucune infra d'empreinte appareil
+n'existe dans tout le système (aucune RPC ne prend d'id device) —
+`client_id` est déjà le seul identifiant par-navigateur que ce système
+utilise partout (join, vote, réponse) ; participant et appareil
+fusionnent donc sur ce même identifiant plutôt que d'inventer un
+fingerprint séparé que rien d'autre ne supporte. « événement » obtient son
+propre plafond, plus large, indépendant du nombre de `client_id`
+distincts impliqués — la défense qu'un plafond par-client seul ne peut pas
+fournir contre de nombreux faux clients synthétiques. Table
+`live_event_moderation_settings`, une ligne par événement (RLS
+`is_live_event_staff(event_id)`, même précédent que
+`live_event_allowlist`), défauts raisonnables (5/60s, 60/événement)
+appliqués par `coalesce()` si absente — même posture que
+`analytics_privacy_settings`. Trois RPC instrumentées, celles qui
+écrivaient du contenu répété sans aucune limite jusqu'ici (vérifié en
+lisant leurs corps avant de commencer) : `submit_audience_question`,
+`cast_vote`, `submit_live_response`. `join_live_run` volontairement
+exclu — contrôle d'admission avec son propre verrou de capacité
+(`pg_advisory_xact_lock`), pas un flux de contenu répété, un problème
+différent de celui visé ici. Filtre de termes scopé à
+`audience_questions.body` uniquement : seul contenu libre avec une porte
+de modération déjà existante (`pending`→`moderate_question()`) à laquelle
+accrocher un flag ; `live_responses.payload` n'a aucune porte de
+modération et aucun format à texte libre n'est construit du tout
+(priorisation/matrice/brainstorm/classement toujours sans éditeur/lecteur)
+— filtrer un contenu qui n'existe pas encore aurait supposé une porte de
+modération à inventer, pas tenté ici. Le flag (`audience_questions.flagged_terms`)
+ne bloque jamais l'insertion ni l'affichage staff — la question reste
+`pending` normalement, le modérateur voit juste un badge « ⚠ Termes
+signalés » dans `QuestionModeration` et approuve/refuse comme avant,
+conforme au « jamais suppression invisible » de la spec. UI :
+`ModerationSettingsPanel` par événement (formulaire débit + liste de
+termes séparés par virgules). **Non testé en conditions réelles** (même
+limite que le reste de cette passe : pas de compte staff/participant
+local) — vérifié par lecture du SQL, `tsc`/`eslint` propres, migration
+appliquée sans erreur (`supabase db push`, `migration list` confirmé
+synchronisé).
 
 ## 10 — Gouvernance, versionnement, localisation et diffusion du contenu
 

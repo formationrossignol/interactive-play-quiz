@@ -18,6 +18,7 @@ import {
   createLiveEvent,
   createLiveRun,
   createPollInteraction,
+  getLiveModerationSettings,
   kickParticipant,
   listEventAllowlist,
   listInteractionResponses,
@@ -29,11 +30,13 @@ import {
   moderateQuestion,
   openLiveInteraction,
   removeAllowlistEmail,
+  setLiveModerationSettings,
   setRunLocked,
   type AllowlistEntry,
   type AudienceQuestion,
   type LiveEvent,
   type LiveInteraction,
+  type LiveModerationSettings,
   type LiveParticipantRow,
   type LiveRun,
   type PollConfig,
@@ -75,6 +78,9 @@ function QuestionModeration({ run }: { run: LiveRun }) {
             <span>{q.body}</span>
             <span className="text-muted-foreground">{q.votes_count} votes · {q.status}</span>
           </div>
+          {q.flagged_terms && q.flagged_terms.length > 0 && (
+            <p className="text-xs mt-1" style={{ color: "var(--ap-danger)" }}>⚠ Termes signalés (assistance) : {q.flagged_terms.join(", ")}</p>
+          )}
           {q.status === "pending" && (
             <div className="flex gap-2 mt-2">
               <Button size="sm" variant="ghost" onClick={() => handleModerate(q.id, "approved")}>Approuver</Button>
@@ -460,6 +466,78 @@ function AllowlistManager({ eventId }: { eventId: string }) {
   );
 }
 
+/** RESTE-A-FAIRE §09: "filtre de termes configurable comme assistance,
+ *  jamais suppression invisible" + "rate limits par participant, appareil
+ *  et événement" — see 20260813060000_live_moderation_rate_limit_term_filter.sql
+ *  for why participant/appareil collapse to the same client_id-scoped
+ *  check and why term filtering only covers audience_questions.body. */
+function ModerationSettingsPanel({ eventId }: { eventId: string }) {
+  const [settings, setSettings] = useState<Omit<LiveModerationSettings, "event_id" | "updated_at"> | null>(null);
+  const [blockedTermsText, setBlockedTermsText] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    getLiveModerationSettings(eventId)
+      .then((s) => { setSettings(s); setBlockedTermsText(s.blocked_terms.join(", ")); })
+      .catch(showError)
+      .finally(() => setLoading(false));
+  }, [eventId]);
+
+  const handleSave = async () => {
+    if (!settings) return;
+    setSaving(true);
+    const next = { ...settings, blocked_terms: blockedTermsText.split(",").map((t) => t.trim()).filter(Boolean) };
+    try {
+      await setLiveModerationSettings(eventId, next);
+      setSettings(next);
+    } catch (err) {
+      showError(err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading || !settings) return <TableSkeleton rows={1} cols={1} />;
+
+  return (
+    <div className="mt-2 border-t pt-2 space-y-2">
+      <p className="text-sm font-medium">Modération : débit et termes signalés</p>
+      <div className="flex flex-wrap items-end gap-2">
+        <div className="space-y-1">
+          <label className="text-xs" htmlFor={`rl-per-${eventId}`}>Actions / participant</label>
+          <Input
+            id={`rl-per-${eventId}`} type="number" min={1} className="w-24"
+            value={settings.rate_limit_per_window}
+            onChange={(e) => setSettings({ ...settings, rate_limit_per_window: Number(e.target.value) || 1 })}
+          />
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs" htmlFor={`rl-window-${eventId}`}>Fenêtre (s)</label>
+          <Input
+            id={`rl-window-${eventId}`} type="number" min={1} className="w-24"
+            value={settings.rate_limit_window_seconds}
+            onChange={(e) => setSettings({ ...settings, rate_limit_window_seconds: Number(e.target.value) || 1 })}
+          />
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs" htmlFor={`rl-event-${eventId}`}>Actions / événement</label>
+          <Input
+            id={`rl-event-${eventId}`} type="number" min={1} className="w-24"
+            value={settings.event_rate_limit_per_window}
+            onChange={(e) => setSettings({ ...settings, event_rate_limit_per_window: Number(e.target.value) || 1 })}
+          />
+        </div>
+      </div>
+      <div className="space-y-1">
+        <label className="text-xs" htmlFor={`terms-${eventId}`}>Termes signalés (séparés par des virgules — assistance, jamais bloquant)</label>
+        <Input id={`terms-${eventId}`} value={blockedTermsText} onChange={(e) => setBlockedTermsText(e.target.value)} className="max-w-md" />
+      </div>
+      <Button variant="ghost" size="sm" loading={saving} onClick={handleSave}>Enregistrer</Button>
+    </div>
+  );
+}
+
 function EventRow({ event, onActivate }: { event: LiveEvent; onActivate: (id: string) => void }) {
   const [run, setRun] = useState<LiveRun | null>(null);
   const [starting, setStarting] = useState(false);
@@ -497,6 +575,7 @@ function EventRow({ event, onActivate }: { event: LiveEvent; onActivate: (id: st
         </div>
       </div>
       {event.access_policy === "allowlist" && <AllowlistManager eventId={event.id} />}
+      <ModerationSettingsPanel eventId={event.id} />
       {run && (
         <div className="mt-2 border-t pt-2 space-y-2">
           <div className="flex items-center justify-between flex-wrap gap-2">

@@ -28,6 +28,18 @@ export interface AudienceQuestion {
   status: 'pending' | 'approved' | 'live' | 'answered' | 'dismissed' | 'archived';
   votes_count: number;
   created_at: string;
+  /** Assist only — matched blocked_terms, never hides/blocks the question
+   *  itself. See 20260813060000_live_moderation_rate_limit_term_filter.sql. */
+  flagged_terms: string[] | null;
+}
+
+export interface LiveModerationSettings {
+  event_id: string;
+  rate_limit_per_window: number;
+  rate_limit_window_seconds: number;
+  event_rate_limit_per_window: number;
+  blocked_terms: string[];
+  updated_at: string;
 }
 
 export interface LiveParticipantRow {
@@ -108,6 +120,26 @@ export async function addAllowlistEmail(eventId: string, email: string): Promise
 
 export async function removeAllowlistEmail(entryId: string): Promise<void> {
   const { error } = await supabase.from('live_event_allowlist').delete().eq('id', entryId);
+  if (error) throw error;
+}
+
+/** Sane defaults when no row exists yet — mirrors this table's own
+ *  coalesce-to-default posture inside the RPCs that read it. */
+const DEFAULT_MODERATION_SETTINGS = {
+  rate_limit_per_window: 5,
+  rate_limit_window_seconds: 60,
+  event_rate_limit_per_window: 60,
+  blocked_terms: [] as string[],
+};
+
+export async function getLiveModerationSettings(eventId: string): Promise<Omit<LiveModerationSettings, 'event_id' | 'updated_at'>> {
+  const { data, error } = await supabase.from('live_event_moderation_settings').select('*').eq('event_id', eventId).maybeSingle();
+  if (error) throw error;
+  return data ?? DEFAULT_MODERATION_SETTINGS;
+}
+
+export async function setLiveModerationSettings(eventId: string, settings: Omit<LiveModerationSettings, 'event_id' | 'updated_at'>): Promise<void> {
+  const { error } = await supabase.from('live_event_moderation_settings').upsert({ event_id: eventId, ...settings }, { onConflict: 'event_id' });
   if (error) throw error;
 }
 
