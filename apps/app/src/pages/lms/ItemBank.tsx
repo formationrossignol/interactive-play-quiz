@@ -13,11 +13,14 @@ import { useSEO } from "@/hooks/useSEO";
 import { myOrgMemberships, type OrgMembership } from "@/lib/org/orgRepo";
 import {
   addFixedSection,
+  addPoolRule,
+  addPoolSection,
   addItemRef,
   createAssessment,
   createItem,
   createItemRevision,
   getPlacementThresholds,
+  importLegacyQuizAsAssessment,
   listAssessmentSections,
   listItemRevisions,
   listOrgAssessments,
@@ -37,13 +40,13 @@ import {
 } from "@/lib/lms/itemBank";
 
 const STAFF_ROLES = new Set(["trainer", "pedago", "admin"]);
-/** The only 4 item_types with a scoring comparator (see the correction
- *  engine migration's header) — the item-type select is intentionally
- *  limited to these, not the 21 the DB check constraint allows: creating
- *  an item of an unscored type would be authoring something no attempt
- *  could ever be scored on. */
-const SCORABLE_TYPES = ["mcq", "single_choice", "true_false", "short_answer"] as const;
-type ScorableType = (typeof SCORABLE_TYPES)[number];
+/** All formats supported by the assessment runner. Rich formats are stored
+ *  for human review when no automatic comparator exists. */
+const AUTHORABLE_TYPES = [
+  "mcq", "single_choice", "true_false", "short_answer", "ranking", "matching", "cloze",
+  "interactive_video", "audio_video", "drawing", "labeling", "math_graph", "file", "code",
+] as const;
+type ScorableType = string;
 
 function OptionsEditor({ options, onChange, mode, correctIds, onCorrectChange }: {
   options: ItemOption[];
@@ -223,13 +226,21 @@ function ItemRevisions({ item }: { item: AssessmentItem }) {
         setRevisions((prev) => [revision, ...prev]);
         resetForm();
         return;
-      } else {
+      } else if (itemType === "short_answer") {
         const filled = equivalents.map((e2) => e2.trim()).filter(Boolean);
         if (filled.length === 0) { setFormError("Au moins une réponse acceptée requise."); return; }
         await createItemRevision({
           itemId: item.id, prompt: { text: promptText.trim() },
           correctAnswer: { equivalents: filled }, scoringRules: { points: pts, caseSensitive },
           changelog: `Révision ${revisions.length + 1}`,
+        });
+      } else {
+        await createItemRevision({
+          itemId: item.id,
+          prompt: { text: promptText.trim(), instructions: "Réponse revue par un formateur." },
+          correctAnswer: null,
+          scoringRules: { points: pts },
+          changelog: `Révision ${revisions.length + 1} · interaction riche`,
         });
       }
       // true_false and short_answer branches return via this shared tail;
@@ -350,7 +361,7 @@ function ItemRevisions({ item }: { item: AssessmentItem }) {
 }
 
 function AttachItemForm({ sectionId, items, onAttached }: { sectionId: string; items: AssessmentItem[]; onAttached: () => void }) {
-  const scorableItems = items.filter((i) => (SCORABLE_TYPES as readonly string[]).includes(i.item_type));
+  const scorableItems = items.filter((i) => (AUTHORABLE_TYPES as readonly string[]).includes(i.item_type) && i.item_type !== "passage");
   const [itemId, setItemId] = useState("");
   const [revisions, setRevisions] = useState<ItemRevision[]>([]);
   const [revisionId, setRevisionId] = useState("");
@@ -381,7 +392,7 @@ function AttachItemForm({ sectionId, items, onAttached }: { sectionId: string; i
   };
 
   if (scorableItems.length === 0) {
-    return <p className="text-xs text-muted-foreground">Créez d'abord un item notable (QCM, choix unique, vrai/faux, réponse courte) avec au moins une révision.</p>;
+    return <p className="text-xs text-muted-foreground">Créez d'abord un item avec une révision.</p>;
   }
 
   return (
@@ -417,13 +428,27 @@ function AssessmentSectionRow({ section, items }: { section: AssessmentSection; 
 
   return (
     <div className="rounded-md border p-3 space-y-2">
-      <p className="text-sm font-medium">{section.title} <span className="text-muted-foreground font-normal">— fixe</span></p>
+      <p className="text-sm font-medium">{section.title} <span className="text-muted-foreground font-normal">— {section.selection_mode === "pool" ? "tirage aléatoire" : "fixe"}</span></p>
       {loading ? <ListSkeleton rows={1} withAvatar={false} /> : (
         <p className="text-xs text-muted-foreground">{refs.length} item{refs.length !== 1 ? "s" : ""} attaché{refs.length !== 1 ? "s" : ""}</p>
       )}
-      <AttachItemForm sectionId={section.id} items={items} onAttached={reload} />
+      {section.selection_mode === "fixed" ? <AttachItemForm sectionId={section.id} items={items} onAttached={reload} /> : <PoolRuleForm sectionId={section.id} />}
     </div>
   );
+}
+
+function PoolRuleForm({ sectionId }: { sectionId: string }) {
+  const [collectionId, setCollectionId] = useState("");
+  const [count, setCount] = useState("5");
+  const [saving, setSaving] = useState(false);
+  const handleAdd = async () => {
+    if (!collectionId.trim() || Number(count) < 1) return;
+    setSaving(true);
+    try { await addPoolRule(sectionId, collectionId.trim(), Number(count)); setCollectionId(""); }
+    catch (err) { showError(err); }
+    finally { setSaving(false); }
+  };
+  return <div className="flex flex-wrap items-end gap-2"><div className="space-y-1"><label className="text-xs" htmlFor={`pool-collection-${sectionId}`}>UUID collection</label><Input id={`pool-collection-${sectionId}`} value={collectionId} onChange={(e) => setCollectionId(e.target.value)} placeholder="Collection d'items" className="min-w-[240px]" /></div><div className="space-y-1"><label className="text-xs" htmlFor={`pool-count-${sectionId}`}>Nombre tiré</label><Input id={`pool-count-${sectionId}`} type="number" min={1} value={count} onChange={(e) => setCount(e.target.value)} className="w-24" /></div><Button size="sm" variant="outline" loading={saving} onClick={() => void handleAdd()}><Plus size={14} /> Ajouter la règle</Button></div>;
 }
 
 const EMPTY_THRESHOLD: PlacementThreshold = { min_percentage: 0, max_percentage: 100, outcome: "recommend" };
@@ -523,6 +548,7 @@ function AssessmentRow({ assessment, items }: { assessment: Assessment; items: A
   const [loading, setLoading] = useState(false);
   const [addingSection, setAddingSection] = useState(false);
   const [sectionTitle, setSectionTitle] = useState("Section 1");
+  const [poolMode, setPoolMode] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [status, setStatus] = useState(assessment.status);
   const [publishedVersion, setPublishedVersion] = useState(assessment.published_version);
@@ -540,7 +566,8 @@ function AssessmentRow({ assessment, items }: { assessment: Assessment; items: A
     if (!sectionTitle.trim()) return;
     setAddingSection(true);
     try {
-      await addFixedSection(assessment.id, sectionTitle.trim(), sections.length);
+      if (poolMode) await addPoolSection(assessment.id, sectionTitle.trim(), sections.length);
+      else await addFixedSection(assessment.id, sectionTitle.trim(), sections.length);
       setSectionTitle(`Section ${sections.length + 2}`);
       reload();
     } catch (err) {
@@ -586,7 +613,8 @@ function AssessmentRow({ assessment, items }: { assessment: Assessment; items: A
           )}
           <div className="flex items-end gap-2">
             <Input value={sectionTitle} onChange={(e) => setSectionTitle(e.target.value)} className="w-48" aria-label="Titre de la nouvelle section" />
-            <Button size="sm" variant="outline" loading={addingSection} onClick={handleAddSection}><Plus size={14} /> Ajouter une section fixe</Button>
+            <label className="flex items-center gap-1.5 text-sm"><input type="checkbox" checked={poolMode} onChange={(e) => setPoolMode(e.target.checked)} /> Tirage aléatoire</label>
+            <Button size="sm" variant="outline" loading={addingSection} onClick={handleAddSection}><Plus size={14} /> Ajouter une section</Button>
           </div>
           <div className="border-t pt-3">
             <h4 className="text-sm font-medium mb-2">Test de positionnement — seuils de remédiation/exemption</h4>
@@ -626,7 +654,7 @@ function AssessmentsPanel({ orgId, items }: { orgId: string; items: AssessmentIt
   return (
     <section className="product-list-panel p-5 mt-4">
       <div className="product-panel-heading -mx-5 -mt-5 mb-4">
-        <div><h2>Évaluations</h2><p>Sections fixes uniquement — le tirage aléatoire (pool) n'a pas encore d'exécuteur.</p></div>
+        <div><h2>Évaluations</h2><p>Sections fixes ou tirage aléatoire depuis une collection partagée.</p></div>
       </div>
       <form onSubmit={handleCreate} className="flex flex-wrap items-end gap-2 mb-4">
         <div className="min-w-[220px] space-y-1">
@@ -655,6 +683,8 @@ export default function LmsItemBank() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [itemType, setItemType] = useState("mcq");
   const [creating, setCreating] = useState(false);
+  const [legacyContentId, setLegacyContentId] = useState("");
+  const [importingLegacy, setImportingLegacy] = useState(false);
   useSEO({ title: "Banque d'items", description: "Items versionnés, réutilisables et analysables." });
 
   useEffect(() => {
@@ -680,6 +710,14 @@ export default function LmsItemBank() {
     } finally {
       setCreating(false);
     }
+  };
+
+  const handleLegacyImport = async () => {
+    if (!legacyContentId.trim()) return;
+    setImportingLegacy(true);
+    try { const id = await importLegacyQuizAsAssessment(legacyContentId.trim()); setLegacyContentId(""); window.alert(`Évaluation importée : ${id}`); }
+    catch (err) { showError(err); }
+    finally { setImportingLegacy(false); }
   };
 
   if (loading) {
@@ -722,10 +760,24 @@ export default function LmsItemBank() {
                 <option value="single_choice">Choix unique</option>
                 <option value="true_false">Vrai/Faux</option>
                 <option value="short_answer">Réponse courte</option>
+                <option value="ranking">Classement</option>
+                <option value="matching">Association</option>
+                <option value="cloze">Texte à trous</option>
+                <option value="interactive_video">Vidéo interactive</option>
+                <option value="audio_video">Audio / vidéo (revue)</option>
+                <option value="drawing">Dessin (revue)</option>
+                <option value="labeling">Étiquetage</option>
+                <option value="math_graph">Maths / graphique (revue)</option>
+                <option value="file">Fichier (revue)</option>
+                <option value="code">Code (revue)</option>
               </select>
             </div>
             <Button type="submit" size="sm" loading={creating}><Plus /> Créer un item</Button>
           </form>
+          <div className="mb-4 flex flex-wrap items-end gap-2 rounded-md border border-dashed p-3">
+            <div className="flex-1 space-y-1"><label className="text-xs font-medium" htmlFor="legacy-quiz-id">Importer un ancien quiz</label><Input id="legacy-quiz-id" value={legacyContentId} onChange={(e) => setLegacyContentId(e.target.value)} placeholder="UUID du contenu quiz" /></div>
+            <Button type="button" variant="outline" size="sm" loading={importingLegacy} disabled={!legacyContentId.trim()} onClick={() => void handleLegacyImport()}>Importer en évaluation</Button>
+          </div>
 
           {itemsLoading ? <TableSkeleton rows={3} cols={2} /> : items.length === 0 ? (
             <ExplorerEmptyState icon={<Layers size={27} />} title="Banque vide" body="Créez un item puis ajoutez sa première révision avec l'énoncé et la réponse correcte." />

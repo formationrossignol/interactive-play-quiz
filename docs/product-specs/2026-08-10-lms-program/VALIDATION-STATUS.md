@@ -1253,6 +1253,14 @@ et par l'application propre de la migration (`supabase db push`,
 
 ## 08 — Évaluations avancées et banque d'items versionnée
 
+Depuis `20260813190000_assessment_pools_and_legacy_links.sql` : les sections
+`pool` sont publiables et tirées aléatoirement depuis `item_collections`, le
+tirage est figé dans `assessment_responses`, l'import des anciens
+`content(type=quiz)` crée des révisions liées par `assessment_legacy_question_links`,
+et les formats riches sans comparateur automatique sont capturés puis dirigés
+vers la revue humaine au lieu d'être notés implicitement. L'éditeur ItemBank
+expose les types et le runner accepte ces réponses. Aucune IA n'est utilisée.
+
 **Fait** : `assessment_items`/`assessment_item_revisions` (immuables) +
 `item_answer_keys` (illisible client) + `create_item_revision()` +
 `submit_score_adjustment()` audité.

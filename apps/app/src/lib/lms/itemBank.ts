@@ -87,6 +87,14 @@ export async function createItem(orgId: string, itemType: string): Promise<Asses
   return data as AssessmentItem;
 }
 
+/** Creates an immutable assessment snapshot from a legacy content.quiz while
+ * keeping a question-level link back to the source content. */
+export async function importLegacyQuizAsAssessment(contentId: string): Promise<string> {
+  const { data, error } = await supabase.rpc('import_legacy_quiz_as_assessment', { p_content_id: contentId });
+  if (error) throw error;
+  return data as string;
+}
+
 export async function listItemRevisions(itemId: string): Promise<ItemRevision[]> {
   const { data, error } = await supabase.from('assessment_item_revisions').select('*').eq('item_id', itemId).order('version', { ascending: false });
   if (error) throw error;
@@ -169,6 +177,17 @@ export async function addFixedSection(assessmentId: string, title: string, posit
   const { data, error } = await supabase.from('assessment_sections').insert({ assessment_id: assessmentId, title, position, selection_mode: 'fixed' }).select().single();
   if (error) throw error;
   return data as AssessmentSection;
+}
+
+export async function addPoolSection(assessmentId: string, title: string, position = 0): Promise<AssessmentSection> {
+  const { data, error } = await supabase.from('assessment_sections').insert({ assessment_id: assessmentId, title, position, selection_mode: 'pool' }).select().single();
+  if (error) throw error;
+  return data as AssessmentSection;
+}
+
+export async function addPoolRule(sectionId: string, collectionId: string, count: number, filter: Record<string, unknown> = {}): Promise<void> {
+  const { error } = await supabase.from('assessment_pool_rules').insert({ section_id: sectionId, collection_id: collectionId, count, filter });
+  if (error) throw error;
 }
 
 export async function listAssessmentSections(assessmentId: string): Promise<AssessmentSection[]> {
