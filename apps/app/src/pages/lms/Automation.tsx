@@ -15,6 +15,7 @@ import {
   listOrgAutomationRules,
   listOrgRuleSets,
   publishRuleSetVersion,
+  simulateRuleDefinition,
   type AutomationRule,
   type RuleSet,
 } from "@/lib/lms/automation";
@@ -218,6 +219,9 @@ function RuleSets({ orgId }: { orgId: string }) {
   const [creating, setCreating] = useState(false);
   const [publishing, setPublishing] = useState<string | null>(null);
   const [publishError, setPublishError] = useState<string | null>(null);
+  const [simLearnerId, setSimLearnerId] = useState<Record<string, string>>({});
+  const [simResults, setSimResults] = useState<Record<string, boolean | null>>({});
+  const [simulating, setSimulating] = useState<string | null>(null);
 
   useEffect(() => {
     listOrgRuleSets(orgId).then(setRuleSets).catch(showError).finally(() => setLoading(false));
@@ -257,6 +261,27 @@ function RuleSets({ orgId }: { orgId: string }) {
     }
   };
 
+  /** ADP-008/AUT-004: tests the current (possibly unpublished) draft
+   *  against a real learner before publish_rule_set_version() is ever
+   *  called — reuses evaluate_rule_definition() via simulate_rule_definition(). */
+  const handleSimulate = async (ruleSet: RuleSet) => {
+    const draft = drafts[ruleSet.id] ?? makeRootDraft();
+    const definition = serializeCondition(draft);
+    const learnerId = simLearnerId[ruleSet.id]?.trim();
+    if (!definition) { setPublishError(ruleSet.id); return; }
+    if (!learnerId) return;
+    setPublishError(null);
+    setSimulating(ruleSet.id);
+    try {
+      const result = await simulateRuleDefinition(orgId, definition, learnerId);
+      setSimResults((prev) => ({ ...prev, [ruleSet.id]: result }));
+    } catch (err) {
+      showError(err);
+    } finally {
+      setSimulating(null);
+    }
+  };
+
   if (loading) return <TableSkeleton rows={3} cols={2} />;
 
   return (
@@ -289,7 +314,23 @@ function RuleSets({ orgId }: { orgId: string }) {
                   depth={1}
                 />
                 {publishError === rs.id && <p className="text-sm" style={{ color: "var(--ap-danger)" }}>Complétez toutes les conditions (aucune ne peut rester vide) avant de publier.</p>}
-                <Button variant="ghost" size="sm" loading={publishing === rs.id} onClick={() => void handlePublish(rs)}>Publier</Button>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button variant="ghost" size="sm" loading={publishing === rs.id} onClick={() => void handlePublish(rs)}>Publier</Button>
+                  <Input
+                    placeholder="UUID apprenant à simuler"
+                    value={simLearnerId[rs.id] ?? ""}
+                    onChange={(e) => { setSimLearnerId((prev) => ({ ...prev, [rs.id]: e.target.value })); setSimResults((prev) => ({ ...prev, [rs.id]: null })); }}
+                    className="w-52"
+                  />
+                  <Button variant="outline" size="sm" loading={simulating === rs.id} disabled={!simLearnerId[rs.id]?.trim()} onClick={() => void handleSimulate(rs)}>
+                    Simuler pour cet apprenant
+                  </Button>
+                  {simResults[rs.id] !== undefined && simResults[rs.id] !== null && (
+                    <span className="text-sm font-medium" style={{ color: simResults[rs.id] ? "var(--ap-pres)" : "var(--ap-danger)" }}>
+                      {simResults[rs.id] ? "Débloqué" : "Verrouillé"}
+                    </span>
+                  )}
+                </div>
               </li>
             );
           })}

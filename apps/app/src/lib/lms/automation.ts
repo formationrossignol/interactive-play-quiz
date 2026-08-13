@@ -35,6 +35,15 @@ export async function publishRuleSetVersion(ruleSetId: string, definition: Recor
   if (error) throw error;
 }
 
+/** ADP-008/AUT-004: evaluates a definition (not necessarily published yet)
+ *  against a specific learner — pedago/admin only, learner must belong to
+ *  the org (see 20260813040000_rule_definition_simulation.sql). */
+export async function simulateRuleDefinition(orgId: string, definition: Record<string, unknown>, learnerId: string): Promise<boolean> {
+  const { data, error } = await supabase.rpc('simulate_rule_definition', { p_org_id: orgId, p_definition: definition, p_learner_id: learnerId });
+  if (error) throw error;
+  return data as boolean;
+}
+
 export async function listOrgAutomationRules(orgId: string): Promise<AutomationRule[]> {
   const { data, error } = await supabase.from('automation_rules').select('*').eq('org_id', orgId).order('created_at', { ascending: false });
   if (error) throw error;

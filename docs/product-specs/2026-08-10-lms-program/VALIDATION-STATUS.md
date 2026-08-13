@@ -876,8 +876,29 @@ retourne `null` sur une feuille incomplète à n'importe quelle profondeur,
 **Non testé en conditions réelles** (même limite que le reste de cette
 passe) — vérifié par lecture du code, `tsc`/`eslint` propres.
 
+Depuis cette passe (`20260813040000_rule_definition_simulation.sql`) :
+simulation dry-run avant publication (ADP-008/AUT-004).
+`evaluate_rule_definition()` prenait déjà exactement `(definition,
+learner_id)` — le moteur n'a jamais manqué, seulement un point d'entrée
+appelable côté client : elle n'était accordée qu'en interne (jamais
+`grant ... to authenticated`), et l'exposer telle quelle aurait laissé
+n'importe quel appelant sonder les notes/compétences d'un apprenant
+arbitraire via une feuille `score`/`compétence` fabriquée, aucun contrôle
+d'org dans la fonction elle-même. `simulate_rule_definition()` l'enveloppe :
+vérifie `pedago`/`admin` (même `STAFF_ROLES` que `Automation.tsx`) et que
+l'apprenant cible appartient bien à l'org avant d'évaluer quoi que ce
+soit contre lui. Prend la définition en paramètre plutôt que de lire la
+version publiée d'un `rule_set` — c'est précisément le sens de « dry-run
+avant publication » : le brouillon en cours d'édition dans
+`ConditionNodeEditor` (jamais encore envoyé à `publish_rule_set_version()`)
+peut être testé directement. UI : champ UUID apprenant + bouton « Simuler
+pour cet apprenant » par règle, badge Débloqué/Verrouillé, réinitialisé
+si le brouillon ou l'apprenant change. **Non testé en conditions réelles**
+(même limite que le reste de cette passe) — vérifié par lecture du SQL,
+`tsc`/`eslint` propres, migration appliquée sans erreur (`supabase db
+push`, `migration list` confirmé synchronisé).
+
 **Reste à faire** :
-- [ ] Simulation « voir comme cet apprenant » / dry-run avant publication (ADP-008, AUT-004)
 - [ ] Test de positionnement / remédiation (ADP-009/010/011)
 - [ ] `follow_up_tasks` — table posée, aucun écran ni déclencheur
 
