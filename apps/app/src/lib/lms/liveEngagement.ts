@@ -16,6 +16,7 @@ export interface LiveRun {
   event_id: string;
   status: 'open' | 'closed';
   started_at: string;
+  ended_at: string | null;
   capacity: number | null;
   locked: boolean;
 }
@@ -217,6 +218,139 @@ export async function listRunParticipants(runId: string): Promise<LiveParticipan
   const { data, error } = await supabase.from('live_participants').select('*').eq('run_id', runId).order('joined_at');
   if (error) throw error;
   return (data ?? []) as LiveParticipantRow[];
+}
+
+/** LIVE-020/021/023: post-session report. No new RPC — every table read
+ *  here already has an `is_live_event_staff()`-gated select policy
+ *  (live_participants_staff, audience_questions_staff, live_interactions_staff,
+ *  live_responses_staff_read), so this composes plain reads client-side
+ *  rather than adding a server-side aggregate nothing else needed.
+ *
+ *  LIVE-023 "distingue absence de réponse, perte de connexion et
+ *  interaction non présentée" — per (participant, interaction) pair:
+ *    - not_presented: the interaction never left 'draft' (nobody could
+ *      have answered regardless of who was present).
+ *    - answered: a live_responses row exists for that (interaction, client).
+ *    - connection_lost: no response, and the participant's last_seen_at
+ *      (refreshed only on join/rejoin, no continuous heartbeat exists in
+ *      this schema) predates the interaction's opened_at — they had
+ *      already gone quiet before this interaction even started, the best
+ *      honest signal this data model supports.
+ *    - no_response: present when it opened, still didn't answer. */
+export interface SessionReportParticipant {
+  client_id: string;
+  display_name: string | null;
+  joined_at: string;
+  last_seen_at: string;
+}
+
+export interface InteractionBreakdown {
+  interaction_id: string;
+  kind: LiveInteraction['kind'];
+  presented: boolean;
+  answered_count: number;
+  no_response_count: number;
+  connection_lost_count: number;
+}
+
+export interface TimelineEntry {
+  at: string;
+  label: string;
+}
+
+export interface SessionReport {
+  run: LiveRun;
+  participants: SessionReportParticipant[];
+  questionsCount: number;
+  votesCount: number;
+  interactions: LiveInteraction[];
+  interactionBreakdown: InteractionBreakdown[];
+  timeline: TimelineEntry[];
+}
+
+export async function getSessionReport(runId: string): Promise<SessionReport> {
+  const [runRes, participants, questions, interactions] = await Promise.all([
+    supabase.from('live_runs').select('*').eq('id', runId).single(),
+    listRunParticipants(runId),
+    listRunQuestions(runId),
+    listRunInteractions(runId),
+  ]);
+  if (runRes.error) throw runRes.error;
+  const run = runRes.data as LiveRun;
+
+  const interactionIds = interactions.map((i) => i.id);
+  let responses: Array<{ interaction_id: string; client_id: string }> = [];
+  if (interactionIds.length > 0) {
+    const { data, error } = await supabase.from('live_responses').select('interaction_id, client_id').in('interaction_id', interactionIds);
+    if (error) throw error;
+    responses = data ?? [];
+  }
+
+  const interactionBreakdown: InteractionBreakdown[] = interactions.map((interaction) => {
+    const presented = interaction.status !== 'draft';
+    if (!presented) {
+      return { interaction_id: interaction.id, kind: interaction.kind, presented, answered_count: 0, no_response_count: 0, connection_lost_count: 0 };
+    }
+    const answeredClientIds = new Set(responses.filter((r) => r.interaction_id === interaction.id).map((r) => r.client_id));
+    let noResponse = 0;
+    let connectionLost = 0;
+    for (const p of participants) {
+      if (answeredClientIds.has(p.client_id)) continue;
+      if (interaction.opened_at && p.last_seen_at < interaction.opened_at) connectionLost++;
+      else noResponse++;
+    }
+    return { interaction_id: interaction.id, kind: interaction.kind, presented, answered_count: answeredClientIds.size, no_response_count: noResponse, connection_lost_count: connectionLost };
+  });
+
+  const timeline: TimelineEntry[] = [
+    { at: run.started_at, label: 'Session démarrée' },
+    ...participants.map((p) => ({ at: p.joined_at, label: `${p.display_name ?? 'Participant'} a rejoint` })),
+    ...questions.map((q) => ({ at: q.created_at, label: `Question posée : « ${q.body.slice(0, 60)}${q.body.length > 60 ? '…' : ''} »` })),
+    ...interactions.filter((i) => i.opened_at).map((i) => ({ at: i.opened_at as string, label: `Interaction ouverte (${i.kind})` })),
+    ...interactions.filter((i) => i.closed_at).map((i) => ({ at: i.closed_at as string, label: `Interaction fermée (${i.kind})` })),
+    ...(run.ended_at ? [{ at: run.ended_at, label: 'Session terminée' }] : []),
+  ].sort((a, b) => a.at.localeCompare(b.at));
+
+  return {
+    run,
+    participants: participants.map((p) => ({ client_id: p.client_id, display_name: p.display_name, joined_at: p.joined_at, last_seen_at: p.last_seen_at })),
+    questionsCount: questions.length,
+    votesCount: questions.reduce((sum, q) => sum + q.votes_count, 0),
+    interactions,
+    interactionBreakdown,
+    timeline,
+  };
+}
+
+/** LIVE-021 "comparaison entre sessions d'un même événement" — one summary
+ *  row per run, side by side. */
+export interface EventRunSummary {
+  run: LiveRun;
+  participantsCount: number;
+  questionsCount: number;
+  votesCount: number;
+  interactionsCount: number;
+}
+
+export async function listEventRunSummaries(eventId: string): Promise<EventRunSummary[]> {
+  const { data: runs, error } = await supabase.from('live_runs').select('*').eq('event_id', eventId).order('started_at', { ascending: false });
+  if (error) throw error;
+  const summaries: EventRunSummary[] = [];
+  for (const run of (runs ?? []) as LiveRun[]) {
+    const [participants, questions, interactions] = await Promise.all([
+      listRunParticipants(run.id),
+      listRunQuestions(run.id),
+      listRunInteractions(run.id),
+    ]);
+    summaries.push({
+      run,
+      participantsCount: participants.length,
+      questionsCount: questions.length,
+      votesCount: questions.reduce((sum, q) => sum + q.votes_count, 0),
+      interactionsCount: interactions.length,
+    });
+  }
+  return summaries;
 }
 
 export async function setRunLocked(runId: string, locked: boolean): Promise<void> {

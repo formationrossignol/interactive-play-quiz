@@ -1432,7 +1432,37 @@ synchronisé), suite complète (335 tests) verte.
 - [x] Vraie table/mécanisme d'allowlist pour `access_policy = 'allowlist'` — voir ci-dessus
 - [ ] Formats supplémentaires : priorisation, matrice 2×2, brainstorm, classement forcé (LIVE-009 à LIVE-013) — `live_interactions.kind` les accepte, aucun éditeur/lecteur pour ces quatre-là
 - [ ] Intégrations PowerPoint/Teams/Zoom (LIVE-017/018/019)
-- [ ] Rapports post-session (participation, chronologie, export — LIVE-020 à LIVE-023)
+
+Depuis cette passe (pas de nouvelle migration) : rapports post-session
+(LIVE-020 à LIVE-023). Toutes les tables lues (`live_participants`,
+`audience_questions`, `live_interactions`, `live_responses`) ont déjà une
+policy de lecture staff (`is_live_event_staff()`) — composé entièrement
+côté client (`getSessionReport()`, `liveEngagement.ts`), aucune RPC
+nouvelle. LIVE-023 (« distingue absence de réponse, perte de connexion et
+interaction non présentée »), par paire (participant, interaction) :
+`not_presented` si l'interaction n'est jamais sortie de `draft` (personne
+n'aurait pu répondre, quel que soit qui était présent) ; `answered` si une
+ligne `live_responses` existe ; `connection_lost` si pas de réponse et que
+le `last_seen_at` du participant est antérieur à l'ouverture de
+l'interaction — le signal le plus honnête que permet ce schéma, qui n'a
+aucun heartbeat continu (`last_seen_at` n'est rafraîchi qu'au (re)join,
+confirmé par grep) ; `no_response` sinon (présent au moment de
+l'ouverture, n'a simplement pas répondu). LIVE-021 (« comparaison entre
+sessions d'un même événement ») : `listEventRunSummaries()`, une ligne de
+synthèse par run, plutôt qu'un mécanisme de comparaison plus élaboré que
+rien dans la spec ne détaille. LIVE-022 (export anonymisé « selon la
+politique de collecte ») : aucune configuration de « politique de
+collecte » n'existe nulle part dans ce schéma pour s'y raccrocher — bascule
+au moment de l'export à la place (« Anonymiser les participants »),
+remplace les noms par des pseudonymes stables. Export CSV/Excel/PDF
+(`liveSessionReportExport.ts`) : même structure que `gradebookExport.ts`
+(neutralisation de formules identique), mêmes librairies déjà en
+dépendance (`xlsx`, `jspdf`/`jspdf-autotable`) — aucune nouvelle
+dépendance. UI : 3ᵉ onglet « Rapport » dans `LiveEngagement.tsx::EventRow`,
+à côté des onglets Présentateur/Modération ajoutés dans la passe
+précédente. **Non testé en conditions réelles** (même limite que le reste
+de cette passe) — vérifié par lecture du code, `tsc`/`eslint` propres,
+suite complète (335 tests) verte.
 
 Depuis cette passe (`20260813060000_live_moderation_rate_limit_term_filter.sql`) :
 rate limiting et filtre de termes. La spec (« Modération et sécurité »)

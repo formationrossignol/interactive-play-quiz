@@ -19,8 +19,10 @@ import {
   createLiveRun,
   createPollInteraction,
   getLiveModerationSettings,
+  getSessionReport,
   kickParticipant,
   listEventAllowlist,
+  listEventRunSummaries,
   listInteractionResponses,
   listOrgLiveEvents,
   listLatestRun,
@@ -34,13 +36,16 @@ import {
   setRunLocked,
   type AllowlistEntry,
   type AudienceQuestion,
+  type EventRunSummary,
   type LiveEvent,
   type LiveInteraction,
   type LiveModerationSettings,
   type LiveParticipantRow,
   type LiveRun,
   type PollConfig,
+  type SessionReport,
 } from "@/lib/lms/liveEngagement";
+import { exportSessionReport, type LiveSessionReportExportFormat } from "@/lib/lms/liveSessionReportExport";
 
 const STAFF_ROLES = new Set(["trainer", "pedago", "admin"]);
 
@@ -538,6 +543,144 @@ function ModerationSettingsPanel({ eventId }: { eventId: string }) {
   );
 }
 
+const interactionKindLabel: Record<LiveInteraction["kind"], string> = {
+  poll: "Sondage", priority: "Priorisation", matrix: "Matrice", brainstorm: "Brainstorm", ranking: "Classement",
+};
+
+/** LIVE-020/021/022/023: post-session report — no new RPC, every table
+ *  read here is already staff-readable (see liveEngagement.ts's
+ *  getSessionReport() doc comment for the exact RLS reused and the
+ *  connection_lost/no_response/not_presented heuristic). */
+function SessionReportPanel({ event, run }: { event: LiveEvent; run: LiveRun }) {
+  const [report, setReport] = useState<SessionReport | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [comparisons, setComparisons] = useState<EventRunSummary[]>([]);
+  const [comparing, setComparing] = useState(false);
+  const [anonymized, setAnonymized] = useState(false);
+  const [exporting, setExporting] = useState<LiveSessionReportExportFormat | null>(null);
+
+  useEffect(() => {
+    setLoading(true);
+    getSessionReport(run.id).then(setReport).catch(showError).finally(() => setLoading(false));
+  }, [run.id]);
+
+  const handleCompare = () => {
+    setComparing(true);
+    listEventRunSummaries(event.id).then(setComparisons).catch(showError).finally(() => setComparing(false));
+  };
+
+  const handleExport = async (format: LiveSessionReportExportFormat) => {
+    if (!report) return;
+    setExporting(format);
+    try {
+      await exportSessionReport(format, event, report, anonymized);
+    } catch (err) {
+      showError(err);
+    } finally {
+      setExporting(null);
+    }
+  };
+
+  if (loading || !report) return <TableSkeleton rows={3} cols={2} />;
+
+  return (
+    <div className="space-y-3">
+      <div className="grid gap-2 sm:grid-cols-4">
+        {[
+          { label: "Participants", value: report.participants.length },
+          { label: "Questions", value: report.questionsCount },
+          { label: "Votes", value: report.votesCount },
+          { label: "Interactions", value: report.interactions.length },
+        ].map((stat) => (
+          <div key={stat.label} className="rounded-md border p-2 text-center">
+            <strong className="block text-lg">{stat.value}</strong>
+            <span className="text-xs text-muted-foreground">{stat.label}</span>
+          </div>
+        ))}
+      </div>
+
+      {report.interactionBreakdown.length > 0 && (
+        <div className="rounded-md border overflow-hidden">
+          <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr style={{ background: "var(--ap-paper-2)" }}>
+                <th className="px-2 py-1.5 text-left text-xs font-bold">Interaction</th>
+                <th className="px-2 py-1.5 text-left text-xs font-bold">Présentée</th>
+                <th className="px-2 py-1.5 text-left text-xs font-bold">Répondu</th>
+                <th className="px-2 py-1.5 text-left text-xs font-bold">Sans réponse</th>
+                <th className="px-2 py-1.5 text-left text-xs font-bold">Connexion perdue</th>
+              </tr>
+            </thead>
+            <tbody>
+              {report.interactionBreakdown.map((b) => (
+                <tr key={b.interaction_id} style={{ borderTop: "var(--ap-border-w) solid var(--ap-line)" }}>
+                  <td className="px-2 py-1.5">{interactionKindLabel[b.kind] ?? b.kind}</td>
+                  <td className="px-2 py-1.5">{b.presented ? "Oui" : "Non"}</td>
+                  <td className="px-2 py-1.5">{b.answered_count}</td>
+                  <td className="px-2 py-1.5">{b.no_response_count}</td>
+                  <td className="px-2 py-1.5">{b.connection_lost_count}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <details>
+        <summary className="text-sm font-medium cursor-pointer">Chronologie ({report.timeline.length} événements)</summary>
+        <ul className="mt-2 space-y-1 max-h-64 overflow-y-auto">
+          {report.timeline.map((t, i) => (
+            <li key={i} className="text-xs text-muted-foreground flex gap-2">
+              <span className="shrink-0">{new Date(t.at).toLocaleTimeString("fr-FR")}</span>
+              <span>{t.label}</span>
+            </li>
+          ))}
+        </ul>
+      </details>
+
+      <div className="flex flex-wrap items-center gap-2 border-t pt-2">
+        <label className="flex items-center gap-1.5 text-sm">
+          <input type="checkbox" checked={anonymized} onChange={(e) => setAnonymized(e.target.checked)} /> Anonymiser les participants
+        </label>
+        <Button variant="outline" size="sm" loading={exporting === "CSV"} onClick={() => void handleExport("CSV")}>CSV</Button>
+        <Button variant="outline" size="sm" loading={exporting === "Excel"} onClick={() => void handleExport("Excel")}>Excel</Button>
+        <Button variant="outline" size="sm" loading={exporting === "PDF"} onClick={() => void handleExport("PDF")}>PDF</Button>
+      </div>
+
+      <div className="border-t pt-2">
+        {comparisons.length === 0 ? (
+          <Button variant="ghost" size="sm" loading={comparing} onClick={handleCompare}>Comparer avec les autres sessions de l'événement</Button>
+        ) : (
+          <div className="rounded-md border overflow-hidden">
+            <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr style={{ background: "var(--ap-paper-2)" }}>
+                  <th className="px-2 py-1.5 text-left text-xs font-bold">Session</th>
+                  <th className="px-2 py-1.5 text-left text-xs font-bold">Participants</th>
+                  <th className="px-2 py-1.5 text-left text-xs font-bold">Questions</th>
+                  <th className="px-2 py-1.5 text-left text-xs font-bold">Votes</th>
+                  <th className="px-2 py-1.5 text-left text-xs font-bold">Interactions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {comparisons.map((c) => (
+                  <tr key={c.run.id} style={{ borderTop: "var(--ap-border-w) solid var(--ap-line)", fontWeight: c.run.id === run.id ? 700 : 400 }}>
+                    <td className="px-2 py-1.5">{new Date(c.run.started_at).toLocaleString("fr-FR")}</td>
+                    <td className="px-2 py-1.5">{c.participantsCount}</td>
+                    <td className="px-2 py-1.5">{c.questionsCount}</td>
+                    <td className="px-2 py-1.5">{c.votesCount}</td>
+                    <td className="px-2 py-1.5">{c.interactionsCount}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /** LIVE-015: "mode présentateur, écran public, appareil participant et
  *  console modérateur sont des vues distinctes" — the public screen
  *  (LivePresenterScreen.tsx) and participant device (LiveEventRoom.tsx)
@@ -546,8 +689,10 @@ function ModerationSettingsPanel({ eventId }: { eventId: string }) {
  *  were still merged into one console showing both at once. Split into a
  *  tab toggle here rather than two routes — same page, same run state
  *  already loaded, genuinely distinct views the animateur switches
- *  between rather than a permanently-merged panel. */
-type ConsoleTab = "present" | "moderate";
+ *  between rather than a permanently-merged panel. A "Rapport" tab
+ *  (LIVE-020/021/022/023) joins them, reusing the same run already
+ *  loaded. */
+type ConsoleTab = "present" | "moderate" | "report";
 
 function EventRow({ event, onActivate }: { event: LiveEvent; onActivate: (id: string) => void }) {
   const [run, setRun] = useState<LiveRun | null>(null);
@@ -624,8 +769,18 @@ function EventRow({ event, onActivate }: { event: LiveEvent; onActivate: (id: st
             >
               Modération
             </button>
+            <button
+              type="button"
+              className="ap-btn ap-btn--ghost ap-btn--sm"
+              style={consoleTab === "report" ? { fontWeight: 700, borderBottom: "2px solid var(--ap-ink)" } : undefined}
+              onClick={() => setConsoleTab("report")}
+            >
+              Rapport
+            </button>
           </div>
-          {consoleTab === "present" ? <InteractionManager run={run} /> : <QuestionModeration run={run} />}
+          {consoleTab === "present" && <InteractionManager run={run} />}
+          {consoleTab === "moderate" && <QuestionModeration run={run} />}
+          {consoleTab === "report" && <SessionReportPanel event={event} run={run} />}
         </div>
       )}
     </li>
