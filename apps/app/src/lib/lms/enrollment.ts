@@ -12,6 +12,15 @@ export interface CourseOffering {
   created_at: string;
 }
 
+export interface EnrollmentPolicy {
+  mode?: 'open' | 'approval' | 'closed' | 'payment';
+  email_domains?: string[];
+  requires_code?: boolean;
+  /** A single evaluate_rule_definition() leaf — not the full AND/OR
+   *  builder from Automation.tsx (see SelfEnrollmentPolicyPanel). */
+  prerequisite?: Record<string, unknown> | null;
+}
+
 export interface CourseSession {
   id: string;
   org_id: string;
@@ -23,6 +32,8 @@ export interface CourseSession {
   starts_at: string | null;
   ends_at: string | null;
   capacity: number | null;
+  relative_duration_days: number | null;
+  enrollment_policy: EnrollmentPolicy;
   status: 'draft' | 'published' | 'in_progress' | 'completed' | 'cancelled';
   created_at: string;
 }
@@ -112,6 +123,93 @@ export async function publishSession(sessionId: string): Promise<void> {
   if (error) throw error;
 }
 
+/** ENR-013: direct RLS write (course_sessions_manage already allows staff
+ *  writes) — no invariant beyond role/org to enforce, same reasoning
+ *  RESTE-A-FAIRE gives for due_override needing no new RPC. The invite
+ *  code itself never goes through this — see setSessionInviteCode(). */
+export async function updateSessionEnrollmentPolicy(sessionId: string, policy: EnrollmentPolicy): Promise<void> {
+  const { error } = await supabase.from('course_sessions').update({ enrollment_policy: policy }).eq('id', sessionId);
+  if (error) throw error;
+}
+
+export async function updateSessionRelativeDuration(sessionId: string, days: number | null): Promise<void> {
+  const { error } = await supabase.from('course_sessions').update({ relative_duration_days: days }).eq('id', sessionId);
+  if (error) throw error;
+}
+
+/** Staff-only in both directions at the RLS layer (session_enrollment_codes
+ *  has no learner/public read policy at all) — safe to select directly. */
+export async function getSessionInviteCode(sessionId: string): Promise<string | null> {
+  const { data, error } = await supabase
+    .from('session_enrollment_codes')
+    .select('code')
+    .eq('session_id', sessionId)
+    .maybeSingle();
+  if (error) throw error;
+  return data?.code ?? null;
+}
+
+/** Pass null/empty to clear the code. */
+export async function setSessionInviteCode(sessionId: string, code: string | null): Promise<void> {
+  const { error } = await supabase.rpc('set_session_invite_code', { p_session_id: sessionId, p_code: code });
+  if (error) throw error;
+}
+
+/** ENR-013: learner-facing self-enrollment, gated by the session's
+ *  enrollment_policy (domain/code/approval/prerequisite) — see
+ *  self_enroll_in_session() migration. Payment mode raises
+ *  'payment_required_not_implemented': deliberately not built this pass. */
+export async function selfEnrollInSession(sessionId: string, inviteCode?: string): Promise<Enrollment> {
+  const { data, error } = await supabase.rpc('self_enroll_in_session', {
+    p_session_id: sessionId,
+    p_invite_code: inviteCode ?? null,
+  });
+  if (error) throw error;
+  return data as Enrollment;
+}
+
+/** Staff: approve or reject a 'pending' self-enrollment request. Approving
+ *  re-checks capacity (waitlists instead of oversubscribing) — see
+ *  resolve_pending_enrollment() migration. */
+export async function resolvePendingEnrollment(enrollmentId: string, approve: boolean, reason?: string): Promise<Enrollment> {
+  const { data, error } = await supabase.rpc('resolve_pending_enrollment', {
+    p_enrollment_id: enrollmentId,
+    p_approve: approve,
+    p_reason: reason ?? null,
+  });
+  if (error) throw error;
+  return data as Enrollment;
+}
+
+/** Sessions a learner can browse to self-enroll into: published, within an
+ *  org they already belong to (internal/invite_only/public visibility —
+ *  'uncatalogued' is deliberately excluded, that's the point of the flag),
+ *  minus sessions they're already enrolled/pending/waitlisted in. Filtered
+ *  client-side against myEnrollments() since course_sessions_org_read
+ *  already scopes the base query to the org RLS allows. */
+export async function listCatalogSessions(orgId: string): Promise<CourseSession[]> {
+  const { data, error } = await supabase
+    .from('course_sessions')
+    .select('*')
+    .eq('org_id', orgId)
+    .eq('status', 'published')
+    .order('starts_at', { ascending: true, nullsFirst: false });
+  if (error) throw error;
+  return (data ?? []) as CourseSession[];
+}
+
+/** Staff: pending self-enrollment requests awaiting approval. */
+export async function listPendingEnrollments(sessionId: string): Promise<Enrollment[]> {
+  const { data, error } = await supabase
+    .from('enrollments')
+    .select('*')
+    .eq('session_id', sessionId)
+    .eq('status', 'pending')
+    .order('created_at', { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as Enrollment[];
+}
+
 /** All enrollments belonging to the current user (their "Mes formations" view). */
 export async function myEnrollments(): Promise<Enrollment[]> {
   const { data, error } = await supabase
@@ -120,6 +218,38 @@ export async function myEnrollments(): Promise<Enrollment[]> {
     .order('created_at', { ascending: false });
   if (error) throw error;
   return (data ?? []) as Enrollment[];
+}
+
+export interface EnrollmentWithSession extends Enrollment {
+  session: CourseSession | null;
+}
+
+/** ENR-017: "Mes formations" needs the session's label/dates alongside the
+ *  enrollment row — one PostgREST embed via the enrollments→course_sessions
+ *  FK instead of a second round trip per row. */
+export async function myEnrollmentsDetailed(): Promise<EnrollmentWithSession[]> {
+  const { data, error } = await supabase
+    .from('enrollments')
+    .select('*, session:course_sessions(*)')
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as unknown as EnrollmentWithSession[];
+}
+
+/** effective_enrollment_access_start_at()/effective_enrollment_due_at() —
+ *  see migration: composes session.mode + relative_duration_days +
+ *  effective_start_at/effective_due_at into the dates ENR-017 actually
+ *  needs to bucket by, instead of the raw columns. */
+export async function effectiveEnrollmentAccessStartAt(enrollmentId: string): Promise<string | null> {
+  const { data, error } = await supabase.rpc('effective_enrollment_access_start_at', { p_enrollment_id: enrollmentId });
+  if (error) throw error;
+  return (data as string | null) ?? null;
+}
+
+export async function effectiveEnrollmentDueAt(enrollmentId: string): Promise<string | null> {
+  const { data, error } = await supabase.rpc('effective_enrollment_due_at', { p_enrollment_id: enrollmentId });
+  if (error) throw error;
+  return (data as string | null) ?? null;
 }
 
 export async function listSessionEnrollments(sessionId: string): Promise<Enrollment[]> {
@@ -251,5 +381,91 @@ export async function acceptWaitlistOffer(waitlistEntryId: string): Promise<Enro
  *  learner in line. */
 export async function declineWaitlistOffer(waitlistEntryId: string): Promise<void> {
   const { error } = await supabase.rpc('decline_waitlist_offer', { p_waitlist_entry_id: waitlistEntryId });
+  if (error) throw error;
+}
+
+// ── Completion policy (versioned) ───────────────────────────────────────
+// "La complétion est calculée par politique versionnée : activités
+// obligatoires, score, présence et durée éventuelle" — every key optional
+// and independent; publishing a new version never touches an
+// already-computed enrollment_completion_results row (see migration).
+
+export interface CompletionPolicyDefinition {
+  required_assignment_ids?: string[];
+  min_score_pct?: number;
+  min_attendance_pct?: number;
+  min_duration_days?: number;
+}
+
+export interface CompletionPolicySet {
+  id: string;
+  session_id: string;
+  status: 'draft' | 'published';
+  published_version: number;
+  created_at: string;
+}
+
+export interface CompletionPolicySetVersion {
+  id: string;
+  set_id: string;
+  version: number;
+  definition: CompletionPolicyDefinition;
+  created_at: string;
+}
+
+export async function publishCompletionPolicy(sessionId: string, definition: CompletionPolicyDefinition): Promise<CompletionPolicySet> {
+  const { data, error } = await supabase.rpc('publish_completion_policy', {
+    p_session_id: sessionId,
+    p_definition: definition,
+  });
+  if (error) throw error;
+  return data as CompletionPolicySet;
+}
+
+export async function getCompletionPolicy(sessionId: string): Promise<{ set: CompletionPolicySet; version: CompletionPolicySetVersion } | null> {
+  const { data: set, error: setError } = await supabase
+    .from('completion_policy_sets')
+    .select('*')
+    .eq('session_id', sessionId)
+    .maybeSingle();
+  if (setError) throw setError;
+  if (!set || set.status !== 'published') return null;
+
+  const { data: version, error: versionError } = await supabase
+    .from('completion_policy_set_versions')
+    .select('*')
+    .eq('set_id', set.id)
+    .eq('version', set.published_version)
+    .maybeSingle();
+  if (versionError) throw versionError;
+  if (!version) return null;
+
+  return { set: set as CompletionPolicySet, version: version as CompletionPolicySetVersion };
+}
+
+export interface EnrollmentCompletionResult {
+  enrollment_id: string;
+  policy_set_id: string;
+  policy_version: number;
+  satisfied: boolean;
+  details: Record<string, unknown>;
+  computed_at: string;
+}
+
+export async function getEnrollmentCompletionResult(enrollmentId: string): Promise<EnrollmentCompletionResult | null> {
+  const { data, error } = await supabase
+    .from('enrollment_completion_results')
+    .select('*')
+    .eq('enrollment_id', enrollmentId)
+    .maybeSingle();
+  if (error) throw error;
+  return (data as EnrollmentCompletionResult) ?? null;
+}
+
+/** Staff on-demand recompute — e.g. right after publishing a new policy
+ *  version, without waiting for the nightly sweep (6th step of
+ *  run_scheduled_lms_analytics_jobs()). */
+export async function recomputeEnrollmentCompletion(enrollmentId: string): Promise<void> {
+  const { error } = await supabase.rpc('recompute_enrollment_completion', { p_enrollment_id: enrollmentId });
   if (error) throw error;
 }
