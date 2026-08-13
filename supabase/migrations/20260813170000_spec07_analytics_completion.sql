@@ -68,21 +68,22 @@ returns table(day date, events_count bigint, attempts_count bigint, average_perc
 language sql stable security definer set search_path = public
 as $$
   with activity as (
-    select day, sum(events_count)::bigint events_count
+    select day as activity_day, sum(events_count)::bigint as events_count
     from public.analytics_daily_activity
     where learner_id = auth.uid() and day >= p_since
     group by day
   ), attempts as (
-    select submitted_at::date day, count(*)::bigint attempts_count,
-           avg(percentage) average_percentage
+    select submitted_at::date as attempt_day, count(*)::bigint as attempts_count,
+           avg(percentage) as average_percentage
     from public.assessment_attempts
     where learner_id = auth.uid() and status = 'submitted'
       and submitted_at::date >= p_since
     group by submitted_at::date
   )
-  select coalesce(a.day, t.day), coalesce(a.events_count, 0),
-         coalesce(t.attempts_count, 0), t.average_percentage
-  from activity a full join attempts t on t.day = a.day
+  select coalesce(a.activity_day, t.attempt_day) as day,
+         coalesce(a.events_count, 0), coalesce(t.attempts_count, 0),
+         t.average_percentage
+  from activity a full join attempts t on t.attempt_day = a.activity_day
   order by 1;
 $$;
 revoke all on function public.get_my_learning_analytics(date) from public;
