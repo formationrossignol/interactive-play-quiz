@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { CalendarCheck, CalendarRange, CheckCircle2, Plus, Upload, Users, XCircle } from "lucide-react";
+import { CalendarCheck, CalendarRange, CheckCircle2, KeyRound, Plus, ShieldCheck, Upload, Users, XCircle } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/ui/page-header";
 import { ExplorerEmptyState } from "@/components/content/ExplorerEmptyState";
@@ -16,20 +16,28 @@ import type { ContentRow } from "@/lib/content/types";
 import { EnrollmentImportDialog } from "@/components/lms/EnrollmentImportDialog";
 import { SessionRosterPanel } from "@/components/lms/SessionRosterPanel";
 import { SessionAttendancePanel } from "@/components/lms/SessionAttendancePanel";
+import { SelfEnrollmentPolicyPanel } from "@/components/lms/SelfEnrollmentPolicyPanel";
+import { CompletionPolicyPanel } from "@/components/lms/CompletionPolicyPanel";
 import {
   acceptWaitlistOffer,
   createCourseSession,
   declineWaitlistOffer,
+  effectiveEnrollmentAccessStartAt,
+  effectiveEnrollmentDueAt,
   ensureCourseOffering,
+  listCatalogSessions,
   listOrgSessions,
-  myEnrollments,
+  myEnrollmentsDetailed,
   myWaitlistEntries,
-  publishSession,
+  selfEnrollInSession,
   type CourseSession,
-  type Enrollment,
+  type EnrollmentPolicy,
   type EnrollmentStatus,
+  type EnrollmentWithSession,
+  publishSession,
   type WaitlistEntry,
 } from "@/lib/lms/enrollment";
+import { toast } from "sonner";
 
 const STAFF_ROLES = new Set(["registrar", "pedago", "admin"]);
 
@@ -67,6 +75,8 @@ function StaffSessions({ orgId }: { orgId: string }) {
   const [importingSessionId, setImportingSessionId] = useState<string | null>(null);
   const [rosterSessionId, setRosterSessionId] = useState<string | null>(null);
   const [attendanceSessionId, setAttendanceSessionId] = useState<string | null>(null);
+  const [policySessionId, setPolicySessionId] = useState<string | null>(null);
+  const [completionSessionId, setCompletionSessionId] = useState<string | null>(null);
 
   const reload = () => {
     listOrgSessions(orgId).then(setSessions).catch(showError).finally(() => setLoading(false));
@@ -186,6 +196,12 @@ function StaffSessions({ orgId }: { orgId: string }) {
                   <Button variant="ghost" size="sm" onClick={() => setImportingSessionId(s.id)}>
                     <Upload size={14} /> Importer
                   </Button>
+                  <Button variant="ghost" size="sm" onClick={() => setPolicySessionId((cur) => (cur === s.id ? null : s.id))}>
+                    <KeyRound size={14} /> Auto-inscription
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => setCompletionSessionId((cur) => (cur === s.id ? null : s.id))}>
+                    <ShieldCheck size={14} /> Complétion
+                  </Button>
                   {s.status === "draft" && (
                     <Button variant="ghost" size="sm" onClick={() => handlePublish(s.id)}>Publier</Button>
                   )}
@@ -195,6 +211,15 @@ function StaffSessions({ orgId }: { orgId: string }) {
                 <SessionRosterPanel session={s} otherSessions={sessions.filter((other) => other.id !== s.id)} />
               )}
               {attendanceSessionId === s.id && <SessionAttendancePanel session={s} />}
+              {policySessionId === s.id && (
+                <SelfEnrollmentPolicyPanel
+                  session={s}
+                  onUpdated={(policy: EnrollmentPolicy) =>
+                    setSessions((prev) => prev.map((row) => (row.id === s.id ? { ...row, enrollment_policy: policy } : row)))
+                  }
+                />
+              )}
+              {completionSessionId === s.id && <CompletionPolicyPanel session={s} />}
             </li>
           ))}
         </ul>
@@ -281,14 +306,126 @@ function WaitlistOffers({ entries, onResolved }: { entries: WaitlistEntry[]; onR
   );
 }
 
-function LearnerEnrollments() {
-  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
+function dateLabel(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  return new Date(iso).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" });
+}
+
+interface EnrichedEnrollment extends EnrollmentWithSession {
+  accessStartAt?: string | null;
+  dueAt?: string | null;
+}
+
+/** ENR-013: browse-and-self-enroll. Eligibility is whatever
+ *  course_sessions_org_read already scopes to this learner's org — the
+ *  RPC re-validates mode/domain/code/prerequisite server-side regardless
+ *  of what's shown here, this list is just discovery. */
+function LearnerCatalog({ orgId, enrolledSessionIds, onEnrolled }: {
+  orgId: string;
+  enrolledSessionIds: Set<string>;
+  onEnrolled: () => void;
+}) {
+  const [sessions, setSessions] = useState<CourseSession[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [enrollingId, setEnrollingId] = useState<string | null>(null);
+  const [codeDrafts, setCodeDrafts] = useState<Map<string, string>>(new Map());
+
+  useEffect(() => {
+    listCatalogSessions(orgId).then(setSessions).catch(showError).finally(() => setLoading(false));
+  }, [orgId]);
+
+  const eligible = sessions.filter((s) => !enrolledSessionIds.has(s.id));
+
+  if (loading) return <TableSkeleton rows={2} cols={2} />;
+  if (eligible.length === 0) return null;
+
+  const handleEnroll = async (s: CourseSession) => {
+    setEnrollingId(s.id);
+    try {
+      const result = await selfEnrollInSession(s.id, codeDrafts.get(s.id));
+      toast.success(result.status === "pending" ? "Demande envoyée, en attente d'approbation" : result.status === "waitlisted" ? "Inscrit en liste d'attente" : "Inscription confirmée");
+      onEnrolled();
+    } catch (err) {
+      showError(err);
+    } finally {
+      setEnrollingId(null);
+    }
+  };
+
+  return (
+    <section className="product-list-panel p-5 mb-4">
+      <div className="product-panel-heading -mx-5 -mt-5 mb-4">
+        <div><h2>Catalogue</h2><p>Sessions ouvertes à l'auto-inscription dans votre organisation.</p></div>
+      </div>
+      <ul className="space-y-2" aria-label="Catalogue de sessions">
+        {eligible.map((s) => {
+          const policy = s.enrollment_policy ?? {};
+          const mode = policy.mode ?? "open";
+          const modeLabel = mode === "closed" ? "Sur invitation uniquement"
+            : mode === "approval" ? "Nécessite une approbation"
+            : mode === "payment" ? "Paiement requis (indisponible)"
+            : "Inscription libre";
+          return (
+            <li key={s.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-3">
+              <div>
+                <p className="font-medium">{s.label} <span className="text-muted-foreground text-sm">({s.code})</span></p>
+                <p className="text-sm text-muted-foreground">
+                  {modeLabel}{s.capacity ? ` · ${s.capacity} places` : ""}{s.starts_at ? ` · à partir du ${dateLabel(s.starts_at)}` : ""}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                {policy.requires_code && (
+                  <Input
+                    aria-label="Code d'invitation"
+                    placeholder="Code"
+                    className="h-9 w-32"
+                    value={codeDrafts.get(s.id) ?? ""}
+                    onChange={(e) => setCodeDrafts((prev) => new Map(prev).set(s.id, e.target.value))}
+                  />
+                )}
+                <Button size="sm" loading={enrollingId === s.id} disabled={mode === "closed" || mode === "payment"} onClick={() => handleEnroll(s)}>
+                  S'inscrire
+                </Button>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
+/** ENR-017: 4 buckets — "à venir" (pas encore d'accès : invitation/attente
+ *  d'approbation/liste d'attente, ou session à date fixe pas encore
+ *  démarrée), "en cours" (accès ouvert, pas d'échéance proche), "à
+ *  terminer" (échéance effective — voir effective_enrollment_due_at() —
+ *  dans les 7 prochains jours ou dépassée), "terminées" (statut terminal).
+ *  Le seuil "7 jours" est un choix d'affichage non spécifié par ENR-017,
+ *  pas une règle métier serveur — même esprit que le seuil 2× médiane de
+ *  CMP-012. */
+const DUE_SOON_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+
+function LearnerEnrollments({ orgId }: { orgId?: string | null }) {
+  const [enrollments, setEnrollments] = useState<EnrichedEnrollment[]>([]);
   const [waitlistEntries, setWaitlistEntries] = useState<WaitlistEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
   const reload = () => {
-    Promise.all([myEnrollments(), myWaitlistEntries()])
-      .then(([e, w]) => { setEnrollments(e); setWaitlistEntries(w); })
+    setLoading(true);
+    Promise.all([myEnrollmentsDetailed(), myWaitlistEntries()])
+      .then(async ([detailed, w]) => {
+        setWaitlistEntries(w);
+        const active = detailed.filter((e) => e.status === "active");
+        const enriched = await Promise.all(active.map(async (e) => {
+          const [accessStartAt, dueAt] = await Promise.all([
+            effectiveEnrollmentAccessStartAt(e.id).catch(() => null),
+            effectiveEnrollmentDueAt(e.id).catch(() => null),
+          ]);
+          return { ...e, accessStartAt, dueAt };
+        }));
+        const enrichedMap = new Map(enriched.map((e) => [e.id, e]));
+        setEnrollments(detailed.map((e) => enrichedMap.get(e.id) ?? e));
+      })
       .catch(showError)
       .finally(() => setLoading(false));
   };
@@ -298,38 +435,46 @@ function LearnerEnrollments() {
   }, []);
 
   const groups = useMemo(() => {
-    const upcoming = enrollments.filter((e) => e.status === "invited" || e.status === "pending" || e.status === "waitlisted");
-    const active = enrollments.filter((e) => e.status === "active");
-    const done = enrollments.filter((e) => ["completed", "failed", "withdrawn", "cancelled", "expired"].includes(e.status));
-    return { upcoming, active, done };
+    const now = Date.now();
+    const soonCutoff = now + DUE_SOON_WINDOW_MS;
+    const upcoming: EnrichedEnrollment[] = [];
+    const inProgress: EnrichedEnrollment[] = [];
+    const dueSoon: EnrichedEnrollment[] = [];
+    const done: EnrichedEnrollment[] = [];
+    for (const e of enrollments) {
+      if (["completed", "failed", "withdrawn", "cancelled", "expired"].includes(e.status)) { done.push(e); continue; }
+      if (e.status !== "active") { upcoming.push(e); continue; }
+      const accessStartAt = e.accessStartAt ? new Date(e.accessStartAt).getTime() : null;
+      if (accessStartAt !== null && accessStartAt > now) { upcoming.push(e); continue; }
+      const dueAt = e.dueAt ? new Date(e.dueAt).getTime() : null;
+      if (dueAt !== null && dueAt <= soonCutoff) { dueSoon.push(e); continue; }
+      inProgress.push(e);
+    }
+    return { upcoming, inProgress, dueSoon, done };
   }, [enrollments]);
+
+  const enrolledSessionIds = useMemo(() => new Set(enrollments.filter((e) => e.status !== "withdrawn" && e.status !== "cancelled").map((e) => e.session_id)), [enrollments]);
 
   if (loading) return <ListLoading />;
 
-  if (enrollments.length === 0) {
-    return (
-      <>
-        <WaitlistOffers entries={waitlistEntries} onResolved={reload} />
-        <ExplorerEmptyState
-          icon={<Users size={27} />}
-          title="Aucune formation en cours"
-          body="Vos inscriptions à des sessions apparaîtront ici, classées par statut."
-        />
-      </>
-    );
-  }
-
-  const renderGroup = (title: string, rows: Enrollment[]) => (
+  const renderGroup = (title: string, rows: EnrichedEnrollment[], dateKind: "start" | "due" | "none") => (
     rows.length === 0 ? null : (
       <div className="mb-4">
         <h3 className="ap-h3" style={{ fontSize: 15, marginBottom: 8 }}>{title}</h3>
         <ul className="space-y-2">
-          {rows.map((e) => (
-            <li key={e.id} className="flex items-center justify-between rounded-md border p-3">
-              <span className="text-sm text-muted-foreground">Session {e.session_id.slice(0, 8)}</span>
-              <span className="text-sm font-medium">{enrollmentStatusLabel[e.status]}</span>
-            </li>
-          ))}
+          {rows.map((e) => {
+            const label = e.session?.label ?? `Session ${e.session_id.slice(0, 8)}`;
+            const date = dateKind === "start" ? dateLabel(e.accessStartAt ?? e.session?.starts_at) : dateKind === "due" ? dateLabel(e.dueAt) : null;
+            return (
+              <li key={e.id} className="flex items-center justify-between rounded-md border p-3">
+                <div>
+                  <p className="font-medium">{label}</p>
+                  {date && <p className="text-sm text-muted-foreground">{dateKind === "due" ? "À rendre pour le " : "Débute le "}{date}</p>}
+                </div>
+                <span className="text-sm font-medium">{enrollmentStatusLabel[e.status]}</span>
+              </li>
+            );
+          })}
         </ul>
       </div>
     )
@@ -338,14 +483,24 @@ function LearnerEnrollments() {
   return (
     <>
       <WaitlistOffers entries={waitlistEntries} onResolved={reload} />
-      <section className="product-list-panel p-5">
-        <div className="product-panel-heading -mx-5 -mt-5 mb-4">
-          <div><h2>Mes formations</h2><p>À venir, en cours et terminées.</p></div>
-        </div>
-        {renderGroup("À venir", groups.upcoming)}
-        {renderGroup("En cours", groups.active)}
-        {renderGroup("Terminées", groups.done)}
-      </section>
+      {orgId && <LearnerCatalog orgId={orgId} enrolledSessionIds={enrolledSessionIds} onEnrolled={reload} />}
+      {enrollments.length === 0 ? (
+        <ExplorerEmptyState
+          icon={<Users size={27} />}
+          title="Aucune formation en cours"
+          body="Vos inscriptions à des sessions apparaîtront ici, classées par statut."
+        />
+      ) : (
+        <section className="product-list-panel p-5">
+          <div className="product-panel-heading -mx-5 -mt-5 mb-4">
+            <div><h2>Mes formations</h2><p>À venir, en cours, à terminer et terminées.</p></div>
+          </div>
+          {renderGroup("À venir", groups.upcoming, "start")}
+          {renderGroup("En cours", groups.inProgress, "none")}
+          {renderGroup("À terminer", groups.dueSoon, "due")}
+          {renderGroup("Terminées", groups.done, "none")}
+        </section>
+      )}
     </>
   );
 }
@@ -381,7 +536,7 @@ export default function LmsSessions() {
           title="Sessions & inscriptions"
           description="Le cycle d'inscription aux cours et sessions de votre organisation."
         />
-        {isStaff && activeOrgId ? <StaffSessions orgId={activeOrgId} /> : <LearnerEnrollments />}
+        {isStaff && activeOrgId ? <StaffSessions orgId={activeOrgId} /> : <LearnerEnrollments orgId={activeOrgId} />}
       </div>
     </AppLayout>
   );
