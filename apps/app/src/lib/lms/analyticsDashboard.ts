@@ -94,3 +94,38 @@ export async function setMinCohortSize(orgId: string, minCohortSize: number): Pr
   const { error } = await supabase.rpc('set_min_cohort_size', { p_org_id: orgId, p_min_cohort_size: minCohortSize });
   if (error) throw error;
 }
+
+export interface DailyProgramRow {
+  day: string;
+  active_learners: number;
+  started_count: number;
+  completed_count: number;
+  withdrawn_count: number;
+  waitlisted_count: number;
+  suppressed: boolean;
+}
+
+export async function listDailyProgram(orgId: string, sinceIsoDate: string): Promise<DailyProgramRow[]> {
+  const { data, error } = await supabase.rpc('get_daily_program_totals', { p_org_id: orgId, p_since: sinceIsoDate });
+  if (error) throw error;
+  return (data ?? []) as DailyProgramRow[];
+}
+
+export interface ItemPsychometricRow {
+  item_revision_id: string;
+  day: string;
+  response_count: number;
+  omitted_count: number;
+  correct_rate: number | null;
+  median_response_time_ms: number | null;
+  difficulty: number | null;
+  discrimination: number | null;
+  option_counts: Record<string, number>;
+  warning_codes: string[];
+}
+
+export async function listItemPsychometrics(orgId: string, sinceIsoDate: string): Promise<ItemPsychometricRow[]> {
+  const { data, error } = await supabase.rpc('get_item_psychometrics', { p_org_id: orgId, p_since: sinceIsoDate });
+  if (error) throw error;
+  return (data ?? []) as ItemPsychometricRow[];
+}

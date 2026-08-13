@@ -14,21 +14,49 @@ export interface ItemOption {
   label: string;
 }
 
+/** A passage's content copied (not live-referenced — see
+ *  20260813140000_assessment_new_item_types.sql) into a sub-question's own
+ *  prompt at authoring time — ASM-017 without a new join. */
+export interface PassageStimulus {
+  text?: string;
+  mediaUrl?: string;
+}
+
+export interface LabelingTarget {
+  id: string;
+  text: string;
+}
+
 export interface ItemPrompt {
   text: string;
   options?: ItemOption[];
+  passage?: PassageStimulus;
+  /** labeling (ASM-021): named targets matched to labels via a dropdown —
+   *  deliberately not pixel zones on an image, see migration header. */
+  targets?: LabelingTarget[];
+  labels?: LabelingTarget[];
+  /** audio_video (ASM-019) / file (ASM-023) */
+  instructions?: string;
+  kind?: "audio" | "video";
+  maxDurationSeconds?: number;
+  consentRequired?: boolean;
+  allowedMime?: string[];
 }
 
 /** Matches item_answer_keys.correct_answer's shape per item_type — see
- *  20260812060000_assessment_correction_engine.sql's header comment for
- *  the authoritative contract. Only these 4 types have a scoring
- *  comparator; the other 17 assessment_items.item_type values have no
- *  authoring UI and start_assessment_attempt() refuses to attempt them. */
+ *  20260812060000_assessment_correction_engine.sql's header comment
+ *  (true_false/single_choice/mcq/short_answer) and
+ *  20260813140000_assessment_new_item_types.sql (labeling). audio_video/
+ *  file never populate a real correct_answer — item_answer_keys still
+ *  needs a row (points-only scoring_rules) but correct_answer is unused,
+ *  see that migration's start_assessment_attempt() comment. */
 export type CorrectAnswer =
   | boolean
   | { optionId: string }
   | { optionIds: string[] }
-  | { equivalents: string[] };
+  | { equivalents: string[] }
+  | { assignments: Record<string, string> }
+  | null;
 
 export interface ScoringRules {
   points?: number;

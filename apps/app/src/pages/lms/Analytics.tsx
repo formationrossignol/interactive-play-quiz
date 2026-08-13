@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, FileBarChart, Plus } from "lucide-react";
+import { AlertTriangle, Download, FileBarChart, Plus } from "lucide-react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/ui/page-header";
@@ -32,11 +32,13 @@ import {
   getMinCohortSize,
   listDailyActivity,
   listDailyCompetency,
+  listItemPsychometrics,
   setMinCohortSize,
   type DailyActivityRow,
   type DailyCompetencyRow,
   type EnrollmentTotals,
 } from "@/lib/lms/analyticsDashboard";
+import { exportAnalytics } from "@/lib/lms/analyticsExport";
 
 const STAFF_ROLES = new Set(["trainer", "pedago", "admin"]);
 
@@ -267,9 +269,21 @@ function AnalyticsDashboard({ orgId }: { orgId: string }) {
 
   const hasActivity = activityByDay.some((point) => point.activeLearners > 0 || point.events > 0);
   const hasCompetency = competencyByDay.some((point) => point.evidenceCount > 0);
+  const exportRows = activityByDay.map((point) => ({
+    date: point.date,
+    activeLearners: point.activeLearners,
+    events: point.events,
+    evidence: competencyByDay.find((entry) => entry.date === point.date)?.evidenceCount ?? 0,
+  }));
 
   return (
     <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        <span className="ap-muted text-xs">Export pseudonymisé · aucune identité apprenant</span>
+        <Button variant="outline" size="sm" onClick={() => void exportAnalytics('CSV', exportRows)}><Download size={15} /> CSV</Button>
+        <Button variant="outline" size="sm" onClick={() => void exportAnalytics('Excel', exportRows)}><Download size={15} /> Excel</Button>
+        <Button variant="outline" size="sm" onClick={() => void exportAnalytics('PDF', exportRows)}><Download size={15} /> PDF</Button>
+      </div>
       {enrollmentTotals?.suppressed ? (
         <div className="ap-card p-4 text-sm">
           <strong className="block">Inscriptions (30j) — masquées</strong>
@@ -420,6 +434,27 @@ function SavedReports({ orgId }: { orgId: string }) {
   );
 }
 
+function PsychometricsPanel({ orgId }: { orgId: string }) {
+  const [rows, setRows] = useState<Awaited<ReturnType<typeof listItemPsychometrics>>>([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    listItemPsychometrics(orgId, isoDaysAgo(30)).then(setRows).catch(showError).finally(() => setLoading(false));
+  }, [orgId]);
+  if (loading) return <TableSkeleton rows={3} cols={4} />;
+  return (
+    <section className="product-list-panel p-5 mt-4">
+      <div className="product-panel-heading -mx-5 -mt-5 mb-4">
+        <div><h2>Analyse des items</h2><p>Difficulté, discrimination et distracteurs sur les 30 derniers jours. Les petits échantillons sont masqués.</p></div>
+      </div>
+      {rows.length === 0 ? <p className="text-sm text-muted-foreground">Aucune donnée psychométrique disponible.</p> : (
+        <div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr className="text-left text-muted-foreground"><th className="p-2">Item</th><th className="p-2">Réponses</th><th className="p-2">Difficulté</th><th className="p-2">Discrimination</th><th className="p-2">Temps médian</th><th className="p-2">Alertes</th></tr></thead><tbody>
+          {rows.slice(-50).map((row) => <tr key={`${row.item_revision_id}-${row.day}`} className="border-t"><td className="p-2 font-mono text-xs">{row.item_revision_id.slice(0, 8)}</td><td className="p-2">{row.response_count}</td><td className="p-2">{row.difficulty == null ? "—" : `${Math.round(row.difficulty * 100)} %`}</td><td className="p-2">{row.discrimination == null ? "—" : row.discrimination.toFixed(2)}</td><td className="p-2">{row.median_response_time_ms == null ? "—" : `${Math.round(row.median_response_time_ms / 1000)} s`}</td><td className="p-2">{row.warning_codes.length ? row.warning_codes.join(", ") : "—"}</td></tr>)}
+        </tbody></table></div>
+      )}
+    </section>
+  );
+}
+
 /** ANA-020: min_cohort_size gates every cohort-level aggregate below it
  *  (get_org_enrollment_totals/get_daily_competency_totals/get_daily_item_totals,
  *  20260812170000_analytics_privacy_threshold.sql) — pedago/admin only,
@@ -509,6 +544,7 @@ export default function LmsAnalytics() {
           description="Définitions partagées, signaux de risque explicables et rapports réutilisables."
         />
         <AnalyticsDashboard orgId={activeOrgId} />
+        <PsychometricsPanel orgId={activeOrgId} />
         <RiskSignals orgId={activeOrgId} />
         <FollowUpTasksPanel orgId={activeOrgId} />
         <SavedReports orgId={activeOrgId} />
