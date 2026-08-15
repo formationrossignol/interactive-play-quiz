@@ -32,6 +32,7 @@ import {
   type ContentAccessibilityCheck,
   type EffectiveAccommodation,
 } from "@/lib/lms/accessibility";
+import { applyAccessibilityPreferences } from "@/lib/accessibilityRuntime";
 
 const STAFF_ROLES = new Set(["registrar", "pedago", "admin"]);
 const CHECKABLE_TYPES: ContentType[] = ["quiz", "poll", "exam"];
@@ -48,7 +49,7 @@ function PreferencesPanel({ userId }: { userId: string }) {
 
   useEffect(() => {
     Promise.all([myAccessibilityPreferences(), getEffectiveAccommodations(userId)])
-      .then(([p, e]) => { setPrefs(p); setEffective(e); })
+      .then(([p, e]) => { setPrefs(p); setEffective(e); applyAccessibilityPreferences(p); })
       .catch(showError)
       .finally(() => setLoading(false));
   }, [userId]);
@@ -57,6 +58,7 @@ function PreferencesPanel({ userId }: { userId: string }) {
     try {
       const updated = await upsertMyAccessibilityPreferences(userId, { [key]: value });
       setPrefs(updated);
+      applyAccessibilityPreferences(updated);
     } catch (err) {
       showError(err);
     }
