@@ -17,7 +17,11 @@ import {
   createSavedReport,
   listMySavedReports,
   listOrgRiskSignals,
+  listReportSchedules,
+  relaunchRiskSignal,
   resolveRiskSignal,
+  scheduleSavedReport,
+  type ReportSchedule,
   type RiskSignal,
   type SavedReport,
 } from "@/lib/lms/analytics";
@@ -33,6 +37,7 @@ import {
   getMinCohortSize,
   listDailyActivity,
   listDailyCompetency,
+  listDailyProgram,
   listItemPsychometrics,
   setMinCohortSize,
   type DailyActivityRow,
@@ -59,6 +64,9 @@ function RiskSignals({ orgId }: { orgId: string }) {
   const [taskAssignee, setTaskAssignee] = useState("");
   const [taskTitle, setTaskTitle] = useState("");
   const [creatingTask, setCreatingTask] = useState(false);
+  const [relaunchFormFor, setRelaunchFormFor] = useState<string | null>(null);
+  const [relaunchMessage, setRelaunchMessage] = useState("");
+  const [relaunching, setRelaunching] = useState<string | null>(null);
 
   useEffect(() => {
     listOrgRiskSignals(orgId).then(setSignals).catch(showError).finally(() => setLoading(false));
@@ -95,6 +103,23 @@ function RiskSignals({ orgId }: { orgId: string }) {
     }
   };
 
+  const openRelaunchForm = (s: RiskSignal) => {
+    setRelaunchFormFor(s.id);
+    setRelaunchMessage("");
+  };
+
+  const handleRelaunch = async (s: RiskSignal) => {
+    setRelaunching(s.id);
+    try {
+      await relaunchRiskSignal(s.id, relaunchMessage.trim());
+      setRelaunchFormFor(null);
+    } catch (err) {
+      showError(err);
+    } finally {
+      setRelaunching(null);
+    }
+  };
+
   if (loading) return <TableSkeleton rows={3} cols={3} />;
 
   return (
@@ -118,10 +143,20 @@ function RiskSignals({ orgId }: { orgId: string }) {
                   <p className="text-muted-foreground">Apprenant {s.learner_id.slice(0, 8)} · {s.window_start} → {s.window_end}</p>
                 </div>
                 <div className="flex items-center gap-2">
+                  <Button variant="ghost" size="sm" onClick={() => (relaunchFormFor === s.id ? setRelaunchFormFor(null) : openRelaunchForm(s))}>Relancer</Button>
                   <Button variant="ghost" size="sm" onClick={() => (taskFormFor === s.id ? setTaskFormFor(null) : openTaskForm(s))}>Créer une tâche de suivi</Button>
                   <Button variant="ghost" size="sm" loading={resolving === s.id} onClick={() => handleResolve(s.id)}>Marquer traité</Button>
                 </div>
               </div>
+              {relaunchFormFor === s.id && (
+                <div className="mt-2 flex flex-wrap items-end gap-2 border-t pt-2">
+                  <div className="min-w-[240px] flex-1 space-y-1">
+                    <label className="text-xs font-medium" htmlFor={`relaunch-message-${s.id}`}>Message (optionnel)</label>
+                    <Input id={`relaunch-message-${s.id}`} value={relaunchMessage} onChange={(e) => setRelaunchMessage(e.target.value)} placeholder="Un suivi pédagogique est attendu." />
+                  </div>
+                  <Button size="sm" loading={relaunching === s.id} onClick={() => handleRelaunch(s)}>Envoyer la notification</Button>
+                </div>
+              )}
               {taskFormFor === s.id && (
                 <div className="mt-2 flex flex-wrap items-end gap-2 border-t pt-2">
                   <div className="min-w-[200px] space-y-1">
@@ -380,6 +415,53 @@ function AnalyticsDashboard({ orgId }: { orgId: string }) {
   );
 }
 
+/** ANA: schedule_saved_report()/report_schedules existed since
+ *  20260813180000 with zero UI caller — the nightly executor
+ *  (_run_due_analytics_reports_internal(), 20260813170000) only ever finds
+ *  schedules a report owner explicitly creates here. A report with no
+ *  schedule row is saved filters only, never run. */
+function ReportScheduleControl({ report }: { report: SavedReport }) {
+  const [schedules, setSchedules] = useState<ReportSchedule[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [frequency, setFrequency] = useState<ReportSchedule['frequency']>("weekly");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    listReportSchedules(report.id).then(setSchedules).catch(showError).finally(() => setLoading(false));
+  }, [report.id]);
+
+  const handleSchedule = async () => {
+    setSaving(true);
+    try {
+      const schedule = await scheduleSavedReport(report.id, frequency);
+      setSchedules((prev) => [schedule, ...prev]);
+    } catch (err) {
+      showError(err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) return null;
+
+  return (
+    <div className="flex items-center gap-2">
+      {schedules[0] ? (
+        <span className="text-xs text-muted-foreground">Programmé ({schedules[0].frequency})</span>
+      ) : (
+        <>
+          <select value={frequency} onChange={(e) => setFrequency(e.target.value as ReportSchedule['frequency'])} className="h-8 rounded-md border border-input bg-background px-2 text-xs">
+            <option value="daily">Quotidien</option>
+            <option value="weekly">Hebdomadaire</option>
+            <option value="monthly">Mensuel</option>
+          </select>
+          <Button size="sm" variant="outline" loading={saving} onClick={handleSchedule}>Programmer</Button>
+        </>
+      )}
+    </div>
+  );
+}
+
 function SavedReports({ orgId }: { orgId: string }) {
   const [reports, setReports] = useState<SavedReport[]>([]);
   const [loading, setLoading] = useState(true);
@@ -425,8 +507,8 @@ function SavedReports({ orgId }: { orgId: string }) {
         <ul className="space-y-2">
           {reports.map((r) => (
             <li key={r.id} className="flex items-center justify-between rounded-md border p-3 text-sm">
-              <span>{r.title}</span>
-              <span className="text-muted-foreground">{r.audience}</span>
+              <span>{r.title} <span className="text-muted-foreground">· {r.audience}</span></span>
+              <ReportScheduleControl report={r} />
             </li>
           ))}
         </ul>
@@ -450,6 +532,32 @@ function PsychometricsPanel({ orgId }: { orgId: string }) {
       {rows.length === 0 ? <p className="text-sm text-muted-foreground">Aucune donnée psychométrique disponible.</p> : (
         <div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr className="text-left text-muted-foreground"><th className="p-2">Item</th><th className="p-2">Réponses</th><th className="p-2">Difficulté</th><th className="p-2">Discrimination</th><th className="p-2">Temps médian</th><th className="p-2">Alertes</th></tr></thead><tbody>
           {rows.slice(-50).map((row) => <tr key={`${row.item_revision_id}-${row.day}`} className="border-t"><td className="p-2 font-mono text-xs">{row.item_revision_id.slice(0, 8)}</td><td className="p-2">{row.response_count}</td><td className="p-2">{row.difficulty == null ? "—" : `${Math.round(row.difficulty * 100)} %`}</td><td className="p-2">{row.discrimination == null ? "—" : row.discrimination.toFixed(2)}</td><td className="p-2">{row.median_response_time_ms == null ? "—" : `${Math.round(row.median_response_time_ms / 1000)} s`}</td><td className="p-2">{row.warning_codes.length ? row.warning_codes.join(", ") : "—"}</td></tr>)}
+        </tbody></table></div>
+      )}
+    </section>
+  );
+}
+
+/** ANA-006/007: programme = catalog offering in the current model
+ *  (get_daily_program_totals(), 20260813170000_spec07_analytics_completion.sql)
+ *  — server + lib wrapper (listDailyProgram()) existed with zero UI caller
+ *  until now. */
+function ProgramPanel({ orgId }: { orgId: string }) {
+  const [rows, setRows] = useState<Awaited<ReturnType<typeof listDailyProgram>>>([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    listDailyProgram(orgId, isoDaysAgo(30)).then(setRows).catch(showError).finally(() => setLoading(false));
+  }, [orgId]);
+  if (loading) return <TableSkeleton rows={3} cols={4} />;
+  const visible = rows.filter((r) => !r.suppressed);
+  return (
+    <section className="product-list-panel p-5 mt-4">
+      <div className="product-panel-heading -mx-5 -mt-5 mb-4">
+        <div><h2>Programmes</h2><p>Inscriptions actives, démarrées, terminées et abandonnées par offre de cours sur les 30 derniers jours. Périodes sous le seuil de cohorte masquées.</p></div>
+      </div>
+      {visible.length === 0 ? <p className="text-sm text-muted-foreground">Aucune donnée programme disponible.</p> : (
+        <div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr className="text-left text-muted-foreground"><th className="p-2">Jour</th><th className="p-2">Actifs</th><th className="p-2">Démarrées</th><th className="p-2">Terminées</th><th className="p-2">Abandonnées</th><th className="p-2">Liste d'attente</th></tr></thead><tbody>
+          {visible.slice(-30).map((row) => <tr key={row.day} className="border-t"><td className="p-2">{row.day}</td><td className="p-2">{row.active_learners}</td><td className="p-2">{row.started_count}</td><td className="p-2">{row.completed_count}</td><td className="p-2">{row.withdrawn_count}</td><td className="p-2">{row.waitlisted_count}</td></tr>)}
         </tbody></table></div>
       )}
     </section>
@@ -577,6 +685,7 @@ export default function LmsAnalytics() {
           description="Définitions partagées, signaux de risque explicables et rapports réutilisables."
         />
         <AnalyticsDashboard orgId={activeOrgId} />
+        <ProgramPanel orgId={activeOrgId} />
         <PsychometricsPanel orgId={activeOrgId} />
         <RiskSignals orgId={activeOrgId} />
         <FollowUpTasksPanel orgId={activeOrgId} />

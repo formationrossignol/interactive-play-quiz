@@ -35,6 +35,13 @@ export async function resolveRiskSignal(signalId: string, resolution: string): P
   if (error) throw error;
 }
 
+/** Sends the learner an in-app notification without resolving the signal —
+ *  a human-triggered nudge, never an automatic action (20260813180000). */
+export async function relaunchRiskSignal(signalId: string, message: string): Promise<void> {
+  const { error } = await supabase.rpc('relaunch_risk_signal', { p_signal_id: signalId, p_message: message });
+  if (error) throw error;
+}
+
 export async function listMySavedReports(orgId: string): Promise<SavedReport[]> {
   const { data, error } = await supabase.from('saved_reports').select('*').eq('org_id', orgId).order('created_at', { ascending: false });
   if (error) throw error;
@@ -45,4 +52,29 @@ export async function createSavedReport(orgId: string, title: string, columns: s
   const { data, error } = await supabase.from('saved_reports').insert({ org_id: orgId, title, columns, audience }).select().single();
   if (error) throw error;
   return data as SavedReport;
+}
+
+export interface ReportSchedule {
+  id: string;
+  report_id: string;
+  frequency: 'daily' | 'weekly' | 'monthly';
+  recipients: string[];
+  next_run_at: string | null;
+  created_at: string;
+}
+
+/** report_schedules is what _run_due_analytics_reports_internal() (the
+ *  nightly executor, 20260813170000) actually reads — a saved report with
+ *  no schedule row never runs. schedule_saved_report() (20260813180000)
+ *  existed with no caller until this. */
+export async function scheduleSavedReport(reportId: string, frequency: ReportSchedule['frequency'], recipients: string[] = []): Promise<ReportSchedule> {
+  const { data, error } = await supabase.rpc('schedule_saved_report', { p_report_id: reportId, p_frequency: frequency, p_recipients: recipients });
+  if (error) throw error;
+  return data as ReportSchedule;
+}
+
+export async function listReportSchedules(reportId: string): Promise<ReportSchedule[]> {
+  const { data, error } = await supabase.from('report_schedules').select('*').eq('report_id', reportId).order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as ReportSchedule[];
 }

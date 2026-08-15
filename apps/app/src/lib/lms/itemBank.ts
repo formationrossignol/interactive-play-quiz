@@ -308,8 +308,13 @@ export async function startAssessmentAttempt(assessmentId: string): Promise<Atte
 
 /** The correction engine call — response is scored server-side against
  *  item_answer_keys, which the client never receives. */
-export async function submitAssessmentResponse(responseId: string, response: unknown): Promise<AssessmentResponse> {
-  const { data, error } = await supabase.rpc('submit_assessment_response', { p_response_id: responseId, p_response: response });
+/** durationMs: elapsed time since the item became visible to the learner —
+ *  feeds ANA-009's median-response-time psychometric, see
+ *  20260815010000_assessment_response_duration_wiring.sql (the column
+ *  existed and was read by the analytics rollup, but nothing ever wrote
+ *  it before this). */
+export async function submitAssessmentResponse(responseId: string, response: unknown, durationMs?: number): Promise<AssessmentResponse> {
+  const { data, error } = await supabase.rpc('submit_assessment_response', { p_response_id: responseId, p_response: response, p_duration_ms: durationMs ?? null });
   if (error) throw error;
   return data as AssessmentResponse;
 }
