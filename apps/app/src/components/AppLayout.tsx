@@ -92,6 +92,12 @@ export const AppLayout = ({ subtitle, extraSection, children }: AppLayoutProps) 
 
   return (
     <SidebarProvider className="product-shell-root">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-[100] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground"
+      >
+        {t("skipToContent")}
+      </a>
       <AppSidebar user={user} extraSection={extraSection} />
       <SidebarInset className="min-w-0 overflow-x-clip">
         <header
@@ -260,7 +266,7 @@ export const AppLayout = ({ subtitle, extraSection, children }: AppLayoutProps) 
         </header>
 
         <div className="product-content">
-          <main className="product-main">{children}</main>
+          <main id="main-content" tabIndex={-1} className="product-main">{children}</main>
           <Footer />
         </div>
       </SidebarInset>

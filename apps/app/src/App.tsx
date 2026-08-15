@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 import { initAuth, getCurrentUser } from "@/lib/auth";
 import { applySiteTheme, resolveSiteThemeForPath } from "@/lib/siteTheme";
+import { loadAndApplyAccessibilityPreferences } from "@/lib/accessibilityRuntime";
 import { RouteTransition } from "@/components/RouteTransition";
 import { RouteFallback } from "@/components/RouteFallback";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -126,7 +127,11 @@ const queryClient = new QueryClient();
 const AuthGate = ({ children }: { children: ReactNode }) => {
   const [ready, setReady] = useState(false);
   useEffect(() => {
-    void initAuth().then(() => setReady(true));
+    void initAuth().then(() => {
+      setReady(true);
+      // Non-blocking: apply once auth is known, doesn't hold up first paint.
+      if (getCurrentUser()) void loadAndApplyAccessibilityPreferences();
+    });
   }, []);
   if (!ready) return null;
   return <>{children}</>;
