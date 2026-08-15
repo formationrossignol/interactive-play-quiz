@@ -164,19 +164,26 @@ export function QuestionAnswerPanel({
 
       {/* Ranking */}
       {question.type === 'ranking' && !hasAnswered && (
-        <div className="flex flex-col gap-2 px-2">
+        // A11Y-013: keyboard-operable by construction (plain <button>s, no
+        // native drag) — the ▲▼ glyphs had no accessible name though (WCAG
+        // 4.1.2), and reordering produced no feedback for a screen-reader
+        // user not watching the visual list. aria-label names each button
+        // by the item it moves; aria-live announces the resulting order.
+        <div className="flex flex-col gap-2 px-2" aria-live="polite">
           {rankingOrder.map((item, idx) => (
             <div key={item} className="flex items-center gap-3 rounded-xl px-4 py-3 text-white font-bold" style={{ background: 'rgba(255,255,255,0.15)', border: '2px solid rgba(255,255,255,0.2)' }}>
-              <span className="text-white/50 w-5 text-center text-sm">{idx + 1}</span>
-              <span className="flex-1 text-sm">{item}</span>
+              <span className="text-white/50 w-5 text-center text-sm" aria-hidden="true">{idx + 1}</span>
+              <span className="flex-1 text-sm">{idx + 1}. {item}</span>
               <div className="flex flex-col gap-1">
                 <button
                   className="text-white/70 hover:text-white disabled:opacity-30 text-xs leading-none"
+                  aria-label={`Monter « ${item} » d'une position`}
                   disabled={idx === 0}
                   onClick={() => setRankingOrder(prev => { const next = [...prev]; [next[idx - 1], next[idx]] = [next[idx], next[idx - 1]]; return next; })}
                 >▲</button>
                 <button
                   className="text-white/70 hover:text-white disabled:opacity-30 text-xs leading-none"
+                  aria-label={`Descendre « ${item} » d'une position`}
                   disabled={idx === rankingOrder.length - 1}
                   onClick={() => setRankingOrder(prev => { const next = [...prev]; [next[idx], next[idx + 1]] = [next[idx + 1], next[idx]]; return next; })}
                 >▼</button>
