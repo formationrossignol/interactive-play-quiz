@@ -1180,14 +1180,38 @@ export const QuizBuilder = () => {
             <span>Illustration affichée avec l’énoncé</span>
           </div>
           {q.image ? (
-          <div style={{ position: "relative", borderRadius: "var(--ap-r-md)", overflow: "hidden" }}>
-            <img src={q.image} alt="" style={{ width: "100%", maxHeight: 200, objectFit: "cover", display: "block" }} />
-            <button
-              onClick={() => upd({ image: "" })}
-              style={{ position: "absolute", top: 8, right: 8, background: "color-mix(in srgb, var(--ap-ink) 78%, transparent)", color: "white", border: "none", borderRadius: 8, padding: "4px 8px", cursor: "pointer" }}
-            >
-              <Trash2 style={{ width: 14, height: 14 }} />
-            </button>
+          <div>
+            <div style={{ position: "relative", borderRadius: "var(--ap-r-md)", overflow: "hidden" }}>
+              <img src={q.image} alt="" style={{ width: "100%", maxHeight: 200, objectFit: "cover", display: "block" }} />
+              <button
+                onClick={() => upd({ image: "", imageAlt: "", imageIsDecorative: false })}
+                style={{ position: "absolute", top: 8, right: 8, background: "color-mix(in srgb, var(--ap-ink) 78%, transparent)", color: "white", border: "none", borderRadius: 8, padding: "4px 8px", cursor: "pointer" }}
+              >
+                <Trash2 style={{ width: 14, height: 14 }} />
+              </button>
+            </div>
+            {/* A11Y-007: informative image needs alt text, or an explicit
+                "decorative" declaration — no silent third option. */}
+            <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "var(--ap-muted)" }}>
+                <input
+                  type="checkbox"
+                  checked={Boolean(q.imageIsDecorative)}
+                  onChange={e => upd({ imageIsDecorative: e.target.checked, imageAlt: e.target.checked ? "" : q.imageAlt })}
+                />
+                Image décorative (n'apporte aucune information)
+              </label>
+              {!q.imageIsDecorative && (
+                <input
+                  type="text"
+                  value={q.imageAlt ?? ""}
+                  onChange={e => upd({ imageAlt: e.target.value })}
+                  placeholder="Texte alternatif — décrit l'image pour un lecteur d'écran"
+                  aria-label="Texte alternatif de l'image"
+                  style={{ width: "100%", borderRadius: "var(--ap-r-md)", border: "var(--ap-border-w) solid var(--ap-line)", padding: "8px 10px", fontSize: 13, background: "var(--ap-paper)", color: "var(--ap-ink)" }}
+                />
+              )}
+            </div>
           </div>
         ) : (
           <label style={{ display: "block", cursor: "pointer" }}>
