@@ -27,6 +27,13 @@ export interface BaseQuestion {
   timeLimit?: number;
   points?: number;
   image?: string;
+  /** A11Y-007: required whenever `image` is set and the image isn't marked
+   *  decorative — enforced by check_content_accessibility(), not by the
+   *  builder (a draft can be saved incomplete; only publishing is
+   *  eventually meant to gate on it, per "selon la politique
+   *  organisation"). */
+  imageAlt?: string;
+  imageIsDecorative?: boolean;
   /** Full-screen background photo for this question, overriding the quiz
    *  theme's background on the host's projected screen (QuizSession) and,
    *  with a darkening overlay for legibility, the player's own phone
@@ -224,6 +231,8 @@ export interface EditableQuestion {
   timeLimit?: number;
   points?: number;
   image?: string;
+  imageAlt?: string;
+  imageIsDecorative?: boolean;
   backgroundImage?: string;
   layout?: import("@/lib/contentLayouts").QuestionLayoutId;
   prompt?: string;

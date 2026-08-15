@@ -7,12 +7,14 @@ qui est déjà fait/vérifié et pourquoi, voir `VALIDATION-STATUS.md`. Chaque
 item ici reste formulé exactement comme dans ce document source, pour
 pouvoir s'y référer facilement.
 
-**Progression globale : 63/86 items (73%).** Fermés : §02 Inscriptions (7/7),
+**Progression globale : 65/86 items (76%).** Fermés : §02 Inscriptions (7/7),
 §03 Compétences (7/7), §06 Parcours adaptatifs (7/7), §07 Analytics
 pédagogiques (9/9). Quasi fermés : §08 Évaluations avancées (8/9 — reste
 seulement l'IA d'assistance, non-objectif partiel), §09 Live Q&A (9/10), §01
-Devoirs/gradebook (7/8). Vierges : §04 Interopérabilité Enterprise (2/11),
-§05 Accessibilité (0/6), §10 Gouvernance de contenu (0/8).
+Devoirs/gradebook (7/8). Entamés : §05 Accessibilité (2/6 — vérificateur de
+contenu + déclaration publique faits, reste le socle clavier/focus transverse
+et le moteur `extra_time`, deux gros chantiers séparés). Vierges : §04
+Interopérabilité Enterprise (2/11), §10 Gouvernance de contenu (0/8).
 
 ## Dépendances qui bloquent plusieurs items à la fois
 
@@ -101,10 +103,10 @@ Devoirs/gradebook (7/8). Vierges : §04 Interopérabilité Enterprise (2/11),
 ## 05 — Accessibilité, inclusion et aménagements individuels
 
 - [ ] `extra_time` réel — bloqué en amont par l'absence de tout moteur de tentative chronométrée server-side sur `exams`/`exam_attempts` ; **pas débloqué** par le moteur de correction de la spec 08 (voir dépendances en tête de document) — celui-ci note un système parallèle (`assessment_items`) sans aucune notion de durée
-- [ ] Vérificateur d'accessibilité de contenu (A11Y-007 à A11Y-012) — table `content_accessibility_checks` posée, aucun analyseur
+- [x] Vérificateur d'accessibilité de contenu (A11Y-007/009/010, partiel) — `20260815020000_content_accessibility_checker.sql` : `content_accessibility_checks` était posée sans analyseur. **Prérequis trouvé avant de pouvoir vérifier quoi que ce soit** : aucun champ de texte alternatif n'existait sur une question de quiz/sondage (`BaseQuestion`/`EditableQuestion`, `questionTypes.ts`) — impossible de contrôler A11Y-007 sans d'abord donner à l'auteur un endroit où le saisir. Ajouté `imageAlt`/`imageIsDecorative` + champ dans `QuizBuilder.tsx` (visible seulement quand une image de question est présente, aucun changement pour les questions sans image). `check_content_accessibility()` (staff/propriétaire) : image sans alt ni déclaration décorative (erreur), langue de contenu absente (avertissement, A11Y-009 partiel), `drag-drop`/`hotspot` sans mode clavier connu (avertissement, A11Y-013 signalé mais pas résolu). Upsert par `(content_id, rule_code, location)` — un statut `ignored` posé par un opérateur survit aux re-vérifications, seul un « fixed » automatique referme un constat qui disparaît vraiment. UI : panneau « Vérificateur d'accessibilité » dans `/lms/accessibility`, par type de contenu. **Reste** : contraste (A11Y-009 — formes de thème trop variables selon le type de contenu pour un contrôle fiable sans deviner), blocage de publication selon politique d'organisation (A11Y-011 — la bascule `is_public` est une écriture client directe sans concept de politique par org dans ce schéma, en inventer une aurait été deviner), le texte alternatif n'est pas encore consommé par l'écran de passation réel (le champ existe et se sauvegarde, seul l'aperçu éditeur a été touché)
 - [ ] Socle application (A11Y-001 à A11Y-006 : focus, navigation clavier, contrastes, `prefers-reduced-motion`) — hors DB, c'est un chantier design system transverse à tout le produit
-- [ ] Alternatives d'interaction accessibles (hotspot/drag-drop/dessin clavier — A11Y-013)
-- [ ] Déclaration d'accessibilité publique (`accessibility_audits.published`) — table prête, aucun contenu réel, aucun écran public
+- [ ] Alternatives d'interaction accessibles (hotspot/drag-drop/dessin clavier — A11Y-013) — signalées par le vérificateur ci-dessus, jamais résolues (nécessite un mode clavier réel dans le lecteur, pas juste un constat)
+- [x] Déclaration d'accessibilité publique (`accessibility_audits.published`) — table posée sans contenu ni écran. Écriture directe RLS déjà ouverte (`accessibility_audits_admin`, admin d'org uniquement) — pas de nouvelle RPC, juste un formulaire (périmètre/méthode/statut) + bascule publier dans `/lms/accessibility`. Lecture publique (`published = true`) volontairement sans filtre d'org (n'importe quel utilisateur connecté de la plateforme voit n'importe quelle déclaration publiée — c'est le sens de « déclaration factuelle publique », pas un vrai accès anonyme puisque la page reste dans l'appli authentifiée)
 - [ ] Tests automatisés (axe ou équivalent) en CI
 
 ## 06 — Parcours adaptatifs, conditions et automatisations
