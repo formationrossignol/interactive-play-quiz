@@ -45,6 +45,30 @@ export async function revokeItemPermission(permissionId: string): Promise<void> 
   if (error) throw error;
 }
 
+export interface ItemCollectionMember {
+  id: string;
+  collection_id: string;
+  item_id: string;
+  position: number;
+}
+
+export async function listCollectionMembers(collectionId: string): Promise<ItemCollectionMember[]> {
+  const { data, error } = await supabase.from('item_collection_members').select('*').eq('collection_id', collectionId).order('position');
+  if (error) throw error;
+  return (data ?? []) as ItemCollectionMember[];
+}
+
+export async function addCollectionMember(collectionId: string, itemId: string, position = 0): Promise<ItemCollectionMember> {
+  const { data, error } = await supabase.from('item_collection_members').insert({ collection_id: collectionId, item_id: itemId, position }).select().single();
+  if (error) throw error;
+  return data as ItemCollectionMember;
+}
+
+export async function removeCollectionMember(memberId: string): Promise<void> {
+  const { error } = await supabase.from('item_collection_members').delete().eq('id', memberId);
+  if (error) throw error;
+}
+
 export interface RescoreImpact {
   attempt_id: string;
   learner_id: string;
