@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CheckCircle2, ClipboardList, XCircle } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/ui/page-header";
@@ -32,6 +32,11 @@ function ItemAnswer({ item, savedResponse, onAnswered }: {
   onAnswered: (responseId: string, patch: { is_correct: boolean | null; points_earned: number | null; max_points: number }) => void;
 }) {
   const [saving, setSaving] = useState(false);
+  // ANA-009: rough proxy for "time spent on this item" — all items render
+  // at once (free navigation, not one-per-screen), so this is elapsed time
+  // since the item mounted, not focused dwell time. Documented limitation,
+  // not a precise instrument.
+  const shownAtRef = useRef(Date.now());
   const [feedback, setFeedback] = useState<{ is_correct: boolean; points_earned: number; max_points: number } | null>(null);
   const [textValue, setTextValue] = useState(
     item.item_type === "short_answer" && savedResponse && typeof savedResponse === "object"
@@ -67,7 +72,7 @@ function ItemAnswer({ item, savedResponse, onAnswered }: {
   const submit = async (value: ResponseValue) => {
     setSaving(true);
     try {
-      const result = await submitAssessmentResponse(item.response_id, value);
+      const result = await submitAssessmentResponse(item.response_id, value, Date.now() - shownAtRef.current);
       setFeedback(
         result.is_correct === null || result.points_earned === null
           ? null

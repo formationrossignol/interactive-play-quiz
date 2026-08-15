@@ -7,12 +7,12 @@ qui est déjà fait/vérifié et pourquoi, voir `VALIDATION-STATUS.md`. Chaque
 item ici reste formulé exactement comme dans ce document source, pour
 pouvoir s'y référer facilement.
 
-**Progression globale : 51/86 items (59%).** Fermés : §02 Inscriptions (7/7),
-§03 Compétences (7/7), §06 Parcours adaptatifs (7/7). Quasi fermés : §08
-Évaluations avancées (8/9 — reste seulement l'IA d'assistance, non-objectif
-partiel), §09 Live Q&A (9/10), §01 Devoirs/gradebook (7/8). Quasi vierges :
-§04 Interopérabilité Enterprise (2/11), §05 Accessibilité (0/6), §10
-Gouvernance de contenu (0/12).
+**Progression globale : 63/86 items (73%).** Fermés : §02 Inscriptions (7/7),
+§03 Compétences (7/7), §06 Parcours adaptatifs (7/7), §07 Analytics
+pédagogiques (9/9). Quasi fermés : §08 Évaluations avancées (8/9 — reste
+seulement l'IA d'assistance, non-objectif partiel), §09 Live Q&A (9/10), §01
+Devoirs/gradebook (7/8). Vierges : §04 Interopérabilité Enterprise (2/11),
+§05 Accessibilité (0/6), §10 Gouvernance de contenu (0/8).
 
 ## Dépendances qui bloquent plusieurs items à la fois
 
@@ -120,11 +120,11 @@ Gouvernance de contenu (0/12).
 ## 07 — Analytics pédagogiques, psychométrie et signaux de risque
 
 - [x] Projection journalière **item** — `analytics_daily_item` + `analytics_item_psychometrics` (`20260813170000_spec07_analytics_completion.sql`) : réponses, omissions, durée médiane, difficulté, discrimination, répartition des options et avertissements avec seuil de cohorte.
-- [x] Projection journalière **programme** — `analytics_daily_program` agrège les sessions au grain `course_offering` (programme/catalogue dans le modèle actuel) et expose `get_daily_program_totals()` avec suppression sous seuil.
+- [x] Projection journalière **programme** — `analytics_daily_program` agrège les sessions au grain `course_offering` (programme/catalogue dans le modèle actuel) et expose `get_daily_program_totals()` avec suppression sous seuil. **Corrigé cette passe** : `listDailyProgram()` existait côté lib sans aucun appelant — `get_daily_program_totals()` n'était affiché nulle part dans `/lms/analytics`. Ajouté `ProgramPanel` (tableau jour/actifs/démarrées/terminées/abandonnées/liste d'attente)
 - [x] Dashboard formateur/pédagogue/admin et apprenant (ANA-005 à ANA-008) — RPC `get_my_learning_analytics()` pour la vue apprenant, dashboard staff `/lms/analytics` conservé avec seuils de confidentialité.
 - [x] Analyse d'items / psychométrie (ANA-010/011/012) — quartiles de performance, distracteurs agrégés, difficulté/discrimination et codes d'avertissement dans `analytics_item_psychometrics`, lecture via `get_item_psychometrics()`.
-- [x] Temps médian de réponse par item (ANA-009) — `assessment_responses.duration_ms` nullable et calcul `percentile_cont(0.5)` pour préserver les tentatives historiques.
-- [x] Programmation de rapports (`report_schedules`/`report_runs`) — exécuteur idempotent `_run_due_analytics_reports_internal()` branché au job `pg_cron`, snapshots agrégés et pseudonymisés.
+- [x] Temps médian de réponse par item (ANA-009) — `assessment_responses.duration_ms` nullable et calcul `percentile_cont(0.5)` pour préserver les tentatives historiques. **Corrigé cette passe** : la colonne existait et le calcul la lisait, mais **rien ne l'écrivait jamais** — `submit_assessment_response()`/`submit_assessment_response_auto()` n'avaient aucun paramètre durée, `median_response_time_ms` était garanti `null` en permanence malgré la case cochée. `20260815010000_assessment_response_duration_wiring.sql` ajoute `p_duration_ms` aux deux RPC (overloads à 2 arguments supprimées plutôt que laissées comme piège) ; `TakeAssessment.tsx` mesure le temps écoulé depuis le montage de l'item (tous les items s'affichent en même temps, navigation libre — proxy documenté comme approximatif, pas une mesure de concentration réelle)
+- [x] Programmation de rapports (`report_schedules`/`report_runs`) — exécuteur idempotent `_run_due_analytics_reports_internal()` branché au job `pg_cron`, snapshots agrégés et pseudonymisés. **Corrigé cette passe** : `schedule_saved_report()` n'avait aucun appelant — un rapport enregistré ne pouvait jamais être programmé, l'exécuteur ne trouvait donc jamais rien à exécuter malgré le libellé du vide `/lms/analytics` (« … et les programmer »). Ajouté `ReportScheduleControl` par rapport (fréquence + bouton). Même défaut trouvé sur `relaunch_risk_signal()` (spec 06/07, panneau Signaux de risque) — bouton « Relancer » ajouté à côté de « Créer une tâche de suivi »/« Marquer traité »
 - [x] Export CSV/XLSX/PDF avec pseudonymisation — actions d'export du dashboard (`analyticsExport.ts`), aucune identité apprenant exportée.
 - [x] Seuil minimal anti-réidentification sur les comparaisons de cohortes (ANA-020) — `20260812170000_analytics_privacy_threshold.sql` : la vraie faille trouvée n'était pas juste « pas de comparaison de cohortes » mais que `analytics_daily_enrollment`/`competency`/`item` étaient déjà lisibles ligne à ligne (par session/compétence/item, petit N) par tout staff via PostgREST, le client ne faisant que sommer après coup. Policies de lecture directe supprimées, remplacées par 3 RPC `security definer` agrégées à org+jour, qui suppriment la période entière sous un seuil configurable par org (`analytics_privacy_settings`, défaut 5, géré par `pedago`/`admin` via un panneau « Confidentialité » sur `/lms/analytics`). Ne construit pas les écrans de comparaison de cohortes eux-mêmes (ANA-007, toujours inexistants) — ferme la fuite réelle et pose le mécanisme de seuil que ces écrans (et ANA-011) réutiliseront
 - [x] Ordonnanceur réel pour `run_daily_analytics_rollup()`/`generate_risk_signals()` — `pg_cron`, job nocturne par organisation (voir dépendances en tête de document)
