@@ -186,9 +186,11 @@ export default function ExamRoom() {
   useEffect(() => {
     if (phase !== 'taking' || !attempt || !exam) return;
 
-    const deadline = exam.durationMinutes
-      ? new Date(attempt.startedAt).getTime() + exam.durationMinutes * 60000
-      : null;
+    // Server-computed at attempt start (extra_time-aware — see
+    // 20260815030000_exam_extra_time_engine.sql). Reading exam.durationMinutes
+    // here directly would ignore any extra_time/no_time_limit accommodation
+    // applied to this learner; attempt.expiresAt already bakes it in.
+    const deadline = attempt.expiresAt ? new Date(attempt.expiresAt).getTime() : null;
 
     timerRef.current = setInterval(() => {
       elapsedRef.current += 1;

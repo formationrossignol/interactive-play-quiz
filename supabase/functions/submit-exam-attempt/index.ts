@@ -49,19 +49,32 @@ Deno.serve(async (req) => {
       .from("exams").select("passing_score").eq("id", attempt.exam_id).maybeSingle();
     if (examError || !exam) return jsonResponse({ error: "not_found" }, 404);
 
-    const questions = keyRow.questions as ExamQuestionForScoring[];
-    const { score, percentage, passed } = calculateScore(body.answers, questions, exam.passing_score);
+    // expires_at is server-computed at start (start_exam_attempt_atomic,
+    // extra_time-aware — 20260815030000_exam_extra_time_engine.sql). Past it,
+    // save_exam_answers already refuses further writes, so `attempt.answers`
+    // is the last answer set saved before the deadline — trust that instead
+    // of `body.answers`, which could carry edits typed after expiry that
+    // just never made it past the (also expiry-gated) autosave. Also forces
+    // the outcome to auto-submitted and clamps the recorded time regardless
+    // of what the client claims, closing the gap a forged `mode`/
+    // `timeUsedSeconds` payload would otherwise walk through.
+    const isExpired = attempt.expires_at != null && new Date(attempt.expires_at).getTime() < Date.now();
+    const answersToScore = isExpired ? (attempt.answers ?? {}) : body.answers;
+    const { score, percentage, passed } = calculateScore(answersToScore, questions, exam.passing_score);
 
     const now = new Date().toISOString();
-    const status = body.mode === "manual" ? "submitted" : "auto-submitted";
+    const status = isExpired ? "auto-submitted" : (body.mode === "manual" ? "submitted" : "auto-submitted");
+    const timeUsedSeconds = isExpired
+      ? Math.max(0, Math.round((new Date(attempt.expires_at).getTime() - new Date(attempt.started_at).getTime()) / 1000))
+      : body.timeUsedSeconds;
     const { data: updated, error: updateError } = await supabase
       .from("exam_attempts")
       .update({
-        answers: body.answers,
-        time_used_seconds: body.timeUsedSeconds,
+        answers: answersToScore,
+        time_used_seconds: timeUsedSeconds,
         submitted_at: now,
         score, percentage, passed,
-        submission_mode: body.mode,
+        submission_mode: isExpired ? "auto" : body.mode,
         status,
         logs: [...(attempt.logs ?? []), { event: status, timestamp: now }],
       })

@@ -62,6 +62,11 @@ export interface Attempt {
   participantEmail: string;
   startedAt: string;
   submittedAt: string | null;
+  /** Server-computed at start (extra_time-aware — see
+   *  20260815030000_exam_extra_time_engine.sql); null = no time limit. The
+   *  countdown below reads this, never `exam.durationMinutes` directly, so an
+   *  accommodation applied to the learner actually moves the deadline they see. */
+  expiresAt: string | null;
   timeUsedSeconds: number;
   questionOrder: string[];                          // ordered question IDs
   answers: Record<string, number | string | null>;  // questionId → answer
@@ -138,7 +143,7 @@ function examFromRow(r: ExamRow): Exam {
 
 interface AttemptRow {
   id: string; exam_id: string; participant_id: string; participant_name: string; participant_email: string;
-  started_at: string; submitted_at: string | null; time_used_seconds: number;
+  started_at: string; submitted_at: string | null; expires_at: string | null; time_used_seconds: number;
   question_order: string[]; answers: Record<string, number | string | null>;
   score: number | null; percentage: number | null; passed: boolean | null;
   submission_mode: string | null; status: string; logs: AttemptLog[];
@@ -168,6 +173,7 @@ function attemptFromRow(r: AttemptRow): Attempt {
     participantEmail: r.participant_email,
     startedAt: r.started_at,
     submittedAt: r.submitted_at,
+    expiresAt: r.expires_at,
     timeUsedSeconds: r.time_used_seconds,
     questionOrder: r.question_order ?? [],
     answers: r.answers ?? {},
