@@ -14,7 +14,9 @@ import {
   listOrgAssessments,
   startAssessmentAttempt,
   submitAssessmentAttempt,
+  submitAssessmentMediaResponse,
   submitAssessmentResponse,
+  uploadAssessmentResponseMedia,
   type Assessment,
   type AssessmentAttempt,
   type AttemptItem,
@@ -22,7 +24,7 @@ import {
 
 /** Response shape per item_type — mirrors item_answer_keys.correct_answer's
  *  contract (see 20260812060000_assessment_correction_engine.sql). */
-type ResponseValue = boolean | { optionId: string } | { optionIds: string[] } | { text: string } | { value: unknown };
+type ResponseValue = boolean | { optionId: string } | { optionIds: string[] } | { text: string } | { value: unknown } | { assignments: Record<string, string> };
 
 function ItemAnswer({ item, savedResponse, onAnswered }: {
   item: AttemptItem;
@@ -40,6 +42,18 @@ function ItemAnswer({ item, savedResponse, onAnswered }: {
     savedResponse && typeof savedResponse === "object" && "value" in savedResponse
       ? JSON.stringify((savedResponse as { value: unknown }).value)
       : "",
+  );
+  const [assignments, setAssignments] = useState<Record<string, string>>(
+    item.item_type === "labeling" && savedResponse && typeof savedResponse === "object" && "assignments" in savedResponse
+      ? ((savedResponse as { assignments?: Record<string, string> }).assignments ?? {})
+      : {},
+  );
+  const [consent, setConsent] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadedName, setUploadedName] = useState<string | null>(
+    savedResponse && typeof savedResponse === "object" && "file_name" in savedResponse
+      ? String((savedResponse as { file_name?: string }).file_name ?? "")
+      : null,
   );
   const options = item.prompt.options ?? [];
   const selectedOptionId = item.item_type === "single_choice" && savedResponse && typeof savedResponse === "object"
@@ -67,8 +81,41 @@ function ItemAnswer({ item, savedResponse, onAnswered }: {
     }
   };
 
+  const submitAssignments = (next: Record<string, string>) => {
+    setAssignments(next);
+    void submit({ assignments: next });
+  };
+
+  const submitMedia = async (file: File, kind: "audio" | "video" | "file") => {
+    setUploading(true);
+    try {
+      const upload = await uploadAssessmentResponseMedia(file, item.response_id);
+      const requiresConsent = item.item_type === "audio_video";
+      if (requiresConsent && !consent) {
+        showError(new Error("Le consentement est requis avant l'envoi."));
+        return;
+      }
+      await submitAssessmentMediaResponse(item.response_id, upload, kind, requiresConsent ? consent : undefined);
+      setUploadedName(file.name);
+      // audio_video/file are never auto-scored (grading_status stays
+      // pending_review) — nothing meaningful to feed into onAnswered's
+      // is_correct/points_earned, just mark the item as answered.
+      onAnswered(item.response_id, { is_correct: null, points_earned: null, max_points: 0 });
+    } catch (err) {
+      showError(err);
+    } finally {
+      setUploading(false);
+    }
+  };
+
   return (
     <li className="rounded-md border p-3 space-y-2">
+      {item.prompt.passage && (
+        <div className="mb-2 rounded-md border border-dashed p-3 text-sm" style={{ background: "var(--ap-paper-2)" }}>
+          {item.prompt.passage.text && <p>{item.prompt.passage.text}</p>}
+          {item.prompt.passage.mediaUrl && <a href={item.prompt.passage.mediaUrl} target="_blank" rel="noopener noreferrer">Support du passage</a>}
+        </div>
+      )}
       <p className="font-medium">{item.prompt.text}</p>
 
       {item.item_type === "true_false" && (
@@ -126,7 +173,53 @@ function ItemAnswer({ item, savedResponse, onAnswered }: {
         </div>
       )}
 
-      {!(["true_false", "single_choice", "mcq", "short_answer", "audio_video", "file"] as string[]).includes(item.item_type) && (
+      {item.item_type === "labeling" && (
+        <div className="space-y-1.5">
+          {(item.prompt.targets ?? []).map((t) => (
+            <div key={t.id} className="flex flex-wrap items-center gap-2 text-sm">
+              <span className="min-w-[160px]">{t.text}</span>
+              <select
+                value={assignments[t.id] ?? ""}
+                disabled={saving}
+                onChange={(e) => submitAssignments({ ...assignments, [t.id]: e.target.value })}
+                className="h-9 min-w-[160px] rounded-md border border-input bg-background px-2 text-sm"
+                aria-label={`Étiquette pour ${t.text}`}
+              >
+                <option value="">Choisir une étiquette…</option>
+                {(item.prompt.labels ?? []).map((l) => <option key={l.id} value={l.id}>{l.text}</option>)}
+              </select>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {(item.item_type === "audio_video" || item.item_type === "file") && (
+        <div className="space-y-2">
+          {item.prompt.instructions && <p className="text-sm text-muted-foreground">{item.prompt.instructions}</p>}
+          {item.item_type === "audio_video" && (
+            <label className="flex items-center gap-1.5 text-sm">
+              <input type="checkbox" checked={consent} disabled={saving || uploading} onChange={(e) => setConsent(e.target.checked)} />
+              J'accepte l'enregistrement de ma réponse audio/vidéo
+            </label>
+          )}
+          <input
+            type="file"
+            aria-label="Déposer un fichier"
+            accept={item.item_type === "audio_video" ? "audio/*,video/*" : undefined}
+            disabled={saving || uploading || (item.item_type === "audio_video" && !consent)}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              const kind = item.item_type === "audio_video" ? (item.prompt.kind ?? "video") : "file";
+              void submitMedia(file, kind);
+            }}
+          />
+          {uploading && <p className="text-xs text-muted-foreground">Envoi…</p>}
+          {uploadedName && !uploading && <p className="text-xs" style={{ color: "var(--ap-pres)" }}>Déposé : {uploadedName} — revue par un formateur</p>}
+        </div>
+      )}
+
+      {!(["true_false", "single_choice", "mcq", "short_answer", "audio_video", "file", "labeling"] as string[]).includes(item.item_type) && (
         <div className="space-y-2">
           <label className="text-sm text-muted-foreground" htmlFor={`rich-${item.response_id}`}>Votre réponse</label>
           <textarea

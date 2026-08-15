@@ -281,6 +281,7 @@ export interface AssessmentResponse {
   points_earned: number | null;
   max_points: number;
   answered_at: string | null;
+  grading_status: 'auto' | 'pending_review' | 'graded';
 }
 
 export interface AssessmentAttempt {
@@ -323,4 +324,135 @@ export async function myAssessmentAttempts(): Promise<AssessmentAttempt[]> {
   const { data, error } = await supabase.from('assessment_attempts').select('*').order('started_at', { ascending: false });
   if (error) throw error;
   return (data ?? []) as AssessmentAttempt[];
+}
+
+// ── ASM-019/023 : audio/vidéo et fichier — jamais notés par
+// submitAssessmentResponse (pas de comparateur), un chemin dédié qui
+// uploade d'abord (RLS storage : dossier <learner_id>/<response_id>/...)
+// puis attache les métadonnées côté serveur avec re-vérification du
+// propriétaire — voir 20260813140000_assessment_new_item_types.sql. ──────
+
+export interface AssessmentResponseFile {
+  id: string;
+  response_id: string;
+  storage_path: string;
+  file_name: string;
+  mime_type: string | null;
+  size_bytes: number | null;
+  kind: 'audio' | 'video' | 'file';
+  transcription_status: 'not_requested' | 'pending' | 'reviewed';
+  transcript_text: string | null;
+  created_at: string;
+}
+
+const MAX_RESPONSE_MEDIA_BYTES = 25 * 1024 * 1024;
+
+/** Uploads the raw bytes first (Storage RLS gates the write), returns just
+ *  enough to hand to submitAssessmentMediaResponse() — mirrors
+ *  uploadSubmissionFiles()'s two-step shape from spec 01's gradebook.ts. */
+export async function uploadAssessmentResponseMedia(file: File, responseId: string): Promise<{ storagePath: string; fileName: string; mimeType: string; sizeBytes: number }> {
+  if (file.size > MAX_RESPONSE_MEDIA_BYTES) {
+    throw new Error('Fichier trop volumineux (25 Mo max)');
+  }
+  const { data: userData } = await supabase.auth.getUser();
+  const ownerId = userData.user?.id;
+  if (!ownerId) throw new Error('Not authenticated');
+  const path = `${ownerId}/${responseId}/${crypto.randomUUID()}-${file.name}`;
+  const { error } = await supabase.storage.from('assessment-response-media').upload(path, file, { contentType: file.type });
+  if (error) throw error;
+  return { storagePath: path, fileName: file.name, mimeType: file.type, sizeBytes: file.size };
+}
+
+/** p_consent is required (true) only for kind='audio'|'video' — the RPC
+ *  raises consent_required otherwise. */
+export async function submitAssessmentMediaResponse(
+  responseId: string,
+  upload: { storagePath: string; fileName: string; mimeType: string; sizeBytes: number },
+  kind: 'audio' | 'video' | 'file',
+  consent?: boolean,
+): Promise<AssessmentResponse> {
+  const { data, error } = await supabase.rpc('submit_assessment_media_response', {
+    p_response_id: responseId,
+    p_storage_path: upload.storagePath,
+    p_file_name: upload.fileName,
+    p_mime_type: upload.mimeType,
+    p_size_bytes: upload.sizeBytes,
+    p_kind: kind,
+    p_consent: consent ?? null,
+  });
+  if (error) throw error;
+  return data as AssessmentResponse;
+}
+
+export async function listResponseFiles(responseId: string): Promise<AssessmentResponseFile[]> {
+  const { data, error } = await supabase.from('assessment_response_files').select('*').eq('response_id', responseId).order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as AssessmentResponseFile[];
+}
+
+/** 5-minute signed URL, requested fresh every time — never cached, same
+ *  posture as getSubmissionFileSignedUrl() in spec 01's gradebook.ts. */
+export async function getResponseFileSignedUrl(storagePath: string): Promise<string> {
+  const { data, error } = await supabase.storage.from('assessment-response-media').createSignedUrl(storagePath, 300);
+  if (error) throw error;
+  return data.signedUrl;
+}
+
+export async function setResponseTranscription(fileId: string, status: AssessmentResponseFile['transcription_status'], text?: string): Promise<void> {
+  const { error } = await supabase.rpc('set_response_transcription', { p_file_id: fileId, p_status: status, p_text: text ?? null });
+  if (error) throw error;
+}
+
+// ── ASM-015/019/023 : révision manuelle des réponses pending_review ──────
+
+export interface PendingReviewResponse {
+  id: string;
+  attempt_id: string;
+  item_revision_id: string;
+  response: unknown;
+  max_points: number;
+  answered_at: string | null;
+  item_type: string;
+  prompt: ItemPrompt;
+  learner_id: string;
+  assessment_title: string;
+}
+
+/** RLS (assessment_responses_staff_read) already scopes rows to staff of
+ *  the response's org — the org_id filter here is a UI convenience
+ *  (active-org tab), not a security boundary. */
+export async function listPendingReviewResponses(orgId: string): Promise<PendingReviewResponse[]> {
+  const { data, error } = await supabase
+    .from('assessment_responses')
+    .select(`
+      id, attempt_id, item_revision_id, response, max_points, answered_at,
+      item_revision:assessment_item_revisions!inner(prompt, item:assessment_items!inner(item_type)),
+      attempt:assessment_attempts!inner(learner_id, assessment:assessments!inner(org_id, title))
+    `)
+    .eq('grading_status', 'pending_review');
+  if (error) throw error;
+  type Row = {
+    id: string; attempt_id: string; item_revision_id: string; response: unknown; max_points: number; answered_at: string | null;
+    item_revision: { prompt: ItemPrompt; item: { item_type: string } };
+    attempt: { learner_id: string; assessment: { org_id: string; title: string } };
+  };
+  return ((data ?? []) as unknown as Row[])
+    .filter((row) => row.attempt.assessment.org_id === orgId)
+    .map((row) => ({
+      id: row.id, attempt_id: row.attempt_id, item_revision_id: row.item_revision_id, response: row.response,
+      max_points: row.max_points, answered_at: row.answered_at,
+      item_type: row.item_revision.item.item_type, prompt: row.item_revision.prompt,
+      learner_id: row.attempt.learner_id, assessment_title: row.attempt.assessment.title,
+    }));
+}
+
+/** Writes through score_adjustments for audit and recomputes the parent
+ *  attempt's totals immediately if it was already submitted — see
+ *  grade_assessment_response() migration. */
+export async function gradeAssessmentResponse(responseId: string, pointsEarned: number, isCorrect?: boolean, note?: string): Promise<AssessmentResponse> {
+  const { data, error } = await supabase.rpc('grade_assessment_response', {
+    p_response_id: responseId, p_points_earned: pointsEarned, p_is_correct: isCorrect ?? null, p_note: note ?? null,
+  });
+  if (error) throw error;
+  return data as AssessmentResponse;
 }

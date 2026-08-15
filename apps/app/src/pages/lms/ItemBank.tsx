@@ -19,12 +19,16 @@ import {
   createAssessment,
   createItem,
   createItemRevision,
+  gradeAssessmentResponse,
   getPlacementThresholds,
+  getResponseFileSignedUrl,
   importLegacyQuizAsAssessment,
   listAssessmentSections,
   listItemRevisions,
   listOrgAssessments,
   listOrgItems,
+  listPendingReviewResponses,
+  listResponseFiles,
   listSectionItemRefs,
   publishAssessment,
   publishPlacementThresholds,
@@ -35,18 +39,23 @@ import {
   type AssessmentSection,
   type ItemOption,
   type ItemRevision,
+  type PendingReviewResponse,
   type PlacementThreshold,
   type SimulationResult,
 } from "@/lib/lms/itemBank";
 import {
+  addCollectionMember,
   createItemCollection,
   executeRescore,
   grantItemPermission,
+  listCollectionMembers,
   listItemCollections,
   listItemPermissions,
   previewRescore,
+  removeCollectionMember,
   revokeItemPermission,
   type ItemCollection,
+  type ItemCollectionMember,
   type ItemPermission,
 } from "@/lib/lms/itemCollections";
 
@@ -185,6 +194,10 @@ function ItemRevisions({ item }: { item: AssessmentItem }) {
   const [tfCorrect, setTfCorrect] = useState<"true" | "false">("true");
   const [equivalents, setEquivalents] = useState<string[]>([""]);
   const [caseSensitive, setCaseSensitive] = useState(false);
+  const [labelTargets, setLabelTargets] = useState([{ id: crypto.randomUUID(), text: "" }]);
+  const [labelChoices, setLabelChoices] = useState([{ id: crypto.randomUUID(), text: "" }]);
+  const [labelAssignments, setLabelAssignments] = useState<Record<string, string>>({});
+  const [labelPartialCredit, setLabelPartialCredit] = useState(true);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [simulatingId, setSimulatingId] = useState<string | null>(null);
@@ -202,6 +215,9 @@ function ItemRevisions({ item }: { item: AssessmentItem }) {
     setOptions([{ id: crypto.randomUUID(), label: "" }, { id: crypto.randomUUID(), label: "" }]);
     setCorrectIds([]); setPartialCredit(false); setPenaltyPerWrong("1");
     setTfCorrect("true"); setEquivalents([""]); setCaseSensitive(false);
+    setLabelTargets([{ id: crypto.randomUUID(), text: "" }]);
+    setLabelChoices([{ id: crypto.randomUUID(), text: "" }]);
+    setLabelAssignments({}); setLabelPartialCredit(true);
   };
 
   const inspectRescore = async (revisionId: string) => {
@@ -263,6 +279,30 @@ function ItemRevisions({ item }: { item: AssessmentItem }) {
         await createItemRevision({
           itemId: item.id, prompt: { text: promptText.trim() },
           correctAnswer: { equivalents: filled }, scoringRules: { points: pts, caseSensitive },
+          changelog: `Révision ${revisions.length + 1}`,
+        });
+      } else if (itemType === "labeling") {
+        const targets = labelTargets.filter((t) => t.text.trim());
+        const labels = labelChoices.filter((l) => l.text.trim());
+        if (targets.length === 0 || labels.length === 0) { setFormError("Au moins une cible et une étiquette requises."); return; }
+        const assignments: Record<string, string> = {};
+        for (const t of targets) {
+          if (labelAssignments[t.id]) assignments[t.id] = labelAssignments[t.id];
+        }
+        if (Object.keys(assignments).length < targets.length) { setFormError("Assignez une étiquette correcte à chaque cible."); return; }
+        await createItemRevision({
+          itemId: item.id,
+          prompt: { text: promptText.trim(), targets, labels },
+          correctAnswer: { assignments },
+          scoringRules: { points: pts, partialCredit: labelPartialCredit },
+          changelog: `Révision ${revisions.length + 1}`,
+        });
+      } else if (itemType === "passage") {
+        await createItemRevision({
+          itemId: item.id,
+          prompt: { text: promptText.trim() },
+          correctAnswer: null,
+          scoringRules: {},
           changelog: `Révision ${revisions.length + 1}`,
         });
       } else {
@@ -356,6 +396,68 @@ function ItemRevisions({ item }: { item: AssessmentItem }) {
               </label>
             </div>
           </div>
+        )}
+
+        {itemType === "labeling" && (
+          <div className="space-y-3">
+            <p className="text-xs font-medium text-muted-foreground">
+              Cibles à étiqueter — sans canvas, choix au clavier (accessibilité ASM-021)
+            </p>
+            {labelTargets.map((t, index) => (
+              <div key={t.id} className="flex flex-wrap items-center gap-2">
+                <Input
+                  value={t.text}
+                  onChange={(e) => setLabelTargets((prev) => prev.map((x) => (x.id === t.id ? { ...x, text: e.target.value } : x)))}
+                  placeholder={`Cible ${index + 1} (ex. Capitale de la France)`}
+                  className="flex-1 min-w-[200px]"
+                />
+                <select
+                  value={labelAssignments[t.id] ?? ""}
+                  onChange={(e) => setLabelAssignments((prev) => ({ ...prev, [t.id]: e.target.value }))}
+                  className="h-9 min-w-[160px] rounded-md border border-input bg-background px-2 text-sm"
+                  aria-label={`Étiquette correcte pour la cible ${index + 1}`}
+                >
+                  <option value="">Étiquette correcte…</option>
+                  {labelChoices.filter((l) => l.text.trim()).map((l) => <option key={l.id} value={l.id}>{l.text}</option>)}
+                </select>
+                {labelTargets.length > 1 && (
+                  <button type="button" className="ap-btn ap-btn--ghost ap-btn--sm ap-icon-btn" aria-label="Retirer la cible" onClick={() => setLabelTargets((prev) => prev.filter((x) => x.id !== t.id))}>
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+            ))}
+            <Button type="button" variant="outline" size="sm" onClick={() => setLabelTargets((prev) => [...prev, { id: crypto.randomUUID(), text: "" }])}><Plus size={14} /> Ajouter une cible</Button>
+
+            <p className="text-xs font-medium text-muted-foreground">Étiquettes disponibles</p>
+            {labelChoices.map((l, index) => (
+              <div key={l.id} className="flex items-center gap-2">
+                <Input
+                  value={l.text}
+                  onChange={(e) => setLabelChoices((prev) => prev.map((x) => (x.id === l.id ? { ...x, text: e.target.value } : x)))}
+                  placeholder={`Étiquette ${index + 1}`}
+                  className="flex-1"
+                />
+                {labelChoices.length > 1 && (
+                  <button type="button" className="ap-btn ap-btn--ghost ap-btn--sm ap-icon-btn" aria-label="Retirer l'étiquette" onClick={() => setLabelChoices((prev) => prev.filter((x) => x.id !== l.id))}>
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+            ))}
+            <div className="flex flex-wrap items-center gap-3">
+              <Button type="button" variant="outline" size="sm" onClick={() => setLabelChoices((prev) => [...prev, { id: crypto.randomUUID(), text: "" }])}><Plus size={14} /> Ajouter une étiquette</Button>
+              <label className="flex items-center gap-1.5 text-sm">
+                <input type="checkbox" checked={labelPartialCredit} onChange={(e) => setLabelPartialCredit(e.target.checked)} /> Crédit partiel (proportionnel aux cibles correctes)
+              </label>
+            </div>
+          </div>
+        )}
+
+        {itemType === "passage" && (
+          <p className="text-xs text-muted-foreground">
+            Ce texte sera proposé comme stimulus à copier dans le prompt d'autres items (ASM-017) — pas noté, jamais attaché directement à une évaluation.
+          </p>
         )}
 
         <div className="flex items-end gap-3">
@@ -707,19 +809,25 @@ function AssessmentsPanel({ orgId, items }: { orgId: string; items: AssessmentIt
   );
 }
 
-function CollectionsPanel({ orgId }: { orgId: string }) {
+function CollectionsPanel({ orgId, items }: { orgId: string; items: AssessmentItem[] }) {
   const [collections, setCollections] = useState<ItemCollection[]>([]);
   const [selected, setSelected] = useState<ItemCollection | null>(null);
   const [permissions, setPermissions] = useState<ItemPermission[]>([]);
+  const [members, setMembers] = useState<ItemCollectionMember[]>([]);
   const [title, setTitle] = useState("");
   const [visibility, setVisibility] = useState<ItemCollection['visibility']>("private");
   const [userId, setUserId] = useState("");
   const [permission, setPermission] = useState<ItemPermission['permission']>("view");
+  const [memberItemId, setMemberItemId] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const reload = () => listItemCollections(orgId).then(setCollections).catch(showError).finally(() => setLoading(false));
   useEffect(() => { reload(); }, [orgId]);
-  useEffect(() => { if (selected) listItemPermissions(selected.id).then(setPermissions).catch(showError); }, [selected]);
+  useEffect(() => {
+    if (!selected) return;
+    listItemPermissions(selected.id).then(setPermissions).catch(showError);
+    listCollectionMembers(selected.id).then(setMembers).catch(showError);
+  }, [selected]);
   const create = async () => {
     if (!title.trim()) return;
     setSaving(true); try { const collection = await createItemCollection(orgId, title.trim(), visibility); setCollections((prev) => [collection, ...prev]); setTitle(""); setSelected(collection); } catch (err) { showError(err); } finally { setSaving(false); }
@@ -728,8 +836,153 @@ function CollectionsPanel({ orgId }: { orgId: string }) {
     if (!selected || !userId.trim()) return;
     setSaving(true); try { const row = await grantItemPermission(selected.id, userId.trim(), permission); setPermissions((prev) => [...prev.filter((p) => p.id !== row.id), row]); setUserId(""); } catch (err) { showError(err); } finally { setSaving(false); }
   };
+  const addMember = async () => {
+    if (!selected || !memberItemId) return;
+    setSaving(true); try { const row = await addCollectionMember(selected.id, memberItemId, members.length); setMembers((prev) => [...prev, row]); setMemberItemId(""); } catch (err) { showError(err); } finally { setSaving(false); }
+  };
   if (loading) return <TableSkeleton rows={2} cols={2} />;
-  return <section className="product-list-panel p-5 mt-4"><div className="product-panel-heading -mx-5 -mt-5 mb-4"><div><h2>Collections et permissions</h2><p>Partagez une banque d'items avec des droits explicites : voir, utiliser, commenter ou modifier.</p></div></div><div className="flex flex-wrap items-end gap-2"><Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Nom de la collection" className="min-w-[220px]" /><select value={visibility} onChange={(e) => setVisibility(e.target.value as ItemCollection['visibility'])} className="h-10 rounded-md border border-input bg-background px-2 text-sm"><option value="private">Privée</option><option value="shared">Partagée</option><option value="org">Organisation</option></select><Button size="sm" loading={saving} onClick={() => void create()}><Plus size={14} /> Créer</Button></div>{collections.length > 0 && <div className="mt-4 flex flex-wrap gap-2">{collections.map((collection) => <Button key={collection.id} size="sm" variant={selected?.id === collection.id ? "default" : "outline"} onClick={() => setSelected(collection)}>{collection.title} · {collection.visibility}</Button>)}</div>}{selected && <div className="mt-4 rounded-md border p-3"><p className="mb-2 text-sm font-medium">Droits de « {selected.title} »</p><div className="flex flex-wrap items-end gap-2"><Input value={userId} onChange={(e) => setUserId(e.target.value)} placeholder="UUID utilisateur" className="min-w-[240px]" /><select value={permission} onChange={(e) => setPermission(e.target.value as ItemPermission['permission'])} className="h-10 rounded-md border border-input bg-background px-2 text-sm"><option value="view">Voir</option><option value="use">Utiliser</option><option value="comment">Commenter</option><option value="edit">Modifier</option></select><Button size="sm" variant="outline" loading={saving} onClick={() => void grant()}>Accorder</Button></div><ul className="mt-3 space-y-1 text-sm">{permissions.map((row) => <li className="flex items-center justify-between border-t py-2" key={row.id}><span>{row.user_id.slice(0, 8)} · {row.permission}</span><Button size="sm" variant="ghost" onClick={() => void revokeItemPermission(row.id).then(() => setPermissions((prev) => prev.filter((p) => p.id !== row.id))).catch(showError)}>Révoquer</Button></li>)}</ul></div>}</section>;
+  return (
+    <section className="product-list-panel p-5 mt-4">
+      <div className="product-panel-heading -mx-5 -mt-5 mb-4">
+        <div><h2>Collections et permissions</h2><p>Partagez une banque d'items avec des droits explicites : voir, utiliser, commenter ou modifier.</p></div>
+      </div>
+      <div className="flex flex-wrap items-end gap-2">
+        <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Nom de la collection" className="min-w-[220px]" />
+        <select value={visibility} onChange={(e) => setVisibility(e.target.value as ItemCollection['visibility'])} className="h-10 rounded-md border border-input bg-background px-2 text-sm">
+          <option value="private">Privée</option>
+          <option value="shared">Partagée</option>
+          <option value="org">Organisation</option>
+        </select>
+        <Button size="sm" loading={saving} onClick={() => void create()}><Plus size={14} /> Créer</Button>
+      </div>
+      {collections.length > 0 && (
+        <div className="mt-4 flex flex-wrap gap-2">
+          {collections.map((collection) => (
+            <Button key={collection.id} size="sm" variant={selected?.id === collection.id ? "default" : "outline"} onClick={() => setSelected(collection)}>
+              {collection.title} · {collection.visibility}
+            </Button>
+          ))}
+        </div>
+      )}
+      {selected && (
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
+          <div className="rounded-md border p-3">
+            <p className="mb-2 text-sm font-medium">Droits de « {selected.title} »</p>
+            <div className="flex flex-wrap items-end gap-2">
+              <Input value={userId} onChange={(e) => setUserId(e.target.value)} placeholder="UUID utilisateur" className="min-w-[200px]" />
+              <select value={permission} onChange={(e) => setPermission(e.target.value as ItemPermission['permission'])} className="h-10 rounded-md border border-input bg-background px-2 text-sm">
+                <option value="view">Voir</option>
+                <option value="use">Utiliser</option>
+                <option value="comment">Commenter</option>
+                <option value="edit">Modifier</option>
+              </select>
+              <Button size="sm" variant="outline" loading={saving} onClick={() => void grant()}>Accorder</Button>
+            </div>
+            <ul className="mt-3 space-y-1 text-sm">
+              {permissions.map((row) => (
+                <li className="flex items-center justify-between border-t py-2" key={row.id}>
+                  <span>{row.user_id.slice(0, 8)} · {row.permission}</span>
+                  <Button size="sm" variant="ghost" onClick={() => void revokeItemPermission(row.id).then(() => setPermissions((prev) => prev.filter((p) => p.id !== row.id))).catch(showError)}>Révoquer</Button>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="rounded-md border p-3">
+            <p className="mb-2 text-sm font-medium">Items de « {selected.title} »</p>
+            <div className="flex flex-wrap items-end gap-2">
+              <select value={memberItemId} onChange={(e) => setMemberItemId(e.target.value)} className="h-10 min-w-[200px] rounded-md border border-input bg-background px-2 text-sm" aria-label="Ajouter un item">
+                <option value="">Choisir un item…</option>
+                {items.filter((i) => !members.some((m) => m.item_id === i.id)).map((i) => <option key={i.id} value={i.id}>{i.item_type} · {i.id.slice(0, 8)}</option>)}
+              </select>
+              <Button size="sm" variant="outline" loading={saving} onClick={() => void addMember()}><Plus size={14} /> Ajouter</Button>
+            </div>
+            <ul className="mt-3 space-y-1 text-sm">
+              {members.map((m) => {
+                const memberItem = items.find((i) => i.id === m.item_id);
+                return (
+                  <li className="flex items-center justify-between border-t py-2" key={m.id}>
+                    <span>{memberItem ? `${memberItem.item_type} · ${memberItem.id.slice(0, 8)}` : m.item_id.slice(0, 8)}</span>
+                    <Button size="sm" variant="ghost" onClick={() => void removeCollectionMember(m.id).then(() => setMembers((prev) => prev.filter((x) => x.id !== m.id))).catch(showError)}>Retirer</Button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
+/** ASM-015/019/023 : file de révision manuelle — les réponses audio_video/
+ *  file (jamais notées automatiquement) atterrissent ici, avec le fichier
+ *  téléchargeable et un champ points/note qui écrit via
+ *  grade_assessment_response() (recompute immédiat si la tentative est déjà
+ *  soumise — voir la migration). */
+function PendingReviewPanel({ orgId }: { orgId: string }) {
+  const [rows, setRows] = useState<PendingReviewResponse[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [points, setPoints] = useState<Record<string, string>>({});
+  const [notes, setNotes] = useState<Record<string, string>>({});
+  const [fileUrls, setFileUrls] = useState<Record<string, string>>({});
+  const [grading, setGrading] = useState<string | null>(null);
+
+  const reload = () => listPendingReviewResponses(orgId).then(setRows).catch(showError).finally(() => setLoading(false));
+  useEffect(() => { reload(); }, [orgId]);
+
+  const loadFile = async (responseId: string) => {
+    try {
+      const files = await listResponseFiles(responseId);
+      if (files[0]) setFileUrls((prev) => ({ ...prev, [responseId]: files[0].file_name }));
+      const url = files[0] ? await getResponseFileSignedUrl(files[0].storage_path) : null;
+      if (url) window.open(url, "_blank", "noopener,noreferrer");
+    } catch (err) { showError(err); }
+  };
+
+  const grade = async (row: PendingReviewResponse) => {
+    const pts = Number(points[row.id]);
+    if (!Number.isFinite(pts) || pts < 0) return;
+    setGrading(row.id);
+    try {
+      await gradeAssessmentResponse(row.id, pts, pts >= row.max_points, notes[row.id]);
+      setRows((prev) => prev.filter((r) => r.id !== row.id));
+    } catch (err) { showError(err); }
+    finally { setGrading(null); }
+  };
+
+  if (loading) return <TableSkeleton rows={2} cols={2} />;
+  if (rows.length === 0) return null;
+
+  return (
+    <section className="product-list-panel p-5 mt-4">
+      <div className="product-panel-heading -mx-5 -mt-5 mb-4">
+        <div><h2>À corriger manuellement</h2><p>Réponses audio/vidéo et fichier — sans comparateur automatique (ASM-015).</p></div>
+      </div>
+      <ul className="space-y-2" aria-label="Réponses en attente de correction">
+        {rows.map((row) => (
+          <li key={row.id} className="rounded-md border p-3 space-y-2">
+            <p className="text-sm">{row.prompt.text} <span className="text-muted-foreground">({row.item_type} · {row.assessment_title})</span></p>
+            {(row.item_type === "audio_video" || row.item_type === "file") && (
+              <Button type="button" variant="outline" size="sm" onClick={() => void loadFile(row.id)}>
+                {fileUrls[row.id] ?? "Ouvrir la pièce jointe"}
+              </Button>
+            )}
+            <div className="flex flex-wrap items-end gap-2">
+              <div className="w-24 space-y-1">
+                <label className="text-xs" htmlFor={`grade-points-${row.id}`}>Points (/{row.max_points})</label>
+                <Input id={`grade-points-${row.id}`} type="number" min={0} max={row.max_points} step="0.1" value={points[row.id] ?? ""} onChange={(e) => setPoints((prev) => ({ ...prev, [row.id]: e.target.value }))} />
+              </div>
+              <div className="min-w-[220px] flex-1 space-y-1">
+                <label className="text-xs" htmlFor={`grade-note-${row.id}`}>Note (facultative)</label>
+                <Input id={`grade-note-${row.id}`} value={notes[row.id] ?? ""} onChange={(e) => setNotes((prev) => ({ ...prev, [row.id]: e.target.value }))} />
+              </div>
+              <Button size="sm" loading={grading === row.id} disabled={points[row.id] === undefined || points[row.id] === ""} onClick={() => void grade(row)}>Noter</Button>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
 }
 
 export default function LmsItemBank() {
@@ -821,6 +1074,7 @@ export default function LmsItemBank() {
                 <option value="ranking">Classement</option>
                 <option value="matching">Association</option>
                 <option value="cloze">Texte à trous</option>
+                <option value="passage">Passage (stimulus partagé)</option>
                 <option value="interactive_video">Vidéo interactive</option>
                 <option value="audio_video">Audio / vidéo (revue)</option>
                 <option value="drawing">Dessin (revue)</option>
@@ -855,7 +1109,8 @@ export default function LmsItemBank() {
             </ul>
           )}
         </section>
-        <CollectionsPanel orgId={activeOrgId} />
+        <PendingReviewPanel orgId={activeOrgId} />
+        <CollectionsPanel orgId={activeOrgId} items={items} />
         <AssessmentsPanel orgId={activeOrgId} items={items} />
       </div>
     </AppLayout>

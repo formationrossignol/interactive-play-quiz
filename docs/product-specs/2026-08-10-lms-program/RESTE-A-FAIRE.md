@@ -7,11 +7,12 @@ qui est déjà fait/vérifié et pourquoi, voir `VALIDATION-STATUS.md`. Chaque
 item ici reste formulé exactement comme dans ce document source, pour
 pouvoir s'y référer facilement.
 
-**Progression globale : 47/86 items (55%).** Fermés : §02 Inscriptions (7/7),
-§03 Compétences (7/7), §06 Parcours adaptatifs (7/7). Quasi fermés : §09 Live
-Q&A (9/10), §01 Devoirs/gradebook (7/8). Quasi vierges : §04 Interopérabilité
-Enterprise (2/11), §05 Accessibilité (0/6), §10 Gouvernance de contenu
-(0/12).
+**Progression globale : 51/86 items (59%).** Fermés : §02 Inscriptions (7/7),
+§03 Compétences (7/7), §06 Parcours adaptatifs (7/7). Quasi fermés : §08
+Évaluations avancées (8/9 — reste seulement l'IA d'assistance, non-objectif
+partiel), §09 Live Q&A (9/10), §01 Devoirs/gradebook (7/8). Quasi vierges :
+§04 Interopérabilité Enterprise (2/11), §05 Accessibilité (0/6), §10
+Gouvernance de contenu (0/12).
 
 ## Dépendances qui bloquent plusieurs items à la fois
 
@@ -134,11 +135,13 @@ Enterprise (2/11), §05 Accessibilité (0/6), §10 Gouvernance de contenu
 - [x] Barèmes riches (ASM-012) — **pour 4 types sur 21** (`true_false`/`single_choice`/`mcq`/`short_answer`, les seuls avec UI d'auteur) : points fixes, crédit partiel + pénalité par option fausse (mcq), équivalences insensibles casse/espaces (short_answer). Tolérance numérique non couverte (aucun type numérique n'a d'UI). **Reste** : ranking/matching/cloze et les 8 types ASM-017-024
 - [x] Simulation de barème avant publication (ASM-013) — `20260812200000_assessment_scoring_simulation.sql` : `item_answer_keys` n'a aucune policy select pour `authenticated` (même staff), donc RPC serveur `simulate_item_scoring()` réutilisant `_score_assessment_response()` telle quelle (jamais de dérive avec la vraie correction), retourne seulement le résultat (correct/points), jamais la clé. UI `ItemBank.tsx::SimulateForm`, bouton « Simuler » par révision — apte pour les 4 types notables
 - [x] Moteur de correction réel utilisant `item_answer_keys` — **la pièce la plus bloquante du programme** : `submit_assessment_response()` lit `item_answer_keys` pour la première fois dans ce repo, corrige côté serveur, jamais de fuite de la réponse correcte au client. Contrat JSON `correct_answer`/`scoring_rules` défini et documenté (`20260812060000_assessment_correction_engine.sql`). Testé fonctionnellement (11 cas : crédit partiel + plancher à 0, équivalences, casse) en transaction annulée avant commit, puis déployé en prod. **Non testé en conditions réelles** (pas de compte staff/apprenant local pour dérouler un cycle complet création→passation→note)
-- [x] Nouveaux types d'interaction — éditeur de banque et lecteur de réponse couvrent ranking/matching/cloze, labeling, vidéo/audio, dessin, math/graphique, fichier et code ; les formats sans comparateur automatique sont explicitement envoyés en revue humaine (`grading_status=pending_review`), sans notation inventée
+- [x] Nouveaux types d'interaction — éditeur de banque et lecteur de réponse couvrent ranking/matching/cloze, labeling, vidéo/audio, dessin, math/graphique, fichier et code ; les formats sans comparateur automatique sont explicitement envoyés en revue humaine (`grading_status=pending_review`), sans notation inventée. **Corrigé cette passe** : `labeling` avait un vrai comparateur serveur (`_score_assessment_response()`, `20260813140000_assessment_new_item_types.sql`) mais l'UI de passation le faisait tomber dans le textarea générique `{value}` — toujours faux, jamais `{assignments:{cible:étiquette}}`. `ItemBank.tsx` n'avait d'ailleurs aucun éditeur dédié pour les cibles/étiquettes, et `audio_video`/`file` n'avaient **aucun** bloc de réponse dans `TakeAssessment.tsx` (exclus du fallback générique mais jamais remplacés — apprenant bloqué, aucune saisie possible). Corrigés : éditeur cibles/étiquettes + crédit partiel pour `labeling`, dépôt fichier/consentement pour `audio_video`/`file` branché sur `submit_assessment_media_response()` (upload storage bucket privé `assessment-response-media` + RPC dédiée, jamais via le comparateur générique). `passage` n'avait pas d'option dans le sélecteur de type d'item (impossible à créer) — ajoutée ; rendu du stimulus dans `TakeAssessment.tsx` quand `prompt.passage` est présent. File de révision manuelle (`PendingReviewPanel`) ajoutée dans `/lms/item-bank` — `grade_assessment_response()`/`listPendingReviewResponses()` existaient côté serveur/lib sans aucun appelant UI
 - [x] Rescore en masse avec prévisualisation d'impact — `preview_rescore()` liste les tentatives impactées, `execute_rescore()` recalcule les réponses auto-corrigeables, met à jour les tentatives et journalise chaque changement dans `score_adjustments` avec motif obligatoire
 - [ ] Suggestions IA (génération, distracteurs, vérifications de biais/ambiguïté) — non-objectif partiel mais mentionné comme option V1
-- [x] Collections/permissions granulaires — RLS applique les droits `view/use/comment/edit`, grantee lisible, création/partage/révocation exposés dans `/lms/item-bank`, collections privées/partagées/organisationnelles
+- [x] Collections/permissions granulaires — RLS applique les droits `view/use/comment/edit`, grantee lisible, création/partage/révocation exposés dans `/lms/item-bank`, collections privées/partagées/organisationnelles. **Complété cette passe** : la gestion des membres (`item_collection_members` — quels items appartiennent à la collection, condition nécessaire pour qu'une règle de tirage pool ait quoi que ce soit à tirer) n'avait ni lecture ni écriture côté UI ; ajoutée dans `CollectionsPanel`
 - [x] Lien vers les questions de quiz existantes — import serveur `import_legacy_quiz_as_assessment()` + table `assessment_legacy_question_links`, accessible depuis la Banque d'items par UUID de contenu, source conservée et revisions traçables
+
+**Incident déploiement (corrigé cette passe)** : les 5 migrations `20260813170000` à `20260813210000` (analytics spec 07, pools/import legacy, correctifs rescore/réponse) étaient commitées et leurs objets existaient réellement en base, mais absentes de `supabase_migrations.schema_migrations` — `supabase db push` échouait donc systématiquement sur la première (`analytics_daily_program` already exists) sans jamais atteindre les suivantes. Vérifié objet par objet (`information_schema`/`pg_policies`/`pg_proc`) que `170000`/`180000`/`190000` étaient intégralement appliquées avant de réparer l'historique (`supabase migration repair --status applied`) plutôt que de les rejouer ; `200000`/`210000` (uniquement `create or replace function`, idempotentes) ont été rejouées pour de vrai. `supabase migration list` confirme désormais 0 divergence local/remote sur les 110 migrations.
 
 ## 09 — Sondage live, Q&A, modération et coanimation
 
