@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { CheckCircle2, KeyRound, Link2, Plug, Plus, RadioTower, Webhook, XCircle } from "lucide-react";
+import { CheckCircle2, KeyRound, Link2, Plug, Plus, RadioTower, Search, ShieldCheck, Trash2, Webhook, XCircle } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
@@ -10,27 +10,530 @@ import { showError } from "@/lib/errorTaxonomy";
 import { useSEO } from "@/hooks/useSEO";
 import { listOrgMembers, myOrgMemberships, type OrgMember, type OrgMembership } from "@/lib/org/orgRepo";
 import {
+  buildSsoLoginUrl,
   createApiClient,
+  createIdentityClientSecret,
   createIdentityConnection,
+  createIdentityDomain,
+  createIdentityRoleMapping,
   createLtiDeployment,
   createLtiRegistration,
   createWebhookEndpoint,
+  deactivateIdentityClientSecret,
+  deleteIdentityRoleMapping,
+  discoverOidcEndpoints,
   linkLtiSubject,
+  linkSsoSubject,
   listApiClients,
+  listIdentityClientSecrets,
   listIdentityConnections,
+  listIdentityDomains,
+  listIdentityRoleMappings,
   listLtiDeployments,
   listLtiLaunches,
   listLtiRegistrations,
+  listSsoLogins,
   listWebhookEndpoints,
+  previewSsoRoleMapping,
+  startSsoTestLogin,
   testLtiConnection,
+  updateIdentityConnection,
   type ApiClient,
+  type IdentityClientSecret,
   type IdentityConnection,
+  type IdentityDomain,
+  type IdentityRoleMapping,
   type LtiConnectionTestResult,
   type LtiDeployment,
   type LtiLaunch,
   type LtiRegistration,
+  type SsoLogin,
   type WebhookEndpoint,
 } from "@/lib/lms/integrations";
+
+const ORG_ROLES: IdentityRoleMapping["target_role"][] = ["learner", "trainer", "pedago", "registrar", "admin"];
+
+const SSO_LOGIN_ERROR_LABEL: Record<string, string> = {
+  bad_signature_or_claims: "Signature ou revendications invalides",
+  nonce_mismatch: "Nonce incohérent (rejeu ?)",
+  missing_subject: "Sub absent du jeton",
+  missing_code: "Code d'autorisation absent",
+  token_exchange_failed: "Échec de l'échange du code (vérifiez client_secret / token endpoint)",
+  no_active_secret: "Aucun secret client actif",
+  connection_not_configured: "Connexion incomplète (endpoints manquants)",
+  linked_user_not_found: "Compte lié introuvable",
+  session_mint_failed: "Échec de création de session",
+  invalid_or_expired_state: "État expiré ou invalide",
+};
+
+function IdentityDomainsPanel({ orgId, connectionId }: { orgId: string; connectionId: string }) {
+  const [domains, setDomains] = useState<IdentityDomain[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [domain, setDomain] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    listIdentityDomains(connectionId).then(setDomains).catch(showError).finally(() => setLoading(false));
+  }, [connectionId]);
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!domain.trim()) return;
+    setSaving(true);
+    try {
+      const d = await createIdentityDomain(orgId, connectionId, domain.trim());
+      setDomains((prev) => [d, ...prev]);
+      setDomain("");
+    } catch (err) {
+      showError(err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) return <ListSkeleton rows={1} withAvatar={false} />;
+
+  return (
+    <div>
+      <form onSubmit={handleCreate} className="flex flex-wrap items-end gap-2 mb-2">
+        <div className="min-w-[200px] space-y-1">
+          <label className="text-xs font-medium" htmlFor={`domain-${connectionId}`}>Domaine (mode « obligatoire pour les domaines gérés »)</label>
+          <Input id={`domain-${connectionId}`} value={domain} onChange={(e) => setDomain(e.target.value)} placeholder="exemple.edu" required />
+        </div>
+        <Button type="submit" size="sm" variant="outline" loading={saving}><Plus size={14} /> Ajouter</Button>
+      </form>
+      {domains.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Aucun domaine — le mode « obligatoire pour les domaines gérés » n'aura aucun effet tant qu'aucun n'est ajouté.</p>
+      ) : (
+        <ul className="space-y-1">
+          {domains.map((d) => <li key={d.id} className="text-sm rounded-md border px-3 py-1.5"><code>{d.domain}</code></li>)}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function IdentitySecretsPanel({ connectionId }: { connectionId: string }) {
+  const [secrets, setSecrets] = useState<IdentityClientSecret[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [plaintext, setPlaintext] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const reload = () => listIdentityClientSecrets(connectionId).then(setSecrets).catch(showError).finally(() => setLoading(false));
+  useEffect(() => { reload(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [connectionId]);
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!plaintext.trim()) return;
+    setSaving(true);
+    try {
+      await createIdentityClientSecret(connectionId, plaintext.trim());
+      setPlaintext("");
+      reload();
+    } catch (err) {
+      showError(err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeactivate = async (id: string) => {
+    try {
+      await deactivateIdentityClientSecret(id);
+      reload();
+    } catch (err) {
+      showError(err);
+    }
+  };
+
+  if (loading) return <ListSkeleton rows={1} withAvatar={false} />;
+
+  return (
+    <div>
+      <form onSubmit={handleCreate} className="flex flex-wrap items-end gap-2 mb-2">
+        <div className="min-w-[260px] flex-1 space-y-1">
+          <label className="text-xs font-medium" htmlFor={`secret-${connectionId}`}>Client secret (fourni par le fournisseur)</label>
+          <Input id={`secret-${connectionId}`} type="password" value={plaintext} onChange={(e) => setPlaintext(e.target.value)} placeholder="Jamais réaffiché après création" />
+        </div>
+        <Button type="submit" size="sm" variant="outline" loading={saving}><KeyRound size={14} /> Enregistrer</Button>
+      </form>
+      {secrets.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Aucun secret — l'échange de code échouera tant qu'aucun secret actif n'existe.</p>
+      ) : (
+        <ul className="space-y-1">
+          {secrets.map((s) => (
+            <li key={s.id} className="text-sm flex items-center justify-between rounded-md border px-3 py-1.5">
+              <span>v{s.version} · {s.is_active ? <span style={{ color: "var(--ap-pres)" }}>actif</span> : <span className="text-muted-foreground">désactivé</span>}</span>
+              {s.is_active && (
+                <Button variant="ghost" size="sm" onClick={() => handleDeactivate(s.id)}>
+                  <Trash2 size={14} /> Désactiver
+                </Button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+      <p className="text-xs text-muted-foreground mt-1">INT-005 : gardez l'ancien secret actif jusqu'à confirmation que le nouveau fonctionne (fenêtre de chevauchement) — sso-callback essaie chaque secret actif.</p>
+    </div>
+  );
+}
+
+function RoleMappingPanel({ orgId, connectionId }: { orgId: string; connectionId: string }) {
+  const [mappings, setMappings] = useState<IdentityRoleMapping[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [attributePath, setAttributePath] = useState("");
+  const [matchValue, setMatchValue] = useState("");
+  const [targetRole, setTargetRole] = useState<IdentityRoleMapping["target_role"]>("learner");
+  const [saving, setSaving] = useState(false);
+  const [sample, setSample] = useState('{\n  "groups": ["staff"]\n}');
+  const [previewResult, setPreviewResult] = useState<string[] | null>(null);
+  const [previewing, setPreviewing] = useState(false);
+
+  const reload = () => listIdentityRoleMappings(connectionId).then(setMappings).catch(showError).finally(() => setLoading(false));
+  useEffect(() => { reload(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [connectionId]);
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!attributePath.trim() || !matchValue.trim()) return;
+    setSaving(true);
+    try {
+      await createIdentityRoleMapping(orgId, connectionId, { attributePath: attributePath.trim(), matchValue: matchValue.trim(), targetRole, priority: mappings.length });
+      setAttributePath(""); setMatchValue("");
+      reload();
+    } catch (err) {
+      showError(err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteIdentityRoleMapping(id);
+      reload();
+    } catch (err) {
+      showError(err);
+    }
+  };
+
+  const handlePreview = async () => {
+    setPreviewing(true);
+    setPreviewResult(null);
+    try {
+      const parsed = JSON.parse(sample);
+      setPreviewResult(await previewSsoRoleMapping(connectionId, parsed));
+    } catch (err) {
+      showError(err);
+    } finally {
+      setPreviewing(false);
+    }
+  };
+
+  if (loading) return <ListSkeleton rows={1} withAvatar={false} />;
+
+  return (
+    <div>
+      <form onSubmit={handleCreate} className="grid gap-2 sm:grid-cols-4 mb-2">
+        <div className="space-y-1">
+          <label className="text-xs font-medium" htmlFor={`map-attr-${connectionId}`}>Attribut (clé du jeton)</label>
+          <Input id={`map-attr-${connectionId}`} value={attributePath} onChange={(e) => setAttributePath(e.target.value)} placeholder="groups" required />
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs font-medium" htmlFor={`map-value-${connectionId}`}>Valeur attendue</label>
+          <Input id={`map-value-${connectionId}`} value={matchValue} onChange={(e) => setMatchValue(e.target.value)} placeholder="staff" required />
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs font-medium" htmlFor={`map-role-${connectionId}`}>Rôle accordé</label>
+          <select
+            id={`map-role-${connectionId}`}
+            className="h-9 w-full rounded-md border bg-transparent px-2 text-sm"
+            style={{ borderColor: "var(--ap-line)", color: "var(--ap-ink)" }}
+            value={targetRole}
+            onChange={(e) => setTargetRole(e.target.value as IdentityRoleMapping["target_role"])}
+          >
+            {ORG_ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+          </select>
+        </div>
+        <div className="flex items-end">
+          <Button type="submit" size="sm" variant="outline" loading={saving}><Plus size={14} /> Ajouter la règle</Button>
+        </div>
+      </form>
+      {mappings.length === 0 ? (
+        <p className="text-sm text-muted-foreground mb-2">Aucune règle — une connexion réussie n'accordera aucun rôle supplémentaire.</p>
+      ) : (
+        <ul className="space-y-1 mb-3">
+          {mappings.map((m) => (
+            <li key={m.id} className="text-sm flex items-center justify-between rounded-md border px-3 py-1.5">
+              <span>Si <code>{m.attribute_path}</code> = <code>{m.match_value}</code> → <strong>{m.target_role}</strong></span>
+              <Button variant="ghost" size="sm" onClick={() => handleDelete(m.id)}><Trash2 size={14} /></Button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="rounded-md border p-3">
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">INT-004 — Prévisualiser avant activation</p>
+        <textarea
+          className="w-full rounded-md border p-2 text-xs font-mono"
+          style={{ borderColor: "var(--ap-line)", color: "var(--ap-ink)", minHeight: 90 }}
+          value={sample}
+          onChange={(e) => setSample(e.target.value)}
+          aria-label="Payload d'attributs d'exemple (JSON)"
+        />
+        <div className="flex items-center gap-2 mt-2">
+          <Button variant="outline" size="sm" loading={previewing} onClick={handlePreview}><Search size={14} /> Prévisualiser</Button>
+          {previewResult && (
+            <span className="text-sm">
+              {previewResult.length === 0 ? "Aucun rôle accordé par cet exemple" : <>Rôles résolus : <strong>{previewResult.join(", ")}</strong></>}
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SsoLinkSubjectForm({ connectionId, subject, orgId, members, onLinked }: {
+  connectionId: string; subject: string; orgId: string; members: OrgMember[]; onLinked: () => void;
+}) {
+  const [userId, setUserId] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const handleLink = async () => {
+    if (!userId) return;
+    setSaving(true);
+    try {
+      await linkSsoSubject(connectionId, subject, userId);
+      onLinked();
+    } catch (err) {
+      showError(err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-wrap items-center gap-2 mt-2">
+      <select
+        className="h-9 rounded-md border bg-transparent px-2 text-sm"
+        style={{ borderColor: "var(--ap-line)", color: "var(--ap-ink)" }}
+        value={userId}
+        onChange={(e) => setUserId(e.target.value)}
+        aria-label={`Relier le sub ${subject} à un compte`}
+      >
+        <option value="">Relier à…</option>
+        {members.map((m) => (
+          <option key={m.user_id} value={m.user_id}>{m.username ? `@${m.username}` : m.email}</option>
+        ))}
+      </select>
+      <Button size="sm" variant="outline" disabled={!userId} loading={saving} onClick={handleLink}>
+        <Link2 size={14} /> Lier
+      </Button>
+    </div>
+  );
+}
+
+function IdentityDiagnostics({ connectionId, orgId }: { connectionId: string; orgId: string }) {
+  const [logins, setLogins] = useState<SsoLogin[]>([]);
+  const [members, setMembers] = useState<OrgMember[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const reload = () => listSsoLogins(connectionId).then(setLogins).catch(showError).finally(() => setLoading(false));
+  useEffect(() => {
+    reload();
+    listOrgMembers(orgId).then(setMembers).catch(() => setMembers([]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [connectionId, orgId]);
+
+  if (loading) return <TableSkeleton rows={2} cols={3} />;
+  if (logins.length === 0) return <p className="text-sm text-muted-foreground">Aucune connexion journalisée pour l'instant.</p>;
+
+  return (
+    <ul className="space-y-2" aria-label="Connexions SSO">
+      {logins.map((l) => {
+        const unlinked = l.status === "success" && !l.user_id && l.external_subject;
+        return (
+          <li key={l.id} className="rounded-md border p-3 text-sm">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <span className="flex items-center gap-1.5">
+                {l.status === "success" ? <CheckCircle2 size={14} style={{ color: "var(--ap-pres)" }} /> : <XCircle size={14} style={{ color: "var(--ap-danger)" }} />}
+                {l.status === "success" ? (l.user_id ? "Lié" : "Non relié") : (SSO_LOGIN_ERROR_LABEL[l.error_reason ?? ""] ?? l.error_reason ?? "Rejeté")}
+              </span>
+              <span className="text-muted-foreground text-xs">{new Date(l.logged_at).toLocaleString("fr-FR")}</span>
+            </div>
+            {l.external_subject && <p className="text-muted-foreground text-xs mt-1">sub : <code>{l.external_subject}</code></p>}
+            {unlinked && (
+              <SsoLinkSubjectForm connectionId={connectionId} subject={l.external_subject!} orgId={orgId} members={members} onLinked={reload} />
+            )}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+function IdentityConnectionRow({ connection, orgId, onUpdated }: { connection: IdentityConnection; orgId: string; onUpdated: (c: IdentityConnection) => void }) {
+  const [expanded, setExpanded] = useState(false);
+  const [issuer, setIssuer] = useState((connection.metadata.issuer as string) ?? "");
+  const [clientId, setClientId] = useState((connection.metadata.client_id as string) ?? "");
+  const [authorizationEndpoint, setAuthorizationEndpoint] = useState((connection.metadata.authorization_endpoint as string) ?? "");
+  const [tokenEndpoint, setTokenEndpoint] = useState((connection.metadata.token_endpoint as string) ?? "");
+  const [jwksUri, setJwksUri] = useState((connection.metadata.jwks_uri as string) ?? "");
+  const [discovering, setDiscovering] = useState(false);
+  const [savingConfig, setSavingConfig] = useState(false);
+  const [testing, setTesting] = useState(false);
+
+  const handleDiscover = async () => {
+    if (!issuer.trim()) return;
+    setDiscovering(true);
+    try {
+      const doc = await discoverOidcEndpoints(orgId, issuer.trim());
+      setAuthorizationEndpoint(doc.authorization_endpoint);
+      setTokenEndpoint(doc.token_endpoint);
+      setJwksUri(doc.jwks_uri);
+    } catch (err) {
+      showError(err);
+    } finally {
+      setDiscovering(false);
+    }
+  };
+
+  const handleSaveConfig = async () => {
+    setSavingConfig(true);
+    try {
+      const updated = await updateIdentityConnection(connection.id, {
+        metadata: { ...connection.metadata, issuer: issuer.trim(), client_id: clientId.trim(), authorization_endpoint: authorizationEndpoint.trim(), token_endpoint: tokenEndpoint.trim(), jwks_uri: jwksUri.trim() },
+      });
+      onUpdated(updated);
+    } catch (err) {
+      showError(err);
+    } finally {
+      setSavingConfig(false);
+    }
+  };
+
+  const handleModeChange = async (mode: IdentityConnection["mode"]) => {
+    try {
+      onUpdated(await updateIdentityConnection(connection.id, { mode }));
+    } catch (err) {
+      showError(err);
+    }
+  };
+
+  const handleStatusChange = async (status: IdentityConnection["status"]) => {
+    try {
+      onUpdated(await updateIdentityConnection(connection.id, { status }));
+    } catch (err) {
+      showError(err);
+    }
+  };
+
+  const handleTest = async () => {
+    setTesting(true);
+    try {
+      const url = await startSsoTestLogin(connection.id, window.location.origin + "/dashboard");
+      window.location.href = url;
+    } catch (err) {
+      showError(err);
+      setTesting(false);
+    }
+  };
+
+  return (
+    <li className="rounded-md border p-3 text-sm">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div>
+          <span className="font-medium">{connection.display_name}</span>
+          <span className="text-muted-foreground"> · OIDC · {connection.mode}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <select
+            className="h-8 rounded-md border bg-transparent px-2 text-xs"
+            style={{ borderColor: "var(--ap-line)", color: "var(--ap-ink)" }}
+            value={connection.status}
+            onChange={(e) => handleStatusChange(e.target.value as IdentityConnection["status"])}
+            aria-label={`Statut de ${connection.display_name}`}
+          >
+            <option value="draft">draft</option>
+            <option value="testing">testing</option>
+            <option value="active">active</option>
+            <option value="disabled">disabled</option>
+          </select>
+          <Button variant="ghost" size="sm" onClick={() => setExpanded((v) => !v)}>{expanded ? "Fermer" : "Gérer"}</Button>
+        </div>
+      </div>
+      {expanded && (
+        <div className="mt-3 border-t pt-3 space-y-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Configuration OIDC</p>
+            <div className="grid gap-2 sm:grid-cols-2 mb-2">
+              <div className="space-y-1">
+                <label className="text-xs font-medium" htmlFor={`iss-${connection.id}`}>Issuer</label>
+                <div className="flex gap-1">
+                  <Input id={`iss-${connection.id}`} value={issuer} onChange={(e) => setIssuer(e.target.value)} placeholder="https://idp.exemple.edu" />
+                  <Button type="button" variant="outline" size="sm" loading={discovering} onClick={handleDiscover}><Search size={14} /> Découvrir</Button>
+                </div>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium" htmlFor={`cid-${connection.id}`}>Client ID</label>
+                <Input id={`cid-${connection.id}`} value={clientId} onChange={(e) => setClientId(e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium" htmlFor={`az-${connection.id}`}>Authorization endpoint</label>
+                <Input id={`az-${connection.id}`} value={authorizationEndpoint} onChange={(e) => setAuthorizationEndpoint(e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium" htmlFor={`tok-${connection.id}`}>Token endpoint</label>
+                <Input id={`tok-${connection.id}`} value={tokenEndpoint} onChange={(e) => setTokenEndpoint(e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium" htmlFor={`jwks-${connection.id}`}>JWKS URI</label>
+                <Input id={`jwks-${connection.id}`} value={jwksUri} onChange={(e) => setJwksUri(e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium" htmlFor={`mode-${connection.id}`}>Mode d'activation (INT-002)</label>
+                <select
+                  id={`mode-${connection.id}`}
+                  className="h-9 w-full rounded-md border bg-transparent px-2 text-sm"
+                  style={{ borderColor: "var(--ap-line)", color: "var(--ap-ink)" }}
+                  value={connection.mode}
+                  onChange={(e) => handleModeChange(e.target.value as IdentityConnection["mode"])}
+                >
+                  <option value="optional">optionnel</option>
+                  <option value="required_for_domains">obligatoire pour les domaines gérés</option>
+                  <option value="admin_bypass">secours administrateur</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" loading={savingConfig} onClick={handleSaveConfig}>Enregistrer la configuration</Button>
+              {connection.status === "testing" && (
+                <Button variant="outline" size="sm" loading={testing} onClick={handleTest}>
+                  <ShieldCheck size={14} /> Tester la connexion (login réel, admin seulement)
+                </Button>
+              )}
+            </div>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Client secret</p>
+            <IdentitySecretsPanel connectionId={connection.id} />
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Domaines</p>
+            <IdentityDomainsPanel orgId={orgId} connectionId={connection.id} />
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Mapping attributs → rôles</p>
+            <RoleMappingPanel orgId={orgId} connectionId={connection.id} />
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Diagnostic — dernières connexions</p>
+            <IdentityDiagnostics connectionId={connection.id} orgId={orgId} />
+          </div>
+        </div>
+      )}
+    </li>
+  );
+}
 
 function IdentitySection({ orgId }: { orgId: string }) {
   const [connections, setConnections] = useState<IdentityConnection[]>([]);
@@ -57,10 +560,14 @@ function IdentitySection({ orgId }: { orgId: string }) {
     }
   };
 
+  const handleUpdated = (updated: IdentityConnection) => {
+    setConnections((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+  };
+
   return (
     <section className="product-list-panel p-5">
       <div className="product-panel-heading -mx-5 -mt-5 mb-4">
-        <div><h2>SSO (OIDC/SAML)</h2><p>Connexions d'identité par organisation. Configuration uniquement — l'échange OIDC/SAML lui-même s'exécute côté serveur.</p></div>
+        <div><h2>SSO (OIDC)</h2><p>Connexion d'identité par organisation — brouillon → test (login réel réservé à l'admin) → actif. SAML n'est pas encore couvert (voir RESTE-A-FAIRE.md §04).</p></div>
       </div>
       <form onSubmit={handleCreate} className="flex flex-wrap items-end gap-2 mb-4">
         <div className="min-w-[220px] space-y-1">
@@ -69,14 +576,11 @@ function IdentitySection({ orgId }: { orgId: string }) {
         </div>
         <Button type="submit" size="sm" loading={saving}><Plus /> Ajouter (OIDC)</Button>
       </form>
-      {loading ? <TableSkeleton rows={2} cols={2} /> : (
-        <ul className="space-y-2">
-          {connections.map((c) => (
-            <li key={c.id} className="flex items-center justify-between rounded-md border p-3 text-sm">
-              <span>{c.display_name} · {c.protocol.toUpperCase()}</span>
-              <span className="text-muted-foreground">{c.status}</span>
-            </li>
-          ))}
+      {loading ? <TableSkeleton rows={2} cols={2} /> : connections.length === 0 ? (
+        <p className="text-sm text-muted-foreground flex items-center gap-1.5"><Plug size={14} /> Aucune connexion SSO pour l'instant.</p>
+      ) : (
+        <ul className="space-y-2" aria-label="Connexions SSO">
+          {connections.map((c) => <IdentityConnectionRow key={c.id} connection={c} orgId={orgId} onUpdated={handleUpdated} />)}
         </ul>
       )}
     </section>

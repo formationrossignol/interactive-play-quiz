@@ -424,3 +424,23 @@ verify_jwt = false
 verify_jwt = false
 [functions.lti-launch]
 verify_jwt = false
+
+# sso-login/sso-callback: same reasoning as lti-login/lti-launch above — the
+# GET path (production 'active' login) is a raw top-level browser navigation
+# before any Brivia session exists, so there is no Supabase JWT to verify at
+# the gateway. Authenticity comes from sso-callback validating the IdP's own
+# id_token signature (see _shared/oidc.ts) and from the single-use
+# sso_login_states row minted by sso-login. sso-login also accepts an
+# authenticated POST (supabase.functions.invoke, which DOES attach a JWT) for
+# testing a 'testing'-status connection as its own admin — checked manually
+# inside sso-login itself, not by this gateway, since the requirement only
+# applies to that one status/method combination.
+[functions.sso-login]
+verify_jwt = false
+[functions.sso-callback]
+verify_jwt = false
+# sso-discover-oidc: unlike the two above, this IS called by an already-
+# authenticated admin from Integrations.tsx (supabase.functions.invoke, which
+# attaches the session's JWT automatically) — kept JWT-verified so a random
+# unauthenticated caller can't use this project's edge function as an open
+# SSRF-probing proxy against arbitrary URLs.

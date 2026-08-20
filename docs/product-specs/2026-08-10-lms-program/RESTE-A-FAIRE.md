@@ -7,12 +7,14 @@ qui est déjà fait/vérifié et pourquoi, voir `VALIDATION-STATUS.md`. Chaque
 item ici reste formulé exactement comme dans ce document source, pour
 pouvoir s'y référer facilement.
 
-**Progression globale : 69/86 items (80%).** Fermés : §02 Inscriptions (7/7),
+**Progression globale : 70/87 items (80%).** Fermés : §02 Inscriptions (7/7),
 §03 Compétences (7/7), §05 Accessibilité (6/6), §06 Parcours adaptatifs
 (7/7), §07 Analytics pédagogiques (9/9). Quasi fermés : §08 Évaluations
 avancées (8/9 — reste seulement l'IA d'assistance, non-objectif partiel),
-§09 Live Q&A (9/10), §01 Devoirs/gradebook (7/8). Vierges : §04
-Interopérabilité Enterprise (2/11), §10 Gouvernance de contenu (0/8).
+§09 Live Q&A (9/10), §01 Devoirs/gradebook (7/8). Entamé : §04
+Interopérabilité Enterprise (3/12 — SSO OIDC fait, SAML/LTI Advantage/QTI3/
+SCIM/OneRoster/API publique/webhooks restent). Vierge : §10 Gouvernance de
+contenu (0/8).
 
 ## Dépendances qui bloquent plusieurs items à la fois
 
@@ -90,7 +92,8 @@ Interopérabilité Enterprise (2/11), §10 Gouvernance de contenu (0/8).
 - [x] Outil de diagnostic LTI (dernier lancement, erreurs, test de connexion — LTI-006) — panneau « derniers lancements » par enregistrement (succès/rejet, raison, sub, deployment) + bouton test de connexion JWKS en direct (edge function `lti-test-connection`, non persistée)
 - [ ] Deep Linking (LTI-002), Names and Role Provisioning (LTI-003), Assignment and Grade Services (LTI-004) — LTI-001 (lancement core) seul est couvert
 - [ ] Provisioning automatique d'un compte pour un `sub` jamais vu (actuellement : jamais, par choix — voir commentaire en tête de `lti-launch/index.ts`)
-- [ ] Handshake OIDC/SAML réel pour le SSO général (INT-001 à INT-005) — étape 1 de l'ordre de livraison, toujours pas commencée ; seule la table de config existe
+- [x] Handshake OIDC réel pour le SSO général (INT-001 à INT-004) — `20260815040000_sso_oidc.sql` + `sso-login`/`sso-callback`/`sso-discover-oidc` (edge functions), `_shared/oidc.ts` (vérification signature/issuer/audience/nonce, testée — `oidc.test.ts`, 7 cas, même rigueur que `_shared/lti.ts`). SAML **non fait** (voir item séparé ci-dessous) — seule la moitié OIDC de INT-001 est couverte. Authorization code + PKCE (pas le flux implicite de LTI — ici il n'y a pas de contrainte spec imposant form_post, code+PKCE est le choix le plus sûr côté navigateur). Secret client stocké **chiffré** (`supabase_vault`, nouveau dans ce repo — le vault hash-only de `integration_secrets` ne convient pas : un client_secret doit repartir en clair vers le token endpoint à chaque connexion, un hash ne le permet jamais) via `identity_client_secrets`/`create_identity_client_secret()`, déchiffrement seulement par `_decrypt_identity_client_secret()` (service_role uniquement, jamais accordée à `authenticated`). INT-002 (mode) : statut `testing` réellement gated à l'admin propriétaire (`sso-login` accepte un POST authentifié distinct du GET anonyme de production — un `<a href>` brut ne peut pas porter d'en-tête `Authorization`, d'où les deux entrées). INT-003 (liaison par sub stable, jamais par email seul) : `external_identities`, jamais d'auto-provisioning sur un sub inconnu — même posture que `lti-launch` (délibérée, documentée dans son en-tête) — redirection vers `/sso/unlinked`, résolution admin via `link_sso_subject()` (mirroring `link_lti_subject()`) + panneau diagnostic dans `/lms/integrations`. INT-004 (mapping attribut→rôle) : `identity_role_mappings` + `preview_sso_role_mapping()` (évalue un payload d'exemple collé par l'admin, n'écrit rien) + application réelle des rôles résolus (`_resolve_sso_roles()`) à chaque connexion réussie — additif seulement, ne révoque jamais un rôle qu'une règle ne matche plus (décision de reconciliation complète non tranchée, pas devinée ici). Nouvelle RPC publique `resolve_sso_connection_for_email()` (narrow : id+nom seulement, connexions actives seulement) + bouton « Se connecter avec {provider} » dans `AuthPage.tsx` quand le domaine de l'email tapé correspond — sans ça, le mode `required_for_domains` restait une donnée que rien ne lisait jamais côté écran de connexion réel, même trou que celui déjà trouvé et corrigé ailleurs dans ce programme. **Reste dans INT-002** : `required_for_domains` n'empêche pas réellement la connexion par mot de passe (juste une suggestion de bouton) — bloquer vraiment le mot de passe pour un domaine géré est un changement plus large sur `auth.ts`/le flux de connexion, pas tenté ici. `sso-discover-oidc` a un garde-fou anti-SSRF minimal (hôtes loopback/privés littéraux bloqués, HTTPS obligatoire) — pas une défense complète (pas de protection contre le DNS rebinding)
+- [ ] SAML (moitié restante d'INT-001, + INT-005 rotation de certificat) — non tenté : implémentation XML-DSig sans aucun précédent dans ce dépôt, chantier séparé, décision explicite (voir choix utilisateur : « SAML fait maison » plutôt que l'addon Supabase natif payant `signInWithSSO()`/SAML) — à faire dans une passe dédiée
 - [ ] Import/export QTI 3
 - [ ] Sync SCIM 2.0 (provisioning/déprovisioning réel)
 - [ ] Sync OneRoster 1.2 (import CSV + REST, dry-run)
