@@ -444,3 +444,17 @@ verify_jwt = false
 # attaches the session's JWT automatically) — kept JWT-verified so a random
 # unauthenticated caller can't use this project's edge function as an open
 # SSRF-probing proxy against arbitrary URLs.
+
+# saml-login/saml-acs/saml-metadata: same reasoning as sso-login/sso-callback
+# above, SAML's version of it — saml-acs is a raw POST from the IdP's own
+# browser-submitted form (no Brivia session, no JWT to check at the gateway);
+# authenticity comes from verifySamlResponse validating the IdP's own XML
+# signature (see _shared/saml.ts) and the single-use saml_login_states row
+# minted by saml-login. saml-metadata is a public, unauthenticated document
+# by definition (an admin pastes its contents into their IdP's own config).
+[functions.saml-login]
+verify_jwt = false
+[functions.saml-acs]
+verify_jwt = false
+[functions.saml-metadata]
+verify_jwt = false

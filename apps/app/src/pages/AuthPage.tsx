@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useSEO } from "@/hooks/useSEO";
 import { login, register, requestPasswordReset, verifyMfaLogin, getCurrentUser } from "@/lib/auth";
 import { acceptOrgInvitation, myOrgMemberships } from "@/lib/org/orgRepo";
-import { buildSsoLoginUrl, resolveSsoConnectionForEmail } from "@/lib/lms/integrations";
+import { buildSamlLoginUrl, buildSsoLoginUrl, resolveSsoConnectionForEmail } from "@/lib/lms/integrations";
 import { toast } from "sonner";
 import { t } from "@/lib/i18n";
 import { BrandMonogram } from "ui/BrandMonogram";
@@ -32,7 +32,7 @@ const AuthPage = () => {
   // (see its migration comment). Password login stays usable regardless of
   // mode — enforcing `required_for_domains` by actually blocking password
   // submission server-side is a separate, bigger change, not attempted here.
-  const [ssoOption, setSsoOption] = useState<{ connection_id: string; display_name: string } | null>(null);
+  const [ssoOption, setSsoOption] = useState<{ connection_id: string; display_name: string; protocol: 'oidc' | 'saml' } | null>(null);
   const checkSsoForEmail = async (email: string) => {
     try {
       setSsoOption(await resolveSsoConnectionForEmail(email));
@@ -439,7 +439,12 @@ const AuthPage = () => {
               type="button"
               className={`${styles.submitButton} ap-btn`}
               style={{ background: "transparent", border: "1px solid var(--ap-line)", color: "var(--ap-ink)" }}
-              onClick={() => { window.location.href = buildSsoLoginUrl(ssoOption.connection_id, window.location.origin + "/dashboard"); }}
+              onClick={() => {
+                const target = window.location.origin + "/dashboard";
+                window.location.href = ssoOption.protocol === "saml"
+                  ? buildSamlLoginUrl(ssoOption.connection_id, target)
+                  : buildSsoLoginUrl(ssoOption.connection_id, target);
+              }}
             >
               Se connecter avec {ssoOption.display_name}
             </button>

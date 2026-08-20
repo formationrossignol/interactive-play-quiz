@@ -11,35 +11,16 @@
 // tested pattern for that in this codebase (lti-launch's own header comment
 // says the same) — building one blind here would be exactly the kind of
 // unverified auth code this project's guidelines warn against.
+//
+// Post-verification (existing-account lookup → unlinked redirect or role
+// mapping + session mint) lives in _shared/sso-session.ts, shared with
+// saml-acs — a fix there now applies to both protocols, not just this one.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { createRemoteJWKSet } from "npm:jose@5";
 import { corsHeaders, handleCorsPreflight } from "../_shared/cors.ts";
 import { OidcValidationError, verifyOidcIdToken, type OidcRejectReason } from "../_shared/oidc.ts";
-
-function htmlRedirect(location: string) {
-  // Same form_post-safe meta-refresh pattern as lti-launch/index.ts — a raw
-  // 302 following a cross-site hop is flagged as suspicious by some
-  // browsers; this is the conventional workaround.
-  return new Response(
-    `<!doctype html><html><head><meta http-equiv="refresh" content="0;url=${location}"></head>` +
-      `<body><script>location.replace(${JSON.stringify(location)})</script>` +
-      `<p>Redirection… <a href="${location}">Continuer</a></p></body></html>`,
-    { headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8" } },
-  );
-}
-
-function appUrl(path: string): string {
-  const base = Deno.env.get("PUBLIC_APP_URL");
-  if (!base) {
-    console.error("[sso-callback] PUBLIC_APP_URL is not configured — falling back to a relative path, which will not resolve for the IdP's browser redirect.");
-    return path;
-  }
-  return new URL(path, base).toString();
-}
-
-function jsonError(reason: string, status = 400) {
-  return new Response(JSON.stringify({ error: reason }), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-}
+import { htmlRedirect, jsonError } from "../_shared/sso-http.ts";
+import { journalRejected, resolveSsoLoginAndMintSession } from "../_shared/sso-session.ts";
 
 Deno.serve(async (req) => {
   const preflight = handleCorsPreflight(req);
@@ -84,22 +65,12 @@ Deno.serve(async (req) => {
       return jsonError("unknown_connection");
     }
 
-    const journal = (args: { subject: string | null; rawAttributes: Record<string, unknown> | null; status: "success" | "rejected"; errorReason?: string; userId?: string | null }) =>
-      supabase.rpc("record_sso_login", {
-        p_connection_id: connection.id,
-        p_external_subject: args.subject,
-        p_raw_attributes: args.rawAttributes,
-        p_user_id: args.userId ?? null,
-        p_status: args.status,
-        p_error_reason: args.errorReason ?? null,
-      });
-
     if (idpError) {
-      await journal({ subject: null, rawAttributes: null, status: "rejected", errorReason: `idp_error:${idpError}` });
+      await journalRejected(supabase, connection.id, `idp_error:${idpError}`);
       return jsonError(`idp_error:${idpError}`);
     }
     if (!code) {
-      await journal({ subject: null, rawAttributes: null, status: "rejected", errorReason: "missing_code" });
+      await journalRejected(supabase, connection.id, "missing_code");
       return jsonError("missing_code");
     }
 
@@ -109,7 +80,7 @@ Deno.serve(async (req) => {
     const tokenEndpoint = typeof meta.token_endpoint === "string" ? meta.token_endpoint : null;
     const jwksUri = typeof meta.jwks_uri === "string" ? meta.jwks_uri : null;
     if (!issuer || !clientId || !tokenEndpoint || !jwksUri) {
-      await journal({ subject: null, rawAttributes: null, status: "rejected", errorReason: "connection_not_configured" });
+      await journalRejected(supabase, connection.id, "connection_not_configured");
       return jsonError("connection_not_configured", 500);
     }
 
@@ -125,7 +96,7 @@ Deno.serve(async (req) => {
       .order("version", { ascending: false });
 
     if (!secrets || secrets.length === 0) {
-      await journal({ subject: null, rawAttributes: null, status: "rejected", errorReason: "no_active_secret" });
+      await journalRejected(supabase, connection.id, "no_active_secret");
       return jsonError("connection_not_configured", 500);
     }
 
@@ -158,7 +129,7 @@ Deno.serve(async (req) => {
     }
 
     if (!tokenResponse?.id_token) {
-      await journal({ subject: null, rawAttributes: null, status: "rejected", errorReason: lastTokenError ?? "token_exchange_failed" });
+      await journalRejected(supabase, connection.id, lastTokenError ?? "token_exchange_failed");
       return jsonError("token_exchange_failed", 401);
     }
 
@@ -172,66 +143,14 @@ Deno.serve(async (req) => {
       });
     } catch (err) {
       const reason: OidcRejectReason = err instanceof OidcValidationError ? err.reason : "bad_signature_or_claims";
-      await journal({ subject: null, rawAttributes: null, status: "rejected", errorReason: reason });
+      await journalRejected(supabase, connection.id, reason);
       return jsonError(reason, 401);
     }
 
-    const { data: existing } = await supabase
-      .from("external_identities")
-      .select("id, user_id")
-      .eq("connection_id", connection.id)
-      .eq("external_subject", claims.sub)
-      .maybeSingle();
-
-    if (!existing) {
-      // Verified, but no linked Brivia account — same "success but unlinked"
-      // journaling as lti-launch, never auto-provisioned (see file header).
-      await journal({ subject: claims.sub, rawAttributes: claims.rawAttributes, status: "success", userId: null });
-      const unlinkedUrl = appUrl(`/sso/unlinked?connection=${connection.id}&target=${encodeURIComponent(loginState.redirect_to)}`);
-      return htmlRedirect(unlinkedUrl);
-    }
-
-    // Refresh the latest-known snapshot (service_role bypasses RLS; this is
-    // the one write path outside link_sso_subject(), scoped to a row this
-    // exact verified login just proved the subject controls).
-    await supabase.from("external_identities").update({ raw_attributes: claims.rawAttributes }).eq("id", existing.id);
-
-    // INT-004: apply the connection's attribute→role mapping. Additive only
-    // — a role a previous login granted but this one's attributes no longer
-    // match is left alone; the spec (INT-004) describes mapping roles in,
-    // not a full reconciling sync, and revocation-on-mismatch would be a
-    // much bigger, separate design decision (what happens to a role granted
-    // by a rule that's since been deleted, by a manual admin grant, etc.)
-    // not something to infer silently here.
-    const { data: resolvedRoles } = await supabase.rpc("_resolve_sso_roles", {
-      p_connection_id: connection.id,
-      p_attributes: claims.rawAttributes,
-    });
-    for (const role of (resolvedRoles ?? []) as string[]) {
-      await supabase.from("user_org_roles").upsert(
-        { org_id: connection.org_id, user_id: existing.user_id, role },
-        { onConflict: "user_id,org_id,role", ignoreDuplicates: true },
-      );
-    }
-
-    const { data: userResult, error: userError } = await supabase.auth.admin.getUserById(existing.user_id);
-    if (userError || !userResult?.user?.email) {
-      await journal({ subject: claims.sub, rawAttributes: claims.rawAttributes, status: "rejected", errorReason: "linked_user_not_found" });
-      return jsonError("linked_user_not_found", 500);
-    }
-
-    const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
-      type: "magiclink",
-      email: userResult.user.email,
-      options: { redirectTo: loginState.redirect_to },
-    });
-    if (linkError || !linkData?.properties?.action_link) {
-      await journal({ subject: claims.sub, rawAttributes: claims.rawAttributes, status: "rejected", errorReason: "session_mint_failed" });
-      return jsonError("session_mint_failed", 500);
-    }
-
-    await journal({ subject: claims.sub, rawAttributes: claims.rawAttributes, status: "success", userId: existing.user_id });
-    return htmlRedirect(linkData.properties.action_link);
+    const result = await resolveSsoLoginAndMintSession(supabase, connection, claims.sub, claims.rawAttributes, loginState.redirect_to);
+    if (result.kind === "unlinked") return htmlRedirect(result.redirectUrl);
+    if (result.kind === "error") return jsonError(result.reason, 500);
+    return htmlRedirect(result.actionLink);
   } catch (err) {
     console.error("[sso-callback] error:", err);
     return jsonError("internal_error", 500);

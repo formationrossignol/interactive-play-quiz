@@ -1,12 +1,13 @@
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { LinkIcon } from 'lucide-react';
 
-// Landed here by supabase/functions/sso-callback when a validly-signed OIDC
-// id_token carries a `sub` that has no row in external_identities yet — the
-// login itself was legitimate (already journaled as status='success',
-// user_id=null in sso_logins), there's just no Brivia account linked to this
-// identity yet. Mirrors LtiUnlinked.tsx exactly — see sso-callback/index.ts's
-// top comment for why this doesn't auto-provision one.
+// Landed here by sso-callback (OIDC) or saml-acs (SAML) when a validly-
+// verified login carries a subject (id_token `sub` / SAML `NameID`) that has
+// no row in external_identities yet — the login itself was legitimate
+// (already journaled as status='success', user_id=null in sso_logins),
+// there's just no Brivia account linked to this identity yet. Mirrors
+// LtiUnlinked.tsx exactly — see _shared/sso-session.ts's top comment for why
+// this doesn't auto-provision one.
 export default function SsoUnlinked() {
   const navigate = useNavigate();
   const [params] = useSearchParams();

@@ -241,11 +241,11 @@ export function buildSsoLoginUrl(connectionId: string, redirectTo: string): stri
  *  what a login button needs). Used by AuthPage.tsx to offer "Se connecter
  *  avec {provider}" once the typed email's domain matches an active
  *  connection (INT-002 `required_for_domains` mode). */
-export async function resolveSsoConnectionForEmail(email: string): Promise<{ connection_id: string; display_name: string } | null> {
+export async function resolveSsoConnectionForEmail(email: string): Promise<{ connection_id: string; display_name: string; protocol: 'oidc' | 'saml' } | null> {
   if (!email.includes('@')) return null;
   const { data, error } = await supabase.rpc('resolve_sso_connection_for_email', { p_email: email });
   if (error) throw error;
-  return (data as { connection_id: string; display_name: string }[])[0] ?? null;
+  return (data as { connection_id: string; display_name: string; protocol: 'oidc' | 'saml' }[])[0] ?? null;
 }
 
 export async function startSsoTestLogin(connectionId: string, redirectTo: string): Promise<string> {
@@ -255,6 +255,41 @@ export async function startSsoTestLogin(connectionId: string, redirectTo: string
   });
   if (error) throw error;
   return (data as { redirectUrl: string }).redirectUrl;
+}
+
+/** SAML SP-initiated login (production 'active' path) — mirrors buildSsoLoginUrl
+ *  exactly; the browser must navigate here directly, saml-login ends in a
+ *  redirect to the IdP and the IdP's own POST back to saml-acs. */
+export function buildSamlLoginUrl(connectionId: string, redirectTo: string): string {
+  const url = new URL(`${supabaseUrl}/functions/v1/saml-login`);
+  url.searchParams.set('connection_id', connectionId);
+  url.searchParams.set('redirect_to', redirectTo);
+  return url.toString();
+}
+
+/** SAML equivalent of startSsoTestLogin — same 'testing'-status + connection-owner
+ *  gating (see saml-login/index.ts), same invoke-then-navigate shape since a raw
+ *  <a href> can't carry the admin's Authorization header either. */
+export async function startSamlTestLogin(connectionId: string, redirectTo: string): Promise<string> {
+  const { data, error } = await supabase.functions.invoke('saml-login', {
+    method: 'POST',
+    body: { connection_id: connectionId, redirect_to: redirectTo },
+  });
+  if (error) throw error;
+  return (data as { redirectUrl: string }).redirectUrl;
+}
+
+/** Static, connection-independent — one SP identity for the whole
+ *  deployment (see saml-metadata/index.ts's header). Used by the admin UI
+ *  to show what to paste into the IdP's own configuration. */
+export function samlSpMetadataUrl(): string {
+  return `${supabaseUrl}/functions/v1/saml-metadata`;
+}
+export function samlSpEntityId(): string {
+  return `${window.location.origin}/sso/saml/metadata`;
+}
+export function samlSpAcsUrl(): string {
+  return `${supabaseUrl}/functions/v1/saml-acs`;
 }
 
 export async function listLtiRegistrations(orgId: string): Promise<LtiRegistration[]> {

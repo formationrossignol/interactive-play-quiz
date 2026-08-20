@@ -35,6 +35,10 @@ import {
   listSsoLogins,
   listWebhookEndpoints,
   previewSsoRoleMapping,
+  samlSpAcsUrl,
+  samlSpEntityId,
+  samlSpMetadataUrl,
+  startSamlTestLogin,
   startSsoTestLogin,
   testLtiConnection,
   updateIdentityConnection,
@@ -56,14 +60,21 @@ const ORG_ROLES: IdentityRoleMapping["target_role"][] = ["learner", "trainer", "
 const SSO_LOGIN_ERROR_LABEL: Record<string, string> = {
   bad_signature_or_claims: "Signature ou revendications invalides",
   nonce_mismatch: "Nonce incohérent (rejeu ?)",
-  missing_subject: "Sub absent du jeton",
+  missing_subject: "Sub/NameID absent",
   missing_code: "Code d'autorisation absent",
   token_exchange_failed: "Échec de l'échange du code (vérifiez client_secret / token endpoint)",
   no_active_secret: "Aucun secret client actif",
-  connection_not_configured: "Connexion incomplète (endpoints manquants)",
+  connection_not_configured: "Connexion incomplète (endpoints ou certificat manquants)",
   linked_user_not_found: "Compte lié introuvable",
   session_mint_failed: "Échec de création de session",
   invalid_or_expired_state: "État expiré ou invalide",
+  invalid_or_expired_relay_state: "RelayState expiré ou invalide",
+  missing_saml_response: "Réponse SAML absente",
+  bad_signature_or_cert: "Signature invalide ou certificat non reconnu",
+  audience_mismatch: "Audience de l'assertion incorrecte",
+  conditions_expired: "Assertion expirée (fenêtre de validité)",
+  response_to_mismatch: "InResponseTo incohérent (rejeu ?)",
+  idp_error: "Erreur signalée par le fournisseur d'identité",
 };
 
 function IdentityDomainsPanel({ orgId, connectionId }: { orgId: string; connectionId: string }) {
@@ -371,13 +382,33 @@ function IdentityDiagnostics({ connectionId, orgId }: { connectionId: string; or
   );
 }
 
+/** SP metadata is static and connection-independent (see saml-metadata's
+ *  header) — shown once per connection's expanded panel purely as a
+ *  copy-paste convenience for whichever IdP config screen the admin has
+ *  open, not fetched from the connection row itself. */
+function SamlSpMetadataPanel() {
+  return (
+    <div className="rounded-md border p-3 space-y-1.5 text-xs">
+      <p className="font-semibold uppercase tracking-wide text-muted-foreground mb-1">Métadonnées SP — à coller côté fournisseur</p>
+      <p>Entity ID : <code className="break-all">{samlSpEntityId()}</code></p>
+      <p>ACS URL (Assertion Consumer Service) : <code className="break-all">{samlSpAcsUrl()}</code></p>
+      <p>Métadonnées XML complètes : <code className="break-all">{samlSpMetadataUrl()}</code></p>
+      <p className="text-muted-foreground">NameID format : email · liaison ACS : HTTP-POST · pas de clé de signature SP (les requêtes ne sont pas signées, voir _shared/saml.ts)</p>
+    </div>
+  );
+}
+
 function IdentityConnectionRow({ connection, orgId, onUpdated }: { connection: IdentityConnection; orgId: string; onUpdated: (c: IdentityConnection) => void }) {
   const [expanded, setExpanded] = useState(false);
+  const isSaml = connection.protocol === "saml";
   const [issuer, setIssuer] = useState((connection.metadata.issuer as string) ?? "");
   const [clientId, setClientId] = useState((connection.metadata.client_id as string) ?? "");
   const [authorizationEndpoint, setAuthorizationEndpoint] = useState((connection.metadata.authorization_endpoint as string) ?? "");
   const [tokenEndpoint, setTokenEndpoint] = useState((connection.metadata.token_endpoint as string) ?? "");
   const [jwksUri, setJwksUri] = useState((connection.metadata.jwks_uri as string) ?? "");
+  const [idpEntityId, setIdpEntityId] = useState((connection.metadata.idp_entity_id as string) ?? "");
+  const [idpSsoUrl, setIdpSsoUrl] = useState((connection.metadata.idp_sso_url as string) ?? "");
+  const [idpCert, setIdpCert] = useState((connection.metadata.idp_cert as string) ?? "");
   const [discovering, setDiscovering] = useState(false);
   const [savingConfig, setSavingConfig] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -401,7 +432,9 @@ function IdentityConnectionRow({ connection, orgId, onUpdated }: { connection: I
     setSavingConfig(true);
     try {
       const updated = await updateIdentityConnection(connection.id, {
-        metadata: { ...connection.metadata, issuer: issuer.trim(), client_id: clientId.trim(), authorization_endpoint: authorizationEndpoint.trim(), token_endpoint: tokenEndpoint.trim(), jwks_uri: jwksUri.trim() },
+        metadata: isSaml
+          ? { ...connection.metadata, idp_entity_id: idpEntityId.trim(), idp_sso_url: idpSsoUrl.trim(), idp_cert: idpCert.trim() }
+          : { ...connection.metadata, issuer: issuer.trim(), client_id: clientId.trim(), authorization_endpoint: authorizationEndpoint.trim(), token_endpoint: tokenEndpoint.trim(), jwks_uri: jwksUri.trim() },
       });
       onUpdated(updated);
     } catch (err) {
@@ -430,7 +463,9 @@ function IdentityConnectionRow({ connection, orgId, onUpdated }: { connection: I
   const handleTest = async () => {
     setTesting(true);
     try {
-      const url = await startSsoTestLogin(connection.id, window.location.origin + "/dashboard");
+      const url = isSaml
+        ? await startSamlTestLogin(connection.id, window.location.origin + "/dashboard")
+        : await startSsoTestLogin(connection.id, window.location.origin + "/dashboard");
       window.location.href = url;
     } catch (err) {
       showError(err);
@@ -443,7 +478,7 @@ function IdentityConnectionRow({ connection, orgId, onUpdated }: { connection: I
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <span className="font-medium">{connection.display_name}</span>
-          <span className="text-muted-foreground"> · OIDC · {connection.mode}</span>
+          <span className="text-muted-foreground"> · {isSaml ? "SAML" : "OIDC"} · {connection.mode}</span>
         </div>
         <div className="flex items-center gap-2">
           <select
@@ -463,60 +498,112 @@ function IdentityConnectionRow({ connection, orgId, onUpdated }: { connection: I
       </div>
       {expanded && (
         <div className="mt-3 border-t pt-3 space-y-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Configuration OIDC</p>
-            <div className="grid gap-2 sm:grid-cols-2 mb-2">
-              <div className="space-y-1">
-                <label className="text-xs font-medium" htmlFor={`iss-${connection.id}`}>Issuer</label>
-                <div className="flex gap-1">
-                  <Input id={`iss-${connection.id}`} value={issuer} onChange={(e) => setIssuer(e.target.value)} placeholder="https://idp.exemple.edu" />
-                  <Button type="button" variant="outline" size="sm" loading={discovering} onClick={handleDiscover}><Search size={14} /> Découvrir</Button>
+          {isSaml ? (
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Configuration SAML</p>
+              <div className="grid gap-2 sm:grid-cols-2 mb-2">
+                <div className="space-y-1">
+                  <label className="text-xs font-medium" htmlFor={`idp-eid-${connection.id}`}>IdP Entity ID</label>
+                  <Input id={`idp-eid-${connection.id}`} value={idpEntityId} onChange={(e) => setIdpEntityId(e.target.value)} placeholder="https://idp.exemple.edu/saml" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium" htmlFor={`idp-sso-${connection.id}`}>IdP SSO URL (HTTP-Redirect)</label>
+                  <Input id={`idp-sso-${connection.id}`} value={idpSsoUrl} onChange={(e) => setIdpSsoUrl(e.target.value)} placeholder="https://idp.exemple.edu/sso" />
+                </div>
+                <div className="space-y-1 sm:col-span-2">
+                  <label className="text-xs font-medium" htmlFor={`idp-cert-${connection.id}`}>Certificat de signature IdP (x509, PEM)</label>
+                  <textarea
+                    id={`idp-cert-${connection.id}`}
+                    className="w-full rounded-md border p-2 text-xs font-mono"
+                    style={{ borderColor: "var(--ap-line)", color: "var(--ap-ink)", minHeight: 90 }}
+                    value={idpCert}
+                    onChange={(e) => setIdpCert(e.target.value)}
+                    placeholder="-----BEGIN CERTIFICATE-----&#10;...&#10;-----END CERTIFICATE-----"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium" htmlFor={`mode-${connection.id}`}>Mode d'activation (INT-002)</label>
+                  <select
+                    id={`mode-${connection.id}`}
+                    className="h-9 w-full rounded-md border bg-transparent px-2 text-sm"
+                    style={{ borderColor: "var(--ap-line)", color: "var(--ap-ink)" }}
+                    value={connection.mode}
+                    onChange={(e) => handleModeChange(e.target.value as IdentityConnection["mode"])}
+                  >
+                    <option value="optional">optionnel</option>
+                    <option value="required_for_domains">obligatoire pour les domaines gérés</option>
+                    <option value="admin_bypass">secours administrateur</option>
+                  </select>
                 </div>
               </div>
-              <div className="space-y-1">
-                <label className="text-xs font-medium" htmlFor={`cid-${connection.id}`}>Client ID</label>
-                <Input id={`cid-${connection.id}`} value={clientId} onChange={(e) => setClientId(e.target.value)} />
+              <div className="flex items-center gap-2 mb-3">
+                <Button variant="outline" size="sm" loading={savingConfig} onClick={handleSaveConfig}>Enregistrer la configuration</Button>
+                {connection.status === "testing" && (
+                  <Button variant="outline" size="sm" loading={testing} onClick={handleTest}>
+                    <ShieldCheck size={14} /> Tester la connexion (login réel, admin seulement)
+                  </Button>
+                )}
               </div>
-              <div className="space-y-1">
-                <label className="text-xs font-medium" htmlFor={`az-${connection.id}`}>Authorization endpoint</label>
-                <Input id={`az-${connection.id}`} value={authorizationEndpoint} onChange={(e) => setAuthorizationEndpoint(e.target.value)} />
+              <SamlSpMetadataPanel />
+            </div>
+          ) : (
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Configuration OIDC</p>
+              <div className="grid gap-2 sm:grid-cols-2 mb-2">
+                <div className="space-y-1">
+                  <label className="text-xs font-medium" htmlFor={`iss-${connection.id}`}>Issuer</label>
+                  <div className="flex gap-1">
+                    <Input id={`iss-${connection.id}`} value={issuer} onChange={(e) => setIssuer(e.target.value)} placeholder="https://idp.exemple.edu" />
+                    <Button type="button" variant="outline" size="sm" loading={discovering} onClick={handleDiscover}><Search size={14} /> Découvrir</Button>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium" htmlFor={`cid-${connection.id}`}>Client ID</label>
+                  <Input id={`cid-${connection.id}`} value={clientId} onChange={(e) => setClientId(e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium" htmlFor={`az-${connection.id}`}>Authorization endpoint</label>
+                  <Input id={`az-${connection.id}`} value={authorizationEndpoint} onChange={(e) => setAuthorizationEndpoint(e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium" htmlFor={`tok-${connection.id}`}>Token endpoint</label>
+                  <Input id={`tok-${connection.id}`} value={tokenEndpoint} onChange={(e) => setTokenEndpoint(e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium" htmlFor={`jwks-${connection.id}`}>JWKS URI</label>
+                  <Input id={`jwks-${connection.id}`} value={jwksUri} onChange={(e) => setJwksUri(e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium" htmlFor={`mode-${connection.id}`}>Mode d'activation (INT-002)</label>
+                  <select
+                    id={`mode-${connection.id}`}
+                    className="h-9 w-full rounded-md border bg-transparent px-2 text-sm"
+                    style={{ borderColor: "var(--ap-line)", color: "var(--ap-ink)" }}
+                    value={connection.mode}
+                    onChange={(e) => handleModeChange(e.target.value as IdentityConnection["mode"])}
+                  >
+                    <option value="optional">optionnel</option>
+                    <option value="required_for_domains">obligatoire pour les domaines gérés</option>
+                    <option value="admin_bypass">secours administrateur</option>
+                  </select>
+                </div>
               </div>
-              <div className="space-y-1">
-                <label className="text-xs font-medium" htmlFor={`tok-${connection.id}`}>Token endpoint</label>
-                <Input id={`tok-${connection.id}`} value={tokenEndpoint} onChange={(e) => setTokenEndpoint(e.target.value)} />
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-medium" htmlFor={`jwks-${connection.id}`}>JWKS URI</label>
-                <Input id={`jwks-${connection.id}`} value={jwksUri} onChange={(e) => setJwksUri(e.target.value)} />
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-medium" htmlFor={`mode-${connection.id}`}>Mode d'activation (INT-002)</label>
-                <select
-                  id={`mode-${connection.id}`}
-                  className="h-9 w-full rounded-md border bg-transparent px-2 text-sm"
-                  style={{ borderColor: "var(--ap-line)", color: "var(--ap-ink)" }}
-                  value={connection.mode}
-                  onChange={(e) => handleModeChange(e.target.value as IdentityConnection["mode"])}
-                >
-                  <option value="optional">optionnel</option>
-                  <option value="required_for_domains">obligatoire pour les domaines gérés</option>
-                  <option value="admin_bypass">secours administrateur</option>
-                </select>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" loading={savingConfig} onClick={handleSaveConfig}>Enregistrer la configuration</Button>
+                {connection.status === "testing" && (
+                  <Button variant="outline" size="sm" loading={testing} onClick={handleTest}>
+                    <ShieldCheck size={14} /> Tester la connexion (login réel, admin seulement)
+                  </Button>
+                )}
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" loading={savingConfig} onClick={handleSaveConfig}>Enregistrer la configuration</Button>
-              {connection.status === "testing" && (
-                <Button variant="outline" size="sm" loading={testing} onClick={handleTest}>
-                  <ShieldCheck size={14} /> Tester la connexion (login réel, admin seulement)
-                </Button>
-              )}
+          )}
+          {!isSaml && (
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Client secret</p>
+              <IdentitySecretsPanel connectionId={connection.id} />
             </div>
-          </div>
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Client secret</p>
-            <IdentitySecretsPanel connectionId={connection.id} />
-          </div>
+          )}
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Domaines</p>
             <IdentityDomainsPanel orgId={orgId} connectionId={connection.id} />
@@ -539,6 +626,7 @@ function IdentitySection({ orgId }: { orgId: string }) {
   const [connections, setConnections] = useState<IdentityConnection[]>([]);
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
+  const [protocol, setProtocol] = useState<IdentityConnection["protocol"]>("oidc");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -550,7 +638,7 @@ function IdentitySection({ orgId }: { orgId: string }) {
     if (!name.trim()) return;
     setSaving(true);
     try {
-      const c = await createIdentityConnection(orgId, "oidc", name.trim());
+      const c = await createIdentityConnection(orgId, protocol, name.trim());
       setConnections((prev) => [c, ...prev]);
       setName("");
     } catch (err) {
@@ -567,14 +655,27 @@ function IdentitySection({ orgId }: { orgId: string }) {
   return (
     <section className="product-list-panel p-5">
       <div className="product-panel-heading -mx-5 -mt-5 mb-4">
-        <div><h2>SSO (OIDC)</h2><p>Connexion d'identité par organisation — brouillon → test (login réel réservé à l'admin) → actif. SAML n'est pas encore couvert (voir RESTE-A-FAIRE.md §04).</p></div>
+        <div><h2>SSO (OIDC / SAML)</h2><p>Connexion d'identité par organisation — brouillon → test (login réel réservé à l'admin) → actif.</p></div>
       </div>
       <form onSubmit={handleCreate} className="flex flex-wrap items-end gap-2 mb-4">
         <div className="min-w-[220px] space-y-1">
           <label className="text-sm font-medium" htmlFor="idp-name">Nom du fournisseur</label>
           <Input id="idp-name" value={name} onChange={(e) => setName(e.target.value)} required />
         </div>
-        <Button type="submit" size="sm" loading={saving}><Plus /> Ajouter (OIDC)</Button>
+        <div className="min-w-[140px] space-y-1">
+          <label className="text-sm font-medium" htmlFor="idp-protocol">Protocole</label>
+          <select
+            id="idp-protocol"
+            className="h-9 w-full rounded-md border bg-transparent px-2 text-sm"
+            style={{ borderColor: "var(--ap-line)", color: "var(--ap-ink)" }}
+            value={protocol}
+            onChange={(e) => setProtocol(e.target.value as IdentityConnection["protocol"])}
+          >
+            <option value="oidc">OIDC</option>
+            <option value="saml">SAML</option>
+          </select>
+        </div>
+        <Button type="submit" size="sm" loading={saving}><Plus /> Ajouter</Button>
       </form>
       {loading ? <TableSkeleton rows={2} cols={2} /> : connections.length === 0 ? (
         <p className="text-sm text-muted-foreground flex items-center gap-1.5"><Plug size={14} /> Aucune connexion SSO pour l'instant.</p>
