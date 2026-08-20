@@ -458,3 +458,5 @@ verify_jwt = false
 verify_jwt = false
 [functions.saml-metadata]
 verify_jwt = false
+[functions.lti-jwks]
+verify_jwt = false
