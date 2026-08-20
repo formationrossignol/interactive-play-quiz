@@ -268,8 +268,15 @@ as $$
   insert into public.sso_logins (connection_id, external_subject, raw_attributes, user_id, status, error_reason)
   values (p_connection_id, p_external_subject, p_raw_attributes, p_user_id, p_status, p_error_reason);
 $$;
+-- service_role only: the sole real caller is sso-callback, which already
+-- holds the service_role key (bypasses RLS/grants regardless). This function
+-- has no internal authorization check of its own — it must never be granted
+-- to `authenticated`, or any logged-in user on the platform could insert
+-- arbitrary rows into another org's sso_logins (fake success/rejected
+-- entries, forged connection_id/user_id/raw_attributes), corrupting an
+-- audit trail admins rely on for incident diagnosis.
 revoke all on function public.record_sso_login(uuid, text, jsonb, uuid, text, text) from public;
-grant execute on function public.record_sso_login(uuid, text, jsonb, uuid, text, text) to authenticated, service_role;
+grant execute on function public.record_sso_login(uuid, text, jsonb, uuid, text, text) to service_role;
 
 -- INT-003: admin resolution for an unrecognized `sub` — mirrors
 -- link_lti_subject() exactly, writing external_identities (the table this
