@@ -66,16 +66,21 @@ create policy lti_tool_keys_admin on public.lti_tool_keys
 -- ── generate_lti_tool_key() : mint a new RSA keypair's storage row ─────────
 -- The actual RSA key generation happens in the edge function (jose's
 -- generateKeyPair — Postgres has no equivalent primitive to produce a
--- portable JWK/PKCS8 pair); this RPC only persists what the edge function
--- generated, after re-checking the caller is really an admin of this
--- registration's org (the edge function runs with the caller's own JWT via
--- supabase-js, not service_role, for this call specifically — key
--- generation is an admin action, not part of any unauthenticated flow).
+-- portable JWK/PKCS8 pair). This RPC takes the freshly-generated private key
+-- as plaintext (PKCS8 PEM) and does the vault encryption itself — mirrors
+-- create_identity_client_secret()'s exact shape (20260815040000_sso_oidc.sql):
+-- admin check, vault.create_secret() inline, then the row insert, all in one
+-- security-definer function, same trust boundary an admin RPC carrying a
+-- plaintext secret already crosses elsewhere in this codebase. (The original
+-- version of this function expected an already-existing vault_secret_id —
+-- there was never any exposed path to create that secret in the first place,
+-- since vault.create_secret() isn't callable from an edge function's
+-- supabase-js client directly; fixed before this migration shipped.)
 create or replace function public.generate_lti_tool_key(
   p_registration_id uuid,
   p_kid text,
   p_public_jwk jsonb,
-  p_vault_secret_id uuid
+  p_private_key_pkcs8 text
 ) returns uuid
 language plpgsql
 security definer
@@ -83,6 +88,7 @@ set search_path = public, vault
 as $$
 declare
   v_org_id uuid;
+  v_vault_id uuid;
   v_id uuid;
   v_next_version integer;
 begin
@@ -90,18 +96,23 @@ begin
   if v_org_id is null or not public.has_org_role(v_org_id, array['admin']) then
     raise exception 'Not authorized';
   end if;
+  if p_private_key_pkcs8 is null or length(p_private_key_pkcs8) = 0 then
+    raise exception 'Private key required';
+  end if;
 
   select coalesce(max(version), 0) + 1 into v_next_version from public.lti_tool_keys where registration_id = p_registration_id;
 
+  v_vault_id := vault.create_secret(p_private_key_pkcs8, 'lti_tool_key:' || p_registration_id::text || ':' || p_kid);
+
   insert into public.lti_tool_keys (registration_id, kid, public_jwk, vault_secret_id, version, created_by)
-  values (p_registration_id, p_kid, p_public_jwk, p_vault_secret_id, v_next_version, auth.uid())
+  values (p_registration_id, p_kid, p_public_jwk, v_vault_id, v_next_version, auth.uid())
   returning id into v_id;
 
   return v_id;
 end;
 $$;
-revoke all on function public.generate_lti_tool_key(uuid, text, jsonb, uuid) from public;
-grant execute on function public.generate_lti_tool_key(uuid, text, jsonb, uuid) to authenticated;
+revoke all on function public.generate_lti_tool_key(uuid, text, jsonb, text) from public;
+grant execute on function public.generate_lti_tool_key(uuid, text, jsonb, text) to authenticated;
 
 -- INT-005-style rotation with overlap: deactivating an old key only after a
 -- new one is confirmed live keeps the JWKS document serving both during a
