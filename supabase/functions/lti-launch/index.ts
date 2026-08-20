@@ -144,10 +144,41 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "linked_user_not_found" }), { status: 500, headers: corsHeaders });
     }
 
+    // LTI-002: a Deep Linking request launch resolves the same way a
+    // resource-link launch does up to here (same account-linking, same
+    // INT-003/LTI-005 "never auto-provision" rule) — it only diverges in
+    // *where* the freshly-minted session lands. A resource-link launch goes
+    // straight to target_link_uri (unchanged); a deep-linking-request lands
+    // on the in-app content picker instead, correlated via a short-lived
+    // lti_deep_linking_sessions row (same shape as lti_login_states — see
+    // 20260821020000_lti_deep_linking.sql).
+    let redirectTarget = loginState.target_link_uri;
+    if (claims.messageType === "LtiDeepLinkingRequest" && claims.deepLinkingSettings) {
+      const dlExpiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+      const { data: session, error: sessionError } = await supabase
+        .from("lti_deep_linking_sessions")
+        .insert({
+          registration_id: registration.id,
+          deployment_id: claims.deploymentId,
+          user_id: mapping.internal_id,
+          deep_link_return_url: claims.deepLinkingSettings.deepLinkReturnUrl,
+          accept_types: claims.deepLinkingSettings.acceptTypes,
+          platform_data: claims.deepLinkingSettings.data,
+          expires_at: dlExpiresAt,
+        })
+        .select("id")
+        .single();
+      if (sessionError || !session) {
+        await journal({ deploymentId: claims.deploymentId, subject: claims.sub, status: "rejected", errorReason: "deep_linking_session_failed" });
+        return new Response(JSON.stringify({ error: "deep_linking_session_failed" }), { status: 500, headers: corsHeaders });
+      }
+      redirectTarget = appUrl(`/lti/deep-link?session=${session.id}`);
+    }
+
     const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
       type: "magiclink",
       email: userResult.user.email,
-      options: { redirectTo: loginState.target_link_uri },
+      options: { redirectTo: redirectTarget },
     });
     if (linkError || !linkData?.properties?.action_link) {
       await journal({ deploymentId: claims.deploymentId, subject: claims.sub, status: "rejected", errorReason: "session_mint_failed" });

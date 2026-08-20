@@ -699,6 +699,8 @@ const LAUNCH_ERROR_LABEL: Record<string, string> = {
   linked_user_not_found: "Compte lié introuvable",
   session_mint_failed: "Échec de création de session",
   invalid_or_expired_state: "État expiré ou invalide",
+  missing_deep_linking_settings: "Requête Deep Linking incomplète (deep_link_return_url absent)",
+  deep_linking_session_failed: "Échec de préparation de la sélection de contenu",
 };
 
 function LinkSubjectForm({ registrationId, subject, orgId, members, onLinked }: {

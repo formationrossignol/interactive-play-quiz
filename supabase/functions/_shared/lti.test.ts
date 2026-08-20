@@ -46,6 +46,54 @@ Deno.test("valid launch: accepted, claims extracted", async () => {
   assertEquals(claims.deploymentId, DEPLOYMENT_ID);
   assertEquals(claims.contextExternalId, "course-101");
   assertEquals(claims.roles, ["http://purl.imsglobal.org/vocab/lis/v2/membership#Learner"]);
+  assertEquals(claims.messageType, "LtiResourceLinkRequest");
+  assertEquals(claims.deepLinkingSettings, null);
+});
+
+// LTI-002: regression guard — the message-type gate must widen to accept
+// LtiDeepLinkingRequest without weakening what it does for the existing
+// resource-link path above (still exact-matched, still the only two
+// accepted values).
+Deno.test("valid Deep Linking request: accepted, deep_linking_settings extracted", async () => {
+  const { publicKey, privateKey } = await keypair();
+  const token = await signValidToken(privateKey, {
+    "https://purl.imsglobal.org/spec/lti/claim/message_type": "LtiDeepLinkingRequest",
+    "https://purl.imsglobal.org/spec/lti-dl/claim/deep_linking_settings": {
+      deep_link_return_url: "https://platform.example.test/deep-link/return",
+      accept_types: ["ltiResourceLink"],
+      data: "platform-opaque-token-xyz",
+    },
+  });
+  const claims = await verifyLtiLaunch(token, fixedKey(publicKey), { issuer: ISSUER, audience: AUDIENCE, expectedNonce: NONCE });
+  assertEquals(claims.messageType, "LtiDeepLinkingRequest");
+  assertEquals(claims.deepLinkingSettings?.deepLinkReturnUrl, "https://platform.example.test/deep-link/return");
+  assertEquals(claims.deepLinkingSettings?.acceptTypes, ["ltiResourceLink"]);
+  assertEquals(claims.deepLinkingSettings?.data, "platform-opaque-token-xyz");
+});
+
+Deno.test("Deep Linking request without deep_linking_settings: rejected (not silently treated as a resource-link launch)", async () => {
+  const { publicKey, privateKey } = await keypair();
+  const token = await signValidToken(privateKey, {
+    "https://purl.imsglobal.org/spec/lti/claim/message_type": "LtiDeepLinkingRequest",
+  });
+  const err = await assertRejects(
+    () => verifyLtiLaunch(token, fixedKey(publicKey), { issuer: ISSUER, audience: AUDIENCE, expectedNonce: NONCE }),
+    LtiValidationError,
+  );
+  assertEquals((err as LtiValidationError).reason, "missing_deep_linking_settings");
+});
+
+Deno.test("Deep Linking request with deep_linking_settings but no deep_link_return_url: rejected", async () => {
+  const { publicKey, privateKey } = await keypair();
+  const token = await signValidToken(privateKey, {
+    "https://purl.imsglobal.org/spec/lti/claim/message_type": "LtiDeepLinkingRequest",
+    "https://purl.imsglobal.org/spec/lti-dl/claim/deep_linking_settings": { accept_types: ["ltiResourceLink"] },
+  });
+  const err = await assertRejects(
+    () => verifyLtiLaunch(token, fixedKey(publicKey), { issuer: ISSUER, audience: AUDIENCE, expectedNonce: NONCE }),
+    LtiValidationError,
+  );
+  assertEquals((err as LtiValidationError).reason, "missing_deep_linking_settings");
 });
 
 Deno.test("expired token: rejected", async () => {
