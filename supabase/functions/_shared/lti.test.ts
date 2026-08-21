@@ -230,3 +230,33 @@ Deno.test("no AGS endpoint claim: agsEndpoint is null, not an empty-but-present 
   assertEquals(claims.agsEndpoint, null);
   assertEquals(claims.resourceLinkId, null);
 });
+
+// LTI-003 (NRPS): namesroleservice claim extraction.
+Deno.test("namesroleservice claim: extracted when present", async () => {
+  const { publicKey, privateKey } = await keypair();
+  const token = await signValidToken(privateKey, {
+    "https://purl.imsglobal.org/spec/lti-nrps/claim/namesroleservice": {
+      context_memberships_url: "https://platform.example.test/nrps/course-101/members",
+      service_versions: ["2.0"],
+    },
+  });
+  const claims = await verifyLtiLaunch(token, fixedKey(publicKey), { issuer: ISSUER, audience: AUDIENCE, expectedNonce: NONCE });
+  assertEquals(claims.namesRoleService?.contextMembershipsUrl, "https://platform.example.test/nrps/course-101/members");
+  assertEquals(claims.namesRoleService?.serviceVersions, ["2.0"]);
+});
+
+Deno.test("no namesroleservice claim: namesRoleService is null (roster access not enabled for this placement is a real, valid state)", async () => {
+  const { publicKey, privateKey } = await keypair();
+  const token = await signValidToken(privateKey);
+  const claims = await verifyLtiLaunch(token, fixedKey(publicKey), { issuer: ISSUER, audience: AUDIENCE, expectedNonce: NONCE });
+  assertEquals(claims.namesRoleService, null);
+});
+
+Deno.test("namesroleservice claim missing context_memberships_url: treated as absent, not a half-populated object", async () => {
+  const { publicKey, privateKey } = await keypair();
+  const token = await signValidToken(privateKey, {
+    "https://purl.imsglobal.org/spec/lti-nrps/claim/namesroleservice": { service_versions: ["2.0"] },
+  });
+  const claims = await verifyLtiLaunch(token, fixedKey(publicKey), { issuer: ISSUER, audience: AUDIENCE, expectedNonce: NONCE });
+  assertEquals(claims.namesRoleService, null);
+});

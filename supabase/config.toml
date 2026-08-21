@@ -460,3 +460,34 @@ verify_jwt = false
 verify_jwt = false
 [functions.lti-jwks]
 verify_jwt = false
+
+# scim-users/scim-groups: called directly by an external IdP's SCIM
+# provisioning client (Okta/Azure AD/etc), never by a Brivia session — no
+# Supabase JWT exists on these requests. Authenticity comes from
+# verifyScimBearerToken() hashing the request's own Authorization header and
+# resolving it against api_tokens (see _shared/scim-auth.ts) — every handler
+# re-checks this before touching anything, there is no unauthenticated path
+# inside either function despite the gateway-level JWT check being off.
+[functions.scim-users]
+verify_jwt = false
+[functions.scim-groups]
+verify_jwt = false
+
+# oneroster-sync: same shape as scim-users/scim-groups above — a SIS's own
+# scheduler POSTs here directly (ROS-002), no Supabase session exists.
+# verifyApiBearerToken() (_shared/api-token-auth.ts, the same primitive
+# scim-auth.ts now re-exports from) re-checked before any DB access.
+[functions.oneroster-sync]
+verify_jwt = false
+
+# api-v1: public REST API (spec 04, API-001/002) — verifies its own bearer
+# token (verifyApiBearerToken), not a Supabase session JWT; API-002's "no
+# long-lived user token" is satisfied by there being no code path here that
+# accepts one at all.
+[functions.api-v1]
+verify_jwt = false
+
+# dispatch-webhooks: CRON_SECRET-gated worker, not user-invoked — same
+# posture as dispatch-automation-emails/dispatch-lti-ags-scores.
+[functions.dispatch-webhooks]
+verify_jwt = false

@@ -26,6 +26,15 @@ const DEEP_LINKING_SETTINGS_CLAIM = "https://purl.imsglobal.org/spec/lti-dl/clai
 // resource-link launch.
 const RESOURCE_LINK_CLAIM = "https://purl.imsglobal.org/spec/lti/claim/resource_link";
 const AGS_ENDPOINT_CLAIM = "https://purl.imsglobal.org/spec/lti-ags/claim/endpoint";
+// LTI-003 (NRPS): unlike the AGS endpoint claim (scoped to one resource
+// link), this is scoped to the *context* (the external course/class) — the
+// same context_memberships_url is valid for every resource link placed in
+// that context, which is exactly why lti_contexts (20260821040000_lti_nrps.sql)
+// is its own table keyed on context, not folded into lti_resource_links.
+// Extracted-if-present, never required, same as the AGS claim: a launch with
+// no NRPS claim at all (roster access not enabled for this placement) is
+// still a perfectly valid launch.
+const NRPS_CLAIM = "https://purl.imsglobal.org/spec/lti-nrps/claim/namesroleservice";
 
 // LTI-002: a launch is either a normal resource-link launch or a
 // Deep Linking request — both are legitimate *incoming* launches this tool
@@ -61,6 +70,11 @@ export interface LtiAgsEndpoint {
   lineItemsUrl: string | null;
 }
 
+export interface LtiNamesRoleService {
+  contextMembershipsUrl: string;
+  serviceVersions: string[];
+}
+
 export interface LtiLaunchClaims {
   sub: string;
   email: string | null;
@@ -73,6 +87,7 @@ export interface LtiLaunchClaims {
   resourceLinkId: string | null;
   resourceLinkTitle: string | null;
   agsEndpoint: LtiAgsEndpoint | null;
+  namesRoleService: LtiNamesRoleService | null;
 }
 
 /**
@@ -151,6 +166,17 @@ export async function verifyLtiLaunch(
       }
     : null;
 
+  const rawNrps = payload[NRPS_CLAIM] as { context_memberships_url?: unknown; service_versions?: unknown } | undefined;
+  const namesRoleService: LtiNamesRoleService | null =
+    rawNrps && typeof rawNrps.context_memberships_url === "string"
+      ? {
+          contextMembershipsUrl: rawNrps.context_memberships_url,
+          serviceVersions: Array.isArray(rawNrps.service_versions)
+            ? rawNrps.service_versions.filter((v): v is string => typeof v === "string")
+            : [],
+        }
+      : null;
+
   return {
     sub: String(payload.sub ?? ""),
     email: typeof payload.email === "string" ? payload.email : null,
@@ -163,5 +189,6 @@ export async function verifyLtiLaunch(
     resourceLinkId,
     resourceLinkTitle,
     agsEndpoint,
+    namesRoleService,
   };
 }

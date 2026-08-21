@@ -71,6 +71,29 @@ export interface LtiDeployment {
   created_at: string;
 }
 
+export interface LtiContext {
+  id: string;
+  registration_id: string;
+  context_external_id: string;
+  title: string | null;
+  context_memberships_url: string | null;
+  service_versions: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LtiNrpsSyncRun {
+  id: string;
+  context_id: string;
+  triggered_by: string;
+  status: 'running' | 'completed' | 'failed';
+  matched_count: number;
+  unmatched_count: number;
+  error_reason: string | null;
+  started_at: string;
+  completed_at: string | null;
+}
+
 export interface LtiLaunch {
   id: string;
   registration_id: string;
@@ -348,6 +371,48 @@ export async function linkLtiSubject(registrationId: string, subject: string, in
   if (error) throw error;
 }
 
+/** Contexts (external courses/classes) this registration has been launched
+ *  from with NRPS roster access granted — populated by upsert_lti_context()
+ *  on launch (lti-launch/index.ts), read-only here (RLS: lti_contexts_admin).
+ *  A context with no NRPS claim ever seen simply never appears — there is
+ *  nothing to sync a roster for until the platform actually grants it. */
+export async function listLtiContexts(registrationId: string): Promise<LtiContext[]> {
+  const { data, error } = await supabase
+    .from('lti_contexts').select('*')
+    .eq('registration_id', registrationId)
+    .order('updated_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as LtiContext[];
+}
+
+export async function listLtiNrpsSyncRuns(contextId: string, limit = 10): Promise<LtiNrpsSyncRun[]> {
+  const { data, error } = await supabase
+    .from('lti_nrps_sync_runs').select('*')
+    .eq('context_id', contextId)
+    .order('started_at', { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return (data ?? []) as LtiNrpsSyncRun[];
+}
+
+export interface LtiNrpsSyncResult {
+  sync_run_id: string;
+  matched: number;
+  unmatched: number;
+}
+
+/** LTI-003: admin-triggered roster sync for one context — never automatic.
+ *  Matches roster members against existing external_mappings only (a
+ *  platform reporting someone who has never launched into Brivia has no
+ *  account to sync a role onto — see lti-nrps-sync/index.ts's header), maps
+ *  LTI role URNs to Brivia roles additively, journals every member's outcome
+ *  (LTI-003's own "journal de provenance" requirement). */
+export async function syncLtiContextRoster(contextId: string): Promise<LtiNrpsSyncResult> {
+  const { data, error } = await supabase.functions.invoke('lti-nrps-sync', { body: { context_id: contextId } });
+  if (error) throw error;
+  return data as LtiNrpsSyncResult;
+}
+
 export interface LtiConnectionTestResult {
   ok: boolean;
   reason?: string;
@@ -381,14 +446,156 @@ export async function listWebhookEndpoints(orgId: string): Promise<WebhookEndpoi
   return (data ?? []) as WebhookEndpoint[];
 }
 
-export async function createWebhookEndpoint(orgId: string, url: string, plaintextSecret: string): Promise<WebhookEndpoint> {
-  // Hashing happens server-side; here we only pass a client-generated secret
-  // the admin is shown once — see create_integration_secret() for the
-  // connection-scoped equivalent used by OneRoster/SCIM.
-  const encoder = new TextEncoder();
-  const digest = await crypto.subtle.digest('SHA-256', encoder.encode(plaintextSecret));
-  const secretHash = Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
-  const { data, error } = await supabase.from('webhook_endpoints').insert({ org_id: orgId, url, secret_hash: secretHash }).select().single();
+// API-003 needs this app to hold the secret in reusable (not one-way-hashed)
+// form — it signs every outgoing delivery with it, unlike a bearer token
+// this app only ever verifies once per incoming request. Fixed (spec 04,
+// 20260821070000_public_api_webhooks.sql) after finding the original
+// version of this function only ever sent a SHA-256 hash to the server,
+// which can verify a value presented back but can never be used to *compute*
+// a signature — the plaintext is generated here (same crypto.getRandomValues
+// primitive as createApiToken above) and sent once, over the same
+// authenticated-RPC trust boundary OIDC's client_secret creation already
+// crosses, to create_webhook_endpoint() which vault-encrypts it server-side.
+export async function createWebhookEndpoint(orgId: string, url: string, events: string[]): Promise<{ endpoint: WebhookEndpoint; secret: string }> {
+  const bytes = crypto.getRandomValues(new Uint8Array(32));
+  const secret = 'whsec_' + Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join('');
+  const { data: endpointId, error } = await supabase.rpc('create_webhook_endpoint', {
+    p_org_id: orgId, p_url: url, p_events: events.length ? events : null, p_secret_plaintext: secret,
+  });
   if (error) throw error;
-  return data as WebhookEndpoint;
+  const { data: endpoint, error: readError } = await supabase.from('webhook_endpoints').select('*').eq('id', endpointId).single();
+  if (readError) throw readError;
+  return { endpoint: endpoint as WebhookEndpoint, secret };
+}
+
+export async function disableWebhookEndpoint(endpointId: string): Promise<void> {
+  const { error } = await supabase.rpc('disable_webhook_endpoint', { p_endpoint_id: endpointId });
+  if (error) throw error;
+}
+
+// ── SCIM 2.0 (spec 04, SCM-001→004) — api_clients doubles as the SCIM
+// connection: an IdP's SCIM provisioning client authenticates as one of
+// these via a bearer token (api_tokens, hashed server-side by
+// create_api_token()). Plaintext hashing happens client-side here (same
+// SHA-256-of-a-high-entropy-token primitive as createWebhookEndpoint above,
+// correct for a machine-generated secret, not a password) so the plaintext
+// itself never reaches the server except inside this one round trip whose
+// only purpose is to persist its hash.
+export interface ApiToken {
+  id: string;
+  label: string | null;
+  scopes: string[] | null;
+  expires_at: string | null;
+  revoked_at: string | null;
+  created_at: string;
+}
+
+export async function listApiTokens(clientId: string): Promise<ApiToken[]> {
+  const { data, error } = await supabase.rpc('list_api_tokens', { p_client_id: clientId });
+  if (error) throw error;
+  return (data ?? []) as ApiToken[];
+}
+
+/** Returns the plaintext token — shown to the admin exactly once by the
+ *  caller, never persisted client-side, never retrievable again after this
+ *  call returns. */
+export async function createApiToken(clientId: string, label: string, scopes: string[]): Promise<string> {
+  const bytes = crypto.getRandomValues(new Uint8Array(32));
+  const plaintext = 'brivia_scim_' + Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join('');
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(plaintext));
+  const tokenHash = Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
+  const { error } = await supabase.rpc('create_api_token', {
+    p_client_id: clientId, p_scopes: scopes.length ? scopes : null, p_expires_at: null, p_token_hash: tokenHash, p_label: label || null,
+  });
+  if (error) throw error;
+  return plaintext;
+}
+
+export async function revokeApiToken(tokenId: string): Promise<void> {
+  const { error } = await supabase.rpc('revoke_api_token', { p_token_id: tokenId });
+  if (error) throw error;
+}
+
+export interface ScimGroupRoleMapping {
+  id: string;
+  client_id: string;
+  group_display_name: string;
+  target_role: 'learner' | 'trainer' | 'pedago' | 'registrar' | 'admin';
+  created_at: string;
+}
+
+export async function listScimGroupRoleMappings(clientId: string): Promise<ScimGroupRoleMapping[]> {
+  const { data, error } = await supabase.from('scim_group_role_mappings').select('*').eq('client_id', clientId).order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as ScimGroupRoleMapping[];
+}
+
+export async function createScimGroupRoleMapping(clientId: string, groupDisplayName: string, targetRole: ScimGroupRoleMapping['target_role']): Promise<ScimGroupRoleMapping> {
+  const { data, error } = await supabase.from('scim_group_role_mappings').insert({ client_id: clientId, group_display_name: groupDisplayName, target_role: targetRole }).select().single();
+  if (error) throw error;
+  return data as ScimGroupRoleMapping;
+}
+
+export async function deleteScimGroupRoleMapping(id: string): Promise<void> {
+  const { error } = await supabase.from('scim_group_role_mappings').delete().eq('id', id);
+  if (error) throw error;
+}
+
+// ── OneRoster 1.2 (ROS-001→005, 20260821060000_oneroster.sql) ──────────────
+
+export interface OneRosterSyncRun {
+  id: string;
+  source: 'csv' | 'rest';
+  status: 'running' | 'completed' | 'failed';
+  created_count: number;
+  updated_count: number;
+  deactivated_count: number;
+  error_count: number;
+  error_reason: string | null;
+  started_at: string;
+  completed_at: string | null;
+}
+
+export async function listOneRosterSyncRuns(orgId: string): Promise<OneRosterSyncRun[]> {
+  const { data, error } = await supabase.from('oneroster_sync_runs').select('*').eq('org_id', orgId).order('started_at', { ascending: false }).limit(20);
+  if (error) throw error;
+  return (data ?? []) as OneRosterSyncRun[];
+}
+
+export async function resolveOneRosterUsers(orgId: string, rows: Array<{ sourced_id: string; email: string }>) {
+  const { data, error } = await supabase.rpc('resolve_oneroster_users', { p_org_id: orgId, p_rows: rows });
+  if (error) throw error;
+  return (data ?? []) as Array<{ sourced_id: string; email: string; learner_id: string | null; matched: boolean }>;
+}
+
+export async function commitOneRosterUsers(orgId: string, rows: Array<{ sourced_id: string; email: string; learner_id: string }>) {
+  const { data, error } = await supabase.rpc('commit_oneroster_users', { p_org_id: orgId, p_rows: rows });
+  if (error) throw error;
+  return (data ?? []) as Array<{ sourced_id: string; outcome: string }>;
+}
+
+export async function resolveOneRosterClasses(orgId: string, rows: Array<{ sourced_id: string; class_code: string }>) {
+  const { data, error } = await supabase.rpc('resolve_oneroster_classes', { p_org_id: orgId, p_rows: rows });
+  if (error) throw error;
+  return (data ?? []) as Array<{ sourced_id: string; class_code: string; session_id: string | null; matched: boolean }>;
+}
+
+export async function commitOneRosterEnrollments(orgId: string, rows: Array<{ sourced_id: string; learner_id: string; session_id: string; status: string }>) {
+  const { data, error } = await supabase.rpc('commit_oneroster_enrollments', { p_org_id: orgId, p_rows: rows });
+  if (error) throw error;
+  return (data ?? []) as Array<{ sourced_id: string; outcome: string }>;
+}
+
+export async function startOneRosterSyncRun(orgId: string, source: 'csv' | 'rest'): Promise<string> {
+  const { data, error } = await supabase.rpc('start_oneroster_sync_run', { p_org_id: orgId, p_source: source });
+  if (error) throw error;
+  return data as string;
+}
+
+export async function completeOneRosterSyncRun(runId: string, status: 'completed' | 'failed', created: number, updated: number, deactivated: number, errors: number, errorReason: string | null): Promise<void> {
+  const { error } = await supabase.rpc('complete_oneroster_sync_run', {
+    p_run_id: runId, p_status: status, p_created: created, p_updated: updated,
+    p_deactivated: deactivated, p_errors: errors, p_error_reason: errorReason,
+  });
+  if (error) throw error;
 }

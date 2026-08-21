@@ -18,20 +18,35 @@ import {
   createIdentityRoleMapping,
   createLtiDeployment,
   createLtiRegistration,
+  createScimGroupRoleMapping,
+  createApiToken,
   createWebhookEndpoint,
   deactivateIdentityClientSecret,
   deleteIdentityRoleMapping,
+  deleteScimGroupRoleMapping,
   discoverOidcEndpoints,
   linkLtiSubject,
   linkSsoSubject,
   listApiClients,
+  listApiTokens,
+  listScimGroupRoleMappings,
+  revokeApiToken,
   listIdentityClientSecrets,
   listIdentityConnections,
   listIdentityDomains,
   listIdentityRoleMappings,
+  listLtiContexts,
   listLtiDeployments,
   listLtiLaunches,
+  listLtiNrpsSyncRuns,
   listLtiRegistrations,
+  listOneRosterSyncRuns,
+  resolveOneRosterUsers,
+  commitOneRosterUsers,
+  resolveOneRosterClasses,
+  commitOneRosterEnrollments,
+  startOneRosterSyncRun,
+  completeOneRosterSyncRun,
   listSsoLogins,
   listWebhookEndpoints,
   previewSsoRoleMapping,
@@ -40,20 +55,36 @@ import {
   samlSpMetadataUrl,
   startSamlTestLogin,
   startSsoTestLogin,
+  syncLtiContextRoster,
   testLtiConnection,
   updateIdentityConnection,
   type ApiClient,
+  type ApiToken,
+  type ScimGroupRoleMapping,
   type IdentityClientSecret,
   type IdentityConnection,
   type IdentityDomain,
   type IdentityRoleMapping,
   type LtiConnectionTestResult,
+  type LtiContext,
   type LtiDeployment,
   type LtiLaunch,
+  type LtiNrpsSyncRun,
   type LtiRegistration,
+  type OneRosterSyncRun,
   type SsoLogin,
   type WebhookEndpoint,
 } from "@/lib/lms/integrations";
+import { parseSpreadsheetRows } from "@/lib/importSpreadsheet";
+import {
+  buildOneRosterEnrollmentPreview,
+  buildOneRosterUserPreview,
+  extractOneRosterEnrollmentRows,
+  extractOneRosterUserRows,
+  importableOneRosterEnrollmentRows,
+  importableOneRosterUserRows,
+} from "@/lib/lms/oneRosterImport";
+import { exportOneRosterResults, getOneRosterExportSettings, setOneRosterExportSettings } from "@/lib/lms/oneRosterExport";
 
 const ORG_ROLES: IdentityRoleMapping["target_role"][] = ["learner", "trainer", "pedago", "registrar", "admin"];
 
@@ -843,6 +874,88 @@ function LtiDeployments({ registrationId }: { registrationId: string }) {
   );
 }
 
+/** LTI-003: contexts (external courses/classes) this registration has been
+ *  launched from with NRPS roster access granted. A context only appears
+ *  here once the platform has actually sent a namesroleservice claim on some
+ *  launch — nothing to sync before that. Sync is always admin-triggered,
+ *  never automatic (see lti-nrps-sync/index.ts's header). */
+function LtiContexts({ registrationId }: { registrationId: string }) {
+  const [contexts, setContexts] = useState<LtiContext[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    listLtiContexts(registrationId).then(setContexts).catch(showError).finally(() => setLoading(false));
+  }, [registrationId]);
+
+  if (loading) return <ListSkeleton rows={1} withAvatar={false} />;
+
+  if (contexts.length === 0) {
+    return <p className="text-sm text-muted-foreground">Aucun contexte avec accès au répertoire — un lancement doit d'abord accorder le NRPS pour qu'un contexte apparaisse ici.</p>;
+  }
+
+  return (
+    <ul className="space-y-2">
+      {contexts.map((c) => <LtiContextRow key={c.id} context={c} />)}
+    </ul>
+  );
+}
+
+function LtiContextRow({ context }: { context: LtiContext }) {
+  const [runs, setRuns] = useState<LtiNrpsSyncRun[]>([]);
+  const [loadingRuns, setLoadingRuns] = useState(true);
+  const [syncing, setSyncing] = useState(false);
+
+  const loadRuns = () => {
+    setLoadingRuns(true);
+    listLtiNrpsSyncRuns(context.id).then(setRuns).catch(showError).finally(() => setLoadingRuns(false));
+  };
+
+  useEffect(loadRuns, [context.id]);
+
+  const handleSync = async () => {
+    setSyncing(true);
+    try {
+      // Result surfaces via the "Dernière synchro" line below once loadRuns()
+      // refreshes — no separate toast needed, showError is for errors only.
+      await syncLtiContextRoster(context.id);
+      loadRuns();
+    } catch (err) {
+      showError(err);
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const lastRun = runs[0];
+
+  return (
+    <li className="rounded-md border px-3 py-2 text-sm space-y-1">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div>
+          <span className="font-medium">{context.title ?? context.context_external_id}</span>
+          <span className="text-muted-foreground text-xs"> · {context.context_external_id}</span>
+        </div>
+        <Button
+          variant="outline" size="sm" loading={syncing}
+          disabled={!context.context_memberships_url}
+          onClick={handleSync}
+        >
+          <RadioTower size={14} /> Synchroniser le répertoire
+        </Button>
+      </div>
+      {loadingRuns ? null : lastRun ? (
+        <p className="text-xs text-muted-foreground">
+          Dernière synchro {new Date(lastRun.started_at).toLocaleString()} — {lastRun.status === "completed"
+            ? `${lastRun.matched_count} apparié(s), ${lastRun.unmatched_count} non apparié(s)`
+            : lastRun.status === "failed" ? `échec (${lastRun.error_reason ?? "raison inconnue"})` : "en cours…"}
+        </p>
+      ) : (
+        <p className="text-xs text-muted-foreground">Aucune synchronisation encore lancée.</p>
+      )}
+    </li>
+  );
+}
+
 function LtiRegistrationRow({ registration, orgId }: { registration: LtiRegistration; orgId: string }) {
   const [expanded, setExpanded] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -893,6 +1006,10 @@ function LtiRegistrationRow({ registration, orgId }: { registration: LtiRegistra
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Déploiements</p>
             <LtiDeployments registrationId={registration.id} />
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Répertoire des contextes (NRPS)</p>
+            <LtiContexts registrationId={registration.id} />
           </div>
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Diagnostic — derniers lancements</p>
@@ -977,6 +1094,162 @@ function LtiSection({ orgId }: { orgId: string }) {
   );
 }
 
+/** SCIM 2.0 (spec 04, SCM-001→004) client detail — token issuance (bearer
+ *  tokens an IdP presents on /scim-users, /scim-groups) and group→role
+ *  mapping (SCM-004), scoped to one api_clients row acting as the SCIM
+ *  connection. Collapsed by default: most orgs have very few API clients,
+ *  no need for every row to show its full token/mapping management inline
+ *  before an admin asks for it. */
+function ApiClientDetail({ client }: { client: ApiClient }) {
+  const [open, setOpen] = useState(false);
+  const [tokens, setTokens] = useState<ApiToken[]>([]);
+  const [mappings, setMappings] = useState<ScimGroupRoleMapping[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [tokenLabel, setTokenLabel] = useState("");
+  const [issuing, setIssuing] = useState(false);
+  const [justIssued, setJustIssued] = useState<string | null>(null);
+  const [groupName, setGroupName] = useState("");
+  const [groupRole, setGroupRole] = useState<ScimGroupRoleMapping["target_role"]>("learner");
+  const [mappingSaving, setMappingSaving] = useState(false);
+  const [tokenScopes, setTokenScopes] = useState<string[]>([]);
+
+  const load = () => {
+    setLoading(true);
+    Promise.all([listApiTokens(client.id), listScimGroupRoleMappings(client.id)])
+      .then(([t, m]) => { setTokens(t); setMappings(m); })
+      .catch(showError)
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => { if (open) load(); }, [open]);
+
+  const handleIssueToken = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIssuing(true);
+    try {
+      const plaintext = await createApiToken(client.id, tokenLabel.trim(), tokenScopes);
+      setJustIssued(plaintext);
+      setTokenLabel("");
+      setTokenScopes([]);
+      load();
+    } catch (err) {
+      showError(err);
+    } finally {
+      setIssuing(false);
+    }
+  };
+
+  const handleRevokeToken = async (id: string) => {
+    try {
+      await revokeApiToken(id);
+      load();
+    } catch (err) {
+      showError(err);
+    }
+  };
+
+  const handleAddMapping = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!groupName.trim()) return;
+    setMappingSaving(true);
+    try {
+      const m = await createScimGroupRoleMapping(client.id, groupName.trim(), groupRole);
+      setMappings((prev) => [m, ...prev]);
+      setGroupName("");
+    } catch (err) {
+      showError(err);
+    } finally {
+      setMappingSaving(false);
+    }
+  };
+
+  const handleDeleteMapping = async (id: string) => {
+    try {
+      await deleteScimGroupRoleMapping(id);
+      setMappings((prev) => prev.filter((m) => m.id !== id));
+    } catch (err) {
+      showError(err);
+    }
+  };
+
+  return (
+    <li className="rounded-md border p-3 text-sm">
+      <div className="flex items-center justify-between">
+        <span>{client.name} · <code>{client.client_id}</code></span>
+        <div className="flex items-center gap-2">
+          <span className="text-muted-foreground">{client.status}</span>
+          <Button variant="ghost" size="sm" onClick={() => setOpen((v) => !v)}>{open ? "Masquer" : "Gérer SCIM"}</Button>
+        </div>
+      </div>
+      {open && (
+        <div className="mt-3 space-y-4 border-t pt-3">
+          <div>
+            <h3 className="text-sm font-medium mb-2">Jetons SCIM (SCM-002)</h3>
+            {justIssued && (
+              <div className="mb-2 rounded-md border border-amber-400 bg-amber-50 p-2 text-xs">
+                Jeton (affiché une seule fois) : <code className="break-all">{justIssued}</code>
+                <Button variant="ghost" size="sm" className="ml-2" onClick={() => setJustIssued(null)}>Fermer</Button>
+              </div>
+            )}
+            <form onSubmit={handleIssueToken} className="mb-2">
+              <div className="flex flex-wrap items-end gap-2 mb-2">
+                <Input placeholder="Libellé (ex. Okta)" value={tokenLabel} onChange={(e) => setTokenLabel(e.target.value)} className="max-w-[220px]" />
+                <Button type="submit" size="sm" loading={issuing}><KeyRound size={14} /> Générer</Button>
+              </div>
+              {/* Sans scope explicite, coalesce(t.scopes, c.scopes) retombe sur
+                  api_clients.scopes (vide par défaut) — un jeton créé sans
+                  cocher aucune case ici ne pourrait jamais réussir un check
+                  hasApiScope()/hasScimScope() nulle part, y compris SCIM. */}
+              <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+                {["api:enrollments:read", "api:grades:read", "api:completions:read", "api:certificates:read", "scim:*", "oneroster:sync"].map((scope) => (
+                  <label key={scope} className="flex items-center gap-1">
+                    <input
+                      type="checkbox"
+                      checked={tokenScopes.includes(scope)}
+                      onChange={() => setTokenScopes((prev) => (prev.includes(scope) ? prev.filter((s) => s !== scope) : [...prev, scope]))}
+                    />
+                    {scope}
+                  </label>
+                ))}
+              </div>
+            </form>
+            {loading ? <ListSkeleton rows={2} /> : (
+              <ul className="space-y-1">
+                {tokens.map((t) => (
+                  <li key={t.id} className="flex items-center justify-between text-xs">
+                    <span>{t.label ?? "(sans libellé)"} — {t.revoked_at ? "révoqué" : "actif"}</span>
+                    {!t.revoked_at && <Button variant="ghost" size="sm" onClick={() => handleRevokeToken(t.id)}><Trash2 size={12} /></Button>}
+                  </li>
+                ))}
+                {tokens.length === 0 && <li className="text-muted-foreground text-xs">Aucun jeton.</li>}
+              </ul>
+            )}
+          </div>
+          <div>
+            <h3 className="text-sm font-medium mb-2">Mapping groupe SCIM → rôle (SCM-004)</h3>
+            <form onSubmit={handleAddMapping} className="flex flex-wrap items-end gap-2 mb-2">
+              <Input placeholder="Nom du groupe (displayName)" value={groupName} onChange={(e) => setGroupName(e.target.value)} className="max-w-[220px]" required />
+              <select className="border rounded-md px-2 py-1.5 text-sm" value={groupRole} onChange={(e) => setGroupRole(e.target.value as ScimGroupRoleMapping["target_role"])}>
+                {ORG_ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+              </select>
+              <Button type="submit" size="sm" loading={mappingSaving}><Plus size={14} /> Ajouter</Button>
+            </form>
+            <ul className="space-y-1">
+              {mappings.map((m) => (
+                <li key={m.id} className="flex items-center justify-between text-xs">
+                  <span>{m.group_display_name} → {m.target_role}</span>
+                  <Button variant="ghost" size="sm" onClick={() => handleDeleteMapping(m.id)}><Trash2 size={12} /></Button>
+                </li>
+              ))}
+              {mappings.length === 0 && <li className="text-muted-foreground text-xs">Aucun mapping — les membres de groupe SCIM sans règle ne reçoivent aucun rôle.</li>}
+            </ul>
+          </div>
+        </div>
+      )}
+    </li>
+  );
+}
+
 function ApiSection({ orgId }: { orgId: string }) {
   const [clients, setClients] = useState<ApiClient[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1005,7 +1278,7 @@ function ApiSection({ orgId }: { orgId: string }) {
   return (
     <section className="product-list-panel p-5 mt-4">
       <div className="product-panel-heading -mx-5 -mt-5 mb-4">
-        <div><h2>Clients API</h2><p>Identifiants OAuth client-credentials à scopes fins ; aucun jeton utilisateur longue durée.</p></div>
+        <div><h2>Clients API &amp; SCIM 2.0</h2><p>Identifiants OAuth client-credentials à scopes fins ; un client peut aussi porter des jetons SCIM (provisioning Users/Groups, SCM-001→004) pour un IdP externe.</p></div>
       </div>
       <form onSubmit={handleCreate} className="flex flex-wrap items-end gap-2 mb-4">
         <div className="min-w-[220px] space-y-1">
@@ -1016,38 +1289,42 @@ function ApiSection({ orgId }: { orgId: string }) {
       </form>
       {loading ? <TableSkeleton rows={2} cols={2} /> : (
         <ul className="space-y-2">
-          {clients.map((c) => (
-            <li key={c.id} className="flex items-center justify-between rounded-md border p-3 text-sm">
-              <span>{c.name} · <code>{c.client_id}</code></span>
-              <span className="text-muted-foreground">{c.status}</span>
-            </li>
-          ))}
+          {clients.map((c) => <ApiClientDetail key={c.id} client={c} />)}
         </ul>
       )}
     </section>
   );
 }
 
+// API-004's 7 initial event types — the exact strings emit_webhook_event()
+// checks endpoints.events against (20260821070000_public_api_webhooks.sql).
+const WEBHOOK_EVENT_TYPES = ["enrollment", "submission", "grade", "completion", "certificate", "content.publish", "mastery.change"] as const;
+
 function WebhookSection({ orgId }: { orgId: string }) {
   const [endpoints, setEndpoints] = useState<WebhookEndpoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [url, setUrl] = useState("");
+  const [events, setEvents] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     listWebhookEndpoints(orgId).then(setEndpoints).catch(showError).finally(() => setLoading(false));
   }, [orgId]);
 
+  const toggleEvent = (name: string) => {
+    setEvents((prev) => (prev.includes(name) ? prev.filter((e) => e !== name) : [...prev, name]));
+  };
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!url.trim()) return;
+    if (!url.trim() || events.length === 0) return;
     setSaving(true);
     try {
-      const secret = crypto.randomUUID();
-      const endpoint = await createWebhookEndpoint(orgId, url.trim(), secret);
+      const { endpoint, secret } = await createWebhookEndpoint(orgId, url.trim(), events);
       setEndpoints((prev) => [endpoint, ...prev]);
       setUrl("");
-      window.alert(`Secret du webhook (affiché une seule fois) : ${secret}`);
+      setEvents([]);
+      window.alert(`Secret du webhook (affiché une seule fois, sert à vérifier la signature HMAC de chaque livraison) : ${secret}`);
     } catch (err) {
       showError(err);
     } finally {
@@ -1058,15 +1335,23 @@ function WebhookSection({ orgId }: { orgId: string }) {
   return (
     <section className="product-list-panel p-5 mt-4">
       <div className="product-panel-heading -mx-5 -mt-5 mb-4">
-        <div><h2>Webhooks</h2><p>Livraison signée, horodatée et rejouable ; le secret n'est jamais réaffiché.</p></div>
+        <div><h2>Webhooks</h2><p>Livraison signée (HMAC-SHA256), horodatée et rejouable ; le secret n'est jamais réaffiché.</p></div>
       </div>
-      <form onSubmit={handleCreate} className="flex flex-wrap items-end gap-2 mb-4">
+      <form onSubmit={handleCreate} className="flex flex-wrap items-end gap-2 mb-2">
         <div className="min-w-[260px] flex-1 space-y-1">
-          <label className="text-sm font-medium" htmlFor="webhook-url">URL</label>
-          <Input id="webhook-url" type="url" value={url} onChange={(e) => setUrl(e.target.value)} required />
+          <label className="text-sm font-medium" htmlFor="webhook-url">URL (https)</label>
+          <Input id="webhook-url" type="url" value={url} onChange={(e) => setUrl(e.target.value)} required pattern="https://.*" />
         </div>
-        <Button type="submit" size="sm" loading={saving}><Webhook /> Ajouter</Button>
+        <Button type="submit" size="sm" loading={saving} disabled={events.length === 0}><Webhook /> Ajouter</Button>
       </form>
+      <div className="flex flex-wrap gap-3 mb-4 text-sm">
+        {WEBHOOK_EVENT_TYPES.map((name) => (
+          <label key={name} className="flex items-center gap-1.5">
+            <input type="checkbox" checked={events.includes(name)} onChange={() => toggleEvent(name)} />
+            {name}
+          </label>
+        ))}
+      </div>
       {loading ? <TableSkeleton rows={2} cols={2} /> : (
         <ul className="space-y-2">
           {endpoints.map((e) => (
@@ -1077,6 +1362,189 @@ function WebhookSection({ orgId }: { orgId: string }) {
           ))}
         </ul>
       )}
+    </section>
+  );
+}
+
+/** OneRoster 1.2 (spec 04, ROS-001→005, 20260821060000_oneroster.sql).
+ *  CSV dry-run import for users.csv/enrollments.csv (real preview before
+ *  any write, mirroring EnrollmentImportDialog's established shape),
+ *  sync-run history, and outbound export settings. Enrollment sync stays
+ *  CSV-only (see the migration's file header for why REST-inbound is
+ *  scoped to users only in this pass — enroll_in_session()/
+ *  transition_enrollment() both require a real admin session). */
+function OneRosterSection({ orgId }: { orgId: string }) {
+  const [open, setOpen] = useState(false);
+  const [runs, setRuns] = useState<OneRosterSyncRun[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [userPreview, setUserPreview] = useState<ReturnType<typeof buildOneRosterUserPreview>>([]);
+  const [enrollmentPreview, setEnrollmentPreview] = useState<ReturnType<typeof buildOneRosterEnrollmentPreview>>([]);
+  const [importing, setImporting] = useState(false);
+  const [exportEnabled, setExportEnabled] = useState(false);
+  const [exportSaving, setExportSaving] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    setLoading(true);
+    Promise.all([listOneRosterSyncRuns(orgId), getOneRosterExportSettings(orgId)])
+      .then(([r, settings]) => { setRuns(r); setExportEnabled(settings?.enabled ?? false); })
+      .catch(showError)
+      .finally(() => setLoading(false));
+  }, [open, orgId]);
+
+  const handleUsersFile = async (file: File) => {
+    try {
+      const raw = await parseSpreadsheetRows(file);
+      const rows = extractOneRosterUserRows(raw);
+      const resolved = await resolveOneRosterUsers(orgId, rows.map((r) => ({ sourced_id: r.sourced_id, email: r.email })));
+      setUserPreview(buildOneRosterUserPreview(rows, resolved));
+    } catch (err) {
+      showError(err);
+    }
+  };
+
+  const handleEnrollmentsFile = async (file: File) => {
+    try {
+      const raw = await parseSpreadsheetRows(file);
+      const rows = extractOneRosterEnrollmentRows(raw);
+      const userSourcedIds = [...new Set(rows.map((r) => r.user_sourced_id))];
+      const classSourcedIds = [...new Set(rows.map((r) => r.class_sourced_id))];
+      const [resolvedUsers, resolvedClasses] = await Promise.all([
+        resolveOneRosterUsers(orgId, userSourcedIds.map((id) => ({ sourced_id: id, email: id }))),
+        resolveOneRosterClasses(orgId, classSourcedIds.map((code) => ({ sourced_id: code, class_code: code }))),
+      ]);
+      // Enrollments.csv identifies people/classes by sourcedId, not email —
+      // resolveOneRosterUsers() only matches by email, so a userSourcedId
+      // only resolves here if it was already committed via users.csv first
+      // (external_mappings lookup, not a fresh email match). Build the map
+      // from whichever of the two actually has a Brivia match.
+      const userMap = new Map(resolvedUsers.filter((u) => u.matched).map((u) => [u.sourced_id, u.learner_id as string]));
+      const classMap = new Map(resolvedClasses.filter((c) => c.matched).map((c) => [c.sourced_id, c.session_id as string]));
+      setEnrollmentPreview(buildOneRosterEnrollmentPreview(rows, userMap, classMap));
+    } catch (err) {
+      showError(err);
+    }
+  };
+
+  const commitUsers = async () => {
+    const rows = importableOneRosterUserRows(userPreview);
+    if (rows.length === 0) return;
+    setImporting(true);
+    const runId = await startOneRosterSyncRun(orgId, "csv").catch(() => null);
+    try {
+      const results = await commitOneRosterUsers(orgId, rows);
+      const created = results.filter((r) => r.outcome === "created").length;
+      const updated = results.filter((r) => r.outcome === "updated").length;
+      if (runId) await completeOneRosterSyncRun(runId, "completed", created, updated, 0, 0, null);
+      setUserPreview([]);
+      setRuns(await listOneRosterSyncRuns(orgId));
+    } catch (err) {
+      if (runId) await completeOneRosterSyncRun(runId, "failed", 0, 0, 0, rows.length, err instanceof Error ? err.message : "error");
+      showError(err);
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const commitEnrollments = async () => {
+    const rows = importableOneRosterEnrollmentRows(enrollmentPreview).map((r) => ({ ...r, status: r.status }));
+    if (rows.length === 0) return;
+    setImporting(true);
+    const runId = await startOneRosterSyncRun(orgId, "csv").catch(() => null);
+    try {
+      const results = await commitOneRosterEnrollments(orgId, rows);
+      const active = results.filter((r) => r.outcome === "active").length;
+      const deactivated = results.filter((r) => r.outcome === "deactivated").length;
+      if (runId) await completeOneRosterSyncRun(runId, "completed", active, 0, deactivated, 0, null);
+      setEnrollmentPreview([]);
+      setRuns(await listOneRosterSyncRuns(orgId));
+    } catch (err) {
+      if (runId) await completeOneRosterSyncRun(runId, "failed", 0, 0, 0, rows.length, err instanceof Error ? err.message : "error");
+      showError(err);
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const toggleExport = async (enabled: boolean) => {
+    setExportSaving(true);
+    try {
+      await setOneRosterExportSettings(orgId, enabled, []);
+      setExportEnabled(enabled);
+    } catch (err) {
+      showError(err);
+    } finally {
+      setExportSaving(false);
+    }
+  };
+
+  return (
+    <section className="product-list-panel p-5 mt-4">
+      <div className="product-panel-heading -mx-5 -mt-5 mb-4 flex items-center justify-between">
+        <div><h2>OneRoster 1.2</h2><p>Import CSV (utilisateurs, inscriptions) avec aperçu dry-run ; export gradebook sortant.</p></div>
+        <Button variant="ghost" size="sm" onClick={() => setOpen((v) => !v)}>{open ? "Masquer" : "Gérer OneRoster"}</Button>
+      </div>
+      {open && (loading ? <ListSkeleton rows={3} /> : (
+        <div className="space-y-6">
+          <div>
+            <h3 className="text-sm font-medium mb-2">Import users.csv (ROS-001)</h3>
+            <input type="file" accept=".csv" onChange={(e) => e.target.files?.[0] && handleUsersFile(e.target.files[0])} className="text-sm" />
+            {userPreview.length > 0 && (
+              <div className="mt-2 space-y-2">
+                <ul className="text-xs space-y-1 max-h-40 overflow-y-auto">
+                  {userPreview.map((r) => (
+                    <li key={r.rowIndex} className="flex justify-between gap-2">
+                      <span>{r.email}</span>
+                      <span className={r.outcomeStatus === "ok" ? "text-emerald-600" : "text-amber-600"}>{r.outcomeStatus}</span>
+                    </li>
+                  ))}
+                </ul>
+                <Button size="sm" loading={importing} onClick={commitUsers}>Importer {importableOneRosterUserRows(userPreview).length} ligne(s)</Button>
+              </div>
+            )}
+          </div>
+          <div>
+            <h3 className="text-sm font-medium mb-2">Import enrollments.csv (ROS-001) — inscrit ou désinscrit sans supprimer l'historique (ROS-004)</h3>
+            <input type="file" accept=".csv" onChange={(e) => e.target.files?.[0] && handleEnrollmentsFile(e.target.files[0])} className="text-sm" />
+            {enrollmentPreview.length > 0 && (
+              <div className="mt-2 space-y-2">
+                <ul className="text-xs space-y-1 max-h-40 overflow-y-auto">
+                  {enrollmentPreview.map((r) => (
+                    <li key={r.rowIndex} className="flex justify-between gap-2">
+                      <span>{r.userSourcedId} → {r.classSourcedId}</span>
+                      <span className={r.outcomeStatus === "ok" ? "text-emerald-600" : "text-amber-600"}>{r.outcomeStatus}</span>
+                    </li>
+                  ))}
+                </ul>
+                <Button size="sm" loading={importing} onClick={commitEnrollments}>Synchroniser {importableOneRosterEnrollmentRows(enrollmentPreview).length} ligne(s)</Button>
+              </div>
+            )}
+          </div>
+          <div>
+            <h3 className="text-sm font-medium mb-2">Export gradebook sortant (ROS-005)</h3>
+            <div className="flex items-center gap-2">
+              <Button variant={exportEnabled ? "default" : "outline"} size="sm" loading={exportSaving} onClick={() => toggleExport(!exportEnabled)}>
+                {exportEnabled ? "Activé pour cette organisation" : "Désactivé"}
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => exportOneRosterResults(orgId).catch(showError)} disabled={!exportEnabled}>
+                Télécharger results.csv
+              </Button>
+            </div>
+          </div>
+          <div>
+            <h3 className="text-sm font-medium mb-2">Historique des synchronisations</h3>
+            <ul className="space-y-1 text-xs">
+              {runs.map((r) => (
+                <li key={r.id} className="flex justify-between gap-2 rounded border p-2">
+                  <span>{r.source} · {new Date(r.started_at).toLocaleString()}</span>
+                  <span>{r.status} — {r.created_count} créés, {r.updated_count} maj, {r.deactivated_count} désactivés{r.error_count ? `, ${r.error_count} erreurs` : ""}</span>
+                </li>
+              ))}
+              {runs.length === 0 && <li className="text-muted-foreground">Aucune synchronisation encore.</li>}
+            </ul>
+          </div>
+        </div>
+      ))}
     </section>
   );
 }
@@ -1123,6 +1591,7 @@ export default function LmsIntegrations() {
         <IdentitySection orgId={activeOrgId} />
         <LtiSection orgId={activeOrgId} />
         <ApiSection orgId={activeOrgId} />
+        <OneRosterSection orgId={activeOrgId} />
         <WebhookSection orgId={activeOrgId} />
       </div>
     </AppLayout>
