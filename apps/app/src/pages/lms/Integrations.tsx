@@ -29,8 +29,10 @@ import {
   listIdentityConnections,
   listIdentityDomains,
   listIdentityRoleMappings,
+  listLtiContexts,
   listLtiDeployments,
   listLtiLaunches,
+  listLtiNrpsSyncRuns,
   listLtiRegistrations,
   listSsoLogins,
   listWebhookEndpoints,
@@ -40,6 +42,7 @@ import {
   samlSpMetadataUrl,
   startSamlTestLogin,
   startSsoTestLogin,
+  syncLtiContextRoster,
   testLtiConnection,
   updateIdentityConnection,
   type ApiClient,
@@ -48,8 +51,10 @@ import {
   type IdentityDomain,
   type IdentityRoleMapping,
   type LtiConnectionTestResult,
+  type LtiContext,
   type LtiDeployment,
   type LtiLaunch,
+  type LtiNrpsSyncRun,
   type LtiRegistration,
   type SsoLogin,
   type WebhookEndpoint,
@@ -843,6 +848,88 @@ function LtiDeployments({ registrationId }: { registrationId: string }) {
   );
 }
 
+/** LTI-003: contexts (external courses/classes) this registration has been
+ *  launched from with NRPS roster access granted. A context only appears
+ *  here once the platform has actually sent a namesroleservice claim on some
+ *  launch — nothing to sync before that. Sync is always admin-triggered,
+ *  never automatic (see lti-nrps-sync/index.ts's header). */
+function LtiContexts({ registrationId }: { registrationId: string }) {
+  const [contexts, setContexts] = useState<LtiContext[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    listLtiContexts(registrationId).then(setContexts).catch(showError).finally(() => setLoading(false));
+  }, [registrationId]);
+
+  if (loading) return <ListSkeleton rows={1} withAvatar={false} />;
+
+  if (contexts.length === 0) {
+    return <p className="text-sm text-muted-foreground">Aucun contexte avec accès au répertoire — un lancement doit d'abord accorder le NRPS pour qu'un contexte apparaisse ici.</p>;
+  }
+
+  return (
+    <ul className="space-y-2">
+      {contexts.map((c) => <LtiContextRow key={c.id} context={c} />)}
+    </ul>
+  );
+}
+
+function LtiContextRow({ context }: { context: LtiContext }) {
+  const [runs, setRuns] = useState<LtiNrpsSyncRun[]>([]);
+  const [loadingRuns, setLoadingRuns] = useState(true);
+  const [syncing, setSyncing] = useState(false);
+
+  const loadRuns = () => {
+    setLoadingRuns(true);
+    listLtiNrpsSyncRuns(context.id).then(setRuns).catch(showError).finally(() => setLoadingRuns(false));
+  };
+
+  useEffect(loadRuns, [context.id]);
+
+  const handleSync = async () => {
+    setSyncing(true);
+    try {
+      // Result surfaces via the "Dernière synchro" line below once loadRuns()
+      // refreshes — no separate toast needed, showError is for errors only.
+      await syncLtiContextRoster(context.id);
+      loadRuns();
+    } catch (err) {
+      showError(err);
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const lastRun = runs[0];
+
+  return (
+    <li className="rounded-md border px-3 py-2 text-sm space-y-1">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div>
+          <span className="font-medium">{context.title ?? context.context_external_id}</span>
+          <span className="text-muted-foreground text-xs"> · {context.context_external_id}</span>
+        </div>
+        <Button
+          variant="outline" size="sm" loading={syncing}
+          disabled={!context.context_memberships_url}
+          onClick={handleSync}
+        >
+          <RadioTower size={14} /> Synchroniser le répertoire
+        </Button>
+      </div>
+      {loadingRuns ? null : lastRun ? (
+        <p className="text-xs text-muted-foreground">
+          Dernière synchro {new Date(lastRun.started_at).toLocaleString()} — {lastRun.status === "completed"
+            ? `${lastRun.matched_count} apparié(s), ${lastRun.unmatched_count} non apparié(s)`
+            : lastRun.status === "failed" ? `échec (${lastRun.error_reason ?? "raison inconnue"})` : "en cours…"}
+        </p>
+      ) : (
+        <p className="text-xs text-muted-foreground">Aucune synchronisation encore lancée.</p>
+      )}
+    </li>
+  );
+}
+
 function LtiRegistrationRow({ registration, orgId }: { registration: LtiRegistration; orgId: string }) {
   const [expanded, setExpanded] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -893,6 +980,10 @@ function LtiRegistrationRow({ registration, orgId }: { registration: LtiRegistra
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Déploiements</p>
             <LtiDeployments registrationId={registration.id} />
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Répertoire des contextes (NRPS)</p>
+            <LtiContexts registrationId={registration.id} />
           </div>
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Diagnostic — derniers lancements</p>

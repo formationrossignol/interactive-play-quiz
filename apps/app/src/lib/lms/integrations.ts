@@ -71,6 +71,29 @@ export interface LtiDeployment {
   created_at: string;
 }
 
+export interface LtiContext {
+  id: string;
+  registration_id: string;
+  context_external_id: string;
+  title: string | null;
+  context_memberships_url: string | null;
+  service_versions: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LtiNrpsSyncRun {
+  id: string;
+  context_id: string;
+  triggered_by: string;
+  status: 'running' | 'completed' | 'failed';
+  matched_count: number;
+  unmatched_count: number;
+  error_reason: string | null;
+  started_at: string;
+  completed_at: string | null;
+}
+
 export interface LtiLaunch {
   id: string;
   registration_id: string;
@@ -346,6 +369,48 @@ export async function linkLtiSubject(registrationId: string, subject: string, in
     p_registration_id: registrationId, p_subject: subject, p_internal_user_id: internalUserId,
   });
   if (error) throw error;
+}
+
+/** Contexts (external courses/classes) this registration has been launched
+ *  from with NRPS roster access granted — populated by upsert_lti_context()
+ *  on launch (lti-launch/index.ts), read-only here (RLS: lti_contexts_admin).
+ *  A context with no NRPS claim ever seen simply never appears — there is
+ *  nothing to sync a roster for until the platform actually grants it. */
+export async function listLtiContexts(registrationId: string): Promise<LtiContext[]> {
+  const { data, error } = await supabase
+    .from('lti_contexts').select('*')
+    .eq('registration_id', registrationId)
+    .order('updated_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as LtiContext[];
+}
+
+export async function listLtiNrpsSyncRuns(contextId: string, limit = 10): Promise<LtiNrpsSyncRun[]> {
+  const { data, error } = await supabase
+    .from('lti_nrps_sync_runs').select('*')
+    .eq('context_id', contextId)
+    .order('started_at', { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return (data ?? []) as LtiNrpsSyncRun[];
+}
+
+export interface LtiNrpsSyncResult {
+  sync_run_id: string;
+  matched: number;
+  unmatched: number;
+}
+
+/** LTI-003: admin-triggered roster sync for one context — never automatic.
+ *  Matches roster members against existing external_mappings only (a
+ *  platform reporting someone who has never launched into Brivia has no
+ *  account to sync a role onto — see lti-nrps-sync/index.ts's header), maps
+ *  LTI role URNs to Brivia roles additively, journals every member's outcome
+ *  (LTI-003's own "journal de provenance" requirement). */
+export async function syncLtiContextRoster(contextId: string): Promise<LtiNrpsSyncResult> {
+  const { data, error } = await supabase.functions.invoke('lti-nrps-sync', { body: { context_id: contextId } });
+  if (error) throw error;
+  return data as LtiNrpsSyncResult;
 }
 
 export interface LtiConnectionTestResult {

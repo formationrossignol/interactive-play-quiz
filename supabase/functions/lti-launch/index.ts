@@ -168,6 +168,25 @@ Deno.serve(async (req) => {
       }
     }
 
+    // LTI-003 (NRPS): record/refresh this context's roster-access anchor on
+    // any launch (any message type — the context claim isn't specific to
+    // resource-link launches the way resource_link/AGS are) that carries
+    // both a context and a namesroleservice claim. Same idempotent upsert,
+    // same best-effort/non-blocking posture as the AGS anchor above — NRPS
+    // bookkeeping is not on the critical path of "did the user get in."
+    if (claims.contextExternalId && claims.namesRoleService) {
+      const { error: contextError } = await supabase.rpc("upsert_lti_context", {
+        p_registration_id: registration.id,
+        p_context_external_id: claims.contextExternalId,
+        p_title: null,
+        p_context_memberships_url: claims.namesRoleService.contextMembershipsUrl,
+        p_service_versions: JSON.stringify(claims.namesRoleService.serviceVersions),
+      });
+      if (contextError) {
+        console.error("[lti-launch] upsert_lti_context failed (non-blocking):", contextError);
+      }
+    }
+
     // LTI-002: a Deep Linking request launch resolves the same way a
     // resource-link launch does up to here (same account-linking, same
     // INT-003/LTI-005 "never auto-provision" rule) — it only diverges in
