@@ -172,7 +172,14 @@ create table public.lti_ags_score_queue (
   id            uuid primary key default gen_random_uuid(),
   grade_item_id uuid not null references public.grade_items(id) on delete cascade,
   learner_id    uuid not null references auth.users(id) on delete cascade,
-  status        text not null default 'pending' check (status in ('pending','sent','failed')),
+  -- 'sending' is the atomic-claim intermediate state dispatch-lti-ags-scores
+  -- uses (`update ... where status='pending' set status='sending'`) — without
+  -- it in this list, that claim's UPDATE violates the check constraint on
+  -- every single row, silently returns no data (the caller only reads
+  -- `.data`, discards `.error`), and the entire dispatch loop would skip
+  -- every row forever without ever sending anything. Caught in independent
+  -- review before push — not present in the first version of this migration.
+  status        text not null default 'pending' check (status in ('pending','sending','sent','failed')),
   retry_count   integer not null default 0,
   last_error    text,
   created_at    timestamptz not null default now(),
