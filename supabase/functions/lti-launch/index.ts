@@ -144,6 +144,30 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "linked_user_not_found" }), { status: 500, headers: corsHeaders });
     }
 
+    // LTI-004 (AGS): record/refresh this resource link's anchor + whatever
+    // AGS access the platform granted for it, on every resource-link launch
+    // (idempotent upsert — see upsert_lti_resource_link(),
+    // 20260821030000_lti_ags.sql). Only for real resource-link launches: a
+    // Deep Linking request's resource_link claim (if any) doesn't describe
+    // an existing placed link, it describes a still-being-configured one.
+    // Best-effort: a failure here must never block the actual sign-in —
+    // AGS bookkeeping is not on the critical path of "did the user get in."
+    if (claims.messageType === "LtiResourceLinkRequest" && claims.resourceLinkId) {
+      const { error: linkError } = await supabase.rpc("upsert_lti_resource_link", {
+        p_registration_id: registration.id,
+        p_deployment_id: claims.deploymentId,
+        p_resource_link_id: claims.resourceLinkId,
+        p_context_external_id: claims.contextExternalId,
+        p_title: claims.resourceLinkTitle,
+        p_line_item_url: claims.agsEndpoint?.lineItemUrl ?? null,
+        p_line_items_url: claims.agsEndpoint?.lineItemsUrl ?? null,
+        p_ags_scopes: JSON.stringify(claims.agsEndpoint?.scopes ?? []),
+      });
+      if (linkError) {
+        console.error("[lti-launch] upsert_lti_resource_link failed (non-blocking):", linkError);
+      }
+    }
+
     // LTI-002: a Deep Linking request launch resolves the same way a
     // resource-link launch does up to here (same account-linking, same
     // INT-003/LTI-005 "never auto-provision" rule) — it only diverges in

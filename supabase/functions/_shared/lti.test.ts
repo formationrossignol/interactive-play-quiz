@@ -197,3 +197,36 @@ Deno.test("replaying the exact same valid token twice: both verify (replay defen
   const second = await verifyLtiLaunch(token, fixedKey(publicKey), { issuer: ISSUER, audience: AUDIENCE, expectedNonce: NONCE });
   assertEquals(first.sub, second.sub);
 });
+
+// LTI-004 (AGS): resource_link + AGS endpoint claim extraction.
+Deno.test("resource_link and AGS endpoint claims: extracted when present", async () => {
+  const { publicKey, privateKey } = await keypair();
+  const token = await signValidToken(privateKey, {
+    "https://purl.imsglobal.org/spec/lti/claim/resource_link": { id: "link-77", title: "Chapitre 3" },
+    "https://purl.imsglobal.org/spec/lti-ags/claim/endpoint": {
+      scope: [
+        "https://purl.imsglobal.org/spec/lti-ags/scope/lineitem",
+        "https://purl.imsglobal.org/spec/lti-ags/scope/score",
+      ],
+      lineitem: "https://platform.example.test/ags/lineitems/1",
+      lineitems: "https://platform.example.test/ags/lineitems",
+    },
+  });
+  const claims = await verifyLtiLaunch(token, fixedKey(publicKey), { issuer: ISSUER, audience: AUDIENCE, expectedNonce: NONCE });
+  assertEquals(claims.resourceLinkId, "link-77");
+  assertEquals(claims.resourceLinkTitle, "Chapitre 3");
+  assertEquals(claims.agsEndpoint?.scopes, [
+    "https://purl.imsglobal.org/spec/lti-ags/scope/lineitem",
+    "https://purl.imsglobal.org/spec/lti-ags/scope/score",
+  ]);
+  assertEquals(claims.agsEndpoint?.lineItemUrl, "https://platform.example.test/ags/lineitems/1");
+  assertEquals(claims.agsEndpoint?.lineItemsUrl, "https://platform.example.test/ags/lineitems");
+});
+
+Deno.test("no AGS endpoint claim: agsEndpoint is null, not an empty-but-present object (grading not enabled for this placement is a real, valid state)", async () => {
+  const { publicKey, privateKey } = await keypair();
+  const token = await signValidToken(privateKey);
+  const claims = await verifyLtiLaunch(token, fixedKey(publicKey), { issuer: ISSUER, audience: AUDIENCE, expectedNonce: NONCE });
+  assertEquals(claims.agsEndpoint, null);
+  assertEquals(claims.resourceLinkId, null);
+});
