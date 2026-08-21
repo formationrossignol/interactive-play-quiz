@@ -460,3 +460,15 @@ verify_jwt = false
 verify_jwt = false
 [functions.lti-jwks]
 verify_jwt = false
+
+# scim-users/scim-groups: called directly by an external IdP's SCIM
+# provisioning client (Okta/Azure AD/etc), never by a Brivia session — no
+# Supabase JWT exists on these requests. Authenticity comes from
+# verifyScimBearerToken() hashing the request's own Authorization header and
+# resolving it against api_tokens (see _shared/scim-auth.ts) — every handler
+# re-checks this before touching anything, there is no unauthenticated path
+# inside either function despite the gateway-level JWT check being off.
+[functions.scim-users]
+verify_jwt = false
+[functions.scim-groups]
+verify_jwt = false

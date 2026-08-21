@@ -18,13 +18,19 @@ import {
   createIdentityRoleMapping,
   createLtiDeployment,
   createLtiRegistration,
+  createScimGroupRoleMapping,
+  createApiToken,
   createWebhookEndpoint,
   deactivateIdentityClientSecret,
   deleteIdentityRoleMapping,
+  deleteScimGroupRoleMapping,
   discoverOidcEndpoints,
   linkLtiSubject,
   linkSsoSubject,
   listApiClients,
+  listApiTokens,
+  listScimGroupRoleMappings,
+  revokeApiToken,
   listIdentityClientSecrets,
   listIdentityConnections,
   listIdentityDomains,
@@ -46,6 +52,8 @@ import {
   testLtiConnection,
   updateIdentityConnection,
   type ApiClient,
+  type ApiToken,
+  type ScimGroupRoleMapping,
   type IdentityClientSecret,
   type IdentityConnection,
   type IdentityDomain,
@@ -1068,6 +1076,142 @@ function LtiSection({ orgId }: { orgId: string }) {
   );
 }
 
+/** SCIM 2.0 (spec 04, SCM-001→004) client detail — token issuance (bearer
+ *  tokens an IdP presents on /scim-users, /scim-groups) and group→role
+ *  mapping (SCM-004), scoped to one api_clients row acting as the SCIM
+ *  connection. Collapsed by default: most orgs have very few API clients,
+ *  no need for every row to show its full token/mapping management inline
+ *  before an admin asks for it. */
+function ApiClientDetail({ client }: { client: ApiClient }) {
+  const [open, setOpen] = useState(false);
+  const [tokens, setTokens] = useState<ApiToken[]>([]);
+  const [mappings, setMappings] = useState<ScimGroupRoleMapping[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [tokenLabel, setTokenLabel] = useState("");
+  const [issuing, setIssuing] = useState(false);
+  const [justIssued, setJustIssued] = useState<string | null>(null);
+  const [groupName, setGroupName] = useState("");
+  const [groupRole, setGroupRole] = useState<ScimGroupRoleMapping["target_role"]>("learner");
+  const [mappingSaving, setMappingSaving] = useState(false);
+
+  const load = () => {
+    setLoading(true);
+    Promise.all([listApiTokens(client.id), listScimGroupRoleMappings(client.id)])
+      .then(([t, m]) => { setTokens(t); setMappings(m); })
+      .catch(showError)
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => { if (open) load(); }, [open]);
+
+  const handleIssueToken = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIssuing(true);
+    try {
+      const plaintext = await createApiToken(client.id, tokenLabel.trim(), []);
+      setJustIssued(plaintext);
+      setTokenLabel("");
+      load();
+    } catch (err) {
+      showError(err);
+    } finally {
+      setIssuing(false);
+    }
+  };
+
+  const handleRevokeToken = async (id: string) => {
+    try {
+      await revokeApiToken(id);
+      load();
+    } catch (err) {
+      showError(err);
+    }
+  };
+
+  const handleAddMapping = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!groupName.trim()) return;
+    setMappingSaving(true);
+    try {
+      const m = await createScimGroupRoleMapping(client.id, groupName.trim(), groupRole);
+      setMappings((prev) => [m, ...prev]);
+      setGroupName("");
+    } catch (err) {
+      showError(err);
+    } finally {
+      setMappingSaving(false);
+    }
+  };
+
+  const handleDeleteMapping = async (id: string) => {
+    try {
+      await deleteScimGroupRoleMapping(id);
+      setMappings((prev) => prev.filter((m) => m.id !== id));
+    } catch (err) {
+      showError(err);
+    }
+  };
+
+  return (
+    <li className="rounded-md border p-3 text-sm">
+      <div className="flex items-center justify-between">
+        <span>{client.name} · <code>{client.client_id}</code></span>
+        <div className="flex items-center gap-2">
+          <span className="text-muted-foreground">{client.status}</span>
+          <Button variant="ghost" size="sm" onClick={() => setOpen((v) => !v)}>{open ? "Masquer" : "Gérer SCIM"}</Button>
+        </div>
+      </div>
+      {open && (
+        <div className="mt-3 space-y-4 border-t pt-3">
+          <div>
+            <h3 className="text-sm font-medium mb-2">Jetons SCIM (SCM-002)</h3>
+            {justIssued && (
+              <div className="mb-2 rounded-md border border-amber-400 bg-amber-50 p-2 text-xs">
+                Jeton (affiché une seule fois) : <code className="break-all">{justIssued}</code>
+                <Button variant="ghost" size="sm" className="ml-2" onClick={() => setJustIssued(null)}>Fermer</Button>
+              </div>
+            )}
+            <form onSubmit={handleIssueToken} className="flex flex-wrap items-end gap-2 mb-2">
+              <Input placeholder="Libellé (ex. Okta)" value={tokenLabel} onChange={(e) => setTokenLabel(e.target.value)} className="max-w-[220px]" />
+              <Button type="submit" size="sm" loading={issuing}><KeyRound size={14} /> Générer</Button>
+            </form>
+            {loading ? <ListSkeleton rows={2} /> : (
+              <ul className="space-y-1">
+                {tokens.map((t) => (
+                  <li key={t.id} className="flex items-center justify-between text-xs">
+                    <span>{t.label ?? "(sans libellé)"} — {t.revoked_at ? "révoqué" : "actif"}</span>
+                    {!t.revoked_at && <Button variant="ghost" size="sm" onClick={() => handleRevokeToken(t.id)}><Trash2 size={12} /></Button>}
+                  </li>
+                ))}
+                {tokens.length === 0 && <li className="text-muted-foreground text-xs">Aucun jeton.</li>}
+              </ul>
+            )}
+          </div>
+          <div>
+            <h3 className="text-sm font-medium mb-2">Mapping groupe SCIM → rôle (SCM-004)</h3>
+            <form onSubmit={handleAddMapping} className="flex flex-wrap items-end gap-2 mb-2">
+              <Input placeholder="Nom du groupe (displayName)" value={groupName} onChange={(e) => setGroupName(e.target.value)} className="max-w-[220px]" required />
+              <select className="border rounded-md px-2 py-1.5 text-sm" value={groupRole} onChange={(e) => setGroupRole(e.target.value as ScimGroupRoleMapping["target_role"])}>
+                {ORG_ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+              </select>
+              <Button type="submit" size="sm" loading={mappingSaving}><Plus size={14} /> Ajouter</Button>
+            </form>
+            <ul className="space-y-1">
+              {mappings.map((m) => (
+                <li key={m.id} className="flex items-center justify-between text-xs">
+                  <span>{m.group_display_name} → {m.target_role}</span>
+                  <Button variant="ghost" size="sm" onClick={() => handleDeleteMapping(m.id)}><Trash2 size={12} /></Button>
+                </li>
+              ))}
+              {mappings.length === 0 && <li className="text-muted-foreground text-xs">Aucun mapping — les membres de groupe SCIM sans règle ne reçoivent aucun rôle.</li>}
+            </ul>
+          </div>
+        </div>
+      )}
+    </li>
+  );
+}
+
 function ApiSection({ orgId }: { orgId: string }) {
   const [clients, setClients] = useState<ApiClient[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1096,7 +1240,7 @@ function ApiSection({ orgId }: { orgId: string }) {
   return (
     <section className="product-list-panel p-5 mt-4">
       <div className="product-panel-heading -mx-5 -mt-5 mb-4">
-        <div><h2>Clients API</h2><p>Identifiants OAuth client-credentials à scopes fins ; aucun jeton utilisateur longue durée.</p></div>
+        <div><h2>Clients API &amp; SCIM 2.0</h2><p>Identifiants OAuth client-credentials à scopes fins ; un client peut aussi porter des jetons SCIM (provisioning Users/Groups, SCM-001→004) pour un IdP externe.</p></div>
       </div>
       <form onSubmit={handleCreate} className="flex flex-wrap items-end gap-2 mb-4">
         <div className="min-w-[220px] space-y-1">
@@ -1107,12 +1251,7 @@ function ApiSection({ orgId }: { orgId: string }) {
       </form>
       {loading ? <TableSkeleton rows={2} cols={2} /> : (
         <ul className="space-y-2">
-          {clients.map((c) => (
-            <li key={c.id} className="flex items-center justify-between rounded-md border p-3 text-sm">
-              <span>{c.name} · <code>{c.client_id}</code></span>
-              <span className="text-muted-foreground">{c.status}</span>
-            </li>
-          ))}
+          {clients.map((c) => <ApiClientDetail key={c.id} client={c} />)}
         </ul>
       )}
     </section>

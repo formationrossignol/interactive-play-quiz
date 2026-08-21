@@ -448,12 +448,79 @@ export async function listWebhookEndpoints(orgId: string): Promise<WebhookEndpoi
 
 export async function createWebhookEndpoint(orgId: string, url: string, plaintextSecret: string): Promise<WebhookEndpoint> {
   // Hashing happens server-side; here we only pass a client-generated secret
-  // the admin is shown once — see create_integration_secret() for the
-  // connection-scoped equivalent used by OneRoster/SCIM.
+  // the admin is shown once.
   const encoder = new TextEncoder();
   const digest = await crypto.subtle.digest('SHA-256', encoder.encode(plaintextSecret));
   const secretHash = Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
   const { data, error } = await supabase.from('webhook_endpoints').insert({ org_id: orgId, url, secret_hash: secretHash }).select().single();
   if (error) throw error;
   return data as WebhookEndpoint;
+}
+
+// ── SCIM 2.0 (spec 04, SCM-001→004) — api_clients doubles as the SCIM
+// connection: an IdP's SCIM provisioning client authenticates as one of
+// these via a bearer token (api_tokens, hashed server-side by
+// create_api_token()). Plaintext hashing happens client-side here (same
+// SHA-256-of-a-high-entropy-token primitive as createWebhookEndpoint above,
+// correct for a machine-generated secret, not a password) so the plaintext
+// itself never reaches the server except inside this one round trip whose
+// only purpose is to persist its hash.
+export interface ApiToken {
+  id: string;
+  label: string | null;
+  scopes: string[] | null;
+  expires_at: string | null;
+  revoked_at: string | null;
+  created_at: string;
+}
+
+export async function listApiTokens(clientId: string): Promise<ApiToken[]> {
+  const { data, error } = await supabase.rpc('list_api_tokens', { p_client_id: clientId });
+  if (error) throw error;
+  return (data ?? []) as ApiToken[];
+}
+
+/** Returns the plaintext token — shown to the admin exactly once by the
+ *  caller, never persisted client-side, never retrievable again after this
+ *  call returns. */
+export async function createApiToken(clientId: string, label: string, scopes: string[]): Promise<string> {
+  const bytes = crypto.getRandomValues(new Uint8Array(32));
+  const plaintext = 'brivia_scim_' + Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join('');
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(plaintext));
+  const tokenHash = Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
+  const { error } = await supabase.rpc('create_api_token', {
+    p_client_id: clientId, p_scopes: scopes.length ? scopes : null, p_expires_at: null, p_token_hash: tokenHash, p_label: label || null,
+  });
+  if (error) throw error;
+  return plaintext;
+}
+
+export async function revokeApiToken(tokenId: string): Promise<void> {
+  const { error } = await supabase.rpc('revoke_api_token', { p_token_id: tokenId });
+  if (error) throw error;
+}
+
+export interface ScimGroupRoleMapping {
+  id: string;
+  client_id: string;
+  group_display_name: string;
+  target_role: 'learner' | 'trainer' | 'pedago' | 'registrar' | 'admin';
+  created_at: string;
+}
+
+export async function listScimGroupRoleMappings(clientId: string): Promise<ScimGroupRoleMapping[]> {
+  const { data, error } = await supabase.from('scim_group_role_mappings').select('*').eq('client_id', clientId).order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as ScimGroupRoleMapping[];
+}
+
+export async function createScimGroupRoleMapping(clientId: string, groupDisplayName: string, targetRole: ScimGroupRoleMapping['target_role']): Promise<ScimGroupRoleMapping> {
+  const { data, error } = await supabase.from('scim_group_role_mappings').insert({ client_id: clientId, group_display_name: groupDisplayName, target_role: targetRole }).select().single();
+  if (error) throw error;
+  return data as ScimGroupRoleMapping;
+}
+
+export async function deleteScimGroupRoleMapping(id: string): Promise<void> {
+  const { error } = await supabase.from('scim_group_role_mappings').delete().eq('id', id);
+  if (error) throw error;
 }
