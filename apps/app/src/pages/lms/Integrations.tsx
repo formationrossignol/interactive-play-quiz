@@ -1111,6 +1111,7 @@ function ApiClientDetail({ client }: { client: ApiClient }) {
   const [groupName, setGroupName] = useState("");
   const [groupRole, setGroupRole] = useState<ScimGroupRoleMapping["target_role"]>("learner");
   const [mappingSaving, setMappingSaving] = useState(false);
+  const [tokenScopes, setTokenScopes] = useState<string[]>([]);
 
   const load = () => {
     setLoading(true);
@@ -1126,9 +1127,10 @@ function ApiClientDetail({ client }: { client: ApiClient }) {
     e.preventDefault();
     setIssuing(true);
     try {
-      const plaintext = await createApiToken(client.id, tokenLabel.trim(), []);
+      const plaintext = await createApiToken(client.id, tokenLabel.trim(), tokenScopes);
       setJustIssued(plaintext);
       setTokenLabel("");
+      setTokenScopes([]);
       load();
     } catch (err) {
       showError(err);
@@ -1189,9 +1191,27 @@ function ApiClientDetail({ client }: { client: ApiClient }) {
                 <Button variant="ghost" size="sm" className="ml-2" onClick={() => setJustIssued(null)}>Fermer</Button>
               </div>
             )}
-            <form onSubmit={handleIssueToken} className="flex flex-wrap items-end gap-2 mb-2">
-              <Input placeholder="Libellé (ex. Okta)" value={tokenLabel} onChange={(e) => setTokenLabel(e.target.value)} className="max-w-[220px]" />
-              <Button type="submit" size="sm" loading={issuing}><KeyRound size={14} /> Générer</Button>
+            <form onSubmit={handleIssueToken} className="mb-2">
+              <div className="flex flex-wrap items-end gap-2 mb-2">
+                <Input placeholder="Libellé (ex. Okta)" value={tokenLabel} onChange={(e) => setTokenLabel(e.target.value)} className="max-w-[220px]" />
+                <Button type="submit" size="sm" loading={issuing}><KeyRound size={14} /> Générer</Button>
+              </div>
+              {/* Sans scope explicite, coalesce(t.scopes, c.scopes) retombe sur
+                  api_clients.scopes (vide par défaut) — un jeton créé sans
+                  cocher aucune case ici ne pourrait jamais réussir un check
+                  hasApiScope()/hasScimScope() nulle part, y compris SCIM. */}
+              <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+                {["api:enrollments:read", "api:grades:read", "api:completions:read", "api:certificates:read", "scim:*", "oneroster:sync"].map((scope) => (
+                  <label key={scope} className="flex items-center gap-1">
+                    <input
+                      type="checkbox"
+                      checked={tokenScopes.includes(scope)}
+                      onChange={() => setTokenScopes((prev) => (prev.includes(scope) ? prev.filter((s) => s !== scope) : [...prev, scope]))}
+                    />
+                    {scope}
+                  </label>
+                ))}
+              </div>
             </form>
             {loading ? <ListSkeleton rows={2} /> : (
               <ul className="space-y-1">
@@ -1276,26 +1296,35 @@ function ApiSection({ orgId }: { orgId: string }) {
   );
 }
 
+// API-004's 7 initial event types — the exact strings emit_webhook_event()
+// checks endpoints.events against (20260821070000_public_api_webhooks.sql).
+const WEBHOOK_EVENT_TYPES = ["enrollment", "submission", "grade", "completion", "certificate", "content.publish", "mastery.change"] as const;
+
 function WebhookSection({ orgId }: { orgId: string }) {
   const [endpoints, setEndpoints] = useState<WebhookEndpoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [url, setUrl] = useState("");
+  const [events, setEvents] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     listWebhookEndpoints(orgId).then(setEndpoints).catch(showError).finally(() => setLoading(false));
   }, [orgId]);
 
+  const toggleEvent = (name: string) => {
+    setEvents((prev) => (prev.includes(name) ? prev.filter((e) => e !== name) : [...prev, name]));
+  };
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!url.trim()) return;
+    if (!url.trim() || events.length === 0) return;
     setSaving(true);
     try {
-      const secret = crypto.randomUUID();
-      const endpoint = await createWebhookEndpoint(orgId, url.trim(), secret);
+      const { endpoint, secret } = await createWebhookEndpoint(orgId, url.trim(), events);
       setEndpoints((prev) => [endpoint, ...prev]);
       setUrl("");
-      window.alert(`Secret du webhook (affiché une seule fois) : ${secret}`);
+      setEvents([]);
+      window.alert(`Secret du webhook (affiché une seule fois, sert à vérifier la signature HMAC de chaque livraison) : ${secret}`);
     } catch (err) {
       showError(err);
     } finally {
@@ -1306,15 +1335,23 @@ function WebhookSection({ orgId }: { orgId: string }) {
   return (
     <section className="product-list-panel p-5 mt-4">
       <div className="product-panel-heading -mx-5 -mt-5 mb-4">
-        <div><h2>Webhooks</h2><p>Livraison signée, horodatée et rejouable ; le secret n'est jamais réaffiché.</p></div>
+        <div><h2>Webhooks</h2><p>Livraison signée (HMAC-SHA256), horodatée et rejouable ; le secret n'est jamais réaffiché.</p></div>
       </div>
-      <form onSubmit={handleCreate} className="flex flex-wrap items-end gap-2 mb-4">
+      <form onSubmit={handleCreate} className="flex flex-wrap items-end gap-2 mb-2">
         <div className="min-w-[260px] flex-1 space-y-1">
-          <label className="text-sm font-medium" htmlFor="webhook-url">URL</label>
-          <Input id="webhook-url" type="url" value={url} onChange={(e) => setUrl(e.target.value)} required />
+          <label className="text-sm font-medium" htmlFor="webhook-url">URL (https)</label>
+          <Input id="webhook-url" type="url" value={url} onChange={(e) => setUrl(e.target.value)} required pattern="https://.*" />
         </div>
-        <Button type="submit" size="sm" loading={saving}><Webhook /> Ajouter</Button>
+        <Button type="submit" size="sm" loading={saving} disabled={events.length === 0}><Webhook /> Ajouter</Button>
       </form>
+      <div className="flex flex-wrap gap-3 mb-4 text-sm">
+        {WEBHOOK_EVENT_TYPES.map((name) => (
+          <label key={name} className="flex items-center gap-1.5">
+            <input type="checkbox" checked={events.includes(name)} onChange={() => toggleEvent(name)} />
+            {name}
+          </label>
+        ))}
+      </div>
       {loading ? <TableSkeleton rows={2} cols={2} /> : (
         <ul className="space-y-2">
           {endpoints.map((e) => (

@@ -479,3 +479,15 @@ verify_jwt = false
 # scim-auth.ts now re-exports from) re-checked before any DB access.
 [functions.oneroster-sync]
 verify_jwt = false
+
+# api-v1: public REST API (spec 04, API-001/002) — verifies its own bearer
+# token (verifyApiBearerToken), not a Supabase session JWT; API-002's "no
+# long-lived user token" is satisfied by there being no code path here that
+# accepts one at all.
+[functions.api-v1]
+verify_jwt = false
+
+# dispatch-webhooks: CRON_SECRET-gated worker, not user-invoked — same
+# posture as dispatch-automation-emails/dispatch-lti-ags-scores.
+[functions.dispatch-webhooks]
+verify_jwt = false

@@ -446,15 +446,31 @@ export async function listWebhookEndpoints(orgId: string): Promise<WebhookEndpoi
   return (data ?? []) as WebhookEndpoint[];
 }
 
-export async function createWebhookEndpoint(orgId: string, url: string, plaintextSecret: string): Promise<WebhookEndpoint> {
-  // Hashing happens server-side; here we only pass a client-generated secret
-  // the admin is shown once.
-  const encoder = new TextEncoder();
-  const digest = await crypto.subtle.digest('SHA-256', encoder.encode(plaintextSecret));
-  const secretHash = Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
-  const { data, error } = await supabase.from('webhook_endpoints').insert({ org_id: orgId, url, secret_hash: secretHash }).select().single();
+// API-003 needs this app to hold the secret in reusable (not one-way-hashed)
+// form — it signs every outgoing delivery with it, unlike a bearer token
+// this app only ever verifies once per incoming request. Fixed (spec 04,
+// 20260821070000_public_api_webhooks.sql) after finding the original
+// version of this function only ever sent a SHA-256 hash to the server,
+// which can verify a value presented back but can never be used to *compute*
+// a signature — the plaintext is generated here (same crypto.getRandomValues
+// primitive as createApiToken above) and sent once, over the same
+// authenticated-RPC trust boundary OIDC's client_secret creation already
+// crosses, to create_webhook_endpoint() which vault-encrypts it server-side.
+export async function createWebhookEndpoint(orgId: string, url: string, events: string[]): Promise<{ endpoint: WebhookEndpoint; secret: string }> {
+  const bytes = crypto.getRandomValues(new Uint8Array(32));
+  const secret = 'whsec_' + Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join('');
+  const { data: endpointId, error } = await supabase.rpc('create_webhook_endpoint', {
+    p_org_id: orgId, p_url: url, p_events: events.length ? events : null, p_secret_plaintext: secret,
+  });
   if (error) throw error;
-  return data as WebhookEndpoint;
+  const { data: endpoint, error: readError } = await supabase.from('webhook_endpoints').select('*').eq('id', endpointId).single();
+  if (readError) throw readError;
+  return { endpoint: endpoint as WebhookEndpoint, secret };
+}
+
+export async function disableWebhookEndpoint(endpointId: string): Promise<void> {
+  const { error } = await supabase.rpc('disable_webhook_endpoint', { p_endpoint_id: endpointId });
+  if (error) throw error;
 }
 
 // ── SCIM 2.0 (spec 04, SCM-001→004) — api_clients doubles as the SCIM
