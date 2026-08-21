@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useSEO } from "@/hooks/useSEO";
 import { login, register, requestPasswordReset, verifyMfaLogin, getCurrentUser } from "@/lib/auth";
 import { acceptOrgInvitation, myOrgMemberships } from "@/lib/org/orgRepo";
+import { buildSamlLoginUrl, buildSsoLoginUrl, resolveSsoConnectionForEmail } from "@/lib/lms/integrations";
 import { toast } from "sonner";
 import { t } from "@/lib/i18n";
 import { BrandMonogram } from "ui/BrandMonogram";
@@ -25,6 +26,20 @@ const AuthPage = () => {
   const [rememberMe, setRememberMe] = useState(true);
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  // INT-002: offers "Se connecter avec {provider}" once the typed email's
+  // domain matches an org's active SSO connection — resolve_sso_connection_for_email
+  // is the one deliberately public read of identity_domains/identity_connections
+  // (see its migration comment). Password login stays usable regardless of
+  // mode — enforcing `required_for_domains` by actually blocking password
+  // submission server-side is a separate, bigger change, not attempted here.
+  const [ssoOption, setSsoOption] = useState<{ connection_id: string; display_name: string; protocol: 'oidc' | 'saml' } | null>(null);
+  const checkSsoForEmail = async (email: string) => {
+    try {
+      setSsoOption(await resolveSsoConnectionForEmail(email));
+    } catch {
+      setSsoOption(null);
+    }
+  };
 
   const loginEmailRef = useRef<HTMLInputElement>(null);
   const registerUsernameRef = useRef<HTMLInputElement>(null);
@@ -415,10 +430,25 @@ const AuthPage = () => {
               style={{ ...inputStyle, borderColor: fieldErrors.loginEmail ? "var(--ap-danger)" : "var(--ap-line)" }}
               placeholder="votre@email.com"
               onFocus={onFocus}
-              onBlur={(e) => { onBlur(e); runFieldValidation("loginEmail", e.target.value, emailError); }}
+              onBlur={(e) => { onBlur(e); runFieldValidation("loginEmail", e.target.value, emailError); void checkSsoForEmail(e.target.value); }}
             />
             <FieldError id="login-email-error" message={fieldErrors.loginEmail} />
           </div>
+          {ssoOption && (
+            <button
+              type="button"
+              className={`${styles.submitButton} ap-btn`}
+              style={{ background: "transparent", border: "1px solid var(--ap-line)", color: "var(--ap-ink)" }}
+              onClick={() => {
+                const target = window.location.origin + "/dashboard";
+                window.location.href = ssoOption.protocol === "saml"
+                  ? buildSamlLoginUrl(ssoOption.connection_id, target)
+                  : buildSsoLoginUrl(ssoOption.connection_id, target);
+              }}
+            >
+              Se connecter avec {ssoOption.display_name}
+            </button>
+          )}
           {passwordField}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "10px" }}>
             <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontSize: "13.5px", fontWeight: 700, color: "var(--ap-ink)" }}>
