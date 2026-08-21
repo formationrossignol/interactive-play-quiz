@@ -67,6 +67,7 @@ export async function fetchLtiServiceToken(opts: {
   privateKey: KeyLike;
   kid: string;
   scope: string;
+  signal?: AbortSignal;
 }): Promise<string> {
   const assertion = await signLtiJwt(
     {
@@ -89,6 +90,7 @@ export async function fetchLtiServiceToken(opts: {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body,
+    signal: opts.signal,
   });
   if (!resp.ok) {
     throw new LtiServiceTokenError("token_request_failed", `Platform token endpoint returned ${resp.status}`);

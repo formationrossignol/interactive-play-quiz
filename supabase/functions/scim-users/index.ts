@@ -52,17 +52,32 @@ Deno.serve(async (req) => {
     if (req.method === "GET" && !resourceId) {
       const startIndex = Number(url.searchParams.get("startIndex") ?? "1") || 1;
       const count = Math.min(Number(url.searchParams.get("count") ?? "100") || 100, 200);
-      const { data: rows, count: total } = await supabase
-        .from("scim_users")
-        .select("id", { count: "exact" })
-        .eq("client_id", ctx.clientId)
-        .range(startIndex - 1, startIndex - 2 + count);
-      const resources = [];
-      for (const row of rows ?? []) {
-        const full = await loadScimUserRow(supabase, row.id as string, ctx.clientId);
-        if (full) resources.push(scimUserResource(full, baseUrl));
+      const { data: rows, error } = await supabase.rpc("_list_scim_users_service", {
+        p_client_id: ctx.clientId,
+        p_offset: startIndex - 1,
+        p_limit: count,
+      });
+      if (error) throw error;
+      const resources = (rows ?? []).map((row: Record<string, unknown>) => scimUserResource({
+        id: row.id as string,
+        externalId: row.external_id as string | null,
+        active: row.active as boolean,
+        email: row.email as string | null,
+        name: row.name as string | null,
+      }, baseUrl));
+      let total = Number(rows?.[0]?.total_count ?? 0);
+      // A window query has no row on an out-of-range SCIM page. Preserve the
+      // protocol's exact totalResults in that uncommon case with one bounded
+      // count query; normal pages stay a single round-trip.
+      if ((rows ?? []).length === 0 && startIndex > 1) {
+        const { count: exactTotal, error: countError } = await supabase
+          .from("scim_users")
+          .select("id", { count: "exact", head: true })
+          .eq("client_id", ctx.clientId);
+        if (countError) throw countError;
+        total = exactTotal ?? 0;
       }
-      return jsonResponse(scimListResponse(resources, total ?? 0, startIndex, resources.length));
+      return jsonResponse(scimListResponse(resources, total, startIndex, resources.length));
     }
 
     if (req.method === "GET" && resourceId) {
@@ -73,7 +88,8 @@ Deno.serve(async (req) => {
 
     if (req.method === "POST" && !resourceId) {
       const body = await req.json().catch(() => null);
-      const email = typeof body?.userName === "string" ? body.userName : (typeof body?.emails?.[0]?.value === "string" ? body.emails[0].value : null);
+      const rawEmail = typeof body?.userName === "string" ? body.userName : (typeof body?.emails?.[0]?.value === "string" ? body.emails[0].value : null);
+      const email = rawEmail?.trim().toLowerCase() ?? null;
       if (!email) return jsonResponse(scimError(400, "userName (email) is required"), 400);
 
       // SCM-001: real account creation — this IS the provisioning event, not
@@ -89,15 +105,15 @@ Deno.serve(async (req) => {
         // Most common real-world case: the email already has a Brivia
         // account — link to it rather than failing, same "resolve, don't
         // duplicate" posture as every CSV-import flow elsewhere in this app.
-        const { data: existingList } = await supabase.auth.admin.listUsers();
-        const existing = existingList?.users?.find((u) => u.email === email);
-        if (!existing) return jsonResponse(scimError(409, createErr?.message ?? "Could not create user"), 409);
+        const { data: existingUserId, error: lookupError } = await supabase.rpc("_find_auth_user_by_email_service", { p_email: email });
+        if (lookupError) throw lookupError;
+        if (!existingUserId) return jsonResponse(scimError(409, createErr?.message ?? "Could not create user"), 409);
         const { data: su, error: suErr } = await supabase
           .from("scim_users")
-          .upsert({ client_id: ctx.clientId, user_id: existing.id, external_id: body?.externalId ?? null, active: true }, { onConflict: "client_id,user_id" })
+          .upsert({ client_id: ctx.clientId, user_id: existingUserId, external_id: body?.externalId ?? null, active: true }, { onConflict: "client_id,user_id" })
           .select("id").single();
         if (suErr || !su) return jsonResponse(scimError(500, "Failed to link existing user"), 500);
-        await supabase.from("user_org_roles").upsert({ user_id: existing.id, org_id: ctx.orgId, role: "learner" }, { onConflict: "user_id,org_id,role", ignoreDuplicates: true });
+        await supabase.from("user_org_roles").upsert({ user_id: existingUserId, org_id: ctx.orgId, role: "learner" }, { onConflict: "user_id,org_id,role", ignoreDuplicates: true });
         const row = await loadScimUserRow(supabase, su.id as string, ctx.clientId);
         return jsonResponse(scimUserResource(row!, baseUrl), 201);
       }

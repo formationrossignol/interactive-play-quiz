@@ -158,8 +158,9 @@ export const pushControlToSupabase = (gameCode: string, control: SessionControl)
 // Players-only update: does NOT touch game_state/currentQuestionIndex/timeLeft.
 // Used by player devices so they never overwrite host-controlled fields.
 //
-// Non-urgent writes are debounced per gameCode so rapid heartbeats (30 players × 1/5s)
-// collapse into a single Supabase call instead of hammering the write API.
+// Non-urgent writes are debounced per player so a heartbeat only replaces an
+// older pending heartbeat for that same player.  Keying by gameCode alone made
+// different players cancel one another in busy rooms.
 // Urgent writes (answer submissions) bypass the debounce and flush immediately.
 
 const pendingPlayerWrites = new Map<string, ReturnType<typeof setTimeout>>();
@@ -183,9 +184,10 @@ const flushPlayerToSupabase = (gameCode: string, player: SharedPlayer) => {
 };
 
 const pushSinglePlayerToSupabase = (gameCode: string, player: SharedPlayer, urgent = false) => {
-  const pending = pendingPlayerWrites.get(gameCode);
+  const pendingKey = `${gameCode}:${player.id}`;
+  const pending = pendingPlayerWrites.get(pendingKey);
   if (pending) clearTimeout(pending);
-  pendingPlayerWrites.delete(gameCode);
+  pendingPlayerWrites.delete(pendingKey);
 
   if (urgent) {
     flushPlayerToSupabase(gameCode, player);
@@ -193,10 +195,10 @@ const pushSinglePlayerToSupabase = (gameCode: string, player: SharedPlayer, urge
   }
 
   const timer = setTimeout(() => {
-    pendingPlayerWrites.delete(gameCode);
+    pendingPlayerWrites.delete(pendingKey);
     flushPlayerToSupabase(gameCode, player);
   }, PLAYER_WRITE_DEBOUNCE_MS);
-  pendingPlayerWrites.set(gameCode, timer);
+  pendingPlayerWrites.set(pendingKey, timer);
 };
 
 export const patchSessionState = (
@@ -376,17 +378,36 @@ export const ensureSessionInSupabase = async (gameCode: string, quizData?: objec
   return true;
 };
 
+export const fetchSessionPlayersFromSupabase = async (gameCode: string): Promise<SharedPlayer[]> => {
+  const { data, error } = await supabase
+    .from("session_players")
+    .select("player")
+    .eq("game_code", gameCode);
+
+  if (error) {
+    console.error("[Supabase session players read error]", gameCode, error.code, error.message);
+    return [];
+  }
+
+  return (data ?? [])
+    .map((row) => (row as { player?: unknown }).player)
+    .filter((player): player is SharedPlayer => Boolean(player) && typeof player === "object");
+};
+
 export const fetchSessionStateFromSupabase = async (gameCode: string): Promise<SharedSessionState | null> => {
-  const { data } = await supabase
-    .from("session_state")
-    .select("*")
-    .eq("game_code", gameCode)
-    .single();
+  const [{ data }, players] = await Promise.all([
+    supabase
+      .from("session_state")
+      .select("game_state,current_question_index,time_left,control,updated_at")
+      .eq("game_code", gameCode)
+      .single(),
+    fetchSessionPlayersFromSupabase(gameCode),
+  ]);
 
   if (!data) return null;
 
   return {
-    players: Array.isArray(data.players) ? (data.players as SharedPlayer[]) : [],
+    players,
     gameState: (data.game_state as SharedGameState) ?? "waiting",
     currentQuestionIndex: typeof data.current_question_index === "number" ? data.current_question_index : 0,
     timeLeft: typeof data.time_left === "number" ? data.time_left : 0,
@@ -399,6 +420,41 @@ export const subscribeToSessionState = (
   gameCode: string,
   callback: (state: SharedSessionState) => void
 ) => {
+  const emitSessionRow = (row: Record<string, unknown>) => {
+    const current = readSessionState(gameCode);
+    const state: SharedSessionState = {
+      players: current.players,
+      gameState: (row.game_state as SharedGameState) ?? "waiting",
+      currentQuestionIndex: typeof row.current_question_index === "number" ? row.current_question_index : 0,
+      timeLeft: typeof row.time_left === "number" ? row.time_left : 0,
+      control: normalizeControl(row.control),
+      updatedAt: typeof row.updated_at === "string" ? row.updated_at : new Date().toISOString(),
+    };
+    writeSessionState(gameCode, state);
+    callback(state);
+  };
+
+  const emitPlayerDelta = (payload: {
+    eventType: string;
+    new: Record<string, unknown>;
+    old: Record<string, unknown>;
+  }) => {
+    const current = readSessionState(gameCode);
+    const changedRow = payload.eventType === "DELETE" ? payload.old : payload.new;
+    const playerId = typeof changedRow.player_id === "string" ? changedRow.player_id : null;
+    if (!playerId) return;
+
+    let players = current.players.filter((player) => player.id !== playerId);
+    if (payload.eventType !== "DELETE") {
+      const player = changedRow.player;
+      if (player && typeof player === "object") players = [...players, player as SharedPlayer];
+    }
+
+    const state = { ...current, players, updatedAt: new Date().toISOString() };
+    writeSessionState(gameCode, state);
+    callback(state);
+  };
+
   const channel = supabase
     .channel(`session-${gameCode}`)
     .on(
@@ -411,18 +467,22 @@ export const subscribeToSessionState = (
       },
       (payload) => {
         if (!payload.new || typeof payload.new !== "object") return;
-        const row = payload.new as Record<string, unknown>;
-        const state: SharedSessionState = {
-          players: Array.isArray(row.players) ? (row.players as SharedPlayer[]) : [],
-          gameState: (row.game_state as SharedGameState) ?? "waiting",
-          currentQuestionIndex: typeof row.current_question_index === "number" ? row.current_question_index : 0,
-          timeLeft: typeof row.time_left === "number" ? row.time_left : 0,
-          control: normalizeControl(row.control),
-          updatedAt: typeof row.updated_at === "string" ? row.updated_at : new Date().toISOString(),
-        };
-        writeSessionState(gameCode, state);
-        callback(state);
+        emitSessionRow(payload.new as Record<string, unknown>);
       }
+    )
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "session_players",
+        filter: `game_code=eq.${gameCode}`,
+      },
+      (payload) => emitPlayerDelta(payload as {
+        eventType: string;
+        new: Record<string, unknown>;
+        old: Record<string, unknown>;
+      })
     )
     .subscribe();
 

@@ -9,21 +9,6 @@ interface SubmitAnswerBody {
   answer: number | string | null;
 }
 
-interface SharedPlayer {
-  id: string;
-  name: string;
-  avatar: string;
-  score: number;
-  correctAnswers?: number;
-  joinedAt: string;
-  lastAnswer?: number;
-  lastAnswerText?: string;
-  lastAnswerQuestionIndex?: number;
-  lastAnswerCorrect?: boolean;
-  lastEarnedPoints?: number;
-  [key: string]: unknown;
-}
-
 /** Full answer-key payload for the reveal screen — covers every implemented
  *  question type, not just multiple-choice/slider. Only ever returned in
  *  response to the player's OWN submission for the CURRENT question (see the
@@ -82,7 +67,7 @@ Deno.serve(async (req) => {
 
     const { data: stateRow, error: stateError } = await supabase
       .from("session_state")
-      .select("players, question_started_at, current_question_index, control")
+      .select("question_started_at, current_question_index, control")
       .eq("game_code", game_code)
       .single();
 
@@ -118,22 +103,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    const players = (stateRow.players ?? []) as SharedPlayer[];
-    const existingPlayer = players.find((p) => p.id === player_id);
-
-    // Idempotent: a retry (network blip) for the same question returns the
-    // already-computed result instead of recalculating or double-counting.
-    if (existingPlayer?.lastAnswerQuestionIndex === question_index) {
-      return new Response(
-        JSON.stringify({
-          correct: existingPlayer.lastAnswerCorrect ?? false,
-          earnedPoints: existingPlayer.lastEarnedPoints ?? 0,
-          ...buildCorrectAnswerPayload(question),
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
     // isPoll is always false here: submit-answer is exclusively the quiz-live
     // path (per this plan's scope decision) — polls keep using the pre-existing
     // direct upsertPlayerInSession path, unchanged. checkAnswerCorrect's isPoll
@@ -146,49 +115,31 @@ Deno.serve(async (req) => {
     const timeLimit = (question as { timeLimit?: number }).timeLimit ?? 30;
     const earnedPoints = calculateEarnedPoints(basePoints, elapsedSeconds, timeLimit, correct);
 
-    const updatedPlayer: SharedPlayer = {
-      ...(existingPlayer ?? { id: player_id, name: "", avatar: "", score: 0, joinedAt: new Date().toISOString() }),
-      score: (existingPlayer?.score ?? 0) + earnedPoints,
-      correctAnswers: (existingPlayer?.correctAnswers ?? 0) + (correct ? 1 : 0),
-      // true-false answers arrive as the strings 'true'/'false' (see
-      // PlayerView.tsx); map them to the 0/1 index QuizSession's answer-
-      // distribution screen expects, matching PlayerView's own optimistic
-      // local mapping (line ~620) so host and player agree on the shape.
-      lastAnswer:
-        typeof answer === "number"
-          ? answer
-          : answer === "true"
-          ? 0
-          : answer === "false"
-          ? 1
-          : undefined,
-      lastAnswerText:
-        typeof answer === "string" && (question.type === "short-answer" || question.type === "open-text")
-          ? answer.slice(0, 500)
-          : undefined,
-      lastAnswerQuestionIndex: question_index,
-      lastAnswerCorrect: correct,
-      lastEarnedPoints: earnedPoints,
-    };
+    // Persist through a row-per-player RPC. It locks only
+    // session_players(game_code, player_id), so answers from different players
+    // proceed concurrently. The RPC also owns the idempotency check: overlapping
+    // retries for one player/question return the first committed result.
+    const lastAnswer =
+      typeof answer === "number"
+        ? answer
+        : answer === "true"
+        ? 0
+        : answer === "false"
+        ? 1
+        : null;
+    const lastAnswerText =
+      typeof answer === "string" && (question.type === "short-answer" || question.type === "open-text")
+        ? answer.slice(0, 500)
+        : null;
 
-    // Persist via the existing upsert_session_player RPC rather than a manual
-    // select-then-update: that RPC does SELECT ... FOR UPDATE + a single-row
-    // merge inside one transaction, so concurrent submit-answer calls for
-    // DIFFERENT players in the same session serialize instead of racing (a
-    // naive read-modify-write here would let one player's write silently
-    // overwrite another's under ordinary concurrent play).
-    //
-    // Scope note: the RPC merges by full-row REPLACE on matching id, not a
-    // delta/increment — it protects cross-player writes, not two truly
-    // concurrent submissions for the SAME player+question (e.g. overlapping
-    // client retries). Not exploitable here (both would compute the same
-    // earnedPoints for the same answer, so last-write-wins is idempotent in
-    // practice), but if this RPC is ever reused for a case where two
-    // concurrent calls for the same player could compute DIFFERENT point
-    // values, that residual race would need a delta-based merge instead.
-    const { error: upsertError } = await supabase.rpc("upsert_session_player", {
+    const { data: persisted, error: upsertError } = await supabase.rpc("submit_session_answer", {
       p_game_code: game_code,
-      p_player: updatedPlayer,
+      p_player_id: player_id,
+      p_question_index: question_index,
+      p_last_answer: lastAnswer,
+      p_last_answer_text: lastAnswerText,
+      p_correct: correct,
+      p_earned_points: earnedPoints,
     });
 
     if (upsertError) {
@@ -198,10 +149,12 @@ Deno.serve(async (req) => {
       });
     }
 
+    const persistedResult = persisted as { correct?: boolean; earnedPoints?: number } | null;
+
     return new Response(
       JSON.stringify({
-        correct,
-        earnedPoints,
+        correct: persistedResult?.correct ?? correct,
+        earnedPoints: persistedResult?.earnedPoints ?? earnedPoints,
         ...buildCorrectAnswerPayload(question),
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }

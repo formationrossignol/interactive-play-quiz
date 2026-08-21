@@ -73,14 +73,22 @@ export interface GradeItem {
  *  in this data model — see 20260811050000_lms_reconciliation.sql. Excluding
  *  them would silently hide real grades rather than reflect a real gap. */
 export async function listSessionGradeItems(orgId: string, sessionId: string): Promise<GradeItem[]> {
-  const { data, error } = await supabase
-    .from('grade_items')
-    .select('*')
-    .eq('org_id', orgId)
-    .or(`session_id.eq.${sessionId},session_id.is.null`)
-    .order('created_at', { ascending: true });
-  if (error) throw error;
-  return (data ?? []) as GradeItem[];
+  const pageSize = 500;
+  const items: GradeItem[] = [];
+  for (let offset = 0; ; offset += pageSize) {
+    const { data, error } = await supabase
+      .from('grade_items')
+      .select('id, org_id, session_id, source_type, source_id, title, category, weight, max_points, created_at')
+      .eq('org_id', orgId)
+      .or(`session_id.eq.${sessionId},session_id.is.null`)
+      .order('created_at', { ascending: true })
+      .order('id', { ascending: true })
+      .range(offset, offset + pageSize - 1);
+    if (error) throw error;
+    items.push(...((data ?? []) as GradeItem[]));
+    if ((data ?? []).length < pageSize) break;
+  }
+  return items;
 }
 
 export async function listGradeResultsForItems(itemIds: string[]): Promise<GradeResult[]> {

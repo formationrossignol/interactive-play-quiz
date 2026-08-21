@@ -12,6 +12,7 @@ import { TransitionCountdown, CountdownSplash } from "./TransitionTimer";
 import { QuestionAnswerPanel } from "./QuestionAnswerPanel";
 import {
   ensureSessionState,
+  fetchSessionPlayersFromSupabase,
   fetchSessionStateFromSupabase,
   getSessionStorageKey,
   readSessionState,
@@ -297,7 +298,6 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
     // polling Supabase every 2s behind it indefinitely.
     if (isKicked) return;
 
-    let prevUpdatedAt = '';
     let hasQuizData = false;
     // The control column may not be deployed yet — degrade gracefully if so.
     let hasControlColumn = true;
@@ -308,14 +308,17 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
 
       const ctrlCol = hasControlColumn ? ',control' : '';
       const cols = hasQuizData
-        ? `game_state,current_question_index,time_left,players${ctrlCol},updated_at`
-        : `game_state,current_question_index,time_left,players${ctrlCol},updated_at,quiz_data`;
+        ? `game_state,current_question_index,time_left${ctrlCol},updated_at`
+        : `game_state,current_question_index,time_left${ctrlCol},updated_at,quiz_data`;
 
-      const { data: rawData, error } = await supabase
-        .from('session_state')
-        .select(cols)
-        .eq('game_code', gameCode)
-        .single();
+      const [{ data: rawData, error }, players] = await Promise.all([
+        supabase
+          .from('session_state')
+          .select(cols)
+          .eq('game_code', gameCode)
+          .single(),
+        fetchSessionPlayersFromSupabase(gameCode),
+      ]);
 
       // Retry without the control column if it isn't there yet (pre-deploy).
       if (error && hasControlColumn && /control/i.test(error.message)) {
@@ -341,12 +344,7 @@ export const PlayerView = ({ gameCode, playerName }: PlayerViewProps) => {
       // Control state (lock / global mute / kick list) is host-authoritative.
       setControl(normalizeControl(data.control));
 
-      // Skip state sync if nothing changed
-      if (data.updated_at === prevUpdatedAt) return;
-      prevUpdatedAt = data.updated_at;
-
       const remoteState = (data.game_state ?? 'waiting') as SharedGameState;
-      const players = Array.isArray(data.players) ? (data.players as SharedPlayer[]) : [];
 
       // Map host game states → player game states
       let mapped: 'waiting' | 'countdown' | 'question-intro' | 'question' | 'answer-feedback' | 'leaderboard' | 'transition' | 'final' | 'abandoned' = 'waiting';

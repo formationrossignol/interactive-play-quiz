@@ -13,10 +13,14 @@
 // next_attempt_at pushed forward) up to MAX_ATTEMPTS, then 'failed', not
 // deleted, so an admin can inspect what didn't go out and why.
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { mapInBatches, resolveDispatchBatchSize } from "../_shared/batched-dispatch.ts";
 import { corsHeaders, handleCorsPreflight } from "../_shared/cors.ts";
 import { signWebhookPayload } from "../_shared/webhook-signing.ts";
 
 const MAX_ATTEMPTS = 6;
+const EXTERNAL_REQUEST_TIMEOUT_MS = 10_000;
+
+type DispatchOutcome = "dispatched" | "failed" | "skipped";
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -26,6 +30,11 @@ function backoffSeconds(attempt: number): number {
   // 30s, 60s, 120s, 240s, 480s, 960s — capped by MAX_ATTEMPTS itself, not an
   // artificial ceiling on the interval.
   return 30 * Math.pow(2, attempt);
+}
+
+function errorReason(error: unknown, fallback: string): string {
+  if (error && typeof error === "object" && "name" in error && error.name === "TimeoutError") return "request_timeout";
+  return error instanceof Error ? error.message : fallback;
 }
 
 Deno.serve(async (req) => {
@@ -42,6 +51,7 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
+    const batchSize = resolveDispatchBatchSize(Deno.env.get("WEBHOOK_DISPATCH_BATCH_SIZE"));
 
     const { data: pending, error: fetchError } = await supabase
       .from("webhook_deliveries")
@@ -49,59 +59,74 @@ Deno.serve(async (req) => {
       .eq("status", "pending")
       .lte("next_attempt_at", new Date().toISOString())
       .order("created_at", { ascending: true })
-      .limit(50);
+      .limit(batchSize);
     if (fetchError) throw fetchError;
     if (!pending || pending.length === 0) return jsonResponse({ dispatched: 0 });
 
-    let dispatched = 0;
-    let failed = 0;
-
-    for (const row of pending) {
+    const outcomes = await mapInBatches(pending, async (row): Promise<DispatchOutcome> => {
       // Atomic claim: only proceeds if this row is still 'pending' right
       // now — a concurrent invocation that claimed it first leaves 0 rows
       // affected here.
-      const { data: claimed } = await supabase
-        .from("webhook_deliveries")
-        .update({ status: "sending" })
-        .eq("id", row.id)
-        .eq("status", "pending")
-        .select("id")
-        .maybeSingle();
-      if (!claimed) continue;
+      let claimed = false;
+      try {
+        const { data, error: claimError } = await supabase
+          .from("webhook_deliveries")
+          .update({ status: "sending" })
+          .eq("id", row.id)
+          .eq("status", "pending")
+          .select("id")
+          .maybeSingle();
+        if (claimError) {
+          console.error(`[dispatch-webhooks] could not claim ${row.id}:`, claimError);
+          return "skipped";
+        }
+        claimed = Boolean(data);
+      } catch (err) {
+        console.error(`[dispatch-webhooks] claim threw for ${row.id}:`, err);
+        return "skipped";
+      }
+      if (!claimed) return "skipped";
 
-      const failRow = async (reason: string) => {
+      const failRow = async (reason: string): Promise<DispatchOutcome> => {
         const nextAttempt = row.attempt_count + 1;
         const isExhausted = nextAttempt >= MAX_ATTEMPTS;
-        await supabase
-          .from("webhook_deliveries")
-          .update({
-            status: isExhausted ? "failed" : "pending",
-            attempt_count: nextAttempt,
-            last_error: reason,
-            last_attempt_at: new Date().toISOString(),
-            next_attempt_at: new Date(Date.now() + backoffSeconds(nextAttempt) * 1000).toISOString(),
-          })
-          .eq("id", row.id);
-        failed++;
+        try {
+          const { error: updateError } = await supabase
+            .from("webhook_deliveries")
+            .update({
+              status: isExhausted ? "failed" : "pending",
+              attempt_count: nextAttempt,
+              last_error: reason,
+              last_attempt_at: new Date().toISOString(),
+              next_attempt_at: new Date(Date.now() + backoffSeconds(nextAttempt) * 1000).toISOString(),
+            })
+            .eq("id", row.id);
+          if (updateError) {
+            console.error(`[dispatch-webhooks] could not record failure for ${row.id}:`, updateError);
+          }
+        } catch (err) {
+          console.error(`[dispatch-webhooks] recording failure threw for ${row.id}:`, err);
+        }
+        return "failed";
       };
 
-      const { data: endpoint } = await supabase
-        .from("webhook_endpoints")
-        .select("id, url, status")
-        .eq("id", row.endpoint_id)
-        .maybeSingle();
-      if (!endpoint || endpoint.status !== "active") {
-        await failRow("endpoint_disabled_or_missing");
-        continue;
-      }
-
-      const { data: secret } = await supabase.rpc("_decrypt_webhook_secret", { p_endpoint_id: endpoint.id });
-      if (typeof secret !== "string" || !secret) {
-        await failRow("no_webhook_secret");
-        continue;
-      }
-
       try {
+        const { data: endpoint, error: endpointError } = await supabase
+          .from("webhook_endpoints")
+          .select("id, url, status")
+          .eq("id", row.endpoint_id)
+          .maybeSingle();
+        if (endpointError) throw endpointError;
+        if (!endpoint || endpoint.status !== "active") {
+          return await failRow("endpoint_disabled_or_missing");
+        }
+
+        const { data: secret, error: secretError } = await supabase.rpc("_decrypt_webhook_secret", { p_endpoint_id: endpoint.id });
+        if (secretError) throw secretError;
+        if (typeof secret !== "string" || !secret) {
+          return await failRow("no_webhook_secret");
+        }
+
         // Sign the exact string that will be sent — never re-serialize
         // after signing, or a receiver's independent JSON.stringify could
         // legitimately produce different bytes than what was actually
@@ -118,22 +143,26 @@ Deno.serve(async (req) => {
           method: "POST",
           headers: { "Content-Type": "application/json", ...signedHeaders },
           body: rawBody,
+          signal: AbortSignal.timeout(EXTERNAL_REQUEST_TIMEOUT_MS),
         });
 
         if (!resp.ok) {
-          await failRow(`endpoint_returned_${resp.status}`);
-          continue;
+          return await failRow(`endpoint_returned_${resp.status}`);
         }
 
-        await supabase
+        const { error: deliveredError } = await supabase
           .from("webhook_deliveries")
           .update({ status: "delivered", attempt_count: row.attempt_count + 1, last_attempt_at: new Date().toISOString(), last_error: null })
           .eq("id", row.id);
-        dispatched++;
+        if (deliveredError) throw deliveredError;
+        return "dispatched";
       } catch (err) {
-        await failRow(err instanceof Error ? err.message : "delivery_failed");
+        return await failRow(errorReason(err, "delivery_failed"));
       }
-    }
+    });
+
+    const dispatched = outcomes.filter((outcome) => outcome === "dispatched").length;
+    const failed = outcomes.filter((outcome) => outcome === "failed").length;
 
     return jsonResponse({ dispatched, failed });
   } catch (err) {

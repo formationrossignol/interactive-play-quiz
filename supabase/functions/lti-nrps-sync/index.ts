@@ -96,57 +96,24 @@ Deno.serve(async (req) => {
       return await failRun(reason);
     }
 
-    const { data: registrationRow } = await serviceClient
-      .from("lti_registrations")
-      .select("org_id")
-      .eq("id", start.registration_id)
-      .maybeSingle();
-    if (!registrationRow?.org_id) return await failRun("registration_not_found");
-    const orgId = registrationRow.org_id;
-
-    let matchedCount = 0;
-    let unmatchedCount = 0;
-
-    for (const member of members) {
-      // Same convention AGS's dispatcher already established: external_id is
-      // namespaced "<registration_id>:<sub>" to avoid two different
-      // platforms' subjects colliding in this shared table.
-      const { data: mapping } = await serviceClient
-        .from("external_mappings")
-        .select("internal_id")
-        .eq("system", "lti")
-        .eq("object_type", "user")
-        .eq("external_id", `${start.registration_id}:${member.userId}`)
-        .maybeSingle();
-
-      const appliedRoles = mapping ? mapLtiRolesToBriviaRoles(member.roles) : [];
-
-      if (mapping) {
-        matchedCount++;
-        // Additive only — never revokes a role a previous sync granted but
-        // this one's roster no longer lists (same reasoning as SSO's
-        // _resolve_sso_roles(): revocation-on-mismatch is a separate, bigger
-        // reconciliation decision, not inferred here).
-        for (const role of appliedRoles) {
-          await serviceClient.from("user_org_roles").upsert(
-            { org_id: orgId, user_id: mapping.internal_id, role },
-            { onConflict: "user_id,org_id,role", ignoreDuplicates: true },
-          );
-        }
-      } else {
-        unmatchedCount++;
-      }
-
-      await serviceClient.from("lti_nrps_sync_members").insert({
-        sync_run_id: start.sync_run_id,
-        external_subject: member.userId,
-        name: member.name,
-        email: member.email,
-        lti_roles: JSON.stringify(member.roles),
-        matched_user_id: mapping?.internal_id ?? null,
-        applied_roles: JSON.stringify(appliedRoles),
-      });
-    }
+    // Resolve mappings, apply roles and persist provenance set-wise in one
+    // database call. The previous per-member lookup + per-role upsert +
+    // provenance insert made a large roster thousands of sequential network
+    // round-trips and routinely exceeded the Edge execution window.
+    const memberRows = members.map((member) => ({
+      external_subject: member.userId,
+      name: member.name,
+      email: member.email,
+      lti_roles: member.roles,
+      applied_roles: mapLtiRolesToBriviaRoles(member.roles),
+    }));
+    const { data: commitRows, error: commitError } = await serviceClient.rpc(
+      "_commit_lti_nrps_members_service",
+      { p_sync_run_id: start.sync_run_id, p_members: memberRows },
+    );
+    if (commitError) return await failRun(`member_commit_failed: ${commitError.message}`);
+    const matchedCount = Number(commitRows?.[0]?.matched_count ?? 0);
+    const unmatchedCount = Number(commitRows?.[0]?.unmatched_count ?? 0);
 
     await serviceClient.from("lti_nrps_sync_runs")
       .update({

@@ -52,13 +52,29 @@ Deno.serve(async (req) => {
       const startIndex = Number(url.searchParams.get("startIndex") ?? "1") || 1;
       const count = Math.min(Number(url.searchParams.get("count") ?? "100") || 100, 200);
       const { data: rows, count: total } = await supabase
-        .from("scim_groups").select("id", { count: "exact" }).eq("client_id", ctx.clientId)
+        .from("scim_groups").select("id, external_id, display_name", { count: "exact" }).eq("client_id", ctx.clientId)
         .range(startIndex - 1, startIndex - 2 + count);
-      const resources = [];
-      for (const row of rows ?? []) {
-        const full = await loadScimGroupRow(supabase, row.id as string, ctx.clientId);
-        if (full) resources.push(scimGroupResource(full, baseUrl));
+      const groupIds = (rows ?? []).map((row) => row.id as string);
+      const membersByGroup = new Map<string, string[]>();
+      if (groupIds.length > 0) {
+        const { data: members, error: membersError } = await supabase
+          .from("scim_group_members")
+          .select("group_id, user_id")
+          .in("group_id", groupIds);
+        if (membersError) throw membersError;
+        for (const member of members ?? []) {
+          const groupId = member.group_id as string;
+          const groupMembers = membersByGroup.get(groupId) ?? [];
+          groupMembers.push(member.user_id as string);
+          membersByGroup.set(groupId, groupMembers);
+        }
       }
+      const resources = (rows ?? []).map((row) => scimGroupResource({
+        id: row.id as string,
+        externalId: row.external_id as string | null,
+        displayName: row.display_name as string,
+        memberIds: membersByGroup.get(row.id as string) ?? [],
+      }, baseUrl));
       return jsonResponse(scimListResponse(resources, total ?? 0, startIndex, resources.length));
     }
 

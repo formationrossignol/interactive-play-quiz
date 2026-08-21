@@ -115,7 +115,12 @@ export function buildLtiScorePayload(args: {
  *  row must transition atomically out of 'pending' so a retry-after-success
  *  can't resend, which is the caller's (dispatch-lti-ags-scores) job, not
  *  this function's. */
-export async function postLtiScore(lineItemUrl: string, accessToken: string, payload: LtiScorePayload): Promise<void> {
+export async function postLtiScore(
+  lineItemUrl: string,
+  accessToken: string,
+  payload: LtiScorePayload,
+  signal?: AbortSignal,
+): Promise<void> {
   const resp = await fetch(`${lineItemUrl}/scores`, {
     method: "POST",
     headers: {
@@ -123,6 +128,7 @@ export async function postLtiScore(lineItemUrl: string, accessToken: string, pay
       "Content-Type": SCORE_CONTENT_TYPE,
     },
     body: JSON.stringify(payload),
+    signal,
   });
   if (!resp.ok) {
     throw new LtiAgsError("score_post_failed", `Score POST returned ${resp.status}`);

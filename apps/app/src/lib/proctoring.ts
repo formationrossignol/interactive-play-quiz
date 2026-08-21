@@ -329,12 +329,36 @@ export async function uploadProctoringCapture(input: {
   if (error) console.error('[proctoring] capture persistence failed', error);
 }
 
-export async function getProctoringOverview(examId: string): Promise<ProctoringAttemptOverview[]> {
+export interface ProctoringOverviewPage {
+  attempts: ProctoringAttemptOverview[];
+  page: number;
+  pageSize: number;
+  total: number;
+  hasMore: boolean;
+}
+
+export async function getProctoringOverviewPage(
+  examId: string,
+  page = 1,
+  pageSize = 25,
+): Promise<ProctoringOverviewPage> {
   const { data, error } = await supabase.functions.invoke('proctoring-api', {
-    body: { action: 'get-overview', examId },
+    body: { action: 'get-overview', examId, page, pageSize },
   });
   if (error) throw error;
-  return ((data as { attempts?: ProctoringAttemptOverview[] })?.attempts ?? []);
+  const result = data as Partial<ProctoringOverviewPage> | null;
+  return {
+    attempts: result?.attempts ?? [],
+    page: result?.page ?? page,
+    pageSize: result?.pageSize ?? pageSize,
+    total: result?.total ?? 0,
+    hasMore: result?.hasMore ?? false,
+  };
+}
+
+/** Backwards-compatible first-page helper for non-paginated consumers. */
+export async function getProctoringOverview(examId: string): Promise<ProctoringAttemptOverview[]> {
+  return (await getProctoringOverviewPage(examId)).attempts;
 }
 
 export async function reviewProctoringReport(input: {
