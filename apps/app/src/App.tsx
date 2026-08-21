@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 import { initAuth, getCurrentUser } from "@/lib/auth";
 import { applySiteTheme, resolveSiteThemeForPath } from "@/lib/siteTheme";
+import { loadAndApplyAccessibilityPreferences } from "@/lib/accessibilityRuntime";
 import { RouteTransition } from "@/components/RouteTransition";
 import { RouteFallback } from "@/components/RouteFallback";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -90,6 +91,9 @@ const ExamAdmin = lazy(() => import("./pages/ExamAdmin"));
 const JoinExam = lazy(() => import("./pages/JoinExam"));
 const LiveEventJoin = lazy(() => import("./pages/LiveEventJoin"));
 const LtiUnlinked = lazy(() => import("./pages/LtiUnlinked"));
+const LtiDeepLink = lazy(() => import("./pages/LtiDeepLink"));
+const LtiResourceLink = lazy(() => import("./pages/LtiResourceLink"));
+const SsoUnlinked = lazy(() => import("./pages/SsoUnlinked"));
 const LiveEventRoom = lazy(() => import("./pages/LiveEventRoom"));
 const LivePresenterScreen = lazy(() => import("./pages/LivePresenterScreen"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
@@ -126,7 +130,11 @@ const queryClient = new QueryClient();
 const AuthGate = ({ children }: { children: ReactNode }) => {
   const [ready, setReady] = useState(false);
   useEffect(() => {
-    void initAuth().then(() => setReady(true));
+    void initAuth().then(() => {
+      setReady(true);
+      // Non-blocking: apply once auth is known, doesn't hold up first paint.
+      if (getCurrentUser()) void loadAndApplyAccessibilityPreferences();
+    });
   }, []);
   if (!ready) return null;
   return <>{children}</>;
@@ -229,6 +237,9 @@ const App = () => (
               <Route path="/live/:code/room" element={<LiveEventRoom />} />
               <Route path="/live/:code/present" element={<LivePresenterScreen />} />
               <Route path="/lti/unlinked" element={<LtiUnlinked />} />
+              <Route path="/lti/deep-link" element={<LtiDeepLink />} />
+              <Route path="/lti/resource-link" element={<LtiResourceLink />} />
+              <Route path="/sso/unlinked" element={<SsoUnlinked />} />
               <Route path="/lms/content-governance" element={<LmsContentGovernance />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

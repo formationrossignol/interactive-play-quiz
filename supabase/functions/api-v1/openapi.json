@@ -1,0 +1,128 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Brivia Public API",
+    "version": "1.0.0",
+    "description": "Read-only v1 of Brivia's public REST API (spec 04, API-001/API-002). Authenticated via a per-organization bearer service token (see /lms/integrations to create one) — never a Supabase user session token. Scoped, versioned, cursor-paginated, rate-limited per organization. Generated to describe exactly the endpoints implemented in supabase/functions/api-v1/index.ts, not an aspirational surface."
+  },
+  "servers": [{ "url": "https://{project-ref}.supabase.co/functions/v1/api-v1", "variables": { "project-ref": { "default": "your-project-ref" } } }],
+  "security": [{ "bearerAuth": [] }],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": { "type": "http", "scheme": "bearer", "description": "Service token created via create_api_token(). Scopes: api:enrollments:read, api:grades:read, api:completions:read, api:certificates:read." }
+    },
+    "parameters": {
+      "cursor": {
+        "name": "cursor",
+        "in": "query",
+        "description": "Opaque cursor from a previous response's next_cursor. Omit for the first page.",
+        "schema": { "type": "string" }
+      }
+    },
+    "schemas": {
+      "Enrollment": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "session_id": { "type": "string", "format": "uuid" },
+          "learner_id": { "type": "string", "format": "uuid" },
+          "status": { "type": "string", "enum": ["invited", "pending", "waitlisted", "active", "completed", "failed", "withdrawn", "cancelled", "expired"] },
+          "source": { "type": "string", "enum": ["manual", "group", "import", "self", "purchase", "lti", "oneroster", "scim"] },
+          "effective_start_at": { "type": "string", "format": "date-time" },
+          "effective_due_at": { "type": "string", "format": "date-time", "nullable": true },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Grade": {
+        "type": "object",
+        "description": "Only published grades are ever returned (published_at is never null here).",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "grade_item_id": { "type": "string", "format": "uuid" },
+          "learner_id": { "type": "string", "format": "uuid" },
+          "status": { "type": "string", "enum": ["graded", "excused", "missing", "not_graded"] },
+          "points": { "type": "number", "nullable": true },
+          "published_at": { "type": "string", "format": "date-time" },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Completion": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "enrollment_id": { "type": "string", "format": "uuid" },
+          "learner_id": { "type": "string", "format": "uuid" },
+          "policy_set_id": { "type": "string", "format": "uuid" },
+          "policy_version": { "type": "integer" },
+          "satisfied": { "type": "boolean" },
+          "computed_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Certificate": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "user_id": { "type": "string", "format": "uuid" },
+          "course_id": { "type": "string" },
+          "course_title": { "type": "string" },
+          "certificate_number": { "type": "string" },
+          "issued_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": { "error": { "type": "string" } }
+      }
+    }
+  },
+  "paths": {
+    "/enrollments": {
+      "get": {
+        "summary": "List enrollments for the caller's organization",
+        "parameters": [{ "$ref": "#/components/parameters/cursor" }],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "object", "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/Enrollment" } }, "next_cursor": { "type": "string", "nullable": true } } } } } },
+          "401": { "description": "Missing or invalid bearer token", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "403": { "description": "Token lacks api:enrollments:read scope", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "429": { "description": "Rate limited (per-org)", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/grades": {
+      "get": {
+        "summary": "List published grades for the caller's organization",
+        "parameters": [{ "$ref": "#/components/parameters/cursor" }],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "object", "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/Grade" } }, "next_cursor": { "type": "string", "nullable": true } } } } } },
+          "401": { "description": "Missing or invalid bearer token" },
+          "403": { "description": "Token lacks api:grades:read scope" },
+          "429": { "description": "Rate limited (per-org)" }
+        }
+      }
+    },
+    "/completions": {
+      "get": {
+        "summary": "List enrollment completion results for the caller's organization",
+        "parameters": [{ "$ref": "#/components/parameters/cursor" }],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "object", "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/Completion" } }, "next_cursor": { "type": "string", "nullable": true } } } } } },
+          "401": { "description": "Missing or invalid bearer token" },
+          "403": { "description": "Token lacks api:completions:read scope" },
+          "429": { "description": "Rate limited (per-org)" }
+        }
+      }
+    },
+    "/certificates": {
+      "get": {
+        "summary": "List certificates issued to members of the caller's organization",
+        "parameters": [{ "$ref": "#/components/parameters/cursor" }],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "object", "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/Certificate" } }, "next_cursor": { "type": "string", "nullable": true } } } } } },
+          "401": { "description": "Missing or invalid bearer token" },
+          "403": { "description": "Token lacks api:certificates:read scope" },
+          "429": { "description": "Rate limited (per-org)" }
+        }
+      }
+    }
+  }
+}

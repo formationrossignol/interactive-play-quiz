@@ -451,3 +451,53 @@
     transform: none;
   }
 }
+
+/* ── Accessibility baseline (spec 05, A11Y-001/006/009) ─────────────────
+   Shared across app + marketing — a keyboard-focus indicator and a working
+   reduced-motion/high-contrast override shouldn't depend on which Vite/Next
+   surface renders the page. */
+
+/* A11Y-001: every focusable element gets a visible indicator on keyboard
+   focus, even where a component's own styles suppress the default outline
+   without a replacement ring (several raw `outline: none` rules across the
+   theme CSS files predate this — grep found them without any :focus-visible
+   fallback). Component-level focus styles (shadcn's Tailwind
+   focus-visible:ring-*) still render on top of this — this only fills the
+   gaps, it never overrides a more specific rule. */
+:focus-visible {
+  outline: 2px solid var(--ap-brand);
+  outline-offset: 2px;
+}
+
+/* data-a11y-contrast="high": apps/app/src/lib/accessibilityRuntime.ts mirrors
+   accessibility_preferences.high_contrast (spec 05 personal preference,
+   non-certified) onto <html>. Widens text/border contrast against the
+   existing paper/ink tokens instead of switching to a separate palette —
+   effect only, no new brand skin, consistent with every current site theme
+   layering the same --ap-ink/--ap-line variables. */
+:root[data-a11y-contrast="high"] {
+  --ap-ink: #000000;
+  --ap-muted: #3a3a3a;
+  --ap-line: #000000;
+  --ap-line-2: #000000;
+}
+:root.dark[data-a11y-contrast="high"] {
+  --ap-ink: #ffffff;
+  --ap-muted: #d9d9d9;
+  --ap-line: #ffffff;
+  --ap-line-2: #ffffff;
+}
+
+/* data-a11y-motion="reduce": explicit in-app override of
+   accessibility_preferences.reduce_motion, for a user whose OS-level
+   `prefers-reduced-motion` isn't (or can't be) set — on top of, not instead
+   of, the @media (prefers-reduced-motion: reduce) rules already scattered
+   per-component across this codebase. */
+:root[data-a11y-motion="reduce"] *,
+:root[data-a11y-motion="reduce"] *::before,
+:root[data-a11y-motion="reduce"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}

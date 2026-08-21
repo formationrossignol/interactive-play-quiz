@@ -424,3 +424,70 @@ verify_jwt = false
 verify_jwt = false
 [functions.lti-launch]
 verify_jwt = false
+
+# sso-login/sso-callback: same reasoning as lti-login/lti-launch above — the
+# GET path (production 'active' login) is a raw top-level browser navigation
+# before any Brivia session exists, so there is no Supabase JWT to verify at
+# the gateway. Authenticity comes from sso-callback validating the IdP's own
+# id_token signature (see _shared/oidc.ts) and from the single-use
+# sso_login_states row minted by sso-login. sso-login also accepts an
+# authenticated POST (supabase.functions.invoke, which DOES attach a JWT) for
+# testing a 'testing'-status connection as its own admin — checked manually
+# inside sso-login itself, not by this gateway, since the requirement only
+# applies to that one status/method combination.
+[functions.sso-login]
+verify_jwt = false
+[functions.sso-callback]
+verify_jwt = false
+# sso-discover-oidc: unlike the two above, this IS called by an already-
+# authenticated admin from Integrations.tsx (supabase.functions.invoke, which
+# attaches the session's JWT automatically) — kept JWT-verified so a random
+# unauthenticated caller can't use this project's edge function as an open
+# SSRF-probing proxy against arbitrary URLs.
+
+# saml-login/saml-acs/saml-metadata: same reasoning as sso-login/sso-callback
+# above, SAML's version of it — saml-acs is a raw POST from the IdP's own
+# browser-submitted form (no Brivia session, no JWT to check at the gateway);
+# authenticity comes from verifySamlResponse validating the IdP's own XML
+# signature (see _shared/saml.ts) and the single-use saml_login_states row
+# minted by saml-login. saml-metadata is a public, unauthenticated document
+# by definition (an admin pastes its contents into their IdP's own config).
+[functions.saml-login]
+verify_jwt = false
+[functions.saml-acs]
+verify_jwt = false
+[functions.saml-metadata]
+verify_jwt = false
+[functions.lti-jwks]
+verify_jwt = false
+
+# scim-users/scim-groups: called directly by an external IdP's SCIM
+# provisioning client (Okta/Azure AD/etc), never by a Brivia session — no
+# Supabase JWT exists on these requests. Authenticity comes from
+# verifyScimBearerToken() hashing the request's own Authorization header and
+# resolving it against api_tokens (see _shared/scim-auth.ts) — every handler
+# re-checks this before touching anything, there is no unauthenticated path
+# inside either function despite the gateway-level JWT check being off.
+[functions.scim-users]
+verify_jwt = false
+[functions.scim-groups]
+verify_jwt = false
+
+# oneroster-sync: same shape as scim-users/scim-groups above — a SIS's own
+# scheduler POSTs here directly (ROS-002), no Supabase session exists.
+# verifyApiBearerToken() (_shared/api-token-auth.ts, the same primitive
+# scim-auth.ts now re-exports from) re-checked before any DB access.
+[functions.oneroster-sync]
+verify_jwt = false
+
+# api-v1: public REST API (spec 04, API-001/002) — verifies its own bearer
+# token (verifyApiBearerToken), not a Supabase session JWT; API-002's "no
+# long-lived user token" is satisfied by there being no code path here that
+# accepts one at all.
+[functions.api-v1]
+verify_jwt = false
+
+# dispatch-webhooks: CRON_SECRET-gated worker, not user-invoked — same
+# posture as dispatch-automation-emails/dispatch-lti-ags-scores.
+[functions.dispatch-webhooks]
+verify_jwt = false

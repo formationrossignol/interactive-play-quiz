@@ -529,6 +529,131 @@ $$;
 revoke all on function public.run_scheduled_lms_analytics_jobs() from public;
 
 -- ---------------------------------------------------------------------------
+-- Webhook event outbox: one write on the business transaction, fan-out later
+-- ---------------------------------------------------------------------------
+
+create table public.webhook_event_outbox (
+  id uuid primary key default gen_random_uuid(),
+  org_id uuid not null references public.organizations(id) on delete cascade,
+  event_name text not null,
+  payload jsonb not null,
+  status text not null default 'pending'
+    check (status in ('pending', 'processing', 'completed', 'failed')),
+  attempt_count integer not null default 0,
+  next_attempt_at timestamptz not null default now(),
+  started_at timestamptz,
+  completed_at timestamptz,
+  last_error text,
+  created_at timestamptz not null default now()
+);
+
+create index webhook_event_outbox_pending_idx
+  on public.webhook_event_outbox(next_attempt_at, created_at)
+  where status in ('pending', 'failed');
+
+alter table public.webhook_event_outbox enable row level security;
+revoke all on table public.webhook_event_outbox from public, anon, authenticated;
+
+alter table public.webhook_deliveries
+  add column if not exists event_outbox_id uuid
+  references public.webhook_event_outbox(id) on delete set null;
+
+create unique index if not exists webhook_deliveries_outbox_endpoint_uniq
+  on public.webhook_deliveries(event_outbox_id, endpoint_id)
+  where event_outbox_id is not null;
+
+create or replace function public.emit_webhook_event(
+  p_org_id uuid,
+  p_event_name text,
+  p_payload jsonb
+) returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_event_id uuid;
+begin
+  insert into public.webhook_event_outbox(org_id, event_name, payload)
+  values (p_org_id, p_event_name, p_payload)
+  returning id into v_event_id;
+
+  -- Delivered only after commit. It permits a future LISTEN worker to reduce
+  -- latency, while the durable cron drain remains the source of reliability.
+  perform pg_notify('webhook_event_outbox', v_event_id::text);
+end;
+$$;
+
+revoke all on function public.emit_webhook_event(uuid, text, jsonb) from public;
+grant execute on function public.emit_webhook_event(uuid, text, jsonb) to service_role;
+
+create or replace function public.fan_out_webhook_event_outbox(
+  p_batch_size integer default 100
+) returns integer
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_event record;
+  v_processed integer := 0;
+begin
+  if p_batch_size < 1 or p_batch_size > 1000 then
+    raise exception 'p_batch_size must be between 1 and 1000';
+  end if;
+
+  for v_event in
+    select o.*
+      from public.webhook_event_outbox o
+     where o.status in ('pending', 'failed')
+       and o.next_attempt_at <= statement_timestamp()
+       and o.attempt_count < 10
+     order by o.created_at
+     limit p_batch_size
+     for update skip locked
+  loop
+    update public.webhook_event_outbox
+       set status = 'processing',
+           attempt_count = attempt_count + 1,
+           started_at = clock_timestamp(),
+           last_error = null
+     where id = v_event.id;
+
+    begin
+      insert into public.webhook_deliveries(
+        endpoint_id, event_name, payload, event_outbox_id
+      )
+      select e.id, v_event.event_name, v_event.payload, v_event.id
+        from public.webhook_endpoints e
+       where e.org_id = v_event.org_id
+         and e.status = 'active'
+         and v_event.event_name = any(e.events)
+      on conflict (event_outbox_id, endpoint_id)
+        where event_outbox_id is not null
+      do nothing;
+
+      update public.webhook_event_outbox
+         set status = 'completed', completed_at = clock_timestamp()
+       where id = v_event.id;
+    exception when others then
+      update public.webhook_event_outbox
+         set status = 'failed',
+             last_error = left(sqlerrm, 2000),
+             next_attempt_at = clock_timestamp()
+               + make_interval(mins => least(60, attempt_count))
+       where id = v_event.id;
+    end;
+
+    v_processed := v_processed + 1;
+  end loop;
+
+  return v_processed;
+end;
+$$;
+
+revoke all on function public.fan_out_webhook_event_outbox(integer) from public;
+
+-- ---------------------------------------------------------------------------
 -- Bounded, configurable retention
 -- ---------------------------------------------------------------------------
 
@@ -553,14 +678,19 @@ insert into public.data_retention_policies(
   ('public.competency_mastery_history', 'created_at', interval '7 years', 'true', 5000),
   ('public.manual_grade_history', 'changed_at', interval '7 years', 'true', 5000),
   ('public.lti_launches', 'launched_at', interval '400 days', 'true', 5000),
+  ('public.sso_logins', 'logged_at', interval '400 days', 'true', 5000),
   ('public.accommodation_access_log', 'created_at', interval '7 years', 'true', 5000),
   ('public.attendance_events', 'occurred_on', interval '7 years', 'true', 5000),
   ('public.live_events', 'created_at', interval '2 years', $$status = 'closed'$$, 1000),
   ('public.planning_events', 'ends_at', interval '2 years', 'true', 5000),
   ('public.webhook_deliveries', 'created_at', interval '180 days', $$status in ('delivered', 'failed')$$, 10000),
+  ('public.webhook_event_outbox', 'created_at', interval '180 days', $$status in ('completed', 'failed')$$, 10000),
   ('public.lms_daily_job_queue', 'day', interval '90 days', $$status in ('completed', 'failed')$$, 5000),
   ('public.automation_runs', 'ran_at', interval '400 days', 'true', 5000),
-  ('public.report_runs', 'generated_at', interval '400 days', $$status in ('success', 'failed')$$, 5000)
+  ('public.report_runs', 'generated_at', interval '400 days', $$status in ('success', 'failed')$$, 5000),
+  ('public.oneroster_sync_runs', 'started_at', interval '400 days', $$status in ('completed', 'failed')$$, 5000),
+  ('public.lti_nrps_sync_runs', 'started_at', interval '400 days', $$status in ('completed', 'failed')$$, 5000),
+  ('public.api_request_log', 'created_at', interval '2 days', 'true', 100000)
 on conflict (table_name) do update set
   timestamp_column = excluded.timestamp_column,
   retention_period = excluded.retention_period,
@@ -575,17 +705,25 @@ create index if not exists learning_events_retention_idx on public.learning_even
 create index if not exists enrollment_history_retention_idx on public.enrollment_history(created_at);
 create index if not exists manual_grade_history_retention_idx on public.manual_grade_history(changed_at);
 create index if not exists lti_launches_retention_idx on public.lti_launches(launched_at);
+create index if not exists sso_logins_retention_idx on public.sso_logins(logged_at);
 create index if not exists accommodation_access_log_retention_idx on public.accommodation_access_log(created_at);
 create index if not exists attendance_events_retention_idx on public.attendance_events(occurred_on);
 create index if not exists live_events_retention_idx on public.live_events(created_at) where status = 'closed';
 create index if not exists planning_events_retention_idx on public.planning_events(ends_at);
 create index if not exists webhook_deliveries_retention_idx on public.webhook_deliveries(created_at)
   where status in ('delivered', 'failed');
+create index if not exists webhook_event_outbox_retention_idx on public.webhook_event_outbox(created_at)
+  where status in ('completed', 'failed');
 create index if not exists lms_daily_job_queue_retention_idx on public.lms_daily_job_queue(day)
   where status in ('completed', 'failed');
 create index if not exists automation_runs_retention_idx on public.automation_runs(ran_at);
 create index if not exists report_runs_retention_idx on public.report_runs(generated_at)
   where status in ('success', 'failed');
+create index if not exists oneroster_sync_runs_retention_idx on public.oneroster_sync_runs(started_at)
+  where status in ('completed', 'failed');
+create index if not exists lti_nrps_sync_runs_retention_idx on public.lti_nrps_sync_runs(started_at)
+  where status in ('completed', 'failed');
+create index if not exists api_request_log_retention_idx on public.api_request_log(created_at);
 
 create or replace function public.purge_expired_operational_data()
 returns integer
@@ -641,6 +779,7 @@ begin
        'lms-daily-analytics-and-risk-signals',
        'lms-daily-job-enqueue',
        'lms-daily-job-worker',
+       'webhook-event-outbox-fanout',
        'operational-data-retention'
      )
   loop
@@ -659,6 +798,12 @@ select cron.schedule(
   'lms-daily-job-worker',
   '* * * * *',
   $$select public.run_scheduled_lms_analytics_jobs();$$
+);
+
+select cron.schedule(
+  'webhook-event-outbox-fanout',
+  '* * * * *',
+  $$select public.fan_out_webhook_event_outbox(500);$$
 );
 
 select cron.schedule(
