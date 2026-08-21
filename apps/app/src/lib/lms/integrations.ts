@@ -524,3 +524,62 @@ export async function deleteScimGroupRoleMapping(id: string): Promise<void> {
   const { error } = await supabase.from('scim_group_role_mappings').delete().eq('id', id);
   if (error) throw error;
 }
+
+// ── OneRoster 1.2 (ROS-001→005, 20260821060000_oneroster.sql) ──────────────
+
+export interface OneRosterSyncRun {
+  id: string;
+  source: 'csv' | 'rest';
+  status: 'running' | 'completed' | 'failed';
+  created_count: number;
+  updated_count: number;
+  deactivated_count: number;
+  error_count: number;
+  error_reason: string | null;
+  started_at: string;
+  completed_at: string | null;
+}
+
+export async function listOneRosterSyncRuns(orgId: string): Promise<OneRosterSyncRun[]> {
+  const { data, error } = await supabase.from('oneroster_sync_runs').select('*').eq('org_id', orgId).order('started_at', { ascending: false }).limit(20);
+  if (error) throw error;
+  return (data ?? []) as OneRosterSyncRun[];
+}
+
+export async function resolveOneRosterUsers(orgId: string, rows: Array<{ sourced_id: string; email: string }>) {
+  const { data, error } = await supabase.rpc('resolve_oneroster_users', { p_org_id: orgId, p_rows: rows });
+  if (error) throw error;
+  return (data ?? []) as Array<{ sourced_id: string; email: string; learner_id: string | null; matched: boolean }>;
+}
+
+export async function commitOneRosterUsers(orgId: string, rows: Array<{ sourced_id: string; email: string; learner_id: string }>) {
+  const { data, error } = await supabase.rpc('commit_oneroster_users', { p_org_id: orgId, p_rows: rows });
+  if (error) throw error;
+  return (data ?? []) as Array<{ sourced_id: string; outcome: string }>;
+}
+
+export async function resolveOneRosterClasses(orgId: string, rows: Array<{ sourced_id: string; class_code: string }>) {
+  const { data, error } = await supabase.rpc('resolve_oneroster_classes', { p_org_id: orgId, p_rows: rows });
+  if (error) throw error;
+  return (data ?? []) as Array<{ sourced_id: string; class_code: string; session_id: string | null; matched: boolean }>;
+}
+
+export async function commitOneRosterEnrollments(orgId: string, rows: Array<{ sourced_id: string; learner_id: string; session_id: string; status: string }>) {
+  const { data, error } = await supabase.rpc('commit_oneroster_enrollments', { p_org_id: orgId, p_rows: rows });
+  if (error) throw error;
+  return (data ?? []) as Array<{ sourced_id: string; outcome: string }>;
+}
+
+export async function startOneRosterSyncRun(orgId: string, source: 'csv' | 'rest'): Promise<string> {
+  const { data, error } = await supabase.rpc('start_oneroster_sync_run', { p_org_id: orgId, p_source: source });
+  if (error) throw error;
+  return data as string;
+}
+
+export async function completeOneRosterSyncRun(runId: string, status: 'completed' | 'failed', created: number, updated: number, deactivated: number, errors: number, errorReason: string | null): Promise<void> {
+  const { error } = await supabase.rpc('complete_oneroster_sync_run', {
+    p_run_id: runId, p_status: status, p_created: created, p_updated: updated,
+    p_deactivated: deactivated, p_errors: errors, p_error_reason: errorReason,
+  });
+  if (error) throw error;
+}

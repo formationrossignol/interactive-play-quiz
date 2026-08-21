@@ -472,3 +472,10 @@ verify_jwt = false
 verify_jwt = false
 [functions.scim-groups]
 verify_jwt = false
+
+# oneroster-sync: same shape as scim-users/scim-groups above — a SIS's own
+# scheduler POSTs here directly (ROS-002), no Supabase session exists.
+# verifyApiBearerToken() (_shared/api-token-auth.ts, the same primitive
+# scim-auth.ts now re-exports from) re-checked before any DB access.
+[functions.oneroster-sync]
+verify_jwt = false

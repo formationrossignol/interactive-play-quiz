@@ -40,6 +40,13 @@ import {
   listLtiLaunches,
   listLtiNrpsSyncRuns,
   listLtiRegistrations,
+  listOneRosterSyncRuns,
+  resolveOneRosterUsers,
+  commitOneRosterUsers,
+  resolveOneRosterClasses,
+  commitOneRosterEnrollments,
+  startOneRosterSyncRun,
+  completeOneRosterSyncRun,
   listSsoLogins,
   listWebhookEndpoints,
   previewSsoRoleMapping,
@@ -64,9 +71,20 @@ import {
   type LtiLaunch,
   type LtiNrpsSyncRun,
   type LtiRegistration,
+  type OneRosterSyncRun,
   type SsoLogin,
   type WebhookEndpoint,
 } from "@/lib/lms/integrations";
+import { parseSpreadsheetRows } from "@/lib/importSpreadsheet";
+import {
+  buildOneRosterEnrollmentPreview,
+  buildOneRosterUserPreview,
+  extractOneRosterEnrollmentRows,
+  extractOneRosterUserRows,
+  importableOneRosterEnrollmentRows,
+  importableOneRosterUserRows,
+} from "@/lib/lms/oneRosterImport";
+import { exportOneRosterResults, getOneRosterExportSettings, setOneRosterExportSettings } from "@/lib/lms/oneRosterExport";
 
 const ORG_ROLES: IdentityRoleMapping["target_role"][] = ["learner", "trainer", "pedago", "registrar", "admin"];
 
@@ -1311,6 +1329,189 @@ function WebhookSection({ orgId }: { orgId: string }) {
   );
 }
 
+/** OneRoster 1.2 (spec 04, ROS-001→005, 20260821060000_oneroster.sql).
+ *  CSV dry-run import for users.csv/enrollments.csv (real preview before
+ *  any write, mirroring EnrollmentImportDialog's established shape),
+ *  sync-run history, and outbound export settings. Enrollment sync stays
+ *  CSV-only (see the migration's file header for why REST-inbound is
+ *  scoped to users only in this pass — enroll_in_session()/
+ *  transition_enrollment() both require a real admin session). */
+function OneRosterSection({ orgId }: { orgId: string }) {
+  const [open, setOpen] = useState(false);
+  const [runs, setRuns] = useState<OneRosterSyncRun[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [userPreview, setUserPreview] = useState<ReturnType<typeof buildOneRosterUserPreview>>([]);
+  const [enrollmentPreview, setEnrollmentPreview] = useState<ReturnType<typeof buildOneRosterEnrollmentPreview>>([]);
+  const [importing, setImporting] = useState(false);
+  const [exportEnabled, setExportEnabled] = useState(false);
+  const [exportSaving, setExportSaving] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    setLoading(true);
+    Promise.all([listOneRosterSyncRuns(orgId), getOneRosterExportSettings(orgId)])
+      .then(([r, settings]) => { setRuns(r); setExportEnabled(settings?.enabled ?? false); })
+      .catch(showError)
+      .finally(() => setLoading(false));
+  }, [open, orgId]);
+
+  const handleUsersFile = async (file: File) => {
+    try {
+      const raw = await parseSpreadsheetRows(file);
+      const rows = extractOneRosterUserRows(raw);
+      const resolved = await resolveOneRosterUsers(orgId, rows.map((r) => ({ sourced_id: r.sourced_id, email: r.email })));
+      setUserPreview(buildOneRosterUserPreview(rows, resolved));
+    } catch (err) {
+      showError(err);
+    }
+  };
+
+  const handleEnrollmentsFile = async (file: File) => {
+    try {
+      const raw = await parseSpreadsheetRows(file);
+      const rows = extractOneRosterEnrollmentRows(raw);
+      const userSourcedIds = [...new Set(rows.map((r) => r.user_sourced_id))];
+      const classSourcedIds = [...new Set(rows.map((r) => r.class_sourced_id))];
+      const [resolvedUsers, resolvedClasses] = await Promise.all([
+        resolveOneRosterUsers(orgId, userSourcedIds.map((id) => ({ sourced_id: id, email: id }))),
+        resolveOneRosterClasses(orgId, classSourcedIds.map((code) => ({ sourced_id: code, class_code: code }))),
+      ]);
+      // Enrollments.csv identifies people/classes by sourcedId, not email —
+      // resolveOneRosterUsers() only matches by email, so a userSourcedId
+      // only resolves here if it was already committed via users.csv first
+      // (external_mappings lookup, not a fresh email match). Build the map
+      // from whichever of the two actually has a Brivia match.
+      const userMap = new Map(resolvedUsers.filter((u) => u.matched).map((u) => [u.sourced_id, u.learner_id as string]));
+      const classMap = new Map(resolvedClasses.filter((c) => c.matched).map((c) => [c.sourced_id, c.session_id as string]));
+      setEnrollmentPreview(buildOneRosterEnrollmentPreview(rows, userMap, classMap));
+    } catch (err) {
+      showError(err);
+    }
+  };
+
+  const commitUsers = async () => {
+    const rows = importableOneRosterUserRows(userPreview);
+    if (rows.length === 0) return;
+    setImporting(true);
+    const runId = await startOneRosterSyncRun(orgId, "csv").catch(() => null);
+    try {
+      const results = await commitOneRosterUsers(orgId, rows);
+      const created = results.filter((r) => r.outcome === "created").length;
+      const updated = results.filter((r) => r.outcome === "updated").length;
+      if (runId) await completeOneRosterSyncRun(runId, "completed", created, updated, 0, 0, null);
+      setUserPreview([]);
+      setRuns(await listOneRosterSyncRuns(orgId));
+    } catch (err) {
+      if (runId) await completeOneRosterSyncRun(runId, "failed", 0, 0, 0, rows.length, err instanceof Error ? err.message : "error");
+      showError(err);
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const commitEnrollments = async () => {
+    const rows = importableOneRosterEnrollmentRows(enrollmentPreview).map((r) => ({ ...r, status: r.status }));
+    if (rows.length === 0) return;
+    setImporting(true);
+    const runId = await startOneRosterSyncRun(orgId, "csv").catch(() => null);
+    try {
+      const results = await commitOneRosterEnrollments(orgId, rows);
+      const active = results.filter((r) => r.outcome === "active").length;
+      const deactivated = results.filter((r) => r.outcome === "deactivated").length;
+      if (runId) await completeOneRosterSyncRun(runId, "completed", active, 0, deactivated, 0, null);
+      setEnrollmentPreview([]);
+      setRuns(await listOneRosterSyncRuns(orgId));
+    } catch (err) {
+      if (runId) await completeOneRosterSyncRun(runId, "failed", 0, 0, 0, rows.length, err instanceof Error ? err.message : "error");
+      showError(err);
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const toggleExport = async (enabled: boolean) => {
+    setExportSaving(true);
+    try {
+      await setOneRosterExportSettings(orgId, enabled, []);
+      setExportEnabled(enabled);
+    } catch (err) {
+      showError(err);
+    } finally {
+      setExportSaving(false);
+    }
+  };
+
+  return (
+    <section className="product-list-panel p-5 mt-4">
+      <div className="product-panel-heading -mx-5 -mt-5 mb-4 flex items-center justify-between">
+        <div><h2>OneRoster 1.2</h2><p>Import CSV (utilisateurs, inscriptions) avec aperçu dry-run ; export gradebook sortant.</p></div>
+        <Button variant="ghost" size="sm" onClick={() => setOpen((v) => !v)}>{open ? "Masquer" : "Gérer OneRoster"}</Button>
+      </div>
+      {open && (loading ? <ListSkeleton rows={3} /> : (
+        <div className="space-y-6">
+          <div>
+            <h3 className="text-sm font-medium mb-2">Import users.csv (ROS-001)</h3>
+            <input type="file" accept=".csv" onChange={(e) => e.target.files?.[0] && handleUsersFile(e.target.files[0])} className="text-sm" />
+            {userPreview.length > 0 && (
+              <div className="mt-2 space-y-2">
+                <ul className="text-xs space-y-1 max-h-40 overflow-y-auto">
+                  {userPreview.map((r) => (
+                    <li key={r.rowIndex} className="flex justify-between gap-2">
+                      <span>{r.email}</span>
+                      <span className={r.outcomeStatus === "ok" ? "text-emerald-600" : "text-amber-600"}>{r.outcomeStatus}</span>
+                    </li>
+                  ))}
+                </ul>
+                <Button size="sm" loading={importing} onClick={commitUsers}>Importer {importableOneRosterUserRows(userPreview).length} ligne(s)</Button>
+              </div>
+            )}
+          </div>
+          <div>
+            <h3 className="text-sm font-medium mb-2">Import enrollments.csv (ROS-001) — inscrit ou désinscrit sans supprimer l'historique (ROS-004)</h3>
+            <input type="file" accept=".csv" onChange={(e) => e.target.files?.[0] && handleEnrollmentsFile(e.target.files[0])} className="text-sm" />
+            {enrollmentPreview.length > 0 && (
+              <div className="mt-2 space-y-2">
+                <ul className="text-xs space-y-1 max-h-40 overflow-y-auto">
+                  {enrollmentPreview.map((r) => (
+                    <li key={r.rowIndex} className="flex justify-between gap-2">
+                      <span>{r.userSourcedId} → {r.classSourcedId}</span>
+                      <span className={r.outcomeStatus === "ok" ? "text-emerald-600" : "text-amber-600"}>{r.outcomeStatus}</span>
+                    </li>
+                  ))}
+                </ul>
+                <Button size="sm" loading={importing} onClick={commitEnrollments}>Synchroniser {importableOneRosterEnrollmentRows(enrollmentPreview).length} ligne(s)</Button>
+              </div>
+            )}
+          </div>
+          <div>
+            <h3 className="text-sm font-medium mb-2">Export gradebook sortant (ROS-005)</h3>
+            <div className="flex items-center gap-2">
+              <Button variant={exportEnabled ? "default" : "outline"} size="sm" loading={exportSaving} onClick={() => toggleExport(!exportEnabled)}>
+                {exportEnabled ? "Activé pour cette organisation" : "Désactivé"}
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => exportOneRosterResults(orgId).catch(showError)} disabled={!exportEnabled}>
+                Télécharger results.csv
+              </Button>
+            </div>
+          </div>
+          <div>
+            <h3 className="text-sm font-medium mb-2">Historique des synchronisations</h3>
+            <ul className="space-y-1 text-xs">
+              {runs.map((r) => (
+                <li key={r.id} className="flex justify-between gap-2 rounded border p-2">
+                  <span>{r.source} · {new Date(r.started_at).toLocaleString()}</span>
+                  <span>{r.status} — {r.created_count} créés, {r.updated_count} maj, {r.deactivated_count} désactivés{r.error_count ? `, ${r.error_count} erreurs` : ""}</span>
+                </li>
+              ))}
+              {runs.length === 0 && <li className="text-muted-foreground">Aucune synchronisation encore.</li>}
+            </ul>
+          </div>
+        </div>
+      ))}
+    </section>
+  );
+}
+
 export default function LmsIntegrations() {
   const [memberships, setMemberships] = useState<OrgMembership[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1353,6 +1554,7 @@ export default function LmsIntegrations() {
         <IdentitySection orgId={activeOrgId} />
         <LtiSection orgId={activeOrgId} />
         <ApiSection orgId={activeOrgId} />
+        <OneRosterSection orgId={activeOrgId} />
         <WebhookSection orgId={activeOrgId} />
       </div>
     </AppLayout>
