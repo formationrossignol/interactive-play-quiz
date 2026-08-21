@@ -174,7 +174,7 @@ create index scim_users_client_idx on public.scim_users(client_id);
 alter table public.scim_users enable row level security;
 create policy scim_users_admin on public.scim_users
   for select using (exists (
-    select 1 from public.api_clients c where c.id = client_id and public.has_org_role(c.org_id, array['admin'])
+    select 1 from public.api_clients c where c.id = scim_users.client_id and public.has_org_role(c.org_id, array['admin'])
   ));
 -- No insert/update/delete policy for authenticated: only the scim-users
 -- edge function (service_role, already past _verify_api_token) writes this.
@@ -195,7 +195,7 @@ create index scim_groups_client_idx on public.scim_groups(client_id);
 alter table public.scim_groups enable row level security;
 create policy scim_groups_admin on public.scim_groups
   for select using (exists (
-    select 1 from public.api_clients c where c.id = client_id and public.has_org_role(c.org_id, array['admin'])
+    select 1 from public.api_clients c where c.id = scim_groups.client_id and public.has_org_role(c.org_id, array['admin'])
   ));
 create trigger scim_groups_touch before update on public.scim_groups
   for each row execute function public.touch_updated_at();
@@ -230,9 +230,9 @@ create table public.scim_group_role_mappings (
 alter table public.scim_group_role_mappings enable row level security;
 create policy scim_group_role_mappings_admin on public.scim_group_role_mappings
   for all using (exists (
-    select 1 from public.api_clients c where c.id = client_id and public.has_org_role(c.org_id, array['admin'])
+    select 1 from public.api_clients c where c.id = scim_group_role_mappings.client_id and public.has_org_role(c.org_id, array['admin'])
   )) with check (exists (
-    select 1 from public.api_clients c where c.id = client_id and public.has_org_role(c.org_id, array['admin'])
+    select 1 from public.api_clients c where c.id = scim_group_role_mappings.client_id and public.has_org_role(c.org_id, array['admin'])
   ));
 
 -- ── apply_scim_group_roles() : additive grant on group-membership add ──────
