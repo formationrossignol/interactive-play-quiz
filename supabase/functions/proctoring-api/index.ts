@@ -1,4 +1,4 @@
-import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders, handleCorsPreflight } from "../_shared/cors.ts";
 import { getCallerUserId } from "../_shared/auth.ts";
 
@@ -27,6 +27,8 @@ interface RequestBody {
   analysis?: Record<string, unknown>;
   decision?: "compliant" | "review" | "non-compliant";
   note?: string;
+  page?: number;
+  pageSize?: number;
 }
 
 const json = (body: unknown, status = 200) =>
@@ -193,16 +195,50 @@ Deno.serve(async (req) => {
         return json({ ok: true });
       }
 
-      const [attemptsResult, eventsResult, alertsResult, capturesResult, reportsResult] = await Promise.all([
-        db.from("exam_attempts").select("id, participant_name").eq("exam_id", body.examId),
-        db.from("exam_proctoring_events").select("*").eq("exam_id", body.examId).order("occurred_at"),
-        db.from("exam_proctoring_alerts").select("*").eq("exam_id", body.examId).order("occurred_at"),
-        db.from("exam_proctoring_captures").select("*").eq("exam_id", body.examId).order("occurred_at"),
-        db.from("exam_proctoring_reports").select("*").eq("exam_id", body.examId),
-      ]);
-      const captures = await Promise.all((capturesResult.data ?? []).map(async (capture) => {
-        const { data } = await db.storage.from("exam-proctoring").createSignedUrl(capture.storage_path, 300);
-        return { ...capture, signed_url: data?.signedUrl };
+      const page = Math.max(1, Math.floor(Number(body.page ?? 1)));
+      const pageSize = Math.min(100, Math.max(1, Math.floor(Number(body.pageSize ?? 25))));
+      const first = (page - 1) * pageSize;
+      const attemptsResult = await db.from("exam_attempts")
+        .select("id, participant_name", { count: "exact" })
+        .eq("exam_id", body.examId)
+        .order("started_at", { ascending: false })
+        .range(first, first + pageSize - 1);
+      if (attemptsResult.error) throw attemptsResult.error;
+      const attemptIds = (attemptsResult.data ?? []).map((attempt) => attempt.id as string);
+      const [eventsResult, alertsResult, capturesResult, reportsResult] = attemptIds.length === 0
+        ? [{ data: [], error: null }, { data: [], error: null }, { data: [], error: null }, { data: [], error: null }]
+        : await Promise.all([
+          db.from("exam_proctoring_events")
+            .select("id, exam_id, attempt_id, participant_id, event_type, severity, occurred_at, duration_ms, occurrence, details")
+            .in("attempt_id", attemptIds).order("occurred_at"),
+          db.from("exam_proctoring_alerts")
+            .select("id, exam_id, attempt_id, alert_type, severity, title, details, occurred_at, review_status")
+            .in("attempt_id", attemptIds).order("occurred_at"),
+          db.from("exam_proctoring_captures")
+            .select("id, exam_id, attempt_id, source, trigger, occurred_at, storage_path")
+            .in("attempt_id", attemptIds).order("occurred_at"),
+          db.from("exam_proctoring_reports")
+            .select("id, exam_id, attempt_id, decision, teacher_decision, teacher_note, validation_status, event_count, alert_count, capture_count, tab_switch_count, fullscreen_exit_count, focus_lost_seconds, generated_at, validated_at")
+            .in("attempt_id", attemptIds),
+        ]);
+      for (const result of [eventsResult, alertsResult, capturesResult, reportsResult]) {
+        if (result.error) throw result.error;
+      }
+      const captureRows = capturesResult.data ?? [];
+      const signedUrlByPath = new Map<string, string>();
+      for (let offset = 0; offset < captureRows.length; offset += 100) {
+        const paths = captureRows.slice(offset, offset + 100).map((capture) => capture.storage_path);
+        const { data: signedRows, error: signedError } = await db.storage
+          .from("exam-proctoring")
+          .createSignedUrls(paths, 300);
+        if (signedError) throw signedError;
+        for (const row of signedRows ?? []) {
+          if (row.path && row.signedUrl) signedUrlByPath.set(row.path, row.signedUrl);
+        }
+      }
+      const captures = captureRows.map((capture) => ({
+        ...capture,
+        signed_url: signedUrlByPath.get(capture.storage_path),
       }));
       await db.from("exam_proctoring_access_log").insert({
         exam_id: body.examId,
@@ -212,15 +248,20 @@ Deno.serve(async (req) => {
         resource_id: body.examId,
         expires_at: expiresAt,
       });
+      const eventsByAttempt = groupByAttempt(eventsResult.data ?? []);
+      const alertsByAttempt = groupByAttempt(alertsResult.data ?? []);
+      const capturesByAttempt = groupByAttempt(captures);
+      const reportsByAttempt = new Map((reportsResult.data ?? []).map((report) => [report.attempt_id as string, report]));
       const attempts = (attemptsResult.data ?? []).map((attempt) => ({
         attemptId: attempt.id,
         participantName: attempt.participant_name,
-        events: (eventsResult.data ?? []).filter((event) => event.attempt_id === attempt.id).map(mapEvent),
-        alerts: (alertsResult.data ?? []).filter((alert) => alert.attempt_id === attempt.id).map(mapAlert),
-        captures: captures.filter((capture) => capture.attempt_id === attempt.id).map(mapCapture),
-        report: mapReport((reportsResult.data ?? []).find((report) => report.attempt_id === attempt.id) ?? null),
+        events: (eventsByAttempt.get(attempt.id as string) ?? []).map(mapEvent),
+        alerts: (alertsByAttempt.get(attempt.id as string) ?? []).map(mapAlert),
+        captures: (capturesByAttempt.get(attempt.id as string) ?? []).map(mapCapture),
+        report: mapReport(reportsByAttempt.get(attempt.id as string) ?? null),
       }));
-      return json({ attempts });
+      const total = attemptsResult.count ?? 0;
+      return json({ attempts, page, pageSize, total, hasMore: first + attempts.length < total });
     }
 
     if (!body.attemptId || !body.participantId) return json({ error: "invalid_payload" }, 400);
@@ -249,19 +290,22 @@ Deno.serve(async (req) => {
       }).select().single();
       if (error) throw error;
 
-      if ((body.severity === "warning" || body.severity === "critical") && ALERT_TITLES[body.type]) {
-        await db.from("exam_proctoring_alerts").insert({
+      const alertSeverity = (body.severity === "warning" || body.severity === "critical") && ALERT_TITLES[body.type]
+        ? body.severity
+        : null;
+      if (alertSeverity) {
+        const { error: alertError } = await db.from("exam_proctoring_alerts").insert({
           exam_id: body.examId,
           attempt_id: body.attemptId,
           event_id: event.id,
           alert_type: body.type,
-          severity: body.severity,
+          severity: alertSeverity,
           title: ALERT_TITLES[body.type],
           details: "Alerte automatique à vérifier par un enseignant.",
           expires_at: expiresAt,
         });
+        if (alertError) throw alertError;
       }
-      await refreshReport(db, body.examId, body.attemptId, expiresAt);
       return json({ event: mapEvent(event) });
     }
 
@@ -289,7 +333,7 @@ Deno.serve(async (req) => {
         expires_at: expiresAt,
       }).select().single();
       if (error) throw error;
-      await db.from("exam_proctoring_events").insert({
+      const { error: captureEventError } = await db.from("exam_proctoring_events").insert({
         exam_id: body.examId,
         attempt_id: body.attemptId,
         participant_id: body.participantId,
@@ -298,7 +342,7 @@ Deno.serve(async (req) => {
         details: { captureId, source: body.source, trigger: body.trigger },
         expires_at: expiresAt,
       });
-      await refreshReport(db, body.examId, body.attemptId, expiresAt);
+      if (captureEventError) throw captureEventError;
       return json({ capture: mapCapture(capture) });
     }
 
@@ -309,36 +353,15 @@ Deno.serve(async (req) => {
   }
 });
 
-async function refreshReport(
-  db: SupabaseClient<any, "public", any>,
-  examId: string,
-  attemptId: string,
-  expiresAt: string,
-) {
-  const [eventsResult, alertsResult, capturesResult] = await Promise.all([
-    db.from("exam_proctoring_events").select("event_type, duration_ms").eq("attempt_id", attemptId),
-    db.from("exam_proctoring_alerts").select("severity").eq("attempt_id", attemptId),
-    db.from("exam_proctoring_captures").select("id").eq("attempt_id", attemptId),
-  ]);
-  const events = eventsResult.data ?? [];
-  const alerts = alertsResult.data ?? [];
-  const critical = alerts.filter((alert) => alert.severity === "critical").length;
-  const decision = critical > 0 || alerts.length >= 3 ? "review" : "compliant";
-  await db.from("exam_proctoring_reports").upsert({
-    exam_id: examId,
-    attempt_id: attemptId,
-    decision,
-    event_count: events.length,
-    alert_count: alerts.length,
-    capture_count: capturesResult.data?.length ?? 0,
-    tab_switch_count: events.filter((event) => event.event_type === "tab_hidden").length,
-    fullscreen_exit_count: events.filter((event) => event.event_type === "fullscreen_exited").length,
-    focus_lost_seconds: Math.round(events
-      .filter((event) => event.event_type === "focus_lost")
-      .reduce((sum, event) => sum + Number(event.duration_ms ?? 0), 0) / 1000),
-    generated_at: new Date().toISOString(),
-    expires_at: expiresAt,
-  }, { onConflict: "attempt_id" });
+function groupByAttempt<T extends { attempt_id?: unknown }>(rows: T[]): Map<string, T[]> {
+  const grouped = new Map<string, T[]>();
+  for (const row of rows) {
+    const attemptId = String(row.attempt_id ?? "");
+    const values = grouped.get(attemptId) ?? [];
+    values.push(row);
+    grouped.set(attemptId, values);
+  }
+  return grouped;
 }
 
 function mapEvent(row: Record<string, unknown>) {

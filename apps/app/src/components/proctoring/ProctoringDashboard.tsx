@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Attempt, Exam } from '@/lib/examStorage';
 import {
-  getProctoringOverview,
+  getProctoringOverviewPage,
   reviewProctoringReport,
   type ProctoringAttemptOverview,
   type ProctoringDecision,
@@ -34,12 +34,18 @@ const DECISIONS: Array<{ value: ProctoringDecision; label: string; color: string
 export function ProctoringDashboard({ exam, attempts }: Props) {
   const [items, setItems] = useState<ProctoringAttemptOverview[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      setItems(await getProctoringOverview(exam.id));
+      const result = await getProctoringOverviewPage(exam.id, 1);
+      setItems(result.attempts);
+      setPage(1);
+      setHasMore(result.hasMore);
     } catch {
       toast.error('Impossible de charger les données de surveillance');
     } finally {
@@ -48,6 +54,21 @@ export function ProctoringDashboard({ exam, attempts }: Props) {
   }, [exam.id]);
 
   useEffect(() => { void load(); }, [load]);
+
+  const loadMore = useCallback(async () => {
+    setLoadingMore(true);
+    try {
+      const nextPage = page + 1;
+      const result = await getProctoringOverviewPage(exam.id, nextPage);
+      setItems((current) => [...current, ...result.attempts]);
+      setPage(nextPage);
+      setHasMore(result.hasMore);
+    } catch {
+      toast.error('Impossible de charger la suite des rapports');
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [exam.id, page]);
 
   const totals = useMemo(() => items.reduce((acc, item) => ({
     alerts: acc.alerts + item.alerts.length,
@@ -149,6 +170,17 @@ export function ProctoringDashboard({ exam, attempts }: Props) {
               </article>
             );
           })}
+          {hasMore && (
+            <button
+              type="button"
+              className="ap-btn ap-btn--secondary ap-btn--sm"
+              disabled={loadingMore}
+              onClick={() => void loadMore()}
+              style={{ justifySelf: 'center', marginTop: 6 }}
+            >
+              {loadingMore ? 'Chargement…' : 'Charger plus de rapports'}
+            </button>
+          )}
         </div>
       )}
     </section>

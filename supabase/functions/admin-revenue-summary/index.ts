@@ -50,14 +50,16 @@ Deno.serve(async (req) => {
     // Plan distribution + total account count come straight from our own
     // DB — cheap and always in sync. Only the € revenue figure needs a live
     // Stripe read, since profiles doesn't store subscription amounts.
-    const { data: profiles, error: profilesError } = await supabaseAdmin
-      .from("profiles")
-      .select("plan");
+    const { data: planCounts, error: profilesError } = await supabaseAdmin
+      .rpc("_admin_profile_plan_counts_service");
     if (profilesError) throw profilesError;
     const planBreakdown = { starter: 0, pro: 0, entreprise: 0 } as Record<string, number>;
-    for (const p of profiles ?? []) {
-      const plan = (p as { plan?: string }).plan ?? "starter";
-      planBreakdown[plan] = (planBreakdown[plan] ?? 0) + 1;
+    let totalUsers = 0;
+    for (const row of planCounts ?? []) {
+      const plan = (row as { plan?: string }).plan ?? "starter";
+      const count = Number((row as { user_count?: number | string }).user_count ?? 0);
+      planBreakdown[plan] = count;
+      totalUsers += count;
     }
 
     const stripe = getStripeClient();
@@ -93,7 +95,7 @@ Deno.serve(async (req) => {
         mrr: Math.round(mrrCents) / 100,
         currency,
         activeSubscriptions,
-        totalUsers: profiles?.length ?? 0,
+        totalUsers,
         planBreakdown,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
