@@ -146,17 +146,24 @@ begin
   end loop;
 end;
 $$;
+-- service_role only. Independent review before push: the original version
+-- of this migration also granted `authenticated`, reasoning that the 7
+-- trigger functions below "run as the invoking user" — that reasoning was
+-- wrong. Every one of those triggers is itself `security definer`, so its
+-- internal call to emit_webhook_event() already executes under the
+-- trigger function's own owner privilege, not the end user's — the
+-- `authenticated` grant was never needed for the real call sites to work.
+-- What it DID do: let any authenticated platform user call
+-- emit_webhook_event(p_org_id, p_event_name, p_payload) directly with a
+-- fully attacker-chosen org_id and payload — fabricating a fake "grade
+-- changed"/"certificate issued"/etc event for an org the caller has no
+-- relationship to, which dispatch-webhooks would then sign with this app's
+-- real HMAC secret and deliver to that org's real webhook consumer as if
+-- genuine. Worse in kind than record_sso_login's original bug (that one
+-- forged log rows; this one would forge signed, externally-delivered
+-- business events) — removed before this migration ever shipped.
 revoke all on function public.emit_webhook_event(uuid, text, jsonb) from public;
 grant execute on function public.emit_webhook_event(uuid, text, jsonb) to service_role;
--- Also callable by `authenticated` triggers running as the invoking user
--- (the enrollment/submission/grade/etc triggers below fire inside normal
--- RLS-governed INSERT/UPDATE statements from regular app RPCs, not from a
--- service_role edge function) — security definer already scopes what it
--- does (insert into webhook_deliveries, which has no direct authenticated
--- grant of its own) regardless of caller role, so this grant is safe: it
--- does exactly one thing (fan out to matching endpoints) with no caller-
--- controlled authorization bypass.
-grant execute on function public.emit_webhook_event(uuid, text, jsonb) to authenticated;
 
 -- ── API-004 : the 7 initial event triggers ──────────────────────────────
 -- Real-time triggers (fire immediately on write), not the automation
