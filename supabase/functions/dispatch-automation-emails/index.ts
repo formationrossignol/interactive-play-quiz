@@ -1,5 +1,10 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { mapInBatches, resolveDispatchBatchSize } from "../_shared/batched-dispatch.ts";
 import { corsHeaders, handleCorsPreflight } from "../_shared/cors.ts";
+
+const EXTERNAL_REQUEST_TIMEOUT_MS = 10_000;
+
+type DispatchOutcome = "dispatched" | "failed";
 
 // Spec 06 automation engine (20260813070000_automation_execution_engine.sql):
 // _execute_automation_action() queues the 'email' action into
@@ -41,41 +46,77 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
+    const batchSize = resolveDispatchBatchSize(Deno.env.get("AUTOMATION_EMAIL_DISPATCH_BATCH_SIZE"));
 
     const { data: pending, error: fetchError } = await supabase
       .from("automation_email_outbox")
       .select("id, learner_id, subject, body")
       .eq("status", "pending")
       .order("created_at", { ascending: true })
-      .limit(100);
+      .limit(batchSize);
     if (fetchError) throw fetchError;
     if (!pending || pending.length === 0) return jsonResponse({ dispatched: 0 });
 
-    let dispatched = 0;
-    for (const row of pending) {
-      const { data: userData, error: userError } = await supabase.auth.admin.getUserById(row.learner_id);
-      const email = userData?.user?.email;
-      if (userError || !email) {
-        await supabase.from("automation_email_outbox").update({ status: "failed" }).eq("id", row.id);
-        continue;
+    const outcomes = await mapInBatches(pending, async (row): Promise<DispatchOutcome> => {
+      const markFailed = async (): Promise<DispatchOutcome> => {
+        try {
+          const { error: updateError } = await supabase
+            .from("automation_email_outbox")
+            .update({ status: "failed" })
+            .eq("id", row.id)
+            .eq("status", "pending");
+          if (updateError) {
+            console.error(`[dispatch-automation-emails] could not record failure for ${row.id}:`, updateError);
+          }
+        } catch (err) {
+          console.error(`[dispatch-automation-emails] recording failure threw for ${row.id}:`, err);
+        }
+        return "failed";
+      };
+
+      let acceptedByResend = false;
+      try {
+        const { data: userData, error: userError } = await supabase.auth.admin.getUserById(row.learner_id);
+        const email = userData?.user?.email;
+        if (userError || !email) {
+          if (userError) console.error(`[dispatch-automation-emails] user lookup failed for ${row.id}:`, userError);
+          return await markFailed();
+        }
+
+        const resendResponse = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${resendApiKey}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ from, to: email, subject: row.subject, html: `<p>${row.body}</p>` }),
+          signal: AbortSignal.timeout(EXTERNAL_REQUEST_TIMEOUT_MS),
+        });
+
+        if (!resendResponse.ok) {
+          console.error(`[dispatch-automation-emails] Resend error for ${row.id}:`, await resendResponse.text());
+          return await markFailed();
+        }
+        acceptedByResend = true;
+
+        const { error: sentError } = await supabase
+          .from("automation_email_outbox")
+          .update({ status: "sent", sent_at: new Date().toISOString() })
+          .eq("id", row.id)
+          .eq("status", "pending");
+        if (sentError) throw sentError;
+        return "dispatched";
+      } catch (err) {
+        console.error(`[dispatch-automation-emails] delivery failed for ${row.id}:`, err);
+        // Resend accepted the message, but persisting `sent` failed. Leave
+        // the row pending for an at-least-once retry instead of incorrectly
+        // marking a delivered email as a permanent delivery failure.
+        if (acceptedByResend) return "failed";
+        return await markFailed();
       }
+    });
 
-      const resendResponse = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${resendApiKey}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ from, to: email, subject: row.subject, html: `<p>${row.body}</p>` }),
-      });
+    const dispatched = outcomes.filter((outcome) => outcome === "dispatched").length;
+    const failed = outcomes.filter((outcome) => outcome === "failed").length;
 
-      if (resendResponse.ok) {
-        await supabase.from("automation_email_outbox").update({ status: "sent", sent_at: new Date().toISOString() }).eq("id", row.id);
-        dispatched++;
-      } else {
-        console.error("[dispatch-automation-emails] Resend error:", await resendResponse.text());
-        await supabase.from("automation_email_outbox").update({ status: "failed" }).eq("id", row.id);
-      }
-    }
-
-    return jsonResponse({ dispatched, total: pending.length });
+    return jsonResponse({ dispatched, failed, total: pending.length });
   } catch (err) {
     console.error("[dispatch-automation-emails] error:", err);
     return jsonResponse({ error: "internal_error" }, 500);

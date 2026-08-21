@@ -42,6 +42,7 @@ import {
   ensureSessionState,
   createLiveSession,
   advanceLiveQuestion,
+  fetchSessionPlayersFromSupabase,
   fetchSessionStateFromSupabase,
   getSessionStorageKey,
   patchSessionState,
@@ -52,6 +53,7 @@ import {
   readSessionHistory,
   upsertPlayerInSession,
   submitAnswerToServer,
+  subscribeToSessionState,
   DEFAULT_SESSION_CONTROL,
   type SharedPlayer,
   type SessionControl,
@@ -59,7 +61,7 @@ import {
 } from "@/lib/sessionState";
 import { QuestionAnswerPanel } from "./QuestionAnswerPanel";
 import { recordQuizAttempt } from "@/lib/quizAttempts";
-import { supabase, supabaseUrl, supabaseKey } from "@/lib/supabase";
+import { supabaseUrl, supabaseKey } from "@/lib/supabase";
 import { FONT_STACKS, HOST_ANSWER_STYLES, MILLIONAIRE_ANSWER_STYLES } from "@/lib/answerVisuals";
 import { ExportMenu } from "./ExportMenu";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -76,6 +78,8 @@ interface Player {
   joinedAt: Date;
   lastAnswer?: number;
   lastAnswerQuestionIndex?: number;
+  lastHeartbeat?: string;
+  lastReaction?: { emoji: string; comment?: string; sentAt: string };
   streak?: number;
 }
 
@@ -239,6 +243,8 @@ export const QuizSession = ({ quiz, isHost = false, isSolo = false, onExitReques
   const liveReactionsEnabled = quiz.liveReactionsEnabled ?? true;
   const endChatEnabled = quiz.endChatEnabled ?? true;
   const [players, setPlayers] = useState<Player[]>([]);
+  const playersRef = useRef<Player[]>([]);
+  useEffect(() => { playersRef.current = players; }, [players]);
   const [sessionReady, setSessionReady] = useState(false);
 
   // Solo play: the host device is also the only player. selfPlayerId is stable
@@ -491,6 +497,8 @@ export const QuizSession = ({ quiz, isHost = false, isSolo = false, onExitReques
     joinedAt: shared.joinedAt ? new Date(shared.joinedAt) : new Date(),
     lastAnswer: shared.lastAnswer,
     lastAnswerQuestionIndex: shared.lastAnswerQuestionIndex,
+    lastHeartbeat: shared.lastHeartbeat,
+    lastReaction: shared.lastReaction,
   }), []);
 
   // Refs so syncFromStorage doesn't need to close over mutable state
@@ -625,67 +633,48 @@ export const QuizSession = ({ quiz, isHost = false, isSolo = false, onExitReques
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [quiz.gameCode]);
 
-  // Poll Supabase for player updates (joins in waiting, answers+scores during question).
-  // Polling avoids the write→event→sync→write feedback loop that realtime would cause.
+  // Player rows have their own Realtime stream. Each join/heartbeat/answer now
+  // carries one small row delta instead of polling the full roster every 800ms.
   useEffect(() => {
     if (!isHost) return;
-    if (gameState !== 'waiting' && gameState !== 'question') return;
+    const channel = subscribeToSessionState(quiz.gameCode, (state) => {
+      const remote = state.players.map(normalizeSharedPlayer);
+      setPlayers((previous) => remote.map((fresh) => {
+        const hostFields = previous.find((player) => player.id === fresh.id);
+        return {
+          ...fresh,
+          previousScore: hostFields?.previousScore,
+          streak: hostFields?.streak,
+        };
+      }));
+    });
+    return () => { void channel.unsubscribe(); };
+  }, [isHost, quiz.gameCode, normalizeSharedPlayer]);
 
-    const poll = async () => {
-      const { data, error } = await supabase
-        .from('session_state')
-        .select('players')
-        .eq('game_code', quiz.gameCode)
-        .single();
-      if (error) console.error('[QuizSession poll error]', error.code, error.message);
-      if (data?.players && Array.isArray(data.players)) {
-        const remote = (data.players as SharedPlayer[]).map(normalizeSharedPlayer);
-        setPlayers((prev) => {
-          if (gameState === 'waiting') {
-            const prevIds = new Set(prev.map((p) => p.id));
-            const hasNew = remote.some((p) => !prevIds.has(p.id));
-            return hasNew ? remote : prev;
-          }
-          // During question: merge scores and answers from Supabase without full replace
-          // to avoid overwriting host-managed fields (previousScore etc.)
-          return prev.map((p) => {
-            const fresh = remote.find((r) => r.id === p.id);
-            if (!fresh) return p;
-            return {
-              ...p,
-              score: fresh.score ?? p.score,
-              correctAnswers: fresh.correctAnswers ?? p.correctAnswers,
-              lastAnswer: fresh.lastAnswer,
-              lastAnswerQuestionIndex: fresh.lastAnswerQuestionIndex,
-            };
-          });
-        });
-
-        // Disconnect detection: player is considered offline if heartbeat >15s stale
-        if (gameState === 'question') {
-          const THRESHOLD_MS = 25000;
-          const now = Date.now();
-          (data.players as SharedPlayer[]).forEach((p) => {
-            if (!p.lastHeartbeat) return;
-            const age = now - new Date(p.lastHeartbeat).getTime();
-            const wasDisconnected = disconnectedIdsRef.current.has(p.id);
-            if (age > THRESHOLD_MS && !wasDisconnected) {
-              disconnectedIdsRef.current.add(p.id);
-              setDisconnectedIds(new Set(disconnectedIdsRef.current));
-              toast.error(`${p.name} s'est déconnecté`, { duration: 5000 });
-            } else if (age <= THRESHOLD_MS && wasDisconnected) {
-              disconnectedIdsRef.current.delete(p.id);
-              setDisconnectedIds(new Set(disconnectedIdsRef.current));
-            }
-          });
+  // Presence expiry is a local clock check; no database poll is necessary.
+  useEffect(() => {
+    if (!isHost || gameState !== 'question') return;
+    const checkPresence = () => {
+      const now = Date.now();
+      const nextDisconnected = new Set(disconnectedIdsRef.current);
+      for (const player of playersRef.current) {
+        if (!player.lastHeartbeat) continue;
+        const offline = now - new Date(player.lastHeartbeat).getTime() > 25000;
+        const wasOffline = nextDisconnected.has(player.id);
+        if (offline && !wasOffline) {
+          nextDisconnected.add(player.id);
+          toast.error(`${player.name} s'est déconnecté`, { duration: 5000 });
+        } else if (!offline && wasOffline) {
+          nextDisconnected.delete(player.id);
         }
       }
+      disconnectedIdsRef.current = nextDisconnected;
+      setDisconnectedIds(nextDisconnected);
     };
-
-    // Poll faster during 'question' to detect allAnswered quickly; 2s is enough for waiting
-    const interval = setInterval(poll, gameState === 'question' ? 800 : 2000);
+    checkPresence();
+    const interval = setInterval(checkPresence, 5000);
     return () => clearInterval(interval);
-  }, [isHost, gameState, quiz.gameCode, normalizeSharedPlayer]);
+  }, [isHost, gameState]);
 
 
   // Timer: interval-based with Date.now() — no drift, updates 4× per second.
@@ -776,22 +765,12 @@ export const QuizSession = ({ quiz, isHost = false, isSolo = false, onExitReques
     seenReactionKeysRef.current = new Set();
   }, [gameState]);
 
-  // Poll for player reactions (waiting + final screens, host-only)
+  // Reactions arrive in the same row-level Realtime stream as heartbeats.
   useEffect(() => {
     const lobbyReactionsActive = gameState === 'waiting' && liveReactionsEnabled;
     const finalInteractionsActive = gameState === 'final' && (liveReactionsEnabled || endChatEnabled);
     if (!isHost || (!lobbyReactionsActive && !finalInteractionsActive)) return;
-    seenReactionKeysRef.current = new Set();
-
-    const poll = async () => {
-      const { data } = await supabase
-        .from('session_state')
-        .select('players')
-        .eq('game_code', quiz.gameCode)
-        .single();
-      if (!data?.players || !Array.isArray(data.players)) return;
-
-      (data.players as SharedPlayer[]).forEach((p) => {
+    players.forEach((p) => {
         if (!p.lastReaction) return;
         // Ignore reactions from previous sessions
         if (new Date(p.lastReaction.sentAt).getTime() < sessionStartedAtRef.current) return;
@@ -824,13 +803,8 @@ export const QuizSession = ({ quiz, isHost = false, isSolo = false, onExitReques
             [{ playerName: p.name, avatar: p.avatar, text: reactionText, ts: Date.now() }, ...prev].slice(0, 30)
           );
         }
-      });
-    };
-
-    poll();
-    const interval = setInterval(poll, 2000);
-    return () => clearInterval(interval);
-  }, [isHost, gameState, quiz.gameCode, liveReactionsEnabled, endChatEnabled]);
+    });
+  }, [isHost, gameState, players, liveReactionsEnabled, endChatEnabled]);
 
   // Update session stats
   useEffect(() => {
@@ -918,15 +892,11 @@ export const QuizSession = ({ quiz, isHost = false, isSolo = false, onExitReques
     let freshPlayers: SharedPlayer[] = readSessionState(quiz.gameCode).players;
     try {
       const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000));
-      const fetch = supabase
-        .from('session_state')
-        .select('players')
-        .eq('game_code', quiz.gameCode)
-        .single();
-      const result = await Promise.race([fetch, timeout]);
-      if (result && 'data' in result && result.data?.players && Array.isArray(result.data.players)) {
-        freshPlayers = result.data.players as SharedPlayer[];
-      }
+      const result = await Promise.race([
+        fetchSessionPlayersFromSupabase(quiz.gameCode),
+        timeout,
+      ]);
+      if (Array.isArray(result)) freshPlayers = result;
     } catch { /* ignore */ }
 
     const answeredPlayers = freshPlayers.filter(

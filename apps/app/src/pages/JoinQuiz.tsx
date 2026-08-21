@@ -25,16 +25,20 @@ const fetchRoomLocked = async (gameCode: string): Promise<boolean> => {
  *  joining the last slot near-simultaneously can both be admitted (no
  *  server-side atomic reservation). Accepted trade-off, not a bug. */
 const fetchCapacity = async (gameCode: string): Promise<{ full: boolean }> => {
-  const { data } = await supabase
-    .from("session_state")
-    .select("quiz_data, players")
-    .eq("game_code", gameCode)
-    .single();
+  const [{ data }, { count }] = await Promise.all([
+    supabase
+      .from("session_state")
+      .select("quiz_data")
+      .eq("game_code", gameCode)
+      .single(),
+    supabase
+      .from("session_players")
+      .select("player_id", { count: "exact", head: true })
+      .eq("game_code", gameCode),
+  ]);
   const maxParticipants = (data as { quiz_data?: { maxParticipants?: number | null } } | null)?.quiz_data?.maxParticipants;
   if (maxParticipants === null || maxParticipants === undefined) return { full: false };
-  const players = (data as { players?: unknown[] } | null)?.players;
-  const count = Array.isArray(players) ? players.length : 0;
-  return { full: count >= maxParticipants };
+  return { full: (count ?? 0) >= maxParticipants };
 };
 
 const checkSupabase = async (gameCode: string): Promise<boolean | null> => {

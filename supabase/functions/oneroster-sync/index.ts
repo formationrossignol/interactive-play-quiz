@@ -25,6 +25,9 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders, handleCorsPreflight } from "../_shared/cors.ts";
 import { verifyApiBearerToken } from "../_shared/api-token-auth.ts";
 
+const MAX_SYNC_USERS = 1_000;
+const MAX_BODY_BYTES = 2 * 1024 * 1024;
+
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 }
@@ -43,9 +46,22 @@ Deno.serve(async (req) => {
   if (!ctx) return jsonResponse({ error: "invalid_or_missing_bearer_token" }, 401);
 
   try {
-    const body = await req.json().catch(() => null);
+    const declaredLength = Number(req.headers.get("content-length") ?? 0);
+    if (declaredLength > MAX_BODY_BYTES) {
+      return jsonResponse({ error: "payload_too_large", maxBytes: MAX_BODY_BYTES, maxUsers: MAX_SYNC_USERS }, 413);
+    }
+    const rawBody = await req.text();
+    if (new TextEncoder().encode(rawBody).byteLength > MAX_BODY_BYTES) {
+      return jsonResponse({ error: "payload_too_large", maxBytes: MAX_BODY_BYTES, maxUsers: MAX_SYNC_USERS }, 413);
+    }
+    const body = (() => {
+      try { return JSON.parse(rawBody); } catch { return null; }
+    })();
     const users = Array.isArray(body?.users) ? body.users : null;
     if (!users) return jsonResponse({ error: "missing_users_array" }, 400);
+    if (users.length > MAX_SYNC_USERS) {
+      return jsonResponse({ error: "too_many_users", maxUsers: MAX_SYNC_USERS }, 413);
+    }
 
     const rows = users
       .filter((u: unknown): u is { sourcedId: string; email: string } =>

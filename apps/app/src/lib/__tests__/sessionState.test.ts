@@ -1,20 +1,78 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../supabase', () => ({
   supabase: {
     functions: {
       invoke: vi.fn(),
     },
+    rpc: vi.fn(),
   },
 }));
 
 import { supabase } from '../supabase';
-import { createLiveSession, advanceLiveQuestion, submitAnswerToServer } from '../sessionState';
+import {
+  createLiveSession,
+  advanceLiveQuestion,
+  submitAnswerToServer,
+  upsertPlayerInSession,
+} from '../sessionState';
 
 const invokeMock = supabase.functions.invoke as unknown as ReturnType<typeof vi.fn>;
+const rpcMock = supabase.rpc as unknown as ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
+  vi.useFakeTimers();
   invokeMock.mockReset();
+  rpcMock.mockReset();
+  rpcMock.mockResolvedValue({ data: null, error: null });
+  localStorage.clear();
+});
+
+afterEach(() => {
+  vi.runOnlyPendingTimers();
+  vi.useRealTimers();
+});
+
+describe('player write debounce', () => {
+  const player = (id: string, lastHeartbeat = '2026-08-21T10:00:00.000Z') => ({
+    id,
+    name: id,
+    avatar: '🎮',
+    score: 0,
+    joinedAt: '2026-08-21T09:00:00.000Z',
+    lastHeartbeat,
+  });
+
+  it('flushes pending heartbeats independently for different players in one game', async () => {
+    upsertPlayerInSession('123456', player('player-1'));
+    upsertPlayerInSession('123456', player('player-2'));
+    await vi.advanceTimersByTimeAsync(800);
+
+    expect(rpcMock).toHaveBeenCalledTimes(2);
+    expect(rpcMock).toHaveBeenCalledWith('upsert_session_player', {
+      p_game_code: '123456',
+      p_player: expect.objectContaining({ id: 'player-1' }),
+    });
+    expect(rpcMock).toHaveBeenCalledWith('upsert_session_player', {
+      p_game_code: '123456',
+      p_player: expect.objectContaining({ id: 'player-2' }),
+    });
+  });
+
+  it('still collapses multiple pending heartbeats for the same player', async () => {
+    upsertPlayerInSession('123456', player('player-1'));
+    upsertPlayerInSession('123456', player('player-1', '2026-08-21T10:00:05.000Z'));
+    await vi.advanceTimersByTimeAsync(800);
+
+    expect(rpcMock).toHaveBeenCalledTimes(1);
+    expect(rpcMock).toHaveBeenCalledWith('upsert_session_player', {
+      p_game_code: '123456',
+      p_player: expect.objectContaining({
+        id: 'player-1',
+        lastHeartbeat: '2026-08-21T10:00:05.000Z',
+      }),
+    });
+  });
 });
 
 describe('createLiveSession', () => {
