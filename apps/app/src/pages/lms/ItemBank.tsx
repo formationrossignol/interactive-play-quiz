@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ClipboardList, FlaskConical, Layers, Plus, X } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
@@ -43,6 +43,7 @@ import {
   type PlacementThreshold,
   type SimulationResult,
 } from "@/lib/lms/itemBank";
+import { buildAssessmentQtiPackage, commitQtiImport, parseQtiPackage, type QtiParsedItem } from "@/lib/lms/qti";
 import {
   addCollectionMember,
   createItemCollection,
@@ -733,6 +734,7 @@ function AssessmentRow({ assessment, items }: { assessment: Assessment; items: A
           <p className="text-sm text-muted-foreground">{status === "published" ? `Publiée (v${publishedVersion})` : "Brouillon"}</p>
         </div>
         <div className="flex items-center gap-2">
+          <QtiExportButton assessmentId={assessment.id} />
           <Button size="sm" variant="outline" loading={publishing} onClick={handlePublish}>{status === "published" ? "Republier" : "Publier"}</Button>
           <Button variant="ghost" size="sm" onClick={() => setExpanded((v) => !v)}>{expanded ? "Fermer" : "Gérer"}</Button>
         </div>
@@ -761,14 +763,145 @@ function AssessmentRow({ assessment, items }: { assessment: Assessment; items: A
   );
 }
 
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+/** QTI-002. Report of excluded sections/items (pool sections, item types
+ *  with no faithful QTI representation) is shown even on success — export
+ *  never silently drops content, it names what it couldn't include. */
+function QtiExportButton({ assessmentId }: { assessmentId: string }) {
+  const [exporting, setExporting] = useState(false);
+  const [report, setReport] = useState<{ section_title: string; status: string; reason?: string; item_count?: number }[] | null>(null);
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const result = await buildAssessmentQtiPackage(assessmentId);
+      downloadBlob(result.blob, result.filename);
+      setReport(result.report);
+    } catch (err) {
+      showError(err);
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  return (
+    <div className="relative">
+      <Button size="sm" variant="outline" loading={exporting} onClick={() => void handleExport()}>Exporter QTI</Button>
+      {report && (
+        <div className="absolute right-0 z-10 mt-1 w-80 rounded-md border bg-popover p-3 text-sm shadow-md">
+          <div className="mb-2 flex items-center justify-between">
+            <p className="font-medium">Rapport d'export</p>
+            <button type="button" onClick={() => setReport(null)} aria-label="Fermer le rapport"><X size={14} /></button>
+          </div>
+          <ul className="space-y-1">
+            {report.map((row, i) => (
+              <li key={i} className={row.status === "excluded" ? "text-amber-700 dark:text-amber-400" : "text-muted-foreground"}>
+                <strong>{row.section_title}</strong> — {row.status === "exported" ? `${row.item_count} item(s) exporté(s)` : `exclu : ${row.reason}`}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** QTI-001/QTI-003: preview + per-item report BEFORE anything is written —
+ *  an admin sees every item's outcome (imported/adapted/rejected + why)
+ *  and only then commits, via one transactional RPC
+ *  (import_qti_items()) mirroring import_legacy_quiz_as_assessment()'s
+ *  shape. */
+function QtiImportPanel({ orgId, onImported }: { orgId: string; onImported: (assessmentId: string) => void }) {
+  const [parsing, setParsing] = useState(false);
+  const [committing, setCommitting] = useState(false);
+  const [parsed, setParsed] = useState<{ title: string; items: QtiParsedItem[]; filename: string } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setParsing(true);
+    setParsed(null);
+    try {
+      const result = await parseQtiPackage(file);
+      setParsed({ ...result, filename: file.name });
+    } catch (err) {
+      showError(err);
+    } finally {
+      setParsing(false);
+    }
+  };
+
+  const handleCommit = async () => {
+    if (!parsed) return;
+    setCommitting(true);
+    try {
+      const assessmentId = await commitQtiImport(parsed.title, parsed.filename, parsed.items);
+      setParsed(null);
+      onImported(assessmentId);
+    } catch (err) {
+      showError(err);
+    } finally {
+      setCommitting(false);
+    }
+  };
+
+  const importable = parsed?.items.filter((i) => i.outcome !== "rejected").length ?? 0;
+  const rejected = parsed?.items.filter((i) => i.outcome === "rejected").length ?? 0;
+
+  return (
+    <div className="mb-4 rounded-md border p-3">
+      <div className="flex items-center justify-between gap-2">
+        <div>
+          <p className="text-sm font-medium">Importer un paquet QTI 3</p>
+          <p className="text-xs text-muted-foreground">Fichier .zip (imsmanifest.xml + items) — org : {orgId.slice(0, 8)}</p>
+        </div>
+        <div>
+          <input ref={fileInputRef} type="file" accept=".zip" className="hidden" onChange={(e) => void handleFile(e)} disabled={parsing} />
+          <Button size="sm" variant="outline" loading={parsing} onClick={() => fileInputRef.current?.click()}>Choisir un fichier</Button>
+        </div>
+      </div>
+      {parsed && (
+        <div className="mt-3 border-t pt-3">
+          <p className="text-sm mb-2">
+            <strong>{parsed.title}</strong> — {importable} importable(s), {rejected} refusé(s)
+          </p>
+          <ul className="max-h-48 space-y-1 overflow-y-auto text-sm">
+            {parsed.items.map((item, i) => (
+              <li key={i} className={item.outcome === "rejected" ? "text-destructive" : item.outcome === "adapted" ? "text-amber-700 dark:text-amber-400" : ""}>
+                <code className="text-xs">{item.qti_identifier}</code> — {item.outcome === "imported" ? `importé (${item.item_type})` : item.outcome === "adapted" ? `adapté (${item.item_type}) : ${item.reason}` : `refusé : ${item.reason}`}
+              </li>
+            ))}
+          </ul>
+          <div className="mt-3 flex gap-2">
+            <Button size="sm" loading={committing} disabled={importable === 0} onClick={() => void handleCommit()}>Confirmer l'import ({importable})</Button>
+            <Button size="sm" variant="ghost" onClick={() => setParsed(null)}>Annuler</Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function AssessmentsPanel({ orgId, items }: { orgId: string; items: AssessmentItem[] }) {
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState("");
   const [creating, setCreating] = useState(false);
 
+  const reloadAssessments = () => listOrgAssessments(orgId).then(setAssessments).catch(showError).finally(() => setLoading(false));
   useEffect(() => {
-    listOrgAssessments(orgId).then(setAssessments).catch(showError).finally(() => setLoading(false));
+    reloadAssessments();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orgId]);
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -791,6 +924,7 @@ function AssessmentsPanel({ orgId, items }: { orgId: string; items: AssessmentIt
       <div className="product-panel-heading -mx-5 -mt-5 mb-4">
         <div><h2>Évaluations</h2><p>Sections fixes ou tirage aléatoire depuis une collection partagée.</p></div>
       </div>
+      <QtiImportPanel orgId={orgId} onImported={reloadAssessments} />
       <form onSubmit={handleCreate} className="flex flex-wrap items-end gap-2 mb-4">
         <div className="min-w-[220px] space-y-1">
           <label className="text-sm font-medium" htmlFor="assessment-title">Titre</label>
