@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Check, CheckCircle2, GitCommitVertical, MessageSquare, Plus, Send, Upload, X } from "lucide-react";
+import { toast } from "sonner";
+import { Check, CheckCircle2, GitCommitVertical, Link2 as Link2Icon, MessageSquare, Package, Plus, Send, Upload, X } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/ui/page-header";
 import { ExplorerEmptyState } from "@/components/content/ExplorerEmptyState";
@@ -13,6 +14,9 @@ import { listRecentContent } from "@/lib/content/contentRepo";
 import type { ContentRow } from "@/lib/content/types";
 import { describeDiffChange, diffContentSnapshots } from "@/lib/lms/contentDiff";
 import { listSessionsForContent, type CourseSession } from "@/lib/lms/enrollment";
+import { buildPreviewLinkUrl, createPreviewLink, listPreviewLinks, revokePreviewLink, type PreviewLink } from "@/lib/lms/previewLinks";
+import { buildScorm12Package, buildXapiExport, type ExportReportEntry } from "@/lib/lms/scormExport";
+import type { Course } from "@/lib/courseStorage";
 import {
   addContentComment,
   adoptContentDeploymentUpdate,
@@ -264,6 +268,160 @@ function VersionDiffPanel({ versions }: { versions: ContentVersion[] }) {
   );
 }
 
+/** PUB-004 — token never re-fetchable once created is the security posture
+ *  (preview_links has no anon-readable policy at all, see the migration
+ *  header), but the OWNER can always see it again via this same panel:
+ *  RLS's owner/pedago-admin select policy on preview_links is exactly what
+ *  this list uses, so "copy the link again" always works for staff. */
+function PreviewLinksPanel({ contentId }: { contentId: string }) {
+  const [links, setLinks] = useState<PreviewLink[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [expiresHours, setExpiresHours] = useState(168);
+  const [password, setPassword] = useState("");
+  const [watermark, setWatermark] = useState(true);
+  const [creating, setCreating] = useState(false);
+
+  const reload = () => listPreviewLinks(contentId).then(setLinks).catch(showError).finally(() => setLoading(false));
+  useEffect(() => { reload(); }, [contentId]);
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCreating(true);
+    try {
+      const link = await createPreviewLink(contentId, { expiresInHours: expiresHours, password: password.trim() || undefined, watermark });
+      setPassword("");
+      await navigator.clipboard.writeText(buildPreviewLinkUrl(link.token)).catch(() => {});
+      toast.success("Lien créé et copié dans le presse-papiers.");
+      reload();
+    } catch (err) {
+      showError(err);
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleRevoke = async (id: string) => {
+    try {
+      await revokePreviewLink(id);
+      reload();
+    } catch (err) {
+      showError(err);
+    }
+  };
+
+  if (loading) return null;
+
+  const isActive = (l: PreviewLink) => !l.revoked_at && new Date(l.expires_at) > new Date();
+
+  return (
+    <div>
+      <h4 className="text-sm font-medium mb-2">Liens de prévisualisation (PUB-004)</h4>
+      <form onSubmit={handleCreate} className="flex flex-wrap items-end gap-2 mb-2">
+        <div className="space-y-1">
+          <label className="text-xs font-medium" htmlFor={`expires-${contentId}`}>Expire dans (heures)</label>
+          <Input id={`expires-${contentId}`} type="number" min={1} max={2160} value={expiresHours} onChange={(e) => setExpiresHours(Number(e.target.value))} className="h-8 w-24 text-xs" />
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs font-medium" htmlFor={`pwd-${contentId}`}>Mot de passe (facultatif)</label>
+          <Input id={`pwd-${contentId}`} value={password} onChange={(e) => setPassword(e.target.value)} className="h-8 text-xs" />
+        </div>
+        <label className="flex items-center gap-1.5 text-xs">
+          <input type="checkbox" checked={watermark} onChange={(e) => setWatermark(e.target.checked)} /> Filigrane
+        </label>
+        <Button type="submit" size="sm" variant="outline" loading={creating}><Link2Icon size={14} /> Créer un lien</Button>
+      </form>
+      {links.length === 0 ? (
+        <p className="text-xs text-muted-foreground">Aucun lien.</p>
+      ) : (
+        <ul className="space-y-1">
+          {links.map((l) => (
+            <li key={l.id} className="text-xs rounded border px-2 py-1 flex items-center justify-between gap-2">
+              <span>
+                {isActive(l) ? <span style={{ color: "var(--ap-pres)" }}>actif</span> : <span className="text-muted-foreground">{l.revoked_at ? "révoqué" : "expiré"}</span>}
+                {" · "}{l.view_count} vue(s){l.password_hash ? " · protégé" : ""}{l.watermark ? " · filigrane" : ""}
+              </span>
+              <div className="flex items-center gap-1">
+                {isActive(l) && (
+                  <Button variant="ghost" size="sm" onClick={() => navigator.clipboard.writeText(buildPreviewLinkUrl(l.token)).then(() => toast.success("Copié."))}>Copier</Button>
+                )}
+                {isActive(l) && <Button variant="ghost" size="sm" onClick={() => handleRevoke(l.id)}>Révoquer</Button>}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+/** PUB-002 — content.data for a 'course' item mirrors the localStorage
+ *  Course{title,modules,…} shape (contentRepo.ts's duplicateContent()
+ *  header explains why: CourseBuilder edits localStorage directly, this
+ *  table row is a synced mirror), so version.snapshot casts to Course. Only
+ *  text/document/video/iframe lessons export faithfully — the report names
+ *  every excluded lesson, never a silent drop (see scormExport.ts). */
+function CourseExportPanel({ version }: { version: ContentVersion }) {
+  const [exportingScorm, setExportingScorm] = useState(false);
+  const [exportingXapi, setExportingXapi] = useState(false);
+  const [report, setReport] = useState<ExportReportEntry[] | null>(null);
+
+  const course = version.snapshot as unknown as Course;
+
+  const handleScorm = async () => {
+    setExportingScorm(true);
+    try {
+      const result = await buildScorm12Package(course);
+      downloadBlob(result.blob, result.filename);
+      setReport(result.report);
+    } catch (err) {
+      showError(err);
+    } finally {
+      setExportingScorm(false);
+    }
+  };
+
+  const handleXapi = async () => {
+    setExportingXapi(true);
+    try {
+      const result = await buildXapiExport(course, `${window.location.origin}/courses/${course.id}`);
+      downloadBlob(result.blob, result.filename);
+      setReport(result.report);
+    } catch (err) {
+      showError(err);
+    } finally {
+      setExportingXapi(false);
+    }
+  };
+
+  return (
+    <div>
+      <h4 className="text-sm font-medium mb-2">Export (PUB-002)</h4>
+      <div className="flex items-center gap-2 mb-2">
+        <Button size="sm" variant="outline" loading={exportingScorm} onClick={handleScorm}><Package size={14} /> SCORM 1.2</Button>
+        <Button size="sm" variant="outline" loading={exportingXapi} onClick={handleXapi}><Package size={14} /> xAPI (JSON)</Button>
+      </div>
+      {report && (
+        <ul className="space-y-0.5 text-xs">
+          {report.map((r, i) => (
+            <li key={i} className={r.status === "excluded" ? "text-muted-foreground" : ""}>
+              {r.status === "exported" ? "✓" : "✗"} {r.module_title} — {r.lesson_title}{r.reason ? ` (${r.reason})` : ""}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 function ContentVersionPanel({ item }: { item: ContentRow }) {
   const [versions, setVersions] = useState<ContentVersion[]>([]);
   const [comments, setComments] = useState<ContentComment[]>([]);
@@ -419,7 +577,11 @@ function ContentVersionPanel({ item }: { item: ContentRow }) {
 
       {versions.length >= 2 && <VersionDiffPanel versions={versions} />}
 
+      {item.type === "course" && versions.length > 0 && <CourseExportPanel version={versions[0]} />}
+
       <DeploymentsPanel contentId={item.id} />
+
+      <PreviewLinksPanel contentId={item.id} />
 
       <div>
         <h4 className="text-sm font-medium mb-2 flex items-center gap-1"><MessageSquare size={14} /> Commentaires</h4>
