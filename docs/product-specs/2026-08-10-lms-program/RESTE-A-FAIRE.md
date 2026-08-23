@@ -7,7 +7,7 @@ qui est déjà fait/vérifié et pourquoi, voir `VALIDATION-STATUS.md`. Chaque
 item ici reste formulé exactement comme dans ce document source, pour
 pouvoir s'y référer facilement.
 
-**Progression globale : 73/85 items (86%)** — dénominateur du programme LMS
+**Progression globale : 74/85 items (87%)** — dénominateur du programme LMS
 proprement dit (§01-10) ; 4 items supplémentaires listés en fin de document
 sous « Réconciliation LMS ↔ systèmes pré-existants » sont explicitement hors
 périmètre et non comptés ici. Fermés : §02 Inscriptions (7/7), §03
@@ -24,8 +24,10 @@ question d'autorité), API publique + webhooks (endpoints en lecture seule,
 signature HMAC réelle) et rotation de certificat SAML avec fenêtre de
 chevauchement réelle tous faits ; seul reste ouvert le provisioning
 automatique d'un compte pour un `sub` jamais vu — posture délibérée
-documentée dans le code, pas un gap technique). Vierge : §10 Gouvernance de
-contenu (0/8).
+documentée dans le code, pas un gap technique). Quasi vierge : §10
+Gouvernance de contenu (1/8 — workflow de revue complet fait ; templates/
+blocs, brand kits, gestion des assets, localisation, exports SCORM/xAPI/
+QTI, déploiements réels et diff structurel entre versions restent ouverts).
 
 ## Dépendances qui bloquent plusieurs items à la fois
 
@@ -177,7 +179,7 @@ contenu (0/8).
 
 ## 10 — Gouvernance, versionnement, localisation et diffusion du contenu
 
-- [ ] Workflow de revue complet (état `in_review`/`changes_requested`/`approved`, invalidation d'approbation après modification — CNT-006/009) — les tables existent, le RPC de publication ne passe pas encore par ce workflow
+- [x] Workflow de revue complet (état `in_review`/`changes_requested`/`approved`, invalidation d'approbation après modification — CNT-006/009) — `20260823010000_content_review_workflow.sql`. Les tables existaient (`content_versions` avec ses 7 états, `review_requests`, `review_steps`, `content_releases`) depuis `20260811000000_content_governance.sql` mais avaient exactement deux écrivains — `publish_content_version()`/`restore_content_version()` — tous deux sautant directement à `published` ; aucune fonction ne créait jamais de ligne `draft`, ne faisait jamais transiter vers `in_review`, n'enregistrait jamais de décision de revue, n'écrivait jamais dans `content_releases` (0 ligne possible depuis sa création). Nouveau : `save_content_draft()` (même contrat de concurrence optimiste que `publish_content_version()`, atterrit sur `draft`), `submit_content_for_review()` (`draft`→`in_review`, ouvre `review_requests`), `submit_review_decision()` (seul écrivain de `review_steps` — `approved`/`changes_requested`/`comment` ; un reviewer ne peut jamais décider sur sa propre version, séparation auteur/approbateur de CNT-007 câblée en dur plutôt qu'en option par org — la version complète, configurable, reste à faire), `publish_approved_version()` (exige `status='approved'`, seul écrivain réel de `content_releases`, canal + note de release). CNT-009 (« toute modification après approbation invalide l'approbation ») ne demandait aucune mécanique supplémentaire : `content_versions.snapshot` n'est jamais modifié après insertion, toute nouvelle édition crée une nouvelle ligne qui démarre à `draft` — l'immutabilité déjà en place suffit. `publish_content_version()` (chemin direct, sans revue — contenu personnel/solo) reste intact et fonctionne exactement comme avant, les deux chemins coexistent. CNT-008 (résolution de commentaire) : `resolveContentComment()` côté client, écriture directe — la RLS `content_comments_update` (auteur ou pedago/admin) le permettait déjà, aucune RPC nécessaire. **Reste** : CNT-007 configurable par org (aujourd'hui : séparation toujours forcée), pièces jointes/mentions sur les commentaires (CNT-008), publication/retrait programmés dans le temps (CNT-010 — canal et note de release faits, la partie planification demanderait sa propre étape de balayage nocturne pour un lecteur de `content_releases` qui n'existe encore nulle part). Vérifié : migration + 4 RPC rejouées contre un schéma stub reproduisant les vraies tables (Postgres jetable) — cycle complet brouillon→revue→changements demandés→nouveau brouillon→approuvé→publié, auto-approbation refusée pour de vrai (testée avec un pedago auteur de son propre contenu, pas seulement un rôle insuffisant), non-staff rejeté à chaque étape, double décision sur une demande déjà résolue refusée, `content_releases` reçoit sa première ligne jamais écrite, `publish_content_version()` direct toujours fonctionnel en parallèle ; `tsc`/`eslint` propres. **Non testé en conditions réelles** (pas de compte staff/apprenant local), même limite que le reste du programme
 - [ ] `content_deployments` réels (pinned vs follow-approved-updates, diff avant adoption — CNT-011/012) : table posée, jamais lue par les sessions/parcours qui consomment du contenu
 - [ ] Modèles et blocs réutilisables (`content_templates`, `reusable_blocks`) — pas dans le modèle de données livré du tout
 - [ ] Brand kits (CNT-019) — absents
@@ -226,3 +228,13 @@ voir §04) — dernier item concret ouvert du chantier. Programme LMS à 73/85
 (86%). Restent des blocs non entamés/partiels : §10 (gouvernance/
 localisation, vierge), §08 (11 types d'interaction), et des items isolés —
 §01 (antivirus, double correction), §09 (add-in Office/Teams/Zoom SDK).
+
+**Point d'arrêt 2026-08-23** — §10 sort de zéro : workflow de revue complet
+(`20260823010000_content_review_workflow.sql`, voir §10) — draft→in_review→
+approuvé→publié câblé sur les tables déjà posées le 08-11 mais jamais
+alimentées (`content_releases` n'avait jamais reçu une seule ligne). Étape
+suivante recommandée pour §10 : `content_deployments` réels (CNT-011/012),
+seule pièce restante qui touche à des systèmes déjà en prod (sessions/
+parcours) — le reste (modèles/blocs, brand kits, assets, localisation,
+exports) est indépendant et peut être pris dans n'importe quel ordre.
+Programme LMS à 74/85 (87%).
