@@ -119,6 +119,7 @@ const LmsMediaLibrary = lazy(() => import("./pages/lms/MediaLibrary"));
 const LmsBrandKits = lazy(() => import("./pages/lms/BrandKits"));
 const LmsContentLibrary = lazy(() => import("./pages/lms/ContentLibrary"));
 const PreviewLinkPage = lazy(() => import("./pages/PreviewLinkPage"));
+const LmsLocalization = lazy(() => import("./pages/lms/Localization"));
 const PresentationEditorPage = lazy(() => import("./pages/PresentationEditorPage"));
 const PresentationAudience = lazy(() => import("./pages/PresentationAudience"));
 
@@ -249,6 +250,7 @@ const App = () => (
               <Route path="/lms/brand-kits" element={<LmsBrandKits />} />
               <Route path="/lms/content-library" element={<LmsContentLibrary />} />
               <Route path="/preview-link/:token" element={<PreviewLinkPage />} />
+              <Route path="/lms/localization" element={<LmsLocalization />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
