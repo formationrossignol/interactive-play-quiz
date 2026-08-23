@@ -10,6 +10,7 @@ import { showError } from "@/lib/errorTaxonomy";
 import { useSEO } from "@/hooks/useSEO";
 import { listOrgMembers, myOrgMemberships, type OrgMember, type OrgMembership } from "@/lib/org/orgRepo";
 import {
+  addSamlIdpCert,
   buildSsoLoginUrl,
   createApiClient,
   createIdentityClientSecret,
@@ -35,6 +36,8 @@ import {
   listIdentityConnections,
   listIdentityDomains,
   listIdentityRoleMappings,
+  listSamlIdpCerts,
+  retireSamlIdpCert,
   listLtiContexts,
   listLtiDeployments,
   listLtiLaunches,
@@ -63,6 +66,7 @@ import {
   type ScimGroupRoleMapping,
   type IdentityClientSecret,
   type IdentityConnection,
+  type IdentityConnectionCert,
   type IdentityDomain,
   type IdentityRoleMapping,
   type LtiConnectionTestResult,
@@ -216,6 +220,99 @@ function IdentitySecretsPanel({ connectionId }: { connectionId: string }) {
         </ul>
       )}
       <p className="text-xs text-muted-foreground mt-1">INT-005 : gardez l'ancien secret actif jusqu'à confirmation que le nouveau fonctionne (fenêtre de chevauchement) — sso-callback essaie chaque secret actif.</p>
+    </div>
+  );
+}
+
+/** INT-005 (SAML half) — certificate rotation with a real overlap window.
+ *  Mirrors IdentitySecretsPanel's OIDC pattern above: add the new cert first
+ *  (both old and new verify while both show "actif"), retire the old one
+ *  once the IdP has confirmed cutover. retire_saml_idp_cert() refuses
+ *  server-side while a cert is the only active one — the guard this panel's
+ *  OIDC sibling doesn't have, enforced here because losing every active
+ *  SAML cert locks out every user of the connection, not just future
+ *  rotations. */
+function SamlCertRotationPanel({ connectionId }: { connectionId: string }) {
+  const [certs, setCerts] = useState<IdentityConnectionCert[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [cert, setCert] = useState("");
+  const [label, setLabel] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const reload = () => listSamlIdpCerts(connectionId).then(setCerts).catch(showError).finally(() => setLoading(false));
+  useEffect(() => { reload(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [connectionId]);
+
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!cert.trim()) return;
+    setSaving(true);
+    try {
+      await addSamlIdpCert(connectionId, cert.trim(), label.trim() || undefined);
+      setCert(""); setLabel("");
+      reload();
+    } catch (err) {
+      showError(err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleRetire = async (certId: string) => {
+    try {
+      await retireSamlIdpCert(connectionId, certId);
+      reload();
+    } catch (err) {
+      showError(err);
+    }
+  };
+
+  if (loading) return <ListSkeleton rows={1} withAvatar={false} />;
+
+  const activeCount = certs.filter((c) => c.status === "active").length;
+
+  return (
+    <div>
+      <form onSubmit={handleAdd} className="grid gap-2 sm:grid-cols-2 mb-2">
+        <div className="space-y-1 sm:col-span-2">
+          <label className="text-xs font-medium" htmlFor={`saml-cert-new-${connectionId}`}>Nouveau certificat IdP (x509, PEM)</label>
+          <textarea
+            id={`saml-cert-new-${connectionId}`}
+            className="w-full rounded-md border p-2 text-xs font-mono"
+            style={{ borderColor: "var(--ap-line)", color: "var(--ap-ink)", minHeight: 90 }}
+            value={cert}
+            onChange={(e) => setCert(e.target.value)}
+            placeholder="-----BEGIN CERTIFICATE-----&#10;...&#10;-----END CERTIFICATE-----"
+          />
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs font-medium" htmlFor={`saml-cert-label-${connectionId}`}>Étiquette (facultatif)</label>
+          <Input id={`saml-cert-label-${connectionId}`} value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Renouvellement 2027" />
+        </div>
+        <div className="flex items-end">
+          <Button type="submit" size="sm" variant="outline" loading={saving}><Plus size={14} /> Ajouter (démarre le chevauchement)</Button>
+        </div>
+      </form>
+      {certs.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Aucun certificat — la connexion ne pourra jamais vérifier de réponse SAML tant qu'aucun n'est ajouté.</p>
+      ) : (
+        <ul className="space-y-1">
+          {certs.map((c) => (
+            <li key={c.id} className="text-sm flex items-center justify-between rounded-md border px-3 py-1.5 gap-2">
+              <span className="truncate">
+                {c.label || `Ajouté le ${new Date(c.created_at).toLocaleDateString()}`}
+                {" · "}
+                {c.status === "active" ? <span style={{ color: "var(--ap-pres)" }}>actif</span> : <span className="text-muted-foreground">retiré</span>}
+              </span>
+              {c.status === "active" && (
+                <Button variant="ghost" size="sm" disabled={activeCount <= 1} onClick={() => handleRetire(c.id)} title={activeCount <= 1 ? "Ajoutez d'abord un certificat de remplacement" : undefined}>
+                  <Trash2 size={14} /> Retirer
+                </Button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+      <p className="text-xs text-muted-foreground mt-1">INT-005 : plusieurs certificats actifs à la fois = fenêtre de chevauchement réelle — saml-acs vérifie une réponse contre chacun jusqu'à trouver le bon signataire. Retirer le dernier certificat actif est refusé côté serveur.</p>
     </div>
   );
 }
@@ -439,7 +536,6 @@ function IdentityConnectionRow({ connection, orgId, onUpdated }: { connection: I
   const [jwksUri, setJwksUri] = useState((connection.metadata.jwks_uri as string) ?? "");
   const [idpEntityId, setIdpEntityId] = useState((connection.metadata.idp_entity_id as string) ?? "");
   const [idpSsoUrl, setIdpSsoUrl] = useState((connection.metadata.idp_sso_url as string) ?? "");
-  const [idpCert, setIdpCert] = useState((connection.metadata.idp_cert as string) ?? "");
   const [discovering, setDiscovering] = useState(false);
   const [savingConfig, setSavingConfig] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -462,9 +558,13 @@ function IdentityConnectionRow({ connection, orgId, onUpdated }: { connection: I
   const handleSaveConfig = async () => {
     setSavingConfig(true);
     try {
+      // idp_cert dropped from metadata (SAML side): certificates now live in
+      // identity_connection_certs, one to many with independent
+      // active/retired status — see SamlCertRotationPanel below, INT-005.
+      const { idp_cert: _idpCert, ...restMetadata } = connection.metadata;
       const updated = await updateIdentityConnection(connection.id, {
         metadata: isSaml
-          ? { ...connection.metadata, idp_entity_id: idpEntityId.trim(), idp_sso_url: idpSsoUrl.trim(), idp_cert: idpCert.trim() }
+          ? { ...restMetadata, idp_entity_id: idpEntityId.trim(), idp_sso_url: idpSsoUrl.trim() }
           : { ...connection.metadata, issuer: issuer.trim(), client_id: clientId.trim(), authorization_endpoint: authorizationEndpoint.trim(), token_endpoint: tokenEndpoint.trim(), jwks_uri: jwksUri.trim() },
       });
       onUpdated(updated);
@@ -541,17 +641,6 @@ function IdentityConnectionRow({ connection, orgId, onUpdated }: { connection: I
                   <label className="text-xs font-medium" htmlFor={`idp-sso-${connection.id}`}>IdP SSO URL (HTTP-Redirect)</label>
                   <Input id={`idp-sso-${connection.id}`} value={idpSsoUrl} onChange={(e) => setIdpSsoUrl(e.target.value)} placeholder="https://idp.exemple.edu/sso" />
                 </div>
-                <div className="space-y-1 sm:col-span-2">
-                  <label className="text-xs font-medium" htmlFor={`idp-cert-${connection.id}`}>Certificat de signature IdP (x509, PEM)</label>
-                  <textarea
-                    id={`idp-cert-${connection.id}`}
-                    className="w-full rounded-md border p-2 text-xs font-mono"
-                    style={{ borderColor: "var(--ap-line)", color: "var(--ap-ink)", minHeight: 90 }}
-                    value={idpCert}
-                    onChange={(e) => setIdpCert(e.target.value)}
-                    placeholder="-----BEGIN CERTIFICATE-----&#10;...&#10;-----END CERTIFICATE-----"
-                  />
-                </div>
                 <div className="space-y-1">
                   <label className="text-xs font-medium" htmlFor={`mode-${connection.id}`}>Mode d'activation (INT-002)</label>
                   <select
@@ -576,6 +665,10 @@ function IdentityConnectionRow({ connection, orgId, onUpdated }: { connection: I
                 )}
               </div>
               <SamlSpMetadataPanel />
+              <div className="mt-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Certificat de signature IdP — rotation (INT-005)</p>
+                <SamlCertRotationPanel connectionId={connection.id} />
+              </div>
             </div>
           ) : (
             <div>

@@ -70,8 +70,29 @@ Deno.serve(async (req) => {
     const meta = (connection.metadata ?? {}) as Record<string, unknown>;
     const idpEntityId = typeof meta.idp_entity_id === "string" ? meta.idp_entity_id : null;
     const idpSsoUrl = typeof meta.idp_sso_url === "string" ? meta.idp_sso_url : null;
-    const idpCert = typeof meta.idp_cert === "string" ? meta.idp_cert : null;
-    if (!idpEntityId || !idpSsoUrl || !idpCert) {
+    if (!idpEntityId || !idpSsoUrl) {
+      return jsonBody("connection_not_configured");
+    }
+
+    // INT-005: the signing cert lives in identity_connection_certs now, not
+    // metadata.idp_cert (20260822010000_saml_cert_rotation.sql) — 0..N certs
+    // per connection, each independently active/retired, so a rotation
+    // overlap can have both an outgoing and incoming cert verifying at once.
+    // Which *specific* active cert samlify's IdentityProvider gets built with
+    // here doesn't matter for correctness — this is only building the
+    // unsigned AuthnRequest redirect (see this file's header), samlify's
+    // constructor just requires *a* signingCert string to exist. The real,
+    // per-response signature check against every active cert happens in
+    // saml-acs when the IdP's Response comes back.
+    const { data: certRow } = await supabase
+      .from("identity_connection_certs")
+      .select("cert")
+      .eq("connection_id", connection.id)
+      .eq("status", "active")
+      .limit(1)
+      .maybeSingle();
+    const idpCert = certRow?.cert ?? null;
+    if (!idpCert) {
       return jsonBody("connection_not_configured");
     }
 

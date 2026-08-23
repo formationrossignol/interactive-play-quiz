@@ -79,8 +79,24 @@ Deno.serve(async (req) => {
     const meta = (connection.metadata ?? {}) as Record<string, unknown>;
     const idpEntityId = typeof meta.idp_entity_id === "string" ? meta.idp_entity_id : null;
     const idpSsoUrl = typeof meta.idp_sso_url === "string" ? meta.idp_sso_url : null;
-    const idpCert = typeof meta.idp_cert === "string" ? meta.idp_cert : null;
-    if (!idpEntityId || !idpSsoUrl || !idpCert) {
+    if (!idpEntityId || !idpSsoUrl) {
+      await journalRejected(supabase, connection.id, "connection_not_configured");
+      return jsonError("connection_not_configured", 500);
+    }
+
+    // INT-005: 0..N certs can be 'active' at once (identity_connection_certs,
+    // 20260822010000_saml_cert_rotation.sql) — during a rotation window both
+    // the outgoing and incoming IdP cert verify. Newest first: after a
+    // rotation most real responses are signed by the new cert, so this is
+    // the common case, not a correctness requirement.
+    const { data: certRows, error: certsError } = await supabase
+      .from("identity_connection_certs")
+      .select("cert")
+      .eq("connection_id", connection.id)
+      .eq("status", "active")
+      .order("activated_at", { ascending: false });
+    const idpCerts = (certRows ?? []).map((r) => r.cert as string);
+    if (certsError || idpCerts.length === 0) {
       await journalRejected(supabase, connection.id, "connection_not_configured");
       return jsonError("connection_not_configured", 500);
     }
@@ -89,16 +105,34 @@ Deno.serve(async (req) => {
     const spAcsUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/saml-acs`;
 
     let claims;
-    try {
-      claims = await verifySamlResponse(
-        samlResponse,
-        { idpEntityId, idpSsoUrl, idpCert, spEntityId, spAcsUrl },
-        loginState.request_id,
-      );
-    } catch (err) {
-      const reason: SamlRejectReason = err instanceof SamlValidationError ? err.reason : "bad_signature_or_cert";
-      await journalRejected(supabase, connection.id, reason);
-      return jsonError(reason, 401);
+    let lastSignatureError: SamlValidationError | null = null;
+    for (const idpCert of idpCerts) {
+      try {
+        claims = await verifySamlResponse(
+          samlResponse,
+          { idpEntityId, idpSsoUrl, idpCert, spEntityId, spAcsUrl },
+          loginState.request_id,
+        );
+        break;
+      } catch (err) {
+        if (err instanceof SamlValidationError && err.reason === "bad_signature_or_cert") {
+          // This cert just isn't the one that signed the response — try the
+          // next one in the (possibly overlapping) active set.
+          lastSignatureError = err;
+          continue;
+        }
+        // Any other rejection reason only surfaces once a cert's signature
+        // has already matched (verifySamlResponse checks signature first) —
+        // that's the real signer, so this failure is authoritative, not a
+        // reason to keep trying other certs.
+        const reason: SamlRejectReason = err instanceof SamlValidationError ? err.reason : "bad_signature_or_cert";
+        await journalRejected(supabase, connection.id, reason);
+        return jsonError(reason, 401);
+      }
+    }
+    if (!claims) {
+      await journalRejected(supabase, connection.id, "bad_signature_or_cert");
+      return jsonError(lastSignatureError?.reason ?? "bad_signature_or_cert", 401);
     }
 
     const result = await resolveSsoLoginAndMintSession(supabase, connection, claims.subject, claims.rawAttributes, loginState.redirect_to);

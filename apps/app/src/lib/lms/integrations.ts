@@ -15,6 +15,20 @@ export interface IdentityConnection {
   created_at: string;
 }
 
+/** SAML-only (INT-005) — 0..N per connection, each independently
+ *  'active'/'retired'. Multiple 'active' rows *is* the rotation overlap
+ *  window: saml-acs tries each until one's signature matches. */
+export interface IdentityConnectionCert {
+  id: string;
+  connection_id: string;
+  cert: string;
+  label: string | null;
+  status: 'active' | 'retired';
+  activated_at: string;
+  retired_at: string | null;
+  created_at: string;
+}
+
 export interface IdentityDomain {
   id: string;
   org_id: string;
@@ -313,6 +327,31 @@ export function samlSpEntityId(): string {
 }
 export function samlSpAcsUrl(): string {
   return `${supabaseUrl}/functions/v1/saml-acs`;
+}
+
+/** INT-005 — certificate rotation with a real overlap window. See
+ *  add_saml_idp_cert()/retire_saml_idp_cert() (20260822010000_saml_cert_rotation.sql):
+ *  adding a cert starts the overlap (both old and new verify), retiring the
+ *  old one ends it — refused server-side while it's the only active cert. */
+export async function listSamlIdpCerts(connectionId: string): Promise<IdentityConnectionCert[]> {
+  const { data, error } = await supabase
+    .from('identity_connection_certs')
+    .select('*')
+    .eq('connection_id', connectionId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as IdentityConnectionCert[];
+}
+
+export async function addSamlIdpCert(connectionId: string, cert: string, label?: string): Promise<IdentityConnectionCert> {
+  const { data, error } = await supabase.rpc('add_saml_idp_cert', { p_connection_id: connectionId, p_cert: cert, p_label: label ?? null });
+  if (error) throw error;
+  return data as IdentityConnectionCert;
+}
+
+export async function retireSamlIdpCert(connectionId: string, certId: string): Promise<void> {
+  const { error } = await supabase.rpc('retire_saml_idp_cert', { p_connection_id: connectionId, p_cert_id: certId });
+  if (error) throw error;
 }
 
 export async function listLtiRegistrations(orgId: string): Promise<LtiRegistration[]> {
