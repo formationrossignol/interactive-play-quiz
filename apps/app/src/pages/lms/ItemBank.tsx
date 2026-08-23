@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ClipboardList, FlaskConical, Layers, Plus, X } from "lucide-react";
+import { ClipboardList, FlaskConical, Layers, Plus, Sparkles, X } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/ui/page-header";
 import { ExplorerEmptyState } from "@/components/content/ExplorerEmptyState";
@@ -59,6 +59,16 @@ import {
   type ItemCollectionMember,
   type ItemPermission,
 } from "@/lib/lms/itemCollections";
+import {
+  getOrgAiSettings,
+  listItemAiSuggestions,
+  requestItemAiSuggestion,
+  reviewItemAiSuggestion,
+  updateOrgAiSettings,
+  type AiSuggestionType,
+  type ItemAiSuggestion,
+  type OrgAiSettings,
+} from "@/lib/lms/itemAiSuggestions";
 
 const STAFF_ROLES = new Set(["trainer", "pedago", "admin"]);
 /** All formats supported by the assessment runner. Rich formats are stored
@@ -179,6 +189,146 @@ function SimulateForm({ item, revision }: { item: AssessmentItem; revision: Item
         )}
       </div>
     </div>
+  );
+}
+
+const SUGGESTION_LABELS: Record<AiSuggestionType, string> = {
+  generation: "Génération depuis une source",
+  distractors: "Distracteurs",
+  bias_check: "Vérification biais/ambiguïté",
+};
+const ISSUE_TYPE_LABELS: Record<string, string> = {
+  duplicate: "Doublon probable", unintended_hint: "Indice involontaire", ambiguity: "Ambiguïté",
+  bias: "Biais", scoring_incoherence: "Barème incohérent",
+};
+
+/** ASM "IA d'assistance" : tout contenu généré démarre en brouillon avec
+ *  marqueur de provenance (modèle, demandeur, horodatage) et exige une
+ *  validation humaine explicite — accepter ne crée jamais de révision tout
+ *  seul, l'auteur recopie/édite le contenu proposé dans une nouvelle
+ *  révision (create_item_revision()). La clé de réponse n'est jamais
+ *  envoyée au modèle : distracteurs/biais ne voient que l'énoncé et les
+ *  options visibles côté client. */
+function AiSuggestionsPanel({ item, latestRevision }: { item: AssessmentItem; latestRevision: ItemRevision | undefined }) {
+  const [suggestions, setSuggestions] = useState<ItemAiSuggestion[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [sourceExcerpt, setSourceExcerpt] = useState("");
+  const [requesting, setRequesting] = useState<AiSuggestionType | null>(null);
+  const [reviewing, setReviewing] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const reload = () => listItemAiSuggestions(item.id).then(setSuggestions).catch(showError).finally(() => setLoading(false));
+  useEffect(() => { reload(); }, [item.id]);
+
+  const contextOptions = latestRevision?.prompt.options?.map((o) => o.label);
+
+  const request = async (type: AiSuggestionType) => {
+    setError(null);
+    if (type === "generation" && !sourceExcerpt.trim()) { setError("Collez un extrait source d'abord."); return; }
+    if (type !== "generation" && !latestRevision) { setError("Créez au moins une révision d'abord."); return; }
+    setRequesting(type);
+    try {
+      const result = await requestItemAiSuggestion({
+        itemId: item.id,
+        suggestionType: type,
+        sourceExcerpt: type === "generation" ? sourceExcerpt.trim() : undefined,
+        itemContext: type !== "generation" ? { itemType: item.item_type, promptText: latestRevision!.prompt.text, options: contextOptions } : undefined,
+      });
+      setSuggestions((prev) => [result, ...prev]);
+      if (type === "generation") setSourceExcerpt("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur lors de la génération.");
+    } finally {
+      setRequesting(null);
+    }
+  };
+
+  const review = async (id: string, accept: boolean) => {
+    setReviewing(id);
+    try {
+      const updated = await reviewItemAiSuggestion(id, accept);
+      setSuggestions((prev) => prev.map((s) => (s.id === id ? updated : s)));
+    } catch (err) { showError(err); }
+    finally { setReviewing(null); }
+  };
+
+  if (loading) return <ListSkeleton rows={1} withAvatar={false} />;
+
+  return (
+    <div className="mt-3 border-t pt-3 space-y-3">
+      <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5"><Sparkles size={14} /> Suggestions IA — brouillon, jamais une note officielle sans validation</p>
+      <div className="space-y-2">
+        <div className="flex flex-wrap items-end gap-2">
+          <div className="min-w-[260px] flex-1 space-y-1">
+            <label className="text-xs" htmlFor={`ai-source-${item.id}`}>Extrait source (pour génération)</label>
+            <Input id={`ai-source-${item.id}`} value={sourceExcerpt} onChange={(e) => setSourceExcerpt(e.target.value)} placeholder="Collez un paragraphe de cours…" />
+          </div>
+          <Button type="button" variant="outline" size="sm" loading={requesting === "generation"} onClick={() => void request("generation")}>Générer</Button>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" variant="outline" size="sm" loading={requesting === "distractors"} disabled={!latestRevision} onClick={() => void request("distractors")}>Proposer des distracteurs</Button>
+          <Button type="button" variant="outline" size="sm" loading={requesting === "bias_check"} disabled={!latestRevision} onClick={() => void request("bias_check")}>Vérifier biais/ambiguïté</Button>
+        </div>
+        {error && <p className="text-sm" style={{ color: "var(--ap-danger)" }}>{error}</p>}
+      </div>
+      {suggestions.length > 0 && (
+        <ul className="space-y-2">
+          {suggestions.map((s) => (
+            <li key={s.id} className="rounded-md border p-3 space-y-2 text-sm" style={{ background: "var(--ap-paper-2)" }}>
+              <div className="flex items-center justify-between">
+                <span className="font-medium flex items-center gap-1.5"><Sparkles size={12} /> {SUGGESTION_LABELS[s.suggestion_type]}</span>
+                <span className="text-xs text-muted-foreground">{s.status} · {new Date(s.created_at).toLocaleString("fr-FR")}{s.model ? ` · ${s.model}` : ""}</span>
+              </div>
+              {s.status === "pending" && <p className="text-xs text-muted-foreground">Génération en cours…</p>}
+              {s.status === "failed" && <p className="text-xs" style={{ color: "var(--ap-danger)" }}>Échec — {String((s.output as { error?: string }).error ?? "erreur inconnue")}</p>}
+              {(s.status === "ready" || s.status === "accepted" || s.status === "rejected") && (
+                <AiSuggestionOutput type={s.suggestion_type} output={s.output} />
+              )}
+              {s.status === "ready" && (
+                <div className="flex items-center gap-2">
+                  <Button type="button" size="sm" loading={reviewing === s.id} onClick={() => void review(s.id, true)}>Accepter</Button>
+                  <Button type="button" variant="ghost" size="sm" loading={reviewing === s.id} onClick={() => void review(s.id, false)}>Rejeter</Button>
+                </div>
+              )}
+              {s.status === "accepted" && <p className="text-xs" style={{ color: "var(--ap-pres)" }}>Accepté — recopiez le contenu dans une nouvelle révision ci-dessus.</p>}
+              {s.status === "rejected" && <p className="text-xs text-muted-foreground">Rejeté.</p>}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function AiSuggestionOutput({ type, output }: { type: AiSuggestionType; output: Record<string, unknown> }) {
+  if (type === "generation") {
+    const o = output as { prompt_text?: string; options?: string[]; suggested_correct?: string; difficulty?: string; cognitive_level?: string; citations?: string[] };
+    return (
+      <div className="space-y-1">
+        {o.prompt_text && <p><strong>Énoncé :</strong> {o.prompt_text}</p>}
+        {o.options && o.options.length > 0 && <p><strong>Options :</strong> {o.options.join(" · ")}</p>}
+        {o.suggested_correct && <p><strong>Réponse proposée :</strong> {o.suggested_correct}</p>}
+        {(o.difficulty || o.cognitive_level) && <p className="text-xs text-muted-foreground">{o.difficulty} · {o.cognitive_level}</p>}
+        {o.citations && o.citations.length > 0 && <p className="text-xs text-muted-foreground italic">« {o.citations.join(" » · « ")} »</p>}
+      </div>
+    );
+  }
+  if (type === "distractors") {
+    const o = output as { distractors?: Array<{ label: string; rationale: string }> };
+    if (!o.distractors?.length) return <p className="text-xs text-muted-foreground">Aucun distracteur proposé.</p>;
+    return <ul className="list-disc pl-4 space-y-0.5">{o.distractors.map((d, i) => <li key={i}>{d.label} <span className="text-xs text-muted-foreground">— {d.rationale}</span></li>)}</ul>;
+  }
+  const o = output as { issues?: Array<{ type: string; severity: string; description: string; suggestion: string }> };
+  if (!o.issues?.length) return <p className="text-xs" style={{ color: "var(--ap-pres)" }}>Aucun problème détecté.</p>;
+  return (
+    <ul className="space-y-1">
+      {o.issues.map((issue, i) => (
+        <li key={i} className="rounded border-l-2 pl-2" style={{ borderColor: issue.severity === "high" ? "var(--ap-danger)" : "var(--ap-border)" }}>
+          <strong>{ISSUE_TYPE_LABELS[issue.type] ?? issue.type}</strong> ({issue.severity}) — {issue.description}
+          {issue.suggestion && <div className="text-xs text-muted-foreground">Suggestion : {issue.suggestion}</div>}
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -492,6 +642,7 @@ function ItemRevisions({ item }: { item: AssessmentItem }) {
           ))}
         </ul>
       )}
+      <AiSuggestionsPanel item={item} latestRevision={revisions[0]} />
     </div>
   );
 }
@@ -1119,6 +1270,73 @@ function PendingReviewPanel({ orgId }: { orgId: string }) {
   );
 }
 
+/** ASM "IA d'assistance" : "L'organisation contrôle fournisseur,
+ *  conservation, budget et désactivation." Read-only for trainers
+ *  (org_ai_settings_staff_read), édition réservée pedago/admin (RLS
+ *  org_ai_settings_admin_manage) — le bouton "Enregistrer" n'est rendu que
+ *  pour ces rôles. */
+function AiSettingsPanel({ orgId, canManage }: { orgId: string; canManage: boolean }) {
+  const [settings, setSettings] = useState<OrgAiSettings | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [aiEnabled, setAiEnabled] = useState(true);
+  const [monthlyLimit, setMonthlyLimit] = useState("");
+  const [retentionDays, setRetentionDays] = useState("90");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    getOrgAiSettings(orgId).then((row) => {
+      setSettings(row);
+      if (row) {
+        setAiEnabled(row.ai_enabled);
+        setMonthlyLimit(row.monthly_request_limit != null ? String(row.monthly_request_limit) : "");
+        setRetentionDays(String(row.retention_days));
+      }
+    }).catch(showError).finally(() => setLoading(false));
+  }, [orgId]);
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      const updated = await updateOrgAiSettings(orgId, {
+        ai_enabled: aiEnabled,
+        monthly_request_limit: monthlyLimit.trim() ? Number(monthlyLimit) : null,
+        retention_days: Number(retentionDays) || 90,
+      });
+      setSettings(updated);
+    } catch (err) { showError(err); }
+    finally { setSaving(false); }
+  };
+
+  if (loading) return <ListSkeleton rows={1} withAvatar={false} />;
+
+  return (
+    <section className="product-list-panel p-5 mt-4">
+      <div className="product-panel-heading -mx-5 -mt-5 mb-4">
+        <div><h2>Suggestions IA — contrôles organisation</h2><p>Fournisseur, budget mensuel et désactivation (ASM, section « IA d'assistance »).</p></div>
+      </div>
+      <div className="flex flex-wrap items-end gap-4">
+        <label className="flex items-center gap-1.5 text-sm">
+          <input type="checkbox" checked={aiEnabled} disabled={!canManage} onChange={(e) => setAiEnabled(e.target.checked)} /> Suggestions IA activées
+        </label>
+        <div className="space-y-1">
+          <label className="text-xs" htmlFor="ai-provider">Fournisseur</label>
+          <p id="ai-provider" className="h-9 flex items-center text-sm text-muted-foreground">{settings?.provider ?? "anthropic"}</p>
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs" htmlFor="ai-monthly-limit">Budget mensuel (nb requêtes, vide = illimité)</label>
+          <Input id="ai-monthly-limit" type="number" min={0} disabled={!canManage} value={monthlyLimit} onChange={(e) => setMonthlyLimit(e.target.value)} className="w-40" />
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs" htmlFor="ai-retention">Conservation (jours)</label>
+          <Input id="ai-retention" type="number" min={1} disabled={!canManage} value={retentionDays} onChange={(e) => setRetentionDays(e.target.value)} className="w-28" />
+        </div>
+        {canManage && <Button size="sm" loading={saving} onClick={() => void save()}>Enregistrer</Button>}
+      </div>
+      {!canManage && <p className="mt-2 text-xs text-muted-foreground">Lecture seule — réservé aux responsables et administrateurs.</p>}
+    </section>
+  );
+}
+
 export default function LmsItemBank() {
   const [memberships, setMemberships] = useState<OrgMembership[]>([]);
   const [items, setItems] = useState<AssessmentItem[]>([]);
@@ -1142,6 +1360,7 @@ export default function LmsItemBank() {
   }, [activeOrgId]);
 
   const isStaff = memberships.some((m) => m.org_id === activeOrgId && STAFF_ROLES.has(m.role));
+  const isAdmin = memberships.some((m) => m.org_id === activeOrgId && (m.role === "pedago" || m.role === "admin"));
 
   const handleCreateItem = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1246,6 +1465,7 @@ export default function LmsItemBank() {
         <PendingReviewPanel orgId={activeOrgId} />
         <CollectionsPanel orgId={activeOrgId} items={items} />
         <AssessmentsPanel orgId={activeOrgId} items={items} />
+        <AiSettingsPanel orgId={activeOrgId} canManage={isAdmin} />
       </div>
     </AppLayout>
   );
