@@ -92,6 +92,19 @@ export async function listOrgSessions(orgId: string): Promise<CourseSession[]> {
   return (data ?? []) as CourseSession[];
 }
 
+/** Sessions actually delivering a given content item — for attaching a
+ *  content_deployments row (spec 10, CNT-011) to the right session. Only
+ *  'course' content has a catalogued offering at all today. */
+export async function listSessionsForContent(contentId: string): Promise<CourseSession[]> {
+  const { data, error } = await supabase
+    .from('course_sessions')
+    .select('*, course_offerings!inner(content_id)')
+    .eq('course_offerings.content_id', contentId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as CourseSession[];
+}
+
 /** Creates a session for an already-catalogued offering. Registrar/pedago/admin only (RLS). */
 export async function createCourseSession(input: {
   orgId: string; offeringId: string; label: string; code: string;
