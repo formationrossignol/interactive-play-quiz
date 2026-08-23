@@ -7,7 +7,7 @@ qui est déjà fait/vérifié et pourquoi, voir `VALIDATION-STATUS.md`. Chaque
 item ici reste formulé exactement comme dans ce document source, pour
 pouvoir s'y référer facilement.
 
-**Progression globale : 76/85 items (89%)** — dénominateur du programme LMS
+**Progression globale : 77/85 items (91%)** — dénominateur du programme LMS
 proprement dit (§01-10) ; 4 items supplémentaires listés en fin de document
 sous « Réconciliation LMS ↔ systèmes pré-existants » sont explicitement hors
 périmètre et non comptés ici. Fermés : §02 Inscriptions (7/7), §03
@@ -25,9 +25,9 @@ signature HMAC réelle) et rotation de certificat SAML avec fenêtre de
 chevauchement réelle tous faits ; seul reste ouvert le provisioning
 automatique d'un compte pour un `sub` jamais vu — posture délibérée
 documentée dans le code, pas un gap technique). §10 Gouvernance de contenu
-(3/8 — workflow de revue complet, déploiements réels et gestion des assets
-faits ; templates/blocs, brand kits, localisation, exports SCORM/xAPI/QTI
-et diff structurel entre versions restent ouverts).
+(4/8 — workflow de revue complet, déploiements réels, gestion des assets et
+diff structurel entre versions faits ; templates/blocs, brand kits,
+localisation et exports SCORM/xAPI/QTI restent ouverts).
 
 ## Dépendances qui bloquent plusieurs items à la fois
 
@@ -186,7 +186,7 @@ et diff structurel entre versions restent ouverts).
 - [x] Gestion des assets (remplacement versionné, recherche d'usages avant suppression — CNT-020 à 023) — `20260823030000_media_asset_library.sql`. **Vraie faille trouvée avant tout autre code** : `media_assets_org` était une policy `for all` (select/insert/update/delete) sans aucun garde applicatif — un simple `.delete()` client aurait pu faire disparaître un asset utilisé ailleurs, silencieusement, dès qu'une UI l'aurait appelé (aucune UI n'existait encore, donc pas exploitée en pratique, mais la policy était déjà là, ouverte). Scindée en select/insert/update (permissif, trainer/pedago/admin) + **aucune policy delete** — `delete_media_asset()` (RPC, pedago/admin seulement, décision volontaire : un asset partagé peut être utilisé par du contenu qu'un trainer donné ne voit pas) est désormais le seul chemin de suppression, et il vérifie `asset_usages` avant de supprimer quoi que ce soit. Bucket privé `content-media-assets` (même convention que `assignment-submissions` : URLs signées 5 min, jamais d'accès direct). CNT-021 (remplacer = nouvelle version, jamais un écrasement) : `media_asset_versions.version` n'avait aucun écrivain — trigger `_set_media_asset_version_number()` calcule le prochain numéro en verrouillant la ligne `media_assets` parente (`for update`) avant de lire le max, pas un calcul côté client qui aurait pu collisionner sous upload concurrent. CNT-022 : `check_asset_deletable()` (diagnostic en lecture seule, liste les usages bloquants) + `record_asset_usage()`/`remove_asset_usage()` — **aucun scan automatique de `content.data`** pour détecter les usages : chaque builder a sa propre forme JSON, deviner un scan générique aurait été exactement l'erreur déjà commise puis corrigée ailleurs dans ce programme (migration des tags de compétences, §03) — l'auteur enregistre explicitement « j'utilise cet asset ici » depuis un sélecteur média, même posture que les preuves/alignements de compétences. CNT-023 : URLs signées faites ; scan antivirus non fait (même item déjà différé pour `submission_files.scan_status`, spec 01 — vendor à choisir, pas une deuxième question ouverte) ; quotas/types autorisés en validation client uniquement (taille max 50 Mo), aucune table de quota par org (absente du modèle indicatif aussi). UI : nouvelle page `/lms/media-library` — upload, métadonnées (licence/texte alternatif/langue), versions avec téléchargement signé, liaison/déliaison à un contenu, suppression avec la liste des usages bloquants affichée avant l'échec plutôt qu'une erreur RPC brute. Vérifié : migration rejouée contre un schéma stub avec `storage`/`content`/`media_assets` reproduisant les vraies tables (Postgres jetable) — numérotation de version race-safe confirmée, suppression bloquée tant qu'un usage existe, `.delete()` direct sous rôle `authenticated` réel refusé par RLS (0 ligne affectée, pas juste une erreur applicative), suppression réussie une fois l'usage retiré avec cascade réelle sur les versions, usage cross-org rejeté ; `tsc`/`eslint` propres. **Non testé en conditions réelles**
 - [ ] Localisation complète (L10N-001 à L10N-006 : extraction de segments, glossaires, diff source, traduction IA) — non traitée du tout, explicitement hors scope de cette fondation
 - [ ] Export SCORM/xAPI/cmi5/QTI (PUB-002/003) et liens de preview expirables (PUB-004)
-- [ ] Comparaison structurelle entre versions (diff ajouts/suppressions/déplacements — CNT-003)
+- [x] Comparaison structurelle entre versions (diff ajouts/suppressions/déplacements — CNT-003) — `contentDiff.ts`, aucune migration : `content_versions.snapshot` porte déjà l'état complet de chaque version, rien à stocker de plus. Diff **générique**, pas par type : chaque builder de ce codebase a sa propre forme JSON sous `content.data`, deviner un schéma par type ici aurait répété exactement l'erreur déjà commise puis corrigée ailleurs dans ce programme (migration des tags de compétences §03, drag-drop/hotspot §05) — la « vue adaptée au type » de la spec n'est pas construite, la vue générique l'est. Les tableaux dont les éléments portent un `id` stable (vrai pour questions/options dans les builders quiz/exam/assessment de ce codebase) sont appariés par id plutôt que par position — un réordonnancement ressort comme un vrai déplacement (`moved`, position avant→après), pas comme N ajouts+suppressions non liés ; sans `id` stable sur les deux côtés, repli sur un diff positionnel (une insertion au milieu du tableau ressort comme une série de « changé » plutôt qu'un « ajouté » — limite documentée, pas un bug caché). UI : panneau « Comparer deux versions » dans `/lms/content-governance`, deux sélecteurs de version, liste de lignes lisibles (`+`/`−`/`~`/`⇅`). Vérifié : 14 cas (clés ajoutées/supprimées/modifiées, réordonnancement par id, ajout/suppression par id, changement imbriqué sur un item apparié, repli positionnel, changement de type sans crash, troncature d'affichage) — **suite `vitest` du dépôt cassée dans cet environnement** (`ERR_PACKAGE_PATH_NOT_EXPORTED` sur `vite`, confirmé pré-existant en lançant un test déjà existant du dépôt, pas causé par ce changement), donc vérifié via un runner `tsx` autonome important le vrai module — les 14 cas passent réellement, juste hors du harnais `npm test` habituel ; `tsc`/`eslint` propres.
 
 ## Réconciliation LMS ↔ systèmes pré-existants — items explicitement laissés de côté
 
@@ -259,3 +259,15 @@ appelé. Scindée, suppression désormais RPC-only avec vérification d'usages.
 §10 à 3/8. Reste ouvert, tout indépendant : modèles/blocs réutilisables,
 brand kits, localisation, exports SCORM/xAPI/QTI, diff structurel entre
 versions (CNT-003). Programme LMS à 76/85 (89%).
+
+~~Diff structurel entre versions~~ (CNT-003) fait aussi, même session
+(`contentDiff.ts`, voir §10) — aucune migration, pur calcul côté client sur
+les snapshots déjà stockés. Générique, pas par type (même posture assumée
+qu'ailleurs dans ce programme plutôt que deviner une forme par builder).
+**Découverte en cours de route** : la suite `vitest` du dépôt est cassée
+dans cet environnement (`ERR_PACKAGE_PATH_NOT_EXPORTED` sur `vite`,
+confirmé pré-existant — un test déjà présent dans le dépôt échoue à
+l'identique) — vérifié à la place via un runner autonome important le vrai
+module (14 cas, tous verts). §10 à 4/8. Reste ouvert, tout indépendant :
+modèles/blocs réutilisables, brand kits, localisation, exports SCORM/xAPI/
+QTI. Programme LMS à 77/85 (91%).

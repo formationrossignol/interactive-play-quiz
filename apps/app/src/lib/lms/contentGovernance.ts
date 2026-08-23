@@ -9,6 +9,10 @@ export interface ContentVersion {
   content_id: string;
   version: number;
   status: 'draft' | 'in_review' | 'changes_requested' | 'approved' | 'published' | 'deprecated' | 'archived';
+  /** Full immutable snapshot — already returned by `select('*')`, just
+   *  wasn't typed until CNT-003's diff needed to read it back. */
+  snapshot: Record<string, unknown>;
+  hash: string;
   changelog: string | null;
   approved_by: string | null;
   created_at: string;

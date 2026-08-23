@@ -11,6 +11,7 @@ import { showError } from "@/lib/errorTaxonomy";
 import { useSEO } from "@/hooks/useSEO";
 import { listRecentContent } from "@/lib/content/contentRepo";
 import type { ContentRow } from "@/lib/content/types";
+import { describeDiffChange, diffContentSnapshots } from "@/lib/lms/contentDiff";
 import { listSessionsForContent, type CourseSession } from "@/lib/lms/enrollment";
 import {
   addContentComment,
@@ -225,6 +226,44 @@ function DeploymentsPanel({ contentId }: { contentId: string }) {
   );
 }
 
+/** CNT-003: structural diff between two versions of the same content,
+ *  entirely client-side — content_versions.snapshot already carries the
+ *  full state, nothing new to fetch. Generic across every content type
+ *  (see contentDiff.ts's header for why a per-type view isn't built). */
+function VersionDiffPanel({ versions }: { versions: ContentVersion[] }) {
+  const sorted = [...versions].sort((a, b) => a.version - b.version);
+  const [fromVersion, setFromVersion] = useState(sorted[sorted.length - 2]?.version ?? sorted[0].version);
+  const [toVersion, setToVersion] = useState(sorted[sorted.length - 1].version);
+
+  const from = versions.find((v) => v.version === fromVersion);
+  const to = versions.find((v) => v.version === toVersion);
+  const changes = from && to ? diffContentSnapshots(from.snapshot, to.snapshot) : [];
+
+  return (
+    <div>
+      <h4 className="text-sm font-medium mb-2">Comparer deux versions (CNT-003)</h4>
+      <div className="flex flex-wrap items-center gap-2 mb-2">
+        <select className="h-8 rounded-md border bg-transparent px-2 text-xs" style={{ borderColor: "var(--ap-line)", color: "var(--ap-ink)" }} value={fromVersion} onChange={(e) => setFromVersion(Number(e.target.value))} aria-label="Depuis la version">
+          {sorted.map((v) => <option key={v.id} value={v.version}>v{v.version}</option>)}
+        </select>
+        <span className="text-xs text-muted-foreground">→</span>
+        <select className="h-8 rounded-md border bg-transparent px-2 text-xs" style={{ borderColor: "var(--ap-line)", color: "var(--ap-ink)" }} value={toVersion} onChange={(e) => setToVersion(Number(e.target.value))} aria-label="Vers la version">
+          {sorted.map((v) => <option key={v.id} value={v.version}>v{v.version}</option>)}
+        </select>
+      </div>
+      {fromVersion === toVersion ? (
+        <p className="text-xs text-muted-foreground">Choisissez deux versions différentes.</p>
+      ) : changes.length === 0 ? (
+        <p className="text-xs text-muted-foreground">Aucune différence de contenu entre ces deux versions.</p>
+      ) : (
+        <ul className="space-y-0.5 rounded border p-2 font-mono text-xs max-h-64 overflow-y-auto">
+          {changes.map((c, i) => <li key={i}>{describeDiffChange(c)}</li>)}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 function ContentVersionPanel({ item }: { item: ContentRow }) {
   const [versions, setVersions] = useState<ContentVersion[]>([]);
   const [comments, setComments] = useState<ContentComment[]>([]);
@@ -377,6 +416,8 @@ function ContentVersionPanel({ item }: { item: ContentRow }) {
           ))}
         </ul>
       )}
+
+      {versions.length >= 2 && <VersionDiffPanel versions={versions} />}
 
       <DeploymentsPanel contentId={item.id} />
 
