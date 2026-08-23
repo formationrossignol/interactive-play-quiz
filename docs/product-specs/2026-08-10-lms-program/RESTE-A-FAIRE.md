@@ -7,7 +7,7 @@ qui est déjà fait/vérifié et pourquoi, voir `VALIDATION-STATUS.md`. Chaque
 item ici reste formulé exactement comme dans ce document source, pour
 pouvoir s'y référer facilement.
 
-**Progression globale : 74/85 items (87%)** — dénominateur du programme LMS
+**Progression globale : 75/85 items (88%)** — dénominateur du programme LMS
 proprement dit (§01-10) ; 4 items supplémentaires listés en fin de document
 sous « Réconciliation LMS ↔ systèmes pré-existants » sont explicitement hors
 périmètre et non comptés ici. Fermés : §02 Inscriptions (7/7), §03
@@ -24,10 +24,10 @@ question d'autorité), API publique + webhooks (endpoints en lecture seule,
 signature HMAC réelle) et rotation de certificat SAML avec fenêtre de
 chevauchement réelle tous faits ; seul reste ouvert le provisioning
 automatique d'un compte pour un `sub` jamais vu — posture délibérée
-documentée dans le code, pas un gap technique). Quasi vierge : §10
-Gouvernance de contenu (1/8 — workflow de revue complet fait ; templates/
+documentée dans le code, pas un gap technique). §10 Gouvernance de contenu
+(2/8 — workflow de revue complet et déploiements réels faits ; templates/
 blocs, brand kits, gestion des assets, localisation, exports SCORM/xAPI/
-QTI, déploiements réels et diff structurel entre versions restent ouverts).
+QTI et diff structurel entre versions restent ouverts).
 
 ## Dépendances qui bloquent plusieurs items à la fois
 
@@ -180,7 +180,7 @@ QTI, déploiements réels et diff structurel entre versions restent ouverts).
 ## 10 — Gouvernance, versionnement, localisation et diffusion du contenu
 
 - [x] Workflow de revue complet (état `in_review`/`changes_requested`/`approved`, invalidation d'approbation après modification — CNT-006/009) — `20260823010000_content_review_workflow.sql`. Les tables existaient (`content_versions` avec ses 7 états, `review_requests`, `review_steps`, `content_releases`) depuis `20260811000000_content_governance.sql` mais avaient exactement deux écrivains — `publish_content_version()`/`restore_content_version()` — tous deux sautant directement à `published` ; aucune fonction ne créait jamais de ligne `draft`, ne faisait jamais transiter vers `in_review`, n'enregistrait jamais de décision de revue, n'écrivait jamais dans `content_releases` (0 ligne possible depuis sa création). Nouveau : `save_content_draft()` (même contrat de concurrence optimiste que `publish_content_version()`, atterrit sur `draft`), `submit_content_for_review()` (`draft`→`in_review`, ouvre `review_requests`), `submit_review_decision()` (seul écrivain de `review_steps` — `approved`/`changes_requested`/`comment` ; un reviewer ne peut jamais décider sur sa propre version, séparation auteur/approbateur de CNT-007 câblée en dur plutôt qu'en option par org — la version complète, configurable, reste à faire), `publish_approved_version()` (exige `status='approved'`, seul écrivain réel de `content_releases`, canal + note de release). CNT-009 (« toute modification après approbation invalide l'approbation ») ne demandait aucune mécanique supplémentaire : `content_versions.snapshot` n'est jamais modifié après insertion, toute nouvelle édition crée une nouvelle ligne qui démarre à `draft` — l'immutabilité déjà en place suffit. `publish_content_version()` (chemin direct, sans revue — contenu personnel/solo) reste intact et fonctionne exactement comme avant, les deux chemins coexistent. CNT-008 (résolution de commentaire) : `resolveContentComment()` côté client, écriture directe — la RLS `content_comments_update` (auteur ou pedago/admin) le permettait déjà, aucune RPC nécessaire. **Reste** : CNT-007 configurable par org (aujourd'hui : séparation toujours forcée), pièces jointes/mentions sur les commentaires (CNT-008), publication/retrait programmés dans le temps (CNT-010 — canal et note de release faits, la partie planification demanderait sa propre étape de balayage nocturne pour un lecteur de `content_releases` qui n'existe encore nulle part). Vérifié : migration + 4 RPC rejouées contre un schéma stub reproduisant les vraies tables (Postgres jetable) — cycle complet brouillon→revue→changements demandés→nouveau brouillon→approuvé→publié, auto-approbation refusée pour de vrai (testée avec un pedago auteur de son propre contenu, pas seulement un rôle insuffisant), non-staff rejeté à chaque étape, double décision sur une demande déjà résolue refusée, `content_releases` reçoit sa première ligne jamais écrite, `publish_content_version()` direct toujours fonctionnel en parallèle ; `tsc`/`eslint` propres. **Non testé en conditions réelles** (pas de compte staff/apprenant local), même limite que le reste du programme
-- [ ] `content_deployments` réels (pinned vs follow-approved-updates, diff avant adoption — CNT-011/012) : table posée, jamais lue par les sessions/parcours qui consomment du contenu
+- [x] `content_deployments` réels (pinned vs follow-approved-updates, diff avant adoption — CNT-011/012) — `20260823020000_content_deployments_wiring.sql`. Vraie découverte de réconciliation avant d'écrire quoi que ce soit : la livraison de contenu en session (`course_sessions.content_snapshot`/`content_hash`/`content_schema_version`, `20260810150000_enrollment_roster.sql`) préexiste à toute la spec 10 et en est un second mécanisme de snapshot totalement indépendant — `createCourseSession()` copie `content.data` brut à la création, `content_hash` n'est même pas un vrai hash (`String(content.updated_at)`), et rien ne passe jamais par `content_versions`/`content_releases`. Cette migration ne remplace pas ce chemin — la création de session reste inchangée, fonctionne exactement comme avant pour du contenu sans release. Ce qu'elle ajoute : une couche de gouvernance **facultative** par-dessus — une fois une release publiée (via le pipeline de revue ci-dessus), le staff peut attacher un `content_deployments` à une session, et dès lors cette session peut être vérifiée contre des releases plus récentes et mise à jour explicitement. `create_content_deployment()` (vérifie que la session cible délivre bien le même contenu que la release — garde-fou contre une session non liée attachée par erreur), `check_content_deployment_update()` (diff en lecture seule : version figée vs dernière publiée, changelog, hash/schema_version changés), `adopt_content_deployment_update()` (seul écrivain de `content_deployments.pinned_version` **et** seul point qui remet à jour `course_sessions` après sa création — jamais automatique, toujours un appel explicite). CNT-013 (« une session commencée reste par défaut sur sa version ») découle gratuitement de cette discipline : rien ne tourne jamais sans être invoqué, donc une session figée ne bouge jamais toute seule. Seul `deployment_type='session'` synchronise réellement un consommateur (`course_sessions`, le seul qui existe) — `path`/`public_url`/`integration` restent créables/vérifiables mais n'ont aucune table à synchroniser aujourd'hui, non deviné. **Reste** : CNT-014 (mise à jour forcée pour faille de sécurité, avec rollback — chantier d'escalade à part) et CNT-015 (dépendances manquantes bloquent une release — demanderait un vrai graphe de dépendances entre contenus qui n'existe pas dans ce schéma). Vérifié : les 3 migrations rejouées en séquence contre un schéma stub reproduisant les vraies tables (Postgres jetable) — cycle complet release v1 → déploiement → aucune mise à jour signalée → release v2 → mise à jour détectée → session toujours figée sur v1 avant adoption → adoption explicite → session et déploiement mis à jour vers v2 → session non liée jamais touchée ; rejets vérifiés (non-staff, session appartenant à un autre contenu, version cible inexistante/non publiée) ; `tsc`/`eslint` propres. **Non testé en conditions réelles**
 - [ ] Modèles et blocs réutilisables (`content_templates`, `reusable_blocks`) — pas dans le modèle de données livré du tout
 - [ ] Brand kits (CNT-019) — absents
 - [ ] Gestion des assets (remplacement versionné, recherche d'usages avant suppression) — `media_assets`/`asset_usages` posés, aucun écran, aucun blocage de suppression implémenté
@@ -238,3 +238,14 @@ seule pièce restante qui touche à des systèmes déjà en prod (sessions/
 parcours) — le reste (modèles/blocs, brand kits, assets, localisation,
 exports) est indépendant et peut être pris dans n'importe quel ordre.
 Programme LMS à 74/85 (87%).
+
+~~`content_deployments` réels~~ fait dans la foulée
+(`20260823020000_content_deployments_wiring.sql`, voir §10) — la pièce qui
+touchait à un système en prod (`course_sessions.content_snapshot`, un second
+mécanisme de snapshot indépendant qui préexistait à toute la spec 10) est
+faite sans casser le chemin existant : la création de session fonctionne
+exactement comme avant, la couche de gouvernance est strictement optionnelle
+par-dessus. §10 à 2/8. Reste ouvert, tout indépendant, n'importe quel ordre :
+modèles/blocs réutilisables, brand kits, gestion des assets, localisation,
+exports SCORM/xAPI/QTI, diff structurel entre versions (CNT-003). Programme
+LMS à 75/85 (88%).

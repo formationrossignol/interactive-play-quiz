@@ -115,6 +115,76 @@ export async function publishApprovedVersion(contentId: string, version: number,
   return data as ContentRelease;
 }
 
+export async function listContentReleases(contentId: string): Promise<ContentRelease[]> {
+  const { data, error } = await supabase.from('content_releases').select('*').eq('content_id', contentId).order('published_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as ContentRelease[];
+}
+
+/** CNT-011/012/013 — an optional governed layer on top of session content
+ *  delivery. Only 'session' actually syncs a consumer table on adopt
+ *  (course_sessions.content_snapshot); 'path'/'public_url'/'integration'
+ *  can be created and checked but have no consumer wired yet — see
+ *  20260823020000_content_deployments_wiring.sql's header. */
+export interface ContentDeployment {
+  id: string;
+  release_id: string;
+  deployment_type: 'session' | 'path' | 'public_url' | 'integration';
+  deployment_ref: string;
+  update_policy: 'pinned' | 'follow_approved_updates';
+  pinned_version: number;
+  created_at: string;
+}
+
+export async function createContentDeployment(
+  releaseId: string, deploymentType: ContentDeployment['deployment_type'], deploymentRef: string, updatePolicy: ContentDeployment['update_policy'] = 'pinned',
+): Promise<ContentDeployment> {
+  const { data, error } = await supabase.rpc('create_content_deployment', {
+    p_release_id: releaseId, p_deployment_type: deploymentType, p_deployment_ref: deploymentRef, p_update_policy: updatePolicy,
+  });
+  if (error) throw error;
+  return data as ContentDeployment;
+}
+
+/** No dedicated RPC: content_deployments_read RLS already covers a direct
+ *  select — this is a PostgREST embedded filter across the release ->
+ *  content_id relationship it can't express through .eq() alone. */
+export async function listContentDeployments(contentId: string): Promise<ContentDeployment[]> {
+  const { data, error } = await supabase
+    .from('content_deployments')
+    .select('*, content_releases!inner(content_id)')
+    .eq('content_releases.content_id', contentId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as ContentDeployment[];
+}
+
+export interface ContentDeploymentUpdateCheck {
+  deployment_id: string;
+  content_id: string;
+  pinned_version: number;
+  latest_published_version: number | null;
+  has_update: boolean;
+  changelog: string | null;
+  hash_changed: boolean;
+  schema_version_changed: boolean;
+}
+
+export async function checkContentDeploymentUpdate(deploymentId: string): Promise<ContentDeploymentUpdateCheck> {
+  const { data, error } = await supabase.rpc('check_content_deployment_update', { p_deployment_id: deploymentId });
+  if (error) throw error;
+  return data as ContentDeploymentUpdateCheck;
+}
+
+/** Always explicit — CNT-012's "jamais appliquée silencieusement" — never
+ *  called automatically, only from a confirmed UI action after the diff
+ *  (checkContentDeploymentUpdate) has been shown. */
+export async function adoptContentDeploymentUpdate(deploymentId: string, toVersion: number): Promise<ContentDeployment> {
+  const { data, error } = await supabase.rpc('adopt_content_deployment_update', { p_deployment_id: deploymentId, p_to_version: toVersion });
+  if (error) throw error;
+  return data as ContentDeployment;
+}
+
 export interface ContentComment {
   id: string;
   content_id: string;

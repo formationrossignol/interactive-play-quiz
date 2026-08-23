@@ -11,9 +11,15 @@ import { showError } from "@/lib/errorTaxonomy";
 import { useSEO } from "@/hooks/useSEO";
 import { listRecentContent } from "@/lib/content/contentRepo";
 import type { ContentRow } from "@/lib/content/types";
+import { listSessionsForContent, type CourseSession } from "@/lib/lms/enrollment";
 import {
   addContentComment,
+  adoptContentDeploymentUpdate,
+  checkContentDeploymentUpdate,
+  createContentDeployment,
   listContentComments,
+  listContentDeployments,
+  listContentReleases,
   listContentVersions,
   listOpenReviewRequests,
   listReviewSteps,
@@ -25,6 +31,9 @@ import {
   submitContentForReview,
   submitReviewDecision,
   type ContentComment,
+  type ContentDeployment,
+  type ContentDeploymentUpdateCheck,
+  type ContentRelease,
   type ContentVersion,
   type ReviewRequest,
   type ReviewStep,
@@ -92,6 +101,125 @@ function ReviewPanel({ version, onDecided }: { version: ContentVersion; onDecide
           <Button size="sm" variant="outline" loading={deciding} onClick={() => handleDecide("changes_requested")}><X size={14} /> Demander des changements</Button>
           <Button size="sm" variant="ghost" loading={deciding} onClick={() => handleDecide("comment")}><MessageSquare size={14} /> Commenter</Button>
         </div>
+      )}
+    </div>
+  );
+}
+
+/** CNT-011/012/013: an optional governed layer over session content
+ *  delivery — only shows anything once at least one release exists (the
+ *  common personal/solo path via publishContentVersion has none, and stays
+ *  entirely unaffected). Only 'session' deployments sync a real consumer
+ *  (course_sessions) on adopt — see the migration header for why 'path'/
+ *  'public_url'/'integration' are createable but inert beyond bookkeeping. */
+function DeploymentsPanel({ contentId }: { contentId: string }) {
+  const [releases, setReleases] = useState<ContentRelease[]>([]);
+  const [deployments, setDeployments] = useState<ContentDeployment[]>([]);
+  const [sessions, setSessions] = useState<CourseSession[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [checks, setChecks] = useState<Record<string, ContentDeploymentUpdateCheck>>({});
+  const [selectedRelease, setSelectedRelease] = useState("");
+  const [selectedSession, setSelectedSession] = useState("");
+  const [updatePolicy, setUpdatePolicy] = useState<ContentDeployment["update_policy"]>("pinned");
+  const [creating, setCreating] = useState(false);
+
+  const reload = () => {
+    Promise.all([listContentReleases(contentId), listContentDeployments(contentId), listSessionsForContent(contentId)])
+      .then(([r, d, s]) => { setReleases(r); setDeployments(d); setSessions(s); })
+      .catch(showError)
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    reload();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contentId]);
+
+  if (loading) return null;
+  if (releases.length === 0) return null;
+
+  const sessionLabel = (id: string) => sessions.find((s) => s.id === id)?.label ?? id.slice(0, 8);
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedRelease || !selectedSession) return;
+    setCreating(true);
+    try {
+      await createContentDeployment(selectedRelease, "session", selectedSession, updatePolicy);
+      setSelectedSession("");
+      reload();
+    } catch (err) {
+      showError(err);
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleCheck = async (deploymentId: string) => {
+    try {
+      const result = await checkContentDeploymentUpdate(deploymentId);
+      setChecks((prev) => ({ ...prev, [deploymentId]: result }));
+    } catch (err) {
+      showError(err);
+    }
+  };
+
+  const handleAdopt = async (deploymentId: string, toVersion: number) => {
+    try {
+      await adoptContentDeploymentUpdate(deploymentId, toVersion);
+      setChecks((prev) => { const next = { ...prev }; delete next[deploymentId]; return next; });
+      reload();
+    } catch (err) {
+      showError(err);
+    }
+  };
+
+  return (
+    <div>
+      <h4 className="text-sm font-medium mb-2">Déploiements — sessions liées à une release</h4>
+      {sessions.length > 0 && (
+        <form onSubmit={handleCreate} className="flex flex-wrap items-end gap-2 mb-2">
+          <select className="h-9 rounded-md border bg-transparent px-2 text-sm" style={{ borderColor: "var(--ap-line)", color: "var(--ap-ink)" }} value={selectedRelease} onChange={(e) => setSelectedRelease(e.target.value)} aria-label="Release">
+            <option value="">Release…</option>
+            {releases.map((r) => <option key={r.id} value={r.id}>v{r.version} · {r.channel}</option>)}
+          </select>
+          <select className="h-9 rounded-md border bg-transparent px-2 text-sm" style={{ borderColor: "var(--ap-line)", color: "var(--ap-ink)" }} value={selectedSession} onChange={(e) => setSelectedSession(e.target.value)} aria-label="Session">
+            <option value="">Session…</option>
+            {sessions.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+          </select>
+          <select className="h-9 rounded-md border bg-transparent px-2 text-sm" style={{ borderColor: "var(--ap-line)", color: "var(--ap-ink)" }} value={updatePolicy} onChange={(e) => setUpdatePolicy(e.target.value as ContentDeployment["update_policy"])} aria-label="Politique de mise à jour">
+            <option value="pinned">Figée (pinned)</option>
+            <option value="follow_approved_updates">Suit les mises à jour approuvées</option>
+          </select>
+          <Button type="submit" size="sm" variant="outline" loading={creating}>Déployer</Button>
+        </form>
+      )}
+      {deployments.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Aucun déploiement.</p>
+      ) : (
+        <ul className="space-y-1.5">
+          {deployments.map((d) => {
+            const check = checks[d.id];
+            return (
+              <li key={d.id} className="text-sm rounded border px-3 py-1.5">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <span>Session « {sessionLabel(d.deployment_ref)} » · {d.update_policy === "pinned" ? "figée" : "suit les mises à jour"} · v{d.pinned_version}</span>
+                  <Button variant="ghost" size="sm" onClick={() => handleCheck(d.id)}>Vérifier les mises à jour</Button>
+                </div>
+                {check && (
+                  check.has_update ? (
+                    <div className="mt-1.5 flex items-center justify-between gap-2 rounded bg-muted/40 px-2 py-1.5">
+                      <span className="text-xs">Mise à jour disponible : v{check.latest_published_version}{check.changelog ? ` — ${check.changelog}` : ""}</span>
+                      <Button size="sm" onClick={() => handleAdopt(d.id, check.latest_published_version!)}>Adopter</Button>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground mt-1">À jour (v{check.pinned_version}).</p>
+                  )
+                )}
+              </li>
+            );
+          })}
+        </ul>
       )}
     </div>
   );
@@ -249,6 +377,8 @@ function ContentVersionPanel({ item }: { item: ContentRow }) {
           ))}
         </ul>
       )}
+
+      <DeploymentsPanel contentId={item.id} />
 
       <div>
         <h4 className="text-sm font-medium mb-2 flex items-center gap-1"><MessageSquare size={14} /> Commentaires</h4>
