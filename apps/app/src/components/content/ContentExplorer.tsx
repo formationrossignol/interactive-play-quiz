@@ -9,7 +9,7 @@
  * extras) are injected via props. Quiz/poll/flashcard use the GenericCard/GenericRow
  * renderers; courses pass their own.
  */
-import { useEffect, useMemo, useState, type MutableRefObject, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type MutableRefObject, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { DndContext, useDroppable, type DragEndEvent } from "@dnd-kit/core";
 import { toast } from "sonner";
@@ -37,7 +37,7 @@ import {
   type ContentDisplay,
   type SortOption,
 } from "@/lib/content/contentView";
-import type { ContentType, FolderRow } from "@/lib/content/types";
+import type { ContentRow, ContentType, FolderRow } from "@/lib/content/types";
 import type { ItemCtx } from "./GenericItem";
 import { ExplorerEmptyState } from "./ExplorerEmptyState";
 import { PageHeader } from "@/components/ui/page-header";
@@ -254,6 +254,10 @@ export interface ContentExplorerProps {
   categories?: string[];
   /** Receives the collection's reload fn so the page can refresh after external mutations. */
   reloadRef?: MutableRefObject<(() => void) | null>;
+  /** Fires whenever the collection's items change (trash/restore/delete/duplicate/…), so a
+   *  page-level stats panel (e.g. MyExams' cross-exam overview) can refetch instead of going
+   *  stale after a mutation it has no other way to learn about. */
+  onItemsChanged?: (items: ContentRow[]) => void;
   /** Extra predicate applied on top of the active (non-trashed) items — e.g. a status filter. */
   extraFilter?: (d: ContentDisplay) => boolean;
   /** Extra control(s) rendered in the toolbar, after the category select. */
@@ -295,6 +299,7 @@ export function ContentExplorer({
   statsRow,
   categories: fixedCategories,
   reloadRef,
+  onItemsChanged,
   extraFilter,
   extraToolbar,
   renderCard,
@@ -306,6 +311,15 @@ export function ContentExplorer({
   useEffect(() => {
     if (reloadRef) reloadRef.current = c.reload;
   }, [reloadRef, c.reload]);
+
+  // Ref so a parent passing an inline callback doesn't retrigger this effect
+  // (and loop, if the callback updates state) on every render — only an
+  // actual reload of c.items should notify the parent.
+  const onItemsChangedRef = useRef(onItemsChanged);
+  onItemsChangedRef.current = onItemsChanged;
+  useEffect(() => {
+    onItemsChangedRef.current?.(c.items);
+  }, [c.items]);
 
   const [view, setView] = useState<ShortcutView>(() => readPreferences(type).view ?? "all");
   const [viewMode, setViewModeState] = useState<"grid" | "list">(
@@ -451,6 +465,10 @@ export function ContentExplorer({
     }
   };
 
+  const handleEmptyTrash = () =>
+    c.emptyTrash().then(() => toast.success(t("toastDeletedPermanently")))
+      .catch((e) => { logUnexpected("emptyTrash")(e); toast.error(t("toastGenericError")); });
+
   const handlePermDeleteConfirm = () => {
     if (permDeleteTarget) {
       c.removeItem(permDeleteTarget.id).then(() => toast.success(t("toastDeletedPermanently")))
@@ -546,6 +564,7 @@ export function ContentExplorer({
         viewMode={viewMode}
         onRestore={handleRestore}
         onPermanentDelete={(item) => { setPermDeleteTarget(item); setDeleteDialogOpen(true); }}
+        onEmptyTrash={handleEmptyTrash}
       />
     );
   } else if (view === "favorites") {

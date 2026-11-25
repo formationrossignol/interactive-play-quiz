@@ -148,13 +148,13 @@ function useGroupEmailFilter(groupId: string | null): Set<string> | undefined {
   return emails;
 }
 
-function useHostExamStats(hostId: string, emailFilter?: Set<string>): HostExamStats {
+function useHostExamStats(hostId: string, emailFilter?: Set<string>, refreshKey?: number): HostExamStats {
   const [stats, setStats] = useState<HostExamStats>(EMPTY_HOST_STATS);
   useEffect(() => {
     let cancelled = false;
     computeHostExamStats(hostId, emailFilter).then((s) => { if (!cancelled) setStats(s); });
     return () => { cancelled = true; };
-  }, [hostId, emailFilter]);
+  }, [hostId, emailFilter, refreshKey]);
   return stats;
 }
 
@@ -167,7 +167,7 @@ interface GroupComparisonRow {
  *  computeHostExamStats + email-join already used for the single-group
  *  filter above, just run for every group at once instead of one at a
  *  time, so they can be read side by side instead of switched between. */
-function usePromotionComparison(hostId: string, groups: Group[]): GroupComparisonRow[] {
+function usePromotionComparison(hostId: string, groups: Group[], refreshKey?: number): GroupComparisonRow[] {
   const [rows, setRows] = useState<GroupComparisonRow[]>([]);
   useEffect(() => {
     if (groups.length < 2) { setRows([]); return; }
@@ -179,13 +179,13 @@ function usePromotionComparison(hostId: string, groups: Group[]): GroupCompariso
       return { group, stats };
     })).then((r) => { if (!cancelled) setRows(r); });
     return () => { cancelled = true; };
-  }, [hostId, groups]);
+  }, [hostId, groups, refreshKey]);
   return rows;
 }
 
-function PromotionComparisonPanel({ hostId }: { hostId: string }) {
+function PromotionComparisonPanel({ hostId, refreshKey }: { hostId: string; refreshKey?: number }) {
   const groups = useOwnedGroups(hostId);
-  const rows = usePromotionComparison(hostId, groups);
+  const rows = usePromotionComparison(hostId, groups, refreshKey);
   if (rows.length < 2) return null;
 
   return (
@@ -239,11 +239,11 @@ function HostStatTile({ icon, label, value }: { icon: string; label: string; val
  *  Phase B adds an optional "Promotion" filter (groups from Partage), scoping
  *  the same stats to attempts whose participant email matches a group
  *  member invited by email — see computeHostExamStats' docstring. */
-function HostStatsRow({ hostId }: { hostId: string }) {
+function HostStatsRow({ hostId, refreshKey }: { hostId: string; refreshKey?: number }) {
   const groups = useOwnedGroups(hostId);
   const [groupId, setGroupId] = useState<string | null>(null);
   const emailFilter = useGroupEmailFilter(groupId);
-  const stats = useHostExamStats(hostId, emailFilter);
+  const stats = useHostExamStats(hostId, emailFilter, refreshKey);
 
   if (groups.length === 0 && stats.totalExams === 0) return null;
 
@@ -292,18 +292,18 @@ const PROBLEM_THRESHOLD_PCT = 50;
  *  same per-exam computeExamStats already shown on each exam's own admin
  *  page, just ranked worst-pass-rate-first across the trainer's whole
  *  portfolio instead of read one exam at a time. */
-function useExamStatsRows(hostId: string): ExamStatsRow[] {
+function useExamStatsRows(hostId: string, refreshKey?: number): ExamStatsRow[] {
   const [rows, setRows] = useState<ExamStatsRow[]>([]);
   useEffect(() => {
     let cancelled = false;
     listExamStatsForHost(hostId).then((r) => { if (!cancelled) setRows(r); }).catch(() => {});
     return () => { cancelled = true; };
-  }, [hostId]);
+  }, [hostId, refreshKey]);
   return rows;
 }
 
-function ProblemModulesPanel({ hostId, navigate }: { hostId: string; navigate: ReturnType<typeof useNavigate> }) {
-  const rows = useExamStatsRows(hostId);
+function ProblemModulesPanel({ hostId, navigate, refreshKey }: { hostId: string; navigate: ReturnType<typeof useNavigate>; refreshKey?: number }) {
+  const rows = useExamStatsRows(hostId, refreshKey);
   const problematic = rows
     .filter((r) => r.stats.completedAttempts > 0 && r.stats.passRate !== null && r.stats.passRate < PROBLEM_THRESHOLD_PCT)
     .slice(0, 5);
@@ -499,6 +499,7 @@ export default function MyExams() {
     () => (localStorage.getItem('my-exams-status-filter') as 'Tous' | ExamStatus | null) ?? 'Tous',
   );
   const reloadRef = useRef<(() => void) | null>(null);
+  const [statsRefreshKey, setStatsRefreshKey] = useState(0);
 
   useEffect(() => {
     localStorage.setItem('my-exams-status-filter', status);
@@ -524,6 +525,7 @@ export default function MyExams() {
     <ContentExplorer
       type="exam"
       reloadRef={reloadRef}
+      onItemsChanged={() => setStatsRefreshKey((k) => k + 1)}
       accentBtn=""
       headerTitle="Mes examens"
       headerSubtitle="Planifiez vos évaluations et suivez les résultats en temps réel."
@@ -531,9 +533,9 @@ export default function MyExams() {
       oneLabel="examen"
       cta={{ label: 'Nouvel examen', onClick: () => navigate('/exam-builder') }}
       statsRow={<div className="product-insights-stack">
-        <HostStatsRow hostId={user.id} />
-        <PromotionComparisonPanel hostId={user.id} />
-        <ProblemModulesPanel hostId={user.id} navigate={navigate} />
+        <HostStatsRow hostId={user.id} refreshKey={statsRefreshKey} />
+        <PromotionComparisonPanel hostId={user.id} refreshKey={statsRefreshKey} />
+        <ProblemModulesPanel hostId={user.id} navigate={navigate} refreshKey={statsRefreshKey} />
       </div>}
       extraFilter={(d) => status === 'Tous' || computeExamStatus(d.data as unknown as Exam) === status}
       extraToolbar={

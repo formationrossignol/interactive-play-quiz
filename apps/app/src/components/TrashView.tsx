@@ -1,6 +1,16 @@
 import { useState } from "react";
 import { BarChart2, Clock, FileCheck2, GraduationCap, Layers3, ListChecks, Presentation, RotateCcw, Trash2, type LucideIcon } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import type { ContentDisplay } from "@/lib/content/contentView";
 import { ExplorerEmptyState } from "@/components/content/ExplorerEmptyState";
 
@@ -9,6 +19,7 @@ interface TrashViewProps {
   viewMode: "grid" | "list";
   onRestore: (id: string) => void;
   onPermanentDelete: (item: ContentDisplay) => void;
+  onEmptyTrash: () => void;
 }
 
 type TrashSort = "newest" | "oldest" | "az";
@@ -70,8 +81,9 @@ function TrashHeader({ item, compact = false }: { item: ContentDisplay; compact?
   );
 }
 
-export const TrashView = ({ items, viewMode, onRestore, onPermanentDelete }: TrashViewProps) => {
+export const TrashView = ({ items, viewMode, onRestore, onPermanentDelete, onEmptyTrash }: TrashViewProps) => {
   const [sort, setSort] = useState<TrashSort>("newest");
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const sorted = [...items].sort((a, b) => {
     if (sort === "oldest") return (a.deletedAt ?? "").localeCompare(b.deletedAt ?? "");
@@ -115,7 +127,34 @@ export const TrashView = ({ items, viewMode, onRestore, onPermanentDelete }: Tra
             <SelectItem value="az">A → Z</SelectItem>
           </SelectContent>
         </Select>
+        <button
+          onClick={() => setConfirmOpen(true)}
+          className="ap-btn ap-btn--ghost ap-btn--sm"
+          style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "12px", color: "var(--ap-danger)" }}
+        >
+          <Trash2 className="h-3.5 w-3.5" /> Vider la corbeille
+        </button>
       </div>
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Vider la corbeille</AlertDialogTitle>
+            <AlertDialogDescription>
+              {items.length} élément{items.length > 1 ? "s" : ""} seront supprimés définitivement. Cette action est irréversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => { onEmptyTrash(); setConfirmOpen(false); }}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              Vider la corbeille
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {viewMode === "grid" ? (
         <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
