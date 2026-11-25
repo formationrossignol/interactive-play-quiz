@@ -43,6 +43,7 @@ export interface UseContentCollection {
   trashItem: (id: string) => Promise<void>;
   restoreItem: (id: string) => Promise<void>;
   removeItem: (id: string) => Promise<void>;
+  emptyTrash: () => Promise<void>;
   duplicateItem: (id: string) => Promise<void>;
   setItemPublic: (id: string, isPublic: boolean) => Promise<void>;
 }
@@ -201,6 +202,16 @@ export function useContentCollection(type: ContentType): UseContentCollection {
     [reload],
   );
 
+  const emptyTrash = useCallback(
+    async () => {
+      if (!getCurrentUser()) return;
+      const trashedIds = items.filter((i) => i.data.deletedAt).map((i) => i.id);
+      await Promise.all(trashedIds.map((id) => removeContent(id)));
+      await reload();
+    },
+    [items, reload],
+  );
+
   const duplicateItem = useCallback(
     async (id: string) => {
       const userId = getCurrentUser()?.id;
@@ -239,6 +250,7 @@ export function useContentCollection(type: ContentType): UseContentCollection {
     trashItem,
     restoreItem,
     removeItem,
+    emptyTrash,
     duplicateItem,
     setItemPublic,
   };
