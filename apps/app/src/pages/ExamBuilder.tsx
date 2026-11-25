@@ -273,9 +273,17 @@ export default function ExamBuilder() {
       setSaved(exam);
       // Mirror into the Supabase `content` table so it shows up in "Mes examens"
       // (which reads from there, not from the legacy `lms_exams` localStorage store).
+      // The exam row itself (source of truth, counted against the plan cap) is
+      // already saved at this point, so a mirror failure must not roll that back —
+      // but it must not stay silent either, or the exam becomes invisible in the
+      // library while still counting against the cap (see incident: exams showing
+      // as "5 used" while only 2 were visible, because this catch only logged).
       try {
         await upsertContentBySource(user.id, 'exam', exam.id, exam as unknown as Record<string, unknown>, false);
-      } catch (e) { console.error('[ExamBuilder] content mirror failed', e); }
+      } catch (e) {
+        console.error('[ExamBuilder] content mirror failed', e);
+        toast.error('Examen enregistré, mais son affichage dans "Mes examens" a échoué. Rechargez la page ; si le problème persiste, contactez le support.');
+      }
       // Also mirror the backing quiz: ExamRoom's participant-side read
       // (getContentBySource) depends on this row existing, and a quiz saved
       // before the content-mirroring code shipped (or never re-saved since)
