@@ -20,6 +20,7 @@ import {
   setPublic,
   updateContent,
 } from '@/lib/content/contentRepo';
+import { archiveExam, updateExam } from '@/lib/examStorage';
 
 export interface UseContentCollection {
   loading: boolean;
@@ -164,6 +165,12 @@ export function useContentCollection(type: ContentType): UseContentCollection {
       if (!row) return;
       const data = { ...row.data, deletedAt: new Date().toISOString() };
       await updateContent(id, { data });
+      // Exams are also tracked in the dedicated `exams` table (plan-cap counting
+      // reads from there, not from `content`) — archive it there too so a
+      // trashed exam stops counting against the plan limit.
+      if (row.type === 'exam' && row.source_id) {
+        await archiveExam(row.source_id);
+      }
       await reload();
     },
     [items, reload],
@@ -177,6 +184,9 @@ export function useContentCollection(type: ContentType): UseContentCollection {
       const data = { ...row.data };
       delete data.deletedAt;
       await updateContent(id, { data });
+      if (row.type === 'exam' && row.source_id) {
+        await updateExam(row.source_id, { status: 'draft' });
+      }
       await reload();
     },
     [items, reload],
